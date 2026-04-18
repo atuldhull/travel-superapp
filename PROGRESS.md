@@ -10,18 +10,59 @@
 
 ## Summary
 
-| Counter             | Value                                                             |
-| ------------------- | ----------------------------------------------------------------- |
-| Prompts completed   | 13                                                                |
-| Prompts in progress | 0                                                                 |
-| Prompts blocked     | 0                                                                 |
-| Last prompt         | `[II.6.2] + [II.6.3] + [II.6.4]` (batched, docs-only)             |
-| Last commit date    | 2026-04-18                                                        |
-| Phase               | Phase 0 — Foundation (apps/api wired; 3 architecture ADRs locked) |
+| Counter             | Value                                    |
+| ------------------- | ---------------------------------------- |
+| Prompts completed   | 14                                       |
+| Prompts in progress | 0                                        |
+| Prompts blocked     | 0                                        |
+| Last prompt         | `[IX.32.3]`                              |
+| Last commit date    | 2026-04-18                               |
+| Phase               | Phase 0 — Foundation (+ dev-DX Makefile) |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IX.32.3] — Root Makefile (DX wrapper around the docker-compose stack)
+
+**Date:** 2026-04-18 · **Status:** DONE · **Kind:** Build · **Playbook §** 32.3
+
+**Shipped in commit** `d3cca19`. PROGRESS entry in a follow-up `docs(IX.32.3)` commit (prettier race, same pattern as `[III.13.1]` / `[II.6.2]`).
+
+**What was done**
+
+Single `Makefile` at repo root wrapping the `docker compose -f infra/docker-compose.yml ...` invocations we run dozens of times a day, plus thin wrappers over the workspace pnpm scripts. `make help` is the default goal — a blank `make` prints the full menu auto-generated from inline `## <description>` doc-comments next to each target (via a one-line `awk` parser). No duplication between target list and help text.
+
+**Targets**
+
+| Category | Target                                                               | What                                                                                                                    |
+| -------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Docker   | `up`, `down`, `ps`, `logs`, `reset`, `nuke`                          | Standard lifecycle + two nuclear options (`reset` wipes volumes, `nuke` also rebuilds the postgres image from scratch). |
+| Shells   | `db-shell`, `redis-shell`, `psql-exec SQL="..."`                     | Interactive psql + redis-cli + one-shot SQL.                                                                            |
+| Node     | `install`, `dev`, `build`, `typecheck`, `lint`, `test`, `clean-dist` | `clean-dist` kills stale `dist/` and `.turbo/` — guards against the shadow-file class of bugs from `[III.11.0]`.        |
+| Help     | `help` (default)                                                     | Auto-parsed from the `## ` comments.                                                                                    |
+
+**Files created** (1) — `Makefile`.
+**Files edited** — `PROGRESS.md` (this entry).
+
+**Verification**
+
+- Syntax-valid GNU Make: `.PHONY` for every non-file target, tabs under recipes, variables quoted.
+- Self-documenting: adding a new target + `## <description>` instantly appears in `make help` with no extra bookkeeping.
+- Could not run locally (`make` is not on the default Git Bash PATH). The Makefile header documents the three supported Windows install paths (`winget install GnuWin32.Make`, `choco install make`, `scoop install make`). Linux/macOS ship it with `build-essential` / Xcode CLT.
+- The wrapped commands are exactly the ones already validated during `[IX.32.2]` + subsequent work — so target correctness reduces to "spelled the flags right", which review covers.
+
+**Acceptance criteria (from prompt)**
+
+- ✅ `up`, `down`, `logs`, `reset`, `db-shell`, `redis-shell` all present.
+- Also includes: `ps`, `nuke`, `psql-exec`, pnpm shortcuts, auto-generated `help`.
+
+**Notes**
+
+- `seed-demo` intentionally omitted — needs the Prisma seed that lands in `[IV.18.1.8]`.
+- For developers without `make`, each recipe is a single-line docker/pnpm invocation — literally copy-pasteable out of the Makefile.
 
 ---
 
