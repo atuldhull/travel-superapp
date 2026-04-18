@@ -10,18 +10,55 @@
 
 ## Summary
 
-| Counter             | Value                                    |
-| ------------------- | ---------------------------------------- |
-| Prompts completed   | 14                                       |
-| Prompts in progress | 0                                        |
-| Prompts blocked     | 0                                        |
-| Last prompt         | `[IX.32.3]`                              |
-| Last commit date    | 2026-04-18                               |
-| Phase               | Phase 0 — Foundation (+ dev-DX Makefile) |
+| Counter             | Value                                                               |
+| ------------------- | ------------------------------------------------------------------- |
+| Prompts completed   | 15                                                                  |
+| Prompts in progress | 0                                                                   |
+| Prompts blocked     | 0                                                                   |
+| Last prompt         | `[IX.32.4]`                                                         |
+| Last commit date    | 2026-04-18                                                          |
+| Phase               | Phase 0 — Foundation (env template + docs; onboarding story closed) |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IX.32.4] — `.env.example` + `docs/env.md` (env-var onboarding)
+
+**Date:** 2026-04-18 · **Status:** DONE · **Kind:** Design · **Playbook §** 32.4
+
+**Shipped in commit** `7085eb4`. PROGRESS entry in a follow-up `docs(IX.32.4)` commit (prettier race — same pattern as `[III.13.1]` / `[II.6.2]` / `[IX.32.3]`).
+
+**What was done**
+
+Closes the dev-onboarding loop: every env var declared in `packages/config/src/schema.ts` now has a matching `.env.example` line AND a row in `docs/env.md`.
+
+- **`.env.example`** — 43 vars grouped into the same sections as the Zod schema. Dev-required keys point at the Docker Compose stack verbatim; `cp .env.example .env.local` boots apps/api against the compose services with zero edits. Real secrets carry the sentinel `REPLACE_ME_SEE_DOPPLER_*` which is guaranteed to fail the `.min(32)` / `.min(16)` checks — the process refuses to start if a developer forgot to replace them. Optional blocks commented out so first-run onboarding is minimal.
+- **`docs/env.md`** — reference table (43 rows: Group / Variable / Required / Default / Validator / Notes). Header explains loading order (process env → `.env.local` → schema default), validation flow, Doppler posture for staging/prod, and the sentinel-on-boot check. Closes with a dev quickstart (`cp` + `openssl rand -hex 32` ×3 + `make up` + `pnpm --filter=api dev`) and an "adding a new variable" checklist naming the three places to keep in sync. Auto-enforcement of that checklist is flagged as follow-up in `[IV.18.1.11]` CI.
+
+**Files created** (2) — `.env.example`, `docs/env.md`.
+**Files edited** (1) — `PROGRESS.md` (this entry).
+**Dependencies** — none. Pure docs.
+
+**Verification**
+
+- Cross-check: every field in `packages/config/src/schema.ts` has a matching `.env.example` line AND a matching `docs/env.md` row.
+- Required vs optional matches the schema.
+- Defaults match `.default(...)` values verbatim.
+- `openssl rand -hex 32` produces exactly 64 hex chars which satisfies `.min(32)` — instruction is explicit in the doc.
+
+**Acceptance criteria**
+
+- ✅ `.env.example` covers every env var.
+- ✅ `docs/env.md` documents each variable's purpose, owner, default.
+- ✅ Pre-commit schema-⇄-example sync enforcement flagged as follow-up (not part of this prompt).
+
+**Notes**
+
+- `.env.local` is gitignored (configured in `[IV.19.1]`); real credentials never enter the repo.
+- The three required secrets (`JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `RATE_LIMIT_PEPPER`) each need ≥ 32 chars — documented with the exact `openssl` command.
 
 ---
 
