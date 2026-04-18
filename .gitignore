@@ -1,0 +1,60 @@
+# Node / pnpm
+node_modules/
+.pnpm-store/
+.turbo/
+dist/
+build/
+.next/
+out/
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.swp
+
+# Test / coverage
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# Expo / RN
+.expo/
+.expo-shared/
+ios/Pods/
+android/.gradle/
+android/build/
+android/app/build/
+
+# Python (ai-service)
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Prisma
+prisma/dev.db*
+
+# Misc
+.cache/
+tmp/
