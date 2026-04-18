@@ -10,18 +10,75 @@
 
 ## Summary
 
-| Counter             | Value                                                                         |
-| ------------------- | ----------------------------------------------------------------------------- |
-| Prompts completed   | 9                                                                             |
-| Prompts in progress | 0                                                                             |
-| Prompts blocked     | 0                                                                             |
-| Last prompt         | `[III.11.5]`                                                                  |
-| Last commit date    | 2026-04-18                                                                    |
-| Phase               | Phase 0 — Foundation (apps/api: trinity + exception filters; 14/14 e2e green) |
+| Counter             | Value                                                                                     |
+| ------------------- | ----------------------------------------------------------------------------------------- |
+| Prompts completed   | 10                                                                                        |
+| Prompts in progress | 0                                                                                         |
+| Prompts blocked     | 0                                                                                         |
+| Last prompt         | `[III.13.1]`                                                                              |
+| Last commit date    | 2026-04-18                                                                                |
+| Phase               | Phase 0 — Foundation (apps/api: trinity + filters + ZodValidationPipe; 23/23 tests green) |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [III.13.1] — `ZodValidationPipe` (strict-by-default, friendly fieldErrors, 9 new tests)
+
+**Date:** 2026-04-18 · **Status:** DONE · **Kind:** Build · **Playbook §** 13.1
+
+**Shipped in commit** `f5e78d2`. PROGRESS entry landed one commit later as `docs(III.13.1)` because the initial edit lost a race with prettier.
+
+**What was done**
+
+Pairs directly with `DomainExceptionFilter` from `[III.11.5]`: pipe throws `ValidationError`, filter renders 422 with `fieldErrors` in the JSON body. Consumers get one-line parsing + type inference + automatic error mapping.
+
+- **`apps/api/src/common/pipes/zod-validation.pipe.ts`** — `@Injectable() ZodValidationPipe<T extends ZodTypeAny>` implementing `PipeTransform<unknown, z.infer<T>>`.
+  - Generic parameter carries the schema's inferred type downstream so handlers receive a fully-typed DTO (`@Body(new ZodValidationPipe(CreateTripSchema)) dto: CreateTripDto` — no extra cast).
+  - **Strict by default**: a plain `ZodObject` gets `.strict()` applied before storage so unknown keys are rejected (Zod's default is silent strip). Non-object schemas pass through.
+  - Used a duck-typed `_def.typeName === 'ZodObject'` guard rather than `instanceof ZodObject` — avoids TS2358 generic-arg friction and is robust across Zod minor versions.
+  - Only transforms `body` / `query` / `param` metadata types. Nest-internal `custom` / `metatype` values pass through.
+  - **Friendly `unrecognized_keys` expansion**: Zod reports unknown-key errors with `path = parent, keys = [offenders]`. The pipe expands that into individual `fieldErrors` entries so clients see `{ malicious: ['unrecognized key'] }` rather than a root-level blob.
+  - Throws `ValidationError(msg, fieldErrors, { source: 'body'|'query'|'param', field })` — the filter spreads that context into the response body via `toJSON()`.
+- **`apps/api/test/zod-validation.pipe.e2e-spec.ts`** — 9 e2e cases via a throw-away `DebugValidationController` (two endpoints: `POST /debug/trips` with `@Body` pipe, `GET /debug/search` with `@Query` pipe):
+  1. Valid body passes + parsed dto returned + coercion applied (`radiusKm: '25'` → `25`).
+  2. Defaults applied (`limit` → `10`).
+  3. Missing required → 422 with `fieldErrors.title`.
+  4. Wrong type → 422 with the offending path.
+  5. Nested field error uses `center.lat` dot-path key.
+  6. Unknown key explicitly surfaced: `fieldErrors.malicious = ['unrecognized key']`.
+  7. Multiple independent errors all surface in one response.
+  8. Query validation via `@Get` + `@Query` also works.
+  9. Full 422 response-shape contract verified — `code: 'VALIDATION_FAILED'`, `message`, `fieldErrors`, `timestamp`, `context.source: 'body'`.
+
+**Files created / edited**
+
+- New: `apps/api/src/common/pipes/zod-validation.pipe.ts`, `apps/api/test/zod-validation.pipe.e2e-spec.ts`.
+- Edited: `apps/api/package.json` (added `zod@^3.24.1` direct dep — it was transitive via `@app/config` but `tsc` couldn't find it through the symlink chain), `PROGRESS.md`.
+
+**Commands run / issues fixed**
+
+1. First build → `TS2307: Cannot find module 'zod'` + `TS2358: left-hand side of instanceof ...`. Fixed by adding zod as direct dep and swapping to the duck-typed guard.
+2. First test run → 2 failures:
+   - `expect(fieldErrors).toHaveProperty('center.lat')` — Jest reads dots as nested paths; swapped to `'center.lat' in fieldErrors` + bracket access.
+   - Query test `POST /debug/search?...` with empty body + `Content-Type: application/json` → Fastify 400 (body parse error before handler). Switched the endpoint to `@Get` — cleaner and closer to real search-endpoint shape.
+3. Retested → **23/23 across 4 suites in 3.6s**. Lint clean. Build green.
+4. Workspace turbo → **16/16 tasks successful** (12 cached, 4 fresh).
+
+**Acceptance criteria**
+
+- ✅ Posting an extra field yields 422 with the offending key surfaced by name.
+- ✅ `@Body(new ZodValidationPipe(Schema))` works end-to-end.
+- ✅ `fieldErrors: Record<string, string[]>` preserved.
+- ✅ Strict unknown-key rejection.
+
+**Notes**
+
+- Chose `isZodObjectLike` duck-typed guard over `instanceof ZodObject` — no TS2358, robust to Zod internal refactors, no runtime class import.
+- `context.source` / `context.field` ride along for observability — never PII.
+- Pipe does not mutate input; consumers always get the normalized (type-coerced, default-applied, key-stripped) value.
 
 ---
 
