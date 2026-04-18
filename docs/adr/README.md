@@ -5,11 +5,12 @@ An ADR is never edited in place once accepted — supersede with a new one inste
 
 ## Index
 
-| #   | Title                                                                               | Status   | Prompt     |
-| --- | ----------------------------------------------------------------------------------- | -------- | ---------- |
-| 001 | [Modular monolith with selective service extraction](./ADR-001-modular-monolith.md) | Accepted | `[II.6.2]` |
-| 002 | [Service-extraction triggers](./ADR-002-service-extraction-triggers.md)             | Accepted | `[II.6.3]` |
-| 003 | [Event backbone — Redis Streams first](./ADR-003-event-backbone.md)                 | Accepted | `[II.6.4]` |
+| #   | Title                                                                                | Status   | Prompt     |
+| --- | ------------------------------------------------------------------------------------ | -------- | ---------- |
+| 001 | [Modular monolith with selective service extraction](./ADR-001-modular-monolith.md)  | Accepted | `[II.6.2]` |
+| 002 | [Service-extraction triggers](./ADR-002-service-extraction-triggers.md)              | Accepted | `[II.6.3]` |
+| 003 | [Event backbone — Redis Streams first](./ADR-003-event-backbone.md)                  | Accepted | `[II.6.4]` |
+| 004 | [Bounded-context principle — no cross-module imports](./ADR-004-bounded-contexts.md) | Accepted | `[II.7.1]` |
 
 ## Authoring
 
