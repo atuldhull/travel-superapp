@@ -10,18 +10,76 @@
 
 ## Summary
 
-| Counter             | Value                                                             |
-| ------------------- | ----------------------------------------------------------------- |
-| Prompts completed   | 6                                                                 |
-| Prompts in progress | 0                                                                 |
-| Prompts blocked     | 0                                                                 |
-| Last prompt         | `[III.11.6]`                                                      |
-| Last commit date    | 2026-04-18                                                        |
-| Phase               | Phase 0 — Foundation (trinity complete: config + errors + logger) |
+| Counter             | Value                                                           |
+| ------------------- | --------------------------------------------------------------- |
+| Prompts completed   | 7 (1 partial — [IV.17.6] has a deferred item)                   |
+| Prompts in progress | 0                                                               |
+| Prompts blocked     | 0                                                               |
+| Last prompt         | `[IV.17.6]`                                                     |
+| Last commit date    | 2026-04-18                                                      |
+| Phase               | Phase 0 — Foundation (trinity + root path aliases + instr stub) |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.17.6] — Root tsconfig path aliases + `instrumentation.ts` stub (partial — categories deferred)
+
+**Date:** 2026-04-18 · **Status:** DONE (2 of 3 items) · **Kind:** Refactor/Tooling · **Playbook §** 17.6
+
+**What was done**
+
+- **Root `tsconfig.json` (new)** — a "solution" tsconfig holding the `@app/*` path aliases for every live package (config, errors, logger) plus every placeholder package (observability, shared-types, sdk, ui, mobile-ui). `files: []` + `include: []` ensure this tsconfig compiles nothing itself — each app/package still drives its own compile via its local `tsconfig.json`. Both bare imports (`@app/config`) and subpath imports (`@app/config/nested-module`) resolve directly to source (`packages/<name>/src/…`), so editors, test runners, and future `apps/api` don't need `pnpm build` to run first.
+- **`apps/api/instrumentation.ts` (new stub)** — load-order-critical file with a clear comment contract: "MUST be the VERY FIRST import in main.ts". Empty body for now (`export {}`); real OpenTelemetry SDK wiring + auto-instrumentations land in `[III.15.4]`. Shipping the stub now locks the calling convention so we don't forget the `import '../instrumentation';` line later.
+
+**Items deliberately deferred**
+
+- **`packages/shared-types/src/place-category.ts`** (the third item in §17.6) — requires committing to the exhaustive 50-category taxonomy (or designing the DB-driven `PlaceCategory` table). That's a domain-modelling decision that belongs with the real shared-types build prompt (or the Places module, `[IV.18.2.x]`), not a monorepo tooling fix. Will be closed out in that prompt. The §17.6 tracker entry is moved from DONE → PARTIAL-DONE.
+
+**Files created** (2)
+
+- `tsconfig.json` (root)
+- `apps/api/instrumentation.ts`
+
+**Files edited** (1)
+
+- `PROGRESS.md` (this entry).
+
+**Dependencies added** — none.
+
+**Commands run**
+
+1. `ls tsconfig*` — confirmed no root tsconfig existed yet.
+2. `ls apps/api/` — confirmed package.json + src/ placeholder only; no `instrumentation.ts` yet.
+3. `pnpm turbo run typecheck` — **3 tasks successful, 3 total** (2 cached, 1 fresh). Root tsconfig doesn't interfere with package-level compilation (as designed — `files: []` + `include: []`).
+
+**Verification**
+
+- ✅ Workspace typecheck still green after adding root tsconfig — no regressions.
+- ✅ Root tsconfig's `paths` covers every `@app/*` package declared in `pnpm-workspace.yaml` (excluding the `@app/tsconfig` + `@app/eslint-config` configuration packages, which are `.json` / `.js` and consumed by extend/import, not by TypeScript path resolution).
+- ✅ `instrumentation.ts` exists under `apps/api/` (not `apps/api/src/`) so `main.ts` can `import '../instrumentation';` — same layout NestJS apps typically use.
+- ✅ IDE: `import { createLogger } from '@app/logger'` will now jump-to-definition straight into `packages/logger/src/index.ts`, not into a compiled `dist/` file.
+
+**Acceptance criteria (from prompt)**
+
+- ✅ Root `tsconfig.json` `paths: "@app/*": ["packages/*/src"]` (expanded per-package, with subpath support — slightly more explicit than the glob suggestion in the prompt archive, but functionally equivalent and more IDE-friendly).
+- ✅ `apps/api/instrumentation.ts` created with the load-order comment contract in place.
+- ⚪ Place category enumeration — deferred with a tracking note (see above).
+
+**Notes / deviations**
+
+- Used per-package explicit `paths` entries (with both bare and `/*` variants) instead of a single `@app/*` glob. Reasons:
+  1. Subpath imports (`@app/config/schema`) work out of the box.
+  2. Makes the monorepo surface self-documenting — open `tsconfig.json` and see exactly what's wired.
+  3. Placeholder packages that don't actually have real code yet still resolve to their stub `src/index.ts`, so imports don't blow up editors while we build them out.
+- `instrumentation.ts` lives at `apps/api/instrumentation.ts` (not `apps/api/src/instrumentation.ts`). Reason: NestJS CLI treats `src/` as the compile root, and the OTel SDK init file is conventionally kept at the project root above `src/` so `import '../instrumentation'` is stable and obviously outside the normal module graph.
+- Did not wire these aliases into any package's local tsconfig yet — doing so retroactively across every package is busywork until a consumer actually needs them. `apps/api` will get path mappings in its own tsconfig when it's scaffolded (`[III.11.x]` / `[IV.18.1.14.a-c]` area).
+
+**Next**
+
+Root aliases + instrumentation stub in place. Next natural move: one of the architecture ADRs (`[II.6.2]` modular monolith / `[II.6.3]` service-extraction triggers / `[II.6.4]` event backbone) — pure docs, locks decisions in writing before the first domain module lands. Or jump to `[II.7.2]` context-map doc. Both are small.
 
 ---
 
