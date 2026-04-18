@@ -1,0 +1,90 @@
+# Environment Variables
+
+Source of truth: `packages/config/src/schema.ts` (Zod). This doc is a reference table derived from it. If the two disagree, the schema wins and this doc is wrong — open a PR to fix it.
+
+## Loading order
+
+1. Process environment (`export FOO=bar`).
+2. `.env.local` at repo root (gitignored — this is where developers put credentials).
+3. Schema defaults (where defined).
+
+In CI / staging / production, values come from **Doppler** (see `CLAUDE.md` §secrets). Local `.env.local` must never be synced to those environments.
+
+## Validation
+
+`@app/config` runs `validateEnv(process.env)` at the top of every app's bootstrap (see `apps/api/src/main.ts`). On failure the process exits with a structured `EnvValidationError.issues` list. **The literal string `REPLACE_ME_SEE_DOPPLER` is not a valid credential** — any secret still holding that sentinel fails minimum-length validation on boot.
+
+## Reference
+
+| Group         | Variable                      | Required | Default                 | Validator                                                  | Notes                                                                   |
+| ------------- | ----------------------------- | -------- | ----------------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Runtime       | `NODE_ENV`                    | —        | `development`           | enum: dev / test / staging / production                    | Drives code paths (e.g. AllExceptionFilter dev-echo vs. prod-sanitise). |
+| Runtime       | `PORT`                        | —        | `3000`                  | positive int                                               | Fastify listen port.                                                    |
+| Runtime       | `LOG_LEVEL`                   | —        | `info`                  | enum: silent / trace / debug / info / warn / error / fatal | Pino level. Matches `@app/logger` `LogLevel`.                           |
+| Database      | `DATABASE_URL`                | ✅       | —                       | valid URL                                                  | Postgres 16 + PostGIS + pgvector. Dev matches the compose service.      |
+| Database      | `DATABASE_POOL_MIN`           | —        | `2`                     | non-neg int                                                | Prisma connection pool floor.                                           |
+| Database      | `DATABASE_POOL_MAX`           | —        | `10`                    | positive int                                               | Prisma connection pool ceiling.                                         |
+| Redis         | `REDIS_URL`                   | ✅       | —                       | valid URL                                                  | Cache, rate limits, sessions, streams.                                  |
+| JWT           | `JWT_ACCESS_SECRET`           | ✅       | —                       | ≥ 32 chars                                                 | `openssl rand -hex 32`.                                                 |
+| JWT           | `JWT_REFRESH_SECRET`          | ✅       | —                       | ≥ 32 chars                                                 | Distinct from access secret.                                            |
+| JWT           | `JWT_ACCESS_EXPIRY`           | —        | `15m`                   | duration string                                            | Consumed by Passport; [III.11.3] wires it.                              |
+| JWT           | `JWT_REFRESH_EXPIRY`          | —        | `30d`                   | duration string                                            | Refresh-cookie TTL.                                                     |
+| OAuth         | `GOOGLE_CLIENT_ID`            | —        | —                       | string                                                     | Google OAuth. Optional until enabled.                                   |
+| OAuth         | `GOOGLE_CLIENT_SECRET`        | —        | —                       | string                                                     | Pair with CLIENT_ID.                                                    |
+| OAuth         | `APPLE_CLIENT_ID`             | —        | —                       | string                                                     | Apple Sign-In.                                                          |
+| OAuth         | `APPLE_TEAM_ID`               | —        | —                       | string                                                     | Apple developer team id.                                                |
+| OAuth         | `APPLE_KEY_ID`                | —        | —                       | string                                                     | Apple private-key id.                                                   |
+| OAuth         | `APPLE_PRIVATE_KEY`           | —        | —                       | string                                                     | PKCS#8 PEM. Handle as a secret.                                         |
+| AI            | `CLAUDE_API_KEY`              | —        | —                       | string                                                     | Anthropic key.                                                          |
+| AI            | `OPENAI_API_KEY`              | —        | —                       | string                                                     | Fallback provider.                                                      |
+| AI            | `AI_SERVICE_URL`              | —        | `http://localhost:8001` | valid URL                                                  | Python FastAPI sidecar.                                                 |
+| Stripe        | `STRIPE_SECRET_KEY`           | —        | —                       | string                                                     | `sk_live_…` in prod, `sk_test_…` in dev/staging.                        |
+| Stripe        | `STRIPE_WEBHOOK_SECRET`       | —        | —                       | string                                                     | Webhook signature-verification secret.                                  |
+| Stripe        | `STRIPE_CONNECT_CLIENT_ID`    | —        | —                       | string                                                     | Needed for agent escrow flows.                                          |
+| External      | `GOOGLE_PLACES_API_KEY`       | —        | —                       | string                                                     | Google Places (New) API.                                                |
+| External      | `FOURSQUARE_API_KEY`          | —        | —                       | string                                                     | Foursquare Places v3.                                                   |
+| External      | `MAPBOX_ACCESS_TOKEN`         | —        | —                       | string                                                     | Mapbox GL + directions.                                                 |
+| Storage       | `S3_ENDPOINT`                 | ✅       | —                       | valid URL                                                  | R2 in prod, MinIO local.                                                |
+| Storage       | `S3_BUCKET`                   | ✅       | —                       | non-empty                                                  | Bucket name.                                                            |
+| Storage       | `S3_ACCESS_KEY`               | ✅       | —                       | non-empty                                                  | Access key.                                                             |
+| Storage       | `S3_SECRET_KEY`               | ✅       | —                       | non-empty                                                  | Secret key.                                                             |
+| Storage       | `S3_REGION`                   | —        | `us-east-1`             | string                                                     | Region hint (MinIO ignores).                                            |
+| Comms         | `RESEND_API_KEY`              | —        | —                       | string                                                     | Transactional email.                                                    |
+| Comms         | `TWILIO_ACCOUNT_SID`          | —        | —                       | string                                                     | SMS sender.                                                             |
+| Comms         | `TWILIO_AUTH_TOKEN`           | —        | —                       | string                                                     | SMS auth.                                                               |
+| Comms         | `TWILIO_FROM_NUMBER`          | —        | —                       | string                                                     | E.164 phone number.                                                     |
+| Meili         | `MEILI_HOST`                  | —        | `http://localhost:7700` | valid URL                                                  | Meilisearch base URL.                                                   |
+| Meili         | `MEILI_MASTER_KEY`            | ✅       | —                       | ≥ 16 chars                                                 | Master API key.                                                         |
+| Observability | `OTEL_EXPORTER_OTLP_ENDPOINT` | —        | —                       | valid URL                                                  | OTLP collector (Jaeger dev, Grafana Tempo prod).                        |
+| Observability | `SENTRY_DSN`                  | —        | —                       | valid URL                                                  | Error tracking.                                                         |
+| Observability | `POSTHOG_API_KEY`             | —        | —                       | string                                                     | Product analytics + feature flags.                                      |
+| Features      | `FEATURE_3D_ENABLED`          | —        | `false`                 | coerced bool                                               | Gates `[III.x]` 3D flows.                                               |
+| Features      | `FEATURE_SATELLITE_CROWD`     | —        | `false`                 | coerced bool                                               | Gates satellite-crowd endpoints.                                        |
+| Security      | `RATE_LIMIT_PEPPER`           | ✅       | —                       | ≥ 32 chars                                                 | Hashes rate-limit keys — `openssl rand -hex 32`.                        |
+
+## Dev quickstart
+
+```bash
+cp .env.example .env.local
+# Replace every REPLACE_ME_SEE_DOPPLER with a real value.
+# The three required secrets each need ≥ 32 chars:
+openssl rand -hex 32   # → JWT_ACCESS_SECRET
+openssl rand -hex 32   # → JWT_REFRESH_SECRET
+openssl rand -hex 32   # → RATE_LIMIT_PEPPER
+make up                # start the docker stack
+pnpm install
+pnpm --filter=api dev
+```
+
+## Prod
+
+Doppler manages every value; `.env.local` is ignored. The deploy pipeline injects Doppler values as real environment variables at container start; `validateEnv()` checks them before Nest boots. Any still-sentinel value fails at that check.
+
+## Adding a new variable
+
+1. Add the Zod field to `packages/config/src/schema.ts` with the right group comment.
+2. Add a row to `.env.example` with a safe placeholder.
+3. Add a row to the table in this doc.
+4. If it's a secret, add it to Doppler under the same name in every environment.
+
+Keep the three in sync. A pre-commit hook in a later prompt (`[IV.18.1.11]` CI) will enforce that every schema field has a matching `.env.example` line.
