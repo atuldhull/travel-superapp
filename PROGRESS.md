@@ -10,18 +10,50 @@
 
 ## Summary
 
-| Counter             | Value                                                                                     |
-| ------------------- | ----------------------------------------------------------------------------------------- |
-| Prompts completed   | 10                                                                                        |
-| Prompts in progress | 0                                                                                         |
-| Prompts blocked     | 0                                                                                         |
-| Last prompt         | `[III.13.1]`                                                                              |
-| Last commit date    | 2026-04-18                                                                                |
-| Phase               | Phase 0 — Foundation (apps/api: trinity + filters + ZodValidationPipe; 23/23 tests green) |
+| Counter             | Value                                                             |
+| ------------------- | ----------------------------------------------------------------- |
+| Prompts completed   | 13                                                                |
+| Prompts in progress | 0                                                                 |
+| Prompts blocked     | 0                                                                 |
+| Last prompt         | `[II.6.2] + [II.6.3] + [II.6.4]` (batched, docs-only)             |
+| Last commit date    | 2026-04-18                                                        |
+| Phase               | Phase 0 — Foundation (apps/api wired; 3 architecture ADRs locked) |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [II.6.2] + [II.6.3] + [II.6.4] — Architecture ADRs 001 / 002 / 003 (docs-only, batched)
+
+**Date:** 2026-04-18 · **Status:** DONE · **Kind:** Design · **Playbook §** 6.2 + 6.3 + 6.4
+
+**Shipped in commit** `eb9f85b` (code), PROGRESS entry in a follow-up `docs(II.6.2)` commit (prettier race, same pattern as `[III.13.1]`).
+
+Three Chapter-6 ADRs landed together because they're mutually referential — the monolith-first posture (001) cites the service-extraction triggers (002) which cite the event-bus choice (003). Splitting would churn the cross-links.
+
+**Files created** (4)
+
+- `docs/adr/README.md` — MADR index, supersede-don't-edit rule, authoring guide.
+- `docs/adr/ADR-001-modular-monolith.md` — locks the modular monolith and the four day-one extractions (ai-service, media-service, notification-worker, crawler-worker). Drivers: speed to first user, boundary preservation via clean-hex + ESLint, operational simplicity, future optionality. Rejected alternatives: pure microservices, serverless.
+- `docs/adr/ADR-002-service-extraction-triggers.md` — five triggers (language mismatch, scaling profile, latency contract, lifecycle / blast radius, compliance) + explicit anti-triggers ("feels modular", "different team", "scale someday"). Table mapping each extracted service to its trigger. Rule: any new service OR un-extraction requires an ADR.
+- `docs/adr/ADR-003-event-backbone.md` — Redis Streams for v1 via `@app/events` (port-first adapter). Migration triggers to Kafka / Redpanda: sustained > 30k events/s, > 1 region, > 7d replay, or schema governance at scale. Outbox pattern on Postgres reserved for durable-commit-and-fire (payments).
+
+**Files edited** — `PROGRESS.md` (this entry).
+
+**Dependencies added** — none. Pure docs.
+
+**Verification**
+
+- ✅ All three ADRs follow MADR (Context / Decision Drivers / Considered Options / Decision Outcome / Consequences / Links).
+- ✅ Each closes with a **Consequences (binding)** section enumerating rules future PRs will be judged against.
+- ✅ Cross-links between the three resolve. Index README lists all with status + prompt id.
+
+**Notes**
+
+- Binding rules are manually enforced in code review today; future prompt `[II.9.2]` turns the ESLint boundary checks called out in ADR-001 into automated lint.
+- Future ADRs land one per commit unless they form another tight trio.
 
 ---
 
