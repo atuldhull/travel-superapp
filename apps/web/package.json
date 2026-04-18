@@ -1,0 +1,7 @@
+{
+  "name": "web",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Next.js 15 user-facing app. Scaffold only — real code lands in [IV.18.1.14.a].",
+  "type": "module"
+}

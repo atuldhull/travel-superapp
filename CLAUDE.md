@@ -20,17 +20,17 @@ Mobile-first, AI-powered travel super-app. A user enters a place + radius; the a
 
 ## Authoritative Docs
 
-| File | Role |
-|---|---|
-| `travel-app-playbook.md` | **The book.** Every architectural decision lives here. |
-| `travel-app-playbook.html` | Shareable viewer of the book. |
-| `travel-app-prompts.md` | Prompt archive — one prompt per Playbook subsection. You are executing one of these per session. |
-| `travel-app-plan.md` / `travel-app-compendium-v2.md` / `travel-app-compendium-v3.md` | Historical context (preserved; not authoritative). |
-| `PROGRESS.md` | Rolling log of completed prompts. Updated at the end of every session. |
-| `docs/agent-contract.md` | Acknowledgements any AI agent makes during sessions (seed prompts write here). |
-| `docs/adr/` | Architecture Decision Records (MADR format). |
-| `docs/blocks/<prompt-id>/` | Per-prompt artefacts: spec, draft, diff, test-output, verification, retrospective. |
-| `docs/runbooks/` | Oncall + operational playbooks. |
+| File                                                                                 | Role                                                                                             |
+| ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| `travel-app-playbook.md`                                                             | **The book.** Every architectural decision lives here.                                           |
+| `travel-app-playbook.html`                                                           | Shareable viewer of the book.                                                                    |
+| `travel-app-prompts.md`                                                              | Prompt archive — one prompt per Playbook subsection. You are executing one of these per session. |
+| `travel-app-plan.md` / `travel-app-compendium-v2.md` / `travel-app-compendium-v3.md` | Historical context (preserved; not authoritative).                                               |
+| `PROGRESS.md`                                                                        | Rolling log of completed prompts. Updated at the end of every session.                           |
+| `docs/agent-contract.md`                                                             | Acknowledgements any AI agent makes during sessions (seed prompts write here).                   |
+| `docs/adr/`                                                                          | Architecture Decision Records (MADR format).                                                     |
+| `docs/blocks/<prompt-id>/`                                                           | Per-prompt artefacts: spec, draft, diff, test-output, verification, retrospective.               |
+| `docs/runbooks/`                                                                     | Oncall + operational playbooks.                                                                  |
 
 ---
 
@@ -105,10 +105,10 @@ When stuck, produce:
 3. **Plan** (in `/plan` mode or via the `Plan` subagent) for anything non-trivial.
 4. **Execute** with the files/dependencies listed in the prompt — nothing more.
 5. **Test** — for code prompts, run typecheck + lint + the relevant test suite before committing.
-6. **Commit** with message format: `[<prompt-id>] <short-summary>` (e.g. `[IV.19.1] Install System Rules and progress log`).
+6. **Commit** with message format: `<type>(<prompt-id>): <short-summary>` — conventional commits with the prompt id in the scope. `<type>` is one of `feat | fix | docs | chore | refactor | test | build | ci | perf | style | revert`. Example: `chore(II.10.0): scaffold monorepo`, `feat(III.11.1): build @app/config package`. Enforced by `commitlint.config.js`.
 7. **Update `PROGRESS.md`** — append a row for this prompt.
 8. **Report + ask to proceed.** Never auto-continue.
 
 ---
 
-*Installed by `[IV.19.1]`. See `travel-app-prompts.md` for the full archive.*
+_Installed by `[IV.19.1]`. See `travel-app-prompts.md` for the full archive._

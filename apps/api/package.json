@@ -1,0 +1,7 @@
+{
+  "name": "api",
+  "version": "0.0.0",
+  "private": true,
+  "description": "NestJS modular monolith. Scaffold only — real code lands in [III.11.x] prompts.",
+  "type": "commonjs"
+}

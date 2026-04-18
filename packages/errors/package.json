@@ -1,0 +1,9 @@
+{
+  "name": "@app/errors",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Domain error hierarchy (NotFoundError, ValidationError, ... per Playbook §15.1).",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts"
+}
