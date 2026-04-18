@@ -10,18 +10,112 @@
 
 ## Summary
 
-| Counter             | Value                                                        |
-| ------------------- | ------------------------------------------------------------ |
-| Prompts completed   | 5                                                            |
-| Prompts in progress | 0                                                            |
-| Prompts blocked     | 0                                                            |
-| Last prompt         | `[III.15.1]` (+ tooling follow-up)                           |
-| Last commit date    | 2026-04-18                                                   |
-| Phase               | Phase 0 — Foundation (config + errors trinity packages live) |
+| Counter             | Value                                                             |
+| ------------------- | ----------------------------------------------------------------- |
+| Prompts completed   | 6                                                                 |
+| Prompts in progress | 0                                                                 |
+| Prompts blocked     | 0                                                                 |
+| Last prompt         | `[III.11.6]`                                                      |
+| Last commit date    | 2026-04-18                                                        |
+| Phase               | Phase 0 — Foundation (trinity complete: config + errors + logger) |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [III.11.6] — `@app/logger` (Pino + AsyncLocalStorage trace context + PII redact, 28/28 tests)
+
+**Date:** 2026-04-18 · **Status:** DONE · **Kind:** Build · **Playbook §** 15.2
+
+**What was done**
+
+Completes the Phase 0 "trinity" of shared packages. Every NestJS module, worker, and `apps/api` bootstrap will pull from `@app/logger` — one central place where log format, trace correlation, and PII redaction policy live.
+
+- `src/trace-context.ts` — `AsyncLocalStorage<TraceContext>` with a strict read-only surface. Exports:
+  - `runWithTraceContext(ctx, fn)` enters a new scope; `getTraceContext()` reads the current one (or `undefined` outside any scope).
+  - `extendTraceContext(patch, fn)` merges extra fields into the current scope (mints a fresh `traceId` if there isn't one yet). Merges `tags` map deeply when both outer and patch define them.
+  - `generateTraceId()` → 32-char lowercase hex (W3C 128-bit trace-id shape).
+  - `generateSpanId()` → 16-char lowercase hex (W3C 64-bit span-id shape).
+  - `TraceContext` interface with `traceId`, `spanId?`, `userId?`, `requestId?`, `tags?`.
+- `src/redact.ts` — frozen array of **40+ Pino redact paths** covering top-level + `*.field` (one level deep) for every known secret/PII field: passwords, tokens (access/refresh/id/api), mfaSecret, backup codes, ssn, passport, creditCard, cvv, email, emailHash, phone, and HTTP headers authorization/cookie/set-cookie/x-api-key.
+- `src/logger.ts` — `createLogger(context, options?): AppLogger` factory. Pino configured with:
+  - Level from `options.level ?? process.env.LOG_LEVEL ?? 'info'`.
+  - Base fields: `{context, ...options.base}` on every line.
+  - Redact paths: `PII_REDACT_PATHS` + any `additionalRedactPaths`, censor `'[REDACTED]'`.
+  - Level formatter: emits `{"level":"info"}` (label) instead of Pino's numeric default.
+  - **`mixin`** that pulls the current `TraceContext` every log line — so trace/span/user/request ids arrive automatically with zero call-site boilerplate.
+  - ISO-8601 `time`.
+  - Optional `pino-pretty` transport gated by `options.pretty && NODE_ENV !== 'production'`.
+  - Optional `destination` stream for tests.
+  - `AppLogger = pino.Logger` type alias.
+- `src/nest-logger.service.ts` — `@Injectable() AppNestLoggerService implements @nestjs/common LoggerService`. Correctly maps each of the 6 Nest levels (`log/error/warn/debug/verbose/fatal`) to the corresponding Pino level; stringifies non-string messages; extracts `message` from `Error` instances. Accepts an optional pre-built `AppLogger` for test injection.
+- `src/index.ts` — barrel exporting the factory, types (`AppLogger`, `LogLevel`, `CreateLoggerOptions`, `TraceContext`), trace-context helpers, `PII_REDACT_PATHS`, and `AppNestLoggerService`.
+- **3 test suites, 28 tests total** (all green in 2.5s):
+  - `test/trace-context.spec.ts` (13 tests): outside-scope undefined, single-scope value propagation, sibling isolation, nesting + restoration, async-boundary propagation via `await`, return value passthrough, outer restored after inner throw, `extendTraceContext` mints trace id when bare, `extendTraceContext` preserves outer traceId + merges user fields, deep `tags` merge with override, hex format assertions for `generateTraceId`/`generateSpanId`, uniqueness of successive calls.
+  - `test/logger.spec.ts` (8 tests): JSON shape with level/context/msg/time, top-level redact, nested `*.sensitive` redact, HTTP header redact (authorization/cookie) with non-sensitive headers preserved, trace-context mixin merge both in-scope and absent when outside scope, `additionalRedactPaths`, level filtering (info suppresses trace/debug), `child()` inherits context + redaction.
+  - `test/nest-logger.service.spec.ts` (7 tests): each of `log/warn/error/debug/verbose/fatal` maps to the expected Pino level with correct context; `error` forwards stack separately; non-string messages are JSON-stringified; `Error` instances log `.message`; default constructor doesn't throw.
+- Tests capture output via a `Writable` stream piped to JSON.parse — no snapshots, no globals pollution.
+
+**Files created** (10)
+
+- `packages/logger/tsconfig.json`, `tsconfig.build.json`
+- `packages/logger/jest.config.cjs`, `eslint.config.mjs`
+- `packages/logger/src/trace-context.ts`, `redact.ts`, `logger.ts`, `nest-logger.service.ts`
+- `packages/logger/test/trace-context.spec.ts`, `logger.spec.ts`, `nest-logger.service.spec.ts`
+- `packages/logger/README.md`
+
+**Files edited** (3)
+
+- `packages/logger/package.json` — placeholder → real (pino runtime, optional NestJS peer).
+- `packages/logger/src/index.ts` — placeholder → barrel.
+- `PROGRESS.md` (this entry).
+
+**Dependencies added**
+
+- Runtime: `pino@^9.5.0`.
+- Peer (optional): `@nestjs/common@^11` — app provides its copy; the Nest service is tree-shakable for pure-Node consumers.
+- Dev: `@app/eslint-config`, `@app/tsconfig` (workspace), `@nestjs/common@^11`, `@types/jest`, `@types/node`, `jest`, `rimraf`, `ts-jest`, `typescript`.
+- `pnpm install` delta: only the 2 new direct entries (`pino`, `@nestjs/common`-as-dev) — others reused from `@app/config`. 4.7s.
+
+**Commands run**
+
+1. `npx pnpm install` — added pino; 4.7s.
+2. `pnpm --filter=@app/logger build` — 16 files emitted to `dist/` (4 source modules × {js, js.map, d.ts, d.ts.map}).
+3. `pnpm --filter=@app/logger typecheck` — green.
+4. `pnpm --filter=@app/logger test` — **28/28 across 3 suites, 2.5s**.
+5. `pnpm --filter=@app/logger lint` — 0 errors.
+6. `pnpm turbo run build typecheck lint test` workspace-wide — **12/12 tasks successful** (3 packages × 4 tasks, 8 cached from prior runs).
+
+**Verification**
+
+- ✅ Log lines emit JSON with `traceId` (when in a trace scope), no manual plumbing.
+- ✅ `email` and `authorization` (+ ~40 other PII paths) are replaced with `[REDACTED]` automatically — verified by stream-capturing live logger output and parsing the JSON.
+- ✅ Nested `*.sensitive` redaction works one level deep (enough for `req.body.password`, `user.email`, etc.).
+- ✅ Trace context propagates across `await` boundaries (Node `AsyncLocalStorage` semantics).
+- ✅ Level filtering respects `LOG_LEVEL` — test proves `info` suppresses `trace`/`debug`.
+- ✅ NestJS `LoggerService` contract satisfied; mapping for all 6 methods tested.
+- ✅ Workspace turbo now stands at 3 real packages (config + errors + logger) all building + typechecking + linting + testing clean.
+
+**Acceptance criteria (from prompt)**
+
+- ✅ Logs emit JSON with `traceId` on every line (inside a trace scope).
+- ✅ `email` and `authorization` never appear in output — replaced by `[REDACTED]` (verified by integration test on live pino output).
+- ✅ Integration test with a seeded trace proves correlation (`logger.spec.ts` "merges the current trace context into every line").
+
+**Notes / deviations**
+
+- Followed the `"../tsconfig/nestjs.json"` relative-extends convention set by the prior fix — no IDE squiggles.
+- Deliberately **did not** include `pino-http` middleware in this package — it's Fastify-specific and lives better in `apps/api` once that app exists. Exposing `runWithTraceContext` is enough for the Fastify hook to do its job later.
+- `AppLogger` is a direct re-export of `pino.Logger` (not a wrapper class). Consumers stay on the Pino surface — one less abstraction to learn; if we ever swap Pino out, it's a codemod, not a redesign. Playbook §15.2's examples match Pino idioms.
+- `extendTraceContext` spreads the outer context first, then the patch, so explicit patch fields win — matches React setState/spread intuition. Tags are a separate deep-merge to avoid one side's empty object overwriting the other's populated map.
+- Coverage threshold kept at 80/80/80/70 (same as `@app/config`); the dense tests hit well above.
+- Pre-commit prettier may reformat README tables/code blocks on the eventual commit — expected.
+
+**Next up**
+
+Trinity complete. The natural progression: **`[IV.17.6]`** (root tsconfig path aliases + `apps/api/instrumentation.ts` stub) — one tiny cleanup that unlocks `import … from '@app/logger'` in `apps/api` later without a build step. After that, `[II.6.2]`–`[II.6.4]` ADRs (tiny docs), then the first `apps/api` skeleton.
 
 ---
 
