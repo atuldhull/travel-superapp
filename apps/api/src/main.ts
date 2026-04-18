@@ -27,6 +27,8 @@ import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fa
 import { EnvValidationError, validateEnv } from '@app/config';
 import { AppNestLoggerService, createLogger } from '@app/logger';
 import { AppModule } from './app.module';
+import { AllExceptionFilter } from './common/filters/all-exception.filter';
+import { DomainExceptionFilter } from './common/filters/domain-exception.filter';
 
 const bootLog = createLogger('bootstrap');
 
@@ -55,12 +57,18 @@ async function bootstrap(): Promise<void> {
   // 3. Replace Nest's built-in ConsoleLogger with our Pino bridge.
   app.useLogger(app.get(AppNestLoggerService));
 
-  // 4. `/api/v1` prefix for business routes; `/health/*` stays bare for probes.
+  // 4. Global exception filters — order matters. Register the catch-all
+  //    FIRST so that when Nest scans in reverse, the more specific
+  //    DomainExceptionFilter is evaluated first for any DomainError.
+  //    Plain Error / HttpException fall through to AllExceptionFilter.
+  app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
+
+  // 5. `/api/v1` prefix for business routes; `/health/*` stays bare for probes.
   app.setGlobalPrefix('api/v1', {
     exclude: ['health', 'health/(.*)'],
   });
 
-  // 5. Shutdown hooks so SIGTERM drains in-flight requests cleanly (Fly.io / k8s).
+  // 6. Shutdown hooks so SIGTERM drains in-flight requests cleanly (Fly.io / k8s).
   app.enableShutdownHooks();
 
   await app.listen(env.PORT, '0.0.0.0');

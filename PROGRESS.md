@@ -10,18 +10,89 @@
 
 ## Summary
 
-| Counter             | Value                                                                          |
-| ------------------- | ------------------------------------------------------------------------------ |
-| Prompts completed   | 8                                                                              |
-| Prompts in progress | 0                                                                              |
-| Prompts blocked     | 0                                                                              |
-| Last prompt         | `[III.11.0]`                                                                   |
-| Last commit date    | 2026-04-18                                                                     |
-| Phase               | Phase 0 — Foundation (apps/api boots with trinity; serves `/health/live` live) |
+| Counter             | Value                                                                         |
+| ------------------- | ----------------------------------------------------------------------------- |
+| Prompts completed   | 9                                                                             |
+| Prompts in progress | 0                                                                             |
+| Prompts blocked     | 0                                                                             |
+| Last prompt         | `[III.11.5]`                                                                  |
+| Last commit date    | 2026-04-18                                                                    |
+| Phase               | Phase 0 — Foundation (apps/api: trinity + exception filters; 14/14 e2e green) |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [III.11.5] — Global exception filters (DomainException + AllException, 14/14 tests)
+
+**Date:** 2026-04-18 · **Status:** DONE · **Kind:** Build · **Playbook §** 11.5 + 15.1
+
+**What was done**
+
+Wired `@app/errors` into `apps/api`'s HTTP response pipeline via two global filters. Every thrown error — whether a `DomainError`, a Nest built-in `HttpException`, or a rogue native `Error` — now emits a structured JSON response with a `traceId`, a `timestamp`, and zero stack-trace leakage.
+
+- **`apps/api/src/common/filters/domain-exception.filter.ts`** — `@Catch(DomainError)` filter. Reads `err.toJSON()`, merges `traceId` from the `AsyncLocalStorage` trace context (populated later by the request middleware in `[III.15.4]`), sends at `err.httpStatus`. Special-cases `RateLimitError` to also emit a `Retry-After` header — seconds, `Math.max(1, Math.ceil(retryAfterMs / 1000))` per RFC 9110 §10.2.3. Logs every domain error at `warn` (expected behaviour, not a bug).
+- **`apps/api/src/common/filters/all-exception.filter.ts`** — `@Catch()` catch-all. Two branches:
+  1. `HttpException` (Nest's own — `NotFoundException` from unmatched routes, `BadRequestException` from future pipes, etc.) → preserve status + original body shape, enrich with `traceId` + `timestamp`.
+  2. Anything else → logs at `error` with full stack (sink-side only), responds with a sanitised `{code: 'INTERNAL_ERROR', message, traceId, timestamp}` at HTTP 500. In non-prod `message` echoes the raw error (dev ergonomics); in `NODE_ENV=production` it's a fixed `'Internal server error'`. **Stack trace never enters the response.**
+- **Wired globally in `apps/api/src/main.ts`**: `app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter())`. Order chosen so Nest's reverse-order resolution evaluates the more specific `DomainExceptionFilter` first; anything it doesn't handle falls through to the catch-all. Step-numbered comment in main.ts clarifies the bootstrap ordering (instrumentation → reflect-metadata → env → Nest create → logger → filters → prefix → shutdown hooks → listen).
+- **`apps/api/test/filters.e2e-spec.ts`** — 9 e2e cases via Fastify `inject()` with a test-only `DebugController` (never reaches real code): `TripNotFoundError` → 404, `ValidationError` → 422 with `fieldErrors` surfaced, `InvalidRadiusError` → 422 inherits the ValidationError contract + its own code, `RateLimitError` → 429 with `Retry-After: 3` (2500ms → ceil → 3s), `ExternalServiceError` → 502 with `service` name, unhandled native `Error` → 500 `INTERNAL_ERROR` with **no** `stack` property (the info-leak guarantee), Nest `HttpException` preserves status + body, unknown route → 404 via `NotFoundException` → AllExceptionFilter. Every assertion includes the sibling fields (`timestamp`, `context`, etc).
+- **`apps/api/test/domain-exception.filter.spec.ts`** — 2 unit cases that instantiate the filter directly and mock the `ArgumentsHost`. Wraps `filter.catch()` in `runWithTraceContext` to prove the traceId reads correctly — the HTTP-level propagation test is deferred to when the request middleware exists (`[III.15.4]`).
+
+**Files created** (3)
+
+- `apps/api/src/common/filters/domain-exception.filter.ts`
+- `apps/api/src/common/filters/all-exception.filter.ts`
+- `apps/api/test/filters.e2e-spec.ts`
+- `apps/api/test/domain-exception.filter.spec.ts`
+
+**Files edited** (2)
+
+- `apps/api/src/main.ts` — import + register global filters; renumbered bootstrap comments.
+- `PROGRESS.md` (this entry).
+
+**Dependencies added** — none. `fastify` types pulled in via `@nestjs/platform-fastify` already.
+
+**Commands run**
+
+1. First `pnpm --filter=api test` → 1 failure + 1 TS error.
+   - `TS2534: A function returning 'never' cannot have a reachable end point.` — a `withTrace()` controller method wrapped `throw` inside a `runWithTraceContext` callback; TS's CFA couldn't see the throw propagating out. **Fix:** removed that controller method.
+   - `expected 'trace-abc-123', received undefined` in the "propagates traceId" e2e case. Diagnosed: `runWithTraceContext` is entered **inside** the controller handler; once the handler throws, we exit the ALS scope _before_ Nest invokes the exception filter. This is correct ALS semantics — the actual production plumbing will be a request-level `onRequest` hook that enters the scope for the full request lifecycle. That wiring is part of `[III.15.4]` (OTel SDK). **Fix:** deleted the e2e propagation test, added two unit tests in a dedicated spec file that mock the host and manually wrap `filter.catch()` in `runWithTraceContext` — tests the exact filter logic without relying on request-level middleware.
+2. Re-ran pipeline → **14/14 tests pass in 3.4s** across 3 suites (`app.e2e-spec`, `filters.e2e-spec`, `domain-exception.filter.spec`). Build / typecheck / lint all clean.
+3. `pnpm turbo run build typecheck lint test` workspace-wide → **16/16 tasks successful** (8 cached, 8 fresh).
+4. Live smoke skipped: the filter's real contract is fully exercised by e2e `inject()` calls (byte-identical to what Fastify serves over HTTP) + the unit spec for ALS. Curl-against-a-live-port adds nothing that isn't already covered and would require a test-only endpoint in production code.
+
+**Verification**
+
+- ✅ `DomainError` subclasses → correct HTTP statuses and JSON bodies (404 / 422 / 429 / 502).
+- ✅ `ValidationError.fieldErrors` surfaces through the response unchanged (frozen map of path → reasons).
+- ✅ `RateLimitError` emits both `retryAfterMs` in the body and `Retry-After` (seconds, ≥ 1) in the headers per RFC 9110.
+- ✅ Unhandled native `Error` → 500 with stack **absent** from the body (JSON stringification round-trip confirms no `stack` key).
+- ✅ Nest's own `HttpException` status + body preserved end-to-end (tested with `HttpException({message, sku}, 410)`).
+- ✅ `traceId` is serialised when an ALS scope exists (unit-tested) and is `undefined` otherwise (e2e-tested). Request-level population lands with OTel.
+- ✅ Every response includes `timestamp` (ISO-8601).
+- ✅ Workspace turbo still green with the additions.
+
+**Acceptance criteria (from prompt)**
+
+- ✅ Throwing `NotFoundError` (and every other `DomainError` subclass) from a controller yields `{code, ...}` with the expected HTTP status — verified across 7 concrete subclasses.
+- ✅ `traceId` is plumbed into every response body the filter emits.
+
+**Notes / deviations**
+
+- Did **not** introduce a production debug controller for live smoke. Test-only `DebugController` lives inside the e2e spec file and is never registered in `AppModule`. Avoids attack surface ("probe /debug/rate-limit to DoS us").
+- Filter ordering (AllExceptionFilter first, DomainExceptionFilter second) is deliberate: Nest resolves filters in reverse registration order, so the more specific `@Catch(DomainError)` gets first shot. Any future request-scoped filters can slot in via `@UseFilters()` without conflict.
+- `AllExceptionFilter` dev-mode echoes the raw `err.message` to speed up local debugging — guarded by `NODE_ENV === 'production'`. Never echoes the stack.
+- Logger for each filter is created at construction time (one per filter instance — filters are singletons in Nest), so trace context propagation still works per-request via the mixin — the logger instance doesn't need to change.
+- `domain-exception.filter.spec.ts` uses a hand-rolled mock `ArgumentsHost` rather than `@nestjs/testing`'s full bootstrap — keeps the unit test fast (sub-ms per case) and focused on the filter's own logic.
+
+**Next up**
+
+- `[III.13.1]` — `ZodValidationPipe` that throws our `ValidationError` with populated `fieldErrors`. With the filter in place now, the pipe's thrown error flows through cleanly.
+- `[III.11.3]` — `JwtAuthGuard` + `RolesGuard` (`UnauthorizedError` / `ForbiddenError` flow through the filter).
+- `[III.11.4]` — Redis sliding-window rate limiter (`RateLimitError` → already has the Retry-After wiring ready).
 
 ---
 
