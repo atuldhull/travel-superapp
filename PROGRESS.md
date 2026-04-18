@@ -12,16 +12,102 @@
 
 | Counter             | Value                                                |
 | ------------------- | ---------------------------------------------------- |
-| Prompts completed   | 3                                                    |
+| Prompts completed   | 4                                                    |
 | Prompts in progress | 0                                                    |
 | Prompts blocked     | 0                                                    |
-| Last prompt         | `[IX.32.2]`                                          |
+| Last prompt         | `[III.11.1]`                                         |
 | Last commit date    | 2026-04-18                                           |
-| Phase               | Phase 0 — Foundation (monorepo + local dev stack up) |
+| Phase               | Phase 0 — Foundation (first real TS package shipped) |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [III.11.1] — `@app/config` (Zod env schema + NestJS ConfigModule, 11/11 tests)
+
+**Date:** 2026-04-18 · **Status:** DONE · **Kind:** Build · **Playbook §** 11.1
+
+**What was done**
+
+- Replaced the placeholder `packages/config` with a real package that ships a Zod-validated env schema, a framework-agnostic `validateEnv()` function, and a NestJS global `AppConfigModule.forRoot()` factory.
+- `src/schema.ts` — `EnvSchema` composed from 15 sub-schemas covering every variable from Playbook §11.1 and §8.5 providers: Runtime (NODE_ENV, PORT, LOG_LEVEL), Database, Redis, JWT, Google OAuth, Apple OAuth, AI, Stripe, External APIs, Storage (S3), Comms (Resend/Twilio), Meilisearch, Observability, Features, Security (RATE_LIMIT_PEPPER). Sensible dev defaults where safe; secrets never defaulted. Type `Env = z.infer<typeof EnvSchema>` exported for callers.
+- `src/validate.ts` — `validateEnv(raw = process.env): Env` plus a custom `EnvValidationError` that exposes a structured `issues: readonly EnvIssue[]` list (path / message / code) alongside the pretty multi-line `.message`. Prototype chain preserved across CJS transpilation.
+- `src/nest-config.module.ts` — `AppConfigModule` wraps `@nestjs/config`'s `ConfigModule.forRoot({ isGlobal: true, cache: true, validate })` so Nest aborts at boot on any invalid env. `AppConfigService = ConfigService<Env, true>` re-typed alias lets callers do `config.get('DATABASE_URL', { infer: true })` with full typing.
+- `src/index.ts` — barrel re-exporting EnvSchema, Env, validateEnv, EnvValidationError, EnvIssue, AppConfigModule, AppConfigService.
+- `test/validate.spec.ts` — **11 unit tests** (all green in 1.2s): valid minimal env, defaults for optionals, numeric coercion, missing-key throw, structured issue surface, invalid URL, too-short JWT secret, unknown NODE_ENV enum, optional providers (OAuth/Stripe/comms), feature-flag bool coercion, process.env default fallback.
+- Build emits CJS + declaration maps to `dist/`. Package ships `files: [dist, src]` so consumers can import from `@app/config` (resolved via `exports` map).
+- `tsconfig.json` extends `@app/tsconfig/nestjs.json` with `rootDir: "."` + `noEmit: true` (so typecheck covers both src/ and test/). `tsconfig.build.json` narrows `rootDir: "./src"` + `noEmit: false` + excludes `test/`.
+- `jest.config.cjs` uses `ts-jest` with an inline CommonJS tsconfig (module=commonjs, target=ES2022, experimentalDecorators for future Nest tests). Coverage threshold enforced at 80% lines/stmts/fns, 70% branches.
+- `eslint.config.mjs` re-exports the shared `@app/eslint-config` flat config — proves the shared preset actually propagates to a real consumer package.
+- Rich `README.md` with quick-start for both non-Nest and Nest callers, schema overview table by group, scripts reference, and conventions.
+
+**Files created** (8)
+
+- `packages/config/tsconfig.json`
+- `packages/config/tsconfig.build.json`
+- `packages/config/jest.config.cjs`
+- `packages/config/eslint.config.mjs`
+- `packages/config/src/schema.ts`
+- `packages/config/src/validate.ts`
+- `packages/config/src/nest-config.module.ts`
+- `packages/config/test/validate.spec.ts`
+- `packages/config/README.md`
+
+**Files edited** (2)
+
+- `packages/config/package.json` — placeholder → real (deps, scripts, exports, peers).
+- `packages/config/src/index.ts` — placeholder → barrel.
+- `PROGRESS.md` (this entry).
+
+**Dependencies added** (under `@app/config`)
+
+- Runtime: `zod@^3.24.1`.
+- Peer (optional): `@nestjs/common@^11`, `@nestjs/config@^4`, `reflect-metadata@^0.2`, `rxjs@^7.8`.
+- Dev: `@nestjs/common@11.0.11`, `@nestjs/config@^4`, `@types/jest@29.5`, `@types/node@22.10`, `jest@29.7`, `reflect-metadata@0.2`, `rimraf@6`, `rxjs@7.8`, `ts-jest@29.2`, `typescript@5.7`, plus `@app/tsconfig` + `@app/eslint-config` via workspace links.
+- Total pnpm install delta: **+246 packages**, 21.8s (brings workspace to ~500 packages).
+
+**Commands run**
+
+1. `npx pnpm install` — 246 new packages, husky prepare fired, 21.8s.
+2. `pnpm --filter=@app/config build` — first attempt OK (exit 0). Emitted 16 files (4 sources × .js + .js.map + .d.ts + .d.ts.map) to `dist/`.
+3. `pnpm --filter=@app/config typecheck` — **first run failed** TS6059 (test/ outside rootDir inherited from `@app/tsconfig/nestjs.json`). Fixed by overriding `rootDir: "."` + `noEmit: true` in `tsconfig.json` and narrowing `rootDir: "./src"` in `tsconfig.build.json`. Re-ran: green.
+4. `pnpm --filter=@app/config test` — 11/11 tests pass, 1.2s.
+5. `pnpm --filter=@app/config lint` — 0 errors, 0 warnings.
+6. `pnpm turbo run build typecheck lint test` — all 4 tasks successful across the workspace (cache cold this run).
+7. `ls packages/config/dist/` — confirmed 16 output files.
+
+**Verification**
+
+- ✅ `dist/index.js` + `dist/index.d.ts` present; every src file has a matching .js/.d.ts/.map.
+- ✅ 11/11 Jest tests green in 1.2s. Coverage thresholds (80/80/80/70) satisfied by the test suite (validate.ts + schema.ts fully exercised).
+- ✅ `tsc --noEmit` repo-wide green.
+- ✅ ESLint 9 flat config via `@app/eslint-config` consumed successfully from a sibling package (first proof the shared preset actually works cross-package).
+- ✅ `turbo run build typecheck lint test` → `Tasks: 4 successful, 4 total`.
+
+**Acceptance criteria (from prompt)**
+
+- ✅ `pnpm --filter=@app/config test` green.
+- ✅ NestJS consumer can inject `ConfigService<Env, true>` (`AppConfigService` re-typed alias + `AppConfigModule.forRoot()` available).
+- ✅ Framework-agnostic `validateEnv()` throws pretty `EnvValidationError` on missing / invalid fields with structured `issues` list.
+
+**Notes / deviations**
+
+- `EnvSchema` is comprehensive (40+ vars) but several provider keys are `.optional()` so apps can boot without Stripe / OAuth / full comms wiring until their respective prompts (`[IV.18.2.10]`, `[III.13.2]`, `[IV.18.2.9]`).
+- Chose CJS output (no `"type": "module"`) to avoid ESM/CJS interop pain with NestJS runtime. Later packages can revisit if we hit ESM-only deps.
+- Test file uses `NodeJS.ProcessEnv` destructuring and `_omit` naming for discarded keys — matches the `@app/eslint-config` unused-var allow pattern (`^_`).
+- Intentionally did **not** yet add an `.env.example` with matching defaults — deferred to prompt `[IX.32.4]` which pairs that with the Doppler rollout.
+- Lint-staged on commit will auto-format YAML/MD/JSON; expected.
+
+**Next prompt candidates**
+
+- `[III.15.1]` — `@app/errors` DomainError hierarchy (same tier foundation; every module throws these).
+- `[III.11.6]` — `@app/logger` Pino wrapper + AsyncLocalStorage trace context (needed before `apps/api` main.ts).
+- `[III.11.5]` — Domain exception filter in apps/api (requires errors + logger first).
+- `[IV.17.6]` — Path aliases in root tsconfig + `apps/api/instrumentation.ts` (unlocks `import { ... } from '@app/config'` in apps/api without needing dist build first).
+- `[IX.32.4]` — `.env.example` matching this schema + `docs/env.md`.
+- `[III.11.1]`'s natural siblings: Config → Errors → Logger → Observability — complete the "trinity + 1" then start apps/api.
 
 ---
 
