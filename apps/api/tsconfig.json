@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "../../packages/tsconfig/nestjs.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "./dist",
+    "noEmit": true
+  },
+  "include": ["src/**/*", "test/**/*", "instrumentation.ts"],
+  "exclude": ["dist", "node_modules"]
+}

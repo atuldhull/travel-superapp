@@ -13,7 +13,7 @@
  *
  * Playbook §15.2 · installed by prompt [III.11.6].
  */
-import { Injectable, type LoggerService as NestLoggerService } from '@nestjs/common';
+import { Injectable, Optional, type LoggerService as NestLoggerService } from '@nestjs/common';
 import type { AppLogger } from './logger';
 import { createLogger } from './logger';
 
@@ -21,7 +21,17 @@ import { createLogger } from './logger';
 export class AppNestLoggerService implements NestLoggerService {
   private readonly logger: AppLogger;
 
-  constructor(logger?: AppLogger) {
+  /**
+   * `@Optional()` tells Nest DI "don't fail if no provider resolves this
+   * parameter". `AppLogger` is Pino's `Logger` interface (no runtime
+   * class), so reflect-metadata gives Nest `Object` as the type token;
+   * without `@Optional()` Nest would refuse to construct the service
+   * because it can't find a provider for `Object`. With `@Optional()`
+   * Nest passes `undefined` and the fallback `createLogger('NestJS')`
+   * takes over. Direct test usage `new AppNestLoggerService(myLogger)`
+   * is unaffected.
+   */
+  constructor(@Optional() logger?: AppLogger) {
     this.logger = logger ?? createLogger('NestJS');
   }
 

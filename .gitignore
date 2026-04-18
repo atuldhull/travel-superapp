@@ -58,6 +58,18 @@ prisma/dev.db*
 # Husky auto-generated helpers (hooks themselves are tracked)
 .husky/_/
 
+# Guard against tsc accidentally emitting alongside source files.
+# Real compiled output lives under dist/ per package; anything under src/
+# that is *.js / *.d.ts is a stale artifact and must never be committed.
+packages/*/src/**/*.js
+packages/*/src/**/*.js.map
+packages/*/src/**/*.d.ts
+packages/*/src/**/*.d.ts.map
+apps/*/src/**/*.js
+apps/*/src/**/*.js.map
+apps/*/src/**/*.d.ts
+apps/*/src/**/*.d.ts.map
+
 # Misc
 .cache/
 tmp/
