@@ -10,18 +10,92 @@
 
 ## Summary
 
-| Counter             | Value                                                |
-| ------------------- | ---------------------------------------------------- |
-| Prompts completed   | 4                                                    |
-| Prompts in progress | 0                                                    |
-| Prompts blocked     | 0                                                    |
-| Last prompt         | `[III.11.1]`                                         |
-| Last commit date    | 2026-04-18                                           |
-| Phase               | Phase 0 — Foundation (first real TS package shipped) |
+| Counter             | Value                                                        |
+| ------------------- | ------------------------------------------------------------ |
+| Prompts completed   | 5                                                            |
+| Prompts in progress | 0                                                            |
+| Prompts blocked     | 0                                                            |
+| Last prompt         | `[III.15.1]`                                                 |
+| Last commit date    | 2026-04-18                                                   |
+| Phase               | Phase 0 — Foundation (config + errors trinity packages live) |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [III.15.1] — `@app/errors` (DomainError hierarchy, 27/27 tests)
+
+**Date:** 2026-04-18 · **Status:** DONE · **Kind:** Build · **Playbook §** 15.1
+
+**What was done**
+
+- Replaced placeholder `packages/errors` with a real, zero-runtime-dep package that defines the domain error hierarchy every NestJS module will throw and the global exception filter will catch.
+- `src/base.error.ts` — abstract `DomainError` extending `Error`. Fields: abstract `code` (UPPER_SNAKE machine id), abstract `httpStatus`, readonly `context: DomainErrorContext` (frozen shallow copy), readonly `timestamp: Date`. Method `toJSON(): DomainErrorJson` returns `{code, message, context, timestamp}` — **never the stack**. `isDomainError(unknown): value is DomainError` type guard. Prototype-chain preserved via `Object.setPrototypeOf(this, new.target.prototype)` (for CJS/ES5 `instanceof`). Stack trace captured from the subclass call-site via `Error.captureStackTrace(this, new.target)`.
+- `src/errors.ts` — 15 concrete classes:
+  - **Generic HTTP:** `UnauthorizedError` (401) · `PaymentFailedError` (402) · `ForbiddenError` (403) · `NotFoundError` (404) · `ConflictError` (409) · `ValidationError` (422, adds `fieldErrors` + override `toJSON`) · `RateLimitError` (429, adds `retryAfterMs`, clamps negatives + floors fractions) · `SafetyCheckFailedError` (451) · `InvariantError` (500) · `ExternalServiceError` (502, adds `service` name).
+  - **Domain-specific:** `AgentNotVerifiedError extends ForbiddenError` · `TripNotFoundError / PlaceNotFoundError / UserNotFoundError extends NotFoundError` · `InvalidRadiusError extends ValidationError` (includes `radiusKm` field error).
+  - All generics accept an optional `code` constructor arg with a sensible UPPER_SNAKE default, so callers can re-tag a generic 404 without subclassing. Domain-specific classes lock in their `code` via `super(..., specificCode)`.
+- `src/index.ts` — barrel re-exporting base class, type guard, types, and all 15 concrete classes + the `FieldErrors` helper type.
+- `test/base.error.spec.ts` — 7 tests exercising the abstract base: subclass-name propagation, `instanceof` chain across `DomainError`/`Error`/subclass, context freeze (including defense against post-construction mutation of the input object), timestamp window, `toJSON()` shape without stack, stack-trace origin frame, `isDomainError()` narrowing across all falsy-ish inputs.
+- `test/errors.spec.ts` — 20 tests including an `it.each` table covering the 7 simple generics, `ValidationError` freeze-nested behavior + toJSON shape, `RateLimitError` clamp/floor math, `ExternalServiceError` service propagation, each domain-specific class's prototype chain + code + context, and a JSON.stringify round-trip proving the stack never leaks to the wire.
+- Rich `README.md` — why, usage examples (throw + catch-boundary), the full HTTP-to-class table, wire JSON shape, four authoring rules (only throw DomainError across boundaries, never PII in context, codes are public API, subclass when callers branch), and scripts reference.
+
+**Files created** (9)
+
+- `packages/errors/tsconfig.json`, `tsconfig.build.json`
+- `packages/errors/jest.config.cjs`, `eslint.config.mjs`
+- `packages/errors/src/base.error.ts`, `errors.ts`
+- `packages/errors/test/base.error.spec.ts`, `errors.spec.ts`
+- `packages/errors/README.md`
+
+**Files edited** (3)
+
+- `packages/errors/package.json` — placeholder → real (scripts, exports, devDeps only — **no runtime deps** and **no peer deps**; this is pure TypeScript).
+- `packages/errors/src/index.ts` — placeholder → barrel.
+- `PROGRESS.md` (this entry).
+
+**Dependencies added** — none new. All devDeps (`@app/tsconfig`, `@app/eslint-config`, jest, ts-jest, rimraf, typescript, @types/jest, @types/node) already resolved from `@app/config`'s install; this prompt's `pnpm install` added 0 packages in 4.3s.
+
+**Commands run**
+
+1. `npx pnpm install` — 0 new packages, 4.3s (everything cached).
+2. First attempt `pnpm --filter=@app/errors build typecheck test lint` failed: pnpm passed `typecheck test lint` as args to the `build` script (not as separate scripts), yielding `tsc -p tsconfig.build.json typecheck test lint` and TS5042. Re-ran each script separately with `&&`.
+3. `pnpm --filter=@app/errors build` — green, emits 12 files to `dist/`.
+4. `pnpm --filter=@app/errors typecheck` — green.
+5. `pnpm --filter=@app/errors test` — **27/27 pass in 2.5s** across 2 suites.
+6. `pnpm --filter=@app/errors lint` — 0 errors.
+7. `pnpm turbo run build typecheck lint test` workspace-wide — **8 tasks, 8 successful** (2 packages × 4 tasks each), 6.2s.
+
+**Verification**
+
+- ✅ `dist/` contains base.error, errors, index × `.js` + `.js.map` + `.d.ts` + `.d.ts.map` (12 files).
+- ✅ 27/27 Jest tests green; coverage threshold (85/85/85/75 lines/stmts/fns/branches) met.
+- ✅ Workspace turbo: `@app/config` + `@app/errors` both build+typecheck+lint+test clean (8 tasks).
+- ✅ Pre-commit lint-staged will prettify any staged `.ts`/`.md`/`.json` automatically.
+
+**Acceptance criteria (from prompt)**
+
+- ✅ `DomainError` is abstract with `code`, `httpStatus`, `context`, `timestamp`, `toJSON()`.
+- ✅ All requested concrete classes exist: `NotFoundError` 404, `UnauthorizedError` 401, `ForbiddenError` 403, `ValidationError` 422, `ConflictError` 409, `RateLimitError` 429, `ExternalServiceError` 502, `InvariantError` 500, `TripNotFoundError` / `PlaceNotFoundError` / `UserNotFoundError` / `AgentNotVerifiedError` / `InvalidRadiusError` / `PaymentFailedError` / `SafetyCheckFailedError` 451.
+- ✅ `src/index.ts` re-exports everything.
+- ✅ `toJSON()` produces `{code, message, context, timestamp}` — **no stack** (test `JSON.stringify` round-trip confirms).
+
+**Notes / deviations**
+
+- Chose the "generic-class-with-default-code + domain-specific-class-passes-custom-code-via-super()" pattern over `override readonly code = '...'` on subclasses. Avoids TypeScript friction with `noImplicitOverride` on readonly fields and makes the code-arg explicit in each subclass constructor.
+- Added `InvalidRadiusError` as a subclass of `ValidationError` (not `DomainError` directly) so the exception filter treating any `ValidationError` uniformly (emit `fieldErrors`) works without special-casing.
+- `ExternalServiceError` records `service` both as a typed field and inside `context` — redundancy is intentional so structured log sinks can filter by `context.service` without needing to know about the subclass.
+- Coverage threshold bumped from `@app/config`'s 80/80/80/70 → **85/85/85/75** here because this package is pure types with dense tests; the bar should be higher where mocking is trivial.
+
+**Next prompt candidates**
+
+- `[III.11.6]` — `@app/logger` (Pino + AsyncLocalStorage trace context + PII redact). Last of the "trinity" foundation packages. Small integration note: will use `DomainError.toJSON()` when logging errors.
+- `[III.11.5]` — NestJS global exception filter in `apps/api` mapping `DomainError` → HTTP (requires `apps/api` skeleton, so a few prompts away).
+- `[III.13.1]` — Zod validation pipe (throws our `ValidationError` with populated `fieldErrors`).
+- `[IV.17.6]` — Root tsconfig path aliases + `apps/api/instrumentation.ts`.
+- `[II.6.2]` — ADR-001 Modular monolith (pure docs, locks the call).
 
 ---
 
