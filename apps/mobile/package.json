@@ -1,0 +1,7 @@
+{
+  "name": "mobile",
+  "version": "0.0.0",
+  "private": true,
+  "description": "React Native + Expo 51 app. Scaffold only — real code lands in [IV.18.1.14.c].",
+  "type": "module"
+}

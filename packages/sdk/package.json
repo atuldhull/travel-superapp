@@ -1,0 +1,9 @@
+{
+  "name": "@app/sdk",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Auto-generated API client (orval → React Query hooks) from docs/api/openapi.yaml.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts"
+}

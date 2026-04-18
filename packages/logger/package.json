@@ -1,0 +1,9 @@
+{
+  "name": "@app/logger",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Pino wrapper with AsyncLocalStorage trace context + PII redaction.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts"
+}

@@ -1,0 +1,9 @@
+{
+  "name": "@app/shared-types",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Zod schemas + inferred TS types shared across backend and frontends.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts"
+}

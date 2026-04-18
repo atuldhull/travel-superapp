@@ -1,0 +1,9 @@
+{
+  "name": "@app/mobile-ui",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Tamagui design system for apps/mobile.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts"
+}

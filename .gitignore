@@ -55,6 +55,9 @@ venv/
 # Prisma
 prisma/dev.db*
 
+# Husky auto-generated helpers (hooks themselves are tracked)
+.husky/_/
+
 # Misc
 .cache/
 tmp/

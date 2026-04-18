@@ -1,0 +1,7 @@
+{
+  "name": "media-service",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Node Sharp + ffmpeg worker (image/video processing, 3D tile caching).",
+  "type": "module"
+}

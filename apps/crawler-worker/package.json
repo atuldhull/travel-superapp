@@ -1,0 +1,7 @@
+{
+  "name": "crawler-worker",
+  "version": "0.0.0",
+  "private": true,
+  "description": "NestJS standalone + Playwright (price aggregation, events scraping, OSM diffs).",
+  "type": "commonjs"
+}
