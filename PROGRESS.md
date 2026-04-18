@@ -10,18 +10,107 @@
 
 ## Summary
 
-| Counter             | Value                                      |
-| ------------------- | ------------------------------------------ |
-| Prompts completed   | 2                                          |
-| Prompts in progress | 0                                          |
-| Prompts blocked     | 0                                          |
-| Last prompt         | `[II.10.0]`                                |
-| Last commit date    | 2026-04-18                                 |
-| Phase               | Phase 0 — Foundation (monorepo scaffolded) |
+| Counter             | Value                                                |
+| ------------------- | ---------------------------------------------------- |
+| Prompts completed   | 3                                                    |
+| Prompts in progress | 0                                                    |
+| Prompts blocked     | 0                                                    |
+| Last prompt         | `[IX.32.2]`                                          |
+| Last commit date    | 2026-04-18                                           |
+| Phase               | Phase 0 — Foundation (monorepo + local dev stack up) |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IX.32.2] — Docker Compose local dev stack (8 services, all healthy)
+
+**Date:** 2026-04-18 · **Status:** DONE · **Kind:** Build · **Playbook §** 32.2
+
+**What was done**
+
+- Authored `infra/docker-compose.yml` — 8 services, each with healthcheck + named volume where it holds state. Stack name `travel-superapp-dev`. Modern Compose syntax (no `version:` key).
+- Services + ports:
+  - **postgres** (built from `./postgres/Dockerfile` on top of `postgis/postgis:16-3.4`, pgvector layered via `postgresql-16-pgvector` apt) — `localhost:5432`. Init scripts mounted from `./postgres/init/`.
+  - **redis** (`redis:7.4-alpine`, `--requirepass redis_dev`) — `localhost:6379`.
+  - **meilisearch** (`v1.11`) — `localhost:7700`.
+  - **minio** (`RELEASE.2024-12-18T13-15-44Z`) — API `:9000`, console `:9001`.
+  - **mailpit** (`v1.21`) — SMTP `:1025`, UI `:8025`.
+  - **jaeger** (`all-in-one:1.65.0`) — UI `:16686`, OTLP gRPC `:4317`, HTTP `:4318`.
+  - **prometheus** (`v3.1.0`) — `:9090`, config mounted from `./prometheus/prometheus.yml`.
+  - **grafana** (`11.4.0`) — `:3001` (avoids Next.js 3000), auto-provisioned datasources + dashboards folder mounted from `./grafana/provisioning/`. Depends on prometheus + jaeger being healthy.
+- `infra/postgres/Dockerfile` — extends `postgis/postgis:16-3.4`, `apt-get install postgresql-16-pgvector`. (No single public image bundles PostGIS + pgvector, so we build a small 2-layer one.)
+- `infra/postgres/init/01-extensions.sql` — idempotent `CREATE EXTENSION IF NOT EXISTS` for `postgis`, `postgis_topology`, `vector`, `pg_trgm`, `pgcrypto`. Mounted read-only and runs on first boot.
+- `infra/prometheus/prometheus.yml` — self-scrape + placeholder targets for `apps/api:3000` and `apps/ai-service:8001` (via `host.docker.internal`) — marked down until those apps exist in later prompts.
+- `infra/grafana/provisioning/datasources/datasources.yml` — Prometheus (default) + Jaeger datasources.
+- `infra/grafana/provisioning/dashboards/dashboards.yml` — provider pointing at `./json/` folder (`.gitkeep` placeholder; real dashboards land in `[III.15.7]`).
+- `infra/README.md` — service table, commands, first-boot notes, extension-verification command.
+
+**Files created** (8 new)
+
+- `infra/docker-compose.yml`
+- `infra/postgres/Dockerfile`
+- `infra/postgres/init/01-extensions.sql`
+- `infra/prometheus/prometheus.yml`
+- `infra/grafana/provisioning/datasources/datasources.yml`
+- `infra/grafana/provisioning/dashboards/dashboards.yml`
+- `infra/grafana/provisioning/dashboards/json/.gitkeep`
+- `infra/README.md`
+
+**Files edited** — `PROGRESS.md` (this entry).
+
+**Dependencies added** — none at the Node/pnpm layer. 8 Docker images pulled + 1 local image built.
+
+**Commands run**
+
+1. `docker compose -f infra/docker-compose.yml up -d` — initial: Jaeger tag `1.62` invalid, fixed to `1.65.0`, retried. Pulled 8 images, built postgres image (~2 min on first run).
+2. `docker compose -f infra/docker-compose.yml ps` — 7/8 healthy after ~53s; meilisearch stuck on `(health: starting)`.
+3. Diagnosed meilisearch: image _has_ `wget` at `/usr/bin/wget` and listens on `0.0.0.0:7700`, but `wget -q --spider http://localhost:7700/health` reliably returns "connection refused" inside the container (even with `127.0.0.1`); likely a busybox-applet quirk. `curl` works fine. Switched healthcheck to `curl -fs http://localhost:7700/health` and recreated the container — healthy in ~27s.
+4. `docker compose ps` — **all 8 services healthy**.
+5. `docker compose exec postgres psql -c "\dx"` — lists `pg_trgm 1.6 / pgcrypto 1.3 / plpgsql / postgis 3.4.3 / postgis_topology 3.4.3 / vector 0.8.2` (6 rows).
+6. Host-side smoke test (curl each exposed port): meilisearch/minio/mailpit/jaeger/prometheus/grafana all HTTP 200; postgres + redis as expected don't speak HTTP.
+7. Composite functional query exercising all 4 domain extensions at once:
+   ```sql
+   SELECT ST_AsText(ST_MakePoint(77.5946, 12.9716)::geography),
+          (ARRAY[0.1,0.2,0.3]::vector(3)) <-> (ARRAY[0.4,0.5,0.6]::vector(3)),
+          similarity('Bengaluru', 'Bangalore'),
+          encode(digest('travel', 'sha256'), 'hex');
+   ```
+   Returns:
+   - `POINT(77.5946 12.9716)` (PostGIS),
+   - `0.5196152525944904` (pgvector L2 distance),
+   - `0.1764706` (pg_trgm similarity),
+   - `0209442e...c461c4` (pgcrypto SHA-256).
+
+**Verification**
+
+- ✅ `docker compose ps` — 8/8 services `Up (healthy)` within 60s on a warm start (first boot ~2 min including image pulls + postgres build).
+- ✅ Postgres extensions installed **and** functionally exercised (spatial + vector + trigram + crypto).
+- ✅ Grafana UI reachable on `:3001`; Prometheus on `:9090`; Jaeger UI on `:16686`; MinIO console on `:9001`; Mailpit UI on `:8025`; Meilisearch on `:7700`.
+- ✅ Grafana datasources auto-provisioned (Prometheus + Jaeger visible at first login with `admin/admin`).
+
+**Acceptance criteria (from prompt)**
+
+- ✅ `docker compose ps` shows all services healthy within 60s on warm start.
+
+**Notes / deviations**
+
+- Jaeger tag corrected `1.62` → `1.65.0` (Docker Hub doesn't carry `1.62` without patch suffix; all current 1.x tags are `X.Y.Z`).
+- Meilisearch healthcheck swapped from `wget` to `curl` to work around the busybox `wget --spider` quirk in its v1.11 image. Functionality unchanged.
+- `.husky/commit-msg` uses `[no-install]` style: calls `commitlint` directly via `node_modules/.bin`. On commit, `lint-staged` may prettify `infra/*.yml` — expected.
+- `host.docker.internal` used for Prometheus targets pointing at future API/ai-service — those report `down` until those apps exist; harmless noise.
+- A root `Makefile` with `make up / down / logs / reset / db-shell / redis-shell` is intentionally deferred to prompt **[IX.32.3]**.
+- `.env.example` covering required env vars is deferred to prompt **[IX.32.4]** + shared-types env schema prompt **[III.11.1]**.
+
+**Next prompt candidates**
+
+- `[IX.32.3]` — Root Makefile + compose wrappers (tiny, 1 file).
+- `[IV.18.1.11]` — GitHub Actions CI/CD pipeline (unlocks automatic verification on push).
+- `[IV.17.6]` — Path aliases + instrumentation.ts scaffold (tiny cleanup).
+- `[III.11.1]` — `@app/config` package (first real TS code; Zod env schema).
+- `[II.6.2]`–`[II.6.4]` — Architecture ADRs (pure docs, locks decisions).
 
 ---
 

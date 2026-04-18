@@ -1,0 +1,21 @@
+# Grafana auto-provisioned datasources.
+# Installed by prompt [IX.32.2]. Loaded at Grafana startup.
+# Playbook §15.7 (Dashboards as Code) — real dashboards land in [III.15.7].
+
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
+    jsonData:
+      timeInterval: 15s
+
+  - name: Jaeger
+    type: jaeger
+    access: proxy
+    url: http://jaeger:16686
+    editable: false

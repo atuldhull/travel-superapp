@@ -1,0 +1,33 @@
+# Prometheus scrape config for local dev.
+# Installed by prompt [IX.32.2]. Real `apps/api` metrics land in [III.15.3].
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    environment: local-dev
+    cluster: travel-superapp-dev
+
+scrape_configs:
+  # Self-scrape so the UI has at least one target.
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # NestJS API — comes online once apps/api is implemented in [III.15.3].
+  # The container won't be resolvable until then, so prometheus will report
+  # the target as `down` (harmless).
+  - job_name: api
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['host.docker.internal:3000']
+        labels:
+          service: api
+
+  # ai-service (Python FastAPI) — [IV.18.2.11]
+  - job_name: ai-service
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['host.docker.internal:8001']
+        labels:
+          service: ai-service

@@ -1,0 +1,211 @@
+# Local development stack for TravelSuperApp.
+# Playbook §32.2. Installed by prompt [IX.32.2].
+#
+# Usage (from repo root):
+#   docker compose -f infra/docker-compose.yml up -d
+#   docker compose -f infra/docker-compose.yml ps
+#   docker compose -f infra/docker-compose.yml down
+#
+# All credentials below are LOCAL-DEV ONLY. Never use these values in any
+# non-local environment. Real secrets live in Doppler (see CLAUDE.md §secrets).
+
+name: travel-superapp-dev
+
+services:
+  # ─────────────────────────────────────────────────────────────────────
+  # Postgres 16 with PostGIS 3.4 + pgvector (built from ./postgres/Dockerfile)
+  # ─────────────────────────────────────────────────────────────────────
+  postgres:
+    build:
+      context: ./postgres
+      dockerfile: Dockerfile
+    image: travel-superapp/postgres:16-postgis-pgvector
+    container_name: travel-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: travel
+      POSTGRES_PASSWORD: travel_dev
+      POSTGRES_DB: travel_dev
+      # Lets the init scripts run only on first boot.
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U travel -d travel_dev']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Redis 7 — cache, rate limits, sessions, queues, streams
+  # ─────────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7.4-alpine
+    container_name: travel-redis
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes', '--requirepass', 'redis_dev']
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', '-a', 'redis_dev', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Meilisearch — typo-tolerant full-text search
+  # ─────────────────────────────────────────────────────────────────────
+  meilisearch:
+    image: getmeili/meilisearch:v1.11
+    container_name: travel-meilisearch
+    restart: unless-stopped
+    environment:
+      MEILI_MASTER_KEY: meili_dev_key_change_me_minimum_16_chars
+      MEILI_ENV: development
+    ports:
+      - '7700:7700'
+    volumes:
+      - meilisearch_data:/meili_data
+    healthcheck:
+      test: ['CMD', 'curl', '-fs', 'http://localhost:7700/health']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  # ─────────────────────────────────────────────────────────────────────
+  # MinIO — S3-compatible storage (local stand-in for R2/S3)
+  # Console: http://localhost:9001 · API: http://localhost:9000
+  # ─────────────────────────────────────────────────────────────────────
+  minio:
+    image: minio/minio:RELEASE.2024-12-18T13-15-44Z
+    container_name: travel-minio
+    restart: unless-stopped
+    command: ['server', '/data', '--console-address', ':9001']
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio_dev_password
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Mailpit — local SMTP + web UI for email testing
+  # SMTP: localhost:1025 · UI: http://localhost:8025
+  # ─────────────────────────────────────────────────────────────────────
+  mailpit:
+    image: axllent/mailpit:v1.21
+    container_name: travel-mailpit
+    restart: unless-stopped
+    ports:
+      - '1025:1025'
+      - '8025:8025'
+    environment:
+      MP_MAX_MESSAGES: '5000'
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:8025']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Jaeger — distributed tracing (OTel collector built in)
+  # UI: http://localhost:16686 · OTLP gRPC: 4317 · OTLP HTTP: 4318
+  # ─────────────────────────────────────────────────────────────────────
+  jaeger:
+    image: jaegertracing/all-in-one:1.65.0
+    container_name: travel-jaeger
+    restart: unless-stopped
+    environment:
+      COLLECTOR_OTLP_ENABLED: 'true'
+    ports:
+      - '16686:16686'
+      - '4317:4317'
+      - '4318:4318'
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:14269/']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Prometheus — metrics scraper
+  # UI: http://localhost:9090
+  # ─────────────────────────────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:v3.1.0
+    container_name: travel-prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+    ports:
+      - '9090:9090'
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:9090/-/healthy']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Grafana — dashboards (pre-provisioned via ./grafana/provisioning)
+  # UI: http://localhost:3001 (admin/admin) — port 3001 to avoid Next.js conflict
+  # ─────────────────────────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:11.4.0
+    container_name: travel-grafana
+    restart: unless-stopped
+    depends_on:
+      prometheus:
+        condition: service_healthy
+      jaeger:
+        condition: service_healthy
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: 'false'
+      GF_AUTH_ANONYMOUS_ENABLED: 'false'
+    ports:
+      - '3001:3000'
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -q --spider http://localhost:3000/api/health']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+# ─────────────────────────────────────────────────────────────────────
+# Named volumes — survive `docker compose down` but not `down -v`.
+# ─────────────────────────────────────────────────────────────────────
+volumes:
+  postgres_data:
+  redis_data:
+  meilisearch_data:
+  minio_data:
+  prometheus_data:
+  grafana_data:
