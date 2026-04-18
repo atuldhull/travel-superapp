@@ -10,18 +10,55 @@
 
 ## Summary
 
-| Counter             | Value                                                               |
-| ------------------- | ------------------------------------------------------------------- |
-| Prompts completed   | 15                                                                  |
-| Prompts in progress | 0                                                                   |
-| Prompts blocked     | 0                                                                   |
-| Last prompt         | `[IX.32.4]`                                                         |
-| Last commit date    | 2026-04-18                                                          |
-| Phase               | Phase 0 — Foundation (env template + docs; onboarding story closed) |
+| Counter             | Value                                                                                     |
+| ------------------- | ----------------------------------------------------------------------------------------- |
+| Prompts completed   | 16                                                                                        |
+| Prompts in progress | 0                                                                                         |
+| Prompts blocked     | 0                                                                                         |
+| Last prompt         | `[II.7.1]`                                                                                |
+| Last commit date    | 2026-04-19                                                                                |
+| Phase               | Phase 0 — Foundation (bounded-context rule locked; ESLint pattern ready for [III.Eslint]) |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [II.7.1] — ADR-004 bounded-context principle + ESLint rule pattern
+
+**Date:** 2026-04-19 · **Status:** DONE · **Kind:** Design · **Playbook §** 7.1
+
+**Shipped in commit** `c522bdd`. PROGRESS entry in a follow-up `docs(II.7.1)` commit (prettier race — same pattern as `[III.13.1]` / `[II.6.2]` / `[IX.32.3]` / `[IX.32.4]`).
+
+**What was done**
+
+Locks the cross-context communication rule promised by [ADR-001](./docs/adr/ADR-001-modular-monolith.md): modules inside `apps/api/src/modules/<context>/` may only see each other through `interface/facade/**` ports (for sync reads) or domain events on `@app/events` (for writes / notifications). Direct imports into another module's `domain/`, `application/`, `infrastructure/` or non-facade `interface/` fail CI lint.
+
+- **`docs/adr/ADR-004-bounded-contexts.md`** — MADR-format, same template as ADRs 001–003. Three sections doing the work: (1) a plain-English rule spelling out what `<A>` MAY vs. MUST NOT import from `<B>`; (2) a drop-in `import/no-restricted-paths` zone generator that produces one zone per `{module × private-layer}` pair (17 × 3 = 51 domain/application/infrastructure zones + 17 interface zones with a facade carve-out) — ready for `[III.Eslint]` to paste verbatim into the shared config; (3) binding consequences (facade naming convention, new-module checklist, "need to bypass for perf?" escape hatch requires a superseding ADR).
+- **`docs/adr/README.md`** — index row for ADR-004.
+
+**Files created** (1) — `docs/adr/ADR-004-bounded-contexts.md`.
+**Files edited** (2) — `docs/adr/README.md`, `PROGRESS.md`.
+**Dependencies** — none. Pure docs; the ESLint rule is specified but NOT wired (that's `[III.Eslint]`'s job).
+
+**Verification**
+
+- Acceptance criterion: "one ESLint rule pattern included, ready to paste." ✅ — the snippet is a complete CommonJS module that exports a valid `Linter.RulesRecord`, parameterised over the §7.2 module list so a future module addition is a one-line edit.
+- `MODULES` array matches the 17 contexts in Playbook §7.2 verbatim.
+- `PRIVATE_LAYERS` covers the three layers ADR-001 defines as private; the fourth layer (`interface/`) is handled by a separate zone that carves out `interface/facade/**`.
+- Rule error message names the offending `target/layer` AND tells the developer the two legal alternatives (facade port / domain event) — on-screen self-documenting.
+
+**Acceptance criteria**
+
+- ✅ ADR-004 written in MADR format consistent with siblings.
+- ✅ Cross-context rule stated explicitly (events + facades only; no direct imports across modules).
+- ✅ `import/no-restricted-paths` pattern included inline, ready to paste in `[III.Eslint]`.
+
+**Notes**
+
+- This ADR is binding for `apps/api` only — the rule does not apply to `apps/web`, `apps/admin`, `apps/mobile` because those apps don't host bounded contexts (they consume the API via `@app/sdk`).
+- `[II.7.2]` (context map) and `[II.7.4]` (package manifest) complement this ADR — together they will form the single authoritative description of who-imports-what across the monolith.
 
 ---
 
