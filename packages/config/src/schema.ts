@@ -23,7 +23,8 @@ import { z } from 'zod';
 const RuntimeSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'staging', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
-  LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
+  // Must stay in sync with `LogLevel` in @app/logger/src/logger.ts.
+  LOG_LEVEL: z.enum(['silent', 'trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
 });
 
 // ─── Database (Postgres 16 + PostGIS + pgvector) ────────────────────────

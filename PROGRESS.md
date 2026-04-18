@@ -10,18 +10,136 @@
 
 ## Summary
 
-| Counter             | Value                                                           |
-| ------------------- | --------------------------------------------------------------- |
-| Prompts completed   | 7 (1 partial — [IV.17.6] has a deferred item)                   |
-| Prompts in progress | 0                                                               |
-| Prompts blocked     | 0                                                               |
-| Last prompt         | `[IV.17.6]`                                                     |
-| Last commit date    | 2026-04-18                                                      |
-| Phase               | Phase 0 — Foundation (trinity + root path aliases + instr stub) |
+| Counter             | Value                                                                          |
+| ------------------- | ------------------------------------------------------------------------------ |
+| Prompts completed   | 8                                                                              |
+| Prompts in progress | 0                                                                              |
+| Prompts blocked     | 0                                                                              |
+| Last prompt         | `[III.11.0]`                                                                   |
+| Last commit date    | 2026-04-18                                                                     |
+| Phase               | Phase 0 — Foundation (apps/api boots with trinity; serves `/health/live` live) |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [III.11.0] — `apps/api` bootstrap skeleton (Nest 11 + Fastify + trinity; 4/4 e2e + live smoke test passed)
+
+**Date:** 2026-04-18 · **Status:** DONE · **Kind:** Build · **Playbook §** 10 + 15.2
+
+> Prompt ID `[III.11.0]` was added as a prerequisite to the `[III.11.x]` sequence. Reason: every subsequent prompt ([III.11.3] guards, [III.11.4] rate limit, [III.11.5] filter, [III.13.x] security, [IV.18.1.16] health) needs a running NestJS app to land in. Shipping the skeleton once, cleanly, avoids having every downstream prompt re-scaffold.
+
+**What was done — `apps/api` becomes a real NestJS 11 + Fastify 5 app wired to the trinity**
+
+- **Entry + bootstrap** (`src/main.ts`)
+  - Line 1: `import '../instrumentation';` — OTel load-order contract (real wiring in `[III.15.4]`).
+  - Line 2: `import 'reflect-metadata';` — Nest decorator metadata.
+  - Calls `validateEnv()` from `@app/config` **before** any Nest construction — fail-fast on any invalid env var with the full `EnvValidationError.issues` list logged at `fatal`.
+  - Builds `NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter({ logger: false }), { bufferLogs: true })`. Buffers Nest's own log lines until our logger is wired, so zero output is lost.
+  - `app.useLogger(app.get(AppNestLoggerService))` swaps Nest's default ConsoleLogger for our Pino-backed one — verified live, Nest's own `"Starting Nest application..."` now emits as structured JSON with our `context`/`time`/`level`/`msg` shape.
+  - `app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)'] })` — business routes under `/api/v1/*`, probes stay bare at `/health/*` (k8s/Fly.io convention).
+  - `app.enableShutdownHooks()` — clean SIGTERM draining.
+- **Root module** (`src/app.module.ts`) — imports `AppConfigModule.forRoot()`; registers `AppNestLoggerService` as a provider/export; mounts `HealthController`.
+- **Health endpoint** (`src/health/health.controller.ts`) — single `GET /health/live` returning `{status, service, timestamp, uptimeSeconds}`. Richer `/health/ready` + `/health/startup` with Postgres/Redis/Meili dep checks intentionally deferred to `[IV.18.1.16]` (@nestjs/terminus).
+- **Tooling**
+  - `tsconfig.json` — extends `../../packages/tsconfig/nestjs.json` via relative path (IDE-clean convention). `rootDir: "."` so `instrumentation.ts` is included; `noEmit: true` for typecheck.
+  - `tsconfig.build.json` — `noEmit: false`, excludes tests.
+  - `eslint.config.mjs` — re-exports `@app/eslint-config`.
+  - `jest.config.cjs` — ts-jest with inline CJS tsconfig; `moduleNameMapper` for the three `@app/*` packages so tests read src directly (no `dist/` round-trip).
+- **e2e test** (`test/app.e2e-spec.ts`) — 4 cases, all green:
+  1. `GET /health/live` returns 200 + expected JSON shape.
+  2. `GET /api/v1/health/live` returns 404 (health must NOT be under the prefix).
+  3. Unknown route under `/api/v1` returns 404.
+  4. Unknown route at bare root returns 404.
+  - Uses Fastify's in-process `app.inject()` — no real port opened, parallel-safe.
+- **Env seeding** (`test/setup.ts`) — fills the minimal-valid env before any `import` runs (via `setupFiles`).
+- **Scripts** — `dev` (`tsx watch`), `build` (`tsc -p tsconfig.build.json`), `start` (`node dist/main.js`), `typecheck`, `lint`, `test`, `test:watch`.
+- **README** — the full "what's wired vs what's not yet" table so contributors know exactly which upcoming prompts layer Helmet, CSP, validation pipe, metrics, Swagger, Terminus, etc.
+
+**Bugs surfaced and fixed during integration** (all in this same commit)
+
+- **`packages/config`**: `LOG_LEVEL` enum restricted to `['debug','info','warn','error']` didn't match `@app/logger`'s `LogLevel` type (`silent` + `trace` + `fatal` also valid). Expanded the enum to match Pino's full set and added a cross-reference comment so the two stay in sync.
+- **`packages/logger`**: `AppNestLoggerService` constructor took `logger?: AppLogger`. `AppLogger` is a Pino **interface**, not a class, so `reflect-metadata` gave Nest `Object` as the param type token and Nest DI refused to construct the service ("Nest can't resolve dependencies"). Fix: `@Optional() logger?: AppLogger` — Nest now passes `undefined` and the internal `createLogger('NestJS')` fallback takes over. Direct test-time `new AppNestLoggerService(myLogger)` is unchanged.
+- **Stale compiled artifacts shadowing sources**: 36 files (`.js`/`.d.ts`/`.map` for every `src/**/*.ts` in `@app/config` and `@app/logger`) were sitting **inside** `packages/*/src/` from an earlier tsc invocation that used the default (not `tsconfig.build.json`) configuration. CJS resolution prefers `.js` over `.ts` at the same path — so Jest's `moduleNameMapper` pointed at `src/index.ts` but `./schema` resolved to the stale `schema.js` next to it. Deleted all 36, added a `.gitignore` guard so this can never slip back in: `packages/*/src/**/*.{js,js.map,d.ts,d.ts.map}` + the same for `apps/*/src/**`.
+- **`apps/api/tsconfig.json`**: initial draft had explicit `paths` pointing at `packages/*/src` which dragged package sources into `apps/api`'s compilation unit and tripped TS6059 (rootDir violation). Removed — pnpm's `node_modules` symlinks and jest's `moduleNameMapper` cover resolution without needing apps/api-local path mappings.
+
+**Files created** (10)
+
+- `apps/api/tsconfig.json`, `tsconfig.build.json`
+- `apps/api/eslint.config.mjs`, `jest.config.cjs`
+- `apps/api/src/main.ts`, `app.module.ts`, `health/health.controller.ts`
+- `apps/api/test/setup.ts`, `app.e2e-spec.ts`
+- `apps/api/README.md`
+
+**Files edited** (5)
+
+- `apps/api/package.json` — placeholder → real (NestJS + Fastify + tsx + @app/\* deps).
+- `packages/config/src/schema.ts` — expand `LOG_LEVEL` enum to match `@app/logger`.
+- `packages/logger/src/nest-logger.service.ts` — `@Optional()` on the constructor param.
+- `.gitignore` — guard against tsc emitting inside `src/`.
+- `PROGRESS.md` (this entry).
+
+**Dependencies added** (under `apps/api`)
+
+- Runtime: `@nestjs/core@11`, `@nestjs/common@11`, `@nestjs/config@4`, `@nestjs/platform-fastify@11`, `fastify@5`, `reflect-metadata@0.2`, `rxjs@7.8`, plus workspace deps `@app/config`, `@app/errors`, `@app/logger`.
+- Dev: `@nestjs/testing@11`, `tsx@4.19` (hot-reload dev runtime), standard Jest/TS chain already cached.
+- `pnpm install` delta: 10.3s.
+
+**Commands run**
+
+1. `npx pnpm install` → 10.3s.
+2. `pnpm --filter=api build` → tsc emit to `apps/api/dist/`.
+3. `pnpm --filter=api typecheck` → green.
+4. First `pnpm --filter=api test` → 4 failures. Debugged in order: rootDir TS6059 → dropped paths; LOG_LEVEL 'silent' rejected → expanded `@app/config` enum; `PORT=0` rejected by `.positive()` → removed from setup; lint warnings on unused `no-process-exit` disables → removed; `Nest can't resolve dependencies of AppNestLoggerService` → added `@Optional()`. After each fix, re-ran. **Remaining** bug: stale `.js`/`.d.ts` shadow files inside `packages/config/src/` and `packages/logger/src/` from an earlier build. Direct `node -e "require('@app/config').validateEnv({LOG_LEVEL:'silent',...})"` worked (dist was up to date), but Jest via `moduleNameMapper → src/index.ts → './schema'` resolved the stale `.js` over `.ts`. Nuked the 36 files, added a .gitignore guard, rebuilt, tests passed.
+5. `pnpm --filter=api test` → **4/4 e2e tests pass in 2.1s**.
+6. `pnpm --filter=api lint` → 0 errors.
+7. `pnpm turbo run build typecheck lint test` workspace-wide → **16/16 tasks successful**.
+8. **Live smoke test**: started `node apps/api/dist/src/main.js` with full valid env. Server bound to `:3030`. `curl http://localhost:3030/health/live` returned `{"status":"ok","service":"api","timestamp":"2026-04-18T15:41:14.714Z","uptimeSeconds":105}`. Observed structured JSON logs in stdout:
+   - `{level:info, context:NestFactory, msg:"Starting Nest application..."}` — Nest's own log flowing through our Pino bridge.
+   - `{level:info, context:bootstrap, port:3030, nodeEnv:development, logLevel:info, msg:"api_started"}` — our own bootstrap log.
+   - `{level:info, context:InstanceLoader, msg:"AppConfigModule dependencies initialized"}` — Nest DI activity.
+     Then `taskkill /F /PID <pid>` — server exited cleanly via SIGTERM thanks to `enableShutdownHooks()`.
+
+**Verification**
+
+- ✅ `pnpm --filter=api build`: 16 files emitted to `apps/api/dist/src/` (main, app.module, health/health.controller) + instrumentation.
+- ✅ `pnpm --filter=api typecheck`: zero errors with root tsconfig aliases + shared nestjs preset.
+- ✅ `pnpm --filter=api test`: 4/4 Fastify `inject()` e2e tests pass in 2.1s. Prefix exclusion for `/health/*` verified — `/api/v1/health/live` correctly returns 404.
+- ✅ `pnpm --filter=api lint`: clean.
+- ✅ Workspace-wide `turbo run build typecheck lint test`: **16 tasks, 16 successful**.
+- ✅ **Live HTTP smoke**: `curl /health/live` returned 200 + expected JSON body.
+- ✅ **Log integration**: Nest's internal logs emitted as structured JSON through `@app/logger` (Pino) — Nest ConsoleLogger is fully replaced.
+- ✅ **Env fail-fast proven** — any invalid env var would have aborted boot with a structured `issues` list (`validateEnv` unit tests in `@app/config` already cover this; live app inherits the contract).
+
+**Acceptance criteria**
+
+- ✅ apps/api compiles, typechecks, lints, tests.
+- ✅ apps/api boots live, binds a port, serves `/health/live` with the expected JSON shape.
+- ✅ `@app/config` validates env at boot (fail-fast on failure).
+- ✅ `@app/logger` wired as Nest's logger — structured JSON output with trace-context support ready.
+- ✅ `@app/errors` imported and on the path for the exception filter (`[III.11.5]` next).
+- ✅ Global prefix + health exclusion verified.
+
+**Notes / deviations**
+
+- `tsx` chosen over `ts-node-dev` / `@nestjs/cli` for the `dev` script — zero config, faster startup, works with our existing tsconfig. If we hit an edge case later (e.g. decorator emit issues), we can swap to `nest start --watch` without disturbing the rest of the toolchain.
+- No `@nestjs/cli` installed yet. `nest build` / `nest start` aren't wired — plain `tsc` + `node dist/main.js` + `tsx watch` cover everything. Adding `@nestjs/cli` later is optional; the scaffold is already fully usable.
+- The `apps/api/src/index.ts` placeholder from `[II.10.0]` is obsolete (entry is now `main.ts`) but intentionally left in place per the CLAUDE.md rule "never delete a file you did not create in this session." A later cleanup prompt can remove it.
+- Bug carryovers (LOG_LEVEL enum in `@app/config`, `@Optional()` in `@app/logger`, stale-src-artifact gitignore) are all bundled into this commit because they surfaced **through** this integration work and are meaningless without it. Makes the prompt's "what broke and why" reviewable in one diff.
+
+**Next up**
+
+With apps/api live, the natural sequence is:
+
+- `[III.11.5]` — DomainExceptionFilter mapping `@app/errors` → HTTP responses.
+- `[III.13.1]` — ZodValidationPipe throwing `ValidationError` with populated `fieldErrors`.
+- `[III.11.3]` — JWT + RBAC guards.
+- `[III.11.4]` — Redis sliding-window rate limiter (needs Redis; Docker Compose stack is already up).
+- `[IV.18.1.16]` — Terminus-powered `/health/ready` + `/health/startup` with real Postgres/Redis checks.
+
+All of these are small-to-medium, land one-at-a-time, and exercise the trinity further.
 
 ---
 
