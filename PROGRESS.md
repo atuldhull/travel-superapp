@@ -15,13 +15,34 @@
 | Prompts completed   | 5                                                            |
 | Prompts in progress | 0                                                            |
 | Prompts blocked     | 0                                                            |
-| Last prompt         | `[III.15.1]`                                                 |
+| Last prompt         | `[III.15.1]` (+ tooling follow-up)                           |
 | Last commit date    | 2026-04-18                                                   |
 | Phase               | Phase 0 — Foundation (config + errors trinity packages live) |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### Follow-up fix — tsconfig `extends` path (VS Code JSON-schema validator)
+
+**Date:** 2026-04-18 · **Status:** DONE · **Kind:** Fix · **Trigger:** IDE squiggle reported by user on `packages/errors/tsconfig.json` line 3.
+
+**Symptom** — VS Code's built-in tsconfig JSON-schema validator underlined `"@app/tsconfig/nestjs.json"` with "Cannot find extends file". This is a known limitation of the schema validator (it can't resolve npm-package extends paths the way `tsc` does via pnpm's workspace symlinks). `tsc --build`, `tsc --noEmit`, Jest, and ESLint all resolved the path fine, so the error was **IDE-only, not build-breaking**.
+
+**Fix** — swapped both live package tsconfigs to a relative extends path. Same semantic, both tools happy:
+
+```diff
+- "extends": "@app/tsconfig/nestjs.json",
++ "extends": "../tsconfig/nestjs.json",
+```
+
+Touched `packages/errors/tsconfig.json` and `packages/config/tsconfig.json`. `tsconfig.build.json` in both packages was unaffected (extends `./tsconfig.json` — already relative).
+
+**Verification** — `pnpm turbo run build typecheck lint test` → **8 tasks, 8 successful**, 4.7s (1 cached). 27/27 `@app/errors` tests + 11/11 `@app/config` tests still green.
+
+**Convention going forward** — all future package tsconfigs will use `../tsconfig/<preset>.json` (relative) rather than `@app/tsconfig/<preset>.json` (npm). Updating `CLAUDE.md` is overkill for this — the fix is obvious on sight once you've seen it. Template the next package off of `packages/config/tsconfig.json`.
 
 ---
 
