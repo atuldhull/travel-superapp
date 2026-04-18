@@ -1,0 +1,17 @@
+# Grafana dashboard provider config.
+# Installed by prompt [IX.32.2]. Empty loader — real dashboards JSON lands
+# in [III.15.7] under ./json/ (overview, trips, ai, safety).
+
+apiVersion: 1
+
+providers:
+  - name: TravelSuperApp
+    orgId: 1
+    folder: ''
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: false
+    options:
+      path: /etc/grafana/provisioning/dashboards/json
+      foldersFromFilesStructure: true
