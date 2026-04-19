@@ -13,6 +13,7 @@ An ADR is never edited in place once accepted — supersede with a new one inste
 | 004 | [Bounded-context principle — no cross-module imports](./ADR-004-bounded-contexts.md)           | Accepted | `[II.7.1]` |
 | 005 | [Frontend stack: Next.js + Expo + TS strict + Tailwind + Tamagui](./ADR-005-frontend-stack.md) | Accepted | `[II.8.1]` |
 | 006 | [Backend stack: NestJS + Fastify + Prisma + FastAPI + BullMQ](./ADR-006-backend-stack.md)      | Accepted | `[II.8.2]` |
+| 007 | [Data layer: Postgres + PostGIS + pgvector + Redis + Meilisearch](./ADR-007-data-layer.md)     | Accepted | `[II.8.3]` |
 
 ## Authoring
 
