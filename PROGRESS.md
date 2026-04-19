@@ -10,18 +10,55 @@
 
 ## Summary
 
-| Counter             | Value                                                                             |
-| ------------------- | --------------------------------------------------------------------------------- |
-| Prompts completed   | 27                                                                                |
-| Prompts in progress | 0                                                                                 |
-| Prompts blocked     | 0                                                                                 |
-| Last prompt         | `[III.11.2]`                                                                      |
-| Last commit date    | 2026-04-19                                                                        |
-| Phase               | Phase 0 — Foundation (use-case contract formalised; unblocks every future module) |
+| Counter             | Value                                                                                          |
+| ------------------- | ---------------------------------------------------------------------------------------------- |
+| Prompts completed   | 28                                                                                             |
+| Prompts in progress | 0                                                                                              |
+| Prompts blocked     | 0                                                                                              |
+| Last prompt         | `[II.8.5]`                                                                                     |
+| Last commit date    | 2026-04-19                                                                                     |
+| Phase               | Phase 0 — Foundation (external-APIs registry locked; 18 providers × adapter ports + CB policy) |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [II.8.5] — External APIs registry
+
+**Date:** 2026-04-19 · **Status:** DONE · **Kind:** Design · **Playbook §** 8.5
+
+**What was done**
+
+One canonical table for every external provider the product depends on. Reviewers grep this doc whenever a PR bumps, adds, or removes an external dep — the row has to change in the same commit.
+
+- **`docs/external-apis.md`** — 18 providers across 7 categories (Maps, Places, Hotels, Weather, Satellite/Crowd, Crime, Payments, Comms). Every row has: name, purpose, base URL, auth type, 2026-04-snapshot free-tier limits, step-up cost, adapter port name (e.g. `PlacesLookupPort#google`), circuit-breaker config. Shared CB policy stated explicitly (opossum-style: `N failures / rolling window / cooldown`, 4xx never opens the circuit, 429 feeds a rate-limit counter, state transitions emit metrics). Stripe is the explicit exception — no circuit breaker, only idempotent retry (failing closed on checkout is worse than waiting). How-to-add + how-to-remove procedures documented. Cross-links to ADR-004 (adapter-in-module rule), package-manifest, notification-worker/crawler-worker contracts.
+
+**Files created** (1) — `docs/external-apis.md`.
+**Files edited** (1) — `PROGRESS.md`.
+**Dependencies** — none.
+
+**Verification**
+
+Acceptance: "every provider from §8.5 present; circuit-breaker policy stated." ✅ — every §8.5 row present; circuit-breaker policy captured both per-provider and as a shared-policy block.
+
+Cross-checks:
+
+- Every adapter-port name follows the `<Owner><Verb>Port` convention from [context-map](./docs/architecture/context-map.md).
+- Free-tier numbers tagged as "snapshot as of 2026-04" — the doc is explicit that this is a re-verify-quarterly thing.
+- Stripe's carve-out (no circuit breaker) is called out so future reviewers don't try to "fix" it.
+
+**Acceptance criteria**
+
+- ✅ Every provider from Playbook §8.5 present.
+- ✅ Circuit-breaker policy stated (shared + per-provider exceptions).
+
+**Notes**
+
+- 429 handling is its own design choice — not treated as a failure, just a rate-limit signal. Crawler-worker's "rate_limit_breaches_total = 0" anti-SLO (from [II.7.3]) aligns with this.
+- Numbeo's paid tier is "contact them" opaque — flagged in the row.
+- Government open-data row is intentionally per-country / per-feed rather than a single base URL; the adapter's internal registry handles the routing.
 
 ---
 
