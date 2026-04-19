@@ -10,18 +10,54 @@
 
 ## Summary
 
-| Counter             | Value                                                                                |
-| ------------------- | ------------------------------------------------------------------------------------ |
-| Prompts completed   | 26                                                                                   |
-| Prompts in progress | 0                                                                                    |
-| Prompts blocked     | 0                                                                                    |
-| Last prompt         | `[II.8.4]`                                                                           |
-| Last commit date    | 2026-04-19                                                                           |
-| Phase               | Phase 0 — Foundation (Chapter-8 complete: frontend + backend + data + AI all locked) |
+| Counter             | Value                                                                             |
+| ------------------- | --------------------------------------------------------------------------------- |
+| Prompts completed   | 27                                                                                |
+| Prompts in progress | 0                                                                                 |
+| Prompts blocked     | 0                                                                                 |
+| Last prompt         | `[III.11.2]`                                                                      |
+| Last commit date    | 2026-04-19                                                                        |
+| Phase               | Phase 0 — Foundation (use-case contract formalised; unblocks every future module) |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [III.11.2] — Use-case pattern reference
+
+**Date:** 2026-04-19 · **Status:** DONE · **Kind:** Seed · **Playbook §** 11.2
+
+**What was done**
+
+Formalises the 5-rule use-case contract every future `*.use-case.ts` file across all 17 bounded contexts must obey. PRs that diverge fail review by construction.
+
+- **`docs/patterns/use-case.md`** — five contract rules: (1) single public `execute(cmd)`; (2) commands are Zod-validated DTOs; (3) returns DTO, never an entity; (4) persist before publish, bus second; (5) no `try/catch` around expected `DomainError`s (bubble to the global filter). Includes Playbook §11.2 example **verbatim** (the `GenerateItineraryUseCase`). Complements: command-file shape (Zod schema + inferred type), explicit MUST-NOT list (no `console.log`, no `prisma.$transaction` wrapping a network call, no reach-across-modules, no `null` returns, no `this.`-state), testing template (ports mocked / domain entities real / 80% coverage floor), and the folder tree that every module uses.
+- Cross-links: Playbook §11.2; CLAUDE.md rules 9, 11, 13; ADR-001 (layer rule); ADR-003 (EventBus contract); ADR-004 (no cross-module imports).
+
+**Files created** (1) — `docs/patterns/use-case.md`.
+**Files edited** (1) — `PROGRESS.md`.
+**Dependencies** — none.
+
+**Verification**
+
+Acceptance: "doc references Playbook and is linked from the module template README." ✅ for the Playbook reference (inline §11.2 source link + verbatim example). ⚠ for the module-template-README link — the template README itself doesn't exist yet. Added a forward-link note at the end of the doc; the future `[III.11.x]` module-template prompt will close the loop.
+
+**Acceptance criteria**
+
+- ✅ One public `execute(cmd)` method documented as rule 1.
+- ✅ Commands are Zod-validated DTOs before `execute`.
+- ✅ Returns a DTO, never an entity.
+- ✅ Publishes events to `EventBus` after persistence (persist before publish, explicit ordering note).
+- ✅ No `try/catch` around expected domain errors (bubble to global filter).
+- ✅ Playbook §11.2 example included verbatim.
+
+**Notes**
+
+- This is the first doc under `docs/patterns/`. Future sibling patterns (repository, port, mapper) go here under the same format.
+- The test template shows `expect(save).toHaveBeenCalledBefore(events.publish as unknown as jest.Mock)` — `jest-extended` provides `toHaveBeenCalledBefore` which isn't in stock Jest. Noted for the future module-template prompt to add `jest-extended` to `@app/testing`.
+- Every binding consequence cross-references an existing authoritative doc (ADR / CLAUDE). No new rules are introduced — this doc is the teaching surface, not the source of truth.
 
 ---
 
