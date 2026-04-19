@@ -1,0 +1,90 @@
+# Phase-0 smoke gate.
+#
+# Runs the single aggregate smoke file that re-asserts one representative
+# acceptance criterion per shipped Phase-0 prompt. If it fails, we block
+# the PR: a regression in env validation / filters / health probes /
+# security headers / shared-package exports / the ADR+docs tree shows up
+# here first.
+#
+# This workflow is intentionally narrow — NOT the full CI pipeline. The
+# broader `ci.yml` (lint + typecheck + full jest matrix + build) lands in
+# a later prompt ([IV.18.1.x]). This gate specifically guards the Phase-0
+# → Phase-1 boundary so no-one can open a Phase-1 PR against a
+# regressed foundation.
+#
+# Installed by prompt [IV.18.1.18].
+
+name: phase-0-smoke
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: phase-0-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    env:
+      # Test env mirrors apps/api/test/setup.ts. Must satisfy every
+      # required var in packages/config/src/schema.ts — indicators are
+      # mocked up in the smoke itself, so localhost URLs are fine.
+      NODE_ENV: test
+      LOG_LEVEL: silent
+      DATABASE_URL: postgresql://travel:travel_dev@localhost:5432/travel_dev
+      REDIS_URL: redis://:redis_dev@localhost:6379
+      JWT_ACCESS_SECRET: ci_smoke_access_secret_min_32_chars_XXXXXX
+      JWT_REFRESH_SECRET: ci_smoke_refresh_secret_min_32_chars_YYYYY
+      S3_ENDPOINT: http://localhost:9000
+      S3_BUCKET: travel-ci
+      S3_ACCESS_KEY: minio
+      S3_SECRET_KEY: minio_ci_password
+      MEILI_MASTER_KEY: meili_ci_master_key_min_16_chars
+      RATE_LIMIT_PEPPER: ci_smoke_pepper_value_min_32_chars_ZZZZZZ
+      CORS_ORIGINS: ''
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.3
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build @app/* packages (@app/config ships a compiled dist/)
+        run: pnpm turbo run build --filter=@app/config --filter=@app/errors --filter=@app/logger
+
+      - name: Run Phase-0 smoke
+        working-directory: apps/api
+        run: npx jest test/smoke/phase-0.smoke.ts --ci --runInBand
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "### Phase-0 smoke" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "✅ All Phase-0 acceptance criteria pass." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "❌ Phase-0 AC regression — see job log above." >> "$GITHUB_STEP_SUMMARY"
+          fi

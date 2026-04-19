@@ -2,7 +2,11 @@
 module.exports = {
   testEnvironment: 'node',
   rootDir: '.',
-  testMatch: ['<rootDir>/test/**/*.spec.ts', '<rootDir>/test/**/*.e2e-spec.ts'],
+  testMatch: [
+    '<rootDir>/test/**/*.spec.ts',
+    '<rootDir>/test/**/*.e2e-spec.ts',
+    '<rootDir>/test/**/*.smoke.ts',
+  ],
   setupFiles: ['<rootDir>/test/setup.ts'],
   collectCoverageFrom: ['src/**/*.ts', '!src/**/*.d.ts', '!src/main.ts'],
   coverageReporters: ['text', 'lcov'],
