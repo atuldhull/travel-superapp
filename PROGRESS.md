@@ -10,18 +10,68 @@
 
 ## Summary
 
-| Counter             | Value                                                                                       |
-| ------------------- | ------------------------------------------------------------------------------------------- |
-| Prompts completed   | 18                                                                                          |
-| Prompts in progress | 0                                                                                           |
-| Prompts blocked     | 0                                                                                           |
-| Last prompt         | `[II.7.4]`                                                                                  |
-| Last commit date    | 2026-04-19                                                                                  |
-| Phase               | Phase 0 — Foundation (Chapter-7 trilogy complete: ADR-004 + context map + package manifest) |
+| Counter             | Value                                                                                            |
+| ------------------- | ------------------------------------------------------------------------------------------------ |
+| Prompts completed   | 19                                                                                               |
+| Prompts in progress | 0                                                                                                |
+| Prompts blocked     | 0                                                                                                |
+| Last prompt         | `[IV.18.1.16]`                                                                                   |
+| Last commit date    | 2026-04-19                                                                                       |
+| Phase               | Phase 0 — Foundation (terminus health probes live against docker stack; Redis-kill flips /ready) |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.1.16] — Health / Readiness / Liveness probes with @nestjs/terminus
+
+**Date:** 2026-04-19 · **Status:** DONE · **Kind:** Build · **Playbook §** 18.1 [0.16]
+
+**What was done**
+
+First code prompt in four — apps/api now talks to the Docker Compose stack end-to-end. Three probe endpoints:
+
+- **`GET /health/live`** — unchanged from `[III.11.0]`. No dep checks. Liveness.
+- **`GET /health/ready`** — terminus-powered. Checks **Postgres** (raw `pg` pool, `SELECT 1`) + **Redis** (ioredis `PING`) + **Meilisearch** (native `fetch` to `/health`). Returns 200 if all up, 503 with per-dep breakdown if any down.
+- **`GET /health/startup`** — currently checks Postgres. Once Prisma lands, also asserts `_prisma_migrations` fully applied. Kubernetes-style startup probe.
+
+ai-service intentionally omitted from /ready until the ai-service prompt lands — commented at the registration site with a pointer to the future switch. That prevents a permanently-red gate on a non-existent service.
+
+- **`apps/api/src/health/indicators/postgres.indicator.ts`** — `HealthIndicator` subclass with `SELECT 1` over a singleton `pg.Pool` (max 1, 2s connect/idle timeout). `onModuleDestroy` closes the pool. Records `latencyMs` in the response.
+- **`apps/api/src/health/indicators/redis.indicator.ts`** — `ioredis` client (lazyConnect, offlineQueue disabled so a down Redis fails instantly instead of queueing). `PING` → `PONG`.
+- **`apps/api/src/health/indicators/http-ping.indicator.ts`** — reusable; Meili today, could be wired to ai-service later without adding new deps.
+- **`apps/api/src/health/health.module.ts`** — wires `TerminusModule` + the three indicators + the controller.
+- **`apps/api/src/health/health.controller.ts`** — extended; `@Inject(ConfigService)` (see "Notes" for why).
+- **`apps/api/src/app.module.ts`** — swapped from direct `HealthController` registration to `HealthModule` import.
+- **`apps/api/test/health.e2e-spec.ts`** — 8 new e2e tests. Indicators overridden with test doubles; asserts all-up / each-down-in-turn / Meili URL construction from `MEILI_HOST`. Simulates the "kill Redis" acceptance via a throwing double on the same code path terminus walks when the real Redis is down.
+
+**Files created** (5) — `apps/api/src/health/health.module.ts`, `apps/api/src/health/indicators/{postgres,redis,http-ping}.indicator.ts`, `apps/api/test/health.e2e-spec.ts`.
+**Files edited** (4) — `apps/api/src/health/health.controller.ts`, `apps/api/src/app.module.ts`, `apps/api/package.json`, `pnpm-lock.yaml` (auto).
+**Dependencies** — `@nestjs/terminus@11.1.1`, `ioredis@5.10.1`, `pg@8.20.0`, `@types/pg@8.20.0` (dev).
+
+**Verification**
+
+- `pnpm --filter=api typecheck` green.
+- `pnpm --filter=api test` — **31/31 pass** (8 new tests across `up / each-dep-down / url-construction`). All pre-existing suites unaffected.
+- **Live smoke against the 8-service docker-compose stack:**
+  - All three endpoints 200 with stack up — `postgres{latencyMs:114}`, `redis{latencyMs:37}`, `meilisearch{latencyMs:47, httpStatus:200}`.
+  - `docker stop travel-redis` → `/health/ready` flips to **503** with `redis.status=down, error:"Stream isn't writeable..."` and the other two still `up`. ✅ binding acceptance criterion.
+  - `docker start travel-redis` → /ready recovers to 200 within 3s.
+
+**Acceptance criteria**
+
+- ✅ `/health/live` returns 200 unconditionally.
+- ✅ `/health/ready` covers Postgres + Redis + Meilisearch.
+- ✅ Killing Redis flips `/ready` to 503. (ai-service check deferred — noted in header comment with pointer.)
+- ✅ `/health/startup` covers the app-boot proxy check (Postgres reachable); Prisma-migration assertion lands when Prisma does.
+
+**Notes**
+
+- **tsx + decorator metadata:** `tsx`'s esbuild-based transform does not reliably emit `emitDecoratorMetadata` for Nest DI. Symptom was `TypeError: Cannot read properties of undefined (reading 'get')` when constructing `PostgresHealthIndicator` — `config` was `undefined` because Nest couldn't derive the injection token from the param type. Fix: explicit `@Inject(ConfigService)` / `@Inject(PostgresHealthIndicator)` / etc. on every constructor param. ts-jest respects the metadata fine (which is why unit tests passed), so the issue only surfaced at live-bootstrap time. Pattern now locked in for future indicators — worth revisiting when the dev script migrates to `ts-node` or `nest start`.
+- `AppConfigService` (the type alias) can't be used as a Nest injection token — it erases to `ConfigService` at runtime only if metadata emission is on. Constructors now type the param as `ConfigService<Env, true>` with explicit `@Inject(ConfigService)`.
+- **ai-service** gate deliberately excluded until `apps/ai-service` exists. The `HttpPingIndicator` is already generic enough to wire it in: a single line in `ready()` will do, gated on a feature flag.
 
 ---
 
