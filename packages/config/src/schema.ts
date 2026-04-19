@@ -116,9 +116,16 @@ const FeaturesSchema = z.object({
   FEATURE_SATELLITE_CROWD: z.coerce.boolean().default(false),
 });
 
-// ─── Security (peppers, keys) ───────────────────────────────────────────
+// ─── Security (peppers, keys, HTTP perimeter) ───────────────────────────
 const SecuritySchema = z.object({
   RATE_LIMIT_PEPPER: z.string().min(32),
+  /**
+   * Comma-separated CORS allow-list of exact origins (scheme + host + port).
+   * Empty / absent means "no cross-origin requests permitted" — the safe
+   * default. Wildcards are intentionally not supported: if you want "any
+   * origin" in dev, list the dev origins explicitly. [IV.18.1.17]
+   */
+  CORS_ORIGINS: z.string().default(''),
 });
 
 // ─── Composed root schema ───────────────────────────────────────────────

@@ -61,6 +61,7 @@ In CI / staging / production, values come from **Doppler** (see `CLAUDE.md` §se
 | Features      | `FEATURE_3D_ENABLED`          | —        | `false`                 | coerced bool                                               | Gates `[III.x]` 3D flows.                                               |
 | Features      | `FEATURE_SATELLITE_CROWD`     | —        | `false`                 | coerced bool                                               | Gates satellite-crowd endpoints.                                        |
 | Security      | `RATE_LIMIT_PEPPER`           | ✅       | —                       | ≥ 32 chars                                                 | Hashes rate-limit keys — `openssl rand -hex 32`.                        |
+| Security      | `CORS_ORIGINS`                | —        | `` (empty)              | string                                                     | Comma-separated exact origins. Empty = no cross-origin. No wildcards.   |
 
 ## Dev quickstart
 
