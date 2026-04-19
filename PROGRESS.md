@@ -10,18 +10,50 @@
 
 ## Summary
 
-| Counter             | Value                                                                                  |
-| ------------------- | -------------------------------------------------------------------------------------- |
-| Prompts completed   | 22                                                                                     |
-| Prompts in progress | 0                                                                                      |
-| Prompts blocked     | 0                                                                                      |
-| Last prompt         | `[II.7.3]`                                                                             |
-| Last commit date    | 2026-04-19                                                                             |
-| Phase               | Phase 0 — Foundation (Chapter-7 complete: all 4 extracted-service contracts published) |
+| Counter             | Value                                                                         |
+| ------------------- | ----------------------------------------------------------------------------- |
+| Prompts completed   | 23                                                                            |
+| Prompts in progress | 0                                                                             |
+| Prompts blocked     | 0                                                                             |
+| Last prompt         | `[II.8.1]`                                                                    |
+| Last commit date    | 2026-04-19                                                                    |
+| Phase               | Phase 0 — Foundation (ADR-005 locks the frontend stack; Chapter-8 kicked off) |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [II.8.1] — ADR-005 frontend stack lock
+
+**Date:** 2026-04-19 · **Status:** DONE · **Kind:** Design · **Playbook §** 8.1
+
+**What was done**
+
+Locks 5 frontend-stack choices + 5 rejected alternatives so feature authors don't relitigate "Next vs Remix" or "Tailwind vs MUI" on every PR.
+
+- **`docs/adr/ADR-005-frontend-stack.md`** — MADR: Context (one TS universe + SSR/SEO + native mobile feel + OTA + small team + shared primitives). Choices: (1) Next.js 15 App Router / rejected Remix; (2) React Native + Expo 51 / rejected Flutter; (3) TypeScript strict end-to-end / rejected gradual TS; (4) Tailwind + shadcn/ui / rejected MUI; (5) Tamagui on mobile / rejected NativeWind. Rationale per choice cites the specific hot-path that would suffer under the rejected option (RSC streaming, 60 FPS scrolling, scroll-heavy feeds, etc.). Binding consequences: every TS surface inherits `@app/tsconfig`; no Vite escape hatch; primitives live only in `@app/ui` (web) and `@app/mobile-ui` (mobile); PWA is explicitly NOT the mobile story. Re-evaluation triggers: RSC parity elsewhere, Tamagui drift, new render target (Vision Pro / Wear OS), team growth past ~20.
+- **`docs/adr/README.md`** — index row for ADR-005.
+
+**Files created** (1) — `docs/adr/ADR-005-frontend-stack.md`.
+**Files edited** (2) — `docs/adr/README.md`, `PROGRESS.md`.
+**Dependencies** — none.
+
+**Verification**
+
+Acceptance criterion: "5 choices, 5 rejected alternatives." ✅ — exactly 5 `### N. <Layer>` sections, each with a **Chosen** + **Rejected alternative** paragraph, and a summary table at the bottom for grep-ability.
+
+**Acceptance criteria**
+
+- ✅ Next.js 15 + RN/Expo 51 + TS strict + shadcn/Tailwind + Tamagui all called out.
+- ✅ One rejected alternative per choice, with the reason it was rejected.
+- ✅ No code (per prompt).
+
+**Notes**
+
+- Chapter-8 stack-lock series kicked off. ADR-006 (backend), ADR-007 (data), ADR-008 (AI) are `[II.8.2-4]` and will follow the same shape.
+- Binding consequences re-assert two CLAUDE.md rules (no `any`, `@app/tsconfig` inheritance) in ADR form so a future ADR-supersede is the only way to relax them.
 
 ---
 
