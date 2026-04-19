@@ -14,11 +14,10 @@
 import { Module } from '@nestjs/common';
 import { AppConfigModule } from '@app/config';
 import { AppNestLoggerService } from '@app/logger';
-import { HealthController } from './health/health.controller';
+import { HealthModule } from './health/health.module';
 
 @Module({
-  imports: [AppConfigModule.forRoot()],
-  controllers: [HealthController],
+  imports: [AppConfigModule.forRoot(), HealthModule],
   providers: [AppNestLoggerService],
   exports: [AppNestLoggerService],
 })
