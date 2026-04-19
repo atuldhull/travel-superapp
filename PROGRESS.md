@@ -10,18 +10,50 @@
 
 ## Summary
 
-| Counter             | Value                                                                         |
-| ------------------- | ----------------------------------------------------------------------------- |
-| Prompts completed   | 23                                                                            |
-| Prompts in progress | 0                                                                             |
-| Prompts blocked     | 0                                                                             |
-| Last prompt         | `[II.8.1]`                                                                    |
-| Last commit date    | 2026-04-19                                                                    |
-| Phase               | Phase 0 — Foundation (ADR-005 locks the frontend stack; Chapter-8 kicked off) |
+| Counter             | Value                                                                       |
+| ------------------- | --------------------------------------------------------------------------- |
+| Prompts completed   | 24                                                                          |
+| Prompts in progress | 0                                                                           |
+| Prompts blocked     | 0                                                                           |
+| Last prompt         | `[II.8.2]`                                                                  |
+| Last commit date    | 2026-04-19                                                                  |
+| Phase               | Phase 0 — Foundation (ADR-006 locks the backend stack; data + AI ADRs next) |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [II.8.2] — ADR-006 backend stack lock
+
+**Date:** 2026-04-19 · **Status:** DONE · **Kind:** Design · **Playbook §** 8.2
+
+**What was done**
+
+Locks 5 backend-stack choices + 5 rejected alternatives so "Express vs NestJS" and "Drizzle vs Prisma" never relitigate in a PR.
+
+- **`docs/adr/ADR-006-backend-stack.md`** — Context tied to ADR-001 (17 modules × 4 layers needs real DI) + ADR-002 (Python carve-out for ML) + ADR-003 (BullMQ rides the same Redis). Choices: (1) NestJS 11 / rejected plain-Fastify + tsyringe; (2) Fastify adapter / rejected Express (slower); (3) Prisma 5 / rejected Drizzle (PostGIS+pgvector integration too DIY today); (4) Python 3.12 + FastAPI + Ray Serve / rejected ONNX-Runtime-in-Node (NLLB quality loss + Whisper streaming pain); (5) BullMQ on Redis / rejected Temporal (heavier ops; migrate per-workflow later if replay required). Binding consequences: every module is a Nest module; all DB access through Prisma or `GeoQueries`; ai-service mTLS-only internal; BullMQ queues env-namespaced via `@app/cache`; Temporal is a per-workflow ADR trigger, not a wholesale switch.
+- **`docs/adr/README.md`** — index row for ADR-006.
+
+**Files created** (1) — `docs/adr/ADR-006-backend-stack.md`.
+**Files edited** (2) — `docs/adr/README.md`, `PROGRESS.md`.
+**Dependencies** — none.
+
+**Verification**
+
+Acceptance: "5 choices, 5 rejected alternatives." ✅ — exactly 5 `### N. <Layer>` sections, each with a **Chosen** + **Rejected alternative** paragraph, summary table for grep-ability.
+
+**Acceptance criteria**
+
+- ✅ NestJS 11 + Fastify + Prisma 5 + Python 3.12 FastAPI + BullMQ all locked.
+- ✅ One rejected alternative per choice with the specific reason (not generic "more complex").
+- ✅ Rationale includes the migration trigger for at least the Temporal decision (deterministic-replay-needed-for-billing).
+
+**Notes**
+
+- Chapter-8 now 2/4: ADR-005 (frontend), ADR-006 (backend). ADR-007 (data) + ADR-008 (AI) remain.
+- Several binding consequences re-encode rules that already live in CLAUDE.md (rule 11 — PostGIS via `GeoQueries`, rule 13 — no network inside `prisma.$transaction`). Having them in an ADR means re-interpretation requires a superseding ADR, not just a PR comment thread.
 
 ---
 
