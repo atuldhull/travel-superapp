@@ -12,16 +12,61 @@
 
 | Counter             | Value                                                                                  |
 | ------------------- | -------------------------------------------------------------------------------------- |
-| Prompts completed   | 21                                                                                     |
+| Prompts completed   | 22                                                                                     |
 | Prompts in progress | 0                                                                                      |
 | Prompts blocked     | 0                                                                                      |
-| Last prompt         | `[IV.18.1.18]`                                                                         |
+| Last prompt         | `[II.7.3]`                                                                             |
 | Last commit date    | 2026-04-19                                                                             |
-| Phase               | Phase 0 — Foundation (25-assertion aggregate smoke suite + CI gate; 64/64 tests green) |
+| Phase               | Phase 0 — Foundation (Chapter-7 complete: all 4 extracted-service contracts published) |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [II.7.3] — Extracted-service contracts (4 docs)
+
+**Date:** 2026-04-19 · **Status:** DONE · **Kind:** Design · **Playbook §** 7.3
+
+**What was done**
+
+Finishes Chapter 7. One contract doc per extracted service — all four of them — each covering the four sections the prompt mandates: **transport · endpoints/topics · SLO · failure/degradation**. Contracts are the out-of-process counterpart to ADR-004 (intra-api rule) + context-map (intra-api shape) + package-manifest (cross-app shape).
+
+- **`docs/services/README.md`** — index table mapping each service to its contract + stack + role. Commits rule: any contract change is a same-commit edit of the doc AND the matching `@app/shared-types` schemas.
+- **`docs/services/ai-service/contract.md`** — Python sidecar. gRPC primary (needed for Whisper STT streaming + typed .proto IDL), REST secondary. Endpoints: `/v1/translate`, `/v1/stt` (streaming), `/v1/fake-review/score`, `/v1/crowd/predict`, `/v1/embeddings`, `/v1/health`. SLOs range from 60 ms p95 (crowd predict, in-memory) to 900 ms p95 (translate cache-miss). Circuit breaker opens after 5 consecutive failures; per-endpoint fallback (identity-text, safe-optimistic, deferred-embeddings).
+- **`docs/services/media-service/contract.md`** — Node worker. BullMQ primary (every media job is fire-and-forget), internal HTTP secondary for `/v1/health` + admin reprocess. Queues: `media.image.transform`, `media.video.transcode`, `media.3d-tile.cache`. SLOs per-job (image 900 ms p95, video 45 s p95 for ≤30 s sources). Deterministic `sha256`-keyed outputs make retries idempotent by construction.
+- **`docs/services/notification-worker/contract.md`** — BullMQ + event-bus wildcard subscriber. Inbound: every outbound event from every context. Outbound: `Notifications.NotificationDispatched` / `NotificationFailed`. Tightest SLO in the whole system: `Safety.SosTriggered → push delivered` at p95 3 s. Per-channel retry policies + idempotency-key dedupe; `critical` priority bypasses quiet-hours.
+- **`docs/services/crawler-worker/contract.md`** — Scheduled scrapers (Playwright + cron). Three cron jobs: `prices.refresh.daily`, `events.scrape.hourly`, `osm.diff.6h`. SLOs measured as **freshness** (26 h for prices, 90 min for events, 7 h for OSM). Anti-SLO `rate_limit_breaches_total = 0` — a single breach loses us source API access. Feature flags disable misbehaving scrapers per-source.
+
+**Files created** (5) — `docs/services/README.md` + 4 `<name>/contract.md` files.
+**Files edited** (1) — `PROGRESS.md`.
+**Dependencies** — none. Pure docs.
+
+**Verification**
+
+Acceptance criterion: "4 contract docs, each with all 4 sections." ✅ — every contract has explicit `## 1. Transport` / `## 2. Endpoints/Topics` / `## 3. SLO` / `## 4. Failure / degradation mode` sections.
+
+Additional cross-checks:
+
+- Every ai-service endpoint has a complete Zod request + response schema (not placeholders).
+- Every BullMQ job has an `idempotencyKey` field — CLAUDE.md rule 13 friendly (never inside a DB transaction).
+- Every service cross-references [ADR-002](./docs/adr/ADR-002-service-extraction-triggers.md), [context-map](./docs/architecture/context-map.md), and [manifest](./docs/packages/manifest.md).
+- `Safety.SosTriggered → push` SLO matches context-map's "SosTriggered is the highest-priority outbound event" claim.
+- Crawler egress caps match Playbook §8.5 numbers (Overpass 10,000/day etc.).
+
+**Acceptance criteria**
+
+- ✅ 4 contract docs (ai / media / notification / crawler).
+- ✅ Each has 4 sections (transport, endpoints, SLO, failure).
+- ✅ Zod schemas on every request/response / job payload / event payload.
+- ✅ SLO is quantitative (numbers + percentiles + availability tiers), not hand-wavy.
+
+**Notes**
+
+- Chapter 7 is now complete: ADR-004 (rule) + context-map (modules) + package-manifest (TS packages) + these 4 service contracts (out-of-process). Reviewers have one authoritative answer to "can X import / call / publish to Y?" across the entire codebase.
+- The `@app/shared-types` package will own these Zod schemas when it's scaffolded. Until then these docs ARE the schemas — drifts between docs and code fail CI once the codegen gate lands.
+- `ai-service/contract.md` deliberately covers the gRPC ↔ REST hybrid — gRPC for Whisper STT streaming, REST for debuggable endpoints. That decision lives here (the contract) rather than spawning a fifth ADR.
 
 ---
 
