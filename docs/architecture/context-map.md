@@ -22,7 +22,7 @@
 
 ## Summary Table
 
-The 51-model ownership claim is reconciled in §"Model Ownership Index" at the bottom. The row order matches Playbook §7.2 strictly.
+The model-ownership claim (one owner per Prisma model, zero overlap) is reconciled in §"Model Ownership Index" at the bottom. The row order matches Playbook §7.2 strictly.
 
 | #   | Context               | Inbound (consumes)                                                                                 | Outbound (publishes)                                                                                   | Facade ports                                                                          | Owns (Prisma)                                          |
 | --- | --------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- | ------------------------------------------------------ |
