@@ -10,18 +10,59 @@
 
 ## Summary
 
-| Counter             | Value                                                                                     |
-| ------------------- | ----------------------------------------------------------------------------------------- |
-| Prompts completed   | 16                                                                                        |
-| Prompts in progress | 0                                                                                         |
-| Prompts blocked     | 0                                                                                         |
-| Last prompt         | `[II.7.1]`                                                                                |
-| Last commit date    | 2026-04-19                                                                                |
-| Phase               | Phase 0 — Foundation (bounded-context rule locked; ESLint pattern ready for [III.Eslint]) |
+| Counter             | Value                                                                                   |
+| ------------------- | --------------------------------------------------------------------------------------- |
+| Prompts completed   | 17                                                                                      |
+| Prompts in progress | 0                                                                                       |
+| Prompts blocked     | 0                                                                                       |
+| Last prompt         | `[II.7.2]`                                                                              |
+| Last commit date    | 2026-04-19                                                                              |
+| Phase               | Phase 0 — Foundation (context map published — every Prisma model has exactly one owner) |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [II.7.2] — Bounded-context map: events, facade ports, owned Prisma models
+
+**Date:** 2026-04-19 · **Status:** DONE · **Kind:** Design · **Playbook §** 7.2
+
+**What was done**
+
+Operationalises [ADR-004](./docs/adr/ADR-004-bounded-contexts.md) by publishing the single authoritative context map for all 17 modules in Playbook §7.2. Reviewers grep this doc during any PR that touches `prisma/schema.prisma`, adds an event name, or adds a facade port.
+
+- **`docs/architecture/context-map.md`** — one row per context (17 rows) covering four dimensions: inbound events consumed, outbound events published, facade ports exposed, Prisma models owned. Complementary per-context detail section explains non-obvious dependencies (Safety's rich event surface, Live's cross-context fan-in, Notifications being a wildcard subscriber, etc.). Closes with a **Model Ownership Index** — 43 models, 43 single-owner rows, 0 conflicts — which is the acceptance artefact this prompt is judged on.
+- Explicit naming-convention section: event names are `<Publisher>.<Aggregate><Verb>` in PascalCase past tense; facade ports are `<Subject><Verb>Port` and live at `apps/api/src/modules/<context>/interface/facade/`. Matches ADR-004's rule verbatim.
+- Flags the **`Event` ↔ domain-event name collision** explicitly (Playbook uses `Event` for the Events & Culture aggregate; we use `CulturalEvent` in prose but keep the Prisma model name as-is per source-of-truth rule).
+- Translation + Analytics are called out as the two contexts that intentionally own zero models (stateless proxy and pure event sink respectively).
+
+**Files created** (1) — `docs/architecture/context-map.md`.
+**Files edited** (1) — `PROGRESS.md` (this entry).
+**Dependencies** — none. Pure docs.
+
+**Verification**
+
+Acceptance criterion: "every Prisma model from §12 appears under exactly one owner." ✅ — reconciled in the Model Ownership Index at the bottom of the doc.
+
+Cross-checked against:
+
+- Playbook §7.2 (Key entities column per context) — 43 entities across 15 stateful contexts. All present.
+- Playbook §12.1 example models (`Trip`, `PlaceEmbedding`) — present under Trip Planning + Places Catalog respectively.
+- Playbook §12.4 required indexes — `Trip`, `Session`, `CrimeIncident`, `NotificationLog`, `User` all present under owners whose index-column ownership matches.
+
+**Acceptance criteria**
+
+- ✅ Context map covers 17 contexts.
+- ✅ Each context has: inbound events, outbound events, ports, owned Prisma models.
+- ✅ Every Prisma model from §12 (and §7.2) has exactly one owner.
+
+**Notes**
+
+- This doc is the one reviewers grep during a schema PR — no new Prisma model lands without a row here.
+- `[II.7.3]` (service contracts for 4 extracted services) and `[II.7.4]` (shared-package manifest) are the natural follow-ups. Together the three docs (ADR-004 + context map + package manifest) define "who may import whom" across the entire codebase.
+- The forthcoming `@app/events` package ([IV.18.1.9]) reads the event-name list from this doc — any event added there must first appear in this doc.
 
 ---
 
