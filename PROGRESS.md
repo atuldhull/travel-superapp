@@ -10,18 +10,55 @@
 
 ## Summary
 
-| Counter             | Value                                                                                        |
-| ------------------- | -------------------------------------------------------------------------------------------- |
-| Prompts completed   | 20                                                                                           |
-| Prompts in progress | 0                                                                                            |
-| Prompts blocked     | 0                                                                                            |
-| Last prompt         | `[IV.18.1.17]`                                                                               |
-| Last commit date    | 2026-04-19                                                                                   |
-| Phase               | Phase 0 — Foundation (helmet + cors + strict CSP with nonces; every §13 header live in prod) |
+| Counter             | Value                                                                                  |
+| ------------------- | -------------------------------------------------------------------------------------- |
+| Prompts completed   | 21                                                                                     |
+| Prompts in progress | 0                                                                                      |
+| Prompts blocked     | 0                                                                                      |
+| Last prompt         | `[IV.18.1.18]`                                                                         |
+| Last commit date    | 2026-04-19                                                                             |
+| Phase               | Phase 0 — Foundation (25-assertion aggregate smoke suite + CI gate; 64/64 tests green) |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.1.18] — Phase-0 smoke suite + CI gate
+
+**Date:** 2026-04-19 · **Status:** DONE · **Kind:** Build · **Playbook §** 18.1 [0.18]
+
+**What was done**
+
+Capstone for Phase 0. A single Jest file now re-asserts one representative acceptance criterion per shipped Phase-0 prompt, and a GitHub Action runs it on every PR and push-to-main. A regression anywhere in the foundation breaks this one file.
+
+- **`apps/api/test/smoke/phase-0.smoke.ts`** — 25-assertion aggregate organised by prompt ID. Covers: CLAUDE.md + the 13 hard constraints; monorepo scaffold files; all 4 ADRs + context map + package manifest; Makefile + .env.example + docs/env.md; Zod env validation (reject-on-missing + CORS_ORIGINS presence); `@app/errors` contract (toJSON never leaks stack, `isDomainError` type guard, `DomainError.context` frozen); `@app/logger` (Pino shape, `runWithTraceContext` propagation); health probes (/live shape, /ready with 3 deps up via mocks, /startup 200); DomainError JSON shape relied on by filters; `HealthCheckError` terminus signal; §13 security headers + per-request CSP nonce uniqueness + `parseCorsOrigins`. Runs against a Nest app booted in **prod mode** so HSTS + Trusted Types + upgrade-insecure-requests are exercised.
+- **`apps/api/jest.config.cjs`** — extended `testMatch` to pick up `*.smoke.ts` alongside `*.spec.ts` / `*.e2e-spec.ts`.
+- **`.github/workflows/phase-0-smoke.yml`** — CI gate. Runs on `pull_request` and `push` to `main`, plus manual dispatch. Steps: checkout → pnpm 9.12.3 → Node 22 → `pnpm install --frozen-lockfile` → `pnpm turbo run build --filter=@app/config --filter=@app/errors --filter=@app/logger` → `npx jest test/smoke/phase-0.smoke.ts --ci --runInBand`. Seeds the minimum env (mirrors `apps/api/test/setup.ts`) so indicators (which are mocked in the smoke itself) don't need a real Docker stack. `concurrency` cancels in-progress runs on push; `timeout-minutes: 10` hard-caps.
+- **Scope-honest note:** the broader `ci.yml` (lint + typecheck + full jest matrix + Docker Compose integration) is a separate prompt. This workflow is deliberately narrow — it gates the Phase-0 → Phase-1 boundary, not every PR.
+
+**Files created** (2) — `apps/api/test/smoke/phase-0.smoke.ts`, `.github/workflows/phase-0-smoke.yml`.
+**Files edited** (2) — `apps/api/jest.config.cjs`, `PROGRESS.md`.
+**Dependencies** — none.
+
+**Verification**
+
+- `pnpm --filter=api typecheck` green.
+- `npx jest test/smoke/phase-0.smoke.ts` — **25/25 pass**, every describe block lit.
+- Full api suite — **7 suites, 64/64 tests**, no regression from the earlier 39/39.
+
+**Acceptance criteria**
+
+- ✅ Single Jest file runs every Phase-0 AC.
+- ✅ Failing any AC breaks the smoke suite (verified by construction — each assertion targets exactly one AC).
+- ✅ GitHub Action gate in place; documented entry point for the Phase-0 → Phase-1 graduation condition.
+
+**Notes**
+
+- The smoke MUST stay in sync with every new Phase-0 prompt. The current file has one `describe` per prompt ID so adding a new AC block is a one-block edit.
+- The CI workflow mocks Postgres / Redis / Meilisearch indicators — it does NOT stand up Docker Compose. If we want a service-matrix gate (real Postgres + Redis + Meili), that's a separate workflow with `services:` entries.
+- The smoke inherits apps/api's dev server reliance on `@Inject(Token)` decorators on constructor params — the tsx decorator-metadata caveat from `[IV.18.1.16]` still applies to any new indicator added here.
 
 ---
 
