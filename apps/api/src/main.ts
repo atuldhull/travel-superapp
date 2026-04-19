@@ -29,6 +29,7 @@ import { AppNestLoggerService, createLogger } from '@app/logger';
 import { AppModule } from './app.module';
 import { AllExceptionFilter } from './common/filters/all-exception.filter';
 import { DomainExceptionFilter } from './common/filters/domain-exception.filter';
+import { registerSecurity } from './common/security/security.register';
 
 const bootLog = createLogger('bootstrap');
 
@@ -68,7 +69,12 @@ async function bootstrap(): Promise<void> {
     exclude: ['health', 'health/(.*)'],
   });
 
-  // 6. Shutdown hooks so SIGTERM drains in-flight requests cleanly (Fly.io / k8s).
+  // 6. HTTP perimeter: helmet (CSP + COOP/COEP + HSTS + …) + CORS +
+  //    Permissions-Policy. Registered before listen so every route —
+  //    including /health/* — gets the same response-side hardening.
+  await registerSecurity(app, env);
+
+  // 7. Shutdown hooks so SIGTERM drains in-flight requests cleanly (Fly.io / k8s).
   app.enableShutdownHooks();
 
   await app.listen(env.PORT, '0.0.0.0');
