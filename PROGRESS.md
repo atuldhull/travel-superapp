@@ -10,18 +10,63 @@
 
 ## Summary
 
-| Counter             | Value                                                                                       |
-| ------------------- | ------------------------------------------------------------------------------------------- |
-| Prompts completed   | 25                                                                                          |
-| Prompts in progress | 0                                                                                           |
-| Prompts blocked     | 0                                                                                           |
-| Last prompt         | `[II.8.3]`                                                                                  |
-| Last commit date    | 2026-04-19                                                                                  |
-| Phase               | Phase 0 — Foundation (ADR-007 locks the data layer; pgvector split trigger is quantitative) |
+| Counter             | Value                                                                                |
+| ------------------- | ------------------------------------------------------------------------------------ |
+| Prompts completed   | 26                                                                                   |
+| Prompts in progress | 0                                                                                    |
+| Prompts blocked     | 0                                                                                    |
+| Last prompt         | `[II.8.4]`                                                                           |
+| Last commit date    | 2026-04-19                                                                           |
+| Phase               | Phase 0 — Foundation (Chapter-8 complete: frontend + backend + data + AI all locked) |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [II.8.4] — ADR-008 AI-stack lock
+
+**Date:** 2026-04-19 · **Status:** DONE · **Kind:** Design · **Playbook §** 21 + §22
+
+**What was done**
+
+Locks runtime AI. Playbook §22.3 is blunt: "you need caching + Haiku routing to be profitable below 5% Pro conversion." The ADR bakes both in + a fallback chain that survives an Anthropic outage.
+
+- **`docs/adr/ADR-008-ai-stack.md`** — 5 choices + 5 rejected alternatives:
+  1. Anthropic 3-tier router (Haiku/Sonnet/Opus) via a `TaskKind` enum / rejected single-model Sonnet-everywhere.
+  2. Self-hosted NLLB-200 / rejected Google Translate API.
+  3. Self-hosted Whisper small-v3 (streaming) / rejected Groq/Deepgram.
+  4. Self-hosted DistilBERT for fake-review / rejected Anthropic classification prompt.
+  5. Llama 3.1 70B reserved open-weight lane (not wired today) / rejected Mistral Large / Mixtral.
+- **Runtime routing table** mapped to the 6 `TaskKind`s in the product (itinerary gen, live re-plan, chat suggest, trip summary, agent safety check, ambiguity resolution) — each keyed to a model with the specific reason (margin-critical for Haiku, ambiguity-resolution for Opus, etc.).
+- **Prompt-caching strategy** ported from Playbook §21.2 to runtime: 3 cache layers (5-min ephemeral per-turn / 1-hour ephemeral per-session / 1-hour ephemeral per-trip). `ai_cache_hit_ratio` is a tracked SLO at ≥ 60% / 14d.
+- **Fallback chain** when Anthropic is down: 1) primary call → 2) failover region → 3) OpenAI equivalent via `OPENAI_API_KEY` → 4) self-hosted Llama (when wired) → 5) template fallback (itinerary only) → 6) `AI_SERVICE_DEGRADED` domain error. Per-task matrix shows which levels apply. **Agent safety-check has an explicit fail-closed rule** — never silently approve on AI outage; the UI disables the action.
+- **`docs/adr/README.md`** — index row for ADR-008.
+
+**Files created** (1) — `docs/adr/ADR-008-ai-stack.md`.
+**Files edited** (2) — `docs/adr/README.md`, `PROGRESS.md`.
+**Dependencies** — none. (ai-service and `@app/ai` adapter implementation is `[IV.18.2.11]`.)
+
+**Verification**
+
+Acceptance criteria from prompt (three clauses):
+
+- ✅ **Model per task.** Runtime routing table lists all 6 `TaskKind`s with a named model + rationale.
+- ✅ **Cache layers listed.** 3 layers (L1 5-min per-turn; L2 1-hr per-session; L3 1-hr per-trip) with token budgets per block.
+- ✅ **Fallback chain covers outage.** 6-step chain with per-task applicability matrix; agent-safety fail-closed rule called out.
+
+**Acceptance criteria**
+
+- ✅ Layered Anthropic tier (Haiku / Sonnet / Opus) + self-hosted NLLB / Whisper / DistilBERT / Llama 3.1 all covered.
+- ✅ Prompt-caching strategy documented per §21.2.
+- ✅ Fallback chain for Anthropic outage documented.
+
+**Notes**
+
+- **Chapter-8 trilogy of stack-lock ADRs complete.** ADR-005 (frontend) + ADR-006 (backend) + ADR-007 (data) + ADR-008 (AI). Any non-trivial architectural drift now requires a superseding ADR, not a PR-comment thread.
+- Routing table deliberately restraints Opus to safety-check + ambiguity-resolution — matches the margin math in §22.3 more than the "Opus is the best" instinct.
+- **Fail-closed on safety** is the most important single line in the ADR: if the agent-safety prompt can't reach any model, the UI disables the action rather than silently approving. That's a product / liability decision dressed as an architecture decision, and it needs to live somewhere permanent.
 
 ---
 
