@@ -10,18 +10,61 @@
 
 ## Summary
 
-| Counter             | Value                                                                                   |
-| ------------------- | --------------------------------------------------------------------------------------- |
-| Prompts completed   | 17                                                                                      |
-| Prompts in progress | 0                                                                                       |
-| Prompts blocked     | 0                                                                                       |
-| Last prompt         | `[II.7.2]`                                                                              |
-| Last commit date    | 2026-04-19                                                                              |
-| Phase               | Phase 0 — Foundation (context map published — every Prisma model has exactly one owner) |
+| Counter             | Value                                                                                       |
+| ------------------- | ------------------------------------------------------------------------------------------- |
+| Prompts completed   | 18                                                                                          |
+| Prompts in progress | 0                                                                                           |
+| Prompts blocked     | 0                                                                                           |
+| Last prompt         | `[II.7.4]`                                                                                  |
+| Last commit date    | 2026-04-19                                                                                  |
+| Phase               | Phase 0 — Foundation (Chapter-7 trilogy complete: ADR-004 + context map + package manifest) |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [II.7.4] — Shared-package manifest: 10 cross-cutting packages + allow-lists
+
+**Date:** 2026-04-19 · **Status:** DONE · **Kind:** Design · **Playbook §** 7.4
+
+**What was done**
+
+Closes the Chapter-7 trilogy ([ADR-004](./docs/adr/ADR-004-bounded-contexts.md) + [context-map](./docs/architecture/context-map.md) + this manifest). ADR-004 says modules can't import across contexts; context-map says which module owns what; the manifest says which apps can import which `@app/*` packages — and crucially, which ones can NOT.
+
+- **`docs/packages/manifest.md`** — summary table of all 10 §7.4 packages (`@app/logger`, `@app/config`, `@app/auth`, `@app/errors`, `@app/observability`, `@app/events`, `@app/cache`, `@app/ratelimit`, `@app/validation`, `@app/testing`) × 7 consumer surfaces (api / workers / web / admin / mobile / ai-service / tests), with ✅ / ❌ / ⚠ allowance per cell. The `❌` column is called out as the binding part of the doc.
+- Per-package detail explaining **why** each allow-list is what it is. Two canonical examples: `@app/auth` — forbidden on web/admin/mobile because tokens never enter client-side JS (CLAUDE.md rule 12); `@app/config` — forbidden on web/admin because Next.js has its own `NEXT_PUBLIC_*` env story and leaking server-only secrets into a client bundle would be critical.
+- Per-package peer-dependency graph documented (`@app/auth` → `@app/logger` + `@app/config` + `@app/errors` + `@app/cache`, etc.). This prevents the accidental dep cycle an over-eager refactor would introduce.
+- Secondary table for the 6 _build-tooling_ packages that also live in `packages/` but aren't on §7.4's list (`@app/tsconfig`, `@app/eslint-config`, `@app/shared-types`, `@app/sdk`, `@app/ui`, `@app/mobile-ui`). Notable rule: `api` and `workers` MUST NOT depend on `@app/sdk` (the SDK is generated FROM their OpenAPI — would be a cycle).
+- Enforcement section names two CI layers: `dependency-cruiser` against `package.json` diffs (to be installed by `[III.Tooling]`) + ESLint `import/no-restricted-paths` zones extending the ADR-004 set.
+
+**Files created** (1) — `docs/packages/manifest.md`.
+**Files edited** (1) — `PROGRESS.md`.
+**Dependencies** — none. Pure docs; the dependency-cruiser rule wiring is a follow-up.
+
+**Verification**
+
+Acceptance criterion: "every package has an explicit allow-list." ✅ — summary table has a ✅ / ❌ / ⚠ entry for every (package × surface) pair. All 10 §7.4 packages accounted for; 7 surfaces named; no cell left blank.
+
+Cross-referenced against:
+
+- Playbook §7.4 — exact 10-package list preserved verbatim.
+- [ADR-004](./docs/adr/ADR-004-bounded-contexts.md) — doesn't conflict (ADR-004 is intra-api; this is package-level).
+- CLAUDE.md rule 12 (token storage) — `@app/auth` row cites it as rationale for the client-surface ban.
+- CLAUDE.md rule 9 (no console.log) — `@app/logger` row cites it.
+
+**Acceptance criteria**
+
+- ✅ All 10 §7.4 packages listed.
+- ✅ Each has purpose + public exports + allow-list + forbidden-list.
+- ✅ Every package has an explicit allow-list (the required part of the prompt).
+
+**Notes**
+
+- The manifest is authoritative; `dependency-cruiser` (follow-up) will read the "Forbidden" cells and fail CI on violation.
+- Chapter-7 trilogy now complete: ADR-004 (rule) + context-map (intra-api shape) + package-manifest (cross-app shape). Together they form the single authoritative answer to "can file X import from Y?"
+- Next Chapter-7 artefact is `[II.7.3]` (4 extracted-service contracts) — the out-of-process counterpart to this doc.
 
 ---
 
