@@ -10,18 +10,62 @@
 
 ## Summary
 
-| Counter             | Value                                                                                            |
-| ------------------- | ------------------------------------------------------------------------------------------------ |
-| Prompts completed   | 19                                                                                               |
-| Prompts in progress | 0                                                                                                |
-| Prompts blocked     | 0                                                                                                |
-| Last prompt         | `[IV.18.1.16]`                                                                                   |
-| Last commit date    | 2026-04-19                                                                                       |
-| Phase               | Phase 0 — Foundation (terminus health probes live against docker stack; Redis-kill flips /ready) |
+| Counter             | Value                                                                                        |
+| ------------------- | -------------------------------------------------------------------------------------------- |
+| Prompts completed   | 20                                                                                           |
+| Prompts in progress | 0                                                                                            |
+| Prompts blocked     | 0                                                                                            |
+| Last prompt         | `[IV.18.1.17]`                                                                               |
+| Last commit date    | 2026-04-19                                                                                   |
+| Phase               | Phase 0 — Foundation (helmet + cors + strict CSP with nonces; every §13 header live in prod) |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.1.17] — Security headers + CORS + strict CSP with per-request nonces
+
+**Date:** 2026-04-19 · **Status:** DONE · **Kind:** Build · **Playbook §** 18.1 [0.17] · **Playbook §** 13
+
+**What was done**
+
+Every response out of apps/api now carries the full Playbook §13 perimeter: strict CSP (with per-request nonces, Trusted Types, upgrade-insecure-requests in prod), COOP, COEP, CORP, Referrer-Policy, X-Frame-Options, X-Content-Type-Options, HSTS (prod only), and a tight Permissions-Policy denying 24 sensor/device classes. CORS is allow-listed by exact origin from the `CORS_ORIGINS` env var — deny-by-default when the list is empty.
+
+- **`packages/config/src/schema.ts`** — added `CORS_ORIGINS: z.string().default('')`. Comma-separated exact origins; no wildcards.
+- **`.env.example` + `docs/env.md`** — documented the new var; dev-commented example (`http://localhost:3000,http://localhost:3001`) for when web/admin come online.
+- **`apps/api/src/common/security/security.register.ts`** — single async registrar that wires `@fastify/helmet` (with `enableCSPNonces: true`) + `@fastify/cors` + a `Permissions-Policy` `onSend` hook. Branches on `NODE_ENV === 'production'` to enable HSTS + Trusted Types + upgrade-insecure-requests only in prod (localhost HSTS is a footgun; Trusted Types breaks some dev tooling). Exports `parseCorsOrigins(raw)` as a plain, testable function.
+- **`apps/api/src/main.ts`** — new step 6: `await registerSecurity(app, env)` after filters, before `enableShutdownHooks()`, so every route (including `/health/*`) inherits the perimeter.
+- **`apps/api/test/security/headers.e2e-spec.ts`** — 8-test matrix: `parseCorsOrigins` unit tests, prod-mode baseline, per-request-nonce uniqueness, dev-mode (no HSTS, no Trusted Types), CORS deny-by-default (empty allow-list), CORS allowed-origin preflight reflection, CORS disallowed-origin suppression.
+- **`package.json`** (root) — `pnpm.overrides.fastify = "5.8.5"` to dedupe fastify across `@nestjs/platform-fastify` and `@fastify/*` which had resolved to 5.8.4 and 5.8.5 respectively. Type errors disappeared after `pnpm install`.
+
+**Files created** (2) — `apps/api/src/common/security/security.register.ts`, `apps/api/test/security/headers.e2e-spec.ts`.
+**Files edited** (5) — `apps/api/src/main.ts`, `apps/api/package.json`, `packages/config/src/schema.ts`, `.env.example`, `docs/env.md`, `package.json`, `pnpm-lock.yaml`.
+**Dependencies** — `@fastify/helmet@13.0.2`, `@fastify/cors@11.2.0`.
+
+**Verification**
+
+- **Typecheck** — `pnpm --filter=api typecheck` green (only after the fastify dedupe override).
+- **Tests** — `39/39 pass` (8 new across prod / dev / CORS / utility). Per-request-nonce test runs two back-to-back requests and asserts the CSP nonces differ.
+- **Live smoke (`NODE_ENV=production`, `CORS_ORIGINS=https://travel.example`, port 3031):**
+  - `curl -I /health/live` prints every expected header: `Content-Security-Policy` (with `default-src 'none'`, script/style nonces, `require-trusted-types-for 'script'`, `upgrade-insecure-requests`), `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Embedder-Policy: require-corp`, `Cross-Origin-Resource-Policy: same-origin`, `Referrer-Policy: no-referrer`, `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-DNS-Prefetch-Control: off`, full `Permissions-Policy` with 24 disabled features.
+  - `OPTIONS /api/v1/test` preflight with `Origin: https://travel.example` → `access-control-allow-origin: https://travel.example` + credentials + 600s max-age.
+  - Same preflight with `Origin: https://evil.example` → no `access-control-allow-origin` header. Browser blocks.
+
+**Acceptance criteria**
+
+- ✅ Every header present in prod mode.
+- ✅ Test matrix passes (8/8 new, 39/39 total).
+- ✅ Per-request CSP nonces (different across two back-to-back requests).
+- ✅ CORS allow-list driven by `CORS_ORIGINS` env var.
+- ✅ Trusted Types + COOP + COEP + Permissions-Policy all asserted.
+
+**Notes**
+
+- **Fastify dedupe:** `@nestjs/platform-fastify` pulled fastify 5.8.4 as a transitive, while the fresh `@fastify/helmet` + `@fastify/cors` pulled 5.8.5. That gave TS two separate `FastifyInstance` types and plugin registration failed to typecheck. Pinning with a root-level `pnpm.overrides.fastify = "5.8.5"` + reinstall produced a single fastify in `node_modules/.pnpm`. Future @fastify/\* installs might nudge this again — watch for it and re-pin if it recurs.
+- **Dev vs prod branching:** HSTS / Trusted Types / upgrade-insecure-requests intentionally skipped in dev because (a) HSTS over `localhost` pins browsers to https on that origin and makes `http://localhost` unreachable; (b) Trusted Types breaks react-devtools / HMR tooling; (c) upgrade-insecure-requests downgrades http→https which breaks plain-http dev servers.
+- **`enableCSPNonces: true`** is the `@fastify/helmet` feature that generates `reply.cspNonce.{script, style}` per request and injects the nonce into the CSP header automatically. No manual hook needed.
 
 ---
 
