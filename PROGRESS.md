@@ -10,18 +10,63 @@
 
 ## Summary
 
-| Counter             | Value                                                                       |
-| ------------------- | --------------------------------------------------------------------------- |
-| Prompts completed   | 24                                                                          |
-| Prompts in progress | 0                                                                           |
-| Prompts blocked     | 0                                                                           |
-| Last prompt         | `[II.8.2]`                                                                  |
-| Last commit date    | 2026-04-19                                                                  |
-| Phase               | Phase 0 — Foundation (ADR-006 locks the backend stack; data + AI ADRs next) |
+| Counter             | Value                                                                                       |
+| ------------------- | ------------------------------------------------------------------------------------------- |
+| Prompts completed   | 25                                                                                          |
+| Prompts in progress | 0                                                                                           |
+| Prompts blocked     | 0                                                                                           |
+| Last prompt         | `[II.8.3]`                                                                                  |
+| Last commit date    | 2026-04-19                                                                                  |
+| Phase               | Phase 0 — Foundation (ADR-007 locks the data layer; pgvector split trigger is quantitative) |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [II.8.3] — ADR-007 data-layer lock
+
+**Date:** 2026-04-19 · **Status:** DONE · **Kind:** Design · **Playbook §** 8.3
+
+**What was done**
+
+Locks "one Postgres for relational + geo + vectors" + Redis for cache/queue/streams + Meilisearch for full-text. Key non-obvious contribution: the **quantitative vector-split trigger** the prompt's acceptance criterion demands.
+
+- **`docs/adr/ADR-007-data-layer.md`** — 5 choices + 5 rejected alternatives:
+  1. Postgres 16 / rejected CockroachDB (multi-region & ext-ecosystem regressions).
+  2. PostGIS in same DB / rejected Elasticsearch geo (JOIN-with-relational wins).
+  3. pgvector in same DB / rejected Pinecone — with the quantitative split trigger below.
+  4. Redis 7 (one cluster, namespaced) / rejected "Memcached for cache, Redis for rest".
+  5. Meilisearch / rejected `pg_trgm` + `tsvector`.
+- **Vector split trigger (quantitative):** migrate off pgvector when, over a rolling 14-day window, **either** `PlaceEmbedding > 5,000,000 rows` **or** `p95 > 150 ms for k≤50` measured at the `VectorQueries` adapter layer. Crossing the threshold without opening the superseding ADR is a policy violation.
+- **Binding consequences** promote two pre-existing CLAUDE rules (11 — PostGIS via `GeoQueries`; Redis key namespacing via `@app/cache`) to ADR-level, so relaxing them requires a superseding ADR.
+- **`docs/adr/README.md`** — index row for ADR-007.
+
+**Files created** (1) — `docs/adr/ADR-007-data-layer.md`.
+**Files edited** (2) — `docs/adr/README.md`, `PROGRESS.md`.
+**Dependencies** — none.
+
+**Verification**
+
+Acceptance: "vector-split trigger is quantitative (embeddings row count + query p95)." ✅ — 5M rows OR 150 ms p95 over a 14-day window, both numbers named at the `VectorQueries` layer so they're enforceable.
+
+Cross-checks:
+
+- Five choices × five rejected alternatives; summary table for grep.
+- PostGIS extension name is correct (`postgis`), pgvector extension name is the gotcha (`vector`, not `pgvector` — called out in the text).
+- Redis decision ties back to [ADR-003](./docs/adr/ADR-003-event-backbone.md) + [ADR-006](./docs/adr/ADR-006-backend-stack.md) so this ADR formalises the "one Redis for five things" posture without contradicting either sibling.
+
+**Acceptance criteria**
+
+- ✅ Postgres 16 + PostGIS + pgvector + Redis 7 (+Streams +BullMQ) + Meilisearch all locked.
+- ✅ "One Postgres for relational + geo + vectors" rationale documented.
+- ✅ Vector-split trigger is quantitative with both named metrics.
+
+**Notes**
+
+- Chapter-8 now 3/4: ADR-005 (frontend), ADR-006 (backend), ADR-007 (data). ADR-008 (AI stack) is the last one (`[II.8.4]`).
+- The vector-split threshold numbers (5M / 150 ms) are conservative for IVFFlat + commodity Postgres; we'd likely hit the latency threshold well before the row count threshold.
 
 ---
 
