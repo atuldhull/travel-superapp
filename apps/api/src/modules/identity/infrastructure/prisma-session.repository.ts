@@ -30,6 +30,7 @@ export class PrismaSessionRepository implements SessionRepository {
         deviceId: input.deviceId,
         userAgent: input.userAgent,
         ipHash: input.ipHash,
+        deviceFingerprint: input.deviceFingerprint,
         expiresAt: input.expiresAt,
       },
     });
@@ -57,6 +58,7 @@ export class PrismaSessionRepository implements SessionRepository {
           deviceId: next.deviceId,
           userAgent: next.userAgent,
           ipHash: next.ipHash,
+          deviceFingerprint: next.deviceFingerprint,
           expiresAt: next.expiresAt,
         },
       });
@@ -79,6 +81,18 @@ export class PrismaSessionRepository implements SessionRepository {
     });
     return result.count;
   }
+
+  async listActiveForUser(userId: string): Promise<readonly Session[]> {
+    const rows = await this.prisma.session.findMany({
+      where: {
+        userId,
+        revokedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      orderBy: { issuedAt: 'asc' },
+    });
+    return rows.map(toDomain);
+  }
 }
 
 function toDomain(row: PrismaSession): Session {
@@ -89,6 +103,7 @@ function toDomain(row: PrismaSession): Session {
     deviceId: row.deviceId,
     userAgent: row.userAgent,
     ipHash: row.ipHash,
+    deviceFingerprint: row.deviceFingerprint,
     issuedAt: row.issuedAt,
     expiresAt: row.expiresAt,
     revokedAt: row.revokedAt,

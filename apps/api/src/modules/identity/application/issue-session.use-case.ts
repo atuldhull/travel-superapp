@@ -25,9 +25,21 @@
  */
 import { createHash } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
+import { createLogger } from '@app/logger';
 import type { Session } from '../domain/session.entity';
 import { SESSION_REPOSITORY, type SessionRepository } from './ports/session.repository';
 import { TOKEN_SERVICE, type TokenService } from './ports/token.service';
+
+const log = createLogger('identity.issue');
+
+/**
+ * Cap on simultaneously-active sessions per user. When an 11th login
+ * arrives, the oldest active session is revoked — users keep a
+ * rolling window of their most recent devices. A single per-user
+ * concurrency cap is enough for v1; per-device-class caps (e.g. 3
+ * web + 2 mobile) are a follow-up if product signals demand it.
+ */
+export const MAX_SESSIONS_PER_USER = 10;
 
 export interface IssueSessionCommand {
   readonly userId: string;
@@ -73,8 +85,28 @@ export class IssueSessionUseCase {
       deviceId: cmd.deviceId,
       userAgent: cmd.userAgent,
       ipHash: cmd.ipHash,
+      deviceFingerprint: cmd.deviceFingerprint,
       expiresAt: refresh.expiresAt,
     });
+
+    // Concurrency cap — after the new row lands, count active
+    // sessions for this user. If the cap is exceeded, revoke the
+    // oldest ones (keeping the most recent MAX_SESSIONS_PER_USER).
+    // Race condition note: two concurrent logins can both see count
+    // == MAX and each create. Worst-case we end up with MAX + 1
+    // briefly and the next login trims. Not worth a serializable
+    // transaction for v1.
+    const active = await this.sessions.listActiveForUser(cmd.userId);
+    if (active.length > MAX_SESSIONS_PER_USER) {
+      const toRevoke = active.slice(0, active.length - MAX_SESSIONS_PER_USER);
+      for (const old of toRevoke) {
+        await this.sessions.revoke(old.id);
+      }
+      log.info(
+        { userId: cmd.userId, revoked: toRevoke.length, cap: MAX_SESSIONS_PER_USER },
+        'session_concurrency_cap_enforced',
+      );
+    }
 
     const access = await this.tokens.issueAccessToken({
       userId: cmd.userId,
