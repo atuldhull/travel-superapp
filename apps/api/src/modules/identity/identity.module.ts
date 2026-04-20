@@ -15,6 +15,7 @@
 import { Module } from '@nestjs/common';
 import { IssueSessionUseCase } from './application/issue-session.use-case';
 import { LoginUseCase } from './application/login.use-case';
+import { DisableMfaUseCase, SetupMfaUseCase, VerifyMfaUseCase } from './application/mfa.use-case';
 import { SESSION_REPOSITORY } from './application/ports/session.repository';
 import { TOKEN_SERVICE } from './application/ports/token.service';
 import { USER_REPOSITORY } from './application/ports/user.repository';
@@ -24,6 +25,7 @@ import { RevokeSessionUseCase } from './application/revoke-session.use-case';
 import { JwtTokenService } from './infrastructure/jwt-token.service';
 import { PrismaSessionRepository } from './infrastructure/prisma-session.repository';
 import { PrismaUserRepository } from './infrastructure/prisma-user.repository';
+import { TotpService } from './infrastructure/totp.service';
 import { AuthController } from './interface/auth.controller';
 
 @Module({
@@ -33,12 +35,16 @@ import { AuthController } from './interface/auth.controller';
     { provide: SESSION_REPOSITORY, useClass: PrismaSessionRepository },
     { provide: USER_REPOSITORY, useClass: PrismaUserRepository },
     { provide: TOKEN_SERVICE, useClass: JwtTokenService },
+    TotpService,
     // Use-cases.
     IssueSessionUseCase,
     RegisterUseCase,
     LoginUseCase,
     RefreshSessionUseCase,
     RevokeSessionUseCase,
+    SetupMfaUseCase,
+    VerifyMfaUseCase,
+    DisableMfaUseCase,
   ],
   exports: [SESSION_REPOSITORY, USER_REPOSITORY, TOKEN_SERVICE, RefreshSessionUseCase],
 })

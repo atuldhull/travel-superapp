@@ -14,6 +14,13 @@ export interface UserRecord {
   readonly passwordHash: string | null;
   readonly role: UserRole;
   readonly displayName: string;
+  readonly mfaEnabled: boolean;
+  /**
+   * base32-encoded TOTP shared secret. Null when MFA is off. Holds
+   * a provisional value between `/mfa/setup` and `/mfa/verify` —
+   * `mfaEnabled` is what LoginUseCase actually gates on.
+   */
+  readonly mfaSecret: string | null;
 }
 
 export interface CreateUserInput {
@@ -27,6 +34,25 @@ export interface UserRepository {
   create(input: CreateUserInput): Promise<UserRecord>;
   findByEmailHash(emailHash: string): Promise<UserRecord | null>;
   findById(id: string): Promise<UserRecord | null>;
+
+  /**
+   * Stage a TOTP secret during `/mfa/setup` — the user has scanned
+   * the QR but hasn't proved they can generate codes yet. Keeps
+   * `mfaEnabled` at its current value.
+   */
+  setMfaSecret(userId: string, base32Secret: string): Promise<void>;
+
+  /**
+   * Flip `mfaEnabled` to true after `/mfa/verify` succeeds. The
+   * secret must already be staged by `setMfaSecret`.
+   */
+  confirmMfa(userId: string): Promise<void>;
+
+  /**
+   * Turn MFA off + drop the secret. Requires a valid code at the
+   * use-case layer (defence against session-hijack account takeover).
+   */
+  disableMfa(userId: string): Promise<void>;
 }
 
 export const USER_REPOSITORY = Symbol('UserRepository');

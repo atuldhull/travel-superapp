@@ -45,6 +45,27 @@ export class PrismaUserRepository implements UserRepository {
     if (!row || row.deletedAt !== null) return null;
     return toDomain(row);
   }
+
+  async setMfaSecret(userId: string, base32Secret: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { mfaSecret: base32Secret },
+    });
+  }
+
+  async confirmMfa(userId: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { mfaEnabled: true },
+    });
+  }
+
+  async disableMfa(userId: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { mfaEnabled: false, mfaSecret: null },
+    });
+  }
 }
 
 function toDomain(row: PrismaUser): UserRecord {
@@ -54,5 +75,7 @@ function toDomain(row: PrismaUser): UserRecord {
     passwordHash: row.passwordHash,
     role: row.role as UserRole,
     displayName: row.displayName,
+    mfaEnabled: row.mfaEnabled,
+    mfaSecret: row.mfaSecret,
   };
 }
