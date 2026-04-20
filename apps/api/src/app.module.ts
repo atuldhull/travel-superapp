@@ -19,9 +19,10 @@ import { DbModule } from './common/db/db.module';
 import { RateLimitGuard } from './common/rate-limit/rate-limit.guard';
 import { RateLimitModule } from './common/rate-limit/rate-limit.module';
 import { HealthModule } from './health/health.module';
+import { IdentityModule } from './modules/identity/identity.module';
 
 @Module({
-  imports: [AppConfigModule.forRoot(), DbModule, RateLimitModule, HealthModule],
+  imports: [AppConfigModule.forRoot(), DbModule, RateLimitModule, HealthModule, IdentityModule],
   providers: [
     AppNestLoggerService,
     // Rate-limit every route by default. Routes with @SkipThrottle() or
