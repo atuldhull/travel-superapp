@@ -109,6 +109,32 @@ export class RefreshSessionUseCase {
       throw new UnauthorizedError('Session identity mismatch', {}, 'REFRESH_SID_MISMATCH');
     }
 
+    // 5b. Device-fingerprint binding. Stored fingerprint was computed
+    //     at issuance as sha256(pepper + UA). If the current request
+    //     derives a different fingerprint, the refresh is coming from
+    //     a different user-agent than the one that logged in — treat
+    //     as theft and cascade-revoke. Guard against legacy rows
+    //     that predate this column (`deviceFingerprint === null`):
+    //     those get grandfathered through without a check.
+    if (row.deviceFingerprint !== null && row.deviceFingerprint !== cmd.deviceFingerprint) {
+      const revoked = await this.sessions.revokeAllForUser(row.userId);
+      log.warn(
+        {
+          userId: row.userId,
+          sessionId: row.id,
+          revoked,
+          storedDfp: row.deviceFingerprint.slice(0, 8),
+          presentedDfp: cmd.deviceFingerprint.slice(0, 8),
+        },
+        'refresh_device_fingerprint_mismatch',
+      );
+      throw new UnauthorizedError(
+        'Refresh token presented from a different device — all sessions revoked',
+        { userId: row.userId, sessionsRevoked: revoked },
+        'REFRESH_DFP_MISMATCH',
+      );
+    }
+
     // Confirm the user still exists + isn't soft-deleted.
     const user = await this.users.findById(row.userId);
     if (!user) {
@@ -136,6 +162,7 @@ export class RefreshSessionUseCase {
       deviceId: cmd.deviceId,
       userAgent: cmd.userAgent,
       ipHash: cmd.ipHash,
+      deviceFingerprint: cmd.deviceFingerprint,
       expiresAt: newRefresh.expiresAt,
     });
 

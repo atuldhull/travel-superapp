@@ -22,6 +22,12 @@ export interface CreateSessionInput {
   readonly deviceId: string | null;
   readonly userAgent: string | null;
   readonly ipHash: string | null;
+  /**
+   * sha256(pepper + userAgent). Stored at issuance so `/refresh` can
+   * compare against a newly-derived fingerprint and detect a stolen
+   * token presented from a different user-agent.
+   */
+  readonly deviceFingerprint: string;
   readonly expiresAt: Date;
 }
 
@@ -58,6 +64,14 @@ export interface SessionRepository {
    * actually revoked, for audit logging.
    */
   revokeAllForUser(userId: string): Promise<number>;
+
+  /**
+   * Return every currently-active (not revoked, not expired) session
+   * for a user, ordered oldest-first. Used by `IssueSessionUseCase`
+   * to enforce the per-user concurrency cap — when length > N, the
+   * oldest (length - N) sessions are revoked.
+   */
+  listActiveForUser(userId: string): Promise<readonly Session[]>;
 }
 
 /** DI token — interface types erase at runtime so we need a value to inject on. */

@@ -168,17 +168,22 @@ model User {
 }
 
 model Session {
-  id             String    @id @default(cuid())
-  userId         String
-  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  refreshTokenH  String    @unique // sha256(refresh_token) — never store raw
-  deviceId       String?
-  device         Device?   @relation(fields: [deviceId], references: [id], onDelete: SetNull)
-  userAgent      String?
-  ipHash         String? // sha256(ip + pepper) — Playbook §13.4
-  issuedAt       DateTime  @default(now())
-  expiresAt      DateTime
-  revokedAt      DateTime?
+  id                 String    @id @default(cuid())
+  userId             String
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokenH      String    @unique // sha256(refresh_token) — never store raw
+  deviceId           String?
+  device             Device?   @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  userAgent          String?
+  ipHash             String? // sha256(ip + pepper) — Playbook §13.4
+  // sha256(pepper + userAgent) at issuance time. Compared against a
+  // freshly-computed fingerprint on every /refresh. Nullable only so
+  // rows inserted before this column existed don't break the schema.
+  // New rows always populate it. Added by [III.13.2] part 3.
+  deviceFingerprint  String?
+  issuedAt           DateTime  @default(now())
+  expiresAt          DateTime
+  revokedAt          DateTime?
 
   @@index([userId, revokedAt])
   @@index([expiresAt])

@@ -195,10 +195,16 @@ export class AuthController {
           .update(pepper + ip, 'utf8')
           .digest('hex')
       : null;
-    // Minimal fingerprint: sha256(pepper + ua + ip). A real mobile
-    // client will send a dedicated header (`X-Device-Id`) later.
+    // Device fingerprint = sha256(pepper + userAgent). Deliberately
+    // excludes IP — mobile clients roam between wifi and cellular,
+    // and locking sessions to an IP would force re-auth on every
+    // network change. UA catches the meaningful threat: a stolen
+    // refresh token presented from a completely different client
+    // (browser → curl, one app → another). A later prompt will
+    // promote this to a client-supplied `X-Device-Id` header once
+    // the mobile app plumbing lands.
     const deviceFingerprint = createHash('sha256')
-      .update(`${pepper}|${ua ?? ''}|${ip ?? ''}`, 'utf8')
+      .update(`${pepper}|${ua ?? ''}`, 'utf8')
       .digest('hex');
     // NB: `Session.deviceId` is a FK to `Device` — we don't auto-create
     // a Device row in this slice. A later prompt will introduce

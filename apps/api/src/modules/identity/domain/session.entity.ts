@@ -17,6 +17,12 @@ export interface Session {
   readonly deviceId: string | null;
   readonly userAgent: string | null;
   readonly ipHash: string | null;
+  /**
+   * sha256(pepper + userAgent) computed at issuance. Compared against
+   * a freshly-derived fingerprint on every `/refresh`. Nullable to
+   * match the Prisma column, but `IssueSessionUseCase` always sets it.
+   */
+  readonly deviceFingerprint: string | null;
   readonly issuedAt: Date;
   readonly expiresAt: Date;
   readonly revokedAt: Date | null;

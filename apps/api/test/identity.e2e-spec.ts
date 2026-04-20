@@ -148,17 +148,19 @@ describe('Identity auth flow (integration, requires Docker Postgres)', () => {
       method: 'POST',
       url: '/api/v1/auth/refresh',
       cookies: { refresh_token: refreshCookie.value },
+      headers: { 'user-agent': 'jest' },
     });
     expect(refresh1.statusCode).toBe(200);
     const rotated = parseSetCookie(refresh1.headers['set-cookie']);
     expect(rotated?.name).toBe('refresh_token');
     expect(rotated?.value).not.toEqual(refreshCookie.value);
 
-    // New cookie refreshes again.
+    // New cookie refreshes again — same UA, so dfp still matches.
     const refresh2 = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/refresh',
       cookies: { refresh_token: rotated!.value },
+      headers: { 'user-agent': 'jest' },
     });
     expect(refresh2.statusCode).toBe(200);
   });
@@ -188,11 +190,12 @@ describe('Identity auth flow (integration, requires Docker Postgres)', () => {
     });
     expect(activeBefore).toBe(2);
 
-    // Rotate session 1. The original refresh cookie is now stale.
+    // Rotate session 1. Same UA as at register, so dfp binding passes.
     const rotate = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/refresh',
       cookies: { refresh_token: refreshCookie.value },
+      headers: { 'user-agent': 'jest' },
     });
     expect(rotate.statusCode).toBe(200);
 
@@ -201,6 +204,7 @@ describe('Identity auth flow (integration, requires Docker Postgres)', () => {
       method: 'POST',
       url: '/api/v1/auth/refresh',
       cookies: { refresh_token: refreshCookie.value },
+      headers: { 'user-agent': 'jest' },
     });
     expect(replay.statusCode).toBe(401);
     expect(JSON.parse(replay.body).code).toBe('REFRESH_REUSE_DETECTED');
