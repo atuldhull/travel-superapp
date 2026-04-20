@@ -10,18 +10,113 @@
 
 ## Summary
 
-| Counter             | Value                                                                                 |
-| ------------------- | ------------------------------------------------------------------------------------- |
-| Prompts completed   | 43 (42 full + 1 foundation-only; `[III.13.2]` part 4 + flaky-fix just shipped)        |
-| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4 shipped; OAuth + JWKS rotation follow-up)             |
-| Prompts blocked     | 0                                                                                     |
-| Last prompt         | `[III.13.2]` part 4 — TOTP MFA via speakeasy (setup + verify + disable + gated login) |
-| Last commit date    | 2026-04-21                                                                            |
-| Phase               | Phase 0 — Foundation (auth flow near-complete; 15 suites, 96 tests green in one shot) |
+| Counter             | Value                                                                               |
+| ------------------- | ----------------------------------------------------------------------------------- |
+| Prompts completed   | 44 (43 full + 1 foundation-only; `[III.13.2]` part 5 just shipped)                  |
+| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up)         |
+| Prompts blocked     | 0                                                                                   |
+| Last prompt         | `[III.13.2]` part 5 — MFA backup codes (10 single-use + rotate + disable-clears)    |
+| Last commit date    | 2026-04-21                                                                          |
+| Phase               | Phase 0 — Foundation (MFA feature-complete; 16 suites, 103 tests green in one shot) |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [III.13.2] — MFA backup codes: single-use recovery + regenerate + disable-clears (part 5)
+
+**Date:** 2026-04-21 · **Status:** IN-PROGRESS · **Kind:** Build · **Playbook §** 13.2
+
+**What was done**
+
+Closed the "lost-phone = locked-out" UX cliff on the MFA feature shipped in part 4. Ten single-use plaintext backup codes are issued at enrolment, persisted as `sha256(pepper + code)`, and redeemable at `/auth/login` as an alternative to TOTP. Client flows: user copies codes to a password manager at enrolment, types one in if the authenticator app is lost.
+
+- **Prisma schema + migration** (`apps/api/prisma/migrations/20260421120000_mfa_backup_codes/`) — new `MfaBackupCode` model: `{ id, userId, codeHash, usedAt?, createdAt }`. Unique index on `(userId, codeHash)` so a collision within a user is impossible; cascade delete on user removal. User model gets the back-relation `mfaBackupCodes`.
+
+- **`BACKUP_CODE_PEPPER`** added to `@app/config`'s `SecuritySchema` (≥32 chars). Mirrors the pattern of `EMAIL_PEPPER`. Test setup + `.env.example` seeded.
+
+- **`apps/api/src/modules/identity/infrastructure/backup-code-hash.ts`**:
+  - `generatePlaintextCode(length=8)` — crypto.randomInt over a 32-char no-ambiguity alphabet (`ABCDEFGHJKLMNPQRSTUVWXYZ23456789` — excludes O/I/1/0). 32⁸ ≈ 1.1 × 10¹² combinations, 40 bits of entropy.
+  - `isWellFormedBackupCode(code)` — regex shape check used by `LoginUseCase` to disambiguate TOTP vs backup.
+  - `hashBackupCode(plaintext)` — `sha256(BACKUP_CODE_PEPPER + uppercase(trim(plaintext)))`. Case-insensitive on input, canonical on store.
+
+- **`BackupCodeRepository` port** (`application/ports/backup-code.repository.ts`):
+  - `regenerate(userId, count)` — wipe + issue + return plaintexts.
+  - `consume(userId, plaintext)` — conditional `updateMany` with `usedAt: null` guard; returns true iff we won the race.
+  - `countRemaining(userId)`.
+  - `clearAll(userId)`.
+
+- **Prisma adapter** (`infrastructure/prisma-backup-code.repository.ts`) — `regenerate` runs delete + bulk insert in a `$transaction`; `consume` uses the race-safe conditional updateMany pattern.
+
+- **`VerifyMfaUseCase`** — extended to return `{ backupCodes: string[] | null }`. On the first-time `mfaEnabled = true` transition, regenerates 10 codes and returns plaintexts. On re-verify (idempotent no-op), returns null so clients can tell them apart. The codes are shown ONCE; no API retrieves them again.
+
+- **`DisableMfaUseCase`** — now calls `backupCodes.clearAll(userId)` on the disable path. Also clears defensively on the already-disabled idempotent branch (shouldn't have any, but safe).
+
+- **`RegenerateBackupCodesUseCase`** (new) — requires a valid TOTP code; wipes and re-issues the 10-code batch. Rejects when MFA isn't enabled (`MFA_NOT_ENABLED`) or the TOTP is wrong (`INVALID_MFA`). A hijacked session alone can't rotate codes.
+
+- **`LoginUseCase`** — after password verify + MFA gate trip, inspects `mfaCode` shape:
+  - `^\d{6}$` → try TOTP.
+  - 8-char alphanumeric → try backup code via `consume`.
+  - Neither shape OR both paths fail → `UnauthorizedError('INVALID_MFA')`.
+  - On backup-code success, structured log `mfa_backup_code_consumed` with `{ userId, remaining }` — surfaces in the auth audit channel so ops notice "user X has burned 7 backup codes, remind them to regenerate."
+
+- **DTO** (`interface/dto/auth.dto.ts`) — `LoginBodySchema.mfaCode` regex relaxed from `^\d{6}$` to `^(\d{6}|[A-Za-z0-9]{8})$`. `MfaCodeBodySchema` stays TOTP-only (6 digits) since /verify and /disable are enrolment/teardown operations — backup codes aren't appropriate for either.
+
+- **Controller** — 3 changes:
+  - `POST /auth/mfa/verify` now returns `200 { backupCodes: string[] | null }` instead of `204`. Clients key on `backupCodes !== null` to distinguish first-enable from idempotent re-verify.
+  - New `POST /auth/mfa/backup-codes/regenerate` body `{ code }` → `200 { backupCodes: string[] }`. Protected by the default JwtAuthGuard + requires valid TOTP proof inside the use-case.
+  - `/mfa/verify` HTTP code changed from 204 to 200 (because we now return a body).
+
+- **Tests**:
+  - `apps/api/test/backup-codes.e2e-spec.ts` — 7 new integration tests:
+    1. Enrolment returns 10 unique 8-char alphanumeric plaintext codes; 10 hashed rows persisted, all unused.
+    2. Login with a backup code succeeds; `usedAt` flipped; remaining count drops to 9.
+    3. Replaying a consumed code → 401 `INVALID_MFA`.
+    4. TOTP still works (parallel factors); unused-count stays 10.
+    5. `/mfa/backup-codes/regenerate` with valid TOTP rotates the 10-code set; old codes rejected, new codes accepted.
+    6. Regenerate with wrong TOTP → 401 `INVALID_MFA`.
+    7. Disable MFA clears every backup code row.
+  - `apps/api/test/mfa.e2e-spec.ts` — updated to assert /mfa/verify now returns 200 with `backupCodes: string[]` of length 10.
+
+**Files created** (4) — `apps/api/prisma/migrations/20260421120000_mfa_backup_codes/migration.sql`, `apps/api/src/modules/identity/application/ports/backup-code.repository.ts`, `apps/api/src/modules/identity/infrastructure/{backup-code-hash,prisma-backup-code.repository}.ts`, `apps/api/test/backup-codes.e2e-spec.ts`.
+**Files edited** (8) — `schema.prisma` (+MfaBackupCode + User back-relation), `packages/config/src/schema.ts` (+BACKUP_CODE_PEPPER), `.env.example`, `apps/api/test/setup.ts`, `apps/api/test/mfa.e2e-spec.ts` (/verify assertion), plus `mfa.use-case.ts` (+RegenerateBackupCodesUseCase + VerifyMfaUseCase returns codes + DisableMfaUseCase clears), `login.use-case.ts` (+backup-code fallback), `identity.module.ts` (register BackupCodeRepository + RegenerateBackupCodesUseCase), `interface/auth.controller.ts` (new endpoint + expanded /verify response), `interface/dto/auth.dto.ts` (relaxed login regex).
+**Dependencies** — none new.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green (both apps/api and packages/config).
+- ✅ `jest --testPathPattern="backup-codes|mfa"` — 11/11 pass (4 MFA + 7 backup).
+- ✅ **Full apps/api suite: 16 suites, 103 tests pass in one shot.**
+- ✅ Migration applied (4 → 5 migrations in `_prisma_migrations`). Client regenerated.
+
+**Acceptance criteria**
+
+- ✅ 10 single-use backup codes issued at enrolment (Playbook §13.2 MFA completeness).
+- ✅ Codes stored hashed (`sha256` with dedicated pepper) — never plaintext.
+- ✅ Codes returned exactly once; no retrieval endpoint.
+- ✅ Login accepts either TOTP or a backup code.
+- ✅ Replay of a consumed code fails.
+- ✅ Regenerate endpoint gated on a valid TOTP (prevents session-hijack rotation).
+- ✅ Disable MFA clears codes (no residue after teardown).
+
+Still deferred under the `[III.13.2]` IN-PROGRESS banner:
+
+- ⏳ OAuth2 Google/Apple via Passport.
+- ⏳ JWKS rotation cron.
+- ⏳ Device table auto-create.
+- ⏳ Field-level encryption on `emailEncrypted` + `mfaSecret` + `codeHash` pepper rotation (`[III.13.11]`).
+
+**Notes**
+
+- **Why sha256 for backup-code hashing, not argon2.** Codes are high-entropy (40 bits) — the cost of argon2 on a login-path hot code would be wasted. Argon2 exists to defend against offline brute-force of LOW-entropy passwords; backup codes don't live in that regime. Pepper + sha256 covers the DB-exfiltration threat (attacker can't compute hashes without the env secret).
+- **Why case-normalize on both input and store.** Users type codes into auth apps or manually; case sensitivity is a UX footgun that doesn't buy security (40 bits is already generous). `hashBackupCode` uppercases + trims before hashing so `ABCD2345` and `abcd2345 ` both resolve to the same row.
+- **Why `LoginUseCase` inspects shape rather than trying TOTP always first.** Short-circuit: if the code is an 8-char alphanumeric, it can't possibly be a valid TOTP (would match `^\d{6}$`), so try only the backup path. Saves a speakeasy call and keeps the failure-code signaling clean. If someone sends random junk like `abc123`, both regex branches skip and we return `INVALID_MFA` without any side effects.
+- **Why `/mfa/verify` returns 200 with body instead of staying 204.** The backup codes are the load-bearing deliverable of the verify response — clients MUST show them to the user, or the whole feature doesn't work. Returning them in the body makes the contract explicit. Re-verify idempotent case returns `null` instead of the codes, so clients can tell "you just enabled MFA, here are your codes" apart from "noop".
+- **Why `MfaCodeBodySchema` (used by /verify + /disable + /backup-codes/regenerate) stays TOTP-only, 6 digits.** Backup codes are for `/login` recovery only. Allowing them to enroll or disable MFA would defeat the single-use lifecycle (a used code would still disable MFA) and complicates the audit trail.
+- **Why 10 codes, not 6 or 16.** GitHub + Google use 10; users don't forget phones _every week_. Not a security-sensitive number — just convention.
+- **What wasn't shipped: "N backup codes remaining" in the login success body.** Logged server-side for ops, not yet returned to the client. Client-side low-remaining warning is a UX polish follow-up; not blocking auth completeness.
 
 ---
 
