@@ -117,7 +117,10 @@ describe('MFA lifecycle (integration, requires Docker Postgres)', () => {
       headers: { authorization: `Bearer ${accessToken}` },
       payload: { code: totp(base32) },
     });
-    expect(verify.statusCode).toBe(204);
+    expect(verify.statusCode).toBe(200);
+    const verifyBody = JSON.parse(verify.body) as { backupCodes: string[] | null };
+    expect(verifyBody.backupCodes).toBeTruthy();
+    expect(verifyBody.backupCodes).toHaveLength(10);
     const after = await prisma.user.findUnique({ where: { id: userId } });
     expect(after?.mfaEnabled).toBe(true);
 

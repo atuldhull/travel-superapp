@@ -15,7 +15,13 @@
 import { Module } from '@nestjs/common';
 import { IssueSessionUseCase } from './application/issue-session.use-case';
 import { LoginUseCase } from './application/login.use-case';
-import { DisableMfaUseCase, SetupMfaUseCase, VerifyMfaUseCase } from './application/mfa.use-case';
+import {
+  DisableMfaUseCase,
+  RegenerateBackupCodesUseCase,
+  SetupMfaUseCase,
+  VerifyMfaUseCase,
+} from './application/mfa.use-case';
+import { BACKUP_CODE_REPOSITORY } from './application/ports/backup-code.repository';
 import { SESSION_REPOSITORY } from './application/ports/session.repository';
 import { TOKEN_SERVICE } from './application/ports/token.service';
 import { USER_REPOSITORY } from './application/ports/user.repository';
@@ -23,6 +29,7 @@ import { RefreshSessionUseCase } from './application/refresh-session.use-case';
 import { RegisterUseCase } from './application/register.use-case';
 import { RevokeSessionUseCase } from './application/revoke-session.use-case';
 import { JwtTokenService } from './infrastructure/jwt-token.service';
+import { PrismaBackupCodeRepository } from './infrastructure/prisma-backup-code.repository';
 import { PrismaSessionRepository } from './infrastructure/prisma-session.repository';
 import { PrismaUserRepository } from './infrastructure/prisma-user.repository';
 import { TotpService } from './infrastructure/totp.service';
@@ -34,6 +41,7 @@ import { AuthController } from './interface/auth.controller';
     // Ports → adapters.
     { provide: SESSION_REPOSITORY, useClass: PrismaSessionRepository },
     { provide: USER_REPOSITORY, useClass: PrismaUserRepository },
+    { provide: BACKUP_CODE_REPOSITORY, useClass: PrismaBackupCodeRepository },
     { provide: TOKEN_SERVICE, useClass: JwtTokenService },
     TotpService,
     // Use-cases.
@@ -45,6 +53,7 @@ import { AuthController } from './interface/auth.controller';
     SetupMfaUseCase,
     VerifyMfaUseCase,
     DisableMfaUseCase,
+    RegenerateBackupCodesUseCase,
   ],
   exports: [SESSION_REPOSITORY, USER_REPOSITORY, TOKEN_SERVICE, RefreshSessionUseCase],
 })

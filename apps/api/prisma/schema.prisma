@@ -141,6 +141,7 @@ model User {
 
   preferences        Preferences?
   sessions           Session[]
+  mfaBackupCodes     MfaBackupCode[]
   devices            Device[]
   trips              Trip[]
   tripVersions       TripVersion[]
@@ -187,6 +188,23 @@ model Session {
 
   @@index([userId, revokedAt])
   @@index([expiresAt])
+}
+
+// Single-use MFA recovery codes. Issued at enrolment (10 at a time)
+// + on explicit /mfa/backup-codes/regenerate. `codeHash` is sha256
+// of (BACKUP_CODE_PEPPER + plaintext) — the plaintext is returned
+// ONCE at generation and never stored.
+// Installed by [III.13.2] part 5.
+model MfaBackupCode {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codeHash   String
+  usedAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@unique([userId, codeHash])
+  @@index([userId, usedAt])
 }
 
 model Preferences {

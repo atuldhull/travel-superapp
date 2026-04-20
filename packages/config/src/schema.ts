@@ -126,6 +126,13 @@ const SecuritySchema = z.object({
    */
   EMAIL_PEPPER: z.string().min(32),
   /**
+   * Pepper for sha256-hashed MFA backup codes. Codes are returned
+   * once at generation and looked up by hash on redemption. Rotating
+   * the pepper invalidates every outstanding backup code — plan a
+   * re-generation flow when rotating.
+   */
+  BACKUP_CODE_PEPPER: z.string().min(32),
+  /**
    * Comma-separated CORS allow-list of exact origins (scheme + host + port).
    * Empty / absent means "no cross-origin requests permitted" — the safe
    * default. Wildcards are intentionally not supported: if you want "any
