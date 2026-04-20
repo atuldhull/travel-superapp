@@ -24,6 +24,7 @@
     "@app/config": "workspace:*",
     "@app/errors": "workspace:*",
     "@app/logger": "workspace:*",
+    "@app/observability": "workspace:*",
     "@fastify/cors": "11.2.0",
     "@fastify/helmet": "13.0.2",
     "@nestjs/common": "^11.0.11",
