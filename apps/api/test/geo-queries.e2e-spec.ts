@@ -92,11 +92,17 @@ describe('GeoQueries (integration, requires Docker Postgres)', () => {
     expect(trafalgar.id).toBeTruthy();
     expect(windsor.id).toBeTruthy();
 
-    const results = await geo.findPlacesWithinRadius({
+    // Filter to this test's own rows so rows seeded by parallel
+    // specs (e.g. `index-usage.e2e-spec.ts` seeding near Victoria)
+    // can't pollute the count assertion. Tests share the same DB in
+    // parallel workers; the PostGIS radius query is correct — it's
+    // the "count is 2" assertion that needs scoping.
+    const all = await geo.findPlacesWithinRadius({
       lat: LONDON.lat,
       lng: LONDON.lng,
       radiusKm: 5,
     });
+    const results = all.filter((r) => r.sourceKey.startsWith(SOURCE_PREFIX));
 
     expect(results).toHaveLength(2);
     const names = results.map((r) => r.name);
