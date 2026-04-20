@@ -12,14 +12,17 @@
  *   import { NestFactory } from '@nestjs/core';
  *   // … rest of bootstrap
  *
- * Real SDK wiring — NodeSDK + `@opentelemetry/auto-instrumentations-node` +
- * OTLP exporter → Jaeger (dev) / Grafana Tempo (prod) — lands in **[III.15.4]**
- * and will live in `@app/observability`. Until then this file is a no-op
- * stub so the load-order contract is locked in at the call site.
+ * Set `OTEL_DISABLED=true` in the env to skip SDK startup (useful for
+ * local runs without Jaeger running, to avoid exporter retry spam).
+ * Otherwise traces land at `OTEL_EXPORTER_OTLP_ENDPOINT` via OTLP/HTTP
+ * (dev: Jaeger `http://localhost:4318`; prod: Grafana Tempo).
  *
- * Installed by prompt [IV.17.6]. See Playbook §15.4.
+ * Installed by prompt [IV.17.6]; real SDK wired by [III.15.4].
  */
+import { initTracing } from '@app/observability';
 
-// Intentionally empty for now. Real OTel init code lands in [III.15.4].
-// Do NOT remove this file — callers already follow the "import first" rule.
+initTracing('api', {
+  serviceVersion: process.env['npm_package_version'] ?? '0.0.0',
+});
+
 export {};
