@@ -1,0 +1,242 @@
+/**
+ * Integration test for the Identity module's register / login /
+ * refresh / logout flows. The load-bearing scenario is
+ * refresh-token reuse detection — presenting an already-rotated
+ * refresh token must revoke every session belonging to that user
+ * (Playbook §13.2).
+ *
+ * Skips cleanly if Postgres isn't reachable so the suite stays
+ * useful offline (same pattern as `geo-queries.e2e-spec.ts`).
+ *
+ * Installed by prompt [III.13.2] part 2.
+ */
+import fastifyCookie from '@fastify/cookie';
+import { Test, type TestingModule } from '@nestjs/testing';
+import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
+import { AppModule } from '../src/app.module';
+import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
+import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
+import { PrismaService } from '../src/common/db/prisma.service';
+
+const TEST_EMAIL_PREFIX = 'identity-e2e';
+
+interface CookieBits {
+  readonly name: string;
+  readonly value: string;
+}
+
+function parseSetCookie(header: string | string[] | undefined): CookieBits | null {
+  if (!header) return null;
+  const raw = Array.isArray(header) ? header.join(',') : header;
+  const match = /^([^=]+)=([^;]+)/.exec(raw);
+  if (!match) return null;
+  return { name: match[1]!, value: match[2]! };
+}
+
+describe('Identity auth flow (integration, requires Docker Postgres)', () => {
+  let moduleRef: TestingModule;
+  let app: NestFastifyApplication;
+  let prisma: PrismaService;
+  let dbReachable = true;
+
+  beforeAll(async () => {
+    moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    app = moduleRef.createNestApplication<NestFastifyApplication>(new FastifyAdapter());
+    app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
+    app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)'] });
+    await app.register(fastifyCookie);
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+
+    prisma = moduleRef.get(PrismaService);
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      // eslint-disable-next-line no-console
+      console.warn(`identity integration test: DB not reachable (${message}). Skipping.`);
+      dbReachable = false;
+    }
+  });
+
+  afterEach(async () => {
+    if (!dbReachable) return;
+    // Tear down users created in this spec (sessions cascade via FK).
+    await prisma.user.deleteMany({
+      where: { displayName: { startsWith: TEST_EMAIL_PREFIX } },
+    });
+  });
+
+  afterAll(async () => {
+    await app.close();
+    await moduleRef.close();
+  });
+
+  async function registerUser(suffix: string): Promise<{
+    userId: string;
+    refreshCookie: CookieBits;
+    accessToken: string;
+  }> {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/register',
+      payload: {
+        email: `${TEST_EMAIL_PREFIX}-${suffix}-${Date.now()}@example.com`,
+        password: 'correct-horse-battery-staple',
+        displayName: `${TEST_EMAIL_PREFIX}-${suffix}`,
+      },
+      headers: { 'user-agent': 'jest', 'x-device-id': `device-${suffix}` },
+    });
+    expect(res.statusCode).toBe(201);
+    const cookie = parseSetCookie(res.headers['set-cookie']);
+    expect(cookie?.name).toBe('refresh_token');
+    const body = JSON.parse(res.body) as { userId: string; accessToken: string };
+    return {
+      userId: body.userId,
+      refreshCookie: cookie!,
+      accessToken: body.accessToken,
+    };
+  }
+
+  it('registers, sets httpOnly refresh cookie, returns access token', async () => {
+    if (!dbReachable) return;
+    const { userId, refreshCookie, accessToken } = await registerUser('register');
+    expect(userId).toMatch(/^c[a-z0-9]+$/); // cuid
+    expect(refreshCookie.value.length).toBeGreaterThan(20);
+    expect(accessToken.split('.').length).toBe(3);
+  });
+
+  it('rejects login with wrong password using a uniform error code', async () => {
+    if (!dbReachable) return;
+    const email = `${TEST_EMAIL_PREFIX}-wrongpw-${Date.now()}@example.com`;
+    const reg = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/register',
+      payload: {
+        email,
+        password: 'correct-horse-battery-staple',
+        displayName: `${TEST_EMAIL_PREFIX}-wrongpw`,
+      },
+    });
+    expect(reg.statusCode).toBe(201);
+
+    const bad = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/login',
+      payload: { email, password: 'WRONG-PASSWORD-XX' },
+    });
+    expect(bad.statusCode).toBe(401);
+    expect(JSON.parse(bad.body).code).toBe('INVALID_CREDENTIALS');
+
+    const miss = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/login',
+      payload: {
+        email: `no-such-${Date.now()}@example.com`,
+        password: 'anything',
+      },
+    });
+    expect(miss.statusCode).toBe(401);
+    expect(JSON.parse(miss.body).code).toBe('INVALID_CREDENTIALS');
+  });
+
+  it('refresh rotates the session — old cookie no longer works, new one does', async () => {
+    if (!dbReachable) return;
+    const { refreshCookie } = await registerUser('rotate');
+
+    const refresh1 = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/refresh',
+      cookies: { refresh_token: refreshCookie.value },
+    });
+    expect(refresh1.statusCode).toBe(200);
+    const rotated = parseSetCookie(refresh1.headers['set-cookie']);
+    expect(rotated?.name).toBe('refresh_token');
+    expect(rotated?.value).not.toEqual(refreshCookie.value);
+
+    // New cookie refreshes again.
+    const refresh2 = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/refresh',
+      cookies: { refresh_token: rotated!.value },
+    });
+    expect(refresh2.statusCode).toBe(200);
+  });
+
+  it('REUSE CASCADE: replaying an already-rotated refresh token revokes ALL sessions for that user', async () => {
+    if (!dbReachable) return;
+    const { userId, refreshCookie } = await registerUser('cascade');
+
+    // Open a second session via /login so we can prove the cascade
+    // reaches beyond the rotated session.
+    // The user is already registered; grab the email from the DB to log in.
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    expect(user).not.toBeNull();
+
+    const email = Buffer.from(user!.emailEncrypted).toString('utf8');
+    const login2 = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/login',
+      payload: { email, password: 'correct-horse-battery-staple' },
+      headers: { 'user-agent': 'jest-device-2', 'x-device-id': 'device-2' },
+    });
+    expect(login2.statusCode).toBe(200);
+
+    // Two active sessions for this user, confirmed.
+    const activeBefore = await prisma.session.count({
+      where: { userId, revokedAt: null },
+    });
+    expect(activeBefore).toBe(2);
+
+    // Rotate session 1. The original refresh cookie is now stale.
+    const rotate = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/refresh',
+      cookies: { refresh_token: refreshCookie.value },
+    });
+    expect(rotate.statusCode).toBe(200);
+
+    // Replay the original (now-rotated) cookie → cascade.
+    const replay = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/refresh',
+      cookies: { refresh_token: refreshCookie.value },
+    });
+    expect(replay.statusCode).toBe(401);
+    expect(JSON.parse(replay.body).code).toBe('REFRESH_REUSE_DETECTED');
+
+    // Every session for this user is now revoked.
+    const activeAfter = await prisma.session.count({
+      where: { userId, revokedAt: null },
+    });
+    expect(activeAfter).toBe(0);
+
+    const total = await prisma.session.count({ where: { userId } });
+    expect(total).toBe(3); // rotated-old, rotated-new, login2 — all revoked.
+  });
+
+  it('logout clears the cookie and revokes the session idempotently', async () => {
+    if (!dbReachable) return;
+    const { userId, refreshCookie } = await registerUser('logout');
+
+    const logout = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/logout',
+      cookies: { refresh_token: refreshCookie.value },
+    });
+    expect(logout.statusCode).toBe(204);
+
+    const activeAfter = await prisma.session.count({
+      where: { userId, revokedAt: null },
+    });
+    expect(activeAfter).toBe(0);
+
+    // Second logout is a no-op (idempotent).
+    const logout2 = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/logout',
+      cookies: { refresh_token: refreshCookie.value },
+    });
+    expect(logout2.statusCode).toBe(204);
+  });
+});

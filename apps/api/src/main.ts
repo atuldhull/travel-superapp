@@ -22,6 +22,7 @@
 import '../instrumentation';
 import 'reflect-metadata';
 
+import fastifyCookie from '@fastify/cookie';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 import { EnvValidationError, validateEnv } from '@app/config';
@@ -73,6 +74,10 @@ async function bootstrap(): Promise<void> {
   //    Permissions-Policy. Registered before listen so every route —
   //    including /health/* — gets the same response-side hardening.
   await registerSecurity(app, env);
+
+  // 6b. Cookie parser — required by Identity module's refresh endpoint to
+  //     read the httpOnly `refresh_token` cookie (CLAUDE rule 12).
+  await app.register(fastifyCookie);
 
   // 7. Shutdown hooks so SIGTERM drains in-flight requests cleanly (Fly.io / k8s).
   app.enableShutdownHooks();

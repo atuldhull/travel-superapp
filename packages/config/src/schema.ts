@@ -120,6 +120,12 @@ const FeaturesSchema = z.object({
 const SecuritySchema = z.object({
   RATE_LIMIT_PEPPER: z.string().min(32),
   /**
+   * Shared pepper for email / IP hashes (Playbook §13.11, §13.4). Stored
+   * as sha256(pepper + value), never plaintext. Rotate with a multi-phase
+   * migration — adding the new pepper, dual-write, backfill, retire.
+   */
+  EMAIL_PEPPER: z.string().min(32),
+  /**
    * Comma-separated CORS allow-list of exact origins (scheme + host + port).
    * Empty / absent means "no cross-origin requests permitted" — the safe
    * default. Wildcards are intentionally not supported: if you want "any
