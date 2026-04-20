@@ -24,6 +24,7 @@ import { createHash } from 'node:crypto';
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Inject,
@@ -35,6 +36,7 @@ import {
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { Env } from '@app/config';
 import { ConfigService } from '@nestjs/config';
+import { type AuthenticatedUser, CurrentUser, Public } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { IssueSessionUseCase } from '../../identity/application/issue-session.use-case';
 import { LoginUseCase } from '../../identity/application/login.use-case';
@@ -80,6 +82,7 @@ export class AuthController {
     void this._issue;
   }
 
+  @Public()
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   @UsePipes(new ZodValidationPipe(RegisterBodySchema))
@@ -102,6 +105,7 @@ export class AuthController {
     };
   }
 
+  @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ZodValidationPipe(LoginBodySchema))
@@ -123,6 +127,7 @@ export class AuthController {
     };
   }
 
+  @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   async refresh(
@@ -151,6 +156,18 @@ export class AuthController {
     };
   }
 
+  /**
+   * Protected probe endpoint. The `JwtAuthGuard` validates the access
+   * token; `@CurrentUser()` returns the claims. First real consumer of
+   * the guard stack — any feature module follows the same pattern.
+   */
+  @Get('me')
+  @HttpCode(HttpStatus.OK)
+  me(@CurrentUser() user: AuthenticatedUser): AuthenticatedUser {
+    return user;
+  }
+
+  @Public()
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
   async logout(

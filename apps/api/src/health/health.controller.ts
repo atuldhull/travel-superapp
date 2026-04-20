@@ -24,6 +24,7 @@ import { ConfigService } from '@nestjs/config';
 import { HealthCheck, HealthCheckService, HealthCheckResult } from '@nestjs/terminus';
 import { SkipThrottle } from '@nestjs/throttler';
 import type { Env } from '@app/config';
+import { Public } from '../common/auth';
 import { HttpPingIndicator } from './indicators/http-ping.indicator';
 import { PostgresHealthIndicator } from './indicators/postgres.indicator';
 import { RedisHealthIndicator } from './indicators/redis.indicator';
@@ -31,6 +32,8 @@ import { RedisHealthIndicator } from './indicators/redis.indicator';
 // Health probes (k8s / Fly.io / LB) MUST NOT be rate-limited — they
 // probe every second or so; a rate limit would flip pods to Unhealthy
 // every time the bucket fills.
+// Probes are not authenticated — LBs can't present JWTs.
+@Public()
 @SkipThrottle()
 @Controller('health')
 export class HealthController {
