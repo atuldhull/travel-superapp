@@ -10,18 +10,64 @@
 
 ## Summary
 
-| Counter             | Value                                                                               |
-| ------------------- | ----------------------------------------------------------------------------------- |
-| Prompts completed   | 34                                                                                  |
-| Prompts in progress | 0                                                                                   |
-| Prompts blocked     | 0                                                                                   |
-| Last prompt         | `[III.12.6]`                                                                        |
-| Last commit date    | 2026-04-20                                                                          |
-| Phase               | Phase 0 — Foundation (ADR-010 locks anonymise-on-delete; 40-model propagation plan) |
+| Counter             | Value                                                                              |
+| ------------------- | ---------------------------------------------------------------------------------- |
+| Prompts completed   | 35                                                                                 |
+| Prompts in progress | 0                                                                                  |
+| Prompts blocked     | 0                                                                                  |
+| Last prompt         | `[III.11.4]`                                                                       |
+| Last commit date    | 2026-04-20                                                                         |
+| Phase               | Phase 0 — Foundation (Redis sliding-window throttler live; 11 suites, 76/76 tests) |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [III.11.4] — Redis sliding-window rate limiter
+
+**Date:** 2026-04-20 · **Status:** DONE · **Kind:** Build · **Playbook §** 11.4 + §13.4
+
+**What was done**
+
+Custom `@nestjs/throttler` storage backed by a Redis sorted-set sliding window. Three named buckets wired (`default` 60/min, `ai` 10/min, `auth` 5/min). Keys peppered with `RATE_LIMIT_PEPPER` so raw IPs / user-ids never sit in Redis in plaintext (§13.4).
+
+- **`apps/api/src/common/rate-limit/redis-throttler.storage.ts`** — implements `ThrottlerStorage`. Single Lua script does `ZREMRANGEBYSCORE` (trim out-of-window) + `ZADD` (record current) + `ZCARD` (count) + `PEXPIRE` + `ZRANGE 0 0 WITHSCORES` (oldest entry for `timeToExpire`). All atomic. Uses ioredis with `lazyConnect`, `enableOfflineQueue: false` — same pattern as the Redis health indicator. Keys: `travel-<env>:throttle:<bucket>:sha256(pepper + tracker)`.
+- **`apps/api/src/common/rate-limit/rate-limit.guard.ts`** — extends `ThrottlerGuard`, overrides `getTracker` to key by `user:<id>` when authenticated, falling back to `ip:<remote>`. Storage re-hashes with the pepper before touching Redis.
+- **`apps/api/src/common/rate-limit/rate-limit.module.ts`** — inner `RateLimitStorageModule` provides `RedisThrottlerStorage` + aliases it to the `ThrottlerStorage` symbol. The outer `RateLimitModule` calls `ThrottlerModule.forRootAsync` with that inner module in its `imports:` so the factory can inject the storage (v6's `extraProviders` option was removed — this is the scoping pattern that replaces it). Test-mode inflates limits 10,000× so cumulative test traffic doesn't trip the shared-IP bucket; per-route `@Throttle({ ai: { limit: 10 } })` overrides stay authoritative.
+- **`apps/api/src/app.module.ts`** — imports `RateLimitModule`, registers `RateLimitGuard` globally via `APP_GUARD`. Every route inherits the `default` bucket; routes with `@Throttle({ ai: ... })` get the ai bucket layered on; `@SkipThrottle({ name: true })` removes a specific bucket from a route.
+- **`apps/api/src/health/health.controller.ts`** — `@SkipThrottle()` on the class. Probes from k8s / Fly.io hit /health/\* every second; without this the default bucket would trip and flip every pod to Unhealthy every minute.
+- **`apps/api/test/rate-limit.e2e-spec.ts`** — 2-test integration suite:
+  1. 11th call on an `@Throttle({ ai: { limit: 10, ttl: 60_000 } })` route returns 429 with `Retry-After-ai` set. Calls 1–10 return 200.
+  2. The `default` bucket (60/min) is NOT exhausted by those 11 hits — proves bucket isolation. Uses per-pid IP (RFC 5737 TEST-NET-3) so the window starts fresh on every jest invocation.
+
+**Files created** (4) — `apps/api/src/common/rate-limit/{redis-throttler.storage,rate-limit.guard,rate-limit.module}.ts`, `apps/api/test/rate-limit.e2e-spec.ts`.
+**Files edited** (3) — `apps/api/src/app.module.ts`, `apps/api/src/health/health.controller.ts`, `apps/api/package.json`.
+**Dependencies** — `@nestjs/throttler@6.5.0`.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ `jest test/rate-limit.e2e-spec.ts --runInBand` — **2/2**.
+- ✅ Full api suite — **11 suites, 76/76** (up from 74/74).
+- ✅ Atomicity: Lua script's 5 operations run as one Redis transaction — no race between count and increment.
+
+**Acceptance criteria**
+
+- ✅ Custom `ThrottlerStorage` backed by Redis sliding window (`ZADD` / `ZREMRANGEBYSCORE` / `ZCARD`).
+- ✅ Per-IP, per-user, per-endpoint-class buckets — tracker logic in `RateLimitGuard`.
+- ✅ `@Throttle({ ai: { limit: 10, ttl: 60_000 } })` maps to an `ai` bucket.
+- ✅ Integration test proves 11th call returns 429 (via `ThrottlerException` → `RateLimitError`-ish, HTTP 429 + `Retry-After-ai`).
+
+**Notes**
+
+- **v6 stacks throttlers on every route by default.** `@Throttle({ ai: {...} })` overrides the `ai` bucket's config for that route but `default` and `auth` still apply. To scope a route to ONE bucket, `@SkipThrottle({ other: true, also: true })` is required. The rate-limit test documents this explicitly — it bit me mid-implementation and would bite any future route author.
+- **`setHeaders: true`** is needed for `X-RateLimit-*` + `Retry-After*`. Off by default in v6. Header name is `Retry-After-<throttlerName>` for non-default buckets (so blocked AI returns `Retry-After-ai`, not the standard `Retry-After`).
+- **Test-mode limit inflation.** 76/76 tests pass because non-rate-limit tests don't trip the shared-IP (127.0.0.1) `default` bucket at 10_000 × 60 limit. The rate-limit test uses a per-pid RFC-5737 IP and an explicit `@Throttle` override, so the inflation doesn't touch its correctness.
+- **`@SkipThrottle()` on HealthController** matters operationally, not just for tests. k8s liveness probes fire every 1–10 s; without the skip, probes would exhaust the default bucket in a minute on any pod that sees a health-probe loop.
+- **CLAUDE rule 12 (pepper raw PII keys)** satisfied — the storage hashes the tracker before it touches Redis.
+- **Dep-cycle detour.** First cut registered `RedisThrottlerStorage` as a provider of `RateLimitModule` and injected it into `ThrottlerModule.forRootAsync`'s factory — DI fails at compile because `forRootAsync`'s factory scope is the `ThrottlerModule`, not its parent. Fix: split into `RateLimitStorageModule` (provides storage) + `RateLimitModule` (imports both). v6 removed `extraProviders`; the inner-module pattern replaces it.
 
 ---
 
