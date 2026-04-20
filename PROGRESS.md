@@ -10,18 +10,57 @@
 
 ## Summary
 
-| Counter             | Value                                                                           |
-| ------------------- | ------------------------------------------------------------------------------- |
-| Prompts completed   | 33                                                                              |
-| Prompts in progress | 0                                                                               |
-| Prompts blocked     | 0                                                                               |
-| Last prompt         | `health-indicator-cleanup` (follow-up to [IV.18.1.16] × [III.12.2])             |
-| Last commit date    | 2026-04-20                                                                      |
-| Phase               | Phase 0 — Foundation (PostgresHealthIndicator uses PrismaService; dropped `pg`) |
+| Counter             | Value                                                                               |
+| ------------------- | ----------------------------------------------------------------------------------- |
+| Prompts completed   | 34                                                                                  |
+| Prompts in progress | 0                                                                                   |
+| Prompts blocked     | 0                                                                                   |
+| Last prompt         | `[III.12.6]`                                                                        |
+| Last commit date    | 2026-04-20                                                                          |
+| Phase               | Phase 0 — Foundation (ADR-010 locks anonymise-on-delete; 40-model propagation plan) |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [III.12.6] — ADR-010 delete policy (anonymise-on-delete, no soft-delete middleware)
+
+**Date:** 2026-04-20 · **Status:** DONE · **Kind:** Design · **Playbook §** 12.6 + 30.2
+
+**What was done**
+
+Chose **option B — anonymise-on-delete, no soft-delete middleware** — after the user asked for my call, framing the tension as "some want their data kept, some want it gone."
+
+The key insight baked into the ADR: those two cohorts don't need the same mechanism. "Want data kept" = dormancy (account hidden, data untouched, reversible). "Want it gone" = GDPR/DPDP erasure (irreversible, schema-wide anonymisation). Option A fails BOTH — it leaves real PII on disk for regulators to find, and it hides deleted users' contributions from their co-travellers in group trips. Option B serves both correctly when paired with a separate "deactivate" primitive (lands with the identity module, `[III.13.2]`).
+
+- **`docs/adr/ADR-010-soft-delete-policy.md`** — full MADR. Context drivers + considered options (A, B, + a hybrid C named and rejected) + decision outcome + **per-model propagation plan** listing every context's action on `Identity.UserDeleted`:
+  - Identity: overwrite PII on `User`; cascade delete `Session` / `Preferences` / `Device`.
+  - Trip + Social: retain rows, anonymise `authorId` / reviewer, LLM-sanitise Review bodies (§30.2).
+  - Media: hard-delete owned assets + 30-day S3 archival.
+  - Payments: retain 7 years (legal) with `userId` scrubbed; Stripe sub cancelled.
+  - Safety: retain SosEvent for pattern analysis 12 months with userId blanked; ScamReport + Agent anonymised.
+  - Notifications + Live: hard-delete (cascade).
+  - Places / Stays / Food / Events / Weather / Transport / Analytics / Admin: no user-scoped rows; unaffected.
+- **`docs/adr/README.md`** — index row for ADR-010 (number jumps past 009; [II.8.6] DevOps lock hasn't been done yet, so ADR-009 is still a stub).
+
+**Files created** (1) — `docs/adr/ADR-010-soft-delete-policy.md`.
+**Files edited** (2) — `docs/adr/README.md`, `PROGRESS.md`.
+**Dependencies** — none.
+
+**Acceptance criteria**
+
+- ✅ ADR-010 committed with a chosen outcome (B) and an explicit list of affected models.
+- ✅ Rationale cites Playbook §12.6 + §30.2 + ADR-003 (the event bus that carries `UserDeleted`).
+
+**Notes**
+
+- **Why not A even though the user's first instinct was A.** A soft-delete flag does NOT satisfy GDPR / DPDP — regulators read "row still exists with a flag" as "still processing personal data". Users who actively hit DELETE mean "erase". Users who DON'T want data gone simply DON'T hit delete — they stay active (or hit DEACTIVATE, a separate primitive). The flag-everywhere pattern is a tax that serves no cohort properly.
+- **Recoverability trade-off.** Under B, a deleted account cannot be restored from DB state — anonymised columns are permanently gone. The mitigation is the **30-day grace window** between anonymisation and hard-purge: within those 30 days an operator can rescind the delete (account un-anonymises at the identity-owning-user's request, but fields must be re-supplied — we don't hold the pre-delete PII anywhere). This is the GDPR-correct shape; "delete means delete" is the spirit of the law.
+- **`User.deletedAt` stays the ONE soft-delete column.** Adding any other `deletedAt` now requires a superseding ADR — tripwire locked.
+- **`Identity.UserDeleted` is already in the context-map.** Every user-scoped context's "Inbound" column lists it ([docs/architecture/context-map.md]). ADR-010 ratifies the existing event-name commitment.
+- **Implementation work** lives in `[VI.30.2]` (the erasure propagation worker) and `[III.13.2]` (the identity module, which adds deactivation as a separate primitive). Those prompts read this ADR's per-context propagation table as spec.
 
 ---
 
