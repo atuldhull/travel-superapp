@@ -10,18 +10,68 @@
 
 ## Summary
 
-| Counter             | Value                                                                                     |
-| ------------------- | ----------------------------------------------------------------------------------------- |
-| Prompts completed   | 36                                                                                        |
-| Prompts in progress | 0                                                                                         |
-| Prompts blocked     | 0                                                                                         |
-| Last prompt         | `[III.15.4]`                                                                              |
-| Last commit date    | 2026-04-20                                                                                |
-| Phase               | Phase 0 — Foundation (OTel traces flow to Jaeger; prisma:engine:db_query spans confirmed) |
+| Counter             | Value                                                                                   |
+| ------------------- | --------------------------------------------------------------------------------------- |
+| Prompts completed   | 37                                                                                      |
+| Prompts in progress | 0                                                                                       |
+| Prompts blocked     | 0                                                                                       |
+| Last prompt         | `[II.8.6]`                                                                              |
+| Last commit date    | 2026-04-20                                                                              |
+| Phase               | Phase 0 — Foundation (ADR-009 DevOps locked; ADR-009 gap filled; 5 stack-lock ADRs now) |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [II.8.6] — ADR-009 DevOps & infra lock + quantitative K8s triggers
+
+**Date:** 2026-04-20 · **Status:** DONE · **Kind:** Design · **Playbook §** 8.6 + 34.3
+
+**What was done**
+
+Fills the ADR-009 gap in the index (previously jumped 008 → 010) and locks the deploy/operate surface. The four sibling stack-lock ADRs (005 frontend, 006 backend, 007 data, 008 AI) covered libraries + runtimes; this one pins hosting, CI/CD, CDN, secrets, and — load-bearing — the **quantitative** K8s migration tripwire the prompt's acceptance demands.
+
+- **`docs/adr/ADR-009-devops.md`** — MADR, 5 choices × 5 rejected alternatives:
+  - pnpm 9 + Turborepo 2 / rejected npm workspaces + Nx (extra DSL surface).
+  - Fly.io primary + Railway fallback / rejected AWS ECS day-one (2-week stand-up vs 1-hour ship).
+  - GitHub Actions + Turbo remote cache + Buildx + Trivy / rejected CircleCI/GitLab CI (integration delta with GitHub beats feature delta).
+  - Cloudflare CDN+WAF / rejected AWS CloudFront + WAF + Route 53 (TCO + dashboards).
+  - Doppler secrets / rejected AWS Secrets Manager day-one (DX — need AWS acct before `pnpm dev`).
+- **Kubernetes migration triggers** spelled out as numbers, per the acceptance criterion:
+  1. ≥ 4 regions serving real traffic AND aggregate MAU ≥ 500,000.
+  2. Monthly hosting bill > $15,000 AND > 40% of COGS (per [§23.1]). Caveat: false-positive on trigger 2 alone usually means a cost bug, not an infra ceiling — root-cause before superseding.
+  3. Self-hosted LLM inference > 100 req/s sustained 24 h AND Fly GPU price > 2× EKS spot equivalent.
+  4. Custom networking Fly's anycast + WireGuard mesh can't serve (bounded, not aesthetic).
+- **Re-evaluation triggers** (separate from the K8s tripwires): Fly SLA incident density, Cloudflare free-tier pricing shifts, GitHub Actions minute quota burn, Doppler SOC 2 posture vs CMK requirements.
+- **Binding consequences** re-encode several operational rules: `pnpm install --frozen-lockfile` in CI, distroless + non-root Docker images, `.env` gitignored + Doppler-owned secrets (CLAUDE rule 5 tie-in), SBOM + Trivy hard-block on CRITICAL CVE, Terraform + Helm scaffolds live in `infra/` ready-but-unused until triggers fire, no auto-upgrades on paid tiers (human confirms).
+- **`docs/adr/README.md`** — row for ADR-009, inserted in numeric order so the index finally reads 001..010 contiguous.
+
+**Files created** (1) — `docs/adr/ADR-009-devops.md`.
+**Files edited** (2) — `docs/adr/README.md`, `PROGRESS.md`.
+**Dependencies** — none.
+
+**Verification**
+
+Acceptance criterion: "K8s migration triggers are quantitative." ✅ — 3 numeric triggers (region count + MAU floor; $/month + COGS %; req/s + cost ratio) + 1 architectural (custom networking), all checkable against metrics we'd already be emitting via the OTel stack from `[III.15.4]`.
+
+Cross-checks:
+
+- Every choice reconciles with prior ADRs — pnpm + Turborepo match the actual `pnpm-workspace.yaml` + `turbo.json` shipped in `[II.10.0]`; Fly.io matches the Playbook §34.2 hosting table; Cloudflare matches Playbook §8.6.
+- Binding consequences align with CLAUDE.md rules (rule 5 secrets, rule 9 logger/no-console in Docker image) + the Playbook §21.4 budget-alarm posture.
+- ADR-009 number gap closed; index is now 001..010 contiguous.
+
+**Acceptance criteria**
+
+- ✅ DevOps stack locked (pnpm + Turborepo + Docker + Fly.io/Railway v1 + Terraform-ready for AWS).
+- ✅ K8s migration triggers are quantitative (3 numeric + 1 architectural, each binding).
+
+**Notes**
+
+- **Why a separate ADR for "Infra v1" + "Infra later" instead of one per region?** Because the Infra-later path is the SAME Dockerfile + SAME Terraform scaffold + SAME Helm chart — just on a different control plane. One ADR captures the posture ("small team deploys on managed, graduates to AWS when triggers fire"); doesn't require a follow-up for the target.
+- **Trigger 2's false-positive caveat** is practical operations advice: a team that crosses $15k/month WITHOUT crossing trigger 1 or 3 is usually leaking money (unbounded PostHog captures, CDN cache-miss storms, forgotten staging envs). The ADR refuses to ratify EKS adoption on trigger 2 alone without a cost-cause investigation first — saves us from a migration-as-cope anti-pattern.
+- **Stack-lock series complete.** 005 (frontend) + 006 (backend) + 007 (data) + 008 (AI) + 009 (devops). Any significant architectural drift now requires a superseding ADR, not a PR-comment thread.
 
 ---
 
