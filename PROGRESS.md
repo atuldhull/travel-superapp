@@ -12,16 +12,87 @@
 
 | Counter             | Value                                                                                     |
 | ------------------- | ----------------------------------------------------------------------------------------- |
-| Prompts completed   | 39 (38 full + 1 foundation-only; `[III.13.2]` part 2 just shipped — still IN-PROGRESS)    |
+| Prompts completed   | 40 (39 full + 1 foundation-only; `[III.11.3]` guards just shipped)                        |
 | Prompts in progress | 1 (`[III.13.2]` — parts 1+2 shipped; MFA + OAuth + JWKS rotation + session cap follow-up) |
 | Prompts blocked     | 0                                                                                         |
-| Last prompt         | `[III.13.2]` (part 2 — Identity module: sessions + refresh rotation + reuse cascade)      |
+| Last prompt         | `[III.11.3]` — JwtAuthGuard + RolesGuard + @CurrentUser + @Public + @Roles                |
 | Last commit date    | 2026-04-20                                                                                |
-| Phase               | Phase 0 — Foundation (auth flow live end-to-end; 16 suites, 112 tests green)              |
+| Phase               | Phase 0 — Foundation (auth consumption layer live; 17 suites, 120 tests green)            |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [III.11.3] — JwtAuthGuard + RolesGuard + @CurrentUser + @Public + @Roles (auth consumption layer)
+
+**Date:** 2026-04-20 · **Status:** DONE · **Kind:** Build · **Playbook §** 11.3, 13.2
+
+**What was done**
+
+`[III.13.2]` parts 1+2 shipped the auth _production_ side (primitives + register/login/refresh/logout). This prompt is the _consumption_ side: the guard chain every future feature module uses to protect its routes. Without it, every new controller would have to fake JWT verification inline.
+
+- **`apps/api/src/common/auth/`** — new common package. Tiny by design (6 files, ~180 lines).
+  - **`authenticated-user.ts`** — `AuthenticatedUser { sub, sid, role }` + `Role` union. Fastify module-augmentation typings so `req.user` type-checks downstream.
+  - **`public.decorator.ts`** — `@Public()` sets `IS_PUBLIC_KEY` metadata; `JwtAuthGuard.canActivate` short-circuits when present. Handler-level decorator wins over class-level (Reflector `getAllAndOverride`).
+  - **`roles.decorator.ts`** — `@Roles('admin', 'premium')` sets `ROLES_KEY` with the accepted role list.
+  - **`current-user.decorator.ts`** — `@CurrentUser()` param decorator; pulls `req.user` in handlers. Throws loudly if used on a non-authenticated route (config bug).
+  - **`jwt-auth.guard.ts`** — extracts `Authorization: Bearer <token>`, verifies via the `TOKEN_SERVICE` port exported by `IdentityModule` (does NOT reach into `@app/auth` directly — keeps guard swappable for tests). On failure, throws `UnauthorizedError('…', {reason}, 'UNAUTHENTICATED')` → the global domain filter renders a 401.
+  - **`roles.guard.ts`** — reads `@Roles` metadata; no-op if absent; `ForbiddenError('…', {actual, required}, 'ROLE_FORBIDDEN')` on mismatch.
+  - **`index.ts`** — barrel.
+
+- **`apps/api/src/app.module.ts`** — registered the 3-guard chain as `APP_GUARD`:
+
+  ```
+  RateLimitGuard → JwtAuthGuard → RolesGuard
+  ```
+
+  Order matters: rate-limit runs first so a flood of unauthenticated traffic still hits the budget (otherwise "invalid token" responses would be free DDoS fuel). Auth runs before role because `RolesGuard` reads `req.user` attached by `JwtAuthGuard`.
+
+- **`@Public()` applied to the existing public surface:**
+  - `HealthController` — probes can't present JWTs (already had `@SkipThrottle()`; now `@Public()` too).
+  - `AuthController.register / login / refresh / logout` — these are what _creates_ sessions; they can't require one.
+
+- **`GET /api/v1/auth/me`** added to `AuthController` — the first canonical protected route. Uses `@CurrentUser(): AuthenticatedUser`. Returns `{ sub, sid, role }`. Every future feature module copies this pattern.
+
+- **`apps/api/test/auth-guards.e2e-spec.ts`** — 8 integration tests, real-Postgres via `app.inject()`:
+  1. public `/health/live` + `/auth/register` reachable without a token.
+     2–4. protected `/auth/me` with missing / malformed / bogus bearer → 401 `UNAUTHENTICATED`.
+  2. protected `/auth/me` with a valid token → 200 `{ sub, sid, role }`.
+  3. `@Roles('admin')` on a `user` token → 403 `ROLE_FORBIDDEN` (proves role enforcement).
+  4. `@Roles('admin')` on an admin-minted token → 200 (proves positive path — admin token minted directly via `TOKEN_SERVICE` since we don't expose an admin-create endpoint yet).
+  5. `@CurrentUser()` without `@Roles` still hydrates `req.user`.
+
+**Files created** (7) — `apps/api/src/common/auth/{authenticated-user,public.decorator,roles.decorator,current-user.decorator,jwt-auth.guard,roles.guard,index}.ts` + `apps/api/test/auth-guards.e2e-spec.ts`.
+**Files edited** (3) — `apps/api/src/app.module.ts` (3-guard chain), `apps/api/src/health/health.controller.ts` (+ `@Public()`), `apps/api/src/modules/identity/interface/auth.controller.ts` (+ `@Public()` on the 4 entry routes, + `GET /me` with `@CurrentUser()`).
+**Dependencies** — none new; reuses `@app/auth`, `@app/errors`, `IdentityModule.TOKEN_SERVICE`.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green on apps/api.
+- ✅ `jest --testPathPattern="auth-guards"` — 8/8 pass.
+- ✅ Broader run (`identity|smoke|auth-guards|app.e2e|health` + `filters|rate-limit|zod|security|domain-exception`) — **10 suites, 79 tests pass.** No regression on existing coverage.
+- ✅ Guard ordering verified: a public route with no token hits `RateLimitGuard` (passes) → `JwtAuthGuard` (short-circuits on `@Public()`) → `RolesGuard` (short-circuits with no `@Roles`) → handler. A protected route without a token hits `JwtAuthGuard` and throws before the handler runs.
+
+**Acceptance criteria**
+
+- ✅ `JwtAuthGuard` as global APP_GUARD.
+- ✅ `RolesGuard` as global APP_GUARD enforcing `@Roles`.
+- ✅ `@Public()` exempts specific routes/classes.
+- ✅ `@CurrentUser()` extracts `AuthenticatedUser` in handlers.
+- ✅ Protected route returns 401 without token.
+- ✅ Protected route with wrong role returns 403.
+- ✅ `/health/*` + `/auth/{register,login,refresh,logout}` remain public.
+
+**Notes**
+
+- **Why go through `TOKEN_SERVICE` port, not `@app/auth` directly.** The guard lives in `apps/api/src/common/auth/` — app-level code. The `TokenService` port is the seam between crypto primitives and app policy (TTLs, keyrings, issuer/audience, JWKS rotation later). Future-me can swap HS256 → RS256 + JWKS by editing `JwtTokenService` alone; the guard doesn't change. Direct `@app/auth` use would leak the algorithm choice into the guard.
+- **Why no Reflector import in the decorators.** `SetMetadata` is framework-built-in; the decorators stay pure metadata. Guards are the only places that need a `Reflector` (DI'd via `@Inject(Reflector)` — the tsx decorator-metadata workaround from `[IV.18.1.16]`).
+- **Why the synthetic `GuardTestController` in the test file (not in src/).** Production should not ship an unauthenticated admin probe. Declaring the controller inline in the spec keeps it scoped to test builds.
+- **Why `RolesGuard` throws Error instead of ForbiddenError when `req.user` is missing.** That state means `@Roles` is on a `@Public()` route, which is a config bug — loud is correct. `ForbiddenError` would silently return 403 to a caller who should've gotten a route not protected at all.
+- **Why `@SkipThrottle()` stays on HealthController alongside `@Public()`.** `@Public()` bypasses auth; `@SkipThrottle()` bypasses rate limits. LB health checks need both.
+- **`@Public()` on `/auth/*` is tighter than stacking the whole controller.** The 4 entry routes explicitly opt in; `GET /auth/me` inherits protection by default. This keeps the public surface obvious at the call site.
 
 ---
 
