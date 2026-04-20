@@ -12,14 +12,19 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { hashPassword, verifyPassword } from '@app/auth';
 import { UnauthorizedError } from '@app/errors';
+import { createLogger } from '@app/logger';
+import { isWellFormedBackupCode } from '../infrastructure/backup-code-hash';
 import { TotpService } from '../infrastructure/totp.service';
 import {
   IssueSessionUseCase,
   type IssueSessionCommand,
   type IssuedSession,
 } from './issue-session.use-case';
+import { BACKUP_CODE_REPOSITORY, type BackupCodeRepository } from './ports/backup-code.repository';
 import { USER_REPOSITORY, type UserRepository } from './ports/user.repository';
 import { hashEmail } from '../infrastructure/email-hash';
+
+const log = createLogger('identity.login');
 
 export interface LoginCommand {
   readonly email: string;
@@ -50,6 +55,8 @@ async function ensureDummyHash(): Promise<string> {
 export class LoginUseCase {
   constructor(
     @Inject(USER_REPOSITORY) private readonly users: UserRepository,
+    @Inject(BACKUP_CODE_REPOSITORY)
+    private readonly backupCodes: BackupCodeRepository,
     private readonly issueSession: IssueSessionUseCase,
     private readonly totp: TotpService,
   ) {}
@@ -72,9 +79,12 @@ export class LoginUseCase {
     // MFA gate. Client flow:
     //   1. POST /login with just { email, password }. If the user
     //      has MFA, we return 401 `MFA_REQUIRED` — the client then
-    //      prompts for the authenticator code.
-    //   2. POST /login with { email, password, mfaCode }. We verify
-    //      the code; on success the session issues normally.
+    //      prompts for the authenticator code OR a backup code.
+    //   2. POST /login with { email, password, mfaCode }.
+    //      - 6-digit input → try TOTP.
+    //      - 8-char alphanumeric input → try backup code (single-use;
+    //        consumed on success).
+    //   3. On success the session issues normally.
     if (user.mfaEnabled) {
       if (!cmd.mfaCode) {
         throw new UnauthorizedError(
@@ -88,7 +98,19 @@ export class LoginUseCase {
         // the DB was tampered with. Fail closed.
         throw new UnauthorizedError('MFA misconfigured', {}, 'MFA_MISCONFIGURED');
       }
-      if (!this.totp.verifyCode(user.mfaSecret, cmd.mfaCode)) {
+
+      const trimmedCode = cmd.mfaCode.trim().toUpperCase();
+      let mfaAccepted = false;
+      if (/^\d{6}$/.test(trimmedCode)) {
+        mfaAccepted = this.totp.verifyCode(user.mfaSecret, trimmedCode);
+      } else if (isWellFormedBackupCode(trimmedCode)) {
+        mfaAccepted = await this.backupCodes.consume(user.id, trimmedCode);
+        if (mfaAccepted) {
+          const remaining = await this.backupCodes.countRemaining(user.id);
+          log.warn({ userId: user.id, remaining }, 'mfa_backup_code_consumed');
+        }
+      }
+      if (!mfaAccepted) {
         throw new UnauthorizedError('Invalid MFA code', {}, 'INVALID_MFA');
       }
     }

@@ -42,6 +42,7 @@ import { IssueSessionUseCase } from '../../identity/application/issue-session.us
 import { LoginUseCase } from '../../identity/application/login.use-case';
 import {
   DisableMfaUseCase,
+  RegenerateBackupCodesUseCase,
   SetupMfaUseCase,
   VerifyMfaUseCase,
 } from '../../identity/application/mfa.use-case';
@@ -85,6 +86,7 @@ export class AuthController {
     private readonly setupMfaUc: SetupMfaUseCase,
     private readonly verifyMfaUc: VerifyMfaUseCase,
     private readonly disableMfaUc: DisableMfaUseCase,
+    private readonly regenBackupUc: RegenerateBackupCodesUseCase,
     // Kept for future direct session-issuance flows (OAuth callback,
     // magic-link) even though not called directly in this file today.
     @Inject(IssueSessionUseCase) private readonly _issue: IssueSessionUseCase,
@@ -197,17 +199,37 @@ export class AuthController {
 
   /**
    * Confirm MFA enrollment by proving the user's authenticator
-   * app works. On success, `user.mfaEnabled` flips to true and
-   * subsequent logins require a code.
+   * app works. On the first-time transition we also emit 10
+   * single-use plaintext backup codes — shown ONCE, never
+   * retrievable again. On re-verify of an already-enabled account
+   * (idempotent no-op), `backupCodes` is null.
    */
   @Post('mfa/verify')
-  @HttpCode(HttpStatus.NO_CONTENT)
+  @HttpCode(HttpStatus.OK)
   @UsePipes(new ZodValidationPipe(MfaCodeBodySchema))
   async mfaVerify(
     @CurrentUser() user: AuthenticatedUser,
     @Body() body: MfaCodeBody,
-  ): Promise<void> {
-    await this.verifyMfaUc.execute(user.sub, body.code);
+  ): Promise<{ backupCodes: readonly string[] | null }> {
+    const result = await this.verifyMfaUc.execute(user.sub, body.code);
+    return { backupCodes: result.backupCodes };
+  }
+
+  /**
+   * Regenerate the 10 single-use backup codes. Requires a valid
+   * current TOTP so a hijacked session can't silently rotate codes
+   * (which would lock the legitimate user out of the recovery
+   * path). Returns the new plaintexts — shown once, never again.
+   */
+  @Post('mfa/backup-codes/regenerate')
+  @HttpCode(HttpStatus.OK)
+  @UsePipes(new ZodValidationPipe(MfaCodeBodySchema))
+  async regenerateBackupCodes(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: MfaCodeBody,
+  ): Promise<{ backupCodes: readonly string[] }> {
+    const codes = await this.regenBackupUc.execute(user.sub, body.code);
+    return { backupCodes: codes };
   }
 
   /**
