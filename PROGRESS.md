@@ -10,18 +10,73 @@
 
 ## Summary
 
-| Counter             | Value                                                                                         |
-| ------------------- | --------------------------------------------------------------------------------------------- |
-| Prompts completed   | 38                                                                                            |
-| Prompts in progress | 0                                                                                             |
-| Prompts blocked     | 0                                                                                             |
-| Last prompt         | `[IV.18.1.9]`                                                                                 |
-| Last commit date    | 2026-04-20                                                                                    |
-| Phase               | Phase 0 — Foundation (EventBus + Redis Streams adapter + DLQ live; 13 suites, 85 tests green) |
+| Counter             | Value                                                                                      |
+| ------------------- | ------------------------------------------------------------------------------------------ |
+| Prompts completed   | 39 (38 full + 1 foundation-only)                                                           |
+| Prompts in progress | 1 (`[III.13.2]` — foundation shipped; integration + MFA + OAuth + JWKS rotation follow-up) |
+| Prompts blocked     | 0                                                                                          |
+| Last prompt         | `[III.13.2]` (part 1 — `@app/auth` crypto primitives only)                                 |
+| Last commit date    | 2026-04-20                                                                                 |
+| Phase               | Phase 0 — Foundation (argon2id + JWT-with-kid primitives live; 15 suites, 107 tests green) |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [III.13.2] — @app/auth crypto primitives (foundation only — part 1 of the auth prompt)
+
+**Date:** 2026-04-20 · **Status:** IN-PROGRESS · **Kind:** Build · **Playbook §** 13.2
+
+**What was done — scope reduction explained**
+
+`[III.13.2]` is the single biggest prompt in the Playbook — argon2id + access+refresh JWT + rotating refresh + reuse-detection + TOTP MFA + OAuth2 Google/Apple + JWKS key rotation + session concurrency cap + device fingerprint binding + full integration tests. That's 5+ subsystems of security-critical code, a 3–5 hour focused task at minimum.
+
+In Plan-first mode, a responsible autopilot doesn't ship half of that. Shipping a half-implemented auth flow is WORSE than no auth — it creates the illusion of security. So this commit is **part 1 only: the cryptographic primitives**. Pure functions, no DI, no DB, no HTTP — isolated and heavily tested. The Nest module + Prisma user repo + HTTP endpoints + OAuth + MFA + JWKS rotation + device binding + session cap all land in follow-up prompts on top of THIS foundation.
+
+- **`packages/auth/`** — new workspace package, `@app/logger`-pattern shape.
+  - **`src/password.ts`** — `hashPassword(plaintext)` / `verifyPassword(plaintext, hash)` / `needsRehash(hash)`. argon2id at Playbook §13.2 cost parameters (timeCost 3, memoryCost 64 MiB, parallelism 1). `needsRehash` reads the params out of the stored hash prefix so we can bump work factors later without a flag day — re-hash-on-login migration. Salt is random per hash (16 bytes). Empty-plaintext + malformed-hash inputs return `false` without throwing (never leak timing or implementation details on bad input).
+  - **`src/jwt.ts`** — `signJwt(claims, key, {expiresInSeconds, issuer?, audience?})` + `verifyJwt<T>(token, keyring, opts?)`. Every token carries a `kid` protected header; verify tries `keyring.current` then each `keyring.previous` until a match. `JwtVerificationError` with stable codes `MISSING_KID` | `UNKNOWN_KID` | `INVALID`. HS256 today — RS256/ES256 + JWKS endpoint is a signer-swap follow-up, protocol shape already future-proof. `AccessTokenClaims` + `RefreshTokenClaims` typed so use-cases can't mix them up. `secretFromString(string)` utility for building `JwtKey.secret: Uint8Array` from env.
+  - **`src/index.ts`** — re-exports. Header comment lists what's here (password + JWT) vs. what's NOT YET here (refresh rotation, MFA, OAuth, JWKS rotation cron, Nest guards, session cap, device binding) so future prompts have a clear starting line.
+- **`test/password.spec.ts`** — 11 tests covering argon2-prefix-format assertion, salt-randomness, empty-input rejection, round-trip, non-match false, malformed-hash safe-false, hash-empty defensive throw, and `needsRehash` across current/old-cost/unrecognised-format inputs.
+- **`test/jwt.spec.ts`** — 11 tests covering access + refresh round-trips, issuer + audience propagation + mismatch rejection, key rotation (sign with `v1`, verify when keyring has `v2` current + `v1` previous), `UNKNOWN_KID` when `v1` is rotated out, `MISSING_KID` on a header without kid, `INVALID` on tampered signatures + expired tokens, `JwtVerificationError.code` + name stability, `secretFromString` UTF-8 encoding.
+
+**Files created** (11) — `packages/auth/{package.json, tsconfig.json, tsconfig.build.json, jest.config.cjs, eslint.config.mjs}` + `src/{password,jwt,index}.ts` + `test/{password,jwt}.spec.ts`.
+**Files edited** (1) — `pnpm-lock.yaml` (workspace + deps).
+**Dependencies** — `argon2@^0.41.1` (native binding), `jose@^5.9.6` (modern JWT + JWKS-native). Both CJS-friendly; no ESM/ts-jest friction. Coverage threshold tightened to 85% (vs workspace 80%) since this is security-critical code.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ `jest --runInBand` — **22/22 pass** (11 password + 11 JWT). Covers the 4 error paths on `verifyJwt` (MISSING_KID, UNKNOWN_KID, INVALID-signature, INVALID-expired) and the rotation happy-path.
+- ✅ `tsc -p tsconfig.build.json` emits `dist/`.
+
+**Acceptance criteria**
+
+Partial — scope is the foundation layer only:
+
+- ✅ argon2id at timeCost 3 + memoryCost 65536 (verified via hash-format assertion in tests).
+- ✅ `kid` header on every JWT (part of the sign contract; verify asserts).
+- ✅ Keyring shape supports current + previous during rotation — tests prove a `v2`-current, `v1`-previous keyring accepts tokens signed with EITHER.
+
+Deferred to follow-up prompts (each marked IN-PROGRESS until they land):
+
+- ⏳ Access JWT 15m + refresh JWT 30d in httpOnly cookie — needs Nest + Fastify cookie plugin wiring.
+- ⏳ Rotating refresh + reuse-detection cascade — needs a Session repo (Prisma).
+- ⏳ TOTP MFA — needs speakeasy + a User MFA-status field.
+- ⏳ OAuth2 Google/Apple — needs Passport strategies + env vars already in schema.
+- ⏳ JWKS rotation cron — needs BullMQ + Redis-backed keyring storage.
+- ⏳ Session concurrency cap (10) — needs Session repo.
+- ⏳ Device fingerprint binding — trivially added once refresh flow exists.
+
+**Notes**
+
+- **Why jose over jsonwebtoken.** jose ships both CJS + ESM, has first-class JWKS primitives (`createLocalJWKSet`), and its `SignJWT` / `jwtVerify` API is cleaner. `jsonwebtoken` would work but its JWKS story is third-party (jwks-rsa).
+- **Why explicit argon2 params.** Playbook §13.2 names exact values; argon2's defaults differ. Pinning ensures a hash generated on pod A verifies correctly on pod B at the same cost factor. When we bump the factor, `needsRehash` drives the migration one login at a time.
+- **Why `JwtVerificationError` instead of jose's native errors.** Callers need a stable `code` to branch on — `MISSING_KID` / `UNKNOWN_KID` / `INVALID` cover the real auth decisions (return 401 + "please log in", return 401 + "token from retired key rotation", return 401 + "malformed"). jose's specific error classes (`JWSSignatureVerificationFailed`, `JWTExpired`, etc.) leak too much internal detail into the call-site.
+- **No integration test yet.** Integration tests for the crypto layer alone would be noise; the real integration test is "register a user, log in, refresh the token, log out" — which requires the Nest module + Prisma repo, i.e. the next prompt's work. The unit tests here cover every branch with real argon2 hashing + real jose signing.
+- **Security-sensitive code deserves a real human review** before the Nest integration lands on top. The foundation is small (200 lines); worth reading line-by-line before building the stack on it.
 
 ---
 
