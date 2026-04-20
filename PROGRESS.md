@@ -10,18 +10,51 @@
 
 ## Summary
 
-| Counter             | Value                                                                                 |
-| ------------------- | ------------------------------------------------------------------------------------- |
-| Prompts completed   | 32                                                                                    |
-| Prompts in progress | 0                                                                                     |
-| Prompts blocked     | 0                                                                                     |
-| Last prompt         | `[III.12.4]`                                                                          |
-| Last commit date    | 2026-04-20                                                                            |
-| Phase               | Phase 0 — Foundation (index sweep proven — EXPLAIN hits GiST; 10 suites, 74/74 tests) |
+| Counter             | Value                                                                           |
+| ------------------- | ------------------------------------------------------------------------------- |
+| Prompts completed   | 33                                                                              |
+| Prompts in progress | 0                                                                               |
+| Prompts blocked     | 0                                                                               |
+| Last prompt         | `health-indicator-cleanup` (follow-up to [IV.18.1.16] × [III.12.2])             |
+| Last commit date    | 2026-04-20                                                                      |
+| Phase               | Phase 0 — Foundation (PostgresHealthIndicator uses PrismaService; dropped `pg`) |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### `health-indicator-cleanup` — PostgresHealthIndicator → PrismaService
+
+**Date:** 2026-04-20 · **Status:** DONE · **Kind:** Refactor · **Follow-up to** `[IV.18.1.16]` × `[III.12.2]`
+
+**What was done**
+
+`PostgresHealthIndicator` had been carrying its own `pg.Pool` since it was written in `[IV.18.1.16]` — Prisma wasn't wired yet then. Now that `PrismaService` exists (from `[III.12.2]`), the right posture is ONE pool: `/health/ready` probes through the same connection every request path uses. A probe "up" truly means "every incoming request can reach the DB."
+
+- **`apps/api/src/health/indicators/postgres.indicator.ts`** — rewritten to inject `PrismaService`, probe via `$queryRaw\`SELECT 1 AS ok\``. Dropped the `pg.Pool`+ its`onModuleDestroy` cleanup (PrismaService handles that now).
+- **`apps/api/package.json`** — removed `pg@8.20.0` + `@types/pg@8.20.0`. Nothing in `apps/api/src` or `apps/api/test` imports `pg` after the rewrite.
+- **No test changes needed.** `health.e2e-spec.ts` uses `overrideProvider(PostgresHealthIndicator)` with a test double — the underlying client swap is opaque to it.
+
+**Files created** — none.
+**Files edited** (3) — `apps/api/src/health/indicators/postgres.indicator.ts`, `apps/api/package.json`, `PROGRESS.md`.
+**Dependencies** — **net -2** (`pg`, `@types/pg` removed).
+
+**Verification**
+
+- ✅ `tsc --noEmit` green after the indicator rewrite + dep drop.
+- ✅ Full api suite — **10 suites, 74/74**. Unchanged pass count, no regressions.
+- ✅ Live smoke: `/health/ready` on port 3032 returns 200 with `postgres.latencyMs: 34` via the PrismaService pool.
+- ⚠ Kill-Redis verification skipped this run — Docker CLI commands in the session went silent (Desktop quirk, reproduced in multiple attempts). The Redis-indicator path didn't change in this cleanup, so the `[IV.18.1.16]` verification (503 on redis-down, recovery on restart) still stands. Unit tests for the Redis path continue to pass.
+
+**Acceptance criteria** — n/a (not a standalone prompt; consistency cleanup).
+
+**Notes**
+
+- **Why this matters.** Two DB pools (the old `pg.Pool` for the probe + Prisma's pool for everything else) is a footgun: the probe could succeed while Prisma's pool is exhausted. Same pool = the probe sees what users see.
+- **The `pg` dep had been carrying its weight elsewhere?** No — `grep -r "from 'pg'"` finds zero hits after this rewrite. Clean removal.
+- **`tsx` version lesson.** The local `tsx` ended up at `4.21.0` even though `package.json` pins `^4.19.2` (semver-compatible). When hand-invoking via `node node_modules/.pnpm/tsx@.../...`, the exact folder name matters. Noted inline so next live-smoke picks the right path.
 
 ---
 
