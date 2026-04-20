@@ -15,6 +15,7 @@ An ADR is never edited in place once accepted — supersede with a new one inste
 | 006 | [Backend stack: NestJS + Fastify + Prisma + FastAPI + BullMQ](./ADR-006-backend-stack.md)            | Accepted | `[II.8.2]`   |
 | 007 | [Data layer: Postgres + PostGIS + pgvector + Redis + Meilisearch](./ADR-007-data-layer.md)           | Accepted | `[II.8.3]`   |
 | 008 | [AI stack: layered Anthropic + self-hosted NLLB/Whisper/DistilBERT/Llama 3.1](./ADR-008-ai-stack.md) | Accepted | `[II.8.4]`   |
+| 009 | [DevOps & infra: pnpm + Turborepo + Fly.io/Railway, Terraform-ready for AWS](./ADR-009-devops.md)    | Accepted | `[II.8.6]`   |
 | 010 | [Delete policy: anonymise-on-delete, no soft-delete middleware](./ADR-010-soft-delete-policy.md)     | Accepted | `[III.12.6]` |
 
 ## Authoring
