@@ -10,14 +10,14 @@
 
 ## Summary
 
-| Counter             | Value                                                                                |
-| ------------------- | ------------------------------------------------------------------------------------ |
-| Prompts completed   | 28                                                                                   |
-| Prompts in progress | 1                                                                                    |
-| Prompts blocked     | 0                                                                                    |
-| Last prompt         | `[III.12.1]` (IN-PROGRESS — migration pending Docker restart)                        |
-| Last commit date    | 2026-04-20                                                                           |
-| Phase               | Phase 0 — Foundation (Prisma schema authored + validated; initial migration pending) |
+| Counter             | Value                                                                                      |
+| ------------------- | ------------------------------------------------------------------------------------------ |
+| Prompts completed   | 29                                                                                         |
+| Prompts in progress | 0                                                                                          |
+| Prompts blocked     | 0                                                                                          |
+| Last prompt         | `[III.12.1]`                                                                               |
+| Last commit date    | 2026-04-20                                                                                 |
+| Phase               | Phase 0 — Foundation (Prisma schema foundation landed — 43 tables live in Docker Postgres) |
 
 ---
 
@@ -25,13 +25,15 @@
 
 ---
 
-### [III.12.1] — Prisma schema foundation (IN-PROGRESS)
+### [III.12.1] — Prisma schema foundation (DONE)
 
-**Date:** 2026-04-20 · **Status:** IN-PROGRESS · **Kind:** Build · **Playbook §** 12.1
+**Date:** 2026-04-20 · **Status:** DONE · **Kind:** Build · **Playbook §** 12.1
+
+**Shipped across two commits:** `b8e422a` (schema + deps, IN-PROGRESS pending Docker) → `<current>` (initial migration applied against live Postgres, flipped to DONE).
 
 **What was done**
 
-Authored the full Prisma schema covering every model from the [context-map](./docs/architecture/context-map.md). Validates clean. Initial migration not yet applied — Docker Desktop is not running, so `prisma migrate dev` can't reach `localhost:5432`. Schema + deps + scripts committed so the work isn't dangling; the migration step runs the moment Docker is back up.
+Authored the full Prisma schema covering every model from the [context-map](./docs/architecture/context-map.md). Validates clean. Initial migration generated, applied against the Docker Postgres container, and verified — all 43 tables + 4 extensions (postgis, vector, pg_trgm, pgcrypto) now live.
 
 - **`apps/api/prisma/schema.prisma`** — 43 models, exact match against context-map (`grep "^model " | wc -l` = 43, sorted list cross-checked one-for-one). Covers all 15 stateful bounded contexts. Highlights:
   - `generator client { previewFeatures = ["postgresqlExtensions"] }` + `extensions = [postgis, vector, pg_trgm, pgcrypto]`.
@@ -51,19 +53,22 @@ Authored the full Prisma schema covering every model from the [context-map](./do
 
 **Verification**
 
-- ✅ `pnpm prisma validate` — "The schema at prisma\\schema.prisma is valid 🚀"
-- ✅ Every model from the context-map present exactly once — 43 models, sorted `grep` matches the Ownership Index in [context-map](./docs/architecture/context-map.md).
-- ✅ Migration-diff preview (`prisma migrate diff --from-empty --to-schema-datamodel`) produces 1059 lines of SQL — CREATE EXTENSION × 4 + CREATE TYPE × 12 + CREATE TABLE × 43 + indexes + foreign keys. Parses cleanly; ready to apply.
-- ⚠ `pnpm prisma migrate dev --name init` — **BLOCKED** on Docker. When Docker Desktop is up and `make up` has the Postgres container healthy, the one-line completion is all that's left.
+- ✅ `prisma validate` — "The schema at prisma\\schema.prisma is valid 🚀"
+- ✅ 43 models in schema.prisma match the context-map Ownership Index 1:1 (sorted `grep "^model "` output cross-referenced).
+- ✅ Initial migration `prisma/migrations/20260420060403_init/migration.sql` generated via `prisma migrate diff --from-empty --to-schema-datamodel` (1046 lines of SQL, extensions × 4 + enums × 12 + tables × 43 + indexes + FKs).
+- ✅ `prisma migrate deploy` applied the migration cleanly against `travel-postgres`. `_prisma_migrations` row written.
+- ✅ `docker exec travel-postgres psql -c "\\dt"` confirms 43 app tables (plus `_prisma_migrations` + PostGIS's `spatial_ref_sys`).
+- ✅ `SELECT extname FROM pg_extension` confirms all 4 extensions present (postgis 3.4.3, vector 0.8.2, pg_trgm 1.6, pgcrypto 1.3).
 
 **Acceptance criteria**
 
-- ✅ `pnpm prisma validate` green.
-- ⏳ `pnpm prisma migrate dev --name init` applies cleanly — deferred until Docker is running.
-- ✅ Every model from the context map exists exactly once.
+- ✅ `prisma validate` green.
+- ✅ Initial migration applies cleanly (via `migrate deploy` — see "Migration flow" note below).
+- ✅ Every model from the context map exists exactly once — 43/43.
 
 **Notes**
 
+- **Migration flow** (non-interactive). `prisma migrate dev` is interactive-only and won't run from an automated shell. Generated the migration file manually via `prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script` (same SQL `migrate dev` would produce), wrote `migration_lock.toml`, then applied via `prisma migrate deploy` — which IS non-interactive. Net result identical to a standard `migrate dev --name init`; the `_prisma_migrations` table tracks it correctly.
 - **Prisma 7 → 5 downgrade.** pnpm first resolved `prisma` to 7.7.0, which moved `DATABASE_URL` out of `schema.prisma` into `prisma.config.ts` (breaking change). ADR-006 locks Prisma 5; downgraded to 5.22.0 rather than open a superseding ADR mid-flight.
 - **`postgisTopology` dropped.** Playbook §12.5 has `postgisTopology` in the example extensions list, but that name doesn't map to a real Postgres extension (the actual one is `postgis_topology`, lowercase). We only need Point geometry, not topology — dropping it avoids the name-mapping detour. Worth a note in a future Playbook erratum.
 - **Supabase is the production Postgres host** (user note, 2026-04-20). Memory saved. This doesn't change the schema — Supabase IS Postgres + our extensions are pre-enabled there. It does mean when production lands we'll need a `DIRECT_URL` env var for Prisma migrations (PgBouncer transaction mode breaks Prisma's prepared statements) and a posture decision on RLS. Flagged for the [IV.17.2] Prisma fix-up prompt.
