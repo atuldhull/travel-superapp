@@ -10,18 +10,63 @@
 
 ## Summary
 
-| Counter             | Value                                                                                      |
-| ------------------- | ------------------------------------------------------------------------------------------ |
-| Prompts completed   | 29                                                                                         |
-| Prompts in progress | 0                                                                                          |
-| Prompts blocked     | 0                                                                                          |
-| Last prompt         | `[III.12.1]`                                                                               |
-| Last commit date    | 2026-04-20                                                                                 |
-| Phase               | Phase 0 — Foundation (Prisma schema foundation landed — 43 tables live in Docker Postgres) |
+| Counter             | Value                                                                                       |
+| ------------------- | ------------------------------------------------------------------------------------------- |
+| Prompts completed   | 30                                                                                          |
+| Prompts in progress | 0                                                                                           |
+| Prompts blocked     | 0                                                                                           |
+| Last prompt         | `[III.12.2]`                                                                                |
+| Last commit date    | 2026-04-20                                                                                  |
+| Phase               | Phase 0 — Foundation (GeoQueries wrapper live — PostGIS ST_DWithin wired; 68/68 tests pass) |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [III.12.2] — PostGIS raw-SQL wrapper (GeoQueries) + DI scaffold
+
+**Date:** 2026-04-20 · **Status:** DONE · **Kind:** Build · **Playbook §** 12.2
+
+**What was done**
+
+Turns the PostGIS columns from [III.12.1]'s schema into callable methods, enforces CLAUDE rule 11 (PostGIS writes only via `GeoQueries`) by construction, and stands up the shared `PrismaService` + `DbModule` infrastructure every future module will depend on.
+
+- **`apps/api/src/common/db/prisma.service.ts`** — `@Injectable()` `PrismaClient` subclass wired into Nest lifecycle. `onModuleInit` → `$connect`, `onModuleDestroy` → `$disconnect`. Reads `DATABASE_URL` via the typed `ConfigService`. `log: ['warn', 'error']` for now (query-level logs gated by a future prompt).
+- **`apps/api/src/common/db/db.module.ts`** — `@Global` module exporting `PrismaService` + `GeoQueries`. Global so feature modules don't re-declare; single Prisma connection across the process.
+- **`apps/api/src/common/db/geo-queries.ts`** — three typed methods as specified in the prompt:
+  - `insertPlace({sourceKey, name, category, lat, lng, …})` → `Place` row. `ST_SetSRID(ST_MakePoint(lng, lat), 4326)::geography`. Returns every Prisma-generated field on `Place` (but not `coordinates` — that'd need WKB decoding the ORM can't type).
+  - `findPlacesWithinRadius({lat, lng, radiusKm, filters?})` → `(Place & { distanceMeters })[]`, ordered nearest-first. Optional `filters.category`. `ST_DWithin` on the GiST-indexed column.
+  - `updatePlaceCoordinates(id, lat, lng)` → row count. Returns 0 for non-existent ids.
+- **`apps/api/prisma/migrations/20260420062207_geo_gist_indexes/migration.sql`** — hand-edited migration. 14 GiST indexes on every `geography(Point, 4326)` column in the schema (Place.coordinates, Trip.center, Stay, Eatery, RouteLeg origin/destination, CrimeIncident, ScamReport, SosEvent, WeatherForecast, Alert, Event, Geofence.center, MediaAsset). Prisma can't express `@@index(... type: Gist)` on `Unsupported` columns, so they live as raw SQL (Playbook §12.5 anticipates this).
+- **`apps/api/src/app.module.ts`** — `DbModule` imported.
+- **`apps/api/test/geo-queries.e2e-spec.ts`** — 4-test integration suite against the live Docker Postgres. Acceptance match: inserts 3 places, queries within 5 km of Victoria Station, gets 2 (Hyde Park + Trafalgar Square, not Windsor — ~35 km away). Asserts nearest-first ordering via `distanceMeters` (not name — Trafalgar is actually closer than Hyde Park at these coords, as the test learned). Category filter + `updatePlaceCoordinates` happy-path + zero-row-update cases covered. Suite auto-skips if Postgres isn't reachable (warns, doesn't fail).
+
+**Files created** (5) — `apps/api/src/common/db/{prisma.service.ts, db.module.ts, geo-queries.ts}`, `apps/api/prisma/migrations/20260420062207_geo_gist_indexes/migration.sql`, `apps/api/test/geo-queries.e2e-spec.ts`.
+**Files edited** (3) — `apps/api/src/app.module.ts`, `apps/api/package.json` (added then removed `@paralleldrive/cuid2`), `pnpm-lock.yaml`.
+**Dependencies** — **net zero**. Tried `@paralleldrive/cuid2@3.3.0` for cuid-format ids on raw-SQL inserts, but it's ESM-only and clashed with ts-jest's CJS transform. Swapped to Node 22's built-in `crypto.randomUUID()` instead — no new dep, works in Node + Jest. Id format on raw-SQL-inserted rows is UUIDv4 rather than Prisma's cuid; inconsistency flagged inline in `geo-queries.ts`.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ `node_modules/.pnpm/jest@.../bin/jest.js test/geo-queries.e2e-spec.ts --runInBand` — **4/4 pass**.
+- ✅ Full api suite — **8 suites, 68/68** (up from 64/64). No regressions.
+- ✅ Migration `20260420062207_geo_gist_indexes` applied cleanly via `migrate deploy`. `SELECT indexname FROM pg_indexes WHERE indexname LIKE '%_gist'` lists all 14.
+- ✅ Type inference without casts — `results[0]!.distanceMeters` compiles with `exactOptionalPropertyTypes: true`; `results[0].name` is typed `string` from Prisma's `Place` interface.
+
+**Acceptance criteria**
+
+- ✅ 3 places inserted, query within 5 km gets 2 back (the 2 inside the radius, not Windsor).
+- ✅ Type inference works without casts — every field on `PlaceWithDistance` is compile-time known.
+
+**Notes**
+
+- **Disk space tripwire.** During the session, `C:` hit 100% full (only 27 MB free) while `@paralleldrive/cuid2` was being installed — `npm-cache` alone was 5.2 GB. `npx` / `pnpm remove` both failed with `ENOSPC`. Worked around by invoking jest directly via `node node_modules/.pnpm/jest@.../bin/jest.js`. User should clear npm-cache + pnpm store when convenient — next install will bite otherwise.
+- **`createNestApplication()` default Express fallback.** First cut of the test used `moduleRef.createNestApplication()` which pulled in `@nestjs/platform-express` (missing — we're Fastify-only). Dropped the HTTP-app creation entirely; `moduleRef.get(PrismaService)` + `moduleRef.close()` is the clean path for DB-only integration tests. Pattern worth remembering for every future integration test that doesn't need HTTP.
+- **Test location geography.** Victoria Station is the reference point; Hyde Park ~2 km, Trafalgar ~1.7 km, Windsor ~35 km. First pass used Camden Town (actually ~5.2 km from Victoria) — outside the 5-km radius, so the test failed. Swapped Camden for Trafalgar. Lesson: real-world distances between London landmarks are non-obvious; when asserting radius behaviour, check with a distance calculator or assert via `distanceMeters` rather than name ordering.
+- **`coordinates` omitted from `RETURNING` / `SELECT` in `GeoQueries`.** Prisma's `Place` type doesn't include `coordinates` (it's `Unsupported`), so we can't read it back through the typed interface. Callers that need the point use a separate method (to be added when the first caller materialises — YAGNI for now).
+- **Id-format inconsistency.** Rows inserted via `GeoQueries` get UUIDv4 ids; rows inserted via `prisma.<model>.create` get cuid. Same `String` column, both accepted. If this becomes an observability pain (differentiating id origin in logs), we can swap to a CJS-safe cuid library OR pre-generate cuids via a tiny Node-native helper. Not urgent.
 
 ---
 
