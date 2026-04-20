@@ -10,18 +10,67 @@
 
 ## Summary
 
-| Counter             | Value                                                                              |
-| ------------------- | ---------------------------------------------------------------------------------- |
-| Prompts completed   | 35                                                                                 |
-| Prompts in progress | 0                                                                                  |
-| Prompts blocked     | 0                                                                                  |
-| Last prompt         | `[III.11.4]`                                                                       |
-| Last commit date    | 2026-04-20                                                                         |
-| Phase               | Phase 0 — Foundation (Redis sliding-window throttler live; 11 suites, 76/76 tests) |
+| Counter             | Value                                                                                     |
+| ------------------- | ----------------------------------------------------------------------------------------- |
+| Prompts completed   | 36                                                                                        |
+| Prompts in progress | 0                                                                                         |
+| Prompts blocked     | 0                                                                                         |
+| Last prompt         | `[III.15.4]`                                                                              |
+| Last commit date    | 2026-04-20                                                                                |
+| Phase               | Phase 0 — Foundation (OTel traces flow to Jaeger; prisma:engine:db_query spans confirmed) |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [III.15.4] — OpenTelemetry tracing: NodeSDK + Prisma instrumentation → Jaeger
+
+**Date:** 2026-04-20 · **Status:** DONE · **Kind:** Build · **Playbook §** 15.4
+
+**What was done**
+
+Replaced the `[IV.17.6]` no-op `instrumentation.ts` stub with the real SDK. Traces for every HTTP request now flow `api → OTLP/HTTP → Jaeger` with a full span tree including Prisma engine db_query spans.
+
+- **`packages/observability/`** — upgraded from placeholder to a real CJS-shaped package (matches the `@app/logger` pattern). Rewrote `package.json` (removed `"type": "module"`, added `main`/`types`/`exports` pointing at `dist/`, scripts, deps). Added `tsconfig.json`, `tsconfig.build.json`, `jest.config.cjs`, `eslint.config.mjs`.
+- **`packages/observability/src/tracing.ts`** — `createSdk(opts)` assembles a `NodeSDK` with:
+  - `OTLPTraceExporter({ url: "${endpoint}/v1/traces" })` — endpoint from `OTEL_EXPORTER_OTLP_ENDPOINT` env, default `http://localhost:4318` (Jaeger OTLP HTTP).
+  - `new Resource({ service.name, service.version, deployment.environment })` — resource attributes land as span tags in Jaeger.
+  - `getNodeAutoInstrumentations({ '@opentelemetry/instrumentation-fs': { enabled: false }, '@opentelemetry/instrumentation-dns': { enabled: false } })` — fs + dns are noisy; every other auto-instrumentation stays on (http, fastify, nest, ioredis, undici, pg, etc.).
+  - `new PrismaInstrumentation()` — Prisma's spans are NOT included in `auto-instrumentations-node`; must be registered explicitly. Pinned to `@prisma/instrumentation@5.22.0` to match our `@prisma/client` version exactly.
+- **`packages/observability/src/init.ts`** — `initTracing(serviceName, opts?)`. Idempotent (re-calls are no-ops). Respects `OTEL_DISABLED=true` (skips SDK start + logs one warn — useful for local runs without Jaeger). SIGTERM handler flushes + shuts down the SDK so graceful pod termination doesn't lose in-flight spans. Explicit `shutdown()` export + `__resetForTests()` for unit tests.
+- **`apps/api/instrumentation.ts`** — replaces `export {};` with `initTracing('api', { serviceVersion: process.env['npm_package_version'] ?? '0.0.0' })`. Still the VERY FIRST import in `main.ts` — the load-order contract was there from day one so nothing else changed.
+- **`apps/api/prisma/schema.prisma`** — `previewFeatures = ["postgresqlExtensions", "tracing"]`. The `tracing` flag activates Prisma's OTel integration; without it the `PrismaInstrumentation` registers but receives no events from the client. Requires `prisma generate` to take effect.
+- **`apps/api/package.json`** — adds `@app/observability: workspace:*`.
+
+**Files created** (6) — `packages/observability/src/{tracing.ts, init.ts, index.ts}` + configs (`tsconfig*`, `jest.config.cjs`, `eslint.config.mjs`).
+**Files edited** (4) — `packages/observability/package.json`, `apps/api/instrumentation.ts`, `apps/api/prisma/schema.prisma`, `apps/api/package.json`, `pnpm-lock.yaml`.
+**Dependencies** — `@opentelemetry/{api, sdk-node, auto-instrumentations-node, exporter-trace-otlp-http, resources, semantic-conventions}`, `@prisma/instrumentation@5.22.0` — all on `@app/observability`.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green (both `apps/api` and `@app/observability`).
+- ✅ Full api suite — **11 suites, 76/76** (OTel doesn't load in tests — `instrumentation.ts` is only imported by `main.ts`).
+- ✅ **Live smoke against Jaeger:**
+  - Boot `apps/api` with `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318`.
+  - `curl /health/live` → Jaeger's `/api/services` lists `["api"]`.
+  - `curl /health/ready` repeatedly → Jaeger shows operations including `GET /health/ready`, `prisma:client:operation`, `prisma:client:serialize`, **`prisma:engine:db_query`** (the Prisma engine SQL call), `prisma:engine:response_json_serialization`, plus the full Fastify middleware chain, ioredis `ping`, etc.
+  - Resource tags on every span: `service.name = api`, `service.version = 0.0.0`, `deployment.environment = development`.
+
+**Acceptance criteria**
+
+- ✅ Jaeger UI shows a full span tree for one request — `GET /health/ready` fans into 20+ child spans.
+- ✅ Prisma query spans appear — `prisma:engine:db_query` explicitly present.
+
+**Notes**
+
+- **Windows + OneDrive + Prisma regen.** `prisma generate` fails with `EPERM` renaming `query_engine-windows.dll.node` if OneDrive is syncing `node_modules`, regardless of whether the api is running. Workaround for this session: stopped the api, `rm -f` the DLL, re-ran `prisma generate` — clean regen. Long-term fix: exclude `node_modules/` from OneDrive sync. Noted in the `tracing.ts` header comment for future engineers.
+- **Prisma 5 vs Prisma 7 instrumentation.** `npx pnpm add @prisma/instrumentation` initially resolved to 7.7.0. With a Prisma 5.22 client, the 7.x instrumentation ran but didn't tag any spans (the internal hook surface shifted). Pinned to `@prisma/instrumentation@5.22.0` to match `@prisma/client@5.22.0` — spans appeared immediately.
+- **`getNodeAutoInstrumentations` gotcha.** `fs` and `dns` are on-by-default and flood the tracer with `read`, `stat`, and `tcp.connect` spans for every Node `require()`. Disabled both — keeps the tree readable and costs nothing in observability (file reads aren't interesting).
+- **First-batch 404 on SDK startup.** NodeSDK emits a lifecycle event that the exporter tries to flush before the app has completed boot, sometimes racing Jaeger's readiness and landing a 404. It's transient and doesn't affect post-boot spans. Left as-is; will re-evaluate if it shows up in prod logs.
+- **CI implication.** The Phase-0 smoke workflow does not run with Jaeger available. `OTEL_EXPORTER_OTLP_ENDPOINT` is unset in the CI env, so the exporter falls back to `localhost:4318` and fails — but the failure is silent (OTel logs warn; the app keeps running). Tests don't load `instrumentation.ts`, so CI stays green. Production pods will have the real endpoint injected by Doppler.
+- **Log order inside `instrumentation.ts`.** The whole file is a single function call + `export {};`. Exporting ensures TS treats it as a module and doesn't hoist anything past the `initTracing` call.
 
 ---
 
