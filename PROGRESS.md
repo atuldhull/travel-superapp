@@ -10,18 +10,69 @@
 
 ## Summary
 
-| Counter             | Value                                                                                       |
-| ------------------- | ------------------------------------------------------------------------------------------- |
-| Prompts completed   | 30                                                                                          |
-| Prompts in progress | 0                                                                                           |
-| Prompts blocked     | 0                                                                                           |
-| Last prompt         | `[III.12.2]`                                                                                |
-| Last commit date    | 2026-04-20                                                                                  |
-| Phase               | Phase 0 — Foundation (GeoQueries wrapper live — PostGIS ST_DWithin wired; 68/68 tests pass) |
+| Counter             | Value                                                                  |
+| ------------------- | ---------------------------------------------------------------------- |
+| Prompts completed   | 31                                                                     |
+| Prompts in progress | 0                                                                      |
+| Prompts blocked     | 0                                                                      |
+| Last prompt         | `[III.12.3]`                                                           |
+| Last commit date    | 2026-04-20                                                             |
+| Phase               | Phase 0 — Foundation (VectorQueries + IVFFlat live; 72/72 tests green) |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [III.12.3] — pgvector VectorQueries + IVFFlat index
+
+**Date:** 2026-04-20 · **Status:** DONE · **Kind:** Build · **Playbook §** 12.3
+
+**What was done**
+
+Companion to [III.12.2] — turns `PlaceEmbedding.embedding` (`Unsupported("vector(1024)")`) into callable methods, and lays down the IVFFlat index the queries ride on.
+
+- **`apps/api/src/common/db/vector-queries.ts`** — `@Injectable()`, registered in `DbModule`. Two methods:
+  - `upsertEmbedding(placeId, embedding: number[], model?)` — `INSERT … ON CONFLICT ("placeId") DO UPDATE …`, so the 1:1 `PlaceEmbedding.placeId` primary key enforces "one embedding per place" by construction. Rejects vectors whose length ≠ 1024 at the client boundary (no round-trip for wrong input).
+  - `findSimilar(embedding, limit) → {placeId, distance}[]` — uses the `<->` L2-distance operator, `ORDER BY <->` so pgvector picks the IVFFlat index, `LIMIT limit`. Rejects non-positive limits up front.
+  - Cast is dimensionless (`::vector`) — pgvector infers 1024 from the literal; column type enforces match on INSERT. Helper `toVectorLiteral` serialises `[v0,v1,…]` which is both JSON and pgvector's bracketed input syntax.
+  - **HNSW switch trigger documented inline** (row count > 1M, recall@10 < 0.95, or IVFFlat rebuild > 1h — the [ADR-007] quantitative triggers carry straight through).
+- **`apps/api/prisma/migrations/20260420081604_vector_ivfflat/migration.sql`** — `CREATE INDEX ... USING ivfflat (embedding vector_l2_ops) WITH (lists = 100)`. Prisma can't express this on `Unsupported` columns; hand-edited migration. `vector_l2_ops` matches the `<->` operator; switching to cosine (`<=>`) would require `vector_cosine_ops`.
+- **`apps/api/src/common/db/db.module.ts`** — `VectorQueries` added to providers + exports.
+- **`apps/api/test/vector-queries.e2e-spec.ts`** — integration suite against live Docker Postgres. Seeds **100 deterministic 1024-dim vectors** (`vector[i][0] = i * 0.01`, rest 0), calls `findSimilar(makeVector(42), 5)`, asserts:
+  - Result length = 5.
+  - First result is vector 42 with distance < 1e-5.
+  - Distances non-decreasing across the 5.
+  - **The set** is exactly `{40, 41, 42, 43, 44}` — L2 distances 0.02, 0.01, 0, 0.01, 0.02 to target 42. Avoids asserting a specific intra-tie order.
+  - Upsert replaces in place (row count stays at 1).
+  - Wrong-dimension + non-positive-limit inputs throw at the client boundary, not at the DB.
+  - Seed timeout raised to 60 s (200 SQL round-trips for Places + embeddings — observed ~5 s in practice).
+
+**Files created** (3) — `apps/api/src/common/db/vector-queries.ts`, `apps/api/prisma/migrations/20260420081604_vector_ivfflat/migration.sql`, `apps/api/test/vector-queries.e2e-spec.ts`.
+**Files edited** (1) — `apps/api/src/common/db/db.module.ts`.
+**Dependencies** — none.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ `jest test/vector-queries.e2e-spec.ts --runInBand` — **4/4 pass**.
+- ✅ Full api suite — **9 suites, 72/72** (up from 68/68). No regressions.
+- ✅ Migration `20260420081604_vector_ivfflat` applied cleanly via `migrate deploy`.
+
+**Acceptance criteria**
+
+- ✅ Integration test stores 100 random vectors (deterministic — see note), finds nearest 5 correctly.
+- ✅ `<->` operator used throughout.
+- ✅ IVFFlat index with `lists = 100` installed.
+- ✅ HNSW switch trigger documented inline + cross-referenced to ADR-007.
+
+**Notes**
+
+- **Deterministic test vectors, not random.** The prompt says "100 random vectors" but a random seed doesn't get us a predictable top-5 without re-computing distances in JS. Instead each vector `i` encodes its index as `vector[0] = i * 0.01`, rest zeros. L2 distance between vector(i) and vector(j) is `|i-j| * 0.01`, so "top 5 closest to 42" is exactly `{40, 41, 42, 43, 44}` by construction. Stronger than random — we can assert the exact set, not just "some" ranking.
+- **Distance operator matters.** `<->` is L2 / Euclidean. For cosine similarity we'd use `<=>` AND change the IVFFlat op-class to `vector_cosine_ops`. For inner product, `<#>` + `vector_ip_ops`. The prompt specifies `<->`.
+- **IVFFlat on empty tables.** pgvector's IVFFlat computes centroids when the index is built. Building on an empty table creates a structurally valid but untrained index — pgvector falls back to exact search in that case, which is correct (just slow at scale). Fine at MVP; rebuild (`REINDEX INDEX ... CONCURRENTLY`) once Places has 10k+ rows.
+- **ESM/CJS lesson from III.12.2 applies here too.** Nothing new installed; all imports are from Node built-ins or Prisma/Nest which are already CJS-compatible.
 
 ---
 
