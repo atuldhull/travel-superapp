@@ -10,18 +10,96 @@
 
 ## Summary
 
-| Counter             | Value                                                                                     |
-| ------------------- | ----------------------------------------------------------------------------------------- |
-| Prompts completed   | 40 (39 full + 1 foundation-only; `[III.11.3]` guards just shipped)                        |
-| Prompts in progress | 1 (`[III.13.2]` — parts 1+2 shipped; MFA + OAuth + JWKS rotation + session cap follow-up) |
-| Prompts blocked     | 0                                                                                         |
-| Last prompt         | `[III.11.3]` — JwtAuthGuard + RolesGuard + @CurrentUser + @Public + @Roles                |
-| Last commit date    | 2026-04-20                                                                                |
-| Phase               | Phase 0 — Foundation (auth consumption layer live; 17 suites, 120 tests green)            |
+| Counter             | Value                                                                                |
+| ------------------- | ------------------------------------------------------------------------------------ |
+| Prompts completed   | 41 (40 full + 1 foundation-only; `[III.13.2]` part 3 just shipped)                   |
+| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3 shipped; MFA + OAuth + JWKS rotation follow-up)        |
+| Prompts blocked     | 0                                                                                    |
+| Last prompt         | `[III.13.2]` part 3 — session concurrency cap (10/user) + device-fingerprint binding |
+| Last commit date    | 2026-04-21                                                                           |
+| Phase               | Phase 0 — Foundation (session hardening live; 18 suites, 123 tests green)            |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [III.13.2] — Session concurrency cap + device-fingerprint binding (part 3)
+
+**Date:** 2026-04-21 · **Status:** IN-PROGRESS · **Kind:** Build · **Playbook §** 13.2
+
+**What was done**
+
+Closed two concrete security gaps on the identity module that the previous slices deferred:
+
+1. **Per-user concurrency cap (`MAX_SESSIONS_PER_USER = 10`).** An 11th login trims the oldest active session — users keep a rolling window of their 10 most recent device sessions. Stops unbounded session growth + the abuse vector where a compromised refresh cookie can fork itself forever.
+2. **Device-fingerprint binding on refresh.** The `sha256(pepper + UA)` computed at issuance is persisted on the `Session` row. Every `/refresh` recomputes the fingerprint from the current request and compares. On mismatch → cascade revoke every session for that user, 401 `REFRESH_DFP_MISMATCH`. Catches "stolen refresh cookie replayed from a different client" (browser → curl, one app → another).
+
+**Deliberate design choice: dfp = UA only, not UA + IP.** Mobile clients roam between wifi and cellular networks all the time; locking sessions to an IP would force re-auth on every network change. UA is stable within a client install and catches the threat that matters (different user-agent = different device).
+
+- **`apps/api/prisma/schema.prisma`** + **`apps/api/prisma/migrations/20260420170000_session_device_fingerprint/migration.sql`** — added `Session.deviceFingerprint String?`. Nullable so legacy rows (pre-migration) don't break; new rows always populate it. `RefreshSessionUseCase` grandfathers `null` rows through without a check.
+
+- **`apps/api/src/modules/identity/domain/session.entity.ts`** — added `deviceFingerprint: string | null` to the pure `Session` type.
+
+- **`apps/api/src/modules/identity/application/ports/session.repository.ts`**:
+  - `CreateSessionInput.deviceFingerprint` (non-null for new rows).
+  - New port method: `listActiveForUser(userId): Promise<readonly Session[]>` — ordered oldest-first, used by the concurrency-cap enforcement path.
+
+- **`apps/api/src/modules/identity/infrastructure/prisma-session.repository.ts`** — persists `deviceFingerprint` on `create()` + `rotate()`; implements `listActiveForUser` with `where: { userId, revokedAt: null, expiresAt: { gt: now } }` + `orderBy: issuedAt asc`.
+
+- **`apps/api/src/modules/identity/application/issue-session.use-case.ts`**:
+  - Exported `MAX_SESSIONS_PER_USER = 10`.
+  - After `sessions.create()`, calls `listActiveForUser` and if `length > 10`, revokes `length - 10` oldest rows. Race note documented: two concurrent logins may both see count == 10 and both create — worst case we briefly hold 11 and the next login trims. Not worth a serializable transaction.
+  - Structured log line `session_concurrency_cap_enforced` with the revoked count + cap for audit.
+
+- **`apps/api/src/modules/identity/application/refresh-session.use-case.ts`** — added step 5b. After sid-match and before user lookup: `if (row.deviceFingerprint !== null && row.deviceFingerprint !== cmd.deviceFingerprint)` → `revokeAllForUser` + `REFRESH_DFP_MISMATCH` 401. Also persists `cmd.deviceFingerprint` into the new row on rotation (so the new cookie's dfp matches the new session).
+
+- **`apps/api/src/modules/identity/interface/auth.controller.ts`** — narrowed `deviceFingerprint` from `sha256(pepper | ua | ip)` to `sha256(pepper | ua)`. IP still goes into `Session.ipHash` for audit/analytics, but is no longer part of the binding check.
+
+- **`apps/api/test/session-hardening.e2e-spec.ts`** — 3 new integration tests:
+  1. Concurrency cap: register + 9 logins = 10 active; 11th login keeps count at 10; total session rows = 11; the oldest row has `revokedAt != null`.
+  2. Dfp mismatch: register + 2nd login (same UA, both active) → /refresh from a different UA returns 401 `REFRESH_DFP_MISMATCH` AND every session for the user is revoked.
+  3. Dfp match: register + /refresh with the same UA → 200 (negative-control for the binding check).
+
+- **`apps/api/test/identity.e2e-spec.ts`** — updated 2 tests (`refresh rotates...` + `REUSE CASCADE`) to send `user-agent: 'jest'` on the /refresh calls, so dfp binding doesn't trip them. Pre-change they sent no UA; that difference from the register's `'jest'` UA would have been a dfp mismatch under the new binding.
+
+**Files created** (2) — `apps/api/prisma/migrations/20260420170000_session_device_fingerprint/migration.sql`, `apps/api/test/session-hardening.e2e-spec.ts`.
+**Files edited** (7) — `schema.prisma`, `session.entity.ts`, `ports/session.repository.ts`, `prisma-session.repository.ts`, `issue-session.use-case.ts`, `refresh-session.use-case.ts`, `interface/auth.controller.ts`, plus `test/identity.e2e-spec.ts`.
+**Dependencies** — none new.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ `jest --testPathPattern=session-hardening` — 3/3 pass.
+- ✅ `jest --testPathPattern="identity|auth-guards|session-hardening|smoke|app.e2e|health"` — 6 suites, 53 tests pass. Existing identity + auth-guard coverage unaffected after the 2 identity tests were updated for dfp binding.
+- ✅ Migration applied to dev DB via `prisma migrate deploy`; client regenerated.
+
+**Acceptance criteria**
+
+- ✅ 11th login revokes the oldest session (proven by test).
+- ✅ /refresh from a different UA cascades (proven by test).
+- ✅ /refresh from the same UA still works (negative-control test).
+- ✅ `dfp` stored on the Session row, not just in the refresh JWT claim.
+- ✅ Legacy rows without a stored dfp are grandfathered (null-check).
+
+Still deferred to follow-ups under the `[III.13.2]` IN-PROGRESS banner:
+
+- ⏳ TOTP MFA (speakeasy) + MFA-required login flow.
+- ⏳ OAuth2 Google/Apple via Passport.
+- ⏳ JWKS rotation cron + multi-key keyring persistence.
+- ⏳ Device table auto-create so `x-device-id` persists to `Session.deviceId`.
+- ⏳ Field-level encryption on `emailEncrypted` (`[III.13.11]`).
+
+**Notes**
+
+- **Why UA-only dfp, not UA + IP.** Debated. UA + IP is strictly more defensive, but mobile clients switching wifi ↔ cellular would trigger a false cascade on every network change. Real-world cost of false cascades on UX > marginal security gain. UA captures the meaningful threat. If we later add a client-supplied `X-Device-Id`, that's a stronger signal than either.
+- **Why a per-user cap, not per-device.** Per-device caps need a stable device identifier, which we don't have until `X-Device-Id` lands. Per-user is the right layer for v1.
+- **Why the cap enforces AFTER the create, not before.** Enforcing before would require "is this a login?" detection + careful ordering around MFA. Post-create + trim-oldest is trivially correct regardless of the issue path (register, login, OAuth later). The briefly-over-cap window (< one tick) is acceptable.
+- **Why `deviceFingerprint: string | null` in the domain Session.** Prisma column is nullable for legacy-row compat. The port's `CreateSessionInput.deviceFingerprint` is non-null — new rows MUST provide one. Any future adapter inserting a null would be flagged by typecheck.
+- **Why not refresh with the old UA bound to the session but accept a new UA and UPDATE the dfp.** That's a "dfp update" pattern. Doesn't work — if a session is stolen, the attacker would immediately present their own UA and we'd silently accept it. The only safe update path is: force re-auth when UA changes, which is what the current design does.
+- **Prisma migrate status.** Ran against the dev Postgres with `DATABASE_URL` set inline. All 4 migrations applied cleanly (init · geo-gist-indexes · vector-ivfflat · session-device-fingerprint).
+- **Windows+OneDrive Prisma DLL lock resurfaced.** Fixed by `rm -f` of `query_engine-windows.dll.node` before `prisma generate`. Same workaround as `[IV.18.1.16]`.
 
 ---
 
