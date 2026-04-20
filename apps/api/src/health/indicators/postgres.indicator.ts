@@ -1,36 +1,31 @@
-import { Inject, Injectable, OnModuleDestroy } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Inject, Injectable } from '@nestjs/common';
 import { HealthIndicator, HealthIndicatorResult, HealthCheckError } from '@nestjs/terminus';
-import type { Env } from '@app/config';
-import { createLogger } from '@app/logger';
-import { Pool } from 'pg';
-
-const log = createLogger('health.postgres');
+import { PrismaService } from '../../common/db/prisma.service';
 
 const KEY = 'postgres';
-const CHECK_TIMEOUT_MS = 2_000;
 
+/**
+ * Postgres liveness probe for `/health/ready`. Runs `SELECT 1` through
+ * `PrismaService` — same connection pool the request path uses, so a
+ * probe "up" truly means "every incoming request can reach the DB".
+ *
+ * Pre-[III.12.2] this file carried its own `pg.Pool` because Prisma
+ * wasn't wired yet. Swapped to the shared pool once `PrismaService`
+ * landed — one pool, one source of truth, one metric surface.
+ *
+ * Installed by prompt [IV.18.1.16]; PrismaService-backed rewrite by
+ * [III.12.x-health-cleanup].
+ */
 @Injectable()
-export class PostgresHealthIndicator extends HealthIndicator implements OnModuleDestroy {
-  private readonly pool: Pool;
-
-  constructor(@Inject(ConfigService) config: ConfigService<Env, true>) {
+export class PostgresHealthIndicator extends HealthIndicator {
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {
     super();
-    this.pool = new Pool({
-      connectionString: config.get('DATABASE_URL', { infer: true }),
-      max: 1,
-      idleTimeoutMillis: CHECK_TIMEOUT_MS,
-      connectionTimeoutMillis: CHECK_TIMEOUT_MS,
-    });
-    this.pool.on('error', (err) => {
-      log.warn({ err: err.message }, 'postgres_pool_error');
-    });
   }
 
   async isHealthy(): Promise<HealthIndicatorResult> {
     const started = Date.now();
     try {
-      const { rows } = await this.pool.query<{ ok: number }>('SELECT 1 AS ok');
+      const rows = await this.prisma.$queryRaw<{ ok: number }[]>`SELECT 1 AS ok`;
       const ok = rows[0]?.ok === 1;
       const latencyMs = Date.now() - started;
       const result = this.getStatus(KEY, ok, { latencyMs });
@@ -46,14 +41,5 @@ export class PostgresHealthIndicator extends HealthIndicator implements OnModule
         this.getStatus(KEY, false, { latencyMs, error: message }),
       );
     }
-  }
-
-  async onModuleDestroy(): Promise<void> {
-    await this.pool.end().catch((err: unknown) => {
-      log.warn(
-        { err: err instanceof Error ? err.message : String(err) },
-        'postgres_pool_close_failed',
-      );
-    });
   }
 }
