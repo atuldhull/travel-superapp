@@ -5,16 +5,17 @@ An ADR is never edited in place once accepted — supersede with a new one inste
 
 ## Index
 
-| #   | Title                                                                                                | Status   | Prompt     |
-| --- | ---------------------------------------------------------------------------------------------------- | -------- | ---------- |
-| 001 | [Modular monolith with selective service extraction](./ADR-001-modular-monolith.md)                  | Accepted | `[II.6.2]` |
-| 002 | [Service-extraction triggers](./ADR-002-service-extraction-triggers.md)                              | Accepted | `[II.6.3]` |
-| 003 | [Event backbone — Redis Streams first](./ADR-003-event-backbone.md)                                  | Accepted | `[II.6.4]` |
-| 004 | [Bounded-context principle — no cross-module imports](./ADR-004-bounded-contexts.md)                 | Accepted | `[II.7.1]` |
-| 005 | [Frontend stack: Next.js + Expo + TS strict + Tailwind + Tamagui](./ADR-005-frontend-stack.md)       | Accepted | `[II.8.1]` |
-| 006 | [Backend stack: NestJS + Fastify + Prisma + FastAPI + BullMQ](./ADR-006-backend-stack.md)            | Accepted | `[II.8.2]` |
-| 007 | [Data layer: Postgres + PostGIS + pgvector + Redis + Meilisearch](./ADR-007-data-layer.md)           | Accepted | `[II.8.3]` |
-| 008 | [AI stack: layered Anthropic + self-hosted NLLB/Whisper/DistilBERT/Llama 3.1](./ADR-008-ai-stack.md) | Accepted | `[II.8.4]` |
+| #   | Title                                                                                                | Status   | Prompt       |
+| --- | ---------------------------------------------------------------------------------------------------- | -------- | ------------ |
+| 001 | [Modular monolith with selective service extraction](./ADR-001-modular-monolith.md)                  | Accepted | `[II.6.2]`   |
+| 002 | [Service-extraction triggers](./ADR-002-service-extraction-triggers.md)                              | Accepted | `[II.6.3]`   |
+| 003 | [Event backbone — Redis Streams first](./ADR-003-event-backbone.md)                                  | Accepted | `[II.6.4]`   |
+| 004 | [Bounded-context principle — no cross-module imports](./ADR-004-bounded-contexts.md)                 | Accepted | `[II.7.1]`   |
+| 005 | [Frontend stack: Next.js + Expo + TS strict + Tailwind + Tamagui](./ADR-005-frontend-stack.md)       | Accepted | `[II.8.1]`   |
+| 006 | [Backend stack: NestJS + Fastify + Prisma + FastAPI + BullMQ](./ADR-006-backend-stack.md)            | Accepted | `[II.8.2]`   |
+| 007 | [Data layer: Postgres + PostGIS + pgvector + Redis + Meilisearch](./ADR-007-data-layer.md)           | Accepted | `[II.8.3]`   |
+| 008 | [AI stack: layered Anthropic + self-hosted NLLB/Whisper/DistilBERT/Llama 3.1](./ADR-008-ai-stack.md) | Accepted | `[II.8.4]`   |
+| 010 | [Delete policy: anonymise-on-delete, no soft-delete middleware](./ADR-010-soft-delete-policy.md)     | Accepted | `[III.12.6]` |
 
 ## Authoring
 
