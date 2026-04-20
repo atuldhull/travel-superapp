@@ -10,18 +10,68 @@
 
 ## Summary
 
-| Counter             | Value                                                                                          |
-| ------------------- | ---------------------------------------------------------------------------------------------- |
-| Prompts completed   | 28                                                                                             |
-| Prompts in progress | 0                                                                                              |
-| Prompts blocked     | 0                                                                                              |
-| Last prompt         | `[II.8.5]`                                                                                     |
-| Last commit date    | 2026-04-19                                                                                     |
-| Phase               | Phase 0 — Foundation (external-APIs registry locked; 18 providers × adapter ports + CB policy) |
+| Counter             | Value                                                                                |
+| ------------------- | ------------------------------------------------------------------------------------ |
+| Prompts completed   | 28                                                                                   |
+| Prompts in progress | 1                                                                                    |
+| Prompts blocked     | 0                                                                                    |
+| Last prompt         | `[III.12.1]` (IN-PROGRESS — migration pending Docker restart)                        |
+| Last commit date    | 2026-04-20                                                                           |
+| Phase               | Phase 0 — Foundation (Prisma schema authored + validated; initial migration pending) |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [III.12.1] — Prisma schema foundation (IN-PROGRESS)
+
+**Date:** 2026-04-20 · **Status:** IN-PROGRESS · **Kind:** Build · **Playbook §** 12.1
+
+**What was done**
+
+Authored the full Prisma schema covering every model from the [context-map](./docs/architecture/context-map.md). Validates clean. Initial migration not yet applied — Docker Desktop is not running, so `prisma migrate dev` can't reach `localhost:5432`. Schema + deps + scripts committed so the work isn't dangling; the migration step runs the moment Docker is back up.
+
+- **`apps/api/prisma/schema.prisma`** — 43 models, exact match against context-map (`grep "^model " | wc -l` = 43, sorted list cross-checked one-for-one). Covers all 15 stateful bounded contexts. Highlights:
+  - `generator client { previewFeatures = ["postgresqlExtensions"] }` + `extensions = [postgis, vector, pg_trgm, pgcrypto]`.
+  - PostGIS columns typed `Unsupported("geography(Point, 4326)")` — mandated path through `GeoQueries` (CLAUDE.md rule 11). pgvector columns typed `Unsupported("vector(1024)")`.
+  - Every row has `id String @id @default(cuid())` + `createdAt` + `updatedAt` unless append-only (logs, forecasts, versions).
+  - Soft-delete ONLY on `User` (GDPR erasure flow). Everything else hard-deletes (per Playbook §12.6 "pick one").
+  - 12 enums (`UserRole`, `TripStatus`, `AgentKycStatus`, `ScamSeverity`, `SubscriptionStatus`, `EscrowState`, `NotificationChannel`, `NotificationDeliveryStatus`, `MediaStatus`, `ModerationStatus`, `LiveEventKind`, `TransportMode`).
+  - PII pattern on `User`: `emailHash String @unique` (pepper-hashed for equality lookup) + `emailEncrypted Bytes` (pgcrypto-backed) + `passwordHash String?` (argon2id; null for OAuth-only). Playbook §13.11.
+  - Playbook §12.4 indexes land: `Trip @@index([userId, status, createdAt])`, `Session @@index([userId, revokedAt])`, `CrimeIncident` indexed by `source` + `reportedAt`, `NotificationLog @@index([userId, read, createdAt])`, `User @@unique([emailHash])`.
+  - Foreign-key delete behaviour chosen deliberately: `Cascade` for user-owned rows, `Restrict` for rows with financial consequences (bookings, escrow), `SetNull` for weak references (e.g. `ItineraryItem.placeId`, `MediaAsset.tripId`).
+  - `Event` (the CulturalEvent) kept name-as-is per context-map naming-collision note.
+- **`apps/api/package.json`** — prisma scripts added: `db:generate`, `db:migrate`, `db:migrate:deploy`, `db:studio`, `db:validate`. Pinned `prisma` + `@prisma/client` to **5.22.0** (ADR-006 locks Prisma 5; Prisma 7's config-file requirement for `DATABASE_URL` would need a superseding ADR).
+
+**Files created** (1) — `apps/api/prisma/schema.prisma`.
+**Files edited** (2) — `apps/api/package.json`, `pnpm-lock.yaml`.
+**Dependencies** — `prisma@5.22.0` (dev), `@prisma/client@5.22.0`.
+
+**Verification**
+
+- ✅ `pnpm prisma validate` — "The schema at prisma\\schema.prisma is valid 🚀"
+- ✅ Every model from the context-map present exactly once — 43 models, sorted `grep` matches the Ownership Index in [context-map](./docs/architecture/context-map.md).
+- ✅ Migration-diff preview (`prisma migrate diff --from-empty --to-schema-datamodel`) produces 1059 lines of SQL — CREATE EXTENSION × 4 + CREATE TYPE × 12 + CREATE TABLE × 43 + indexes + foreign keys. Parses cleanly; ready to apply.
+- ⚠ `pnpm prisma migrate dev --name init` — **BLOCKED** on Docker. When Docker Desktop is up and `make up` has the Postgres container healthy, the one-line completion is all that's left.
+
+**Acceptance criteria**
+
+- ✅ `pnpm prisma validate` green.
+- ⏳ `pnpm prisma migrate dev --name init` applies cleanly — deferred until Docker is running.
+- ✅ Every model from the context map exists exactly once.
+
+**Notes**
+
+- **Prisma 7 → 5 downgrade.** pnpm first resolved `prisma` to 7.7.0, which moved `DATABASE_URL` out of `schema.prisma` into `prisma.config.ts` (breaking change). ADR-006 locks Prisma 5; downgraded to 5.22.0 rather than open a superseding ADR mid-flight.
+- **`postgisTopology` dropped.** Playbook §12.5 has `postgisTopology` in the example extensions list, but that name doesn't map to a real Postgres extension (the actual one is `postgis_topology`, lowercase). We only need Point geometry, not topology — dropping it avoids the name-mapping detour. Worth a note in a future Playbook erratum.
+- **Supabase is the production Postgres host** (user note, 2026-04-20). Memory saved. This doesn't change the schema — Supabase IS Postgres + our extensions are pre-enabled there. It does mean when production lands we'll need a `DIRECT_URL` env var for Prisma migrations (PgBouncer transaction mode breaks Prisma's prepared statements) and a posture decision on RLS. Flagged for the [IV.17.2] Prisma fix-up prompt.
+- **What's NOT in the schema yet (intentional):**
+  - No `_prisma_migrations` seeding logic — that's a separate seed prompt.
+  - No Row-Level Security. Supabase enables RLS by default on new tables; we'll decide posture when we wire the Supabase DATABASE_URL.
+  - No `pgvector` IVFFlat / HNSW index creation — Prisma can't express those in the schema. They land via a raw-SQL migration step when the Places module goes live.
+  - `@@index([coordinates], type: Gist)` — Prisma 5 doesn't support GiST on `Unsupported` columns. Landed as raw-SQL-migration step in `[III.12.2]` alongside `GeoQueries`.
 
 ---
 
