@@ -40,13 +40,20 @@ import { type AuthenticatedUser, CurrentUser, Public } from '../../../common/aut
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { IssueSessionUseCase } from '../../identity/application/issue-session.use-case';
 import { LoginUseCase } from '../../identity/application/login.use-case';
+import {
+  DisableMfaUseCase,
+  SetupMfaUseCase,
+  VerifyMfaUseCase,
+} from '../../identity/application/mfa.use-case';
 import { RefreshSessionUseCase } from '../../identity/application/refresh-session.use-case';
 import { RegisterUseCase } from '../../identity/application/register.use-case';
 import { RevokeSessionUseCase } from '../../identity/application/revoke-session.use-case';
 import {
   LoginBodySchema,
+  MfaCodeBodySchema,
   RegisterBodySchema,
   type LoginBody,
+  type MfaCodeBody,
   type RegisterBody,
 } from './dto/auth.dto';
 
@@ -75,6 +82,9 @@ export class AuthController {
     private readonly loginUc: LoginUseCase,
     private readonly refreshUc: RefreshSessionUseCase,
     private readonly revokeUc: RevokeSessionUseCase,
+    private readonly setupMfaUc: SetupMfaUseCase,
+    private readonly verifyMfaUc: VerifyMfaUseCase,
+    private readonly disableMfaUc: DisableMfaUseCase,
     // Kept for future direct session-issuance flows (OAuth callback,
     // magic-link) even though not called directly in this file today.
     @Inject(IssueSessionUseCase) private readonly _issue: IssueSessionUseCase,
@@ -117,6 +127,8 @@ export class AuthController {
     const issued = await this.loginUc.execute({
       email: body.email,
       password: body.password,
+      // `exactOptionalPropertyTypes` is on — only set the key when present.
+      ...(body.mfaCode !== undefined ? { mfaCode: body.mfaCode } : {}),
       deviceContext: this.deviceContext(req),
     });
     this.setRefreshCookie(reply, issued.refreshToken, issued.refreshTokenExpiresAt);
@@ -165,6 +177,51 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   me(@CurrentUser() user: AuthenticatedUser): AuthenticatedUser {
     return user;
+  }
+
+  /**
+   * Begin MFA enrollment. Returns the base32 secret + the
+   * `otpauth://` provisioning URI for the client to render as a
+   * QR code. The secret is persisted as a staging value; MFA is
+   * not yet active until `/mfa/verify` confirms with a code.
+   */
+  @Post('mfa/setup')
+  @HttpCode(HttpStatus.OK)
+  async mfaSetup(@CurrentUser() user: AuthenticatedUser): Promise<{
+    base32: string;
+    otpauthUri: string;
+  }> {
+    const result = await this.setupMfaUc.execute(user.sub);
+    return { base32: result.base32, otpauthUri: result.otpauthUri };
+  }
+
+  /**
+   * Confirm MFA enrollment by proving the user's authenticator
+   * app works. On success, `user.mfaEnabled` flips to true and
+   * subsequent logins require a code.
+   */
+  @Post('mfa/verify')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UsePipes(new ZodValidationPipe(MfaCodeBodySchema))
+  async mfaVerify(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: MfaCodeBody,
+  ): Promise<void> {
+    await this.verifyMfaUc.execute(user.sub, body.code);
+  }
+
+  /**
+   * Turn MFA off. Requires a valid current code — a hijacked
+   * session alone can't strip the second factor.
+   */
+  @Post('mfa/disable')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UsePipes(new ZodValidationPipe(MfaCodeBodySchema))
+  async mfaDisable(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: MfaCodeBody,
+  ): Promise<void> {
+    await this.disableMfaUc.execute(user.sub, body.code);
   }
 
   @Public()
