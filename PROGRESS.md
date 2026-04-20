@@ -10,18 +10,69 @@
 
 ## Summary
 
-| Counter             | Value                                                                                   |
-| ------------------- | --------------------------------------------------------------------------------------- |
-| Prompts completed   | 37                                                                                      |
-| Prompts in progress | 0                                                                                       |
-| Prompts blocked     | 0                                                                                       |
-| Last prompt         | `[II.8.6]`                                                                              |
-| Last commit date    | 2026-04-20                                                                              |
-| Phase               | Phase 0 — Foundation (ADR-009 DevOps locked; ADR-009 gap filled; 5 stack-lock ADRs now) |
+| Counter             | Value                                                                                         |
+| ------------------- | --------------------------------------------------------------------------------------------- |
+| Prompts completed   | 38                                                                                            |
+| Prompts in progress | 0                                                                                             |
+| Prompts blocked     | 0                                                                                             |
+| Last prompt         | `[IV.18.1.9]`                                                                                 |
+| Last commit date    | 2026-04-20                                                                                    |
+| Phase               | Phase 0 — Foundation (EventBus + Redis Streams adapter + DLQ live; 13 suites, 85 tests green) |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.1.9] — @app/events: typed EventBus + Redis Streams adapter + DLQ + in-memory for tests
+
+**Date:** 2026-04-20 · **Status:** DONE · **Kind:** Build · **Playbook §** 6.4 · **ADR** [ADR-003](./docs/adr/ADR-003-event-backbone.md)
+
+**What was done**
+
+The last meaningful Phase-0 infrastructure piece. ADR-003 committed us to Redis Streams as the event backbone; the context-map lists every module's inbound/outbound events. This package turns those commitments into code that every future Phase-1 module can call.
+
+- **`packages/events/`** — new workspace package, `@app/logger`-pattern shape (CJS `dist/` output, scripts, configs). 6 source files:
+  - **`src/event.ts`** — `DomainEvent<TPayload>` canonical shape: `name` (e.g. `Trip.TripDrafted` per context-map naming), `id`, `version`, `occurredAt`, `traceId?`, `payload`. Plus `DomainEventWire` (ISO-string `occurredAt` on the wire) and `DomainEventOfName<TName, TPayload>` for subscribers who want to pin.
+  - **`src/event-bus.ts`** — the `EventBus` port. `publish<TPayload>(event)`, `subscribe<TPayload>(name, handler, options?)`, `close()`. `SubscribeOptions` carries `consumerGroup` + `deadLetterAfterAttempts` (default 3). Returns a `Subscription { eventName, consumerGroup, unsubscribe() }`. `EVENT_BUS` DI token as a `Symbol.for(...)`.
+  - **`src/in-memory-event-bus.ts`** — in-process adapter for tests. Synchronous dispatch per consumer group, retries on failure, accumulates failed events in a `drainDlq()` accessor.
+  - **`src/redis-streams-event-bus.ts`** — **production adapter**. Separate publisher + per-consumer `.duplicate()` connections (XREADGROUP BLOCK can't share a connection with XADD). `XGROUP CREATE ... MKSTREAM` idempotent (BUSYGROUP handled). Consumer loop `XREADGROUP` + `XACK` on success; on failure retries up to `deadLetterAfterAttempts`, then `XADD`s to `<stream>:dlq` before acking the main stream. Keys: `<keyPrefix><eventName>` (e.g. `travel-prod:events:Trip.TripDrafted`). Shutdown flips stop flags, awaits in-flight loops, quits both clients.
+  - **`src/index.ts`** — re-exports. Swap-to-Kafka path documented in header comment: implement `KafkaEventBus: EventBus`, bind to `EVENT_BUS` — zero domain-code changes (ADR-003 migration triggers spell out when).
+- **`test/in-memory-event-bus.spec.ts`** — 6 unit tests: single-subscriber delivery, multi-consumer-group fan-out, unsubscribe, DLQ on retries exhausted, publishing-without-subscribers is a no-op, close rejects further publishes.
+- **`test/redis-streams-event-bus.e2e-spec.ts`** — 3 integration tests against real Docker Redis:
+  1. **One event → two consumer groups**. `notifications` + `analytics` both receive it (proves independent-group semantics).
+  2. **Forced-fail DLQ**. Handler throws on every call; after 3 attempts the event lands in `<stream>:dlq` with `attempts=3` + `lastError=forced-fail` + `originStream` fields. Verified by `XRANGE`.
+  3. **Competing consumers in the same group**. Two handlers in `one-group`, publish 4 events, assert total received = 4 (each event delivered exactly once across the group — Redis Streams's competing-consumer semantics).
+- Unique per-test `keyPrefix` (`events-test-${pid}-${Date.now()}:${uuid}:`) so parallel + repeat runs can't contaminate each other's streams.
+
+**Files created** (11) — `packages/events/package.json` + 5 configs (`tsconfig.json`, `tsconfig.build.json`, `jest.config.cjs`, `eslint.config.mjs`) + `src/{event,event-bus,in-memory-event-bus,redis-streams-event-bus,index}.ts` + 2 test files.
+**Files edited** (1) — `pnpm-lock.yaml` (workspace registration).
+**Dependencies** — `ioredis` (production dep, already in root); `@nestjs/common` optional peer + dev dep; `@app/logger` + `@app/tsconfig` + `@app/eslint-config` workspace deps.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green for `packages/events`.
+- ✅ `jest --runInBand` in `packages/events` — **2 suites, 9/9 tests pass**.
+- ✅ Full `apps/api` suite — **11 suites, 76/76** — no regressions from adding the new workspace package.
+- ✅ `tsc -p tsconfig.build.json` produces a clean `dist/` ready for other packages to consume.
+
+**Acceptance criteria**
+
+- ✅ Typed `EventBus` interface with `publish<E>(event)` + `subscribe<E>(name, handler)`.
+- ✅ Redis Streams adapter with consumer groups per module.
+- ✅ Dead-letter stream: forced-fail event lands in `<stream>:dlq` after retries exhausted (verified via `XRANGE`).
+- ✅ In-memory adapter for tests — 6/6 unit tests pass.
+- ✅ Swap-to-Kafka path documented: implement `KafkaEventBus: EventBus`, bind at `EVENT_BUS`, ADR-003 migration triggers are the gate. No domain changes.
+
+**Notes**
+
+- **Why separate publisher + per-consumer connections?** `XREADGROUP BLOCK 5000` holds its Redis connection for the full 5-second block window. Sharing that connection with `XADD` (publish) means every publish stalls for up to 5s waiting for the read to return. Each consumer gets its own `this.publisher.duplicate()` — one idle connection per subscription is the right trade.
+- **Competing consumers vs independent groups.** This is the whole reason for named consumer groups. `notifications` and `analytics` are different groups — each one gets every event. Two handlers in the SAME group `one-group` are competing consumers — each event goes to exactly one of them. Both patterns are tested.
+- **DLQ key structure.** `<originStream>:dlq`. Fields: `data` (original wire JSON), `consumerGroup`, `attempts`, `lastError`, `originStream`. Retained forever by default; ops clears via `XDEL` or trims with `XTRIM`. Matches context-map's "7-day DLQ retention" default from [ADR-003] — the trim policy is an ops concern, not a code concern.
+- **No NestJS module wired yet.** The `EVENT_BUS` token exists; consumers inject it. A small `EventsModule.forRoot({ redisUrl, keyPrefix })` wrapper is the natural follow-up — but trivial and un-controversial. Left for the first prompt that actually needs it (likely `[IV.18.2.x]` when the first module publishes an event).
+- **Swap-to-Kafka path.** Adapter-pattern + token-based DI means the migration is one file swap + one DI binding change. ADR-003's triggers (>30k ev/s for 7d, cross-region fan-out, long retention, Schema Registry needs) decide when.
+- **ioredis Lua-free.** The adapter doesn't use a Lua script — each op is a separate ioredis call. Redis handles consistency per-op; at-least-once semantics don't need atomicity across multiple ops for this adapter. (Contrast with `RedisThrottlerStorage` which DOES use Lua — sliding-window atomicity is different.)
 
 ---
 
