@@ -10,18 +10,100 @@
 
 ## Summary
 
-| Counter             | Value                                                                                      |
-| ------------------- | ------------------------------------------------------------------------------------------ |
-| Prompts completed   | 39 (38 full + 1 foundation-only)                                                           |
-| Prompts in progress | 1 (`[III.13.2]` — foundation shipped; integration + MFA + OAuth + JWKS rotation follow-up) |
-| Prompts blocked     | 0                                                                                          |
-| Last prompt         | `[III.13.2]` (part 1 — `@app/auth` crypto primitives only)                                 |
-| Last commit date    | 2026-04-20                                                                                 |
-| Phase               | Phase 0 — Foundation (argon2id + JWT-with-kid primitives live; 15 suites, 107 tests green) |
+| Counter             | Value                                                                                     |
+| ------------------- | ----------------------------------------------------------------------------------------- |
+| Prompts completed   | 39 (38 full + 1 foundation-only; `[III.13.2]` part 2 just shipped — still IN-PROGRESS)    |
+| Prompts in progress | 1 (`[III.13.2]` — parts 1+2 shipped; MFA + OAuth + JWKS rotation + session cap follow-up) |
+| Prompts blocked     | 0                                                                                         |
+| Last prompt         | `[III.13.2]` (part 2 — Identity module: sessions + refresh rotation + reuse cascade)      |
+| Last commit date    | 2026-04-20                                                                                |
+| Phase               | Phase 0 — Foundation (auth flow live end-to-end; 16 suites, 112 tests green)              |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [III.13.2] — Identity module: register / login / refresh / logout with reuse-detection cascade (part 2)
+
+**Date:** 2026-04-20 · **Status:** IN-PROGRESS · **Kind:** Build · **Playbook §** 13.2
+
+**What was done**
+
+Picked up the second slice of `[III.13.2]` after part 1 (crypto primitives) locked in. This slice wires the primitives into an actual auth flow — a full NestJS Identity module with the load-bearing reuse-detection cascade. Register, login, refresh, logout all work end-to-end against the real PostGIS Postgres through Fastify `app.inject()`.
+
+- **`apps/api/src/modules/identity/`** — clean-hex layers per ADR-001:
+  - **`domain/session.entity.ts`** — pure `Session` interface + `isSessionActive()`. No Prisma types leak into domain.
+  - **`application/ports/session.repository.ts`** — `SessionRepository` port with `create` / `findByRefreshHash` / `rotate` / `revoke` / `revokeAllForUser`. Symbol DI token. Caller supplies the id so the JWT's `sid` claim matches the persisted row without a round-trip.
+  - **`application/ports/user.repository.ts`** — minimal surface: `create` / `findByEmailHash` / `findById`. Soft-deleted users filter out (ADR-010 contract — anonymised users must not resurrect).
+  - **`application/ports/token.service.ts`** — `TokenService` port wrapping `@app/auth` sign/verify with access + refresh policy split.
+  - **`application/issue-session.use-case.ts`** — generate CSPRNG session id, sign refresh JWT (carries `dfp` device-fingerprint claim), persist `sha256(refreshToken)` only, sign access JWT. Raw refresh token goes to the cookie, never to the DB.
+  - **`application/refresh-session.use-case.ts`** — the load-bearing one. 6-step flow: JWT verify → hash lookup → reuse-detection cascade → expiry → sid-mismatch → atomic rotate (old row's `revokedAt` set + new row inserted in one tx). On a revoked-row hit, `revokeAllForUser()` wipes every session for the user — OWASP refresh-rotation pattern.
+  - **`application/revoke-session.use-case.ts`** — logout. Idempotent: missing / already-revoked cookies return success silently.
+  - **`application/register.use-case.ts`** — argon2id hash, unique-email check via `emailHash`, sha256(EMAIL_PEPPER + email.lowercase). Issues session on success. Full field-level email encryption is queued for `[III.13.11]`; for now we stash utf-8 bytes in `emailEncrypted` (no decryption API is exposed).
+  - **`application/login.use-case.ts`** — deliberate uniform-error: wrong email and wrong password both emit `INVALID_CREDENTIALS` at 401. Dummy-hash verify on miss-path equalizes timing. Issues session on success.
+  - **`infrastructure/email-hash.ts`** — module-scoped `hashEmail(emailLower)` using `EMAIL_PEPPER` env var (new — see below).
+  - **`infrastructure/prisma-session.repository.ts`** — thin Prisma adapter. `rotate()` uses `$transaction` for the revoke-old + insert-new pair (CLAUDE rule 13 preserved — only DB writes in the tx, no network calls).
+  - **`infrastructure/prisma-user.repository.ts`** — hides soft-deleted users from both `findByEmailHash` and `findById`.
+  - **`infrastructure/jwt-token.service.ts`** — env-derived keyrings (`kid=access-v1` / `kid=refresh-v1`, single-key rings for now), `parseDuration("15m"|"30d"|"12h"|"45s")` utility. JWKS rotation cron + multi-key rings land in their own follow-up.
+  - **`interface/auth.controller.ts`** — `POST /api/v1/auth/{register,login,refresh,logout}`. Refresh cookie: `httpOnly`, `sameSite: strict`, `secure` in staging/prod, `path: /api/v1/auth`, `maxAge` mirrors refresh TTL. Access token in JSON body only (CLAUDE rule 12). Device fingerprint = `sha256(pepper + ua + ip)`; `x-device-id` header is **read but ignored** this slice (Session FK → Device, no auto-create yet).
+  - **`interface/dto/auth.dto.ts`** — Zod schemas for register + login bodies. Password policy intentionally mild (min 12, max 128); entropy scoring + HIBP k-anon is a follow-up.
+  - **`identity.module.ts`** — wires all ports → adapters, declares controller, exports `RefreshSessionUseCase` so downstream modules (JwtAuthGuard) can reuse.
+
+- **`apps/api/src/main.ts`** — registered `@fastify/cookie` after `registerSecurity()` so the httpOnly refresh cookie parses on /refresh + /logout.
+
+- **`apps/api/src/app.module.ts`** — imported `IdentityModule`.
+
+- **`packages/config/src/schema.ts`** — added `EMAIL_PEPPER: z.string().min(32)` under `SecuritySchema`. Playbook §13.11 calls for a dedicated pepper on email/IP hashes so pepper rotation can happen independently of rate-limit pepper rotation.
+
+- **`.env.example` + `apps/api/test/setup.ts`** — seeded `EMAIL_PEPPER`.
+
+- **`apps/api/test/identity.e2e-spec.ts`** — 5 integration tests against real Postgres via `app.inject()` (no port bind):
+  1. register → httpOnly cookie set, access token returned, body has userId.
+  2. wrong password + unknown email → uniform `INVALID_CREDENTIALS` 401.
+  3. refresh rotates — old cookie invalidated, new one works.
+  4. **REUSE CASCADE** — register user, open a 2nd login session (total 2 active), rotate session 1 with `/refresh`, replay the (now-rotated) cookie → 401 `REFRESH_REUSE_DETECTED` AND every session for the user is `revokedAt != null`. Proven by `prisma.session.count({ where: { userId, revokedAt: null } })` going 2 → 0.
+  5. logout revokes + clears cookie, second logout is a no-op.
+
+**Files created** (15) — `apps/api/src/modules/identity/{domain/session.entity.ts, application/{issue-session,refresh-session,revoke-session,register,login}.use-case.ts, application/ports/{session,user,token}.ts, infrastructure/{prisma-session.repository,prisma-user.repository,jwt-token.service,email-hash}.ts, interface/{auth.controller.ts, dto/auth.dto.ts}, identity.module.ts}` + `apps/api/test/identity.e2e-spec.ts`.
+**Files edited** (5) — `apps/api/src/main.ts` (cookie plugin), `apps/api/src/app.module.ts` (IdentityModule), `apps/api/test/setup.ts` (EMAIL_PEPPER), `.env.example` (EMAIL_PEPPER), `packages/config/src/schema.ts` (EMAIL_PEPPER).
+**Dependencies added** — `@fastify/cookie@11.0.2` on apps/api, `@app/auth@workspace:*` linked into apps/api.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green on apps/api after the new module landed.
+- ✅ `jest --testPathPattern="identity|smoke"` — **30/30 pass**: identity 5/5, phase-0 smoke 25/25.
+- ✅ Full-suite earlier run: 80/81 pass. The one fail is a pre-existing parallel-test data collision between `index-usage.e2e-spec.ts` (seeds places near Victoria in `beforeAll`, cleans only in `afterAll`) and `geo-queries.e2e-spec.ts` (also queries near Victoria). Both prompts are `[III.12.x]` — unrelated to this slice. Fix is queued as a test-hygiene follow-up.
+- ✅ All clean-hex boundaries hold: `domain/` has no framework imports, `application/` talks only to ports, adapters implement those ports, interface layer is a thin controller.
+
+**Acceptance criteria**
+
+From the `[III.13.2]` full scope, this slice covers:
+
+- ✅ Register + login with argon2id password hashing — land.
+- ✅ Access JWT 15m + refresh JWT 30d in httpOnly+SameSite=strict cookie on `/api/v1/auth` — land.
+- ✅ Rotating refresh + reuse-detection cascade (the load-bearing acceptance criterion) — **proven by integration test**.
+- ✅ Session repo (Prisma) — land.
+
+Still deferred to follow-ups under the same IN-PROGRESS banner:
+
+- ⏳ TOTP MFA (speakeasy) + MFA-required login flow.
+- ⏳ OAuth2 Google/Apple via Passport — env vars already in schema.
+- ⏳ JWKS rotation cron + multi-key keyring persistence.
+- ⏳ Session concurrency cap (10/user).
+- ⏳ Device fingerprint binding on refresh (today's `dfp` is computed fresh per request — should be bound to the session on issuance and compared on refresh).
+- ⏳ Device table auto-create so `x-device-id` persists to `Session.deviceId`.
+- ⏳ Field-level encryption on `emailEncrypted` (queued for `[III.13.11]`).
+- ⏳ `JwtAuthGuard` + `RolesGuard` + `@CurrentUser()` decorator (`[III.11.3]` picks these up on top of the `TokenService` port).
+
+**Notes**
+
+- **Why separate opaque random + JWT refresh tokens was rejected.** Some auth stacks keep a random cookie value and a separate JWT. We use the JWT itself as the cookie value (stored as its sha256). The `dfp` claim + hash-lookup + reuse cascade covers the same threat model; double-token plumbing is dead weight for v1.
+- **Why the controller has no `@Throttle` decorator.** @nestjs/throttler v6 stacks all named buckets when no override is present — so the auth route correctly inherits default (60/min) AND auth (5/min), smallest wins = 5/min in prod. Explicit `@Throttle({ auth: {...} })` would OVERRIDE test-mode limit inflation and trip 429s in the integration suite.
+- **Why `fastify/cookie` registers after `registerSecurity`.** Helmet hardens headers before routes bind; cookie parser attaches a decorator that needs the Fastify instance. Ordering keeps both working and keeps the refresh cookie off the `/health` surface via `path: /api/v1/auth`.
+- **Why the Device FK is nullable in the session.** The Session model has `deviceId String?` with `onDelete: SetNull`. A dedicated `RegisterDeviceUseCase` prompt will populate Device rows from the `x-device-id` header and then we can switch the FK to non-null.
+- **ADR-010 contract met.** Both `UserRepository` methods filter on `deletedAt IS NULL` so anonymised users can't log in or resurrect.
 
 ---
 
