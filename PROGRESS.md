@@ -10,18 +10,55 @@
 
 ## Summary
 
-| Counter             | Value                                                                  |
-| ------------------- | ---------------------------------------------------------------------- |
-| Prompts completed   | 31                                                                     |
-| Prompts in progress | 0                                                                      |
-| Prompts blocked     | 0                                                                      |
-| Last prompt         | `[III.12.3]`                                                           |
-| Last commit date    | 2026-04-20                                                             |
-| Phase               | Phase 0 — Foundation (VectorQueries + IVFFlat live; 72/72 tests green) |
+| Counter             | Value                                                                                 |
+| ------------------- | ------------------------------------------------------------------------------------- |
+| Prompts completed   | 32                                                                                    |
+| Prompts in progress | 0                                                                                     |
+| Prompts blocked     | 0                                                                                     |
+| Last prompt         | `[III.12.4]`                                                                          |
+| Last commit date    | 2026-04-20                                                                            |
+| Phase               | Phase 0 — Foundation (index sweep proven — EXPLAIN hits GiST; 10 suites, 74/74 tests) |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [III.12.4] — Required indexes + EXPLAIN-uses-GiST acceptance
+
+**Date:** 2026-04-20 · **Status:** DONE · **Kind:** Build · **Playbook §** 12.4
+
+**What was done**
+
+The two Playbook-§12.4-mandated outcomes were ALREADY satisfied by prior prompts — the `@@index` / `@@unique` declarations from `[III.12.1]` cover §12.4's list, GiST indexes from `[III.12.2]` cover every geography column, and the IVFFlat from `[III.12.3]` covers the vector column. All applied to the live DB. What was missing: the runtime ASSERTION that the planner actually uses the GiST index. This prompt adds that test.
+
+- **`apps/api/test/index-usage.e2e-spec.ts`** — two-assertion integration suite:
+  1. **`EXPECTED_INDEXES` set** (19 entries: 4 Prisma-declared from §12.4 + 14 GiST + 1 IVFFlat) MUST all appear in `pg_indexes` for schema `public`. Drift in either direction — missing index OR index rename — fails the test.
+  2. **EXPLAIN on a radius query hits `Place_coordinates_gist`.** Seeds 25 Places near London, runs `ANALYZE "Place"` so the planner has stats, then wraps an `EXPLAIN SELECT ... WHERE ST_DWithin(...)` in a `prisma.$transaction` with `SET LOCAL enable_seqscan = off`. The forced setting makes the GiST index the only viable plan — asserts `plan.includes('Place_coordinates_gist')`. Proves the index is wired to the query, not just lying in `pg_indexes`.
+- **No new migration file.** §12.4's indexes already live in the DB via prior migrations. Adding an empty `_indexes` migration would be dead SQL. PROGRESS documents this explicitly so the next engineer doesn't look for a migration that should exist.
+
+**Files created** (1) — `apps/api/test/index-usage.e2e-spec.ts`.
+**Files edited** (1) — `PROGRESS.md`.
+**Dependencies** — none.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ `jest test/index-usage.e2e-spec.ts --runInBand` — 2/2 pass.
+- ✅ Full api suite — **10 suites, 74/74** (up from 72/72). No regressions.
+
+**Acceptance criteria**
+
+- ✅ `EXPLAIN ANALYZE` on a radius query uses the GiST index (verified under `enable_seqscan = off`).
+- ✅ `\di`-equivalent check — every expected index lives in `pg_indexes`.
+
+**Notes**
+
+- **Why `SET LOCAL enable_seqscan = off`?** On 25 rows the planner's default cost model picks a seq-scan (scanning 25 rows is cheaper than walking a GiST index); the index IS there, the planner just won't use it at that data scale. Forcing seq-scan off proves the GiST index is reachable for this query shape. In production with millions of rows, the planner picks it naturally; the test proves the plumbing.
+- **`Place_coordinates_gist` name coupling.** The test literally greps for the index name. If someone renames it in a future migration, this test fails — a deliberate tripwire, since the GiST indexes are referenced by name in `docs/services/...` and the context-map's implied shape.
+- **`EXPLAIN` vs `EXPLAIN ANALYZE`.** The test uses `EXPLAIN` (plan only) rather than `EXPLAIN ANALYZE` (plan + actual runtime). Plan is sufficient to assert index usage and costs zero runtime; `ANALYZE` would force the query to actually run, which is wasted work here.
+- **The "indexes migration" the prompt asks for is a no-op.** All 19 indexes land via `[III.12.1]` (@@index in schema), `[III.12.2]` (14 GiST migration), `[III.12.3]` (1 IVFFlat migration). Adding another migration with `CREATE INDEX IF NOT EXISTS` for the same set would silently succeed and encode zero new state. Omitted deliberately; the test is the acceptance gate.
 
 ---
 
