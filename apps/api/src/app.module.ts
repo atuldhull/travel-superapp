@@ -12,14 +12,22 @@
  * Installed by prompt [III.11.0].
  */
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { AppConfigModule } from '@app/config';
 import { AppNestLoggerService } from '@app/logger';
 import { DbModule } from './common/db/db.module';
+import { RateLimitGuard } from './common/rate-limit/rate-limit.guard';
+import { RateLimitModule } from './common/rate-limit/rate-limit.module';
 import { HealthModule } from './health/health.module';
 
 @Module({
-  imports: [AppConfigModule.forRoot(), DbModule, HealthModule],
-  providers: [AppNestLoggerService],
+  imports: [AppConfigModule.forRoot(), DbModule, RateLimitModule, HealthModule],
+  providers: [
+    AppNestLoggerService,
+    // Rate-limit every route by default. Routes with @SkipThrottle() or
+    // no @Throttle() still get the `default` bucket (60/min/user+ip).
+    { provide: APP_GUARD, useClass: RateLimitGuard },
+  ],
   exports: [AppNestLoggerService],
 })
 export class AppModule {}
