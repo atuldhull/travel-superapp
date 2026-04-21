@@ -15,9 +15,16 @@
  */
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
+import { FederatedSearchPlacesUseCase } from '../application/federated-search-places.use-case';
 import { SearchPlacesUseCase } from '../application/search-places.use-case';
+import type { FederatedPlaceResult } from '../domain/federated-place-result.entity';
 import type { PlaceWithDistance } from '../domain/place.entity';
-import { SearchPlacesBodySchema, type SearchPlacesBody } from './dto/places.dto';
+import {
+  FederatedSearchPlacesBodySchema,
+  SearchPlacesBodySchema,
+  type FederatedSearchPlacesBody,
+  type SearchPlacesBody,
+} from './dto/places.dto';
 
 interface PlaceDto {
   readonly id: string;
@@ -49,7 +56,10 @@ function toDto(p: PlaceWithDistance): PlaceDto {
 
 @Controller('places')
 export class PlacesController {
-  constructor(private readonly searchPlaces: SearchPlacesUseCase) {}
+  constructor(
+    private readonly searchPlaces: SearchPlacesUseCase,
+    private readonly federatedSearch: FederatedSearchPlacesUseCase,
+  ) {}
 
   @Post('search')
   @HttpCode(HttpStatus.OK)
@@ -73,5 +83,26 @@ export class PlacesController {
     if (body.limit !== undefined) command.limit = body.limit;
     const places = await this.searchPlaces.execute(command);
     return { places: places.map(toDto) };
+  }
+
+  /**
+   * Federated search — external providers only (Google / FSQ / OSM
+   * mocks in v1). No merge with the local catalog; clients either
+   * render the external results directly, or a future follow-up
+   * slice writes them through to the `Place` table and returns
+   * merged results via `POST /places/search`.
+   */
+  @Post('federated-search')
+  @HttpCode(HttpStatus.OK)
+  async federated(
+    @Body(new ZodValidationPipe(FederatedSearchPlacesBodySchema))
+    body: FederatedSearchPlacesBody,
+  ): Promise<{ results: readonly FederatedPlaceResult[] }> {
+    const results = await this.federatedSearch.execute({
+      center: body.center,
+      radiusKm: body.radiusKm,
+      ...(body.category ? { category: body.category } : {}),
+    });
+    return { results };
   }
 }

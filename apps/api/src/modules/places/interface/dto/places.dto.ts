@@ -21,3 +21,16 @@ export const SearchPlacesBodySchema = z.object({
   limit: z.number().int().positive().max(100).optional(),
 });
 export type SearchPlacesBody = z.infer<typeof SearchPlacesBodySchema>;
+
+/**
+ * Federated search body — external provider(s) only, no local
+ * catalog merge (that's a follow-up slice). Same shape as
+ * `SearchPlacesBodySchema` minus `limit` (the provider controls
+ * result count in v1).
+ */
+export const FederatedSearchPlacesBodySchema = z.object({
+  center: Coord,
+  radiusKm: z.number().positive().max(10_000),
+  category: z.string().trim().min(1).max(60).optional(),
+});
+export type FederatedSearchPlacesBody = z.infer<typeof FederatedSearchPlacesBodySchema>;
