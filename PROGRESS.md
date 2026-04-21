@@ -12,16 +12,87 @@
 
 | Counter             | Value                                                                       |
 | ------------------- | --------------------------------------------------------------------------- |
-| Prompts completed   | 68 (67 full + 1 foundation-only; Redis cache base class extracted)          |
+| Prompts completed   | 69 (68 full + 1 foundation-only; Trip overview dashboard just shipped)      |
 | Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up) |
 | Prompts blocked     | 0                                                                           |
-| Last prompt         | `[IV.18.8.1]` — TypedRedisCache<T> base class — collapsed 3 copies          |
+| Last prompt         | `[IV.18.7.3]` — Trip overview: GET /trips/:id/overview bundles 4 sections   |
 | Last commit date    | 2026-04-21                                                                  |
-| Phase               | Phase 1 — Cache pattern extracted; 36 suites, 243 tests pass (no change)    |
+| Phase               | Phase 1 — Bundled dashboard with graceful degradation; 37 suites, 248 tests |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.7.3] — Trip overview dashboard: GET /trips/:id/overview (bundles 4 sections)
+
+**Date:** 2026-04-21 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.2 (cross-context composition)
+
+**What was done**
+
+Stitches the three existing Trip fold-ins (weather, stays, eateries) + itinerary into one response so a mobile client can render the "trip home" screen with one round-trip instead of four. Purely compositional — no new modules, no new ports, no new providers.
+
+- **`GetTripOverviewUseCase`** (`apps/api/src/modules/trip/application/get-trip-overview.use-case.ts`):
+  - Owner gate runs ONCE at the top via `TripRepository.findByIdForUser` (404 `TRIP_NOT_FOUND`). Sub-fetches never run for non-owners — no provider quota burned.
+  - Reads `trip.center` ONCE via `GeoQueries.findTripCenter`. Subsequent sub-calls reuse it.
+  - **Calls the inner sibling use-cases** (`GetForecastUseCase`, `SearchStaysUseCase`, `SearchEateriesUseCase`, `ItineraryRepository.listDays`) — not the Trip × \* wrappers — since we're already owner-gated. Wrapper reuse would duplicate the `findByIdForUser` + `findTripCenter` calls 3+ times.
+  - **`Promise.all` across the 4 sub-fetches** — they run concurrently. A 4-hit trip overview takes roughly max(weather, stays, eateries, itinerary) instead of sum.
+  - **Per-section graceful degradation**: each sub-fetch is wrapped in a `section<T>()` helper that catches and converts to `{ ok: false, code }`. A weather-provider outage no longer 500s the overview; the widget just goes grey.
+  - **`GracefulSkip` marker class** for known "skip reasons" like the dateless trip can't search stays — the wrapper surfaces `TRIP_DATES_REQUIRED` as the section code instead of pretending it's a generic error.
+
+- **Discriminated-union response shape**:
+
+  ```ts
+  type Section<T> = { ok: true; data: T } | { ok: false; code: string };
+  interface TripOverviewDto {
+    trip: TripDto;
+    itinerary: Section<{ days: ItineraryDayDto[] }>;
+    weather: Section<{ forecast: WeatherForecast }>;
+    stays: Section<{ list: StayListing[] }>;
+    eateries: Section<{ list: EateryListing[] }>;
+  }
+  ```
+
+  Client type-narrows on `.ok` — no null-juggling per section.
+
+- **HTTP:** `GET /api/v1/trips/:id/overview`. Owner-only. Route added to the existing `TripController` alongside the other Trip × \* fold-ins.
+
+- **5 integration tests** (`apps/api/test/trip-overview.e2e-spec.ts`) — overrides `WEATHER_PROVIDER`, `MockStayProvider`, `MockEateryProvider` so the underlying cache decorators + Redis stay in the chain but data is deterministic:
+  1. Happy path: trip with dates + itinerary generated → all 4 sections `ok: true`, itinerary non-empty, weather matches trip duration, stays + eateries populated.
+  2. Dateless trip → `stays.ok = false` with `code = 'TRIP_DATES_REQUIRED'`; weather + eateries + itinerary remain ok. Itinerary empty list is still `ok: true` (empty is not a failure).
+  3. Weather provider throws → `weather.ok = false` with some code; stays + eateries unaffected.
+  4. Non-owner → **404 `TRIP_NOT_FOUND`** at the top (NOT a partial response). Graceful degradation is intentional for sub-fetch failures, not for auth — owner gate is an auth-style hard fail.
+  5. Unauthenticated → 401.
+
+**Files created** (2) — `modules/trip/application/get-trip-overview.use-case.ts`, `test/trip-overview.e2e-spec.ts`.
+**Files edited** (2) — `modules/trip/trip.module.ts` (+GetTripOverviewUseCase provider), `modules/trip/interface/trip.controller.ts` (+GET /:id/overview route, +TripOverviewDto + SectionDto mapping).
+
+**Dependencies** — none new. Every sub-fetch is an existing use-case.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Overview suite 5/5 pass against Docker + Redis.
+- ✅ **Full real-DB suite: 37 suites, 248 tests pass.** (+1 suite, +5 tests vs `[IV.18.8.1]`.)
+
+**Acceptance criteria**
+
+- ✅ One request returns trip + itinerary + weather + stays + eateries.
+- ✅ Concurrent sub-fetches — overview latency is max(sub), not sum(sub).
+- ✅ Sub-failures degrade per-section; the bundle still arrives.
+- ✅ Owner gate fails hard (404), never a partial success with leaked trip metadata.
+- ✅ Dateless trip surfaces a typed skip code for stays, not a generic error.
+- ✅ No new ports, providers, or adapters — 100% composition.
+
+**Notes**
+
+- **Why call inner use-cases instead of reusing `GetTripWeather/Stays/EateriesUseCase`.** The wrapper use-cases each do their own owner gate + `findTripCenter` call (correct for their standalone endpoints). Reusing them here would mean 4 owner gates + 4 center lookups per overview request — cheap individually but silly to duplicate when we've already established the same context at the top of the overview use-case.
+- **Why graceful sub-section failures but hard 404 on owner mismatch.** The two failure modes are different: sub-failures are transient infrastructure problems (provider down, network blip) that the UI should degrade through; owner-mismatch is an auth signal that should propagate as the usual 404 so clients know the request was categorically wrong (not "try again in a minute").
+- **Why a `GracefulSkip` marker class instead of returning null from the sub-callback.** Section callbacks promise a `T` — returning null would force every `T` to permit null. `throw new GracefulSkip(code)` keeps the success/failure partition explicit and lets ONE code path (the outer section wrapper) handle both exception paths uniformly.
+- **Why empty itinerary is `ok: true` data=[], not `ok: false`.** An un-generated itinerary is the owner's own choice, not a failure. `ok: false` would wrongly imply a retry. Semantically: the fetch succeeded; there are zero days.
+- **Why a `weather` widget failure doesn't fall back to cached data.** The cache decorator already handles Redis outages transparently (swallow-and-log → "fresh fetch"). By the time the use-case sees an exception, the upstream provider itself threw — there is no stale-but-valid data to fall back to. Surfacing `ok: false` is honest; the UI decides whether to show "Unable to load weather" or hide the widget.
+- **Why no bulk-overview for multiple trips.** One request per trip dashboard is fine at current scale. If a "recent trips" landing page ever needs 10 previews with weather, that's its own slice and likely needs a denormalized shape (`{ tripId → weatherSummary }`), not this bundle × N.
 
 ---
 
