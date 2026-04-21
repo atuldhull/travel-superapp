@@ -10,18 +10,80 @@
 
 ## Summary
 
-| Counter             | Value                                                                           |
-| ------------------- | ------------------------------------------------------------------------------- |
-| Prompts completed   | 65 (64 full + 1 foundation-only; Trip × Stays fold-in just shipped)             |
-| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up)     |
-| Prompts blocked     | 0                                                                               |
-| Last prompt         | `[IV.18.6.2]` — Trip × Stays fold-in: GET /trips/:id/stays                      |
-| Last commit date    | 2026-04-21                                                                      |
-| Phase               | Phase 1 — Second cross-module fold-in; 34 suites, 229 tests pass against Docker |
+| Counter             | Value                                                                               |
+| ------------------- | ----------------------------------------------------------------------------------- |
+| Prompts completed   | 66 (65 full + 1 foundation-only; Food module v1 just shipped)                       |
+| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up)         |
+| Prompts blocked     | 0                                                                                   |
+| Last prompt         | `[IV.18.7.1]` — Food module v1: POST /eateries/search (mock provider + cache)       |
+| Last commit date    | 2026-04-21                                                                          |
+| Phase               | Phase 1 — 3rd cache-around-port instance (extraction overdue); 35 suites, 237 tests |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.7.1] — Food module v1: POST /eateries/search (mock provider + cache)
+
+**Date:** 2026-04-21 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.5 (Food & Tryouts)
+
+**What was done**
+
+Third new bounded context this session (after Weather + Stays). Ships the eatery-search surface using the same clean-hex + decorator cache pattern. This is deliberately the **third copy** of the cache-around-port implementation — the `@app/cache` extraction is now overdue and queued as its own slice where a generic `TypedRedisCache<T>` design can get proper attention.
+
+- **`apps/api/src/modules/food/` scaffold:**
+  - `domain/eatery-listing.entity.ts` — flat `EateryListing` (externalId, provider, name, cuisineTags, priceTier, lat/lng, distanceMeters). Dish-level enrichment (the `Dish`/`DishTag` Prisma tables) deferred to the real-provider integration slice.
+  - `application/ports/eatery-provider.ts` — narrow `searchNearby(input)` with optional `cuisineTag` + `maxPriceTier` filters. Token `EATERY_PROVIDER`.
+  - `application/ports/eatery-cache.ts` — `get`/`set` over readonly arrays.
+  - `application/search-eateries.use-case.ts` — validates lat/lng, radius `(0, 25]` (tighter than Stays' 50km — "eateries near me" is a walking/short-ride use case), price tier `[1, 5]`. Typed errors: `INVALID_COORDINATES`, `INVALID_RADIUS`, `INVALID_PRICE_TIER`.
+  - `infrastructure/mock-eatery-provider.ts` — 4 fixtures spanning cuisines + price tiers (ramen/trattoria/tacos/omakase). Real filters applied inside the mock so tests can observe the cuisine/price flow-through.
+  - `infrastructure/redis-eatery-cache.ts` — 3rd copy of the `ensureConnected()` + swallow-and-log pattern. Key prefix `travel-${NODE_ENV}:eateries:`.
+  - `infrastructure/cached-eatery-provider.ts` — decorator. Key is `lat.toFixed(3):lng.toFixed(3):radiusKm.toFixed(1):cuisineTag:maxPriceTier`. TTL 30min (eatery metadata is stable; hours-open data would drop the TTL).
+  - `interface/dto/food.dto.ts` — `SearchEateriesBodySchema` (Zod) with `maxPriceTier: 1..5` at the DTO level.
+  - `interface/food.controller.ts` — `POST /api/v1/eateries/search`.
+  - `food.module.ts` — same decorator-of-DI wiring Weather + Stays use.
+
+- **`AppModule` imports `FoodModule`**.
+
+- **8 integration tests** (`apps/api/test/food.e2e-spec.ts`) with `MockEateryProvider` overridden by a recording + filtering stub:
+  1. No bearer → 401.
+  2. Happy path → 200 + provider echo (undefined filters).
+  3. `cuisineTag=mexican` → narrows to mexican-tagged results + flows through to provider.
+  4. `maxPriceTier=2` → response only has `priceTier ≤ 2`.
+  5. `radiusKm=50` → 422 `INVALID_RADIUS`.
+  6. `maxPriceTier=6` → 422 `VALIDATION_FAILED` (Zod `.max(5)` trips first).
+  7. Three identical searches → upstream called once (cache hit).
+  8. Different cuisine → separate upstream call (cache miss).
+
+- **Test isolation**: `beforeAll` SCAN-DELs every `travel-test:eateries:*` key before the suite runs, same trick Weather + Stays use.
+
+**Files created** (10) — all under `apps/api/src/modules/food/` + `test/food.e2e-spec.ts`.
+**Files edited** (1) — `apps/api/src/app.module.ts` (+FoodModule).
+
+**Dependencies** — none new.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Food suite 8/8 pass.
+- ✅ **Full real-DB suite: 35 suites, 237 tests pass against live Docker.** (+1 suite, +8 tests vs `[IV.18.6.2]`.)
+
+**Acceptance criteria**
+
+- ✅ Authenticated users can search for eateries near a coordinate with optional cuisine + price filters.
+- ✅ Provider behind a port — real providers (Yelp / Google Places / Zomato) drop in as sibling classes.
+- ✅ Cache pattern re-used from Weather + Stays — zero bespoke cache code in Food's application layer.
+- ✅ Domain validation rejects bad radius / tier with typed errors.
+- ✅ Filter parameters affect cache key so different filters don't share entries.
+
+**Notes**
+
+- **Why 25km radius cap instead of Stays' 50km.** "Eateries near me" is a walking / short-ride use-case; anything beyond 25km isn't helping someone choose lunch. Stays are an intentional-booking choice where 50km "I don't mind driving to the lodge" is reasonable. Different domain, different cap.
+- **Why dish-level enrichment isn't here.** `Dish` + `DishTag` need a real provider (or manual crowd-sourcing infra) to populate meaningfully. Shipping them behind a mock would be lying to UI devs about what data is actually available. When Yelp Fusion or Google Places category=restaurant is wired, that slice brings Dish with it.
+- **Why lowercase the cuisineTag filter match in the mock.** Keeps the provider tolerant to client casing (`"Mexican"` vs `"mexican"`) without polluting the domain DTO. Real providers all normalize; the mock matches that behaviour so tests write naturally.
+- **Why `@app/cache` isn't extracted as part of this slice.** Three instances is the trigger, but the extraction is its own design decision — generic type parameters, shared key-prefix contract, test-isolation helper, Redis client reuse policy. Cramming it into this slice would rush that. Queued as `[IV.18.7.x]` so it gets a clean slice with code-review surface on just the extraction.
 
 ---
 
