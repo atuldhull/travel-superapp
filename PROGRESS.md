@@ -12,16 +12,97 @@
 
 | Counter             | Value                                                                               |
 | ------------------- | ----------------------------------------------------------------------------------- |
-| Prompts completed   | 46 (45 full + 1 foundation-only; trace-id + Trip module just shipped)               |
+| Prompts completed   | 47 (46 full + 1 foundation-only; itinerary stub just shipped)                       |
 | Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up)         |
 | Prompts blocked     | 0                                                                                   |
-| Last prompt         | `[IV.18.2.3]` — Trip module first slice (create/list/get-by-id, full Phase-0 stack) |
+| Last prompt         | `[IV.18.2.4]` — GenerateItineraryStubUseCase + POST/GET /trips/:id/itinerary        |
 | Last commit date    | 2026-04-21                                                                          |
-| Phase               | Phase 0/1 boundary — first feature module live; suite depends on Docker being up    |
+| Phase               | Phase 1 underway — Trip module has draft + stub itinerary; Docker still down in dev |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.2.4] — Itinerary stub: day-per-date skeleton on top of the Trip module
+
+**Date:** 2026-04-21 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.1
+
+**What was done**
+
+Deterministic itinerary skeleton — one `ItineraryDay` per calendar date between `startsOn` and `endsOn` inclusive. Closes the Trip module's "it's just a draft with no days" gap. The real AI-backed orchestrator lands when `ai-service` is live; this use-case is the contract it'll replace, so clients wire against the final shape today.
+
+- **`domain/itinerary.entity.ts`** — plain-data `ItineraryDay` + `ItineraryItem`. Domain-only; no Prisma imports.
+
+- **`application/ports/itinerary.repository.ts`** — `ItineraryRepository` port:
+  - `replaceDays(tripId, days[])` — atomic delete + bulk insert; returns inserted rows.
+  - `listDays(tripId)` — ordered by `dayIndex asc`.
+  - `clearAll(tripId)` — for future `DELETE /trips/:id` flow.
+  - `listItemsForDay(dayId)` — stub doesn't create items but the port surface is already there so the AI orchestrator drops in without a port change.
+
+- **`infrastructure/prisma-itinerary.repository.ts`** — `replaceDays` runs delete + `createMany` inside `$transaction` (CLAUDE rule 13 — DB writes only, no network).
+
+- **`application/generate-itinerary-stub.use-case.ts`** — `GenerateItineraryStubUseCase`:
+  - Look up trip via `TripRepository.findByIdForUser` so cross-user reads 404 (IDOR defence).
+  - Reject if `startsOn` or `endsOn` missing → `ValidationError('ITINERARY_DATES_REQUIRED', 422)`.
+  - Belt-and-braces check on `startsOn ≤ endsOn` (the Create use-case already enforces this, but DB could be tampered with) → `INVALID_DATE_RANGE`.
+  - Cap at 90 days → `TRIP_TOO_LONG, 422`. Protects against a user sending a 10-year date range.
+  - Compute day count via UTC-truncation arithmetic (avoids DST footguns).
+  - Build `CreateDayInput[]` with `dayIndex = i + 1`, `date = startOfUtcDay(startsOn) + i days`, `summary = "Day N of your trip to <title>"`.
+  - `replaceDays` atomically.
+
+- **`application/list-itinerary.use-case.ts`** — reads days for a trip the caller owns; 404s on cross-user just like the stub.
+
+- **`interface/trip.controller.ts`** — two new routes (both protected by default):
+  - `POST /api/v1/trips/:id/itinerary` → 200 `{ days: [...] }`. Idempotent: re-POST wipes + recreates the day set. Intentional — "re-plan" is the expected retry shape, not "append".
+  - `GET /api/v1/trips/:id/itinerary` → 200 `{ days: [...] }`.
+  - DTO mapper `toDayDto` with ISO string for `date`.
+
+- **`trip.module.ts`** — registered `ITINERARY_REPOSITORY` binding + two new use-cases; exported the port so downstream modules can read itineraries.
+
+- **`apps/api/test/itinerary.e2e-spec.ts`** — 7 integration tests:
+  1. Happy path: 3-day trip → 3 days, `dayIndex` 1–3, dates 2026-08-01 → 2026-08-03.
+  2. Trip without dates → 422 `ITINERARY_DATES_REQUIRED`.
+  3. Another user's trip → 404 `TRIP_NOT_FOUND`.
+  4. Re-plan idempotence: 3 consecutive POSTs leave exactly 5 rows (not 15).
+  5. GET `/itinerary` echoes the stored set.
+  6. 181-day range → 422 `TRIP_TOO_LONG`.
+  7. Unauthenticated → 401 `UNAUTHENTICATED`.
+
+**Files created** (6) — `apps/api/src/modules/trip/domain/itinerary.entity.ts`, `application/ports/itinerary.repository.ts`, `application/generate-itinerary-stub.use-case.ts`, `application/list-itinerary.use-case.ts`, `infrastructure/prisma-itinerary.repository.ts`, `apps/api/test/itinerary.e2e-spec.ts`.
+**Files edited** (2) — `interface/trip.controller.ts` (+POST/GET /itinerary routes), `trip.module.ts` (register repo + use-cases).
+**Dependencies** — none new. `ItineraryDay` + `ItineraryItem` Prisma models + migration were already in place from `[III.12.1]`.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ `jest --testPathPattern=itinerary` — 7/7 pass via the skip-on-no-DB branches. Docker was still down during verification (known state for this turn).
+- ⚠ Same caveat as the Trip slice: real-DB exercise queued for next Docker-up window. Test code mirrors the Trip suite's shape exactly.
+
+**Acceptance criteria**
+
+- ✅ Trip must have valid date range before itinerary generation.
+- ✅ `dayIndex` is contiguous 1..N.
+- ✅ Re-plan is idempotent (delete-then-insert in a single transaction).
+- ✅ IDOR defence on both POST and GET.
+- ✅ 90-day cap stops pathological inputs.
+- ✅ Port shape fits the future AI orchestrator (same `replaceDays` contract; only difference will be item generation + summary copy).
+
+Queued follow-ups:
+
+- ⏳ AI-backed `GenerateItineraryUseCase` once `ai-service` is real — same port, swap the use-case.
+- ⏳ Place-backed `ItineraryItem` generation (Places module prompt).
+- ⏳ `PATCH /trips/:id/itinerary/:dayId` for user-driven edits.
+- ⏳ Emit `TripItineraryGeneratedEvent` once the EventBus is wired into apps/api.
+
+**Notes**
+
+- **Why day-per-calendar-date, not day-per-night.** "Number of days" of a trip is ambiguous — a Mon-Wed trip is 3 days OR 2 nights depending on who's counting. The calendar-date count matches UX expectations (the user picks check-in + check-out dates, they want a plan for every date including both endpoints).
+- **Why UTC math for date calculation.** JS `Date` + local timezone + DST transitions = subtle bugs like "August 1 → August 31 is 30 days, but during a DST fall-back it's 31 \* 24h − 1h = 29.96 days → Math.round goes wrong". Truncating to start-of-UTC-day + stepping by 86_400_000 ms eliminates DST entirely.
+- **Why no `ItineraryItem` in the stub.** Items need Places; Places is a separate module prompt. Shipping empty days is better than shipping fake placeholder items that the AI prompt would then have to ignore/overwrite. Client can render "No activities scheduled — tap to plan" for each day.
+- **Why the 90-day cap is a constant, not a config.** It's a domain invariant, not a tuning knob. If the product wants multi-month itineraries, we'll earn that with performance work + different AI prompting, not by bumping an env var.
+- **Why `replaceDays` not `upsertDays`.** A partial-upsert would carry old items across a re-plan. "Re-plan means start over" is the cleaner mental model — matches what an authenticator app does when you regenerate backup codes.
 
 ---
 
