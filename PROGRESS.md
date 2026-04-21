@@ -10,18 +10,76 @@
 
 ## Summary
 
-| Counter             | Value                                                                        |
-| ------------------- | ---------------------------------------------------------------------------- |
-| Prompts completed   | 67 (66 full + 1 foundation-only; Trip × Food fold-in just shipped)           |
-| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up)  |
-| Prompts blocked     | 0                                                                            |
-| Last prompt         | `[IV.18.7.2]` — Trip × Food fold-in: GET /trips/:id/eateries                 |
-| Last commit date    | 2026-04-21                                                                   |
-| Phase               | Phase 1 — 3rd cross-module fold-in; 36 suites, 243 tests pass against Docker |
+| Counter             | Value                                                                       |
+| ------------------- | --------------------------------------------------------------------------- |
+| Prompts completed   | 68 (67 full + 1 foundation-only; Redis cache base class extracted)          |
+| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up) |
+| Prompts blocked     | 0                                                                           |
+| Last prompt         | `[IV.18.8.1]` — TypedRedisCache<T> base class — collapsed 3 copies          |
+| Last commit date    | 2026-04-21                                                                  |
+| Phase               | Phase 1 — Cache pattern extracted; 36 suites, 243 tests pass (no change)    |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.8.1] — TypedRedisCache<T>: extract the shared cache base class
+
+**Date:** 2026-04-21 · **Status:** DONE · **Kind:** Refactor · **Playbook §** 12 (Cache)
+
+**What was done**
+
+Rule-of-three trigger: Weather ([IV.18.5.2]) + Stays ([IV.18.6.1]) + Food ([IV.18.7.1]) each shipped a ~70-line Redis cache class that only differed in namespace + logger name + stored type. This slice collapses all three onto a shared `TypedRedisCache<T>` base so bug fixes touch one place and the 4th / 5th cache module costs ~10 lines instead of ~70.
+
+- **`apps/api/src/common/cache/typed-redis-cache.ts`** — abstract base class. Owns:
+  - ioredis client creation (`lazyConnect: true` + `enableOfflineQueue: false` + `maxRetriesPerRequest: 2` — the tuple that needs the `ensureConnected()` guard).
+  - `ensureConnected()` before every get/set (same guard `RedisThrottlerStorage` uses; original Weather cache missed this in the first pass and a test caught it).
+  - JSON serialize on set / deserialize on get.
+  - Swallow-and-log on failure (dead Redis degrades to "no cache", not 500).
+  - `onModuleDestroy()` graceful quit.
+  - Configurable key prefix (`travel-${NODE_ENV}:${namespace}:`) + logger name.
+
+- **Three module caches collapsed to thin subclasses** (~22 lines each instead of ~70):
+  - `RedisWeatherCache extends TypedRedisCache<WeatherForecast> implements WeatherCache`
+  - `RedisStayCache extends TypedRedisCache<readonly StayListing[]> implements StayCache`
+  - `RedisEateryCache extends TypedRedisCache<readonly EateryListing[]> implements EateryCache`
+
+  Each subclass constructor just calls `super(config, '<namespace>', '<logger-name>')`. The original port interfaces (`WeatherCache`, `StayCache`, `EateryCache`) stay in their modules — the subclass implements both the port and the typed base simultaneously via TypeScript structural typing.
+
+- **Module DI bindings unchanged.** `WeatherModule` / `StaysModule` / `FoodModule` still `provide: WEATHER_CACHE → useClass: RedisWeatherCache` etc. — the refactor is internal to the adapter class.
+
+- **Location: `apps/api/src/common/cache/`, NOT `@app/cache`.** Only the api consumes this today; promoting to a workspace package would cost pnpm-workspace + tsconfig paths + jest moduleNameMapper updates for no consumer benefit. When `notification-worker` or `crawler-worker` grow a cache (real work, not a stub), extract then.
+
+**Files created** (1) — `apps/api/src/common/cache/typed-redis-cache.ts`.
+**Files edited** (3) — `modules/weather/infrastructure/redis-weather-cache.ts`, `modules/stays/infrastructure/redis-stay-cache.ts`, `modules/food/infrastructure/redis-eatery-cache.ts` — each now ~22 lines that subclass + constructor-super.
+
+**Dependencies** — none new.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green (generic variance + structural port conformance both type-check).
+- ✅ **Full real-DB suite: 36 suites, 243 tests pass against live Docker** — no test changes needed, existing cache behaviour tests (weather-cache, food, stays) exercise the shared code end-to-end across three distinct namespaces.
+
+**Line-count delta**
+
+Before: 3 × ~75 lines = ~225. After: 119 (shared) + 22 + 22 + 22 = 185. Net −40 lines today, but the real payoff is the marginal cost of the 4th cache is ~22 lines instead of ~75.
+
+**Acceptance criteria**
+
+- ✅ Bug fixes to the cache adapter (reconnect logic, key prefix, failure policy) now live in exactly one file.
+- ✅ Each module-specific cache preserves its domain-typed port (the `WeatherCache`/`StayCache`/`EateryCache` interfaces are unchanged — no leak of `TypedRedisCache<T>` into application layers).
+- ✅ Every existing test continues to pass without modification.
+- ✅ New consumers add ~10 lines of subclass, not 70 lines of copy-paste.
+
+**Notes**
+
+- **Why an abstract class, not a factory function / composed generic service.** NestJS's DI resolves by class token; a factory would force every consumer to use `useFactory` wiring with explicit `Inject()` tokens — more ceremony per module, not less. Abstract base + `@Injectable()` subclass is the native shape.
+- **Why keep the per-module port interfaces** (`WeatherCache`, `StayCache`, `EateryCache`) **instead of one generic `TypedCache<T>` port.** Per-module ports keep the domain-typed contracts clean: `WeatherCache.get` returns `Promise<WeatherForecast | null>` — the caller's intellisense names the actual shape. A single `TypedCache<T>` would push the type burden to the consumer (every use-case would need to restate `TypedCache<WeatherForecast>`). Ports belong to the application layer; the infrastructure shortcut of "one base class" doesn't need to leak upward.
+- **Why not extract to `packages/cache` as a proper workspace package.** That change would touch pnpm-workspace.yaml, add a `packages/cache/package.json`, update jest `moduleNameMapper`, add tsconfig references — for zero new consumer. Scope-lock. When a second app (notification-worker's idempotency cache, say) needs it, the extraction is straightforward — subclass is already decoupled from `apps/api`-specific imports.
+- **Why no dedicated unit test for `TypedRedisCache`.** The three existing module e2e tests already exercise the base class through three distinct namespaces against real Redis — that IS the integration test for the shared code. A unit test against a mocked ioredis would test less than what's already in CI.
+- **Debt paid: the `ensureConnected` bug.** The first Weather cache shipped without this guard and the test caught it. Now the guard is in one place; future cache modules can't forget it even if the author hasn't read `redis-weather-cache.ts`'s history.
 
 ---
 
