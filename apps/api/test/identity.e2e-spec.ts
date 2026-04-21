@@ -45,11 +45,14 @@ describe('Identity auth flow (integration, requires Docker Postgres)', () => {
     app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
     app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)'] });
     await app.register(fastifyCookie);
-    await app.init();
-    await app.getHttpAdapter().getInstance().ready();
-
-    prisma = moduleRef.get(PrismaService);
+    // Wrap `app.init()` too — PrismaService.onModuleInit throws if
+    // Postgres is unreachable, which previously crashed the suite
+    // instead of letting it skip. See memory `feedback_...` / slice
+    // back-port.
     try {
+      await app.init();
+      await app.getHttpAdapter().getInstance().ready();
+      prisma = moduleRef.get(PrismaService);
       await prisma.$queryRaw`SELECT 1`;
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -68,7 +71,9 @@ describe('Identity auth flow (integration, requires Docker Postgres)', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    if (dbReachable) {
+      await app.close();
+    }
     await moduleRef.close();
   });
 

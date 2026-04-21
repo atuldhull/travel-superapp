@@ -13,6 +13,7 @@ import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fa
 import { validateEnv, type Env } from '@app/config';
 import { AppModule } from '../../src/app.module';
 import { parseCorsOrigins, registerSecurity } from '../../src/common/security/security.register';
+import { applyOfflineStubs } from '../helpers/offline-stubs';
 
 function envWith(overrides: Partial<Record<keyof Env, string>>): Env {
   // `validateEnv` reads from a map, so clone current process.env and patch.
@@ -22,7 +23,11 @@ function envWith(overrides: Partial<Record<keyof Env, string>>): Env {
 }
 
 async function bootApp(env: Env): Promise<NestFastifyApplication> {
-  const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+  // Stub Postgres + Redis-backed throttler so this suite asserts
+  // HTTP headers without a live Docker stack.
+  const moduleRef = await applyOfflineStubs(
+    Test.createTestingModule({ imports: [AppModule] }),
+  ).compile();
   const app = moduleRef.createNestApplication<NestFastifyApplication>(
     new FastifyAdapter({ logger: false }),
     { logger: false, bufferLogs: false },

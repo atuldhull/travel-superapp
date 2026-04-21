@@ -70,12 +70,11 @@ describe('Auth guards (integration, requires Docker Postgres)', () => {
     app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
     app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)'] });
     await app.register(fastifyCookie);
-    await (app as INestApplication).init();
-    await app.getHttpAdapter().getInstance().ready();
-
-    prisma = moduleRef.get(PrismaService);
-    tokens = moduleRef.get<TokenService>(TOKEN_SERVICE);
     try {
+      await (app as INestApplication).init();
+      await app.getHttpAdapter().getInstance().ready();
+      prisma = moduleRef.get(PrismaService);
+      tokens = moduleRef.get<TokenService>(TOKEN_SERVICE);
       await prisma.$queryRaw`SELECT 1`;
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -93,7 +92,9 @@ describe('Auth guards (integration, requires Docker Postgres)', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    if (dbReachable) {
+      await app.close();
+    }
     await moduleRef.close();
   });
 

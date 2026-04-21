@@ -38,11 +38,10 @@ describe('MFA backup codes (integration, requires Docker Postgres)', () => {
     app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
     app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)'] });
     await app.register(fastifyCookie);
-    await app.init();
-    await app.getHttpAdapter().getInstance().ready();
-
-    prisma = moduleRef.get(PrismaService);
     try {
+      await app.init();
+      await app.getHttpAdapter().getInstance().ready();
+      prisma = moduleRef.get(PrismaService);
       await prisma.$queryRaw`SELECT 1`;
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -60,7 +59,9 @@ describe('MFA backup codes (integration, requires Docker Postgres)', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    if (dbReachable) {
+      await app.close();
+    }
     await moduleRef.close();
   });
 
