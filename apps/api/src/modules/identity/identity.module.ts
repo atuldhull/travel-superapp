@@ -22,6 +22,7 @@ import {
   VerifyMfaUseCase,
 } from './application/mfa.use-case';
 import { BACKUP_CODE_REPOSITORY } from './application/ports/backup-code.repository';
+import { FAILED_LOGIN_COUNTER } from './application/ports/failed-login-counter';
 import { SESSION_REPOSITORY } from './application/ports/session.repository';
 import { TOKEN_SERVICE } from './application/ports/token.service';
 import { USER_REPOSITORY } from './application/ports/user.repository';
@@ -32,6 +33,7 @@ import { JwtTokenService } from './infrastructure/jwt-token.service';
 import { PrismaBackupCodeRepository } from './infrastructure/prisma-backup-code.repository';
 import { PrismaSessionRepository } from './infrastructure/prisma-session.repository';
 import { PrismaUserRepository } from './infrastructure/prisma-user.repository';
+import { RedisFailedLoginCounter } from './infrastructure/redis-failed-login-counter';
 import { TotpService } from './infrastructure/totp.service';
 import { AuthController } from './interface/auth.controller';
 
@@ -42,6 +44,7 @@ import { AuthController } from './interface/auth.controller';
     { provide: SESSION_REPOSITORY, useClass: PrismaSessionRepository },
     { provide: USER_REPOSITORY, useClass: PrismaUserRepository },
     { provide: BACKUP_CODE_REPOSITORY, useClass: PrismaBackupCodeRepository },
+    { provide: FAILED_LOGIN_COUNTER, useClass: RedisFailedLoginCounter },
     { provide: TOKEN_SERVICE, useClass: JwtTokenService },
     TotpService,
     // Use-cases.

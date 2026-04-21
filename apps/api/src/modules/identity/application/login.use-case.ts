@@ -11,7 +11,7 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { hashPassword, verifyPassword } from '@app/auth';
-import { UnauthorizedError } from '@app/errors';
+import { RateLimitError, UnauthorizedError } from '@app/errors';
 import { createLogger } from '@app/logger';
 import { isWellFormedBackupCode } from '../infrastructure/backup-code-hash';
 import { TotpService } from '../infrastructure/totp.service';
@@ -21,10 +21,19 @@ import {
   type IssuedSession,
 } from './issue-session.use-case';
 import { BACKUP_CODE_REPOSITORY, type BackupCodeRepository } from './ports/backup-code.repository';
+import { FAILED_LOGIN_COUNTER, type FailedLoginCounter } from './ports/failed-login-counter';
 import { USER_REPOSITORY, type UserRepository } from './ports/user.repository';
 import { hashEmail } from '../infrastructure/email-hash';
 
 const log = createLogger('identity.login');
+
+/**
+ * Max failed-login attempts per identity within the window. OWASP
+ * ASVS v4 v2.2.1 recommends ≥5 attempts before lockout (to avoid
+ * locking legitimate users on genuine typos). We pick 5 exactly —
+ * higher costs too much in credential-stuffing attempts per window.
+ */
+export const MAX_FAILED_LOGIN_ATTEMPTS = 5;
 
 export interface LoginCommand {
   readonly email: string;
@@ -57,22 +66,47 @@ export class LoginUseCase {
     @Inject(USER_REPOSITORY) private readonly users: UserRepository,
     @Inject(BACKUP_CODE_REPOSITORY)
     private readonly backupCodes: BackupCodeRepository,
+    @Inject(FAILED_LOGIN_COUNTER)
+    private readonly failCounter: FailedLoginCounter,
     private readonly issueSession: IssueSessionUseCase,
     private readonly totp: TotpService,
   ) {}
 
   async execute(cmd: LoginCommand): Promise<IssuedSession & { userId: string }> {
     const emailHash = hashEmail(cmd.email.trim().toLowerCase());
+
+    // Check lockout BEFORE any password verification — a locked-out
+    // account gives the exact same response regardless of what the
+    // attacker tries, and we don't want to burn argon2 cycles on
+    // their flood of attempts.
+    const state = await this.failCounter.get(emailHash);
+    if (state.count >= MAX_FAILED_LOGIN_ATTEMPTS) {
+      log.warn(
+        { emailHash: emailHash.slice(0, 8), count: state.count, ttlMs: state.ttlMs },
+        'login_locked_out',
+      );
+      throw new RateLimitError(
+        'Account temporarily locked — too many failed login attempts',
+        state.ttlMs,
+        { lockoutMs: state.ttlMs },
+        'ACCOUNT_LOCKED',
+      );
+    }
+
     const user = await this.users.findByEmailHash(emailHash);
 
-    // Missing user: verify dummy to equalize timing, then uniform reject.
+    // Missing user: verify dummy to equalize timing + increment
+    // counter anyway (we don't want "no such email" to be faster
+    // than "wrong password" — both paths burn a failure slot).
     if (!user || user.passwordHash === null) {
       await verifyPassword(cmd.password, await ensureDummyHash()).catch(() => false);
+      await this.failCounter.increment(emailHash);
       throw new UnauthorizedError('Invalid credentials', {}, 'INVALID_CREDENTIALS');
     }
 
     const ok = await verifyPassword(cmd.password, user.passwordHash);
     if (!ok) {
+      await this.failCounter.increment(emailHash);
       throw new UnauthorizedError('Invalid credentials', {}, 'INVALID_CREDENTIALS');
     }
 
@@ -111,9 +145,16 @@ export class LoginUseCase {
         }
       }
       if (!mfaAccepted) {
+        // MFA failure also counts against lockout — otherwise an
+        // attacker with a leaked password could burn through every
+        // 6-digit code unhindered.
+        await this.failCounter.increment(emailHash);
         throw new UnauthorizedError('Invalid MFA code', {}, 'INVALID_MFA');
       }
     }
+
+    // Successful login — clear the counter.
+    await this.failCounter.reset(emailHash);
 
     const issued = await this.issueSession.execute({
       ...cmd.deviceContext,
