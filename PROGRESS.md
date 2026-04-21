@@ -12,16 +12,77 @@
 
 | Counter             | Value                                                                             |
 | ------------------- | --------------------------------------------------------------------------------- |
-| Prompts completed   | 52 (51 full + 1 foundation-only; account lockout + EventBus wiring just shipped)  |
+| Prompts completed   | 53 (52 full + 1 foundation-only; notifications module just shipped)               |
 | Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up)       |
 | Prompts blocked     | 0                                                                                 |
-| Last prompt         | `[IV.18.2.7]` — EventBus wired into apps/api + 5 domain events emit on happy path |
+| Last prompt         | `[IV.18.2.8]` — Notifications module: in-monolith subscribers for 2 domain events |
 | Last commit date    | 2026-04-21                                                                        |
-| Phase               | Phase 1 — full-stack real-DB verified: 22 suites, 143 tests pass against Docker   |
+| Phase               | Phase 1 — pub/sub loop live end-to-end; 23 suites, 147 tests pass against Docker  |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.2.8] — Notifications module: in-monolith subscribers for Identity + Trip events
+
+**Date:** 2026-04-21 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.15
+
+**What was done**
+
+First real consumer of the EventBus wired in the previous slice. Proves the whole pub/sub loop end-to-end against real infra: HTTP → use-case → `EventBus.publish` → subscriber handler → `NotificationSender.send` → test asserts side-effect.
+
+Deliberately **in-monolith**, NOT extracted to `apps/notification-worker` yet. Per ADR-002, extraction triggers are:
+
+- Emit volume sustained > 100/s.
+- Fan-out > 10× request volume.
+- Dispatch failures threatening api's event loop.
+
+None of those apply to v1 — the Trip module does one event per HTTP call, and all current handlers are async fire-and-forget. Extraction is a factory swap (swap `InMemoryEventBus` → `RedisStreamsEventBus`, move handlers into `apps/notification-worker`) when those triggers trip.
+
+- **`apps/api/src/modules/notifications/`**:
+  - **`application/ports/notification-sender.ts`** — `NotificationSender` port + `SendNotificationInput`. Fields: `userId`, `channel: 'email' | 'push' | 'sms'`, `templateKey` (machine name, same value used for i18n + analytics), rendered `subject` + `body`, `context` map. Stable shape — swapping to a real adapter is a factory change.
+
+  - **`infrastructure/logging-notification-sender.ts`** — `LoggingNotificationSender`. No-op that logs + stores last 100 sends in memory. Test-only helpers `drainSent()` + `peekSent()` let integration tests assert without SMTP. Bounded history keeps long-running dev sessions from growing unbounded. Real adapters (ResendNotificationSender, TwilioNotificationSender, ExpoNotificationSender) replace this binding when they land.
+
+  - **`application/handlers/session-issued.handler.ts`** — subscribes to `Identity.SessionIssued`. Emits a "new device sign-in" email stub with the user's UA in the body. Lifecycle: subscribe in `onApplicationBootstrap` (NOT `onModuleInit` — the EventBus might not be ready at module-init time), unsubscribe in `onModuleDestroy`. Consumer group: `notifications.session-issued` so when we split workers later, each gets its own group per ADR-003.
+
+  - **`application/handlers/itinerary-ready.handler.ts`** — subscribes to `Trip.ItineraryGenerated`. Emits a "your plan is ready" push notification stub with `dayCount` in the body.
+
+  - **`notifications.module.ts`** — wires ports → adapters + handlers. Exports `NOTIFICATION_SENDER` + `LoggingNotificationSender` (the concrete class, so tests can `moduleRef.get(LoggingNotificationSender)` to inspect `sent[]`).
+
+- **`AppModule` imports `NotificationsModule`**.
+
+- **`apps/api/test/notifications.e2e-spec.ts`** — 4 integration tests:
+  1. POST /register → `SessionIssuedHandler` fires → 1 email stub with `templateKey: 'session_issued_new_device'`, `userAgent: 'notif-agent/1.0'` in body, `sessionId` in context.
+  2. POST /trips/:id/itinerary → `ItineraryReadyHandler` fires → 1 push stub with `templateKey: 'trip_itinerary_ready'`, `tripId` + `dayCount: 4` in context.
+  3. Re-generating itinerary twice → 2 push stubs (subscribers are not debounced — that's a subscriber concern).
+  4. Sanity: one register event only fires one `SessionIssued` handler call (no duplicate-fire bug).
+
+**Files created** (5) — `notifications.module.ts`, `application/ports/notification-sender.ts`, `application/handlers/{session-issued,itinerary-ready}.handler.ts`, `infrastructure/logging-notification-sender.ts`, `test/notifications.e2e-spec.ts`.
+**Files edited** (1) — `apps/api/src/app.module.ts` (+`NotificationsModule`).
+**Dependencies** — none new.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ notifications suite 4/4 pass against real Docker.
+- ✅ **Full real-DB suite: 23 suites, 147 tests pass.**
+
+**Acceptance criteria**
+
+- ✅ Subscribers active on startup (verified via handler log line at bootstrap).
+- ✅ Each handler runs fire-and-forget — emitter side doesn't block (verified implicitly: the e2e test awaits the HTTP response which returns normally; the subscriber assertion runs after).
+- ✅ Every handler instance has its own consumer group (so when we fan out to multiple pods via Redis Streams, each group sees the event once).
+- ✅ `event.id` + `event.traceId` propagate into the notification's `context` (useful for future "why did I get this email?" debugging).
+
+**Notes**
+
+- **Why `onApplicationBootstrap`, not `onModuleInit`.** `onModuleInit` fires per-module in dependency order; `NotificationsModule` depends on `EventsModule` which DOES finish first, so onModuleInit WOULD work. But if someone later changes module ordering or extracts a sub-module that needs its ports ready, `onApplicationBootstrap` is more robust — it fires exactly once per process, after every module has initialised. Minor future-proofing.
+- **Why `LoggingNotificationSender` exports both itself and the `NOTIFICATION_SENDER` symbol.** Tests need the concrete class to call `peekSent()` / `drainSent()`; production code should only reach in via the port. Exporting both lets the test path `moduleRef.get(LoggingNotificationSender)` work without exposing the concrete type to production consumers.
+- **Why subscribers are NOT debounced on re-generation.** Product decision: "your plan is ready" is a legit notify every time the plan changes. If that becomes spammy, the fix is server-side (suppress ≤60s after the last send) or client-side (group notifications by tripId). Debouncing at the event-handler level is premature.
+- **Why the test doesn't assert that POST /trips (without itinerary) sends no notification.** Implicit from the count assertion in test 2: `pushes.filter((s) => s.templateKey === 'trip_itinerary_ready').length === 1` AFTER draining the register-time email. If POST /trips had a handler subscribing to `Trip.TripDrafted`, this would break the test. It doesn't today, but if someone adds one without updating the test, the test will catch it.
 
 ---
 
