@@ -1,0 +1,112 @@
+/**
+ * Trip HTTP surface — first real feature-module controller on top of
+ * the Phase-0 foundation. Every route is protected by the global
+ * JwtAuthGuard (no `@Public()`); `@CurrentUser()` gives us the
+ * requesting user id.
+ *
+ * Surface (v1):
+ *   - POST /api/v1/trips   — create a draft from { title, center, radiusKm }.
+ *   - GET  /api/v1/trips   — list my trips (paginated by `limit`).
+ *   - GET  /api/v1/trips/:id — fetch a single trip (404 if not mine).
+ *
+ * Itinerary generation is a follow-up. This controller returns the
+ * bare `Trip` row; the itinerary lands when `[IV.18.2.4]` wires
+ * `GenerateItineraryUseCase` into POST /trips/:id/itinerary.
+ *
+ * Installed by prompt [IV.18.2.3].
+ */
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Query,
+  UsePipes,
+} from '@nestjs/common';
+import { NotFoundError } from '@app/errors';
+import { type AuthenticatedUser, CurrentUser } from '../../../common/auth';
+import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
+import { CreateTripDraftUseCase } from '../application/create-trip-draft.use-case';
+import { GetTripUseCase } from '../application/get-trip.use-case';
+import { ListTripsUseCase } from '../application/list-trips.use-case';
+import type { Trip } from '../domain/trip.entity';
+import { CreateTripBodySchema, type CreateTripBody } from './dto/trip.dto';
+
+interface TripDto {
+  readonly id: string;
+  readonly userId: string;
+  readonly title: string;
+  readonly status: string;
+  readonly radiusKm: number;
+  readonly startsOn: string | null;
+  readonly endsOn: string | null;
+  readonly version: number;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
+function toDto(t: Trip): TripDto {
+  return {
+    id: t.id,
+    userId: t.userId,
+    title: t.title,
+    status: t.status,
+    radiusKm: t.radiusKm,
+    startsOn: t.startsOn ? t.startsOn.toISOString() : null,
+    endsOn: t.endsOn ? t.endsOn.toISOString() : null,
+    version: t.version,
+    createdAt: t.createdAt.toISOString(),
+    updatedAt: t.updatedAt.toISOString(),
+  };
+}
+
+@Controller('trips')
+export class TripController {
+  constructor(
+    private readonly createDraft: CreateTripDraftUseCase,
+    private readonly listTrips: ListTripsUseCase,
+    private readonly getTrip: GetTripUseCase,
+  ) {}
+
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  @UsePipes(new ZodValidationPipe(CreateTripBodySchema))
+  async create(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: CreateTripBody,
+  ): Promise<TripDto> {
+    const trip = await this.createDraft.execute({
+      userId: user.sub,
+      title: body.title,
+      center: body.center,
+      radiusKm: body.radiusKm,
+      ...(body.startsOn ? { startsOn: new Date(body.startsOn) } : {}),
+      ...(body.endsOn ? { endsOn: new Date(body.endsOn) } : {}),
+    });
+    return toDto(trip);
+  }
+
+  @Get()
+  @HttpCode(HttpStatus.OK)
+  async list(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('limit') limit?: string,
+  ): Promise<{ trips: TripDto[] }> {
+    const parsed = limit ? Math.max(1, Math.min(100, Number(limit) || 20)) : 20;
+    const trips = await this.listTrips.execute(user.sub, parsed);
+    return { trips: trips.map(toDto) };
+  }
+
+  @Get(':id')
+  @HttpCode(HttpStatus.OK)
+  async getOne(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string): Promise<TripDto> {
+    const trip = await this.getTrip.execute(id, user.sub);
+    if (!trip) {
+      throw new NotFoundError(`Trip not found: ${id}`, { tripId: id }, 'TRIP_NOT_FOUND');
+    }
+    return toDto(trip);
+  }
+}

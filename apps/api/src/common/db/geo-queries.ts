@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
-import type { Place, Prisma } from '@prisma/client';
+import type { Place, Prisma, Trip } from '@prisma/client';
 import { PrismaService } from './prisma.service';
 
 /**
@@ -91,6 +91,46 @@ export class GeoQueries {
   }
 
   /**
+   * Insert a Trip row with typed fields + a PostGIS `center` point.
+   * Goes via raw SQL because `Trip.center` is `Unsupported` to Prisma
+   * (see CLAUDE rule 11).
+   *
+   * Returns every field Prisma knows about — `center` itself isn't
+   * echoed back (clients don't need to read their own input).
+   */
+  async insertTrip(input: InsertTripInput): Promise<Trip> {
+    const id = randomUUID();
+    const now = new Date();
+    const rows = await this.prisma.$queryRaw<Trip[]>`
+      INSERT INTO "Trip" (
+        id, "userId", title, status, center, "radiusKm", "startsOn",
+        "endsOn", version, "createdAt", "updatedAt"
+      )
+      VALUES (
+        ${id},
+        ${input.userId},
+        ${input.title},
+        ${input.status ?? 'draft'}::"TripStatus",
+        ST_SetSRID(ST_MakePoint(${input.lng}, ${input.lat}), 4326)::geography,
+        ${input.radiusKm},
+        ${input.startsOn ?? null},
+        ${input.endsOn ?? null},
+        1,
+        ${now},
+        ${now}
+      )
+      RETURNING
+        id, "userId", title, status, "radiusKm", "startsOn",
+        "endsOn", version, "createdAt", "updatedAt"
+    `;
+    const row = rows[0];
+    if (!row) {
+      throw new Error('insertTrip: no row returned');
+    }
+    return row;
+  }
+
+  /**
    * Move an existing Place to a new lat/lng. Returns the row count
    * actually updated (0 if no Place with that id exists).
    */
@@ -129,3 +169,14 @@ export interface FindPlacesInput {
 
 /** Prisma-generated Place row + the computed geodesic distance in metres. */
 export type PlaceWithDistance = Place & { readonly distanceMeters: number };
+
+export interface InsertTripInput {
+  readonly userId: string;
+  readonly title: string;
+  readonly lat: number;
+  readonly lng: number;
+  readonly radiusKm: number;
+  readonly status?: 'draft' | 'published' | 'archived';
+  readonly startsOn?: Date | null;
+  readonly endsOn?: Date | null;
+}
