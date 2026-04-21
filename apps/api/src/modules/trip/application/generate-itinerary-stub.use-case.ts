@@ -189,7 +189,7 @@ function addDaysUtc(base: Date, days: number): Date {
   return result;
 }
 
-function daysInclusive(start: Date, end: Date): number {
+export function daysInclusive(start: Date, end: Date): number {
   const a = startOfUtcDay(start).getTime();
   const b = startOfUtcDay(end).getTime();
   const diffDays = Math.round((b - a) / (1000 * 60 * 60 * 24));

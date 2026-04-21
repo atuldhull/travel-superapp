@@ -36,6 +36,8 @@ import { CreateTripShareUseCase } from '../application/create-trip-share.use-cas
 import { ListTripSharesUseCase } from '../application/list-trip-shares.use-case';
 import { RevokeTripShareUseCase } from '../application/revoke-trip-share.use-case';
 import { DeleteTripUseCase } from '../application/delete-trip.use-case';
+import { GetTripWeatherUseCase } from '../application/get-trip-weather.use-case';
+import type { WeatherForecast } from '../../weather/domain/weather-forecast.entity';
 import { GenerateItineraryStubUseCase } from '../application/generate-itinerary-stub.use-case';
 import { GetTripUseCase } from '../application/get-trip.use-case';
 import { ListItineraryUseCase } from '../application/list-itinerary.use-case';
@@ -99,6 +101,7 @@ export class TripController {
     private readonly resolveTripShare: ResolveTripShareUseCase,
     private readonly revokeTripShare: RevokeTripShareUseCase,
     private readonly listTripShares: ListTripSharesUseCase,
+    private readonly getTripWeather: GetTripWeatherUseCase,
   ) {}
 
   @Post()
@@ -255,6 +258,23 @@ export class TripController {
       createdAt: trip.createdAt.toISOString(),
       days: days.map(toDayDto),
     };
+  }
+
+  /**
+   * Weather forecast for the trip's center. Owner-only. Day count
+   * matches the trip's duration (capped at Open-Meteo's 16-day
+   * ceiling); falls back to 7 when `startsOn` / `endsOn` aren't set.
+   * Open-Meteo's forecast is "from today" — the UI aligns returned
+   * ISO dates with the trip's date range.
+   */
+  @Get(':id/weather')
+  @HttpCode(HttpStatus.OK)
+  async weather(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ): Promise<{ forecast: WeatherForecast }> {
+    const forecast = await this.getTripWeather.execute(id, user.sub);
+    return { forecast };
   }
 
   /**

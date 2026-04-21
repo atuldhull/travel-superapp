@@ -26,6 +26,6 @@ import { WeatherController } from './interface/weather.controller';
     { provide: WEATHER_PROVIDER, useClass: OpenMeteoWeatherProvider },
     GetForecastUseCase,
   ],
-  exports: [WEATHER_PROVIDER],
+  exports: [WEATHER_PROVIDER, GetForecastUseCase],
 })
 export class WeatherModule {}
