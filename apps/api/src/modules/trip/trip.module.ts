@@ -24,6 +24,7 @@ import { DeleteTripUseCase } from './application/delete-trip.use-case';
 import { GenerateItineraryStubUseCase } from './application/generate-itinerary-stub.use-case';
 import { GetTripUseCase } from './application/get-trip.use-case';
 import { GetTripEateriesUseCase } from './application/get-trip-eateries.use-case';
+import { GetTripOverviewUseCase } from './application/get-trip-overview.use-case';
 import { GetTripStaysUseCase } from './application/get-trip-stays.use-case';
 import { GetTripWeatherUseCase } from './application/get-trip-weather.use-case';
 import { ListItineraryUseCase } from './application/list-itinerary.use-case';
@@ -67,6 +68,7 @@ import { TripController } from './interface/trip.controller';
     GetTripWeatherUseCase,
     GetTripStaysUseCase,
     GetTripEateriesUseCase,
+    GetTripOverviewUseCase,
   ],
   exports: [TRIP_REPOSITORY, ITINERARY_REPOSITORY, TRIP_SHARE_REPOSITORY],
 })
