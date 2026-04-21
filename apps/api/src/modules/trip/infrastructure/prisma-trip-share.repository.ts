@@ -34,6 +34,17 @@ export class PrismaTripShareRepository implements TripShareRepository {
     const row = await this.prisma.tripShare.findUnique({ where: { shareCode: code } });
     return row ? toDomain(row) : null;
   }
+
+  async revokeByCodeForOwner(code: string, ownerId: string): Promise<boolean> {
+    // `updateMany` returns count — atomic "flip only if owned". A
+    // non-owner hitting the same code gets count=0 (no leak about
+    // ownership) and the use-case maps that to 404.
+    const result = await this.prisma.tripShare.updateMany({
+      where: { shareCode: code, ownerId, publicRead: true },
+      data: { publicRead: false },
+    });
+    return result.count === 1;
+  }
 }
 
 function toDomain(row: PrismaTripShare): TripShare {

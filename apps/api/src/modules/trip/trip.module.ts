@@ -25,6 +25,7 @@ import { ITINERARY_REPOSITORY } from './application/ports/itinerary.repository';
 import { TRIP_REPOSITORY } from './application/ports/trip.repository';
 import { TRIP_SHARE_REPOSITORY } from './application/ports/trip-share.repository';
 import { ResolveTripShareUseCase } from './application/resolve-trip-share.use-case';
+import { RevokeTripShareUseCase } from './application/revoke-trip-share.use-case';
 import { UpdateDayItemsUseCase } from './application/update-day-items.use-case';
 import { UpdateTripUseCase } from './application/update-trip.use-case';
 import { PrismaItineraryRepository } from './infrastructure/prisma-itinerary.repository';
@@ -54,6 +55,7 @@ import { TripController } from './interface/trip.controller';
     UpdateDayItemsUseCase,
     CreateTripShareUseCase,
     ResolveTripShareUseCase,
+    RevokeTripShareUseCase,
   ],
   exports: [TRIP_REPOSITORY, ITINERARY_REPOSITORY, TRIP_SHARE_REPOSITORY],
 })

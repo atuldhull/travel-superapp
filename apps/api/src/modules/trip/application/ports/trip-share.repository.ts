@@ -29,6 +29,16 @@ export interface TripShareRepository {
    * the application layer. Returns `null` on miss.
    */
   findByCode(code: string): Promise<TripShare | null>;
+
+  /**
+   * Soft-revoke a share by flipping `publicRead = false`. Scoped to
+   * the owner so a non-owner can't revoke someone else's share even
+   * if they know the code. Returns `true` iff a matching row was
+   * actually touched. Callers translate `false` to 404
+   * `SHARE_NOT_FOUND` (same response as a wholly unknown code) so
+   * owner / non-owner / missing all collapse for the recipient.
+   */
+  revokeByCodeForOwner(code: string, ownerId: string): Promise<boolean>;
 }
 
 export const TRIP_SHARE_REPOSITORY = Symbol('TripShareRepository');
