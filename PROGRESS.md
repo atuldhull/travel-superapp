@@ -10,18 +10,79 @@
 
 ## Summary
 
-| Counter             | Value                                                                         |
-| ------------------- | ----------------------------------------------------------------------------- |
-| Prompts completed   | 70 (69 full + 1 foundation-only; Places federation prep just shipped)         |
-| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up)   |
-| Prompts blocked     | 0                                                                             |
-| Last prompt         | `[IV.18.4.1]` — Places federation prep: POST /places/federated-search + cache |
-| Last commit date    | 2026-04-21                                                                    |
-| Phase               | Phase 1 — 4th cache consumer validates shared base; 38 suites, 255 tests pass |
+| Counter             | Value                                                                       |
+| ------------------- | --------------------------------------------------------------------------- |
+| Prompts completed   | 71 (70 full + 1 foundation-only; Events & Culture v1 just shipped)          |
+| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up) |
+| Prompts blocked     | 0                                                                           |
+| Last prompt         | `[IV.18.9.1]` — Events & Culture v1: POST /events/search (mock + cache)     |
+| Last commit date    | 2026-04-21                                                                  |
+| Phase               | Phase 1 — 5th cache consumer; 39 suites, 263 tests pass against Docker      |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.9.1] — Events & Culture v1: POST /events/search (mock provider + cache)
+
+**Date:** 2026-04-21 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.9 (Events & Culture)
+
+**What was done**
+
+Fourth new bounded context opened this session (after Weather, Stays, Food). Date + coord scoped search — parallels Stays in structure (time-window + radius) but with absolute-UTC `startsAt`/`endsAt` timestamps instead of date-only `checkIn`/`checkOut`. Fifth consumer of `TypedRedisCache<T>` — pattern continues to hold.
+
+- **`apps/api/src/modules/events/` scaffold:**
+  - `domain/event-listing.entity.ts` — `EventListing` (externalId, provider, title, description, category, venueName, lat/lng, distanceMeters, startsAt, endsAt, currency, priceMin/Max, sourceUrl). Prices serialized as decimal strings to preserve precision through JSON. `null` values permitted for free events + missing-signal fields.
+  - `application/ports/event-provider.ts` — `EventProvider.searchNearby({ lat, lng, radiusKm, from, to, category? })`. ISO-8601 datetime strings (absolute UTC).
+  - `application/ports/event-cache.ts` — mirrors the other cache ports.
+  - `application/search-events.use-case.ts` — validates lat/lng + radius `(0, 30]` (tighter than Stays' 50km — evening-out scope, not day-trip) + window strict-ordered + window ≤ 90 days. Typed errors: `INVALID_COORDINATES`, `INVALID_RADIUS`, `INVALID_DATE_RANGE`.
+  - `infrastructure/mock-event-provider.ts` — 4 fixtures (jazz night, farmers market, art opening, symphony) with deterministic hour-offsets from the `from` timestamp so tests can assert exact filtering without clock games.
+  - `infrastructure/redis-event-cache.ts` — **22 lines**; subclass of `TypedRedisCache<readonly EventListing[]>`. Namespace `events`, logger `events.cache`.
+  - `infrastructure/cached-event-provider.ts` — decorator. Key includes `from` + `to` so different windows never collide. **TTL 10 minutes** (shorter than the other caches' 30 min — events have real-time churn: sold-out, cancelled, postponed; stale "available" is a UX-trust hit).
+  - `interface/dto/events.dto.ts` — `SearchEventsBodySchema` (Zod, ISO-8601 datetime strings).
+  - `interface/events.controller.ts` — `POST /api/v1/events/search`.
+  - `events.module.ts` — same decorator-of-DI wiring Weather/Stays/Food/Places use.
+
+- **`AppModule` imports the new module aliased as `EventsSearchModule`** — the existing `common/events/events.module.ts` already owns the `EventsModule` class name (it's the global domain-event-bus module). Import alias in `app.module.ts` keeps both module names sensible in their own files; the new module's class stays `EventsModule` inside its folder.
+
+- **8 integration tests** (`apps/api/test/events-search.e2e-spec.ts` — named to avoid collision with `events.e2e-spec.ts` which tests the event bus) with `MockEventProvider` overridden by a recording stub:
+  1. No bearer → 401.
+  2. Happy path → 200 + provider echo (no category filter).
+  3. `category=music` → narrows results + flows through.
+  4. `radiusKm=50` → 422 `INVALID_RADIUS`.
+  5. `to ≤ from` → 422 `INVALID_DATE_RANGE`.
+  6. Window > 90 days → 422 `INVALID_DATE_RANGE`.
+  7. Three identical searches → upstream called once (cache hit).
+  8. Different window → separate upstream call.
+
+**Files created** (10) — all under `apps/api/src/modules/events/` + `test/events-search.e2e-spec.ts`.
+**Files edited** (1) — `apps/api/src/app.module.ts` (+aliased `EventsSearchModule` import).
+
+**Dependencies** — none new.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green (aliased import resolved the `EventsModule` duplicate-identifier collision).
+- ✅ Events-search suite 8/8 pass against Docker + Redis.
+- ✅ **Full real-DB suite: 39 suites, 263 tests pass against live Docker.** (+1 suite, +8 tests vs `[IV.18.4.1]`.)
+
+**Acceptance criteria**
+
+- ✅ Authenticated users can search events near a coord for a time window with optional category filter.
+- ✅ Provider behind a port — real adapters (Meetup, Eventbrite public, local scraper) drop in as sibling classes.
+- ✅ Cache re-used from the established pattern — zero bespoke cache code.
+- ✅ 5th consumer of `TypedRedisCache<T>` — still zero base-class edits.
+- ✅ Window validation (ordering + max-days) enforced at the domain level with typed errors.
+
+**Notes**
+
+- **Why 10-minute TTL instead of the default 30.** Events data has genuine real-time churn. Weather corrections, stay availability, and eatery hours are stable on a 30-min horizon; event "still available" is not. A recipient who sees "sold out" 15 minutes after a cache hit has a worse UX than one who waits for a fresh fetch. If we ever want to go further, individual providers can override the TTL per-provider (not this slice).
+- **Why `priceMin`/`priceMax` as decimal strings, not numbers.** Prisma's `Decimal(10,2)` is a bignum, and `JSON.parse` drops trailing zeros on numeric doubles (`15.00` → `15`). Keeping strings through the wire preserves the exact provider-reported precision; the UI renders with its own formatter. Same call Stripe's wire format makes.
+- **Why the module alias (`EventsSearchModule`).** Rather than renaming the new class to something like `CultureEventsModule`, the alias keeps each file's own naming clean: inside `common/events/` the class is `EventsModule` (for the bus); inside `modules/events/` it's also `EventsModule` (for the search feature). The alias at the import site is localized to `app.module.ts` — no other file sees the collision.
+- **Why `from`/`to` as ISO-8601 datetimes, not dates.** Events have hour-scope ("live jazz at 8pm tonight"); date-only semantics would force the UI to synthesize window bounds + lose timezone fidelity. Absolute UTC datetimes are the honest contract; client converts to local on render.
+- **5th cache consumer moment.** `TypedRedisCache<readonly EventListing[]>` subclass is 22 lines. Base class required zero edits across Weather → Stays → Food → Places → Events — five distinct shapes (one object, three array-of-domain-entity, one richer array-of-DTO). The `[IV.18.8.1]` extraction is paying dividends; each new cache costs ~10 lines of subclass + constructor super.
 
 ---
 
