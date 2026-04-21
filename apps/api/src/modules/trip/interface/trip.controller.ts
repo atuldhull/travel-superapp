@@ -37,13 +37,16 @@ import { GenerateItineraryStubUseCase } from '../application/generate-itinerary-
 import { GetTripUseCase } from '../application/get-trip.use-case';
 import { ListItineraryUseCase } from '../application/list-itinerary.use-case';
 import { ListTripsUseCase } from '../application/list-trips.use-case';
+import { UpdateDayItemsUseCase } from '../application/update-day-items.use-case';
 import { UpdateTripUseCase } from '../application/update-trip.use-case';
 import type { ItineraryDay } from '../domain/itinerary.entity';
 import type { Trip } from '../domain/trip.entity';
 import {
   CreateTripBodySchema,
+  UpdateDayItemsBodySchema,
   UpdateTripBodySchema,
   type CreateTripBody,
+  type UpdateDayItemsBody,
   type UpdateTripBody,
 } from './dto/trip.dto';
 
@@ -85,6 +88,7 @@ export class TripController {
     private readonly deleteTrip: DeleteTripUseCase,
     private readonly generateItinerary: GenerateItineraryStubUseCase,
     private readonly listItinerary: ListItineraryUseCase,
+    private readonly updateDayItems: UpdateDayItemsUseCase,
   ) {}
 
   @Post()
@@ -182,6 +186,33 @@ export class TripController {
   ): Promise<{ days: ItineraryDayDto[] }> {
     const days = await this.listItinerary.execute(id, user.sub);
     return { days: days.map(toDayDto) };
+  }
+
+  /**
+   * Edit the item list for a single day (reorder / add / remove /
+   * wipe). Empty `items: []` clears the day. Cross-user / wrong
+   * tripId → 404 `TRIP_NOT_FOUND`. Non-existent `placeId` → 404
+   * `PLACE_NOT_FOUND`.
+   */
+  @Patch(':tripId/itinerary/:dayId')
+  @HttpCode(HttpStatus.OK)
+  async updateDay(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('tripId') tripId: string,
+    @Param('dayId') dayId: string,
+    @Body(new ZodValidationPipe(UpdateDayItemsBodySchema)) body: UpdateDayItemsBody,
+  ): Promise<{ day: ItineraryDayDto }> {
+    const day = await this.updateDayItems.execute({
+      tripId,
+      dayId,
+      userId: user.sub,
+      items: body.items.map((it) => ({
+        position: it.position,
+        placeId: it.placeId === undefined ? null : it.placeId,
+        notes: it.notes ?? null,
+      })),
+    });
+    return { day: toDayDto(day) };
   }
 }
 

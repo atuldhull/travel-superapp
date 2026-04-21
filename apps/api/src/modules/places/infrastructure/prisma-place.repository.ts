@@ -11,6 +11,7 @@ import {
   GeoQueries,
   type PlaceWithDistance as GeoQueriesDistance,
 } from '../../../common/db/geo-queries';
+import { PrismaService } from '../../../common/db/prisma.service';
 import type { Place, PlaceWithDistance } from '../domain/place.entity';
 import type {
   FindPlacesInput,
@@ -20,7 +21,10 @@ import type {
 
 @Injectable()
 export class PrismaPlaceRepository implements PlaceRepository {
-  constructor(@Inject(GeoQueries) private readonly geo: GeoQueries) {}
+  constructor(
+    @Inject(GeoQueries) private readonly geo: GeoQueries,
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+  ) {}
 
   async findWithinRadius(input: FindPlacesInput): Promise<readonly PlaceWithDistance[]> {
     const rows = await this.geo.findPlacesWithinRadius({
@@ -35,6 +39,18 @@ export class PrismaPlaceRepository implements PlaceRepository {
   async insert(input: InsertPlaceInput): Promise<Place> {
     const row = await this.geo.insertPlace(input);
     return toDomain(row);
+  }
+
+  async exists(id: string): Promise<boolean> {
+    // `select: { id: true }` is the lightest Prisma probe — no
+    // `coordinates` column touch, no extra joins. PostGIS
+    // `Unsupported` column is transparent here because we're not
+    // selecting it.
+    const row = await this.prisma.place.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    return row !== null;
   }
 }
 
