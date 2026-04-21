@@ -21,6 +21,7 @@ import { RateLimitGuard } from './common/rate-limit/rate-limit.guard';
 import { RateLimitModule } from './common/rate-limit/rate-limit.module';
 import { HealthModule } from './health/health.module';
 import { IdentityModule } from './modules/identity/identity.module';
+import { TripModule } from './modules/trip/trip.module';
 
 /**
  * APP_GUARD order matters — Nest runs them in the order they appear
@@ -36,7 +37,14 @@ import { IdentityModule } from './modules/identity/identity.module';
  *      absent, which is the common case outside admin endpoints.
  */
 @Module({
-  imports: [AppConfigModule.forRoot(), DbModule, RateLimitModule, HealthModule, IdentityModule],
+  imports: [
+    AppConfigModule.forRoot(),
+    DbModule,
+    RateLimitModule,
+    HealthModule,
+    IdentityModule,
+    TripModule,
+  ],
   providers: [
     AppNestLoggerService,
     { provide: APP_GUARD, useClass: RateLimitGuard },
