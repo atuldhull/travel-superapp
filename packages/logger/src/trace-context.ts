@@ -42,6 +42,20 @@ export function runWithTraceContext<T>(ctx: TraceContext, fn: () => T): T {
   return storage.run(ctx, fn);
 }
 
+/**
+ * Enter a trace context without a wrapping callback — the context
+ * persists for the current async chain until its root settles. Used
+ * by HTTP middleware (Fastify `onRequest`, Express-style hooks) that
+ * can't practically wrap the entire request with a `runWithTraceContext`
+ * callback.
+ *
+ * Prefer `runWithTraceContext` whenever you control the call site;
+ * `enterTraceContext` is the escape hatch for framework hooks.
+ */
+export function enterTraceContext(ctx: TraceContext): void {
+  storage.enterWith(ctx);
+}
+
 /** Run `fn` with additional fields merged into the current context. If
  *  no outer context exists, a new one is minted with a generated
  *  `traceId`. Useful for "tag this subtree with the userId we just

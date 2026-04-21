@@ -8,6 +8,7 @@ export { createLogger } from './logger';
 export type { AppLogger, CreateLoggerOptions, LogLevel } from './logger';
 
 export {
+  enterTraceContext,
   extendTraceContext,
   generateSpanId,
   generateTraceId,
