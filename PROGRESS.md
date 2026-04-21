@@ -10,18 +10,81 @@
 
 ## Summary
 
-| Counter             | Value                                                                              |
-| ------------------- | ---------------------------------------------------------------------------------- |
-| Prompts completed   | 63 (62 full + 1 foundation-only; Weather Redis cache just shipped)                 |
-| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up)        |
-| Prompts blocked     | 0                                                                                  |
-| Last prompt         | `[IV.18.5.2]` — Weather provider cache: Redis decorator around WEATHER_PROVIDER    |
-| Last commit date    | 2026-04-21                                                                         |
-| Phase               | Phase 1 — Cache-around-port pattern live; 32 suites, 215 tests pass against Docker |
+| Counter             | Value                                                                                  |
+| ------------------- | -------------------------------------------------------------------------------------- |
+| Prompts completed   | 64 (63 full + 1 foundation-only; Stays module v1 just shipped)                         |
+| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up)            |
+| Prompts blocked     | 0                                                                                      |
+| Last prompt         | `[IV.18.6.1]` — Stays module v1 (mock provider + cache) — POST /stays/search           |
+| Last commit date    | 2026-04-21                                                                             |
+| Phase               | Phase 1 — Cache-pattern reused on new module; 33 suites, 223 tests pass against Docker |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.6.1] — Stays module v1: POST /stays/search (mock provider behind the cache decorator)
+
+**Date:** 2026-04-21 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.4 (Stays)
+
+**What was done**
+
+First new bounded context since Weather. Exercises the cache-around-port decorator pattern on a second module so the pattern is proven, not just declared. Ship a search surface that returns stay listings near a coord + date range, with the real provider boundary mocked out until Booking.com/Amadeus credentials are in hand.
+
+- **`apps/api/src/modules/stays/` clean-hex scaffold:**
+  - `domain/stay-listing.entity.ts` — flat `StayListing` (externalId, provider, name, starRating, amenities, lat/lng, distanceMeters, priceUsdPerNight, currency). Kept flat on purpose: splitting metadata vs price quote would be premature when the v1 surface is read-only.
+  - `application/ports/stay-provider.ts` — `StayProvider.searchNearby(input)` with `SearchStaysInput` = `{ lat, lng, radiusKm, checkIn, checkOut, guests }`. Token `STAY_PROVIDER`. Narrow on purpose — booking/cancellation live in their own ports when the booking-flow slice lands.
+  - `application/ports/stay-cache.ts` — `get`/`set` over opaque keys, mirrors `WeatherCache`.
+  - `application/search-stays.use-case.ts` — validates lat/lng ranges, radius `(0, 50]`, `checkOut > checkIn`, range ≤ 30 nights, clamps guests to `[1, 20]`. Typed domain errors: `INVALID_COORDINATES`, `INVALID_RADIUS`, `INVALID_DATE_RANGE`.
+  - `infrastructure/mock-stay-provider.ts` — deterministic 3-ring fixture (200m central boutique, 1.5km midtown inn, 4km budget suburb). Prices scale with guest count so tests can assert the `guests` parameter actually flows through.
+  - `infrastructure/redis-stay-cache.ts` — same `ensureConnected()` guard pattern as `RedisWeatherCache`. Key prefix `travel-${NODE_ENV}:stays:`. Swallow-and-log on failures.
+  - `infrastructure/cached-stay-provider.ts` — decorator. Key is `lat.toFixed(3):lng.toFixed(3):radiusKm.toFixed(1):checkIn:checkOut:guests` — every parameter affects results so they all go in. TTL 15 minutes (shorter than weather's 30min because availability churns faster; stale "room available" would be a user-facing bug).
+  - `interface/dto/stays.dto.ts` — `SearchStaysBodySchema` (Zod). Mirrors Places + Trip center-and-radius shape.
+  - `interface/stays.controller.ts` — `POST /api/v1/stays/search` with arg-scoped `@Body(new ZodValidationPipe(...))`.
+  - `stays.module.ts` — wires `STAY_PROVIDER` → `CachedStayProvider`, `STAY_CACHE` → `RedisStayCache`, `MockStayProvider` registered as a class token (so the decorator can `@Inject` by class, not the port symbol — breaks circular self-resolution).
+
+- **`AppModule` imports `StaysModule`**.
+
+- **8 integration tests** (`apps/api/test/stays.e2e-spec.ts`) — `MockStayProvider` overridden with a `RecordingStayProvider` to count upstream invocations (keeps the cache + decorator in the chain, bypasses only the data source):
+  1. No bearer → 401 `UNAUTHENTICATED`.
+  2. Happy path → 200 + provider sees exactly the command that arrived.
+  3. Missing `guests` → defaults to 1.
+  4. `radiusKm=75` → 422 `INVALID_RADIUS`.
+  5. `checkOut ≤ checkIn` → 422 `INVALID_DATE_RANGE`.
+  6. Range > 30 nights → 422 `INVALID_DATE_RANGE`.
+  7. Cache hit: three identical searches → upstream called once, all 3 return 200.
+  8. Cache miss on different dates → upstream called twice.
+
+- **Test cache isolation**: `beforeAll` opens a raw ioredis client + SCAN-DELs every `travel-test:stays:*` key before the suite runs. Same pattern `weather-cache.e2e-spec.ts` established.
+
+**Files created** (10) — `modules/stays/domain/stay-listing.entity.ts`, `modules/stays/application/ports/stay-provider.ts`, `modules/stays/application/ports/stay-cache.ts`, `modules/stays/application/search-stays.use-case.ts`, `modules/stays/infrastructure/mock-stay-provider.ts`, `modules/stays/infrastructure/redis-stay-cache.ts`, `modules/stays/infrastructure/cached-stay-provider.ts`, `modules/stays/interface/dto/stays.dto.ts`, `modules/stays/interface/stays.controller.ts`, `modules/stays/stays.module.ts`, `test/stays.e2e-spec.ts`.
+**Files edited** (1) — `apps/api/src/app.module.ts` (+StaysModule).
+
+**Dependencies** — none new.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Stays suite 8/8 pass against live Docker Redis.
+- ✅ **Full real-DB suite: 33 suites, 223 tests pass against live Docker.** (+1 suite, +8 tests vs `[IV.18.5.2]`.)
+
+**Acceptance criteria**
+
+- ✅ Authenticated users can search for stays within a radius + date range.
+- ✅ Provider is behind a port — the mock swaps out for Amadeus/Booking when credentials exist.
+- ✅ Cache pattern re-used from Weather — zero bespoke cache code in Stays' application layer.
+- ✅ Domain validation rejects bad dates / radius / guest counts with typed errors.
+- ✅ Tests exercise the full HTTP → use-case → decorator → cache → provider chain.
+
+**Notes**
+
+- **Why the mock provider is the shipping default, not a test-only stub.** Booking.com partner access takes paperwork; Amadeus needs a sandbox key. Shipping with a mock keeps the HTTP surface usable end-to-end, and swapping in a real provider is a single `useClass` change in the module. Importantly the mock isn't test-only — it's an honest `StayProvider` implementation that returns deterministic fixture data.
+- **Why 15-min TTL instead of weather's 30-min.** Stay availability changes minute-to-minute in peak season; showing a cached "rooms available" that was sold 25 minutes ago would be a direct user-trust hit. Weather corrections propagate more slowly, so 30 min is fine there.
+- **Why every search parameter participates in the cache key.** A different `guests` value legitimately returns different prices (family rooms vs single). Different `checkIn/checkOut` literally has different availability. Partial keys would cross-contaminate. The ~110m coord coarsening stays in (to reduce keyspace without losing meaningful variation).
+- **Why the pattern duplication vs extracting a shared `@app/cache` package.** Two instances isn't enough to know the right abstraction. When Places federation lands with a third cache-around-port decorator, THEN we extract — we'll have a clear pattern to generalize from. Premature extraction would force the two existing decorators to accommodate a future one we haven't built.
+- **Why v1 omits Stays booking/history.** Booking touches payments (Stripe), provider-specific affiliate tracking, and cancellation windows — each is its own slice. Search is the loose end that closes right here.
 
 ---
 
