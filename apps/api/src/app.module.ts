@@ -22,6 +22,8 @@ import { RateLimitGuard } from './common/rate-limit/rate-limit.guard';
 import { RateLimitModule } from './common/rate-limit/rate-limit.module';
 import { HealthModule } from './health/health.module';
 import { AdminModule } from './modules/admin/admin.module';
+// Aliased to distinguish from the common/events domain-event-bus module.
+import { EventsModule as EventsSearchModule } from './modules/events/events.module';
 import { FoodModule } from './modules/food/food.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
@@ -58,6 +60,7 @@ import { WeatherModule } from './modules/weather/weather.module';
     WeatherModule,
     StaysModule,
     FoodModule,
+    EventsSearchModule,
   ],
   providers: [
     AppNestLoggerService,
