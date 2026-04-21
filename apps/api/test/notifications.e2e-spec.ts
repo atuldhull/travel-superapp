@@ -20,7 +20,10 @@ import { PrismaService } from '../src/common/db/prisma.service';
 import { LoggingNotificationSender } from '../src/modules/notifications/infrastructure/logging-notification-sender';
 
 const TEST_PREFIX = 'notif-e2e';
-const VICTORIA = { lat: 51.4952, lng: -0.1441 };
+// Suite-local coord — avoids cross-suite Place contamination in the
+// itinerary generator's radius search (see
+// memory/feedback_unique_test_coords.md).
+const VICTORIA = { lat: -45.6789, lng: 45.1234 };
 
 describe('Notifications subscribers (integration, requires Docker Postgres)', () => {
   let moduleRef: TestingModule;

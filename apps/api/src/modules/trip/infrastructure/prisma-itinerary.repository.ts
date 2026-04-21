@@ -12,6 +12,7 @@ import { PrismaService } from '../../../common/db/prisma.service';
 import type { ItineraryDay, ItineraryItem } from '../domain/itinerary.entity';
 import type {
   CreateDayInput,
+  CreateItemInput,
   ItineraryRepository,
 } from '../application/ports/itinerary.repository';
 
@@ -81,6 +82,42 @@ export class PrismaItineraryRepository implements ItineraryRepository {
       orderBy: { position: 'asc' },
     });
     return rows.map(toItemDomain);
+  }
+
+  async findDayForUser(dayId: string, userId: string): Promise<ItineraryDay | null> {
+    // Scoped lookup via the Trip FK — a day belongs to a Trip
+    // belongs to a User. Prevents horizontal IDOR.
+    const row = await this.prisma.itineraryDay.findFirst({
+      where: { id: dayId, trip: { userId } },
+      include: { items: { orderBy: { position: 'asc' } } },
+    });
+    return row ? toDayDomain(row) : null;
+  }
+
+  async replaceItemsForDay(
+    dayId: string,
+    items: readonly CreateItemInput[],
+  ): Promise<ItineraryDay> {
+    const row = await this.prisma.$transaction(async (tx) => {
+      await tx.itineraryItem.deleteMany({ where: { dayId } });
+      if (items.length > 0) {
+        await tx.itineraryItem.createMany({
+          data: items.map((it) => ({
+            dayId,
+            position: it.position,
+            placeId: it.placeId,
+            notes: it.notes ?? null,
+            startTime: it.startTime ?? null,
+            endTime: it.endTime ?? null,
+          })),
+        });
+      }
+      return tx.itineraryDay.findUniqueOrThrow({
+        where: { id: dayId },
+        include: { items: { orderBy: { position: 'asc' } } },
+      });
+    });
+    return toDayDomain(row);
   }
 }
 

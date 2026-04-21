@@ -46,6 +46,21 @@ export interface ItineraryRepository {
   /** Optional: list items for a day. Kept minimal — the stub doesn't
    *  create items. */
   listItemsForDay(dayId: string): Promise<readonly ItineraryItem[]>;
+
+  /**
+   * Look up a single day by id, scoped to the caller's user so an
+   * attacker can't edit another user's day even if they guess the
+   * cuid. Returns `null` on miss. The domain shape includes items
+   * (empty when the day has none).
+   */
+  findDayForUser(dayId: string, userId: string): Promise<ItineraryDay | null>;
+
+  /**
+   * Atomically replace every item for a day. Empty `items` wipes
+   * the day clean. Returns the updated day (with the new item
+   * set) from a fresh read inside the same transaction.
+   */
+  replaceItemsForDay(dayId: string, items: readonly CreateItemInput[]): Promise<ItineraryDay>;
 }
 
 export const ITINERARY_REPOSITORY = Symbol('ItineraryRepository');

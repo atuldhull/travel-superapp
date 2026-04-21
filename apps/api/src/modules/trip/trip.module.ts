@@ -22,6 +22,7 @@ import { ListItineraryUseCase } from './application/list-itinerary.use-case';
 import { ListTripsUseCase } from './application/list-trips.use-case';
 import { ITINERARY_REPOSITORY } from './application/ports/itinerary.repository';
 import { TRIP_REPOSITORY } from './application/ports/trip.repository';
+import { UpdateDayItemsUseCase } from './application/update-day-items.use-case';
 import { UpdateTripUseCase } from './application/update-trip.use-case';
 import { PrismaItineraryRepository } from './infrastructure/prisma-itinerary.repository';
 import { PrismaTripRepository } from './infrastructure/prisma-trip.repository';
@@ -45,6 +46,7 @@ import { TripController } from './interface/trip.controller';
     DeleteTripUseCase,
     GenerateItineraryStubUseCase,
     ListItineraryUseCase,
+    UpdateDayItemsUseCase,
   ],
   exports: [TRIP_REPOSITORY, ITINERARY_REPOSITORY],
 })

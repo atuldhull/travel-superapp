@@ -45,6 +45,16 @@ export interface PlaceRepository {
   /** Admin / seed-only. `sourceKey` must be unique; callers are
    *  expected to provide a stable id (`osm:way/12345`, `google:<id>`). */
   insert(input: InsertPlaceInput): Promise<Place>;
+
+  /**
+   * Existence probe — returns `true` iff a Place with this id
+   * exists. Used by Trip's `UpdateDayItemsUseCase` to validate
+   * every incoming `placeId` without loading the full row or
+   * running a radius query. Deliberately narrow surface — if
+   * callers need the row, they query the appropriate search
+   * method instead.
+   */
+  exists(id: string): Promise<boolean>;
 }
 
 export const PLACE_REPOSITORY = Symbol('PlaceRepository');
