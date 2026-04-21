@@ -36,8 +36,10 @@ import { CreateTripShareUseCase } from '../application/create-trip-share.use-cas
 import { ListTripSharesUseCase } from '../application/list-trip-shares.use-case';
 import { RevokeTripShareUseCase } from '../application/revoke-trip-share.use-case';
 import { DeleteTripUseCase } from '../application/delete-trip.use-case';
+import { GetTripEateriesUseCase } from '../application/get-trip-eateries.use-case';
 import { GetTripStaysUseCase } from '../application/get-trip-stays.use-case';
 import { GetTripWeatherUseCase } from '../application/get-trip-weather.use-case';
+import type { EateryListing } from '../../food/domain/eatery-listing.entity';
 import type { StayListing } from '../../stays/domain/stay-listing.entity';
 import type { WeatherForecast } from '../../weather/domain/weather-forecast.entity';
 import { GenerateItineraryStubUseCase } from '../application/generate-itinerary-stub.use-case';
@@ -105,6 +107,7 @@ export class TripController {
     private readonly listTripShares: ListTripSharesUseCase,
     private readonly getTripWeather: GetTripWeatherUseCase,
     private readonly getTripStays: GetTripStaysUseCase,
+    private readonly getTripEateries: GetTripEateriesUseCase,
   ) {}
 
   @Post()
@@ -261,6 +264,37 @@ export class TripController {
       createdAt: trip.createdAt.toISOString(),
       days: days.map(toDayDto),
     };
+  }
+
+  /**
+   * Eateries near the trip's center. Owner-only. Dates are NOT
+   * required (unlike Trip × Stays) — "show me restaurants near my
+   * trip" is meaningful regardless of when the trip is. Radius is
+   * capped at 25km (Food's domain cap) even when the trip's own
+   * radius reaches 500km.
+   *
+   * Optional query params: `cuisineTag` (string), `maxPriceTier` (1..5).
+   */
+  @Get(':id/eateries')
+  @HttpCode(HttpStatus.OK)
+  async eateries(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Query('cuisineTag') cuisineTag?: string,
+    @Query('maxPriceTier') maxPriceTier?: string,
+  ): Promise<{ eateries: readonly EateryListing[] }> {
+    // Parse maxPriceTier from the query string ourselves — @Query
+    // delivers strings regardless of type hints. `Number('') === 0`
+    // so guard `=== undefined` first.
+    const tier =
+      maxPriceTier === undefined ? undefined : Math.max(1, Math.min(5, Number(maxPriceTier) || 1));
+    const list = await this.getTripEateries.execute({
+      tripId: id,
+      userId: user.sub,
+      ...(cuisineTag ? { cuisineTag } : {}),
+      ...(tier !== undefined ? { maxPriceTier: tier } : {}),
+    });
+    return { eateries: list };
   }
 
   /**

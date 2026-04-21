@@ -13,6 +13,7 @@
  * Installed by prompt [IV.18.2.3].
  */
 import { Module } from '@nestjs/common';
+import { FoodModule } from '../food/food.module';
 import { PlacesModule } from '../places/places.module';
 import { StaysModule } from '../stays/stays.module';
 import { WeatherModule } from '../weather/weather.module';
@@ -22,6 +23,7 @@ import { ListTripSharesUseCase } from './application/list-trip-shares.use-case';
 import { DeleteTripUseCase } from './application/delete-trip.use-case';
 import { GenerateItineraryStubUseCase } from './application/generate-itinerary-stub.use-case';
 import { GetTripUseCase } from './application/get-trip.use-case';
+import { GetTripEateriesUseCase } from './application/get-trip-eateries.use-case';
 import { GetTripStaysUseCase } from './application/get-trip-stays.use-case';
 import { GetTripWeatherUseCase } from './application/get-trip-weather.use-case';
 import { ListItineraryUseCase } from './application/list-itinerary.use-case';
@@ -39,12 +41,12 @@ import { PrismaTripShareRepository } from './infrastructure/prisma-trip-share.re
 import { TripController } from './interface/trip.controller';
 
 @Module({
-  // Import PlacesModule so GenerateItineraryStubUseCase can inject
-  // the PLACE_REPOSITORY port. Import WeatherModule + StaysModule so
-  // the Trip×Weather + Trip×Stays fold-ins can reuse each module's
-  // own use-case (GetForecastUseCase / SearchStaysUseCase). All
-  // one-way deps — Places/Weather/Stays don't know about Trip.
-  imports: [PlacesModule, WeatherModule, StaysModule],
+  // Import sibling modules so Trip's fold-in use-cases can reuse
+  // each module's own use-case (PLACE_REPOSITORY for itinerary,
+  // GetForecastUseCase / SearchStaysUseCase / SearchEateriesUseCase
+  // for the Trip × * overlays). All one-way deps — none of those
+  // modules knows about Trip.
+  imports: [PlacesModule, WeatherModule, StaysModule, FoodModule],
   controllers: [TripController],
   providers: [
     { provide: TRIP_REPOSITORY, useClass: PrismaTripRepository },
@@ -64,6 +66,7 @@ import { TripController } from './interface/trip.controller';
     ListTripSharesUseCase,
     GetTripWeatherUseCase,
     GetTripStaysUseCase,
+    GetTripEateriesUseCase,
   ],
   exports: [TRIP_REPOSITORY, ITINERARY_REPOSITORY, TRIP_SHARE_REPOSITORY],
 })
