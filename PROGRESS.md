@@ -10,18 +10,76 @@
 
 ## Summary
 
-| Counter             | Value                                                                               |
-| ------------------- | ----------------------------------------------------------------------------------- |
-| Prompts completed   | 61 (60 full + 1 foundation-only; Weather module v1 just shipped)                    |
-| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up)         |
-| Prompts blocked     | 0                                                                                   |
-| Last prompt         | `[IV.18.5.1]` — Weather module v1: GET /weather/forecast via Open-Meteo provider    |
-| Last commit date    | 2026-04-21                                                                          |
-| Phase               | Phase 1 — Weather online, provider-swap pattern in place; 30 suites, 205 tests pass |
+| Counter             | Value                                                                              |
+| ------------------- | ---------------------------------------------------------------------------------- |
+| Prompts completed   | 62 (61 full + 1 foundation-only; Trip × Weather fold-in just shipped)              |
+| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up)        |
+| Prompts blocked     | 0                                                                                  |
+| Last prompt         | `[IV.18.5.3]` — Trip × Weather: GET /trips/:id/weather                             |
+| Last commit date    | 2026-04-21                                                                         |
+| Phase               | Phase 1 — First cross-module integration; 31 suites, 211 tests pass against Docker |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.5.3] — Trip × Weather: GET /trips/:id/weather
+
+**Date:** 2026-04-21 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.8 + 3.2 (cross-context)
+
+**What was done**
+
+First cross-module integration that matters to users — a trip's forecast served from one endpoint, wiring the Weather module into Trip via clean-hex port re-use.
+
+- **`GetTripWeatherUseCase`** in Trip's application layer:
+  - Owner-gated via `TripRepository.findByIdForUser(tripId, userId)` — missing trip OR wrong owner both 404 `TRIP_NOT_FOUND`, same error story as every other Trip read surface.
+  - Reads the trip's PostGIS `center` via `GeoQueries.findTripCenter(tripId)` — the raw-SQL seam that keeps the PostGIS `Unsupported` column off Prisma's typed paths (CLAUDE rule 11).
+  - Day-count policy: `trip.startsOn && trip.endsOn` ⇒ `min(16, max(1, daysInclusive(...)))`; otherwise fall back to 7. 16 is Open-Meteo's hard ceiling; the clamp surfaces in the use-case so the HTTP layer doesn't need to know about provider quirks.
+  - Delegates to `WeatherModule`'s `GetForecastUseCase` — not the raw `WEATHER_PROVIDER` port — so the Trip-weather path inherits the same input validation (lat/lng ranges) and any future additions (cache fold-in, retry, etc.) without call-site churn.
+
+- **Cross-module DI wiring:**
+  - `WeatherModule` now exports `GetForecastUseCase` alongside `WEATHER_PROVIDER`. Use-cases-as-composition-primitive is the cleaner seam than exposing the port directly.
+  - `TripModule` imports `WeatherModule`. One-way dep — Weather has no knowledge of Trip (and shouldn't).
+  - `daysInclusive` in `generate-itinerary-stub.use-case.ts` was flipped from file-private to `export`ed so both itinerary + weather use-cases share the same "YYYY-MM-DD inclusive day count" helper. Cheaper than extracting to a new utility file for two callers.
+
+- **HTTP:** `GET /api/v1/trips/:id/weather` — owner-only via the global `JwtAuthGuard` + `@CurrentUser()`. Returns `{ forecast: WeatherForecast }` (flat `WeatherForecast` shape matches the standalone `/weather/forecast` endpoint so clients can share render components).
+
+- **6 integration tests** (`apps/api/test/trip-weather.e2e-spec.ts`) — `WEATHER_PROVIDER` overridden with a stub that records every call:
+  1. Happy path: trip with both dates → provider receives exactly `trip.center` lat/lng + `daysInclusive(...)`.
+  2. Trip with no dates → provider gets `days=7`.
+  3. Trip duration > 16 days → clamped to 16 before reaching the provider.
+  4. Non-owner → 404 `TRIP_NOT_FOUND`, **and** provider never invoked (ownership gate runs first).
+  5. Missing trip → 404 `TRIP_NOT_FOUND`, provider never invoked.
+  6. Unauthenticated → 401 `UNAUTHENTICATED`, provider never invoked.
+
+**Files created** (2) — `apps/api/src/modules/trip/application/get-trip-weather.use-case.ts`, `apps/api/test/trip-weather.e2e-spec.ts`.
+**Files edited** (4) — `modules/weather/weather.module.ts` (+GetForecastUseCase in exports), `modules/trip/trip.module.ts` (+WeatherModule import + GetTripWeatherUseCase), `modules/trip/interface/trip.controller.ts` (+GET /:id/weather route + WeatherForecast import), `modules/trip/application/generate-itinerary-stub.use-case.ts` (`daysInclusive` → `export function`).
+
+**Dependencies** — none new.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ trip-weather suite 6/6 pass against Docker (provider stub → no network dependency).
+- ✅ **Full real-DB suite: 31 suites, 211 tests pass against live Docker.** (+1 suite, +6 tests vs `[IV.18.5.1]`.)
+
+**Acceptance criteria**
+
+- ✅ Authenticated owner can fetch a forecast scoped to their trip's center + dates.
+- ✅ Non-owner response indistinguishable from missing trip (404 `TRIP_NOT_FOUND`).
+- ✅ Ownership gate runs before provider call (no quota burn on rejected auth).
+- ✅ Day count respects both the trip duration AND Open-Meteo's 16-day ceiling.
+- ✅ Trip module depends on Weather, not the reverse.
+
+**Notes**
+
+- **Why re-use `GetForecastUseCase` and not the `WEATHER_PROVIDER` port directly.** The use-case owns input validation + day clamping. If the Trip-weather path bypassed it and wired straight to the provider, the two HTTP surfaces could drift (e.g., weather module adding a cache layer, Trip-weather not getting it). Use-cases-as-composition-primitive is the explicit contract the clean-hex layering expects.
+- **Why `daysInclusive` got an `export` keyword instead of a new `trip/domain/date-range.ts` file.** Exactly two callers in the same module directory; extracting would trade module locality for reach. Scope-lock also discouraged proactive refactors. If a third caller lands (e.g., Stays' availability search), promote it then.
+- **Why not include trip metadata (title, status, dates) in the response.** `{ forecast: ... }` keeps this endpoint's contract tight — callers fetch trip metadata from `GET /trips/:id` when they need it. Combining would encourage tight coupling on client renderers.
+- **Why the provider-never-invoked assertion on the IDOR test.** Without it, a regression that called the provider before the ownership gate would still pass (the eventual 404 masks the leak). Asserting `stub.calls.length === 0` on failure paths catches the "provider called too eagerly" failure mode that burns external quota.
+- **Why not align the forecast window to the trip dates.** Open-Meteo's free endpoint returns "from today forward" — a trip starting in 30 days can't get a meaningful forecast today regardless. The v1 behaviour (match duration, start from today) is the honest response. Future slices can layer a longer-range paid provider behind the same port if trip-future weather becomes a real requirement.
 
 ---
 
