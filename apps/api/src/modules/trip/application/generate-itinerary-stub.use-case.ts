@@ -20,9 +20,12 @@
  * Installed by prompt [IV.18.2.4].
  */
 import { Inject, Injectable } from '@nestjs/common';
+import { EVENT_BUS, type EventBus } from '@app/events';
 import { NotFoundError, ValidationError } from '@app/errors';
+import { getTraceContext } from '@app/logger';
 import type { ItineraryDay } from '../domain/itinerary.entity';
 import type { Trip } from '../domain/trip.entity';
+import { makeEvent, type TripItineraryGeneratedEvent } from '../domain/trip.events';
 import { ITINERARY_REPOSITORY, type ItineraryRepository } from './ports/itinerary.repository';
 import { TRIP_REPOSITORY, type TripRepository } from './ports/trip.repository';
 
@@ -48,6 +51,7 @@ export class GenerateItineraryStubUseCase {
   constructor(
     @Inject(TRIP_REPOSITORY) private readonly trips: TripRepository,
     @Inject(ITINERARY_REPOSITORY) private readonly itinerary: ItineraryRepository,
+    @Inject(EVENT_BUS) private readonly events: EventBus,
   ) {}
 
   async execute(cmd: GenerateItineraryStubCommand): Promise<GeneratedItinerary> {
@@ -97,6 +101,14 @@ export class GenerateItineraryStubUseCase {
       summary: `Day ${i + 1} of your trip to ${trip.title}`,
     }));
     const days = await this.itinerary.replaceDays(trip.id, input);
+
+    const evt: TripItineraryGeneratedEvent = makeEvent(
+      'Trip.ItineraryGenerated',
+      { tripId: trip.id, userId: trip.userId, dayCount: days.length },
+      getTraceContext()?.traceId ? { traceId: getTraceContext()!.traceId } : {},
+    );
+    await this.events.publish(evt);
+
     return { trip, days };
   }
 }

@@ -18,8 +18,11 @@
  * Installed by prompt [IV.18.2.3].
  */
 import { Inject, Injectable } from '@nestjs/common';
+import { EVENT_BUS, type EventBus } from '@app/events';
 import { InvalidRadiusError, ValidationError } from '@app/errors';
+import { getTraceContext } from '@app/logger';
 import type { Trip } from '../domain/trip.entity';
+import { makeEvent, type TripDraftedEvent } from '../domain/trip.events';
 import { TRIP_REPOSITORY, type TripRepository } from './ports/trip.repository';
 
 const MAX_RADIUS_KM = 500;
@@ -35,7 +38,10 @@ export interface CreateTripDraftCommand {
 
 @Injectable()
 export class CreateTripDraftUseCase {
-  constructor(@Inject(TRIP_REPOSITORY) private readonly trips: TripRepository) {}
+  constructor(
+    @Inject(TRIP_REPOSITORY) private readonly trips: TripRepository,
+    @Inject(EVENT_BUS) private readonly events: EventBus,
+  ) {}
 
   async execute(cmd: CreateTripDraftCommand): Promise<Trip> {
     if (!Number.isFinite(cmd.radiusKm) || cmd.radiusKm <= 0) {
@@ -57,7 +63,7 @@ export class CreateTripDraftUseCase {
         'INVALID_DATE_RANGE',
       );
     }
-    return this.trips.createDraft({
+    const trip = await this.trips.createDraft({
       userId: cmd.userId,
       title: cmd.title,
       lat: cmd.center.lat,
@@ -66,5 +72,22 @@ export class CreateTripDraftUseCase {
       startsOn: cmd.startsOn ?? null,
       endsOn: cmd.endsOn ?? null,
     });
+
+    // Emit AFTER the DB write settles so subscribers never see a
+    // Trip that doesn't exist yet. `publish` is fire-and-forget
+    // per the port contract — caller doesn't block on handlers.
+    const evt: TripDraftedEvent = makeEvent(
+      'Trip.TripDrafted',
+      {
+        tripId: trip.id,
+        userId: trip.userId,
+        title: trip.title,
+        radiusKm: trip.radiusKm,
+      },
+      getTraceContext()?.traceId ? { traceId: getTraceContext()!.traceId } : {},
+    );
+    await this.events.publish(evt);
+
+    return trip;
   }
 }

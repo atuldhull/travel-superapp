@@ -49,6 +49,9 @@ importers:
       '@app/errors':
         specifier: workspace:*
         version: link:../../packages/errors
+      '@app/events':
+        specifier: workspace:*
+        version: link:../../packages/events
       '@app/logger':
         specifier: workspace:*
         version: link:../../packages/logger

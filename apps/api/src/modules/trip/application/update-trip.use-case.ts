@@ -19,8 +19,11 @@
  * Installed by prompt [IV.18.2.3.1].
  */
 import { Inject, Injectable } from '@nestjs/common';
+import { EVENT_BUS, type EventBus } from '@app/events';
 import { InvalidRadiusError, NotFoundError, ValidationError } from '@app/errors';
+import { getTraceContext } from '@app/logger';
 import type { Trip } from '../domain/trip.entity';
+import { makeEvent, type TripUpdatedEvent } from '../domain/trip.events';
 import { ITINERARY_REPOSITORY, type ItineraryRepository } from './ports/itinerary.repository';
 import {
   TRIP_REPOSITORY,
@@ -41,6 +44,7 @@ export class UpdateTripUseCase {
   constructor(
     @Inject(TRIP_REPOSITORY) private readonly trips: TripRepository,
     @Inject(ITINERARY_REPOSITORY) private readonly itinerary: ItineraryRepository,
+    @Inject(EVENT_BUS) private readonly events: EventBus,
   ) {}
 
   async execute(cmd: UpdateTripCommand): Promise<Trip> {
@@ -109,6 +113,35 @@ export class UpdateTripUseCase {
         (existing.endsOn?.getTime() ?? null) !== (effectiveEndsOn?.getTime() ?? null));
     if (datesChanged) {
       await this.itinerary.clearAll(cmd.tripId);
+    }
+
+    // Determine which fields actually changed for the event payload.
+    const changedFields: Array<'title' | 'radiusKm' | 'startsOn' | 'endsOn'> = [];
+    if (patch.title !== undefined && patch.title !== existing.title) changedFields.push('title');
+    if (patch.radiusKm !== undefined && patch.radiusKm !== existing.radiusKm)
+      changedFields.push('radiusKm');
+    if (
+      'startsOn' in patch &&
+      (existing.startsOn?.getTime() ?? null) !== (effectiveStartsOn?.getTime() ?? null)
+    )
+      changedFields.push('startsOn');
+    if (
+      'endsOn' in patch &&
+      (existing.endsOn?.getTime() ?? null) !== (effectiveEndsOn?.getTime() ?? null)
+    )
+      changedFields.push('endsOn');
+    if (changedFields.length > 0) {
+      const evt: TripUpdatedEvent = makeEvent(
+        'Trip.TripUpdated',
+        {
+          tripId: updated.id,
+          userId: updated.userId,
+          version: updated.version,
+          changedFields,
+        },
+        getTraceContext()?.traceId ? { traceId: getTraceContext()!.traceId } : {},
+      );
+      await this.events.publish(evt);
     }
 
     return updated;
