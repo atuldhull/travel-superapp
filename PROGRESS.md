@@ -10,18 +10,76 @@
 
 ## Summary
 
-| Counter             | Value                                                                       |
-| ------------------- | --------------------------------------------------------------------------- |
-| Prompts completed   | 69 (68 full + 1 foundation-only; Trip overview dashboard just shipped)      |
-| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up) |
-| Prompts blocked     | 0                                                                           |
-| Last prompt         | `[IV.18.7.3]` — Trip overview: GET /trips/:id/overview bundles 4 sections   |
-| Last commit date    | 2026-04-21                                                                  |
-| Phase               | Phase 1 — Bundled dashboard with graceful degradation; 37 suites, 248 tests |
+| Counter             | Value                                                                         |
+| ------------------- | ----------------------------------------------------------------------------- |
+| Prompts completed   | 70 (69 full + 1 foundation-only; Places federation prep just shipped)         |
+| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up)   |
+| Prompts blocked     | 0                                                                             |
+| Last prompt         | `[IV.18.4.1]` — Places federation prep: POST /places/federated-search + cache |
+| Last commit date    | 2026-04-21                                                                    |
+| Phase               | Phase 1 — 4th cache consumer validates shared base; 38 suites, 255 tests pass |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.4.1] — Places federation prep: POST /places/federated-search + cache
+
+**Date:** 2026-04-21 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.3 (Places Catalog)
+
+**What was done**
+
+Deepens the previously-thin Places module with external-provider federation — the playbook's catalog-growth story. Ships a `PlaceProvider` port, a deterministic `MockPlaceProvider` as the default adapter, and a new HTTP surface `POST /api/v1/places/federated-search` separate from the existing catalog-only `/places/search`. Fourth consumer of the extracted `TypedRedisCache<T>` base — validates the abstraction on a new shape.
+
+- **`apps/api/src/modules/places/` extensions:**
+  - `domain/federated-place-result.entity.ts` — `FederatedPlaceResult` (externalId, provider, name, category, address, countryCode, lat, lng, distanceMeters). Distinct from the internal `Place` entity: no `id`/`createdAt`/`relaxationScore` — the place may not exist in our catalog yet.
+  - `application/ports/place-provider.ts` — `PlaceProvider.search(input)` with `FederatedPlaceSearchInput = { lat, lng, radiusKm, category? }`. Token `PLACE_PROVIDER`.
+  - `application/ports/place-search-cache.ts` — narrow get/set mirroring `WeatherCache`/`StayCache`/`EateryCache`.
+  - `application/federated-search-places.use-case.ts` — validates lat/lng + radius `(0, 50]` (same cap as the internal search). Throws the already-typed `InvalidRadiusError`.
+  - `infrastructure/mock-place-provider.ts` — 4 fixtures across categories (museum, cafe, park, viewpoint). Applies category filter + radius filter + distance sort.
+  - `infrastructure/redis-place-search-cache.ts` — **~10 lines**; subclass of `TypedRedisCache<readonly FederatedPlaceResult[]>`. Namespace `places-search`, logger `places.cache`.
+  - `infrastructure/cached-place-provider.ts` — decorator. Key is `lat.toFixed(3):lng.toFixed(3):radiusKm.toFixed(1):category`. TTL 30 minutes.
+  - `interface/dto/places.dto.ts` — `FederatedSearchPlacesBodySchema` alongside the existing `SearchPlacesBodySchema`.
+  - `interface/places.controller.ts` — `POST /api/v1/places/federated-search` with arg-scoped Zod pipe. Returns `{ results: FederatedPlaceResult[] }`.
+  - `places.module.ts` — decorator-of-DI wiring same as Weather/Stays/Food: `MockPlaceProvider` registered as its own class token, `PLACE_PROVIDER` → `CachedPlaceProvider`, `PLACE_SEARCH_CACHE` → `RedisPlaceSearchCache`. Exports `PLACE_PROVIDER` + `FederatedSearchPlacesUseCase` so a future Trip × Places fold-in can consume them.
+
+- **7 integration tests** (`apps/api/test/places-federated.e2e-spec.ts`) with `MockPlaceProvider` overridden by a recording stub:
+  1. No bearer → 401.
+  2. Happy path → 200 + provider echo (no `category`).
+  3. `category=museum` narrows results + flows through.
+  4. `radiusKm=75` → 422 `INVALID_RADIUS` (domain typed error).
+  5. `lat=999` → 422 `VALIDATION_FAILED` (Zod beats domain).
+  6. Three identical searches → upstream called once (cache hit).
+  7. Different category → separate upstream call (cache miss).
+
+**Files created** (8) — `domain/federated-place-result.entity.ts`, `application/ports/place-provider.ts`, `application/ports/place-search-cache.ts`, `application/federated-search-places.use-case.ts`, `infrastructure/mock-place-provider.ts`, `infrastructure/redis-place-search-cache.ts`, `infrastructure/cached-place-provider.ts`, `test/places-federated.e2e-spec.ts`.
+**Files edited** (3) — `interface/dto/places.dto.ts` (+`FederatedSearchPlacesBodySchema`), `interface/places.controller.ts` (+POST /federated-search + FederatedSearchPlacesUseCase inject), `places.module.ts` (+decorator-of-DI wiring + exports).
+
+**Dependencies** — none new.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Places-federated suite 7/7 pass against Docker + Redis.
+- ✅ **Full real-DB suite: 38 suites, 255 tests pass against live Docker.** (+1 suite, +7 tests vs `[IV.18.7.3]`.)
+
+**Acceptance criteria**
+
+- ✅ Authenticated users can search external providers for places near a coord.
+- ✅ Provider is behind a port — Google / FSQ / OSM adapters drop in as sibling classes.
+- ✅ Cache decorator pattern re-used from Weather / Stays / Food — zero bespoke cache code in the Places application layer.
+- ✅ 4th consumer of `TypedRedisCache<T>` validates the abstraction on a new value shape (`readonly FederatedPlaceResult[]`) without base-class edits.
+- ✅ New endpoint is distinct from the existing catalog-only `/places/search` — no behaviour regression there.
+
+**Notes**
+
+- **Why a new endpoint instead of falling back from `/places/search`.** Federated search and catalog search have different semantics: federated fetches live, doesn't write through, has its own TTL. Conflating them would mean the existing `/places/search` callers suddenly see foreign `externalId`s and null timestamps — a breaking contract change. Separate endpoints today; a future `[IV.18.4.2]` slice can add a merged view once write-through + dedup by `(provider, externalId)` exists.
+- **Why no write-through in v1.** Write-through requires: (a) dedup policy when the same place comes from multiple providers; (b) cross-provider identity (`sourceKey` unique-constraint handling); (c) a clear "freshness" vs "curated" signal for the `relaxationScore`. Each of those is a real design call. Shipping read-only federation first lets the UI light up without locking in premature catalog policy.
+- **Why `MockPlaceProvider` is the shipping default, not test-only.** Same reasoning as Stays and Food: Google Places/FSQ/OSM each need credentials + billing (or rate-limit-proof patterns for OSM). Mock keeps the endpoint usable end-to-end; swap is one `useClass` change when real adapters land.
+- **Cache-pattern validation moment.** This is the 4th `TypedRedisCache` subclass. The base class required zero edits to accommodate a new `T` (`readonly FederatedPlaceResult[]`) — which is exactly what the extraction was meant to prove. If we'd needed to touch the base, the abstraction would be wrong.
+- **Why 50km cap (same as catalog search), not 25km (like Food).** Federated results include destinations (museums, parks, viewpoints), not walking-distance picks. 50km mirrors what users mean by "things to do in this area"; 25 would strand regional attractions.
 
 ---
 
