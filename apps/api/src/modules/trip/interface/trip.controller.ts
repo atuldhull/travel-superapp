@@ -18,10 +18,12 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Query,
   UsePipes,
@@ -30,13 +32,20 @@ import { NotFoundError } from '@app/errors';
 import { type AuthenticatedUser, CurrentUser } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { CreateTripDraftUseCase } from '../application/create-trip-draft.use-case';
+import { DeleteTripUseCase } from '../application/delete-trip.use-case';
 import { GenerateItineraryStubUseCase } from '../application/generate-itinerary-stub.use-case';
 import { GetTripUseCase } from '../application/get-trip.use-case';
 import { ListItineraryUseCase } from '../application/list-itinerary.use-case';
 import { ListTripsUseCase } from '../application/list-trips.use-case';
+import { UpdateTripUseCase } from '../application/update-trip.use-case';
 import type { ItineraryDay } from '../domain/itinerary.entity';
 import type { Trip } from '../domain/trip.entity';
-import { CreateTripBodySchema, type CreateTripBody } from './dto/trip.dto';
+import {
+  CreateTripBodySchema,
+  UpdateTripBodySchema,
+  type CreateTripBody,
+  type UpdateTripBody,
+} from './dto/trip.dto';
 
 interface TripDto {
   readonly id: string;
@@ -72,6 +81,8 @@ export class TripController {
     private readonly createDraft: CreateTripDraftUseCase,
     private readonly listTrips: ListTripsUseCase,
     private readonly getTrip: GetTripUseCase,
+    private readonly updateTrip: UpdateTripUseCase,
+    private readonly deleteTrip: DeleteTripUseCase,
     private readonly generateItinerary: GenerateItineraryStubUseCase,
     private readonly listItinerary: ListItineraryUseCase,
   ) {}
@@ -113,6 +124,35 @@ export class TripController {
       throw new NotFoundError(`Trip not found: ${id}`, { tripId: id }, 'TRIP_NOT_FOUND');
     }
     return toDto(trip);
+  }
+
+  @Patch(':id')
+  @HttpCode(HttpStatus.OK)
+  @UsePipes(new ZodValidationPipe(UpdateTripBodySchema))
+  async update(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: UpdateTripBody,
+  ): Promise<TripDto> {
+    const patch: {
+      title?: string;
+      radiusKm?: number;
+      startsOn?: Date | null;
+      endsOn?: Date | null;
+    } = {};
+    if (body.title !== undefined) patch.title = body.title;
+    if (body.radiusKm !== undefined) patch.radiusKm = body.radiusKm;
+    if ('startsOn' in body)
+      patch.startsOn = body.startsOn === null ? null : new Date(body.startsOn!);
+    if ('endsOn' in body) patch.endsOn = body.endsOn === null ? null : new Date(body.endsOn!);
+    const trip = await this.updateTrip.execute({ tripId: id, userId: user.sub, patch });
+    return toDto(trip);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async remove(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string): Promise<void> {
+    await this.deleteTrip.execute(id, user.sub);
   }
 
   /**

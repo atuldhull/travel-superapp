@@ -35,6 +35,34 @@ export interface TripRepository {
   /** Used by tests + a future admin flow. No production endpoint calls
    *  this yet. */
   updateStatus(id: string, status: TripStatus): Promise<void>;
+
+  /**
+   * Apply a partial update to a trip the caller owns. Returns the
+   * updated row, or `null` if no row matches (trip missing OR owned
+   * by a different user — the single signal lets the use-case 404).
+   */
+  updateForUser(id: string, userId: string, patch: UpdateTripPatch): Promise<Trip | null>;
+
+  /**
+   * Delete a trip the caller owns. Returns `true` iff a row was
+   * actually removed (missing / wrong-owner → false, mapped to 404).
+   * Cascade via Prisma handles ItineraryDay + ItineraryItem +
+   * TripVersion + Share rows.
+   */
+  deleteForUser(id: string, userId: string): Promise<boolean>;
+}
+
+/**
+ * Subset of Trip that PATCH /trips/:id can mutate. Center lat/lng
+ * is intentionally EXCLUDED — PostGIS `center` changes need the raw-
+ * SQL path and would reshape the itinerary entirely. Users who want
+ * a different location delete + create a new trip.
+ */
+export interface UpdateTripPatch {
+  readonly title?: string;
+  readonly radiusKm?: number;
+  readonly startsOn?: Date | null;
+  readonly endsOn?: Date | null;
 }
 
 export const TRIP_REPOSITORY = Symbol('TripRepository');

@@ -27,3 +27,21 @@ export const CreateTripBodySchema = z.object({
   endsOn: IsoDateString.optional(),
 });
 export type CreateTripBody = z.infer<typeof CreateTripBodySchema>;
+
+/**
+ * PATCH /trips/:id body. Every field optional. `startsOn` / `endsOn`
+ * also accept `null` so the client can clear a previously-set date.
+ * No `center` — trip location changes are delete + re-create.
+ */
+export const UpdateTripBodySchema = z
+  .object({
+    title: z.string().trim().min(1).max(120).optional(),
+    radiusKm: z.number().positive().max(10_000).optional(),
+    startsOn: z.union([IsoDateString, z.null()]).optional(),
+    endsOn: z.union([IsoDateString, z.null()]).optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, {
+    message: 'patch body must have at least one field',
+    path: ['(root)'],
+  });
+export type UpdateTripBody = z.infer<typeof UpdateTripBodySchema>;
