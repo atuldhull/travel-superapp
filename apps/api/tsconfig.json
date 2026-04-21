@@ -6,6 +6,6 @@
     "outDir": "./dist",
     "noEmit": true
   },
-  "include": ["src/**/*", "test/**/*", "instrumentation.ts"],
+  "include": ["src/**/*", "test/**/*", "scripts/**/*", "instrumentation.ts"],
   "exclude": ["dist", "node_modules"]
 }
