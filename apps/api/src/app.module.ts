@@ -26,6 +26,7 @@ import { IdentityModule } from './modules/identity/identity.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PlacesModule } from './modules/places/places.module';
 import { TripModule } from './modules/trip/trip.module';
+import { WeatherModule } from './modules/weather/weather.module';
 
 /**
  * APP_GUARD order matters — Nest runs them in the order they appear
@@ -52,6 +53,7 @@ import { TripModule } from './modules/trip/trip.module';
     PlacesModule,
     NotificationsModule,
     AdminModule,
+    WeatherModule,
   ],
   providers: [
     AppNestLoggerService,
