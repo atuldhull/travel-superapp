@@ -14,12 +14,14 @@
  */
 import { Module } from '@nestjs/common';
 import { CreateTripDraftUseCase } from './application/create-trip-draft.use-case';
+import { DeleteTripUseCase } from './application/delete-trip.use-case';
 import { GenerateItineraryStubUseCase } from './application/generate-itinerary-stub.use-case';
 import { GetTripUseCase } from './application/get-trip.use-case';
 import { ListItineraryUseCase } from './application/list-itinerary.use-case';
 import { ListTripsUseCase } from './application/list-trips.use-case';
 import { ITINERARY_REPOSITORY } from './application/ports/itinerary.repository';
 import { TRIP_REPOSITORY } from './application/ports/trip.repository';
+import { UpdateTripUseCase } from './application/update-trip.use-case';
 import { PrismaItineraryRepository } from './infrastructure/prisma-itinerary.repository';
 import { PrismaTripRepository } from './infrastructure/prisma-trip.repository';
 import { TripController } from './interface/trip.controller';
@@ -32,6 +34,8 @@ import { TripController } from './interface/trip.controller';
     CreateTripDraftUseCase,
     ListTripsUseCase,
     GetTripUseCase,
+    UpdateTripUseCase,
+    DeleteTripUseCase,
     GenerateItineraryStubUseCase,
     ListItineraryUseCase,
   ],

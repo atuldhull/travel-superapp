@@ -11,7 +11,11 @@ import type { Trip as PrismaTrip } from '@prisma/client';
 import { GeoQueries } from '../../../common/db/geo-queries';
 import { PrismaService } from '../../../common/db/prisma.service';
 import type { Trip, TripStatus } from '../domain/trip.entity';
-import type { CreateTripDraftInput, TripRepository } from '../application/ports/trip.repository';
+import type {
+  CreateTripDraftInput,
+  TripRepository,
+  UpdateTripPatch,
+} from '../application/ports/trip.repository';
 
 @Injectable()
 export class PrismaTripRepository implements TripRepository {
@@ -53,6 +57,38 @@ export class PrismaTripRepository implements TripRepository {
       where: { id },
       data: { status },
     });
+  }
+
+  async updateForUser(id: string, userId: string, patch: UpdateTripPatch): Promise<Trip | null> {
+    // Two-step: verify ownership via `findFirst`, then update by id.
+    // Prisma's updateMany returns count but not the row; update
+    // needs a unique-scalar `where` (just id). We gate ownership
+    // first to prevent horizontal IDOR.
+    const existing = await this.prisma.trip.findFirst({ where: { id, userId } });
+    if (!existing) return null;
+    const data: {
+      title?: string;
+      radiusKm?: number;
+      startsOn?: Date | null;
+      endsOn?: Date | null;
+      version?: { increment: number };
+    } = {};
+    if (patch.title !== undefined) data.title = patch.title;
+    if (patch.radiusKm !== undefined) data.radiusKm = patch.radiusKm;
+    if ('startsOn' in patch) data.startsOn = patch.startsOn ?? null;
+    if ('endsOn' in patch) data.endsOn = patch.endsOn ?? null;
+    if (Object.keys(data).length === 0) {
+      return toDomain(existing);
+    }
+    data.version = { increment: 1 };
+    const row = await this.prisma.trip.update({ where: { id }, data });
+    return toDomain(row);
+  }
+
+  async deleteForUser(id: string, userId: string): Promise<boolean> {
+    // `deleteMany` returns count — atomic "delete only if owned".
+    const result = await this.prisma.trip.deleteMany({ where: { id, userId } });
+    return result.count === 1;
   }
 }
 
