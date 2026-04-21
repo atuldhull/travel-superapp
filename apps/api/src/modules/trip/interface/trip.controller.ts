@@ -36,7 +36,9 @@ import { CreateTripShareUseCase } from '../application/create-trip-share.use-cas
 import { ListTripSharesUseCase } from '../application/list-trip-shares.use-case';
 import { RevokeTripShareUseCase } from '../application/revoke-trip-share.use-case';
 import { DeleteTripUseCase } from '../application/delete-trip.use-case';
+import { GetTripStaysUseCase } from '../application/get-trip-stays.use-case';
 import { GetTripWeatherUseCase } from '../application/get-trip-weather.use-case';
+import type { StayListing } from '../../stays/domain/stay-listing.entity';
 import type { WeatherForecast } from '../../weather/domain/weather-forecast.entity';
 import { GenerateItineraryStubUseCase } from '../application/generate-itinerary-stub.use-case';
 import { GetTripUseCase } from '../application/get-trip.use-case';
@@ -102,6 +104,7 @@ export class TripController {
     private readonly revokeTripShare: RevokeTripShareUseCase,
     private readonly listTripShares: ListTripSharesUseCase,
     private readonly getTripWeather: GetTripWeatherUseCase,
+    private readonly getTripStays: GetTripStaysUseCase,
   ) {}
 
   @Post()
@@ -258,6 +261,33 @@ export class TripController {
       createdAt: trip.createdAt.toISOString(),
       days: days.map(toDayDto),
     };
+  }
+
+  /**
+   * Stays near the trip's center, for the trip's date range. Owner-
+   * only. Requires the trip to have both `startsOn` and `endsOn`
+   * set (422 `TRIP_DATES_REQUIRED` otherwise) — stay availability
+   * is intrinsically date-scoped. `radiusKm` is capped at 50km (the
+   * stays-search domain invariant) even when the trip's own radius
+   * reaches 500km.
+   *
+   * Optional `?guests=N` query param (default 1, max 20).
+   */
+  @Get(':id/stays')
+  @HttpCode(HttpStatus.OK)
+  async stays(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Query('guests') guests?: string,
+  ): Promise<{ stays: readonly StayListing[] }> {
+    const parsed =
+      guests === undefined ? undefined : Math.max(1, Math.min(20, Number(guests) || 1));
+    const list = await this.getTripStays.execute({
+      tripId: id,
+      userId: user.sub,
+      ...(parsed !== undefined ? { guests: parsed } : {}),
+    });
+    return { stays: list };
   }
 
   /**

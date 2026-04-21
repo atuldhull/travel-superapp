@@ -36,6 +36,6 @@ import { StaysController } from './interface/stays.controller';
     { provide: STAY_PROVIDER, useClass: CachedStayProvider },
     SearchStaysUseCase,
   ],
-  exports: [STAY_PROVIDER],
+  exports: [STAY_PROVIDER, SearchStaysUseCase],
 })
 export class StaysModule {}
