@@ -260,6 +260,103 @@ describe('Trip sharing (integration, requires Docker Postgres)', () => {
     expect(JSON.parse(res.body).code).toBe('SHARE_NOT_FOUND');
   });
 
+  it('GET /trips/:id/shares lists every code the owner minted, newest first, with publicRead state', async () => {
+    if (!dbReachable) return;
+    const alice = await registerUser('list-ok');
+    const trip = await createTrip(alice.accessToken, 'List test');
+
+    const m1 = await app.inject({
+      method: 'POST',
+      url: `/api/v1/trips/${trip.id}/share`,
+      headers: { authorization: `Bearer ${alice.accessToken}` },
+      payload: {},
+    });
+    const m2 = await app.inject({
+      method: 'POST',
+      url: `/api/v1/trips/${trip.id}/share`,
+      headers: { authorization: `Bearer ${alice.accessToken}` },
+      payload: { expiresAt: new Date(Date.now() + 86_400_000).toISOString() },
+    });
+    const code1 = (JSON.parse(m1.body) as { shareCode: string }).shareCode;
+    const code2 = (JSON.parse(m2.body) as { shareCode: string }).shareCode;
+
+    // Revoke the second code so we can verify both states surface.
+    await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/trips/${trip.id}/share/${code2}`,
+      headers: { authorization: `Bearer ${alice.accessToken}` },
+    });
+
+    const list = await app.inject({
+      method: 'GET',
+      url: `/api/v1/trips/${trip.id}/shares`,
+      headers: { authorization: `Bearer ${alice.accessToken}` },
+    });
+    expect(list.statusCode).toBe(200);
+    const body = JSON.parse(list.body) as {
+      shares: Array<{
+        id: string;
+        shareCode: string;
+        publicRead: boolean;
+        expiresAt: string | null;
+      }>;
+    };
+    expect(body.shares).toHaveLength(2);
+    // Newest first — m2 was created after m1.
+    expect(body.shares[0]!.shareCode).toBe(code2);
+    expect(body.shares[0]!.publicRead).toBe(false);
+    expect(body.shares[0]!.expiresAt).not.toBeNull();
+    expect(body.shares[1]!.shareCode).toBe(code1);
+    expect(body.shares[1]!.publicRead).toBe(true);
+    expect(body.shares[1]!.expiresAt).toBeNull();
+  });
+
+  it('GET /trips/:id/shares on a non-owner → 404 TRIP_NOT_FOUND (no enumeration leak)', async () => {
+    if (!dbReachable) return;
+    const alice = await registerUser('a-list-idor');
+    const bob = await registerUser('b-list-idor');
+    const trip = await createTrip(alice.accessToken, 'Alice private list');
+
+    await app.inject({
+      method: 'POST',
+      url: `/api/v1/trips/${trip.id}/share`,
+      headers: { authorization: `Bearer ${alice.accessToken}` },
+      payload: {},
+    });
+
+    const res = await app.inject({
+      method: 'GET',
+      url: `/api/v1/trips/${trip.id}/shares`,
+      headers: { authorization: `Bearer ${bob.accessToken}` },
+    });
+    expect(res.statusCode).toBe(404);
+    expect(JSON.parse(res.body).code).toBe('TRIP_NOT_FOUND');
+  });
+
+  it('GET /trips/:id/shares without a bearer → 401 UNAUTHENTICATED', async () => {
+    if (!dbReachable) return;
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/trips/whatever/shares',
+    });
+    expect(res.statusCode).toBe(401);
+    expect(JSON.parse(res.body).code).toBe('UNAUTHENTICATED');
+  });
+
+  it('GET /trips/:id/shares on a trip with no shares → 200 with empty array', async () => {
+    if (!dbReachable) return;
+    const { accessToken } = await registerUser('list-empty');
+    const trip = await createTrip(accessToken, 'Unshared trip');
+
+    const res = await app.inject({
+      method: 'GET',
+      url: `/api/v1/trips/${trip.id}/shares`,
+      headers: { authorization: `Bearer ${accessToken}` },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.body)).toEqual({ shares: [] });
+  });
+
   it('DELETE /trips/:id/share/:code twice → second call returns 404 (idempotent from client POV)', async () => {
     if (!dbReachable) return;
     const alice = await registerUser('rev-twice');

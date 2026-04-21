@@ -33,6 +33,7 @@ import { type AuthenticatedUser, CurrentUser, Public } from '../../../common/aut
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { CreateTripDraftUseCase } from '../application/create-trip-draft.use-case';
 import { CreateTripShareUseCase } from '../application/create-trip-share.use-case';
+import { ListTripSharesUseCase } from '../application/list-trip-shares.use-case';
 import { RevokeTripShareUseCase } from '../application/revoke-trip-share.use-case';
 import { DeleteTripUseCase } from '../application/delete-trip.use-case';
 import { GenerateItineraryStubUseCase } from '../application/generate-itinerary-stub.use-case';
@@ -97,6 +98,7 @@ export class TripController {
     private readonly createTripShare: CreateTripShareUseCase,
     private readonly resolveTripShare: ResolveTripShareUseCase,
     private readonly revokeTripShare: RevokeTripShareUseCase,
+    private readonly listTripShares: ListTripSharesUseCase,
   ) {}
 
   @Post()
@@ -256,6 +258,30 @@ export class TripController {
   }
 
   /**
+   * List every share (active + revoked) the caller has minted for
+   * this trip. Owner-only — non-owner + missing collapse to 404
+   * `TRIP_NOT_FOUND`, matching the existence-probe defence on every
+   * other Trip endpoint.
+   */
+  @Get(':id/shares')
+  @HttpCode(HttpStatus.OK)
+  async listShares(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ): Promise<{ shares: TripShareOwnerDto[] }> {
+    const shares = await this.listTripShares.execute(id, user.sub);
+    return {
+      shares: shares.map((s) => ({
+        id: s.id,
+        shareCode: s.shareCode,
+        publicRead: s.publicRead,
+        expiresAt: s.expiresAt ? s.expiresAt.toISOString() : null,
+        createdAt: s.createdAt.toISOString(),
+      })),
+    };
+  }
+
+  /**
    * Revoke a previously-minted share code. Owner-only; missing /
    * non-owner collapse to 404 `SHARE_NOT_FOUND`. Soft-delete (flips
    * `publicRead = false` in the DB), so recipient sees the same
@@ -314,6 +340,14 @@ interface TripShareDto {
   readonly id: string;
   readonly tripId: string;
   readonly shareCode: string;
+  readonly expiresAt: string | null;
+  readonly createdAt: string;
+}
+
+interface TripShareOwnerDto {
+  readonly id: string;
+  readonly shareCode: string;
+  readonly publicRead: boolean;
   readonly expiresAt: string | null;
   readonly createdAt: string;
 }

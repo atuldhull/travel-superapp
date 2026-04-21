@@ -16,6 +16,7 @@ import { Module } from '@nestjs/common';
 import { PlacesModule } from '../places/places.module';
 import { CreateTripDraftUseCase } from './application/create-trip-draft.use-case';
 import { CreateTripShareUseCase } from './application/create-trip-share.use-case';
+import { ListTripSharesUseCase } from './application/list-trip-shares.use-case';
 import { DeleteTripUseCase } from './application/delete-trip.use-case';
 import { GenerateItineraryStubUseCase } from './application/generate-itinerary-stub.use-case';
 import { GetTripUseCase } from './application/get-trip.use-case';
@@ -56,6 +57,7 @@ import { TripController } from './interface/trip.controller';
     CreateTripShareUseCase,
     ResolveTripShareUseCase,
     RevokeTripShareUseCase,
+    ListTripSharesUseCase,
   ],
   exports: [TRIP_REPOSITORY, ITINERARY_REPOSITORY, TRIP_SHARE_REPOSITORY],
 })

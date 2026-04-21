@@ -39,6 +39,15 @@ export interface TripShareRepository {
    * owner / non-owner / missing all collapse for the recipient.
    */
   revokeByCodeForOwner(code: string, ownerId: string): Promise<boolean>;
+
+  /**
+   * List every share (active + revoked) the given owner has minted
+   * for the given trip, newest first. The use-case is responsible
+   * for gating on trip ownership FIRST (so a non-owner can't even
+   * enumerate that a trip has no shares); the adapter treats the
+   * ownerId as a straightforward WHERE filter.
+   */
+  listByTripForOwner(tripId: string, ownerId: string): Promise<readonly TripShare[]>;
 }
 
 export const TRIP_SHARE_REPOSITORY = Symbol('TripShareRepository');
