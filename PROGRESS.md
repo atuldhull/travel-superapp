@@ -10,18 +10,77 @@
 
 ## Summary
 
-| Counter             | Value                                                                       |
-| ------------------- | --------------------------------------------------------------------------- |
-| Prompts completed   | 56 (55 full + 1 foundation-only; PATCH day items just shipped)              |
-| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up) |
-| Prompts blocked     | 0                                                                           |
-| Last prompt         | `[IV.18.2.11]` — PATCH /trips/:tripId/itinerary/:dayId (reorder/remove/add) |
-| Last commit date    | 2026-04-21                                                                  |
-| Phase               | Phase 1 — Trip edit loop complete; 26 suites, 169 tests pass against Docker |
+| Counter             | Value                                                                         |
+| ------------------- | ----------------------------------------------------------------------------- |
+| Prompts completed   | 56 (55 full + 1 foundation-only; PATCH day items just shipped)                |
+| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up)   |
+| Prompts blocked     | 0                                                                             |
+| Last prompt         | `[IV.18.3.1]` — Admin module + POST/DELETE /admin/places (class-level @Roles) |
+| Last commit date    | 2026-04-21                                                                    |
+| Phase               | Phase 1 — Admin seed surface online; 27 suites, 175 tests pass against Docker |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.3.1] — Admin module: POST /admin/places + DELETE /admin/places/:id (class-level @Roles('admin'))
+
+**Date:** 2026-04-21 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.1 (17. Admin)
+
+**What was done**
+
+First admin-only HTTP surface. Keeps Places curation out of the public API (search is user-scoped; insert/delete is operator-scoped). Thin authz shell over the existing `PLACE_REPOSITORY` port — no new domain.
+
+- **`PlaceRepository` port** — added `deleteById(id): Promise<boolean>` alongside the earlier `insert` + `exists`. Returns `true` iff a row was actually removed. Prisma adapter uses `prisma.place.deleteMany({ where: { id } })` + checks `result.count === 1` so the PostGIS `coordinates` Unsupported column never flows through a Prisma-typed delete path.
+
+- **`apps/api/src/modules/admin/`** (clean-hex scaffold):
+  - `application/admin-create-place.use-case.ts` — wraps `PLACE_REPOSITORY.insert`. Re-validates lat/lng ranges as a domain invariant so off-HTTP seed callers get the same guarantee the Zod DTO provides.
+  - `application/admin-delete-place.use-case.ts` — delegates to `deleteById`; translates `false` to `NotFoundError('PLACE_NOT_FOUND', 404)`.
+  - `interface/dto/admin.dto.ts` — `AdminCreatePlaceBodySchema` (sourceKey + name + category + lat/lng + optional address/countryCode/relaxationScore/metadata).
+  - `interface/admin.controller.ts` — `@Controller('admin/places')` with **class-level `@Roles('admin')`** so every method inherits the guard. POST (201) + DELETE :id (204). Arg-scoped `@Body(new ZodValidationPipe(...))` matches the `[IV.18.2.5.fix]` pattern.
+  - `admin.module.ts` imports `PlacesModule` (for `PLACE_REPOSITORY`). Admin owns no repositories of its own — it's purely an authz shell.
+
+- **`AppModule` imports `AdminModule`**. Guard chain order unchanged: rate-limit → JwtAuthGuard → RolesGuard.
+
+- **6 integration tests** (`apps/api/test/admin-places.e2e-spec.ts`):
+  1. Unauthenticated POST → 401 `UNAUTHENTICATED`.
+  2. Non-admin POST → 403 `ROLE_FORBIDDEN` (context.actual='user').
+  3. Admin POST → 201 + row exists + PostGIS coord matches (via `ST_X/ST_Y` raw probe).
+  4. Admin DELETE → 204 + row gone.
+  5. Admin DELETE missing id → 404 `PLACE_NOT_FOUND`.
+  6. Non-admin DELETE → 403.
+
+- **Admin bootstrap for tests**: no CLI for role promotion yet. Each admin-role test registers a user → flips `role = 'admin'` via `prisma.user.update` → re-logs-in so the new JWT carries the admin role (login reads `user.role` at issuance — see `login.use-case.ts`). A CLI / Makefile for admin promotion is queued as a follow-up.
+
+- **Suite-local coord**: `{ lat: 23.4567, lng: 178.1234 }` — mid-Pacific quadrant used by no other e2e suite (per `memory/feedback_unique_test_coords.md`).
+
+**Files created** (5) — `apps/api/src/modules/admin/admin.module.ts`, `apps/api/src/modules/admin/application/admin-create-place.use-case.ts`, `apps/api/src/modules/admin/application/admin-delete-place.use-case.ts`, `apps/api/src/modules/admin/interface/dto/admin.dto.ts`, `apps/api/src/modules/admin/interface/admin.controller.ts`, `apps/api/test/admin-places.e2e-spec.ts`.
+**Files edited** (3) — `apps/api/src/app.module.ts` (+AdminModule), `apps/api/src/modules/places/application/ports/place.repository.ts` (+deleteById), `apps/api/src/modules/places/infrastructure/prisma-place.repository.ts` (impl).
+
+**Dependencies** — none new.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Admin suite 6/6 pass against Docker.
+- ✅ **Full real-DB suite: 27 suites, 175 tests pass against live Docker.** (+1 suite, +6 tests vs `[IV.18.2.11]`.)
+
+**Acceptance criteria**
+
+- ✅ POST + DELETE both gated by `@Roles('admin')` at the class level.
+- ✅ Non-admin → 403 `ROLE_FORBIDDEN`; unauthenticated → 401 `UNAUTHENTICATED`.
+- ✅ Missing place → 404 `PLACE_NOT_FOUND` (not 204, so clients see the difference between "deleted" and "already gone").
+- ✅ PostGIS coord round-trips via `GeoQueries.insertPlace`.
+- ✅ Clean-hex boundary preserved — Admin imports Places (the port owner), not a reverse dependency.
+
+**Notes**
+
+- **Why `deleteMany` over `delete` for deletion.** Prisma's typed `delete` implicitly does a `findUniqueOrThrow` first. The Place schema declares `coordinates` as `Unsupported("geography(Point, 4326)")`, and Prisma's read path can trip on that even when the caller doesn't select the column. `deleteMany` is straight DELETE … WHERE, so the Unsupported column stays out of the code path entirely.
+- **Why class-level `@Roles('admin')` (not per-method).** Every method on this controller is admin-only. Class-level keeps the intent in one place and means a new method added later inherits the guard by default — the opposite of the "forgot to annotate a new handler" failure mode.
+- **Why re-login after role flip in tests.** The role claim is baked into the access token at issuance (`login.use-case.ts:162`). A `prisma.user.update` alone doesn't rotate existing JWTs, so tests must call `/auth/login` again to pick up the promoted role.
+- **Why an admin promotion CLI isn't in scope here.** Bootstrapping the first admin is an operational concern (seed script or direct-SQL) separate from the HTTP surface. Defer to a follow-up so this slice stays a focused port + controller add.
 
 ---
 
