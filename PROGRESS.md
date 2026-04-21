@@ -10,18 +10,88 @@
 
 ## Summary
 
-| Counter             | Value                                                                           |
-| ------------------- | ------------------------------------------------------------------------------- |
-| Prompts completed   | 57 (56 full + 1 foundation-only; admin bootstrap loop just closed)              |
-| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up)     |
-| Prompts blocked     | 0                                                                               |
-| Last prompt         | `[IV.18.3.2]` — admin-promote CLI (bootstraps the first admin without SQL)      |
-| Last commit date    | 2026-04-21                                                                      |
-| Phase               | Phase 1 — Admin bootstrap loop closed; 28 suites, 182 tests pass against Docker |
+| Counter             | Value                                                                                 |
+| ------------------- | ------------------------------------------------------------------------------------- |
+| Prompts completed   | 58 (57 full + 1 foundation-only; Trip sharing just shipped)                           |
+| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up)           |
+| Prompts blocked     | 0                                                                                     |
+| Last prompt         | `[IV.18.2.13]` — Trip sharing: POST /trips/:id/share + public GET /trips/shared/:code |
+| Last commit date    | 2026-04-21                                                                            |
+| Phase               | Phase 1 — Trip share loop online; 29 suites, 189 tests pass against Docker            |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.2.13] — Trip sharing: POST /trips/:id/share + public GET /trips/shared/:code
+
+**Date:** 2026-04-21 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.12 (Social & Groups)
+
+**What was done**
+
+First piece of the Social context: trip owner mints an opaque share code; recipient reads trip metadata without authenticating. Uses the `TripShare` table that was already in the Prisma schema — no migration needed.
+
+- **Clean-hex add to the Trip module** (not a new module — `TripShare` is intrinsically per-trip and belongs to the same bounded context):
+  - `domain/trip-share.entity.ts` — plain-data `TripShare` type (id, tripId, ownerId, shareCode, publicRead, expiresAt, createdAt).
+  - `application/ports/trip-share.repository.ts` — narrow port with `create` + `findByCode`. Revoke / list-my-shares deliberately deferred to a follow-up slice.
+  - `infrastructure/prisma-trip-share.repository.ts` — direct Prisma delegate (no PostGIS columns on this table).
+
+- **`CreateTripShareUseCase`** — owner-only:
+  - Gates on `TripRepository.findByIdForUser(tripId, ownerId)` — non-owner + missing trip collapse to 404 `TRIP_NOT_FOUND` (no existence probe leak).
+  - Validates optional `expiresAt` is in the future (domain-level; Zod DTO re-validates at the wire for defence in depth).
+  - Generates code via `crypto.randomBytes(12).toString('base64url')` → 16 URL-safe chars, ~72 bits of entropy.
+
+- **`ResolveTripShareUseCase`** — unauthenticated:
+  - `findByCode` miss OR `publicRead=false` → 404 `SHARE_NOT_FOUND` (the `publicRead` branch is how a future revoke endpoint soft-kills a share without deleting; both paths look identical to the recipient).
+  - `expiresAt ≤ now` → 404 `SHARE_EXPIRED` (typed separately so the UI can show "this link expired" instead of "not found").
+  - Trip missing after share (cascade race) → 404 `TRIP_NOT_FOUND`.
+  - Looks up `user.displayName` for the shared response (direct `PrismaService` inject — a single read-by-id doesn't justify a minimal port around it).
+
+- **HTTP surface** (in `TripController`):
+  - `POST /api/v1/trips/:id/share` — owner-only, body `{ expiresAt?: ISO-date }`, returns `{ id, tripId, shareCode, expiresAt, createdAt }`.
+  - `GET /api/v1/trips/shared/:code` — `@Public()` to bypass `JwtAuthGuard`. Returns a trimmed trip view: `{ id, title, radiusKm, startsOn, endsOn, ownerDisplayName, expiresAt, createdAt }`. **No `userId` / `ownerId` / `status` / `version` / `updatedAt` on the wire** — anything sensitive or owner-coupled stays off the public surface.
+  - Fastify router gives the static `shared` segment priority over the parametric `:id` so `/trips/shared/<code>` never matches `GET /:id`.
+
+- **DTO** (`CreateTripShareBodySchema`) — strict-mode Zod object with optional `expiresAt` as an ISO date string.
+
+- **7 integration tests** (`apps/api/test/trip-share.e2e-spec.ts`):
+  1. Happy path: mint → resolve publicly → owner displayName returned + sensitive fields omitted.
+  2. Non-owner mint → 404 `TRIP_NOT_FOUND` (IDOR + existence probe defence).
+  3. Unauthenticated mint → 401 `UNAUTHENTICATED`.
+  4. Past `expiresAt` on create → 422 `INVALID_EXPIRY`.
+  5. Resolve an unknown code → 404 `SHARE_NOT_FOUND`.
+  6. Resolve an expired code (back-dated via direct Prisma update after creation with a future expiry) → 404 `SHARE_EXPIRED`.
+  7. Deleting the trip cascades the TripShare → recipient sees `SHARE_NOT_FOUND` (Prisma schema `onDelete: Cascade` exercised end-to-end).
+
+**Files created** (6) — `trip/domain/trip-share.entity.ts`, `trip/application/ports/trip-share.repository.ts`, `trip/application/create-trip-share.use-case.ts`, `trip/application/resolve-trip-share.use-case.ts`, `trip/infrastructure/prisma-trip-share.repository.ts`, `test/trip-share.e2e-spec.ts`.
+**Files edited** (3) — `trip/trip.module.ts` (+TRIP_SHARE_REPOSITORY + 2 use-cases), `trip/interface/dto/trip.dto.ts` (+CreateTripShareBodySchema), `trip/interface/trip.controller.ts` (+2 routes, +Public import).
+
+**Dependencies** — none new. `crypto.randomBytes` is stdlib.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Trip-share suite 7/7 pass against Docker.
+- ✅ **Full real-DB suite: 29 suites, 189 tests pass against live Docker.** (+1 suite, +7 tests vs `[IV.18.3.2]`.)
+
+**Acceptance criteria**
+
+- ✅ Owner can mint a share code with optional expiry.
+- ✅ Recipient resolves the code without authenticating.
+- ✅ Non-owner can't mint a share; missing & wrong-owner both collapse to 404.
+- ✅ Expired share resolves to a dedicated `SHARE_EXPIRED` code (not a generic 404).
+- ✅ Public response omits every owner-coupled or sensitive field.
+- ✅ Deleting a trip invalidates its shares transparently (FK cascade).
+
+**Notes**
+
+- **Why `TripShare` lives in the Trip module, not a new Social module.** Cross-context integration rule is "via events or facade interfaces, not direct service imports". A share is owned by exactly one trip, and its lifecycle (creation, expiry, cascade-delete) is inseparable from the trip's. Putting it in a separate module would mean importing `TRIP_REPOSITORY` across the boundary — leak. When Social grows (groups, comments, votes) those ARE separate, they'll land in their own module.
+- **Why `publicRead: true` on every mint.** Today the HTTP surface always creates a publicly-readable share; the `publicRead: false` branch exists as the revoke path for a future slice. Schema already has the boolean; wiring it here means the revoke endpoint is a one-line use-case addition later instead of a model migration.
+- **Why 12 random bytes, not 16.** 12 → 16 base64url chars; 16 → 22 chars. 72 bits is enough entropy for an opaque token that will live in URLs / SMS / QR codes where short matters. If we ever need collision probability below 1-in-2^72, we'll rotate to 16 bytes; today, 12 is the right trade.
+- **Why `@Public()` GET instead of a separate unauthenticated controller.** Isolated public controllers are useful when the surface is big (e.g., auth). A single read route doesn't justify a new controller + module wiring; `@Public()` on the one handler is the minimum-ceremony, audit-readable solution. The route URL (`/shared/:code`) telegraphs the access model.
+- **Why no `updatedAt` / `version` / `status` in the public DTO.** Anything owner-coupled (version counter, draft/archived state, update timestamps) either leaks mutation history or creates a divergent contract if the future read model differs from the owner's own GET. Keep the shared shape tight; expand only when a real UI asks for it.
 
 ---
 
