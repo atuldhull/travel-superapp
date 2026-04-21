@@ -8,11 +8,24 @@
  */
 import type { ItineraryDay, ItineraryItem } from '../../domain/itinerary.entity';
 
+export interface CreateItemInput {
+  readonly position: number;
+  readonly placeId: string | null;
+  readonly notes?: string | null;
+  readonly startTime?: Date | null;
+  readonly endTime?: Date | null;
+}
+
 export interface CreateDayInput {
   readonly tripId: string;
   readonly dayIndex: number;
   readonly date: Date;
   readonly summary?: string | null;
+  /**
+   * Items to insert for this day in the same transaction as the
+   * day row. Empty / absent → day is created without any items.
+   */
+  readonly items?: readonly CreateItemInput[];
 }
 
 export interface ItineraryRepository {

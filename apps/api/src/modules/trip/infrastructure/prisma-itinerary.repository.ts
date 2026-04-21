@@ -15,6 +15,8 @@ import type {
   ItineraryRepository,
 } from '../application/ports/itinerary.repository';
 
+type PrismaDayWithItems = PrismaDay & { items: PrismaItem[] };
+
 @Injectable()
 export class PrismaItineraryRepository implements ItineraryRepository {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
@@ -25,18 +27,36 @@ export class PrismaItineraryRepository implements ItineraryRepository {
   ): Promise<readonly ItineraryDay[]> {
     const rows = await this.prisma.$transaction(async (tx) => {
       await tx.itineraryDay.deleteMany({ where: { tripId } });
-      if (days.length === 0) return [];
-      await tx.itineraryDay.createMany({
-        data: days.map((d) => ({
-          tripId,
-          dayIndex: d.dayIndex,
-          date: d.date,
-          summary: d.summary ?? null,
-        })),
-      });
+      if (days.length === 0) return [] as PrismaDayWithItems[];
+      // Insert days individually so we can reuse the generated day id
+      // when inserting child items in the same tx. A bulk createMany
+      // would be cheaper but wouldn't return the ids.
+      for (const d of days) {
+        const day = await tx.itineraryDay.create({
+          data: {
+            tripId,
+            dayIndex: d.dayIndex,
+            date: d.date,
+            summary: d.summary ?? null,
+          },
+        });
+        if (d.items && d.items.length > 0) {
+          await tx.itineraryItem.createMany({
+            data: d.items.map((it) => ({
+              dayId: day.id,
+              position: it.position,
+              placeId: it.placeId,
+              notes: it.notes ?? null,
+              startTime: it.startTime ?? null,
+              endTime: it.endTime ?? null,
+            })),
+          });
+        }
+      }
       return tx.itineraryDay.findMany({
         where: { tripId },
         orderBy: { dayIndex: 'asc' },
+        include: { items: { orderBy: { position: 'asc' } } },
       });
     });
     return rows.map(toDayDomain);
@@ -46,6 +66,7 @@ export class PrismaItineraryRepository implements ItineraryRepository {
     const rows = await this.prisma.itineraryDay.findMany({
       where: { tripId },
       orderBy: { dayIndex: 'asc' },
+      include: { items: { orderBy: { position: 'asc' } } },
     });
     return rows.map(toDayDomain);
   }
@@ -63,13 +84,14 @@ export class PrismaItineraryRepository implements ItineraryRepository {
   }
 }
 
-function toDayDomain(row: PrismaDay): ItineraryDay {
+function toDayDomain(row: PrismaDayWithItems): ItineraryDay {
   return {
     id: row.id,
     tripId: row.tripId,
     dayIndex: row.dayIndex,
     date: row.date,
     summary: row.summary,
+    items: row.items.map(toItemDomain),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };

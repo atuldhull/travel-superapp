@@ -185,12 +185,22 @@ export class TripController {
   }
 }
 
+interface ItineraryItemDto {
+  readonly id: string;
+  readonly position: number;
+  readonly placeId: string | null;
+  readonly startTime: string | null;
+  readonly endTime: string | null;
+  readonly notes: string | null;
+}
+
 interface ItineraryDayDto {
   readonly id: string;
   readonly tripId: string;
   readonly dayIndex: number;
   readonly date: string;
   readonly summary: string | null;
+  readonly items: readonly ItineraryItemDto[];
 }
 
 function toDayDto(d: ItineraryDay): ItineraryDayDto {
@@ -200,5 +210,13 @@ function toDayDto(d: ItineraryDay): ItineraryDayDto {
     dayIndex: d.dayIndex,
     date: d.date.toISOString(),
     summary: d.summary,
+    items: d.items.map((i) => ({
+      id: i.id,
+      position: i.position,
+      placeId: i.placeId,
+      startTime: i.startTime ? i.startTime.toISOString() : null,
+      endTime: i.endTime ? i.endTime.toISOString() : null,
+      notes: i.notes,
+    })),
   };
 }

@@ -22,12 +22,24 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { EVENT_BUS, type EventBus } from '@app/events';
 import { NotFoundError, ValidationError } from '@app/errors';
-import { getTraceContext } from '@app/logger';
+import { createLogger, getTraceContext } from '@app/logger';
+import { GeoQueries } from '../../../common/db/geo-queries';
+import {
+  PLACE_REPOSITORY,
+  type PlaceRepository,
+} from '../../places/application/ports/place.repository';
 import type { ItineraryDay } from '../domain/itinerary.entity';
 import type { Trip } from '../domain/trip.entity';
 import { makeEvent, type TripItineraryGeneratedEvent } from '../domain/trip.events';
-import { ITINERARY_REPOSITORY, type ItineraryRepository } from './ports/itinerary.repository';
+import {
+  ITINERARY_REPOSITORY,
+  type CreateDayInput,
+  type CreateItemInput,
+  type ItineraryRepository,
+} from './ports/itinerary.repository';
 import { TRIP_REPOSITORY, type TripRepository } from './ports/trip.repository';
+
+const log = createLogger('trip.itinerary.generator');
 
 export interface GenerateItineraryStubCommand {
   readonly tripId: string;
@@ -46,11 +58,22 @@ export interface GeneratedItinerary {
  */
 const MAX_TRIP_DAYS = 90;
 
+/**
+ * Target activities per day. The stub fetches `MAX_TRIP_DAYS * this`
+ * places from the Places module and distributes them round-robin.
+ * When fewer places are available, days fill up partially or stay
+ * empty. A real AI orchestrator will override this with semantic
+ * grouping (morning hike + lunch + afternoon museum …).
+ */
+const TARGET_ITEMS_PER_DAY = 3;
+
 @Injectable()
 export class GenerateItineraryStubUseCase {
   constructor(
     @Inject(TRIP_REPOSITORY) private readonly trips: TripRepository,
     @Inject(ITINERARY_REPOSITORY) private readonly itinerary: ItineraryRepository,
+    @Inject(PLACE_REPOSITORY) private readonly places: PlaceRepository,
+    @Inject(GeoQueries) private readonly geo: GeoQueries,
     @Inject(EVENT_BUS) private readonly events: EventBus,
   ) {}
 
@@ -93,13 +116,56 @@ export class GenerateItineraryStubUseCase {
       );
     }
 
+    // Fetch places inside the trip's radius so we can populate
+    // each day's activities. The Places search has its own 50km
+    // cap; the trip's radius is capped at 500km by the Create
+    // use-case, but searching 500km of activities is pointless
+    // for a stub. Clamp the query radius at 50km — matches the
+    // PlaceRepository port's own invariant, which would 422 on
+    // anything larger. The AI orchestrator will take a different
+    // approach (semantic scoring + trip-shape awareness).
+    const center = await this.geo.findTripCenter(trip.id);
+    const searchRadiusKm = Math.min(50, trip.radiusKm);
+    const places = center
+      ? await this.places.findWithinRadius({
+          lat: center.lat,
+          lng: center.lng,
+          radiusKm: searchRadiusKm,
+        })
+      : [];
+    const neededItems = dayCount * TARGET_ITEMS_PER_DAY;
+    const pickedPlaces = places.slice(0, neededItems);
+    log.info(
+      {
+        tripId: trip.id,
+        dayCount,
+        placesAvailable: places.length,
+        placesUsed: pickedPlaces.length,
+      },
+      'itinerary_stub_places_picked',
+    );
+
     const baseDate = startOfUtcDay(trip.startsOn);
-    const input = Array.from({ length: dayCount }, (_, i) => ({
-      tripId: trip.id,
-      dayIndex: i + 1,
-      date: addDaysUtc(baseDate, i),
-      summary: `Day ${i + 1} of your trip to ${trip.title}`,
-    }));
+    const input: CreateDayInput[] = Array.from({ length: dayCount }, (_, i) => {
+      // Round-robin distribution: item[0] → day1, item[1] → day2,
+      // ..., item[dayCount] → day1 (next batch), etc. Each day
+      // gets its own monotonic `position` across the batches it
+      // receives.
+      const items: CreateItemInput[] = [];
+      for (let j = 0; j < TARGET_ITEMS_PER_DAY; j++) {
+        const pickIdx = i + j * dayCount;
+        const place = pickedPlaces[pickIdx];
+        if (!place) break; // ran out of places.
+        items.push({ position: j + 1, placeId: place.id });
+      }
+      return {
+        tripId: trip.id,
+        dayIndex: i + 1,
+        date: addDaysUtc(baseDate, i),
+        summary: `Day ${i + 1} of your trip to ${trip.title}`,
+        items,
+      };
+    });
     const days = await this.itinerary.replaceDays(trip.id, input);
 
     const evt: TripItineraryGeneratedEvent = makeEvent(

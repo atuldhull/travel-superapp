@@ -13,6 +13,7 @@
  * Installed by prompt [IV.18.2.3].
  */
 import { Module } from '@nestjs/common';
+import { PlacesModule } from '../places/places.module';
 import { CreateTripDraftUseCase } from './application/create-trip-draft.use-case';
 import { DeleteTripUseCase } from './application/delete-trip.use-case';
 import { GenerateItineraryStubUseCase } from './application/generate-itinerary-stub.use-case';
@@ -27,6 +28,12 @@ import { PrismaTripRepository } from './infrastructure/prisma-trip.repository';
 import { TripController } from './interface/trip.controller';
 
 @Module({
+  // Import PlacesModule so GenerateItineraryStubUseCase can inject
+  // the PLACE_REPOSITORY port (Places exports it). Keeps the
+  // cross-module dependency explicit + traceable. Trip depends on
+  // Places, not the other way around — Places has no knowledge of
+  // trips.
+  imports: [PlacesModule],
   controllers: [TripController],
   providers: [
     { provide: TRIP_REPOSITORY, useClass: PrismaTripRepository },
