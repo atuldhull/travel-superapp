@@ -15,6 +15,7 @@
 import { Module } from '@nestjs/common';
 import { PlacesModule } from '../places/places.module';
 import { CreateTripDraftUseCase } from './application/create-trip-draft.use-case';
+import { CreateTripShareUseCase } from './application/create-trip-share.use-case';
 import { DeleteTripUseCase } from './application/delete-trip.use-case';
 import { GenerateItineraryStubUseCase } from './application/generate-itinerary-stub.use-case';
 import { GetTripUseCase } from './application/get-trip.use-case';
@@ -22,10 +23,13 @@ import { ListItineraryUseCase } from './application/list-itinerary.use-case';
 import { ListTripsUseCase } from './application/list-trips.use-case';
 import { ITINERARY_REPOSITORY } from './application/ports/itinerary.repository';
 import { TRIP_REPOSITORY } from './application/ports/trip.repository';
+import { TRIP_SHARE_REPOSITORY } from './application/ports/trip-share.repository';
+import { ResolveTripShareUseCase } from './application/resolve-trip-share.use-case';
 import { UpdateDayItemsUseCase } from './application/update-day-items.use-case';
 import { UpdateTripUseCase } from './application/update-trip.use-case';
 import { PrismaItineraryRepository } from './infrastructure/prisma-itinerary.repository';
 import { PrismaTripRepository } from './infrastructure/prisma-trip.repository';
+import { PrismaTripShareRepository } from './infrastructure/prisma-trip-share.repository';
 import { TripController } from './interface/trip.controller';
 
 @Module({
@@ -39,6 +43,7 @@ import { TripController } from './interface/trip.controller';
   providers: [
     { provide: TRIP_REPOSITORY, useClass: PrismaTripRepository },
     { provide: ITINERARY_REPOSITORY, useClass: PrismaItineraryRepository },
+    { provide: TRIP_SHARE_REPOSITORY, useClass: PrismaTripShareRepository },
     CreateTripDraftUseCase,
     ListTripsUseCase,
     GetTripUseCase,
@@ -47,7 +52,9 @@ import { TripController } from './interface/trip.controller';
     GenerateItineraryStubUseCase,
     ListItineraryUseCase,
     UpdateDayItemsUseCase,
+    CreateTripShareUseCase,
+    ResolveTripShareUseCase,
   ],
-  exports: [TRIP_REPOSITORY, ITINERARY_REPOSITORY],
+  exports: [TRIP_REPOSITORY, ITINERARY_REPOSITORY, TRIP_SHARE_REPOSITORY],
 })
 export class TripModule {}

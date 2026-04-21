@@ -29,23 +29,27 @@ import {
   UsePipes,
 } from '@nestjs/common';
 import { NotFoundError } from '@app/errors';
-import { type AuthenticatedUser, CurrentUser } from '../../../common/auth';
+import { type AuthenticatedUser, CurrentUser, Public } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { CreateTripDraftUseCase } from '../application/create-trip-draft.use-case';
+import { CreateTripShareUseCase } from '../application/create-trip-share.use-case';
 import { DeleteTripUseCase } from '../application/delete-trip.use-case';
 import { GenerateItineraryStubUseCase } from '../application/generate-itinerary-stub.use-case';
 import { GetTripUseCase } from '../application/get-trip.use-case';
 import { ListItineraryUseCase } from '../application/list-itinerary.use-case';
 import { ListTripsUseCase } from '../application/list-trips.use-case';
+import { ResolveTripShareUseCase } from '../application/resolve-trip-share.use-case';
 import { UpdateDayItemsUseCase } from '../application/update-day-items.use-case';
 import { UpdateTripUseCase } from '../application/update-trip.use-case';
 import type { ItineraryDay } from '../domain/itinerary.entity';
 import type { Trip } from '../domain/trip.entity';
 import {
   CreateTripBodySchema,
+  CreateTripShareBodySchema,
   UpdateDayItemsBodySchema,
   UpdateTripBodySchema,
   type CreateTripBody,
+  type CreateTripShareBody,
   type UpdateDayItemsBody,
   type UpdateTripBody,
 } from './dto/trip.dto';
@@ -89,6 +93,8 @@ export class TripController {
     private readonly generateItinerary: GenerateItineraryStubUseCase,
     private readonly listItinerary: ListItineraryUseCase,
     private readonly updateDayItems: UpdateDayItemsUseCase,
+    private readonly createTripShare: CreateTripShareUseCase,
+    private readonly resolveTripShare: ResolveTripShareUseCase,
   ) {}
 
   @Post()
@@ -194,6 +200,56 @@ export class TripController {
    * tripId → 404 `TRIP_NOT_FOUND`. Non-existent `placeId` → 404
    * `PLACE_NOT_FOUND`.
    */
+  /**
+   * Mint a share code for this trip. Recipient then hits the public
+   * `GET /trips/shared/:code` route to read trip metadata without
+   * authenticating. Owner-only — a non-owner hitting this path gets
+   * 404 `TRIP_NOT_FOUND` (existence probe defence).
+   */
+  @Post(':id/share')
+  @HttpCode(HttpStatus.CREATED)
+  async share(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(CreateTripShareBodySchema)) body: CreateTripShareBody,
+  ): Promise<TripShareDto> {
+    const share = await this.createTripShare.execute({
+      tripId: id,
+      ownerId: user.sub,
+      ...(body.expiresAt ? { expiresAt: new Date(body.expiresAt) } : {}),
+    });
+    return {
+      id: share.id,
+      tripId: share.tripId,
+      shareCode: share.shareCode,
+      expiresAt: share.expiresAt ? share.expiresAt.toISOString() : null,
+      createdAt: share.createdAt.toISOString(),
+    };
+  }
+
+  /**
+   * Resolve a share code to the shared trip's public-safe view.
+   * `@Public()` so unauthenticated recipients can hit it with just
+   * the opaque code. Does NOT expose the owner's userId — only the
+   * displayName so the recipient sees who shared with them.
+   */
+  @Public()
+  @Get('shared/:code')
+  @HttpCode(HttpStatus.OK)
+  async getSharedTrip(@Param('code') code: string): Promise<SharedTripDto> {
+    const { trip, ownerDisplayName, expiresAt } = await this.resolveTripShare.execute(code);
+    return {
+      id: trip.id,
+      title: trip.title,
+      radiusKm: trip.radiusKm,
+      startsOn: trip.startsOn ? trip.startsOn.toISOString() : null,
+      endsOn: trip.endsOn ? trip.endsOn.toISOString() : null,
+      ownerDisplayName,
+      expiresAt: expiresAt ? expiresAt.toISOString() : null,
+      createdAt: trip.createdAt.toISOString(),
+    };
+  }
+
   @Patch(':tripId/itinerary/:dayId')
   @HttpCode(HttpStatus.OK)
   async updateDay(
@@ -232,6 +288,25 @@ interface ItineraryDayDto {
   readonly date: string;
   readonly summary: string | null;
   readonly items: readonly ItineraryItemDto[];
+}
+
+interface TripShareDto {
+  readonly id: string;
+  readonly tripId: string;
+  readonly shareCode: string;
+  readonly expiresAt: string | null;
+  readonly createdAt: string;
+}
+
+interface SharedTripDto {
+  readonly id: string;
+  readonly title: string;
+  readonly radiusKm: number;
+  readonly startsOn: string | null;
+  readonly endsOn: string | null;
+  readonly ownerDisplayName: string;
+  readonly expiresAt: string | null;
+  readonly createdAt: string;
 }
 
 function toDayDto(d: ItineraryDay): ItineraryDayDto {
