@@ -10,18 +10,75 @@
 
 ## Summary
 
-| Counter             | Value                                                                                 |
-| ------------------- | ------------------------------------------------------------------------------------- |
-| Prompts completed   | 60 (59 full + 1 foundation-only; owner list-my-shares just shipped)                   |
-| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up)           |
-| Prompts blocked     | 0                                                                                     |
-| Last prompt         | `[IV.18.2.15]` — GET /trips/:id/shares: owner lists every share code they've minted   |
-| Last commit date    | 2026-04-21                                                                            |
-| Phase               | Phase 1 — Trip share owner surface complete; 29 suites, 198 tests pass against Docker |
+| Counter             | Value                                                                               |
+| ------------------- | ----------------------------------------------------------------------------------- |
+| Prompts completed   | 61 (60 full + 1 foundation-only; Weather module v1 just shipped)                    |
+| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up)         |
+| Prompts blocked     | 0                                                                                   |
+| Last prompt         | `[IV.18.5.1]` — Weather module v1: GET /weather/forecast via Open-Meteo provider    |
+| Last commit date    | 2026-04-21                                                                          |
+| Phase               | Phase 1 — Weather online, provider-swap pattern in place; 30 suites, 205 tests pass |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.5.1] — Weather module v1: GET /weather/forecast via Open-Meteo
+
+**Date:** 2026-04-21 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.8 (Weather & Environment)
+
+**What was done**
+
+First new top-level bounded context since the original Trip module. Establishes the "external-provider behind a port" pattern that Places federation, Translation, and any paid data-service integration will re-use. Open-Meteo is free + keyless so no Doppler secrets are needed to run this locally.
+
+- **`apps/api/src/modules/weather/` clean-hex scaffold:**
+  - `domain/weather-forecast.entity.ts` — `WeatherForecast` (lat, lng, timezone, days[]) + `DailyForecast` (date, maxTempC, minTempC, weatherCode, precipitationProbabilityPercent). `weatherCode` is WMO raw — UI layers own the icon/label mapping so a new provider can be swapped in without a schema change.
+  - `application/ports/weather-provider.ts` — `WeatherProvider` interface with a single method `getDailyForecast(input)`. Token symbol `WEATHER_PROVIDER`. Intentionally narrow: hourly / alerts / AQI land as separate methods when callers actually ask.
+  - `application/get-forecast.use-case.ts` — validates lat/lng ranges (typed `INVALID_COORDINATES` errors), clamps `days` to `[1, 16]` (Open-Meteo's hard ceiling), defaults to 7. Stateless — the planned cache layer (`[IV.18.5.2]`) drops in behind the same use-case without call-site churn.
+  - `infrastructure/open-meteo-provider.ts` — `OpenMeteoWeatherProvider` using stdlib `fetch`. Builds the query via `URLSearchParams` (`daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weather_code&forecast_days=N&timezone=auto`). Wraps network failures + non-OK HTTP + malformed responses in `ExternalServiceError('open-meteo', …, 'WEATHER_PROVIDER_UNAVAILABLE')` → 502 on the wire.
+  - `interface/dto/weather.dto.ts` — `WeatherForecastQuerySchema` with `z.coerce.number()` (query params arrive as strings from Fastify).
+  - `interface/weather.controller.ts` — `@Get('forecast')` with arg-scoped `@Query(new ZodValidationPipe(...))` per the `[IV.18.2.5.fix]` pattern.
+  - `weather.module.ts` — wires `WEATHER_PROVIDER` to `OpenMeteoWeatherProvider` and exports the token so future modules (Trip's "weather at trip center" fold-in) can inject it.
+
+- **`AppModule` imports `WeatherModule`**. Auth + rate-limit guards apply globally — `/weather/forecast` requires a bearer so the throttler keys on user.
+
+- **7 integration tests** (`apps/api/test/weather.e2e-spec.ts`) — all use an in-memory `StubWeatherProvider` via `Test.overrideProvider(WEATHER_PROVIDER).useValue(stub)`:
+  1. No bearer → 401 `UNAUTHENTICATED`.
+  2. Happy path → 200 + provider sees exactly the (lat, lng, days) passed in, response body echoes timezone + days.
+  3. Missing `days` query → use-case defaults to 7.
+  4. `days=50` → clamped to 16 before reaching the provider.
+  5. `lat=999` → 422 `VALIDATION_FAILED` (Zod `.max(90)` trips first).
+  6. `lng=not-a-number` → 422 `VALIDATION_FAILED`.
+  7. Provider throws `ExternalServiceError` → 502 `WEATHER_PROVIDER_UNAVAILABLE`.
+
+**Files created** (8) — `modules/weather/domain/weather-forecast.entity.ts`, `modules/weather/application/ports/weather-provider.ts`, `modules/weather/application/get-forecast.use-case.ts`, `modules/weather/infrastructure/open-meteo-provider.ts`, `modules/weather/interface/dto/weather.dto.ts`, `modules/weather/interface/weather.controller.ts`, `modules/weather/weather.module.ts`, `test/weather.e2e-spec.ts`.
+**Files edited** (1) — `apps/api/src/app.module.ts` (+WeatherModule).
+
+**Dependencies** — none new. `fetch` is stdlib in Node 22.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Weather suite 7/7 pass against Docker (provider stub → no network dependency).
+- ✅ **Full real-DB suite: 30 suites, 205 tests pass against live Docker.** (+1 suite, +7 tests vs `[IV.18.2.15]`.)
+
+**Acceptance criteria**
+
+- ✅ Authenticated users can fetch a daily forecast for any coordinate pair.
+- ✅ Provider is behind a port — a paid or region-specific provider drops in as a sibling adapter class.
+- ✅ Tests exercise the full HTTP → use-case → port chain without hitting the real Open-Meteo API.
+- ✅ Upstream failure surfaces as a clean 502 with a typed code (not a 500 stack trace).
+- ✅ Input validation is enforced at both Zod (DTO) and domain (use-case) layers.
+
+**Notes**
+
+- **Why the stub `WEATHER_PROVIDER` override in tests, not a mocked `fetch`.** `fetch` mocking (via `jest.spyOn(globalThis, 'fetch')` or msw) tests the provider's JSON parsing but couples the test to the Open-Meteo payload shape. Overriding at the port level tests the HTTP→use-case→port chain — the contract we actually care about. A separate `OpenMeteoWeatherProvider` unit test (future slice, no real network) would cover the payload parsing side.
+- **Why `weatherCode` as a raw WMO integer instead of a string enum / normalized category.** Different providers (OWM, Tomorrow.io, AccuWeather) use different taxonomies; any normalization in the domain layer would either drop information or require a lossy mapping. The UI's icon/label layer knows its provider — keep the domain neutral. If a future use-case needs "is it raining?" semantics, that lives in a `weatherCodeCategory(code)` helper, not in the stored shape.
+- **Why clamp `days > 16` instead of rejecting.** Open-Meteo's 16-day ceiling is a provider limit, not a domain invariant. A caller asking for 30 days probably wants "as long as you can give me". Clamping is the forgiving behaviour; swapping to a provider with a 14-day ceiling later is just a MAX_DAYS change.
+- **Why no cache yet.** The slice stays small + the cache is a cross-cutting concern worth its own design pass (TTL? Per-lat-lng-day-count key? Redis vs the `WeatherForecast` Prisma table already in the schema?). Deferring keeps this slice reviewable; `[IV.18.5.2]` can add Redis + DB caching behind the same `GetForecastUseCase` seam.
+- **Why the controller isn't a `Places`-style POST.** Weather is a pure GET — the request has no body, responses are cacheable on recipient + CDN + client side. A POST would fight that cachability without a clear upside.
 
 ---
 
