@@ -10,18 +10,75 @@
 
 ## Summary
 
-| Counter             | Value                                                                                 |
-| ------------------- | ------------------------------------------------------------------------------------- |
-| Prompts completed   | 58 (57 full + 1 foundation-only; Trip sharing just shipped)                           |
-| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up)           |
-| Prompts blocked     | 0                                                                                     |
-| Last prompt         | `[IV.18.2.13]` — Trip sharing: POST /trips/:id/share + public GET /trips/shared/:code |
-| Last commit date    | 2026-04-21                                                                            |
-| Phase               | Phase 1 — Trip share loop online; 29 suites, 189 tests pass against Docker            |
+| Counter             | Value                                                                                |
+| ------------------- | ------------------------------------------------------------------------------------ |
+| Prompts completed   | 59 (58 full + 1 foundation-only; Trip share revoke + itinerary fold-in just shipped) |
+| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up)          |
+| Prompts blocked     | 0                                                                                    |
+| Last prompt         | `[IV.18.2.14]` — Trip share revoke + itinerary in public resolver                    |
+| Last commit date    | 2026-04-21                                                                           |
+| Phase               | Phase 1 — Trip share feature-complete; 29 suites, 194 tests pass against Docker      |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.2.14] — Trip share: revoke endpoint + itinerary in public resolver
+
+**Date:** 2026-04-21 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.12 (Social & Groups)
+
+**What was done**
+
+Closes two gaps from `[IV.18.2.13]`:
+
+1. **Revoke.** A leaked share code had no kill switch short of deleting the trip. Now an owner can `DELETE /api/v1/trips/:id/share/:code` to soft-revoke (flips `publicRead = false`). Recipient-side response is indistinguishable from a wholly unknown code (both are `SHARE_NOT_FOUND`).
+2. **Itinerary in the public view.** The shared response was metadata-only, which isn't that useful ("Alice shared a 7km-radius trip"). Recipients now see the full itinerary — days + items with `placeId`, `notes`, start/end times — the same shape the owner gets via `GET /trips/:id/itinerary`.
+
+Changes:
+
+- **`TripShareRepository.revokeByCodeForOwner(code, ownerId): Promise<boolean>`** — new port method. Prisma adapter uses `updateMany({ where: { shareCode, ownerId, publicRead: true }, data: { publicRead: false } })` + returns `count === 1`. Filtering on `publicRead: true` means a re-revoke returns `false` (idempotency is the use-case's problem, not the adapter's).
+
+- **`RevokeTripShareUseCase`** — delegates to the repo; translates `false` to 404 `SHARE_NOT_FOUND`. Single error code for all three failure modes (missing, non-owner, already-revoked) so the response doesn't leak ownership or row existence.
+
+- **`DELETE /api/v1/trips/:id/share/:code` route** — owner-only via the global `JwtAuthGuard` + `@CurrentUser()`. Returns 204 on success. Note: the `:id` path param is accepted for route shape, but the use-case only queries by `shareCode` + `ownerId` — this means a misspelled trip id doesn't disrupt revocation (shareCode is globally unique; the trip id in the URL is syntactic only).
+
+- **`ResolveTripShareUseCase` — itinerary fold-in.** Injects `ITINERARY_REPOSITORY` and appends `days` (via `listDays(trip.id)`) to the `ResolvedShare` payload. Empty array when no itinerary exists yet. Controller maps days through the existing `toDayDto` helper so the public shape matches the authenticated `GET /trips/:id/itinerary` exactly.
+
+- **5 new integration tests** added to `apps/api/test/trip-share.e2e-spec.ts` (suite grew 7 → 12 tests):
+  1. Metadata-only resolve now asserts `days: []` present (schema consistency).
+  2. New: generate itinerary → mint share → resolve publicly → `days.length > 0` with full day shape.
+  3. Revoke by owner → 204 → resolve returns 404 `SHARE_NOT_FOUND`.
+  4. Revoke by non-owner → 404 + code still works for the recipient.
+  5. Revoke unknown code → 404.
+  6. Revoke twice → second call returns 404 (idempotent from client POV — already revoked row falls outside the `publicRead: true` filter).
+
+**Files created** (1) — `trip/application/revoke-trip-share.use-case.ts`.
+**Files edited** (5) — `trip/application/ports/trip-share.repository.ts` (+revokeByCodeForOwner), `trip/infrastructure/prisma-trip-share.repository.ts` (impl), `trip/application/resolve-trip-share.use-case.ts` (+ITINERARY_REPOSITORY + days in payload), `trip/interface/trip.controller.ts` (+DELETE route, +days in SharedTripDto + resolver mapping), `trip/trip.module.ts` (+RevokeTripShareUseCase), `test/trip-share.e2e-spec.ts` (+5 tests, +days assertion in existing happy path).
+
+**Dependencies** — none new.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Trip-share suite 12/12 pass against Docker (+5 vs previous).
+- ✅ **Full real-DB suite: 29 suites, 194 tests pass against live Docker.** (Same suite count, +5 tests vs `[IV.18.2.13]`.)
+
+**Acceptance criteria**
+
+- ✅ Owner can kill a share code without deleting the trip.
+- ✅ Soft-revoke (flips `publicRead`) — row still exists for audit, but dead to both owner (re-revoke) and recipient (resolve).
+- ✅ Missing / non-owner / already-revoked all collapse to one public error code.
+- ✅ Public share response includes itinerary days + items (real plan, not just metadata).
+- ✅ Empty-itinerary trips still resolve with `days: []` — schema is consistent regardless of itinerary state.
+
+**Notes**
+
+- **Why the `:id` path param on DELETE isn't enforced.** The shareCode is globally unique via a DB-level `@@unique`, so URL structure like `/trips/abc/share/XYZ` where `abc` is nonsense still matches the correct share row. Honoring the id would require either (a) an extra trip-share-belongs-to-this-trip check — pure ceremony — or (b) a route like `/trips/shares/:code` that doesn't mention the trip id. The current URL matches REST convention (nested under its parent) without paying for the nesting semantically.
+- **Why `publicRead: true` in the WHERE of the update.** Without it, a re-revoke would still return `count=1` (it would touch the already-false row with the same false value). Filtering on `publicRead: true` means "only flip if currently live", which matches the use-case's idempotency contract — a second revoke is a 404 because there's nothing to revoke, same as an unknown code.
+- **Why include itinerary on the public surface vs a separate `/shared/:code/itinerary` endpoint.** Two round-trips for one user-facing action (viewing a shared trip) is a UX loss with no security upside — the itinerary data is no more sensitive than the trip metadata. One response, one fetch.
+- **Why not expose the trip's version / status to recipients.** Still holds from `[IV.18.2.13]`: anything owner-coupled (version counter, draft/archived state) leaks mutation cadence. Days + items are stable enough to share without the surrounding lifecycle metadata.
 
 ---
 
