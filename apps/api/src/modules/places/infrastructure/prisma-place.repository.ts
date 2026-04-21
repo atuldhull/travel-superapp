@@ -1,0 +1,61 @@
+/**
+ * Prisma + GeoQueries adapter for `PlaceRepository`. Writes + reads
+ * both go through `GeoQueries` so the PostGIS `coordinates` column
+ * is handled via raw SQL consistently (CLAUDE rule 11).
+ *
+ * Installed by prompt [IV.18.2.9].
+ */
+import { Inject, Injectable } from '@nestjs/common';
+import type { Place as PrismaPlace } from '@prisma/client';
+import {
+  GeoQueries,
+  type PlaceWithDistance as GeoQueriesDistance,
+} from '../../../common/db/geo-queries';
+import type { Place, PlaceWithDistance } from '../domain/place.entity';
+import type {
+  FindPlacesInput,
+  InsertPlaceInput,
+  PlaceRepository,
+} from '../application/ports/place.repository';
+
+@Injectable()
+export class PrismaPlaceRepository implements PlaceRepository {
+  constructor(@Inject(GeoQueries) private readonly geo: GeoQueries) {}
+
+  async findWithinRadius(input: FindPlacesInput): Promise<readonly PlaceWithDistance[]> {
+    const rows = await this.geo.findPlacesWithinRadius({
+      lat: input.lat,
+      lng: input.lng,
+      radiusKm: input.radiusKm,
+      ...(input.filters?.category ? { filters: { category: input.filters.category } } : {}),
+    });
+    return rows.map(toDomainWithDistance);
+  }
+
+  async insert(input: InsertPlaceInput): Promise<Place> {
+    const row = await this.geo.insertPlace(input);
+    return toDomain(row);
+  }
+}
+
+function toDomain(row: PrismaPlace): Place {
+  return {
+    id: row.id,
+    sourceKey: row.sourceKey,
+    name: row.name,
+    category: row.category,
+    address: row.address,
+    countryCode: row.countryCode,
+    relaxationScore: row.relaxationScore,
+    metadata: row.metadata,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
+function toDomainWithDistance(row: GeoQueriesDistance): PlaceWithDistance {
+  return {
+    ...toDomain(row),
+    distanceMeters: row.distanceMeters,
+  };
+}
