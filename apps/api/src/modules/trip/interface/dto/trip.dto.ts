@@ -65,3 +65,14 @@ export const UpdateTripBodySchema = z
     path: ['(root)'],
   });
 export type UpdateTripBody = z.infer<typeof UpdateTripBodySchema>;
+
+/**
+ * Body for POST /trips/:id/share. Caller can set an optional expiry;
+ * use-case rejects past dates with a typed `INVALID_EXPIRY` error.
+ */
+export const CreateTripShareBodySchema = z
+  .object({
+    expiresAt: IsoDateString.optional(),
+  })
+  .strict();
+export type CreateTripShareBody = z.infer<typeof CreateTripShareBodySchema>;
