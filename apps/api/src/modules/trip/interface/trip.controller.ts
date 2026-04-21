@@ -33,6 +33,7 @@ import { type AuthenticatedUser, CurrentUser, Public } from '../../../common/aut
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { CreateTripDraftUseCase } from '../application/create-trip-draft.use-case';
 import { CreateTripShareUseCase } from '../application/create-trip-share.use-case';
+import { RevokeTripShareUseCase } from '../application/revoke-trip-share.use-case';
 import { DeleteTripUseCase } from '../application/delete-trip.use-case';
 import { GenerateItineraryStubUseCase } from '../application/generate-itinerary-stub.use-case';
 import { GetTripUseCase } from '../application/get-trip.use-case';
@@ -95,6 +96,7 @@ export class TripController {
     private readonly updateDayItems: UpdateDayItemsUseCase,
     private readonly createTripShare: CreateTripShareUseCase,
     private readonly resolveTripShare: ResolveTripShareUseCase,
+    private readonly revokeTripShare: RevokeTripShareUseCase,
   ) {}
 
   @Post()
@@ -231,13 +233,15 @@ export class TripController {
    * Resolve a share code to the shared trip's public-safe view.
    * `@Public()` so unauthenticated recipients can hit it with just
    * the opaque code. Does NOT expose the owner's userId — only the
-   * displayName so the recipient sees who shared with them.
+   * displayName so the recipient sees who shared with them. Includes
+   * the itinerary (days + items) so the recipient actually sees the
+   * plan, not just metadata.
    */
   @Public()
   @Get('shared/:code')
   @HttpCode(HttpStatus.OK)
   async getSharedTrip(@Param('code') code: string): Promise<SharedTripDto> {
-    const { trip, ownerDisplayName, expiresAt } = await this.resolveTripShare.execute(code);
+    const { trip, ownerDisplayName, expiresAt, days } = await this.resolveTripShare.execute(code);
     return {
       id: trip.id,
       title: trip.title,
@@ -247,7 +251,23 @@ export class TripController {
       ownerDisplayName,
       expiresAt: expiresAt ? expiresAt.toISOString() : null,
       createdAt: trip.createdAt.toISOString(),
+      days: days.map(toDayDto),
     };
+  }
+
+  /**
+   * Revoke a previously-minted share code. Owner-only; missing /
+   * non-owner collapse to 404 `SHARE_NOT_FOUND`. Soft-delete (flips
+   * `publicRead = false` in the DB), so recipient sees the same
+   * "not found" the unknown-code path returns.
+   */
+  @Delete(':id/share/:code')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async revokeShare(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('code') code: string,
+  ): Promise<void> {
+    await this.revokeTripShare.execute(code, user.sub);
   }
 
   @Patch(':tripId/itinerary/:dayId')
@@ -307,6 +327,7 @@ interface SharedTripDto {
   readonly ownerDisplayName: string;
   readonly expiresAt: string | null;
   readonly createdAt: string;
+  readonly days: readonly ItineraryDayDto[];
 }
 
 function toDayDto(d: ItineraryDay): ItineraryDayDto {

@@ -145,6 +145,151 @@ describe('Trip sharing (integration, requires Docker Postgres)', () => {
     // Sensitive fields NOT exposed on the public surface.
     expect(body).not.toHaveProperty('userId');
     expect(body).not.toHaveProperty('ownerId');
+    // Itinerary slot is always present — empty until the owner
+    // generates one ([IV.18.2.14] fold-in).
+    expect(Array.isArray((body as unknown as { days: unknown[] }).days)).toBe(true);
+    expect((body as unknown as { days: unknown[] }).days).toHaveLength(0);
+  });
+
+  it('GET /trips/shared/:code includes itinerary days once the owner has generated one', async () => {
+    if (!dbReachable) return;
+    const alice = await registerUser('with-itin');
+    const trip = await createTrip(alice.accessToken, 'With itinerary');
+
+    const gen = await app.inject({
+      method: 'POST',
+      url: `/api/v1/trips/${trip.id}/itinerary`,
+      headers: { authorization: `Bearer ${alice.accessToken}` },
+    });
+    expect(gen.statusCode).toBe(200);
+    const genBody = JSON.parse(gen.body) as { days: unknown[] };
+    expect(genBody.days.length).toBeGreaterThan(0);
+
+    const mint = await app.inject({
+      method: 'POST',
+      url: `/api/v1/trips/${trip.id}/share`,
+      headers: { authorization: `Bearer ${alice.accessToken}` },
+      payload: {},
+    });
+    const { shareCode } = JSON.parse(mint.body) as { shareCode: string };
+
+    const resolved = await app.inject({
+      method: 'GET',
+      url: `/api/v1/trips/shared/${shareCode}`,
+    });
+    expect(resolved.statusCode).toBe(200);
+    const body = JSON.parse(resolved.body) as {
+      days: Array<{ id: string; dayIndex: number; date: string; items: unknown[] }>;
+    };
+    expect(body.days.length).toBe(genBody.days.length);
+    // Day shape matches the owner's own GET /trips/:id/itinerary.
+    expect(body.days[0]).toHaveProperty('id');
+    expect(body.days[0]).toHaveProperty('dayIndex');
+    expect(body.days[0]).toHaveProperty('date');
+    expect(Array.isArray(body.days[0]!.items)).toBe(true);
+  });
+
+  it('DELETE /trips/:id/share/:code by owner → 204; resolve after → 404 SHARE_NOT_FOUND', async () => {
+    if (!dbReachable) return;
+    const alice = await registerUser('revoke-ok');
+    const trip = await createTrip(alice.accessToken, 'Revoke test');
+
+    const mint = await app.inject({
+      method: 'POST',
+      url: `/api/v1/trips/${trip.id}/share`,
+      headers: { authorization: `Bearer ${alice.accessToken}` },
+      payload: {},
+    });
+    const { shareCode } = JSON.parse(mint.body) as { shareCode: string };
+
+    const revoke = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/trips/${trip.id}/share/${shareCode}`,
+      headers: { authorization: `Bearer ${alice.accessToken}` },
+    });
+    expect(revoke.statusCode).toBe(204);
+
+    const resolved = await app.inject({
+      method: 'GET',
+      url: `/api/v1/trips/shared/${shareCode}`,
+    });
+    expect(resolved.statusCode).toBe(404);
+    expect(JSON.parse(resolved.body).code).toBe('SHARE_NOT_FOUND');
+  });
+
+  it('DELETE /trips/:id/share/:code by non-owner → 404 SHARE_NOT_FOUND', async () => {
+    if (!dbReachable) return;
+    const alice = await registerUser('a-rev-idor');
+    const bob = await registerUser('b-rev-idor');
+    const trip = await createTrip(alice.accessToken, 'Alice revoke IDOR');
+
+    const mint = await app.inject({
+      method: 'POST',
+      url: `/api/v1/trips/${trip.id}/share`,
+      headers: { authorization: `Bearer ${alice.accessToken}` },
+      payload: {},
+    });
+    const { shareCode } = JSON.parse(mint.body) as { shareCode: string };
+
+    const revoke = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/trips/${trip.id}/share/${shareCode}`,
+      headers: { authorization: `Bearer ${bob.accessToken}` },
+    });
+    expect(revoke.statusCode).toBe(404);
+    expect(JSON.parse(revoke.body).code).toBe('SHARE_NOT_FOUND');
+
+    // Code still works for the recipient — the non-owner attempt
+    // must not have flipped `publicRead`.
+    const resolved = await app.inject({
+      method: 'GET',
+      url: `/api/v1/trips/shared/${shareCode}`,
+    });
+    expect(resolved.statusCode).toBe(200);
+  });
+
+  it('DELETE /trips/:id/share/:code for an unknown code → 404 SHARE_NOT_FOUND', async () => {
+    if (!dbReachable) return;
+    const { accessToken } = await registerUser('rev-404');
+    const res = await app.inject({
+      method: 'DELETE',
+      url: '/api/v1/trips/any/share/does-not-exist-xx',
+      headers: { authorization: `Bearer ${accessToken}` },
+    });
+    expect(res.statusCode).toBe(404);
+    expect(JSON.parse(res.body).code).toBe('SHARE_NOT_FOUND');
+  });
+
+  it('DELETE /trips/:id/share/:code twice → second call returns 404 (idempotent from client POV)', async () => {
+    if (!dbReachable) return;
+    const alice = await registerUser('rev-twice');
+    const trip = await createTrip(alice.accessToken, 'Revoke twice');
+    const mint = await app.inject({
+      method: 'POST',
+      url: `/api/v1/trips/${trip.id}/share`,
+      headers: { authorization: `Bearer ${alice.accessToken}` },
+      payload: {},
+    });
+    const { shareCode } = JSON.parse(mint.body) as { shareCode: string };
+
+    const first = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/trips/${trip.id}/share/${shareCode}`,
+      headers: { authorization: `Bearer ${alice.accessToken}` },
+    });
+    expect(first.statusCode).toBe(204);
+
+    const second = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/trips/${trip.id}/share/${shareCode}`,
+      headers: { authorization: `Bearer ${alice.accessToken}` },
+    });
+    // 404 on the second call is correct: `publicRead` is already
+    // false, so the WHERE clause on the `updateMany` finds zero
+    // matching rows. The row still exists in the DB but is dead
+    // to both the owner (re-revoke) and the recipient.
+    expect(second.statusCode).toBe(404);
+    expect(JSON.parse(second.body).code).toBe('SHARE_NOT_FOUND');
   });
 
   it('POST /trips/:id/share by a non-owner → 404 TRIP_NOT_FOUND (IDOR + existence probe defence)', async () => {
