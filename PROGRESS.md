@@ -12,16 +12,82 @@
 
 | Counter             | Value                                                                       |
 | ------------------- | --------------------------------------------------------------------------- |
-| Prompts completed   | 55 (54 full + 1 foundation-only; Places × Trip integration just shipped)    |
+| Prompts completed   | 56 (55 full + 1 foundation-only; PATCH day items just shipped)              |
 | Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up) |
 | Prompts blocked     | 0                                                                           |
-| Last prompt         | `[IV.18.2.10]` — itinerary generator picks Places, round-robin items        |
+| Last prompt         | `[IV.18.2.11]` — PATCH /trips/:tripId/itinerary/:dayId (reorder/remove/add) |
 | Last commit date    | 2026-04-21                                                                  |
-| Phase               | Phase 1 — Trip × Places loop closed; 25 suites, 159 tests pass              |
+| Phase               | Phase 1 — Trip edit loop complete; 26 suites, 169 tests pass against Docker |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.2.11] — PATCH /trips/:tripId/itinerary/:dayId: reorder / remove / add / wipe items on a day
+
+**Date:** 2026-04-21 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.1
+
+**What was done**
+
+Closed the UX gap where users were stuck with the generator's output — now they can tweak positions, remove items they don't like, add free-form activities (placeId=null with notes), or wipe a day clean. Whole-list-replace semantics match how list-editor UIs typically work (client sends the full new state; server replaces).
+
+- **`ItineraryRepository` port**:
+  - `findDayForUser(dayId, userId)` — scoped lookup via the `trip.userId` FK. Returns `null` when the day is missing OR owned by a different user. Prevents horizontal IDOR without a separate role gate.
+  - `replaceItemsForDay(dayId, items[])` — atomic `deleteMany` + `createMany` inside one `$transaction`, returns the day with fresh items.
+
+- **`Places.PlaceRepository` port** — added `exists(id): Promise<boolean>`. Cheap Prisma `findUnique({ select: { id } })` probe so `UpdateDayItemsUseCase` can validate every non-null `placeId` without a radius query or full row load.
+
+- **`UpdateDayItemsUseCase`**:
+  - Validates `items.length ≤ 20` (domain-level defence; Zod enforces at the DTO too).
+  - Rejects duplicate `position` values with a clean `DUPLICATE_POSITION, 422` before the DB layer trips the `@@unique([dayId, position])` constraint with a P2002.
+  - Looks up the day via `findDayForUser` — 404 `TRIP_NOT_FOUND` (same shape as GET) if missing, OR if the URL's `tripId` doesn't match `day.tripId` (catches URL tampering).
+  - Validates every non-null `placeId` with a dedupe-then-`exists` loop → missing list collected → 404 `PLACE_NOT_FOUND` with the ids in `context.missingPlaceIds`.
+  - Delegates to `replaceItemsForDay` and returns the fresh day shape.
+
+- **Controller**: `PATCH /api/v1/trips/:tripId/itinerary/:dayId` body `{ items: [{ position, placeId?|null, notes? }] }`, arg-scoped `@Body(new ZodValidationPipe(UpdateDayItemsBodySchema))` so `@Param('tripId')` + `@Param('dayId')` don't trip validation (the `[IV.18.2.5.fix]` pattern). Response: `{ day: ItineraryDayDto }` (day nested with items).
+
+- **10 integration tests** (`apps/api/test/itinerary-day-edit.e2e-spec.ts`):
+  1. Reorder: same placeIds, new positions → persisted.
+  2. Remove: subset leaves only those items.
+  3. Add: placeIds + notes, including a `null`-placeId free-form activity.
+  4. Wipe: empty `items: []` clears the day.
+  5. Cross-user → 404 `TRIP_NOT_FOUND` (IDOR defence).
+  6. Wrong `tripId` for a legit dayId (same user, different trip) → 404.
+  7. Non-existent placeId → 404 `PLACE_NOT_FOUND` with the id in context.
+  8. Duplicate positions → 422 `DUPLICATE_POSITION`.
+  9. 21-item list → 422 `VALIDATION_FAILED` (Zod cap).
+  10. Unauthenticated → 401.
+
+**Files created** (2) — `apps/api/src/modules/trip/application/update-day-items.use-case.ts`, `apps/api/test/itinerary-day-edit.e2e-spec.ts`.
+**Files edited** (6) — `application/ports/itinerary.repository.ts` (+2 methods), `infrastructure/prisma-itinerary.repository.ts` (impls), `modules/places/application/ports/place.repository.ts` (+exists), `modules/places/infrastructure/prisma-place.repository.ts` (impl), `trip.module.ts` (+UpdateDayItemsUseCase), `interface/dto/trip.dto.ts` (+UpdateDayItemsBodySchema), `interface/trip.controller.ts` (+PATCH route).
+
+**Also fixed:** `apps/api/test/notifications.e2e-spec.ts` trip center moved to a suite-local remote coord — the first parallel full-suite run tripped the same cross-suite contamination the `[IV.18.2.10]` commit noted. Same rule applies (see `memory/feedback_unique_test_coords.md`).
+
+**Dependencies** — none new.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Day-edit suite 10/10 pass.
+- ✅ **Full real-DB suite: 26 suites, 169 tests pass against live Docker.**
+
+**Acceptance criteria**
+
+- ✅ Reorder / remove / add / wipe all supported via a single "replace whole list" endpoint.
+- ✅ IDOR-scoped — day lookup via `trip.userId`.
+- ✅ Cross-trip day URL rejected with 404, not silent success.
+- ✅ PlaceId existence verified before write (defence against orphan FKs).
+- ✅ Position uniqueness enforced at use-case level with a domain-specific code.
+- ✅ Empty array is a legitimate operation (wipe).
+
+**Notes**
+
+- **Why "replace whole list" instead of patch-delta operations.** Delta APIs (add/remove/reorder) are three endpoints to maintain + consistency bugs when two clients race. Whole-list-replace + optimistic concurrency (future: `If-Match: <version>` header on the Day) handles everything. Every popular list-editor UI (Notion blocks, Todoist tasks) is whole-list under the hood.
+- **Why `exists(id)` on PlaceRepository, not a richer `findById`.** Richer lookups are trivial to add when another caller needs them. Today only this use-case wants "does this id exist" — the narrow port keeps the domain surface disciplined.
+- **Why the wrong-tripId test matters.** Without the `day.tripId !== cmd.tripId` check, someone could craft a URL like `/trips/trip-A/itinerary/day-belonging-to-trip-B` (same user) and the server would happily edit trip-B's day via trip-A's URL. Harmless in this app but violates the principle that URL params are part of the authorization surface.
+- **Why `notes: null` and `notes: undefined` collapse to `null` in the use-case.** Clients send either shape; the DB column is nullable. Canonicalising once in the use-case layer means the adapter doesn't need to care. Same pattern `UpdateTripUseCase` uses for dates.
 
 ---
 
