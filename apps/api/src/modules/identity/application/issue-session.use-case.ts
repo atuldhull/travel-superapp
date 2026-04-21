@@ -25,8 +25,10 @@
  */
 import { createHash } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
-import { createLogger } from '@app/logger';
+import { EVENT_BUS, type EventBus } from '@app/events';
+import { createLogger, getTraceContext } from '@app/logger';
 import type { Session } from '../domain/session.entity';
+import { makeSessionEvent, type SessionIssuedEvent } from '../domain/session.events';
 import { SESSION_REPOSITORY, type SessionRepository } from './ports/session.repository';
 import { TOKEN_SERVICE, type TokenService } from './ports/token.service';
 
@@ -63,6 +65,7 @@ export class IssueSessionUseCase {
   constructor(
     @Inject(SESSION_REPOSITORY) private readonly sessions: SessionRepository,
     @Inject(TOKEN_SERVICE) private readonly tokens: TokenService,
+    @Inject(EVENT_BUS) private readonly events: EventBus,
   ) {}
 
   async execute(cmd: IssueSessionCommand): Promise<IssuedSession> {
@@ -113,6 +116,18 @@ export class IssueSessionUseCase {
       sessionId: session.id,
       role: cmd.role,
     });
+
+    const evt: SessionIssuedEvent = makeSessionEvent(
+      'Identity.SessionIssued',
+      {
+        userId: cmd.userId,
+        sessionId: session.id,
+        userAgent: cmd.userAgent,
+        ipHash: cmd.ipHash,
+      },
+      getTraceContext()?.traceId ? { traceId: getTraceContext()!.traceId } : {},
+    );
+    await this.events.publish(evt);
 
     return {
       session,

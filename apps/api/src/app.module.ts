@@ -17,6 +17,7 @@ import { AppConfigModule } from '@app/config';
 import { AppNestLoggerService } from '@app/logger';
 import { JwtAuthGuard, RolesGuard } from './common/auth';
 import { DbModule } from './common/db/db.module';
+import { EventsModule } from './common/events/events.module';
 import { RateLimitGuard } from './common/rate-limit/rate-limit.guard';
 import { RateLimitModule } from './common/rate-limit/rate-limit.module';
 import { HealthModule } from './health/health.module';
@@ -40,6 +41,7 @@ import { TripModule } from './modules/trip/trip.module';
   imports: [
     AppConfigModule.forRoot(),
     DbModule,
+    EventsModule,
     RateLimitModule,
     HealthModule,
     IdentityModule,

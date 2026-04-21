@@ -24,6 +24,7 @@
     "@app/auth": "workspace:*",
     "@app/config": "workspace:*",
     "@app/errors": "workspace:*",
+    "@app/events": "workspace:*",
     "@app/logger": "workspace:*",
     "@app/observability": "workspace:*",
     "@fastify/cookie": "11.0.2",
