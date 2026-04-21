@@ -45,6 +45,14 @@ export class PrismaTripShareRepository implements TripShareRepository {
     });
     return result.count === 1;
   }
+
+  async listByTripForOwner(tripId: string, ownerId: string): Promise<readonly TripShare[]> {
+    const rows = await this.prisma.tripShare.findMany({
+      where: { tripId, ownerId },
+      orderBy: { createdAt: 'desc' },
+    });
+    return rows.map(toDomain);
+  }
 }
 
 function toDomain(row: PrismaTripShare): TripShare {
