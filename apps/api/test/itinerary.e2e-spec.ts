@@ -21,7 +21,12 @@ import { DomainExceptionFilter } from '../src/common/filters/domain-exception.fi
 import { PrismaService } from '../src/common/db/prisma.service';
 
 const TEST_PREFIX = 'itin-e2e';
-const VICTORIA = { lat: 51.4952, lng: -0.1441 };
+// Unique coordinate for this suite — "middle of the Pacific"
+// — so cross-suite Place seeding near populated cities (Victoria
+// / places-e2e / geo-queries) can't contaminate the generator's
+// place lookup. The radius-5km search here will find nothing
+// unless THIS suite seeds, which it doesn't.
+const VICTORIA = { lat: 12.3456, lng: -150.7891 };
 
 describe('Trip itinerary stub (integration, requires Docker Postgres)', () => {
   let moduleRef: TestingModule;

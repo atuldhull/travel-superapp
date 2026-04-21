@@ -6,16 +6,6 @@
  *
  * Installed by prompt [IV.18.2.4].
  */
-export interface ItineraryDay {
-  readonly id: string;
-  readonly tripId: string;
-  readonly dayIndex: number;
-  readonly date: Date;
-  readonly summary: string | null;
-  readonly createdAt: Date;
-  readonly updatedAt: Date;
-}
-
 export interface ItineraryItem {
   readonly id: string;
   readonly dayId: string;
@@ -24,6 +14,23 @@ export interface ItineraryItem {
   readonly startTime: Date | null;
   readonly endTime: Date | null;
   readonly notes: string | null;
+  readonly createdAt: Date;
+  readonly updatedAt: Date;
+}
+
+export interface ItineraryDay {
+  readonly id: string;
+  readonly tripId: string;
+  readonly dayIndex: number;
+  readonly date: Date;
+  readonly summary: string | null;
+  /**
+   * Activities scheduled for this day, ordered by `position` asc.
+   * Empty array means the day has no activities yet — the
+   * generator may return days with no items when no places are
+   * available in the trip's radius.
+   */
+  readonly items: readonly ItineraryItem[];
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }

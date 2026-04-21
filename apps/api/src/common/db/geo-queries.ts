@@ -131,6 +131,24 @@ export class GeoQueries {
   }
 
   /**
+   * Pluck the `center` lat/lng for a Trip row. Returns `null` when
+   * no trip matches. Goes via raw SQL because `Trip.center` is
+   * `Unsupported` to Prisma (see CLAUDE rule 11). Used by the
+   * itinerary generator to scope the places search to the trip's
+   * radius without requiring the full PostGIS shape on the Trip
+   * domain type.
+   */
+  async findTripCenter(tripId: string): Promise<{ lat: number; lng: number } | null> {
+    const rows = await this.prisma.$queryRaw<Array<{ lat: number; lng: number }>>`
+      SELECT ST_Y(center::geometry) AS lat, ST_X(center::geometry) AS lng
+      FROM "Trip"
+      WHERE id = ${tripId}
+      LIMIT 1
+    `;
+    return rows[0] ?? null;
+  }
+
+  /**
    * Move an existing Place to a new lat/lng. Returns the row count
    * actually updated (0 if no Place with that id exists).
    */
