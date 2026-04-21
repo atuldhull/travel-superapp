@@ -128,11 +128,14 @@ export class TripController {
 
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
-  @UsePipes(new ZodValidationPipe(UpdateTripBodySchema))
   async update(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-    @Body() body: UpdateTripBody,
+    // Arg-scoped pipe: `@UsePipes` at handler level also runs the
+    // Zod body schema against the `:id` path param (type='param'),
+    // which fails with "Expected object, received string". Binding
+    // the pipe to the `@Body` arg keeps it where it belongs.
+    @Body(new ZodValidationPipe(UpdateTripBodySchema)) body: UpdateTripBody,
   ): Promise<TripDto> {
     const patch: {
       title?: string;
