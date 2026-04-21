@@ -10,18 +10,75 @@
 
 ## Summary
 
-| Counter             | Value                                                                               |
-| ------------------- | ----------------------------------------------------------------------------------- |
-| Prompts completed   | 66 (65 full + 1 foundation-only; Food module v1 just shipped)                       |
-| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up)         |
-| Prompts blocked     | 0                                                                                   |
-| Last prompt         | `[IV.18.7.1]` — Food module v1: POST /eateries/search (mock provider + cache)       |
-| Last commit date    | 2026-04-21                                                                          |
-| Phase               | Phase 1 — 3rd cache-around-port instance (extraction overdue); 35 suites, 237 tests |
+| Counter             | Value                                                                        |
+| ------------------- | ---------------------------------------------------------------------------- |
+| Prompts completed   | 67 (66 full + 1 foundation-only; Trip × Food fold-in just shipped)           |
+| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up)  |
+| Prompts blocked     | 0                                                                            |
+| Last prompt         | `[IV.18.7.2]` — Trip × Food fold-in: GET /trips/:id/eateries                 |
+| Last commit date    | 2026-04-21                                                                   |
+| Phase               | Phase 1 — 3rd cross-module fold-in; 36 suites, 243 tests pass against Docker |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.7.2] — Trip × Food fold-in: GET /trips/:id/eateries
+
+**Date:** 2026-04-21 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.5 + 3.2 (cross-context)
+
+**What was done**
+
+Third cross-module fold-in (Trip × Weather, Trip × Stays were #1 and #2). Same shape: Trip's use-case reads `trip.center` via GeoQueries, delegates to the Food module's `SearchEateriesUseCase`.
+
+- **`GetTripEateriesUseCase`** in Trip's application layer:
+  - Owner-gated via `TripRepository.findByIdForUser` (404 `TRIP_NOT_FOUND` on miss or wrong owner).
+  - Reads `trip.center` via `GeoQueries.findTripCenter`.
+  - **No date requirement** (unlike Trip × Stays) — "show me restaurants near my trip" is meaningful regardless of when the trip is. The trip is the anchor, not the search window.
+  - Clamps `radiusKm` to Food's 25km domain cap (Trip allows 500km).
+  - Delegates to `SearchEateriesUseCase` (not the raw `EATERY_PROVIDER`) so caching + validation propagate automatically.
+  - Optional `cuisineTag` / `maxPriceTier` pass through.
+
+- **Cross-module wiring:** `TripModule` imports `FoodModule` (already exports `SearchEateriesUseCase` from the v1 slice).
+
+- **HTTP:** `GET /api/v1/trips/:id/eateries?cuisineTag=&maxPriceTier=`. Query params parsed manually off `@Query()` (strings only from Fastify). `maxPriceTier` clamped `[1, 5]` at the controller.
+
+- **6 integration tests** (`apps/api/test/trip-eateries.e2e-spec.ts`) — `MockEateryProvider` overridden by a recording stub:
+  1. Happy path → provider receives `trip.center` + `trip.radiusKm` + no filters.
+  2. `?cuisineTag=japanese&maxPriceTier=3` → both flow through.
+  3. `trip.radiusKm: 250` → clamped to 25 at the provider call.
+  4. Dateless trip → 200 OK (the interesting assertion here vs Trip × Stays).
+  5. Non-owner → 404 `TRIP_NOT_FOUND`, provider never invoked.
+  6. Unauthenticated → 401, provider never invoked.
+
+- **Caveat logged in the test**: the dateless test asserts only the 200 status + non-empty response, not a provider call count — the cache may have served it from an earlier test in the same suite with the same `(lat, lng, radiusKm, filters)` tuple. Cache transparency across a session is the whole point of the decorator.
+
+**Files created** (2) — `modules/trip/application/get-trip-eateries.use-case.ts`, `test/trip-eateries.e2e-spec.ts`.
+**Files edited** (2) — `modules/trip/trip.module.ts` (+FoodModule import + UC), `modules/trip/interface/trip.controller.ts` (+GET /:id/eateries + imports).
+
+**Dependencies** — none new.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Trip-eateries suite 6/6 pass against Docker + Redis.
+- ✅ **Full real-DB suite: 36 suites, 243 tests pass against live Docker.** (+1 suite, +6 tests vs `[IV.18.7.1]`.)
+
+**Acceptance criteria**
+
+- ✅ Trip owner gets restaurants near their trip's center in one request.
+- ✅ Cuisine + price-tier filters flow end-to-end.
+- ✅ Trip radius exceeding Food's 25km cap degrades gracefully (clamp, not 422).
+- ✅ Dateless trips work (the important behavioural difference vs Trip × Stays).
+- ✅ Non-owner / missing / unauth paths never invoke the provider (no quota burn on rejected auth).
+
+**Notes**
+
+- **Why NOT require trip dates here.** Unlike stay availability (which is intrinsically date-scoped), eateries exist independent of your trip timing. Users frequently look at restaurants before locking in dates. Requiring dates would force a worse UX for zero safety gain.
+- **Trip is now the hub of three cross-module fold-ins** — weather, stays, eateries. A future "dashboard" endpoint that returns all three in one response is a natural follow-up (reduces mobile round-trips). Not in this slice because three parallel requests is fine at current scale and a bundled response needs its own DTO design decision.
+- **Cache key coincidence caught a test bug.** The first pass of the dateless test asserted the provider was called; that failed because test #1 in the same suite had already populated the cache for `(REMOTE, 3km, no filters)`. Adjusted the test to assert status + body only — the point is "dates aren't required," not "provider was hit." Another reminder that cached systems make call-count tests fragile across a shared-state suite.
 
 ---
 
