@@ -25,13 +25,19 @@ import { AppModule } from '../src/app.module';
 import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { registerTraceMiddleware } from '../src/common/trace/register-trace-middleware';
+import { applyOfflineStubs } from './helpers/offline-stubs';
 
 describe('Trace-id middleware (integration)', () => {
   let moduleRef: TestingModule;
   let app: NestFastifyApplication;
 
   beforeAll(async () => {
-    moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    // Stub Postgres + Redis-backed throttler so the suite runs on a
+    // dev box without Docker. Trace-id assertions don't touch the DB
+    // or the rate-limit bucket.
+    moduleRef = await applyOfflineStubs(
+      Test.createTestingModule({ imports: [AppModule] }),
+    ).compile();
     app = moduleRef.createNestApplication<NestFastifyApplication>(new FastifyAdapter());
     app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
     app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)'] });

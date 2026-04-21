@@ -33,6 +33,7 @@ import { PostgresHealthIndicator } from '../../src/health/indicators/postgres.in
 import { RedisHealthIndicator } from '../../src/health/indicators/redis.indicator';
 import { HttpPingIndicator } from '../../src/health/indicators/http-ping.indicator';
 import { parseCorsOrigins, registerSecurity } from '../../src/common/security/security.register';
+import { applyOfflineStubs } from '../helpers/offline-stubs';
 
 const REPO_ROOT = resolve(__dirname, '../../../..');
 const rel = (p: string): string => resolve(REPO_ROOT, p);
@@ -54,7 +55,11 @@ describe('Phase-0 smoke suite — regressions here block Phase-1', () => {
       CORS_ORIGINS: 'https://travel.example',
     });
 
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+    // Stub Postgres + Redis-backed throttler so the smoke suite can
+    // run without Docker — all the assertions below are structural
+    // (env schema, error classes, health probe SHAPE with mocked
+    // indicators, file-tree presence). No real infra needed.
+    const moduleRef = await applyOfflineStubs(Test.createTestingModule({ imports: [AppModule] }))
       .overrideProvider(PostgresHealthIndicator)
       .useValue({ isHealthy: jest.fn().mockResolvedValue(upResult('postgres')) })
       .overrideProvider(RedisHealthIndicator)

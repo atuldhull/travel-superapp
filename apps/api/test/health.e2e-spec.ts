@@ -19,6 +19,7 @@ import { AppModule } from '../src/app.module';
 import { PostgresHealthIndicator } from '../src/health/indicators/postgres.indicator';
 import { RedisHealthIndicator } from '../src/health/indicators/redis.indicator';
 import { HttpPingIndicator } from '../src/health/indicators/http-ping.indicator';
+import { applyOfflineStubs } from './helpers/offline-stubs';
 
 type IndicatorDouble = {
   isHealthy: jest.Mock<Promise<HealthIndicatorResult>, [string?, string?]>;
@@ -40,7 +41,10 @@ async function bootApp(doubles: {
   redis: IndicatorDouble;
   http: IndicatorDouble;
 }): Promise<NestFastifyApplication> {
-  const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+  // Stub Postgres + Redis-backed throttler so the suite runs
+  // without Docker — indicators are already mocked, and the
+  // /health/* routes don't need real rate-limit accounting.
+  const moduleRef = await applyOfflineStubs(Test.createTestingModule({ imports: [AppModule] }))
     .overrideProvider(PostgresHealthIndicator)
     .useValue(doubles.postgres)
     .overrideProvider(RedisHealthIndicator)
