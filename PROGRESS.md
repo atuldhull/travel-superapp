@@ -12,16 +12,75 @@
 
 | Counter             | Value                                                                              |
 | ------------------- | ---------------------------------------------------------------------------------- |
-| Prompts completed   | 62 (61 full + 1 foundation-only; Trip × Weather fold-in just shipped)              |
+| Prompts completed   | 63 (62 full + 1 foundation-only; Weather Redis cache just shipped)                 |
 | Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up)        |
 | Prompts blocked     | 0                                                                                  |
-| Last prompt         | `[IV.18.5.3]` — Trip × Weather: GET /trips/:id/weather                             |
+| Last prompt         | `[IV.18.5.2]` — Weather provider cache: Redis decorator around WEATHER_PROVIDER    |
 | Last commit date    | 2026-04-21                                                                         |
-| Phase               | Phase 1 — First cross-module integration; 31 suites, 211 tests pass against Docker |
+| Phase               | Phase 1 — Cache-around-port pattern live; 32 suites, 215 tests pass against Docker |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.5.2] — Weather provider cache: Redis decorator around WEATHER_PROVIDER
+
+**Date:** 2026-04-21 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.8 (Weather) + §12 (Cache)
+
+**What was done**
+
+Closes the "every hot client loop burns Open-Meteo quota" concern that `[IV.18.5.1]`'s own notes flagged. Installs a Redis-backed cache decorator in front of the weather provider, so every current + future caller of `WEATHER_PROVIDER` — `/weather/forecast` direct, the `GET /trips/:id/weather` fold-in, and anything downstream — inherits caching transparently.
+
+Establishes the **cache-around-port decorator pattern** that Places federation (`[IV.18.4.x]`), Translation, and any paid-provider integration will re-use.
+
+- **`WeatherCache` port** (`application/ports/weather-cache.ts`) — narrow interface with `get(key)` / `set(key, value, ttlSec)`. Stores domain-shape `WeatherForecast` objects, not raw provider responses, so a future provider swap doesn't invalidate every cached entry.
+
+- **`RedisWeatherCache`** (`infrastructure/redis-weather-cache.ts`) — own ioredis client, same single-purpose pattern as `RedisThrottlerStorage` (isolated failure domain per feature). Key prefix is `travel-${NODE_ENV}:weather:`. Failure policy is **swallow-and-log**: a dead Redis degrades to "no cache" rather than 500 on the weather endpoint.
+  - **`ensureConnected()` guard** — `lazyConnect: true` + `enableOfflineQueue: false` means commands fail instantly while status is `wait`/`end`/`close`. The first call into `get`/`set` explicitly `connect()`s. Caught this in the first test run (all calls missed the cache) and matches `RedisThrottlerStorage`'s approach.
+
+- **`CachedWeatherProvider`** (`infrastructure/cached-weather-provider.ts`) — decorator implementing `WeatherProvider`. Wraps the injected `OpenMeteoWeatherProvider` (raw class token) + `WEATHER_CACHE`. Key is `${lat.toFixed(3)}:${lng.toFixed(3)}:${days}` — 3 decimals ≈ 110 m resolution, so nearby callers share entries without blowing up the keyspace. TTL is 30 minutes — short enough for weather corrections to propagate, long enough that a hot trip-planner UI loop doesn't hammer upstream.
+
+- **`WeatherModule` wiring** changed so `WEATHER_PROVIDER` now resolves to `CachedWeatherProvider`, which itself injects `OpenMeteoWeatherProvider` (registered as its own class token so the decorator can `@Inject(OpenMeteoWeatherProvider)` without circular self-resolution against the port token).
+
+- **`weather-cache.e2e-spec.ts`** — 4 integration tests:
+  1. Three identical requests → upstream stub called exactly once (cache hit on calls 2+3).
+  2. Different coords → independent entries (stub called twice).
+  3. Different `days` → independent entries.
+  4. Near-but-different coords (differ at 4th decimal) → **don't** share an entry, proving the 3-decimal contract is enforced. Same-at-3rd-decimal pair does collapse.
+
+- **Test isolation**: a `beforeAll` block opens a raw ioredis client + SCAN-DELs every `travel-test:weather:*` key so stale entries from a prior failed run can't masquerade as cache hits and break the suite on re-run.
+
+- **Existing tests unaffected**: `weather.e2e-spec.ts` and `trip-weather.e2e-spec.ts` override the `WEATHER_PROVIDER` token, which bypasses both the decorator AND the cache — exactly the right seam for exercising upstream stubs without Redis-in-test complexity. The new cache test overrides `OpenMeteoWeatherProvider` (the class token) instead, keeping `CachedWeatherProvider` + `RedisWeatherCache` in the chain.
+
+**Files created** (4) — `modules/weather/application/ports/weather-cache.ts`, `modules/weather/infrastructure/redis-weather-cache.ts`, `modules/weather/infrastructure/cached-weather-provider.ts`, `test/weather-cache.e2e-spec.ts`.
+**Files edited** (1) — `modules/weather/weather.module.ts` (+`OpenMeteoWeatherProvider` as class token, +`WEATHER_CACHE` → `RedisWeatherCache`, `WEATHER_PROVIDER` → `CachedWeatherProvider`).
+
+**Dependencies** — none new. `ioredis` was already a dependency.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Cache suite 4/4 pass against live Docker Redis.
+- ✅ **Full real-DB suite: 32 suites, 215 tests pass against live Docker.** (+1 suite, +4 tests vs `[IV.18.5.3]`.)
+
+**Acceptance criteria**
+
+- ✅ Identical forecast requests hit the cache — upstream invoked once, not per request.
+- ✅ Different coord / day tuples never collide on a cache entry.
+- ✅ Near-duplicate coords (sub-3-decimal) share the entry — intentional coarse-graining.
+- ✅ Redis outage degrades gracefully — no 500 from the weather endpoint if cache is dead.
+- ✅ Pattern transparent to every `WEATHER_PROVIDER` caller — `/weather/forecast`, `/trips/:id/weather`, and any future consumer inherit caching without code changes.
+
+**Notes**
+
+- **Why a provider-level decorator vs a use-case-level cache.** Use-case-level caching would require `GetForecastUseCase` to know about a `WEATHER_CACHE` — suddenly caching logic leaks into application. The decorator keeps application pure; cache is infrastructure (where it belongs), and anyone calling `WEATHER_PROVIDER` — including use-cases that weren't imagined when the cache was added — gets it for free.
+- **Why `@Inject(OpenMeteoWeatherProvider)` by class token, not the port symbol.** Circular self-resolution: the decorator IS the thing bound to `WEATHER_PROVIDER`. Binding the raw upstream to its class token and having the decorator inject by class breaks the cycle cleanly. Standard decorator-of-DI pattern — the same trick NestJS's own `@Logger` takes when it wraps the platform logger.
+- **Why `toFixed(3)` (~110m) granularity instead of exact lat/lng.** Two clients picking "the same cafe" typically submit coords that differ in the 5th decimal (because one used the map centre, the other a marker). Exact keys would treat these as separate; 3-decimal collapses them. Beyond 3 decimals (~11m) the forecast literally doesn't change — Open-Meteo's grid is coarser than that.
+- **Why 30-minute TTL.** Weather providers update model runs roughly every 1–6 hours; a 30-minute TTL means users see a correction within half an hour without hammering the provider. Shorter TTLs (5 min) would leak quota on hot loops; longer (2 h) risks staleness on fast-moving fronts (thunderstorm warnings).
+- **Why swallow-and-log on cache failures instead of propagating.** The forecast call already succeeded; a cache write failure is an optimization miss, not a user-facing failure. Propagating would make a dead Redis take down the weather endpoint — exactly the kind of "adding resilience made things less resilient" foot-gun to avoid.
+- **Why a TTL-expiry test isn't in the suite.** Real-time expiry testing is flaky (requires either sleeping past the TTL — slow — or time-mocking that doesn't play well with the ioredis client). The 30-min TTL is a configuration-level decision; once the set/get pair works (tests 1–4), TTL expiration is a Redis guarantee we trust. A unit test with a mocked cache could exercise expiry if we ever need to, but the cost/value is wrong here.
 
 ---
 
