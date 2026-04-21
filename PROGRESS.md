@@ -10,18 +10,148 @@
 
 ## Summary
 
-| Counter             | Value                                                                               |
-| ------------------- | ----------------------------------------------------------------------------------- |
-| Prompts completed   | 49 (48 full + 1 foundation-only; skip-pattern back-port + Trip CRUD PATCH/DELETE)   |
-| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up)         |
-| Prompts blocked     | 0                                                                                   |
-| Last prompt         | `[IV.18.2.3.1]` — Trip CRUD: PATCH + DELETE /trips/:id with itinerary invalidation  |
-| Last commit date    | 2026-04-21                                                                          |
-| Phase               | Phase 1 — Trip module CRUD complete; 20 suites, 132 tests pass green without Docker |
+| Counter             | Value                                                                             |
+| ------------------- | --------------------------------------------------------------------------------- |
+| Prompts completed   | 52 (51 full + 1 foundation-only; account lockout + EventBus wiring just shipped)  |
+| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up)       |
+| Prompts blocked     | 0                                                                                 |
+| Last prompt         | `[IV.18.2.7]` — EventBus wired into apps/api + 5 domain events emit on happy path |
+| Last commit date    | 2026-04-21                                                                        |
+| Phase               | Phase 1 — full-stack real-DB verified: 22 suites, 143 tests pass against Docker   |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.2.7] — EventBus wired into apps/api + Trip / Identity domain events on happy path
+
+**Date:** 2026-04-21 · **Status:** DONE · **Kind:** Build · **Playbook §** 15.3, ADR-003
+
+**What was done**
+
+Closed the prerequisite for the NotificationWorker + analytics subscribers: every feature module now publishes on the shared `EventBus` after DB writes settle. In-memory adapter today; swap to `RedisStreamsEventBus` via an env flag when we want cross-pod delivery + durable DLQ.
+
+- **`apps/api/src/common/events/events.module.ts`** — `@Global` NestJS module that provides the `EVENT_BUS` token (from `@app/events`) backed by `InMemoryEventBus`. Lifecycle holder calls `bus.close()` on `onModuleDestroy` so graceful shutdown drains in-flight handlers and blocks further publishes (throws on publish after close). Imported into `AppModule`.
+
+- **Domain event types** — colocated with the domain they belong to:
+  - `apps/api/src/modules/trip/domain/trip.events.ts` — `TripDraftedEvent`, `TripUpdatedEvent`, `TripDeletedEvent`, `TripItineraryGeneratedEvent`. Payloads are anemic (`tripId + userId + minimal context`, no joined rows). Names follow `<Context>.<Verb><Noun>Event` per ADR-003. `makeEvent(name, payload, { traceId? })` helper mints the envelope (id, version, occurredAt, optional traceId).
+  - `apps/api/src/modules/identity/domain/session.events.ts` — `SessionIssuedEvent` with userId + sessionId + UA + ipHash.
+
+- **Emitters** — one publish per use-case, always AFTER the DB write succeeds (so subscribers never see a phantom entity):
+  - `CreateTripDraftUseCase` → `Trip.TripDrafted`.
+  - `UpdateTripUseCase` → `Trip.TripUpdated`, with `changedFields: ('title' | 'radiusKm' | 'startsOn' | 'endsOn')[]` computed by diffing the patch against the stored row. **No event** when the patch is a structural no-op (same title, no other changes) — matches the use-case's no-bump semantics.
+  - `DeleteTripUseCase` → `Trip.TripDeleted` (only on 204; 404 miss doesn't emit).
+  - `GenerateItineraryStubUseCase` → `Trip.ItineraryGenerated` with `dayCount`.
+  - `IssueSessionUseCase` → `Identity.SessionIssued` with the UA + ipHash we stored at issuance.
+
+- **TraceId propagation** — every `makeEvent` call pulls the current trace context via `getTraceContext()?.traceId` and includes it when present. Events emitted outside a request (future: CronCreate background jobs) simply omit the traceId. Integration test asserts the W3C 32-hex shape round-trips through the event envelope.
+
+- **`apps/api/test/events.e2e-spec.ts`** — 7 integration tests. A spy subscribes once per known event name on the in-process `InMemoryEventBus`; each test drives an HTTP route and asserts recorded events. Covers:
+  1. Session-issued on register, with trace id.
+  2. Trip-drafted on POST /trips, with `{tripId, userId, title, radiusKm}`.
+  3. Trip-updated on PATCH with correct `changedFields`.
+  4. No Trip-updated when PATCH is a no-op (same value).
+  5. Itinerary-generated with `dayCount`.
+  6. Trip-deleted on 204.
+  7. No Trip-deleted on 404 (ghost id).
+
+**Files created** (4) — `apps/api/src/common/events/events.module.ts`, `apps/api/src/modules/trip/domain/trip.events.ts`, `apps/api/src/modules/identity/domain/session.events.ts`, `apps/api/test/events.e2e-spec.ts`.
+**Files edited** (7) — `app.module.ts` (+EventsModule), `apps/api/package.json` (+`@app/events`), plus the 5 use-cases that emit. `IssueSessionUseCase` also gained the EVENT_BUS dependency.
+**Dependencies added** — `@app/events@workspace:*` linked into apps/api; no external deps.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ `jest` against real Docker Postgres + Redis — **22 suites, 143 tests pass.**
+- ✅ traceId round-trips from Fastify `onRequest` middleware → AsyncLocalStorage → `makeEvent` → subscriber spy.
+
+**Acceptance criteria**
+
+- ✅ EVENT_BUS available via DI across all modules.
+- ✅ Events emit AFTER DB write (verified by 404-path asserting no emit).
+- ✅ Anemic payloads (no joined rows, no framework types).
+- ✅ Fire-and-forget at the port contract — handlers run async, errors go to DLQ via `InMemoryEventBus` (tested separately in `@app/events`).
+
+**Notes**
+
+- **Why in-memory default in production.** v1 apps/api is a single-pod modular monolith. In-memory has zero new infra + no serialisation cost + deterministic ordering. When we extract a worker, we flip `EventsModule` to use `RedisStreamsEventBus` with a one-line factory change. The port contract is identical.
+- **Why no "emit first, rollback on failure" semantics.** Two-phase commit between Prisma + EventBus is bait — in-memory EventBus can't roll back (handlers ran), Redis Streams can't atomically commit with Postgres. Pattern: emit after the row settles; if a handler fails it retries + DLQs. Subscribers MUST be idempotent. Documented on every event type.
+- **Why `changedFields` on TripUpdated instead of the full diff.** Subscribers decide whether they care. A notifications subscriber only re-sends trip-plan emails when dates changed; an analytics subscriber counts all renames. Carrying "which fields changed" avoids forcing every subscriber to re-fetch the old+new rows.
+- **Why not `Identity.UserRegistered` as a separate event.** Registration is one composite operation ending in session issuance; emitting two events for one HTTP call invites double-fire-on-retry subscriber bugs. `SessionIssued` carries the userId, so downstream "new user" work can gate on `!existsSubscriberSeenUserBefore(userId)`. We'll add a richer `UserRegistered` later if the ambiguity becomes a real issue.
+
+---
+
+### [IV.18.2.6] — Account lockout: Redis-backed failed-login counter + LoginUseCase integration
+
+**Date:** 2026-04-21 · **Status:** DONE · **Kind:** Build · **Playbook §** 13.4, OWASP ASVS v2.2.1
+
+**What was done**
+
+Closed the credential-stuffing gap on `/auth/login`. Five wrong attempts within a 15-minute window lock the identity out for the remainder of the window.
+
+- **`FailedLoginCounter` port** (`application/ports/failed-login-counter.ts`) — `get`, `increment`, `reset`. Counter is keyed on `emailHash` (already peppered with `EMAIL_PEPPER`), never on plaintext email.
+
+- **`RedisFailedLoginCounter` adapter** — fixed-window INCR + PEXPIRE NX pattern:
+  - `increment` pipelines `INCR + PEXPIRE NX + PTTL` atomically. `NX` means "set the expiry only on first failure, leave the existing TTL on subsequent failures" — fixed window, not sliding.
+  - Key is `travel-<env>:login-fail:sha256(RATE_LIMIT_PEPPER + emailHash)` so a Redis-only compromise can't cross-reference with the DB.
+  - Uses the same ioredis plumbing as `RedisThrottlerStorage` for consistency (`lazyConnect`, `maxRetriesPerRequest: 2`, `enableOfflineQueue: false`).
+  - Exports `FAILED_LOGIN_WINDOW_MS = 15 * 60 * 1000` (OWASP ASVS v4 v2.2.1).
+
+- **`LoginUseCase` integration**:
+  1. Reads `failCounter.get(emailHash)` BEFORE any password verify — don't burn argon2 cycles on a locked account's flood of attempts.
+  2. If `count >= MAX_FAILED_LOGIN_ATTEMPTS` (5) → throws `RateLimitError('Account temporarily locked', ttlMs, ..., 'ACCOUNT_LOCKED')`. The existing `DomainExceptionFilter` converts `retryAfterMs` to the `Retry-After` header in whole seconds (RFC 9110 §10.2.3).
+  3. Increments on INVALID_CREDENTIALS (both wrong-email and wrong-password paths — prevents timing-based email enumeration).
+  4. Also increments on INVALID_MFA — without this, a leaked-password attacker could brute-force 6-digit TOTP codes unbounded inside the MFA gate.
+  5. Resets on successful login (after MFA success, before session issuance).
+
+- **`apps/api/test/account-lockout.e2e-spec.ts`** — 4 integration tests against real Redis:
+  1. 6 wrong-password attempts → 6th returns 429 + `Retry-After: <sec>` header with valid seconds ≤ 900.
+  2. Successful login resets counter: 4 fails → correct → another 4 fails under cap.
+  3. Unknown email lockout (enumeration defence).
+  4. MFA-failure lockout (enabled MFA via direct DB flip, 5 wrong TOTP codes lock the account).
+
+**Files created** (3) — `application/ports/failed-login-counter.ts`, `infrastructure/redis-failed-login-counter.ts`, `test/account-lockout.e2e-spec.ts`.
+**Files edited** (2) — `application/login.use-case.ts` (+lockout flow, +`MAX_FAILED_LOGIN_ATTEMPTS`), `identity.module.ts` (+FAILED_LOGIN_COUNTER provider).
+**Dependencies** — none new.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Real-DB + real-Redis full suite: **21 suites, 136 tests pass.**
+
+**Acceptance criteria**
+
+- ✅ 5 wrong attempts lock for the remainder of the 15-minute window.
+- ✅ Retry-After header populated correctly.
+- ✅ Counter resets on success.
+- ✅ MFA failures + unknown-email failures both count towards lockout.
+- ✅ Enumeration-defence: both lockup branches identical in response shape.
+
+**Notes**
+
+- **Why fixed window not sliding.** The sliding-window Lua from `RedisThrottlerStorage` is overkill here — per-identity lockout has benign failure modes at window boundaries (user mistypes straddling minute 14 → 15 might get 4 + 4 = 8 attempts under the cap; fine). The complexity would be wasted.
+- **Why `RateLimitError` not a new `AccountLockedError`.** `RateLimitError` already carries `retryAfterMs` + maps to 429 + fills `Retry-After`. The `code: 'ACCOUNT_LOCKED'` discriminator lets callers branch; no new error class needed.
+- **Why pepper + re-hash the emailHash before Redis.** Belt-and-braces: the DB column is already sha256(EMAIL_PEPPER + email). Redis sees sha256(RATE_LIMIT_PEPPER + that). A single-system compromise (Redis OR DB) can't build a lookup table without the OTHER pepper. Cheap defence.
+
+---
+
+### [IV.18.2.5.fix] — Scope ZodValidationPipe to `@Body()` on PATCH /trips/:id
+
+**Date:** 2026-04-21 · **Status:** DONE · **Kind:** Fix · **Playbook §** 13.1
+
+**What was done**
+
+Real-DB verification uncovered 5/10 trip-crud tests failing with `422 VALIDATION_FAILED` on valid bodies. Cause: `@UsePipes(new ZodValidationPipe(UpdateTripBodySchema))` at handler level runs the schema against every arg including `@Param('id')` — the pipe tries to parse the id string as `UpdateTripBodySchema` and rejects with `"Expected object, received string"`.
+
+Fix: arg-scope the pipe (`@Body(new ZodValidationPipe(UpdateTripBodySchema))`). The pipe runs only where the body is bound; `@Param('id')` passes through untouched.
+
+The skip-branch back-port from `[IV.18.2.5]` hid this regression — the skip gate returned early before any request was injected. Real Docker-up verification caught it. Strong argument for running the suite against real infra regularly, not just the skip-branches.
+
+Other `@UsePipes` handlers audited: register / login / mfa/setup / mfa/verify / mfa/disable — none take `@Param`, all safe.
+
+Committed as `1ea81d1`.
 
 ---
 
