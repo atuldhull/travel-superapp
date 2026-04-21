@@ -12,16 +12,85 @@
 
 | Counter             | Value                                                                       |
 | ------------------- | --------------------------------------------------------------------------- |
-| Prompts completed   | 54 (53 full + 1 foundation-only; Places module first slice just shipped)    |
+| Prompts completed   | 55 (54 full + 1 foundation-only; Places × Trip integration just shipped)    |
 | Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up) |
 | Prompts blocked     | 0                                                                           |
-| Last prompt         | `[IV.18.2.9]` — Places module: POST /places/search over PostGIS, 50km cap   |
+| Last prompt         | `[IV.18.2.10]` — itinerary generator picks Places, round-robin items        |
 | Last commit date    | 2026-04-21                                                                  |
-| Phase               | Phase 1 — 3 feature modules live; 24 suites, 154 tests pass against Docker  |
+| Phase               | Phase 1 — Trip × Places loop closed; 25 suites, 159 tests pass              |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.2.10] — Itinerary generator consumes Places: ItineraryItem rows with placeId + round-robin distribution
+
+**Date:** 2026-04-21 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.1, 3.3
+
+**What was done**
+
+Closed the Trip × Places integration loop. Today `ItineraryDay.items[]` is populated — the stub generator fetches every Place within the trip's radius, clamps at 50km, and distributes them round-robin across days at 3 items-per-day. Real AI orchestration replaces this shape-for-shape when the ai-service lands.
+
+- **Domain**: `ItineraryDay.items: readonly ItineraryItem[]` is now part of the plain-data shape. Empty array when no places in range; a day HAS items (possibly zero). Matches how clients render.
+
+- **`ItineraryRepository` port**:
+  - `CreateDayInput` accepts an optional `items: CreateItemInput[]` sibling — same transaction writes days + items.
+  - `CreateItemInput`: `{ position, placeId|null, notes?, startTime?, endTime? }`.
+  - `listDays(tripId)` now returns nested items (`include: { items: { orderBy: { position: 'asc' } } }`).
+  - `replaceDays` returns days with items from a fresh read inside the same transaction.
+
+- **`prisma-itinerary.repository.ts`**: `replaceDays` iterates days (needs the generated day id to FK items), inserts each day row with Prisma `create`, then bulk `createMany` items under it. All inside `$transaction` so "re-plan" is atomic. Final `findMany({ include: { items: ... }})` inside the tx returns the full shape.
+
+- **`GenerateItineraryStubUseCase`**:
+  - New deps: `PLACE_REPOSITORY` + `GeoQueries`.
+  - Step 1: `geo.findTripCenter(tripId)` reads the PostGIS `center` lat/lng via a raw-SQL `ST_Y / ST_X` (Trip domain doesn't expose `center` since Prisma omits `Unsupported` columns).
+  - Step 2: `places.findWithinRadius({ lat, lng, radiusKm: min(50, trip.radiusKm) })` — capped at 50km (matches the Places search invariant). Trip with no center returns no places (never happens in prod; belt-and-braces).
+  - Step 3: Slice the top `dayCount × TARGET_ITEMS_PER_DAY` (3 per day) places.
+  - Step 4: Round-robin — `place[i + j * dayCount]` goes to `day[i].items[j]`. So with 9 places and 3 days: day 1 = places [0, 3, 6], day 2 = [1, 4, 7], day 3 = [2, 5, 8]. When places run out, days get partial item lists.
+  - Step 5: `replaceDays` with the new shape.
+
+- **`GeoQueries.findTripCenter(tripId)`**: new raw-SQL helper returning `{ lat, lng } | null`. Colocated with `insertTrip` so every PostGIS concern lives in `GeoQueries`.
+
+- **`TripModule` imports `PlacesModule`**: TripModule consumes `PLACE_REPOSITORY` which `PlacesModule` exports. Directional dependency is Trip → Places; Places has no knowledge of Trips.
+
+- **Controller `ItineraryDayDto`** now nests `items: ItineraryItemDto[]` with `{id, position, placeId, startTime, endTime, notes}`. GET + POST both return the same nested shape.
+
+- **`apps/api/test/itinerary-items.e2e-spec.ts`** — 5 new integration tests:
+  1. 3-day trip with 9 seeded places → 3 items per day, positions 1..3, every seeded place referenced exactly once across the trip.
+  2. 2-day trip with only 3 seeded places → day 1 gets 2 items, day 2 gets 1 (round-robin partial fill).
+  3. No places nearby → days created with empty `items[]` (back-compat with pre-Places generator + existing `itinerary.e2e-spec.ts`).
+  4. GET /trips/:id/itinerary round-trips the nested items.
+  5. Re-generation wipes old items (3 POSTs → still 6 items, not 18).
+
+- **Cross-suite isolation**: both `itinerary.e2e-spec.ts` and `itinerary-items.e2e-spec.ts` moved off the shared "Victoria" test coordinate. Each suite gets a unique remote-ocean coord so cross-suite Place seeding (places-e2e, geo-queries, index-usage) can't contaminate the generator's radius search. First full-suite run under real Docker caught the race: parallel seed + delete of Places was tripping ItineraryItem FK violations in `itinerary.e2e-spec.ts`'s re-plan test. Moving trip centers to suite-local coords eliminates the race at the data level — no parallel runner tweaks needed.
+
+**Files created** (1) — `apps/api/test/itinerary-items.e2e-spec.ts`.
+**Files edited** (7) — `domain/itinerary.entity.ts` (+items on day), `application/ports/itinerary.repository.ts` (+CreateItemInput on CreateDayInput), `infrastructure/prisma-itinerary.repository.ts` (atomic days+items writes, nested reads), `application/generate-itinerary-stub.use-case.ts` (round-robin over places), `common/db/geo-queries.ts` (+findTripCenter), `interface/trip.controller.ts` (nested day DTO), `trip.module.ts` (+PlacesModule import), `test/itinerary.e2e-spec.ts` (unique coord).
+**Dependencies** — none new.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Itinerary + trip + trip-crud suites: 24/24 pass.
+- ✅ **Full real-DB suite: 25 suites, 159 tests pass.**
+
+**Acceptance criteria**
+
+- ✅ GenerateItineraryStub picks places from `PLACE_REPOSITORY`.
+- ✅ Round-robin distribution verified (every seeded place referenced exactly once when capacity ≥ needs).
+- ✅ Partial fill when places are scarce (day 1 gets 2, day 2 gets 1).
+- ✅ Empty result when no places in radius (back-compat preserved).
+- ✅ Re-generation atomic (days + items both wiped + re-inserted in one tx).
+- ✅ GET + POST /trips/:id/itinerary return the nested-items DTO.
+
+**Notes**
+
+- **Why `TARGET_ITEMS_PER_DAY = 3`.** A generous lunch + afternoon + dinner shape. The AI orchestrator will override this with semantic scoring (morning hike + cafe + afternoon museum + dinner spot …) — this is just a sensible default that matches everyday trip density.
+- **Why read the trip center via raw SQL, not extend the Trip domain.** Two options considered: (a) add `centerLat` + `centerLng` to `Trip` domain + update every repo method to read via `ST_X/ST_Y`; (b) keep Trip domain center-free + use `GeoQueries.findTripCenter` as-needed. Option (b) scopes the change to callers that actually need coords — today just the itinerary generator. Option (a) leaks PostGIS into every read path. (b) wins for now; promotable later if >2 modules need it.
+- **Why the trip center moves each suite's tests to unique coordinates.** Integration tests share a Postgres. Parallel workers can seed + delete in interleaved order; my `itinerary.e2e-spec.ts` "re-generating wipes" test was failing under full-suite-parallel because `itinerary-items` was deleting its seed places mid-transaction of `itinerary`'s POST /itinerary. The generator had already picked a `placeId`, the row was gone before the INSERT, FK violation. Moving each suite's trips to its own remote coord means no cross-suite place contamination — cleaner than running tests serially.
+- **Why `GenerateItineraryStubUseCase` caps search at `min(50, trip.radiusKm)`.** Trip's radius can be up to 500km; PlacesModule's `SearchPlacesUseCase` caps at 50km. The generator uses the Places repo directly (bypassing the use-case), so the cap has to live here. Documented inline. AI orchestrator will use a different strategy (semantic scoring + trip-shape awareness).
 
 ---
 
