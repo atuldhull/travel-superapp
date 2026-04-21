@@ -21,6 +21,7 @@ import { EventsModule } from './common/events/events.module';
 import { RateLimitGuard } from './common/rate-limit/rate-limit.guard';
 import { RateLimitModule } from './common/rate-limit/rate-limit.module';
 import { HealthModule } from './health/health.module';
+import { AdminModule } from './modules/admin/admin.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PlacesModule } from './modules/places/places.module';
@@ -50,6 +51,7 @@ import { TripModule } from './modules/trip/trip.module';
     TripModule,
     PlacesModule,
     NotificationsModule,
+    AdminModule,
   ],
   providers: [
     AppNestLoggerService,

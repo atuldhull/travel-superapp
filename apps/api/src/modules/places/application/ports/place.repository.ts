@@ -55,6 +55,14 @@ export interface PlaceRepository {
    * method instead.
    */
   exists(id: string): Promise<boolean>;
+
+  /**
+   * Delete a Place by id. Returns `true` iff a row was actually
+   * removed (i.e., the id existed). Admin-only — the HTTP surface
+   * is `DELETE /admin/places/:id`. Callers should translate a
+   * `false` return into a 404 `PLACE_NOT_FOUND`.
+   */
+  deleteById(id: string): Promise<boolean>;
 }
 
 export const PLACE_REPOSITORY = Symbol('PlaceRepository');
