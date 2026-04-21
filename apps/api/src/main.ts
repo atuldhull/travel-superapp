@@ -31,6 +31,7 @@ import { AppModule } from './app.module';
 import { AllExceptionFilter } from './common/filters/all-exception.filter';
 import { DomainExceptionFilter } from './common/filters/domain-exception.filter';
 import { registerSecurity } from './common/security/security.register';
+import { registerTraceMiddleware } from './common/trace/register-trace-middleware';
 
 const bootLog = createLogger('bootstrap');
 
@@ -78,6 +79,11 @@ async function bootstrap(): Promise<void> {
   // 6b. Cookie parser — required by Identity module's refresh endpoint to
   //     read the httpOnly `refresh_token` cookie (CLAUDE rule 12).
   await app.register(fastifyCookie);
+
+  // 6c. Trace-id middleware — establishes an AsyncLocalStorage context
+  //     per request so every log line + every DomainError response
+  //     body carries a correlatable `traceId`.
+  await registerTraceMiddleware(app);
 
   // 7. Shutdown hooks so SIGTERM drains in-flight requests cleanly (Fly.io / k8s).
   app.enableShutdownHooks();
