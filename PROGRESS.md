@@ -10,18 +10,76 @@
 
 ## Summary
 
-| Counter             | Value                                                                                  |
-| ------------------- | -------------------------------------------------------------------------------------- |
-| Prompts completed   | 64 (63 full + 1 foundation-only; Stays module v1 just shipped)                         |
-| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up)            |
-| Prompts blocked     | 0                                                                                      |
-| Last prompt         | `[IV.18.6.1]` — Stays module v1 (mock provider + cache) — POST /stays/search           |
-| Last commit date    | 2026-04-21                                                                             |
-| Phase               | Phase 1 — Cache-pattern reused on new module; 33 suites, 223 tests pass against Docker |
+| Counter             | Value                                                                           |
+| ------------------- | ------------------------------------------------------------------------------- |
+| Prompts completed   | 65 (64 full + 1 foundation-only; Trip × Stays fold-in just shipped)             |
+| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up)     |
+| Prompts blocked     | 0                                                                               |
+| Last prompt         | `[IV.18.6.2]` — Trip × Stays fold-in: GET /trips/:id/stays                      |
+| Last commit date    | 2026-04-21                                                                      |
+| Phase               | Phase 1 — Second cross-module fold-in; 34 suites, 229 tests pass against Docker |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.6.2] — Trip × Stays fold-in: GET /trips/:id/stays
+
+**Date:** 2026-04-21 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.4 + 3.2 (cross-context)
+
+**What was done**
+
+Second cross-module fold-in (Trip × Weather being the first) — same pattern, different payload. Surface returns stay listings near the trip's center for the trip's date range.
+
+- **`GetTripStaysUseCase`** in Trip's application layer:
+  - Owner-gated via `TripRepository.findByIdForUser` — missing/wrong-owner collapse to 404 `TRIP_NOT_FOUND`.
+  - **Requires the trip to have both `startsOn` and `endsOn` set** — stay availability is intrinsically date-scoped; a search without dates is meaningless. Missing → 422 `TRIP_DATES_REQUIRED`. Clients PATCH the trip with dates first (existing route).
+  - Reads `trip.center` via `GeoQueries.findTripCenter` (PostGIS seam, CLAUDE rule 11).
+  - **Clamps `radiusKm` to 50km** before calling into stays — Trip's own domain allows radius up to 500km, but `SearchStaysUseCase` enforces 50km. Without the clamp a long-range trip would always 422. With it the stay search degrades gracefully.
+  - Delegates to `StaysModule`'s `SearchStaysUseCase` (not the raw `STAY_PROVIDER`) — consistent with Trip × Weather, so caching and any future stays-side additions propagate automatically.
+  - Optional `guests` command parameter; use-case passes it through if present.
+
+- **Cross-module DI wiring:**
+  - `StaysModule` now exports `SearchStaysUseCase` alongside `STAY_PROVIDER`.
+  - `TripModule` imports `StaysModule` (one-way; Stays still doesn't know Trip exists).
+
+- **HTTP:** `GET /api/v1/trips/:id/stays` with optional `?guests=N` query (clamped to `[1, 20]` at the controller). Returns `{ stays: StayListing[] }`.
+
+- **6 integration tests** (`apps/api/test/trip-stays.e2e-spec.ts`) with `MockStayProvider` overridden by a recording stub:
+  1. Happy path: trip with both dates → provider receives exactly `trip.center` lat/lng + `YYYY-MM-DD` checkIn/checkOut + `guests: 1` default.
+  2. `?guests=3` → provider sees `guests: 3`.
+  3. Trip with `radiusKm: 300` → provider sees `radiusKm: 50` (clamp).
+  4. Trip missing dates → 422 `TRIP_DATES_REQUIRED`, provider never invoked.
+  5. Non-owner → 404 `TRIP_NOT_FOUND`, provider never invoked.
+  6. Unauthenticated → 401 `UNAUTHENTICATED`, provider never invoked.
+
+**Files created** (2) — `modules/trip/application/get-trip-stays.use-case.ts`, `test/trip-stays.e2e-spec.ts`.
+**Files edited** (3) — `modules/stays/stays.module.ts` (+SearchStaysUseCase export), `modules/trip/trip.module.ts` (+StaysModule import + UC), `modules/trip/interface/trip.controller.ts` (+GET /:id/stays route + imports).
+
+**Dependencies** — none new.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Trip-stays suite 6/6 pass against Docker + Redis.
+- ✅ **Full real-DB suite: 34 suites, 229 tests pass against live Docker.** (+1 suite, +6 tests vs `[IV.18.6.1]`.)
+
+**Acceptance criteria**
+
+- ✅ Authenticated trip owner gets stay listings scoped to their trip's center + dates.
+- ✅ Dateless trip forces the date-set flow first (422, not silent bad search).
+- ✅ Non-owner response indistinguishable from missing trip.
+- ✅ Trip's own 500km radius doesn't break stays' 50km domain invariant.
+- ✅ Pattern consistent with Trip × Weather — both fold-ins re-use the other module's use-case, not its port.
+
+**Notes**
+
+- **Why 422 `TRIP_DATES_REQUIRED` instead of defaulting to "today + 7 days" (as Trip × Weather does for missing dates).** Weather is genuinely useful with or without trip-specific dates — "what's the weather like there?" is an honest question. Stay search without dates is undefined — availability depends on dates, and returning "today + 7" would mislead users into thinking they've searched for their actual trip dates. Better to force the explicit decision.
+- **Why clamp trip.radiusKm at the use-case level, not return an error for > 50km.** The trip's own radius is meaningful for itinerary generation + share view, where "how far will I roam" is a valid 500km question. For stay search specifically, anything beyond ~50km is a separate trip's worth of lodging, not hotels-near-your-destination. Clamping gives the expected answer for the expected query.
+- **Why `?guests` as a query param instead of reading from trip.** Trip schema has no `guests` field. Adding one would imply richer semantics (party composition, per-person preferences) that belong in a separate slice. For now, accept it per-request so clients can vary by search without mutating the trip.
+- **Why import `SearchStaysUseCase` not `STAY_PROVIDER` directly.** Caching, validation, guest clamping all live in the use-case. Calling the port directly would either duplicate that logic (bad) or skip it (worse). Use-case-as-composition-primitive is the same decision Trip × Weather made — now it's a pattern.
 
 ---
 
