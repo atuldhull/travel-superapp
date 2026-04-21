@@ -14,12 +14,14 @@
  */
 import { Module } from '@nestjs/common';
 import { PlacesModule } from '../places/places.module';
+import { WeatherModule } from '../weather/weather.module';
 import { CreateTripDraftUseCase } from './application/create-trip-draft.use-case';
 import { CreateTripShareUseCase } from './application/create-trip-share.use-case';
 import { ListTripSharesUseCase } from './application/list-trip-shares.use-case';
 import { DeleteTripUseCase } from './application/delete-trip.use-case';
 import { GenerateItineraryStubUseCase } from './application/generate-itinerary-stub.use-case';
 import { GetTripUseCase } from './application/get-trip.use-case';
+import { GetTripWeatherUseCase } from './application/get-trip-weather.use-case';
 import { ListItineraryUseCase } from './application/list-itinerary.use-case';
 import { ListTripsUseCase } from './application/list-trips.use-case';
 import { ITINERARY_REPOSITORY } from './application/ports/itinerary.repository';
@@ -36,11 +38,11 @@ import { TripController } from './interface/trip.controller';
 
 @Module({
   // Import PlacesModule so GenerateItineraryStubUseCase can inject
-  // the PLACE_REPOSITORY port (Places exports it). Keeps the
-  // cross-module dependency explicit + traceable. Trip depends on
-  // Places, not the other way around — Places has no knowledge of
-  // trips.
-  imports: [PlacesModule],
+  // the PLACE_REPOSITORY port (Places exports it). Import
+  // WeatherModule so GetTripWeatherUseCase can inject the shared
+  // GetForecastUseCase for trip-scoped weather queries. Both are
+  // one-way deps — neither Places nor Weather knows about Trip.
+  imports: [PlacesModule, WeatherModule],
   controllers: [TripController],
   providers: [
     { provide: TRIP_REPOSITORY, useClass: PrismaTripRepository },
@@ -58,6 +60,7 @@ import { TripController } from './interface/trip.controller';
     ResolveTripShareUseCase,
     RevokeTripShareUseCase,
     ListTripSharesUseCase,
+    GetTripWeatherUseCase,
   ],
   exports: [TRIP_REPOSITORY, ITINERARY_REPOSITORY, TRIP_SHARE_REPOSITORY],
 })
