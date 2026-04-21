@@ -18,7 +18,8 @@
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
-    "db:validate": "prisma validate"
+    "db:validate": "prisma validate",
+    "admin:promote": "tsx scripts/promote-admin.ts"
   },
   "dependencies": {
     "@app/auth": "workspace:*",
