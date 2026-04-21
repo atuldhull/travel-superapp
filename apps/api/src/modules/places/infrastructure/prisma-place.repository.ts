@@ -52,6 +52,16 @@ export class PrismaPlaceRepository implements PlaceRepository {
     });
     return row !== null;
   }
+
+  async deleteById(id: string): Promise<boolean> {
+    // `deleteMany` instead of `delete` — `delete` implicitly does
+    // a `findUniqueOrThrow` first, and Prisma's generated types
+    // may refuse to read the `coordinates` column (Unsupported).
+    // `deleteMany` is a straight DELETE … WHERE id = $1 with no
+    // up-front read, so the PostGIS column never enters the picture.
+    const result = await this.prisma.place.deleteMany({ where: { id } });
+    return result.count === 1;
+  }
 }
 
 function toDomain(row: PrismaPlace): Place {
