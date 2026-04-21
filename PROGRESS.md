@@ -10,18 +10,76 @@
 
 ## Summary
 
-| Counter             | Value                                                                             |
-| ------------------- | --------------------------------------------------------------------------------- |
-| Prompts completed   | 53 (52 full + 1 foundation-only; notifications module just shipped)               |
-| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up)       |
-| Prompts blocked     | 0                                                                                 |
-| Last prompt         | `[IV.18.2.8]` — Notifications module: in-monolith subscribers for 2 domain events |
-| Last commit date    | 2026-04-21                                                                        |
-| Phase               | Phase 1 — pub/sub loop live end-to-end; 23 suites, 147 tests pass against Docker  |
+| Counter             | Value                                                                       |
+| ------------------- | --------------------------------------------------------------------------- |
+| Prompts completed   | 54 (53 full + 1 foundation-only; Places module first slice just shipped)    |
+| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up) |
+| Prompts blocked     | 0                                                                           |
+| Last prompt         | `[IV.18.2.9]` — Places module: POST /places/search over PostGIS, 50km cap   |
+| Last commit date    | 2026-04-21                                                                  |
+| Phase               | Phase 1 — 3 feature modules live; 24 suites, 154 tests pass against Docker  |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.2.9] — Places module first slice: `POST /places/search` over PostGIS with 50km cap
+
+**Date:** 2026-04-21 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.3, 11.2
+
+**What was done**
+
+Third feature module on top of the Phase-0 foundation. Unlocks the Trip module's fuller value — today a Trip has a radius but no places inside it; the Places module makes the search surface the Trip module will consume when `ItineraryItem` wiring lands.
+
+- **Clean-hex layout** `apps/api/src/modules/places/`:
+  - **`domain/place.entity.ts`** — plain-data `Place` + `PlaceWithDistance` (Place + `distanceMeters`). Mirrors what Prisma reads (PostGIS `coordinates` column is `Unsupported` so Prisma omits it).
+  - **`application/ports/place.repository.ts`** — `PlaceRepository` with `findWithinRadius` (returns `PlaceWithDistance[]`, ordered ascending by distance) + `insert` (admin-only seed path — no HTTP route exercises it yet).
+  - **`infrastructure/prisma-place.repository.ts`** — delegates straight to the existing `GeoQueries.findPlacesWithinRadius` + `insertPlace` (CLAUDE rule 11 — PostGIS column stays in raw SQL only).
+  - **`application/search-places.use-case.ts`** — enforces `radiusKm ∈ (0, 50]`. Tighter than Trip's 500km cap because search returns EVERY match; cost grows with radius². `limit` clamped to [1, 100], default 20. Uses existing `InvalidRadiusError` + `ValidationError` for consistent error codes.
+  - **`interface/dto/places.dto.ts`** — Zod `SearchPlacesBodySchema` with `center: {lat, lng}`, `radiusKm`, optional `category` + `limit`.
+  - **`interface/places.controller.ts`** — `POST /api/v1/places/search`. Arg-scoped `@Body(new ZodValidationPipe(...))` per the `[IV.18.2.5.fix]` lesson (body-only validation, no param collision). No `@Public()` — search requires auth so the rate limiter has a user-key + we can attribute usage.
+  - **`places.module.ts`** — standard DI wiring; `GeoQueries` comes in from the global `DbModule`.
+
+- **`AppModule` imports `PlacesModule`**.
+
+- **`apps/api/test/places.e2e-spec.ts`** — 7 integration tests:
+  1. No bearer → 401 `UNAUTHENTICATED`.
+  2. 5 km search around Victoria returns Hyde Park + Trafalgar (2 km + 1.7 km), excludes Windsor (~35 km); distance-ascending order verified.
+  3. `category: 'park'` narrows to 1 result.
+  4. Radius 51 km → 422 `INVALID_RADIUS`.
+  5. Radius 0 → 422 (either `VALIDATION_FAILED` or `INVALID_RADIUS`).
+  6. Remote point with no seeded data → 200 + `places: []` (not 404).
+  7. `limit: 2` clamps a 4-row seed set.
+
+- Tests use the existing `GeoQueries.insertPlace` to seed rows with a unique `SOURCE_PREFIX`, then filter results to their own prefix before asserting counts (same pattern the `geo-queries` suite uses — avoids cross-suite collision).
+
+**Files created** (6) — `apps/api/src/modules/places/{domain/place.entity.ts, application/ports/place.repository.ts, application/search-places.use-case.ts, infrastructure/prisma-place.repository.ts, interface/dto/places.dto.ts, interface/places.controller.ts, places.module.ts}` + `apps/api/test/places.e2e-spec.ts`.
+**Files edited** (1) — `apps/api/src/app.module.ts` (+`PlacesModule`).
+**Dependencies** — none new. Leans entirely on the already-tested `GeoQueries` layer.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Places suite 7/7 pass.
+- ✅ **Full real-DB suite: 24 suites, 154 tests pass against live Docker** (Postgres + Redis + Meili + Jaeger + Minio).
+
+**Acceptance criteria**
+
+- ✅ Within-radius query returns distance-ordered results.
+- ✅ Radius cap enforced via `InvalidRadiusError` (422).
+- ✅ Category filter works.
+- ✅ Auth required.
+- ✅ Empty result is 200 + empty array (no false 404).
+- ✅ Limit clamping.
+
+**Notes**
+
+- **Why a 50km search cap, not 500km like Trip.** Search returns every match — radius² cost growth matters. 50km is generous for a day-trip search + matches the Playbook's Phase-1 `discoverRadiusKm` range. Trip's 500km cap is a different invariant (how far the user's radius-of-planning extends), not a query cost limit.
+- **Why no `Place.SearchPerformed` event.** Considered, punted. Analytics subscriber doesn't exist yet; emitting events nobody consumes is noise. When an analytics subscriber (PostHog / Segment) lands, we'll revisit.
+- **Why auth on search, not public.** Places data is shared, so there's no IDOR concern. BUT: the rate limiter keys on user+IP, and an authenticated user gets a bigger bucket (via the `auth` throttler). Unauthenticated search + cheap PostGIS on an exposed cluster = easy DDoS vector. Keeping auth on is cheap + defensive.
+- **Why `insert` exists on the port but no HTTP route.** Seed scripts + integration tests call `geo.insertPlace` directly today; a `POST /admin/places` endpoint will land with the Admin module + RolesGuard 'admin' flow. Port surface is already right — adapter just wires through to `GeoQueries`.
 
 ---
 
