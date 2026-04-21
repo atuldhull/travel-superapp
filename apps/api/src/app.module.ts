@@ -22,6 +22,7 @@ import { RateLimitGuard } from './common/rate-limit/rate-limit.guard';
 import { RateLimitModule } from './common/rate-limit/rate-limit.module';
 import { HealthModule } from './health/health.module';
 import { IdentityModule } from './modules/identity/identity.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { TripModule } from './modules/trip/trip.module';
 
 /**
@@ -46,6 +47,7 @@ import { TripModule } from './modules/trip/trip.module';
     HealthModule,
     IdentityModule,
     TripModule,
+    NotificationsModule,
   ],
   providers: [
     AppNestLoggerService,
