@@ -10,18 +10,68 @@
 
 ## Summary
 
-| Counter             | Value                                                                                |
-| ------------------- | ------------------------------------------------------------------------------------ |
-| Prompts completed   | 59 (58 full + 1 foundation-only; Trip share revoke + itinerary fold-in just shipped) |
-| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up)          |
-| Prompts blocked     | 0                                                                                    |
-| Last prompt         | `[IV.18.2.14]` — Trip share revoke + itinerary in public resolver                    |
-| Last commit date    | 2026-04-21                                                                           |
-| Phase               | Phase 1 — Trip share feature-complete; 29 suites, 194 tests pass against Docker      |
+| Counter             | Value                                                                                 |
+| ------------------- | ------------------------------------------------------------------------------------- |
+| Prompts completed   | 60 (59 full + 1 foundation-only; owner list-my-shares just shipped)                   |
+| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up)           |
+| Prompts blocked     | 0                                                                                     |
+| Last prompt         | `[IV.18.2.15]` — GET /trips/:id/shares: owner lists every share code they've minted   |
+| Last commit date    | 2026-04-21                                                                            |
+| Phase               | Phase 1 — Trip share owner surface complete; 29 suites, 198 tests pass against Docker |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.2.15] — GET /trips/:id/shares: owner lists every share they've minted
+
+**Date:** 2026-04-21 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.12 (Social & Groups)
+
+**What was done**
+
+Closes the last owner-facing gap in the share feature. Before this slice an owner who minted several codes had no way to list them — they could revoke only codes they'd remembered from the `POST /:id/share` response. Now `GET /api/v1/trips/:id/shares` returns every share (active AND revoked) the caller has minted for the given trip, newest first.
+
+- **`TripShareRepository.listByTripForOwner(tripId, ownerId): Promise<TripShare[]>`** — new port method. Prisma adapter uses `findMany({ where: { tripId, ownerId }, orderBy: { createdAt: 'desc' } })`. Adapter is the minimal WHERE — the use-case is the owner gate.
+
+- **`ListTripSharesUseCase`** — gates via `TripRepository.findByIdForUser(tripId, ownerId)` first. A miss (missing trip OR wrong owner) throws 404 `TRIP_NOT_FOUND`, matching the existence-probe defence on every other Trip endpoint. Without the gate, a non-owner calling this path could probe existence by observing `[]` vs `404`.
+
+- **`GET /api/v1/trips/:id/shares` route** — auth via global `JwtAuthGuard` + `@CurrentUser()`. Returns `{ shares: [{ id, shareCode, publicRead, expiresAt, createdAt }] }`. Deliberately exposes `publicRead` so the UI can render "Active" vs "Revoked" badges; doesn't expose `ownerId` (always the caller), `tripId` (always the path param).
+
+- **`TripShareOwnerDto`** — separate interface from `TripShareDto` (the POST response) because this surface explicitly exposes the `publicRead` boolean, which the mint response omits (it's always `true` on creation).
+
+- **4 new integration tests** added to `apps/api/test/trip-share.e2e-spec.ts` (suite 12 → 16 tests):
+  1. Owner lists 2 shares (1 revoked, 1 active) → 200 + newest-first ordering + `publicRead` state visible.
+  2. Non-owner list → 404 `TRIP_NOT_FOUND` (IDOR + enumeration leak defence).
+  3. Unauthenticated list → 401 `UNAUTHENTICATED`.
+  4. Trip with no shares → 200 `{ shares: [] }`.
+
+**Files created** (1) — `trip/application/list-trip-shares.use-case.ts`.
+**Files edited** (5) — `trip/application/ports/trip-share.repository.ts` (+listByTripForOwner), `trip/infrastructure/prisma-trip-share.repository.ts` (impl), `trip/interface/trip.controller.ts` (+GET /:id/shares + TripShareOwnerDto), `trip/trip.module.ts` (+ListTripSharesUseCase), `test/trip-share.e2e-spec.ts` (+4 tests).
+
+**Dependencies** — none new.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Trip-share suite 16/16 pass against Docker (+4 vs previous).
+- ✅ **Full real-DB suite: 29 suites, 198 tests pass against live Docker.** (Same suite count, +4 tests vs `[IV.18.2.14]`.)
+
+**Acceptance criteria**
+
+- ✅ Owner sees every active + revoked share they've minted for one trip.
+- ✅ Newest first ordering — matches the natural rendering order on a UI panel.
+- ✅ `publicRead` state surfaces so clients can distinguish active vs revoked rows.
+- ✅ Non-owner response indistinguishable from missing trip (404 `TRIP_NOT_FOUND`).
+- ✅ Empty trips return 200 with `shares: []`, not 404.
+
+**Notes**
+
+- **Why include revoked shares in the response, not filter them out.** An owner who revoked by mistake wants to see that a code is dead in the audit trail. Filtering would mean the UI would need a separate "show revoked" toggle (extra state + extra round trip). The `publicRead: false` flag is right there — let the client decide.
+- **Why not paginate.** TripShare rows per trip are bounded by the owner's own mint volume (a reasonable user mints 1–5; an abusive one is rate-limited by the global throttler). Offset/limit would be ceremony; real pagination lands if + when one trip starts growing hundreds of shares.
+- **Why a separate DTO (`TripShareOwnerDto`) vs reusing `TripShareDto`.** The POST response omits `publicRead` (always `true` on creation); the list response needs it. Two types make both contracts explicit — reusing one would either litter the POST response with an always-true boolean or require a `Partial<>` / `Omit<>` dance that obscures what each endpoint actually returns.
+- **Why the owner gate uses `findByIdForUser` instead of the adapter's ownerId filter alone.** Two benefits: (1) the error code is `TRIP_NOT_FOUND`, consistent with GET /trips/:id — clients have one "this trip isn't yours" code to handle; (2) if the trip exists but has no shares, a bare adapter WHERE would still return `[]` — no way to tell "you're not the owner" from "you haven't minted any". The gate makes the error story unambiguous.
 
 ---
 
