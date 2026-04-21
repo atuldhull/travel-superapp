@@ -37,6 +37,7 @@ import { ListTripSharesUseCase } from '../application/list-trip-shares.use-case'
 import { RevokeTripShareUseCase } from '../application/revoke-trip-share.use-case';
 import { DeleteTripUseCase } from '../application/delete-trip.use-case';
 import { GetTripEateriesUseCase } from '../application/get-trip-eateries.use-case';
+import { GetTripOverviewUseCase, type Section } from '../application/get-trip-overview.use-case';
 import { GetTripStaysUseCase } from '../application/get-trip-stays.use-case';
 import { GetTripWeatherUseCase } from '../application/get-trip-weather.use-case';
 import type { EateryListing } from '../../food/domain/eatery-listing.entity';
@@ -108,6 +109,7 @@ export class TripController {
     private readonly getTripWeather: GetTripWeatherUseCase,
     private readonly getTripStays: GetTripStaysUseCase,
     private readonly getTripEateries: GetTripEateriesUseCase,
+    private readonly getTripOverview: GetTripOverviewUseCase,
   ) {}
 
   @Post()
@@ -263,6 +265,32 @@ export class TripController {
       expiresAt: expiresAt ? expiresAt.toISOString() : null,
       createdAt: trip.createdAt.toISOString(),
       days: days.map(toDayDto),
+    };
+  }
+
+  /**
+   * Bundled dashboard: trip metadata + itinerary + weather + stays
+   * + eateries in one response. Each non-trip section is a
+   * discriminated `{ ok: true, data } | { ok: false, code }` so a
+   * sub-fetch failure (dead provider, dateless trip for stays, etc.)
+   * degrades that one widget instead of 500-ing the whole screen.
+   *
+   * Owner gate runs once at the top; provider sub-calls never run
+   * for non-owners / missing trips.
+   */
+  @Get(':id/overview')
+  @HttpCode(HttpStatus.OK)
+  async overview(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ): Promise<TripOverviewDto> {
+    const ov = await this.getTripOverview.execute(id, user.sub);
+    return {
+      trip: toDto(ov.trip),
+      itinerary: mapSection(ov.itinerary, (days) => ({ days: days.map(toDayDto) })),
+      weather: mapSection(ov.weather, (f) => ({ forecast: f })),
+      stays: mapSection(ov.stays, (list) => ({ list })),
+      eateries: mapSection(ov.eateries, (list) => ({ list })),
     };
   }
 
@@ -446,6 +474,22 @@ interface SharedTripDto {
   readonly expiresAt: string | null;
   readonly createdAt: string;
   readonly days: readonly ItineraryDayDto[];
+}
+
+type SectionDto<T> =
+  | { readonly ok: true; readonly data: T }
+  | { readonly ok: false; readonly code: string };
+
+interface TripOverviewDto {
+  readonly trip: TripDto;
+  readonly itinerary: SectionDto<{ readonly days: readonly ItineraryDayDto[] }>;
+  readonly weather: SectionDto<{ readonly forecast: WeatherForecast }>;
+  readonly stays: SectionDto<{ readonly list: readonly StayListing[] }>;
+  readonly eateries: SectionDto<{ readonly list: readonly EateryListing[] }>;
+}
+
+function mapSection<T, U>(s: Section<T>, f: (t: T) => U): SectionDto<U> {
+  return s.ok ? { ok: true, data: f(s.data) } : { ok: false, code: s.code };
 }
 
 function toDayDto(d: ItineraryDay): ItineraryDayDto {
