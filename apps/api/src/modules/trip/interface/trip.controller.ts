@@ -30,8 +30,11 @@ import { NotFoundError } from '@app/errors';
 import { type AuthenticatedUser, CurrentUser } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { CreateTripDraftUseCase } from '../application/create-trip-draft.use-case';
+import { GenerateItineraryStubUseCase } from '../application/generate-itinerary-stub.use-case';
 import { GetTripUseCase } from '../application/get-trip.use-case';
+import { ListItineraryUseCase } from '../application/list-itinerary.use-case';
 import { ListTripsUseCase } from '../application/list-trips.use-case';
+import type { ItineraryDay } from '../domain/itinerary.entity';
 import type { Trip } from '../domain/trip.entity';
 import { CreateTripBodySchema, type CreateTripBody } from './dto/trip.dto';
 
@@ -69,6 +72,8 @@ export class TripController {
     private readonly createDraft: CreateTripDraftUseCase,
     private readonly listTrips: ListTripsUseCase,
     private readonly getTrip: GetTripUseCase,
+    private readonly generateItinerary: GenerateItineraryStubUseCase,
+    private readonly listItinerary: ListItineraryUseCase,
   ) {}
 
   @Post()
@@ -109,4 +114,48 @@ export class TripController {
     }
     return toDto(trip);
   }
+
+  /**
+   * Generate (or re-generate) the itinerary skeleton for the trip.
+   * Today this is a deterministic day-per-date stub; the AI-backed
+   * version lands when the ai-service is real. Returns the fresh
+   * list of days — empty `items`, non-null `summary`.
+   */
+  @Post(':id/itinerary')
+  @HttpCode(HttpStatus.OK)
+  async buildItinerary(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ): Promise<{ days: ItineraryDayDto[] }> {
+    const { days } = await this.generateItinerary.execute({ tripId: id, userId: user.sub });
+    return { days: days.map(toDayDto) };
+  }
+
+  @Get(':id/itinerary')
+  @HttpCode(HttpStatus.OK)
+  async getItinerary(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ): Promise<{ days: ItineraryDayDto[] }> {
+    const days = await this.listItinerary.execute(id, user.sub);
+    return { days: days.map(toDayDto) };
+  }
+}
+
+interface ItineraryDayDto {
+  readonly id: string;
+  readonly tripId: string;
+  readonly dayIndex: number;
+  readonly date: string;
+  readonly summary: string | null;
+}
+
+function toDayDto(d: ItineraryDay): ItineraryDayDto {
+  return {
+    id: d.id,
+    tripId: d.tripId,
+    dayIndex: d.dayIndex,
+    date: d.date.toISOString(),
+    summary: d.summary,
+  };
 }
