@@ -10,18 +10,73 @@
 
 ## Summary
 
-| Counter             | Value                                                                         |
-| ------------------- | ----------------------------------------------------------------------------- |
-| Prompts completed   | 56 (55 full + 1 foundation-only; PATCH day items just shipped)                |
-| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up)   |
-| Prompts blocked     | 0                                                                             |
-| Last prompt         | `[IV.18.3.1]` — Admin module + POST/DELETE /admin/places (class-level @Roles) |
-| Last commit date    | 2026-04-21                                                                    |
-| Phase               | Phase 1 — Admin seed surface online; 27 suites, 175 tests pass against Docker |
+| Counter             | Value                                                                           |
+| ------------------- | ------------------------------------------------------------------------------- |
+| Prompts completed   | 57 (56 full + 1 foundation-only; admin bootstrap loop just closed)              |
+| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up)     |
+| Prompts blocked     | 0                                                                               |
+| Last prompt         | `[IV.18.3.2]` — admin-promote CLI (bootstraps the first admin without SQL)      |
+| Last commit date    | 2026-04-21                                                                      |
+| Phase               | Phase 1 — Admin bootstrap loop closed; 28 suites, 182 tests pass against Docker |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.3.2] — admin-promote CLI: bootstrap the first admin without direct SQL
+
+**Date:** 2026-04-21 · **Status:** DONE · **Kind:** Build · **Playbook §** 17 (Admin)
+
+**What was done**
+
+Closes the bootstrap loop opened by `[IV.18.3.1]`: the HTTP admin surface exists, but nobody can call it until at least one user has `role = 'admin'`. Before this slice, tests flipped the column directly with `prisma.user.update` — production can't.
+
+- **`apps/api/scripts/promote-admin.ts`** — standalone tsx CLI. No Nest bootstrap; the script talks to Prisma directly (`new PrismaClient()`) and reuses the shared `hashEmail` helper so the equality hash over pepper+email matches the row the API wrote at registration.
+  - **Core exported as `promoteUserToAdmin(prisma, rawEmail)`** — idempotent, returns a discriminated union (`PROMOTED | ALREADY_ADMIN | USER_NOT_FOUND`). No DB write when already admin (so `updatedAt` doesn't churn on a re-run).
+  - **CLI wrapper `runCli(argv, deps?)`** — parses positional email arg, maps result to exit code (0 on PROMOTED/ALREADY_ADMIN, 1 on USER_NOT_FOUND/USAGE_ERROR). Accepts an optional `prisma` override so the integration test can share the test's existing `PrismaService` — no subprocess spawn needed.
+  - **Thin `main()` guard (`require.main === module`)** — prevents the CLI from auto-running when jest imports the module.
+  - **JSON-line stdout** — operators / CI can pipe into `jq`. Unhandled errors go to stderr with `kind: 'UNHANDLED_ERROR'` so success/failure is unambiguous at the shell level.
+
+- **`apps/api/package.json`**: added `"admin:promote": "tsx scripts/promote-admin.ts"` script. Callers: `pnpm --filter=api admin:promote <email>`.
+
+- **`apps/api/tsconfig.json`**: added `scripts/**/*` to `include` so typecheck covers the CLI. `tsconfig.build.json` already scopes its own include to `src/**/*`, so scripts don't leak into `dist/`.
+
+- **7 integration tests** (`apps/api/test/promote-admin.e2e-spec.ts`):
+  1. `promoteUserToAdmin` flips `role: user → admin` and writes the row.
+  2. Second call on an already-admin user → `ALREADY_ADMIN`, `updatedAt` unchanged.
+  3. Unknown email → `USER_NOT_FOUND` (exit 1).
+  4. `runCli` happy path → exit 0 + `PROMOTED` + DB reflects it.
+  5. `runCli` unknown email → exit 1 + `USER_NOT_FOUND`.
+  6. `runCli` zero args → exit 1 + `USAGE_ERROR`.
+  7. `runCli` malformed email → exit 1 + `USAGE_ERROR`.
+
+**Files created** (2) — `apps/api/scripts/promote-admin.ts`, `apps/api/test/promote-admin.e2e-spec.ts`.
+**Files edited** (2) — `apps/api/package.json` (+admin:promote script), `apps/api/tsconfig.json` (+scripts/\*_/_ in include).
+
+**Dependencies** — none new. `tsx` was already a devDep.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Promote-admin suite 7/7 pass against Docker.
+- ✅ **Full real-DB suite: 28 suites, 182 tests pass against live Docker.** (+1 suite, +7 tests vs `[IV.18.3.1]`.)
+
+**Acceptance criteria**
+
+- ✅ Operator can promote a user to admin without direct SQL: `pnpm --filter=api admin:promote user@example.com`.
+- ✅ Idempotent: re-running is safe and explicitly reports `ALREADY_ADMIN`.
+- ✅ Unknown email is a failure (exit 1), not a silent no-op — prevents operators from thinking a typo-ed address was promoted.
+- ✅ Core logic is a pure function that tests can exercise without spawning a subprocess.
+- ✅ CLI reuses the same `EMAIL_PEPPER`-based `hashEmail` helper as register/login — no duplicate hashing code paths.
+
+**Notes**
+
+- **Why no Nest bootstrap.** `NestFactory.createApplicationContext(AppModule)` would work, but the only two things the script needs are Prisma + `hashEmail`. Both are framework-agnostic. Skipping Nest keeps startup fast (~200ms instead of ~2s) and avoids pulling in the event bus / rate limiter / guard chain the CLI has no use for.
+- **Why `USER_NOT_FOUND` is exit 1, not 0.** A successful no-op (`ALREADY_ADMIN`) is exit 0 because the post-condition holds (user is admin). `USER_NOT_FOUND` means the post-condition isn't met — scripting this into a Makefile / CI step, an operator wants that to fail loudly.
+- **Why no `--demote` / `--role <role>` flag.** Single-purpose scripts are easier to reason about + audit. If we need demotion later, that's a three-line sibling script, not a flag on this one. Keeps the blast radius of a typo minimal.
+- **Why store `EMAIL_PEPPER` requirement in the script's JSDoc.** Running the CLI without the pepper throws a clear error from `getPepper()` at hash time. Leading with the requirement in the docblock saves operators a round of confusion if they try to run it via plain `tsx` without Doppler / `.env` loaded.
 
 ---
 
