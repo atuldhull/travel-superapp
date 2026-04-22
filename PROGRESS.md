@@ -10,18 +10,101 @@
 
 ## Summary
 
-| Counter             | Value                                                                       |
-| ------------------- | --------------------------------------------------------------------------- |
-| Prompts completed   | 73 (72 full + 1 foundation-only; events added to overview dashboard)        |
-| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up) |
-| Prompts blocked     | 0                                                                           |
-| Last prompt         | `[IV.18.7.5]` — Trip overview +events section (5 sections total)            |
-| Last commit date    | 2026-04-22                                                                  |
-| Phase               | Phase 1 — Dashboard now bundles 5 sections; 40 suites, 269 tests pass       |
+| Counter             | Value                                                                        |
+| ------------------- | ---------------------------------------------------------------------------- |
+| Prompts completed   | 74 (73 full + 1 foundation-only; OAuth sign-in just shipped)                 |
+| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5+6 shipped; JWKS rotation still follow-up)  |
+| Prompts blocked     | 0                                                                            |
+| Last prompt         | `[III.13.2.6]` — OAuth sign-in: POST /auth/oauth/:provider (Google + Mock)   |
+| Last commit date    | 2026-04-22                                                                   |
+| Phase               | Phase 1 — Identity almost complete; 41 suites, 276 tests pass against Docker |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [III.13.2.6] — OAuth sign-in: POST /auth/oauth/:provider (Google + Mock adapters)
+
+**Date:** 2026-04-22 · **Status:** DONE · **Kind:** Build · **Playbook §** 13 (Identity, part 6)
+
+**What was done**
+
+Closes the oldest open gap in Identity — parts 1–5 (password + MFA + backup codes + sessions + account lockout) shipped weeks ago, but "Sign in with Google/Apple" has been a TODO. This slice ships the full pattern: port, two real-ish adapters, use-case with three-stage user resolution, HTTP surface, migration. Apple is a follow-up (its quirks — aud bundle-ids, required-claim list, first-sign-in name — deserve their own slice).
+
+- **New Prisma model `UserOAuthIdentity`** (schema append-only per CLAUDE rule 8):
+  - Columns: `id`, `userId`, `provider`, `providerUserId`, `providerEmail?`, `linkedAt`.
+  - Uniqueness on `(provider, providerUserId)` — Google's `sub` + our provider name is the stable link.
+  - `onDelete: Cascade` from `User` — soft-deleting a user drops the links.
+  - Migration `20260422000000_oauth_identity`: applied via `docker exec psql` because the DB wasn't tracked by `_prisma_migrations` (prior schema was `db push`'d). The SQL was generated via `prisma migrate diff` (subset — Prisma's diff wanted to drop PostGIS GiST indexes it can't express in the schema, which we ignored).
+  - `CreateUserInput.passwordHash` widened from `string` to `string | null` (schema already allowed nullable passwords; the port had been narrower).
+
+- **Port `OAuthProvider`**:
+  - Single method `verifyIdToken(idToken): Promise<OAuthProfile>`.
+  - `OAuthProfile = { provider, providerUserId, email, displayName }`.
+  - `OAuthProviderRegistry` DI token — a `get(name)` map so the use-case can route by provider name.
+
+- **Port `UserOAuthIdentityRepository`**:
+  - `findByProviderUser(provider, providerUserId) → UserOAuthIdentity | null`.
+  - `link({ userId, provider, providerUserId, providerEmail })`.
+
+- **Adapters**:
+  - `GoogleOAuthProvider` — real verification using `jose`'s `createRemoteJWKSet` (fetches Google's certs at `googleapis.com/oauth2/v3/certs`, cached). Checks signature + issuer (`accounts.google.com` either form) + audience (`GOOGLE_CLIENT_ID`) + `email_verified === true`. Throws `UnauthorizedError(..., 'OAUTH_INVALID_TOKEN')` or `'OAUTH_EMAIL_UNVERIFIED'`.
+  - `MockOAuthProvider` — accepts a JSON-encoded profile as the "id token." For dev + tests only; registered outside `NODE_ENV=production`.
+  - `PrismaUserOAuthIdentityRepository` — direct Prisma delegate calls.
+
+- **Use-case `SignInWithOAuthUseCase`** — three-stage resolution:
+  1. **Existing link**: `findByProviderUser` hits → issue session for that user. Most common.
+  2. **Email match, no link**: unlinked `(provider, providerUserId)` but email matches an existing password user → auto-link + issue session. Safe because the provider already verified the email.
+  3. **New user**: create password-less User + link + issue. Display name from provider or email local-part.
+  - Result includes `createdUser` / `linkedExisting` booleans so the UI can distinguish the three paths.
+
+- **Provider registry (module factory)**: built at module init from env. `mock` only in non-prod (NODE_ENV gate). `google` only when `GOOGLE_CLIENT_ID` is set (constructor asserts; the registry swallows the "not configured" case by simply not registering the adapter). Tests don't need to override — the `mock` entry is live in test env.
+
+- **HTTP**: `POST /api/v1/auth/oauth/:provider` → `{ userId, accessToken, expiresAt }` + sets `refresh_token` cookie. Same shape as register + login for client unification. `@Public()` (no existing session required). Reads device context (IP hash, UA, fingerprint) and issues a normal session via `IssueSessionUseCase` — sessions from OAuth are indistinguishable downstream from password sessions.
+
+- **Dependency added**: `jose@^5.9.6` to `apps/api/package.json` (already transitively via `@app/auth`, but an explicit dep makes the Google adapter's imports visible).
+
+- **7 integration tests** (`apps/api/test/oauth.e2e-spec.ts`) — all drive the real `MockOAuthProvider` (no Nest-level override needed since it's already wired):
+  1. Unknown provider → 401 `OAUTH_PROVIDER_UNKNOWN`.
+  2. First sign-in creates a password-less user + link row; returns access token + cookie.
+  3. Repeat sign-in with same `(provider, providerUserId)` → same userId; only one link row.
+  4. Pre-existing password user with the same email → auto-linked; same userId across the two flows.
+  5. Malformed JSON id token → 401 `OAUTH_INVALID_TOKEN`.
+  6. `emailVerified: false` → 401 `OAUTH_EMAIL_UNVERIFIED`.
+  7. Missing body → 422 `VALIDATION_FAILED`.
+
+**Files created** (6) — `apps/api/prisma/migrations/20260422000000_oauth_identity/migration.sql`, `modules/identity/application/ports/oauth-provider.ts`, `modules/identity/application/ports/user-oauth-identity.repository.ts`, `modules/identity/application/sign-in-with-oauth.use-case.ts`, `modules/identity/infrastructure/mock-oauth-provider.ts`, `modules/identity/infrastructure/google-oauth-provider.ts`, `modules/identity/infrastructure/prisma-user-oauth-identity.repository.ts`, `test/oauth.e2e-spec.ts`.
+**Files edited** (5) — `prisma/schema.prisma` (+UserOAuthIdentity model + User.oauthIdentities back-relation), `apps/api/package.json` (+jose), `modules/identity/application/ports/user.repository.ts` (passwordHash → string | null), `modules/identity/identity.module.ts` (wiring + factory-provider for registry), `modules/identity/interface/auth.controller.ts` (+POST /oauth/:provider + inject), `modules/identity/interface/dto/auth.dto.ts` (+OAuthSignInBodySchema).
+
+**Dependencies** — `jose@^5.9.6` (direct).
+
+**Verification**
+
+- ✅ Migration applied; `_prisma_migrations` table absent → migration applied directly via psql. Prisma client regenerated (needed a DLL unlock on Windows + OneDrive per known gotcha).
+- ✅ `tsc --noEmit` green.
+- ✅ OAuth suite 7/7 pass against Docker Postgres.
+- ✅ **Full real-DB suite: 41 suites, 276 tests pass.** (+1 suite, +7 tests.)
+
+**Acceptance criteria**
+
+- ✅ Users can sign in with Google (real JWT verification via `jose` + remote JWKS).
+- ✅ `MockOAuthProvider` shipped for dev/test ergonomics; gated out of `NODE_ENV=production`.
+- ✅ First sign-in auto-creates a password-less account.
+- ✅ Password users auto-link on matching verified email — no account fork.
+- ✅ Repeat sign-ins stable by `(provider, providerUserId)` (not email, which can change).
+- ✅ Sessions from OAuth use the same `IssueSessionUseCase` + cookie policy as password flows.
+
+**Notes**
+
+- **Why email-based auto-linking is safe.** The provider has verified the email on its side (adapters enforce `email_verified === true`). An attacker controlling `foo@bar.com`'s Google account legitimately IS the owner. If we're ever uncomfortable with that (e.g., adding TOTP-on-first-link as a belt), it's a use-case change, not a port change.
+- **Why `(provider, providerUserId)` is the link key, not email.** Providers let users change their email. Google's `sub` is permanent. Keying on email would orphan users the first time they update their Google account email.
+- **Why a factory provider for the registry.** Google should only register when `GOOGLE_CLIENT_ID` is set — an unconditional `useClass: GoogleOAuthProvider` would throw at module init on local dev. The factory inspects env at startup and registers conditionally. Also gates `mock` out of production.
+- **Why path-param provider vs separate routes per provider.** Adding a 3rd provider (Apple) is a new adapter + a registry entry, not a new route + controller method. Keeps the HTTP surface from sprawling.
+- **Why the Prisma migration had to be applied via `docker exec psql`.** The DB was originally seeded via `prisma db push` or manual baseline — the `_prisma_migrations` tracking table doesn't exist. `prisma migrate deploy` bails with P3005. Options were: resolve all prior migrations as applied (chatty), or apply only the new SQL directly (done). Either works; direct-apply was fewer steps and the SQL was already generated.
+- **Why no test-level override of the registry.** The mock adapter is a real, shipping adapter (just gated to non-prod). Tests don't need to swap anything — they just build valid JSON-encoded profiles and POST them. Keeps the test close to the real behaviour.
+- **Apple deferred.** Apple's ID token has `aud = <bundle-id>` (not a client-id), required claims are a slightly different subset, and the name is only sent on FIRST sign-in (provider tells you nothing on repeat). Each is a real complication; shipping Google clean first + Apple as its own slice is the right split.
 
 ---
 
