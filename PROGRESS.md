@@ -12,16 +12,72 @@
 
 | Counter             | Value                                                                       |
 | ------------------- | --------------------------------------------------------------------------- |
-| Prompts completed   | 71 (70 full + 1 foundation-only; Events & Culture v1 just shipped)          |
+| Prompts completed   | 72 (71 full + 1 foundation-only; Trip × Events fold-in just shipped)        |
 | Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up) |
 | Prompts blocked     | 0                                                                           |
-| Last prompt         | `[IV.18.9.1]` — Events & Culture v1: POST /events/search (mock + cache)     |
-| Last commit date    | 2026-04-21                                                                  |
-| Phase               | Phase 1 — 5th cache consumer; 39 suites, 263 tests pass against Docker      |
+| Last prompt         | `[IV.18.9.2]` — Trip × Events fold-in: GET /trips/:id/events                |
+| Last commit date    | 2026-04-22                                                                  |
+| Phase               | Phase 1 — 4th Trip × overlay; 40 suites, 269 tests pass against Docker      |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.9.2] — Trip × Events fold-in: GET /trips/:id/events
+
+**Date:** 2026-04-22 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.9 + 3.2 (cross-context)
+
+**What was done**
+
+Fourth cross-module fold-in on Trip (after Weather, Stays, Eateries). Events during the trip's date window, scoped to the trip's center.
+
+- **`GetTripEventsUseCase`** in Trip's application layer:
+  - Owner gate → 404 `TRIP_NOT_FOUND`.
+  - **Requires `trip.startsOn` + `trip.endsOn`** (matches Trip × Stays policy; `TRIP_DATES_REQUIRED` 422). "What's on during my trip" is the canonical question — dateless = meaningless here.
+  - Reads `trip.center` via `GeoQueries`.
+  - Clamps `radiusKm` to 30km (Events' domain cap; Trip's own max is 500km).
+  - **Full-day window bounds**: `from = startsOn.toISOString()` (stored as 00:00 UTC); `to = endsOn + 23:59:59.999 UTC` so an event at 11pm on the last day still matches. Without the offset, `to <= endsOn` would miss end-of-day events.
+  - Delegates to `SearchEventsUseCase`.
+  - Optional `category` pass-through.
+
+- **Cross-module wiring**: `TripModule` imports `EventsModule` (direct import — no alias needed here because Trip doesn't touch the `common/events` domain-event-bus module).
+
+- **HTTP**: `GET /api/v1/trips/:id/events?category=`. Returns `{ events: EventListing[] }`.
+
+- **6 integration tests** (`apps/api/test/trip-events.e2e-spec.ts`) with `MockEventProvider` overridden by a recording stub:
+  1. Happy path → provider sees `trip.center` + full-day window bounds.
+  2. `?category=music` flows through to provider.
+  3. `trip.radiusKm: 200` → provider sees 30 (clamp).
+  4. Dateless trip → 422 `TRIP_DATES_REQUIRED`, provider never invoked.
+  5. Non-owner → 404 `TRIP_NOT_FOUND`, provider never invoked.
+  6. Unauthenticated → 401, provider never invoked.
+
+**Files created** (2) — `modules/trip/application/get-trip-events.use-case.ts`, `test/trip-events.e2e-spec.ts`.
+**Files edited** (2) — `modules/trip/trip.module.ts` (+EventsModule import + UC), `modules/trip/interface/trip.controller.ts` (+GET /:id/events route + imports).
+
+**Dependencies** — none new.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Trip-events suite 6/6 pass.
+- ✅ **Full real-DB suite: 40 suites, 269 tests pass.** (+1 suite, +6 tests.)
+
+**Acceptance criteria**
+
+- ✅ Trip owner gets events during their trip window in one request.
+- ✅ Date requirement enforced (parallels Trip × Stays).
+- ✅ Trip radius exceeding Events' 30km cap degrades gracefully (clamp).
+- ✅ Full-day window bounds so last-day evening events aren't missed.
+- ✅ Provider never runs when auth / ownership / date checks fail.
+
+**Notes**
+
+- **Why `TRIP_DATES_REQUIRED` here, mirroring Trip × Stays rather than Trip × Food.** Events are time-scoped identity-level information ("the symphony on Sep 5th" is a different event than "the symphony on Oct 12th"). Stays are similar (availability changes per-night). Food is not — the same restaurant exists whenever. Requiring trip dates forces the user to answer "when" before asking "what," which is also how mental models of trip planning work.
+- **Why the full-day `to` offset (23:59:59.999) instead of `endsOn.toISOString()` directly.** A trip ending `2026-08-04` means "I'm there on the 4th through the end of the day." Without the offset, `to = 2026-08-04T00:00:00.000Z` would miss any event that starts after midnight. Extending to end-of-day captures concerts, late-night tours, etc. that are clearly in-scope.
+- **Why not add events to the bundled overview dashboard** (`[IV.18.7.3]`). Could. But it'd require designing section semantics for "dateless trip → skip events with `TRIP_DATES_REQUIRED`" (same pattern as stays). The fold-in first ships the standalone capability; a future slice adds events as a 5th Section once we've decided whether the dashboard should include them by default or via a query flag.
 
 ---
 
