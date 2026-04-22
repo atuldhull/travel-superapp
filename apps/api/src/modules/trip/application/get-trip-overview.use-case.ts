@@ -22,6 +22,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { NotFoundError } from '@app/errors';
 import { GeoQueries } from '../../../common/db/geo-queries';
+import { SearchEventsUseCase } from '../../events/application/search-events.use-case';
+import type { EventListing } from '../../events/domain/event-listing.entity';
 import { SearchEateriesUseCase } from '../../food/application/search-eateries.use-case';
 import type { EateryListing } from '../../food/domain/eatery-listing.entity';
 import { SearchStaysUseCase } from '../../stays/application/search-stays.use-case';
@@ -37,6 +39,7 @@ import { TRIP_REPOSITORY, type TripRepository } from './ports/trip.repository';
 const WEATHER_MAX_DAYS = 16;
 const STAYS_MAX_RADIUS_KM = 50;
 const EATERIES_MAX_RADIUS_KM = 25;
+const EVENTS_MAX_RADIUS_KM = 30;
 
 export type Section<T> =
   | { readonly ok: true; readonly data: T }
@@ -48,6 +51,7 @@ export interface TripOverview {
   readonly weather: Section<WeatherForecast>;
   readonly stays: Section<readonly StayListing[]>;
   readonly eateries: Section<readonly EateryListing[]>;
+  readonly events: Section<readonly EventListing[]>;
 }
 
 @Injectable()
@@ -59,6 +63,7 @@ export class GetTripOverviewUseCase {
     @Inject(GetForecastUseCase) private readonly getForecast: GetForecastUseCase,
     @Inject(SearchStaysUseCase) private readonly searchStays: SearchStaysUseCase,
     @Inject(SearchEateriesUseCase) private readonly searchEateries: SearchEateriesUseCase,
+    @Inject(SearchEventsUseCase) private readonly searchEvents: SearchEventsUseCase,
   ) {}
 
   async execute(tripId: string, userId: string): Promise<TripOverview> {
@@ -76,9 +81,9 @@ export class GetTripOverviewUseCase {
         ? Math.max(1, Math.min(WEATHER_MAX_DAYS, daysInclusive(trip.startsOn, trip.endsOn)))
         : 7;
 
-    // Run the four sub-fetches concurrently. Each is wrapped so a
+    // Run the five sub-fetches concurrently. Each is wrapped so a
     // single failure doesn't reject the whole bundle.
-    const [itinerary, weather, stays, eateries] = await Promise.all([
+    const [itinerary, weather, stays, eateries, events] = await Promise.all([
       section(() => this.itinerary.listDays(trip.id)),
       section(() =>
         this.getForecast.execute({ lat: center.lat, lng: center.lng, days: weatherDays }),
@@ -103,9 +108,24 @@ export class GetTripOverviewUseCase {
           radiusKm: Math.min(EATERIES_MAX_RADIUS_KM, trip.radiusKm),
         }),
       ),
+      section(async () => {
+        if (!trip.startsOn || !trip.endsOn) {
+          throw new GracefulSkip('TRIP_DATES_REQUIRED');
+        }
+        // Full-day window bounds — events at 11pm on the last day
+        // still match. Matches the Trip × Events fold-in's approach.
+        const endExclusive = new Date(trip.endsOn.getTime() + 24 * 60 * 60 * 1000 - 1);
+        return this.searchEvents.execute({
+          lat: center.lat,
+          lng: center.lng,
+          radiusKm: Math.min(EVENTS_MAX_RADIUS_KM, trip.radiusKm),
+          from: trip.startsOn.toISOString(),
+          to: endExclusive.toISOString(),
+        });
+      }),
     ]);
 
-    return { trip, itinerary, weather, stays, eateries };
+    return { trip, itinerary, weather, stays, eateries, events };
   }
 }
 
