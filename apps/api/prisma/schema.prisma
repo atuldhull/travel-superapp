@@ -163,9 +163,35 @@ model User {
   agent              Agent?
   dishReports        Dish[]
   moderationActions  ModerationItem[] @relation("ModerationActor")
+  oauthIdentities    UserOAuthIdentity[]
 
   @@index([role])
   @@index([deletedAt])
+}
+
+// Links a user to an external OAuth provider identity. The
+// `(provider, providerUserId)` tuple is the stable identity —
+// providers like Google expose this as the `sub` claim on the ID
+// token and it doesn't change when the user's email does.
+//
+// Installed by prompt [III.13.2.6]. Future providers (Apple, etc.)
+// share this same row shape; each provider name is just a string.
+model UserOAuthIdentity {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Short provider name: "google" | "apple" | "mock" (tests/dev).
+  provider       String
+  // The provider's stable user id (e.g. Google `sub` claim).
+  providerUserId String
+  // Email reported by the provider at link time. Useful for audit +
+  // for surfacing "you've linked your Google account as foo@bar.com"
+  // in settings. Can drift from User.email over time.
+  providerEmail  String?
+  linkedAt       DateTime @default(now())
+
+  @@unique([provider, providerUserId])
+  @@index([userId])
 }
 
 model Session {
