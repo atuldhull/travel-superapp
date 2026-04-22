@@ -12,16 +12,65 @@
 
 | Counter             | Value                                                                       |
 | ------------------- | --------------------------------------------------------------------------- |
-| Prompts completed   | 72 (71 full + 1 foundation-only; Trip × Events fold-in just shipped)        |
+| Prompts completed   | 73 (72 full + 1 foundation-only; events added to overview dashboard)        |
 | Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5 shipped; OAuth + JWKS rotation follow-up) |
 | Prompts blocked     | 0                                                                           |
-| Last prompt         | `[IV.18.9.2]` — Trip × Events fold-in: GET /trips/:id/events                |
+| Last prompt         | `[IV.18.7.5]` — Trip overview +events section (5 sections total)            |
 | Last commit date    | 2026-04-22                                                                  |
-| Phase               | Phase 1 — 4th Trip × overlay; 40 suites, 269 tests pass against Docker      |
+| Phase               | Phase 1 — Dashboard now bundles 5 sections; 40 suites, 269 tests pass       |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.7.5] — Trip overview: add events as 5th Section
+
+**Date:** 2026-04-22 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.2 (cross-context)
+
+**What was done**
+
+Closes the overview-dashboard story: now bundles 5 sections (itinerary, weather, stays, eateries, **events**) in one response. Pure composition over the existing `[IV.18.9.2]` fold-in primitives.
+
+- **`GetTripOverviewUseCase`** extended:
+  - +inject `SearchEventsUseCase` + import `EventListing`.
+  - +`events: Section<readonly EventListing[]>` on the `TripOverview` interface.
+  - +5th sub-fetch in the `Promise.all`, using the same `GracefulSkip('TRIP_DATES_REQUIRED')` pattern stays uses when `startsOn`/`endsOn` are missing.
+  - Full-day window bounds (`endsOn + 23:59:59.999`) same as the Trip × Events fold-in.
+  - Radius clamp to 30km (Events' domain cap).
+
+- **`TripOverviewDto`** (controller) + **`mapSection`** call updated to pass through the new section.
+
+- **5 existing overview tests** extended (+1 new stub class):
+  - Happy-path test (now "all **five** sections ok:true") asserts `events.ok === true` + non-empty list.
+  - Dateless test (renamed: "stays + events sections ok:false") now asserts both stays AND events return `TRIP_DATES_REQUIRED`; weather/eateries/itinerary still ok.
+  - Weather-failure test now also asserts `events.ok === true` (event upstream unaffected by weather outage).
+  - +`StubEvent` provider added to the suite's provider overrides. Events cache namespace added to the `SCAN-DEL` pre-suite wipe.
+
+**Files edited** (3) — `modules/trip/application/get-trip-overview.use-case.ts` (+events section), `modules/trip/interface/trip.controller.ts` (+events on TripOverviewDto + mapping), `test/trip-overview.e2e-spec.ts` (+StubEvent + override + assertions on 3 existing tests + events namespace in SCAN-DEL).
+
+**Dependencies** — none new.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ **Full real-DB suite: 40 suites, 269 tests pass** (same test count — no new `it()` blocks, but existing ones now assert 5 sections instead of 4).
+
+**Acceptance criteria**
+
+- ✅ Overview response includes `events` section as a discriminated `Section<{ list }>`.
+- ✅ Dateless trips degrade `events` + `stays` via `TRIP_DATES_REQUIRED` (same code, reusing `GracefulSkip`).
+- ✅ Weather outage doesn't affect events (independent sub-fetches).
+- ✅ Section count + parallel fanout is now 5 — still O(max) latency, not O(sum).
+- ✅ Zero new HTTP routes — purely compositional.
+
+**Notes**
+
+- **Why extending existing tests vs new `it()` blocks.** The semantic contract of each test is "this condition → these section states." Events is a new state to check under the same conditions. Adding assertions to existing tests keeps the coverage graph coherent (one test per condition, all sections asserted) and mirrors how a client renders the whole bundle at once — it doesn't do the "weather check" separately from the "events check."
+- **Why reuse the same `TRIP_DATES_REQUIRED` code for both stays and events.** Both are intrinsically time-scoped; a client that handles one already knows the fix (set dates). One code + two sections sharing it keeps the UI's error-surface simple.
+- **Why not add Places (federated) as a 6th section.** Places federation is user-intent-driven ("what's in this city?") not trip-center-driven ("here's what's near your trip"). Bundling would muddle the signal — the overview is "here's the state of my trip," not "let me browse the catalog." If we ever want federated places as trip context, that's an explicit cross-module decision, not a drive-by fold-in.
+- **Overview is now feature-complete for v1 demo.** Five sections, graceful per-section degradation, owner gate runs once, provider stubs never called on auth failure. A mobile client can render the entire "trip home" screen from one request.
 
 ---
 
