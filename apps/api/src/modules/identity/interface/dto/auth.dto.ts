@@ -43,3 +43,14 @@ export const MfaCodeBodySchema = z.object({
   code: z.string().regex(/^\d{6}$/, 'must be 6 digits'),
 });
 export type MfaCodeBody = z.infer<typeof MfaCodeBodySchema>;
+
+/**
+ * Body for `POST /auth/oauth/:provider` — the provider-issued ID
+ * token. Length bound is generous: real Google ID tokens are
+ * ~1.2KB; 8192 caps pathological payloads without clipping valid
+ * tokens.
+ */
+export const OAuthSignInBodySchema = z.object({
+  idToken: z.string().min(1).max(8192),
+});
+export type OAuthSignInBody = z.infer<typeof OAuthSignInBodySchema>;

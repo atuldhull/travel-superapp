@@ -26,7 +26,13 @@ export interface UserRecord {
 export interface CreateUserInput {
   readonly emailHash: string;
   readonly emailEncrypted: Buffer;
-  readonly passwordHash: string;
+  /**
+   * Argon2id hash of the user's password. `null` for OAuth-only
+   * sign-ups (the schema already types this nullable). These users
+   * can set a password later via a "add password to my account"
+   * flow — deferred to a follow-up slice.
+   */
+  readonly passwordHash: string | null;
   readonly displayName: string;
 }
 

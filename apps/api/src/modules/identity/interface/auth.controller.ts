@@ -28,6 +28,7 @@ import {
   HttpCode,
   HttpStatus,
   Inject,
+  Param,
   Post,
   Req,
   Res,
@@ -49,12 +50,15 @@ import {
 import { RefreshSessionUseCase } from '../../identity/application/refresh-session.use-case';
 import { RegisterUseCase } from '../../identity/application/register.use-case';
 import { RevokeSessionUseCase } from '../../identity/application/revoke-session.use-case';
+import { SignInWithOAuthUseCase } from '../../identity/application/sign-in-with-oauth.use-case';
 import {
   LoginBodySchema,
   MfaCodeBodySchema,
+  OAuthSignInBodySchema,
   RegisterBodySchema,
   type LoginBody,
   type MfaCodeBody,
+  type OAuthSignInBody,
   type RegisterBody,
 } from './dto/auth.dto';
 
@@ -87,8 +91,9 @@ export class AuthController {
     private readonly verifyMfaUc: VerifyMfaUseCase,
     private readonly disableMfaUc: DisableMfaUseCase,
     private readonly regenBackupUc: RegenerateBackupCodesUseCase,
-    // Kept for future direct session-issuance flows (OAuth callback,
-    // magic-link) even though not called directly in this file today.
+    private readonly oauthUc: SignInWithOAuthUseCase,
+    // Kept for future direct session-issuance flows (magic-link)
+    // even though not called directly in this file today.
     @Inject(IssueSessionUseCase) private readonly _issue: IssueSessionUseCase,
   ) {
     void this._issue;
@@ -107,6 +112,43 @@ export class AuthController {
       email: body.email,
       password: body.password,
       displayName: body.displayName,
+      deviceContext: this.deviceContext(req),
+    });
+    this.setRefreshCookie(reply, issued.refreshToken, issued.refreshTokenExpiresAt);
+    return {
+      userId: issued.userId,
+      accessToken: issued.accessToken,
+      expiresAt: issued.accessTokenExpiresAt.toISOString(),
+    };
+  }
+
+  /**
+   * OAuth sign-in. Verifies a provider-issued ID token and either
+   * signs the user into an existing account, auto-links to their
+   * password account by email, or creates a brand-new passwordless
+   * account. Returns the same `AuthSuccessBody` shape register + login
+   * do, so clients share token-handling logic across all entry points.
+   *
+   * Provider registry is populated at module init from env:
+   *   - `mock` registered outside NODE_ENV=production (dev + tests).
+   *   - `google` registered when `GOOGLE_CLIENT_ID` is set.
+   * Unknown provider → 401 `OAUTH_PROVIDER_UNKNOWN`.
+   *
+   * Signature / audience / email-unverified failures from the adapter
+   * surface as 401 `OAUTH_INVALID_TOKEN` / `OAUTH_EMAIL_UNVERIFIED`.
+   */
+  @Public()
+  @Post('oauth/:provider')
+  @HttpCode(HttpStatus.OK)
+  async oauth(
+    @Param('provider') provider: string,
+    @Body(new ZodValidationPipe(OAuthSignInBodySchema)) body: OAuthSignInBody,
+    @Req() req: FastifyRequest,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ): Promise<AuthSuccessBody> {
+    const issued = await this.oauthUc.execute({
+      provider,
+      idToken: body.idToken,
       deviceContext: this.deviceContext(req),
     });
     this.setRefreshCookie(reply, issued.refreshToken, issued.refreshTokenExpiresAt);
