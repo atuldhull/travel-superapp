@@ -13,6 +13,7 @@
  * Installed by prompt [IV.18.2.3].
  */
 import { Module } from '@nestjs/common';
+import { EventsModule } from '../events/events.module';
 import { FoodModule } from '../food/food.module';
 import { PlacesModule } from '../places/places.module';
 import { StaysModule } from '../stays/stays.module';
@@ -24,6 +25,7 @@ import { DeleteTripUseCase } from './application/delete-trip.use-case';
 import { GenerateItineraryStubUseCase } from './application/generate-itinerary-stub.use-case';
 import { GetTripUseCase } from './application/get-trip.use-case';
 import { GetTripEateriesUseCase } from './application/get-trip-eateries.use-case';
+import { GetTripEventsUseCase } from './application/get-trip-events.use-case';
 import { GetTripOverviewUseCase } from './application/get-trip-overview.use-case';
 import { GetTripStaysUseCase } from './application/get-trip-stays.use-case';
 import { GetTripWeatherUseCase } from './application/get-trip-weather.use-case';
@@ -47,7 +49,7 @@ import { TripController } from './interface/trip.controller';
   // GetForecastUseCase / SearchStaysUseCase / SearchEateriesUseCase
   // for the Trip × * overlays). All one-way deps — none of those
   // modules knows about Trip.
-  imports: [PlacesModule, WeatherModule, StaysModule, FoodModule],
+  imports: [PlacesModule, WeatherModule, StaysModule, FoodModule, EventsModule],
   controllers: [TripController],
   providers: [
     { provide: TRIP_REPOSITORY, useClass: PrismaTripRepository },
@@ -68,6 +70,7 @@ import { TripController } from './interface/trip.controller';
     GetTripWeatherUseCase,
     GetTripStaysUseCase,
     GetTripEateriesUseCase,
+    GetTripEventsUseCase,
     GetTripOverviewUseCase,
   ],
   exports: [TRIP_REPOSITORY, ITINERARY_REPOSITORY, TRIP_SHARE_REPOSITORY],
