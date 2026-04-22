@@ -37,9 +37,11 @@ import { ListTripSharesUseCase } from '../application/list-trip-shares.use-case'
 import { RevokeTripShareUseCase } from '../application/revoke-trip-share.use-case';
 import { DeleteTripUseCase } from '../application/delete-trip.use-case';
 import { GetTripEateriesUseCase } from '../application/get-trip-eateries.use-case';
+import { GetTripEventsUseCase } from '../application/get-trip-events.use-case';
 import { GetTripOverviewUseCase, type Section } from '../application/get-trip-overview.use-case';
 import { GetTripStaysUseCase } from '../application/get-trip-stays.use-case';
 import { GetTripWeatherUseCase } from '../application/get-trip-weather.use-case';
+import type { EventListing } from '../../events/domain/event-listing.entity';
 import type { EateryListing } from '../../food/domain/eatery-listing.entity';
 import type { StayListing } from '../../stays/domain/stay-listing.entity';
 import type { WeatherForecast } from '../../weather/domain/weather-forecast.entity';
@@ -110,6 +112,7 @@ export class TripController {
     private readonly getTripStays: GetTripStaysUseCase,
     private readonly getTripEateries: GetTripEateriesUseCase,
     private readonly getTripOverview: GetTripOverviewUseCase,
+    private readonly getTripEvents: GetTripEventsUseCase,
   ) {}
 
   @Post()
@@ -323,6 +326,28 @@ export class TripController {
       ...(tier !== undefined ? { maxPriceTier: tier } : {}),
     });
     return { eateries: list };
+  }
+
+  /**
+   * Events happening near the trip's center during the trip's date
+   * range. Owner-only. Requires `startsOn` + `endsOn` to be set
+   * (422 `TRIP_DATES_REQUIRED` otherwise) — "what's on during my
+   * trip" is the canonical question. Radius capped at 30km (Events'
+   * domain cap). Optional `?category=` filter.
+   */
+  @Get(':id/events')
+  @HttpCode(HttpStatus.OK)
+  async events(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Query('category') category?: string,
+  ): Promise<{ events: readonly EventListing[] }> {
+    const list = await this.getTripEvents.execute({
+      tripId: id,
+      userId: user.sub,
+      ...(category ? { category } : {}),
+    });
+    return { events: list };
   }
 
   /**
