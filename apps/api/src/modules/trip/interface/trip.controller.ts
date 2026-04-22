@@ -294,6 +294,7 @@ export class TripController {
       weather: mapSection(ov.weather, (f) => ({ forecast: f })),
       stays: mapSection(ov.stays, (list) => ({ list })),
       eateries: mapSection(ov.eateries, (list) => ({ list })),
+      events: mapSection(ov.events, (list) => ({ list })),
     };
   }
 
@@ -511,6 +512,7 @@ interface TripOverviewDto {
   readonly weather: SectionDto<{ readonly forecast: WeatherForecast }>;
   readonly stays: SectionDto<{ readonly list: readonly StayListing[] }>;
   readonly eateries: SectionDto<{ readonly list: readonly EateryListing[] }>;
+  readonly events: SectionDto<{ readonly list: readonly EventListing[] }>;
 }
 
 function mapSection<T, U>(s: Section<T>, f: (t: T) => U): SectionDto<U> {

@@ -1,12 +1,13 @@
 /**
  * Integration tests for `GET /trips/:id/overview` ([IV.18.7.3]).
  *
- * Bundles trip + itinerary + weather + stays + eateries into one
- * response with per-section graceful degradation. Weather provider
- * + Mock-stay + Mock-eatery are all stubbed so the cache + decorator
- * stay in the chain and upstream invocations are countable.
+ * Bundles trip + itinerary + weather + stays + eateries + events
+ * into one response with per-section graceful degradation. Every
+ * external provider is stubbed so the cache + decorator stay in the
+ * chain and upstream invocations are countable.
  *
- * Installed by prompt [IV.18.7.3].
+ * Installed by prompt [IV.18.7.3]; events section added in
+ * prompt [IV.18.7.5].
  */
 import fastifyCookie from '@fastify/cookie';
 import { Test, type TestingModule } from '@nestjs/testing';
@@ -16,6 +17,12 @@ import { AppModule } from '../src/app.module';
 import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { PrismaService } from '../src/common/db/prisma.service';
+import type {
+  EventProvider,
+  SearchEventsInput,
+} from '../src/modules/events/application/ports/event-provider';
+import type { EventListing } from '../src/modules/events/domain/event-listing.entity';
+import { MockEventProvider } from '../src/modules/events/infrastructure/mock-event-provider';
 import type {
   EateryProvider,
   SearchEateriesInput,
@@ -94,6 +101,31 @@ class StubEatery implements EateryProvider {
   }
 }
 
+class StubEvent implements EventProvider {
+  async searchNearby(input: SearchEventsInput): Promise<readonly EventListing[]> {
+    const fromMs = Date.parse(input.from);
+    return [
+      {
+        externalId: `mock:overview-event-${input.lat}`,
+        provider: 'mock',
+        title: 'Overview Event',
+        description: null,
+        category: 'music',
+        venueName: 'Stub Venue',
+        lat: input.lat,
+        lng: input.lng,
+        distanceMeters: 500,
+        startsAt: new Date(fromMs + 3 * 3_600_000).toISOString(),
+        endsAt: new Date(fromMs + 5 * 3_600_000).toISOString(),
+        currency: 'USD',
+        priceMin: '10.00',
+        priceMax: '20.00',
+        sourceUrl: null,
+      },
+    ];
+  }
+}
+
 describe('Trip overview (integration, requires Docker Postgres + Redis)', () => {
   let moduleRef: TestingModule;
   let app: NestFastifyApplication;
@@ -110,6 +142,8 @@ describe('Trip overview (integration, requires Docker Postgres + Redis)', () => 
       .useValue(new StubStay())
       .overrideProvider(MockEateryProvider)
       .useValue(new StubEatery())
+      .overrideProvider(MockEventProvider)
+      .useValue(new StubEvent())
       .compile();
     app = moduleRef.createNestApplication<NestFastifyApplication>(new FastifyAdapter());
     app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
@@ -129,7 +163,7 @@ describe('Trip overview (integration, requires Docker Postgres + Redis)', () => 
         maxRetriesPerRequest: 2,
       });
       try {
-        for (const ns of ['stays', 'eateries', 'weather']) {
+        for (const ns of ['stays', 'eateries', 'weather', 'events']) {
           const stream = flush.scanStream({
             match: `travel-${process.env['NODE_ENV']}:${ns}:*`,
             count: 100,
@@ -208,9 +242,10 @@ describe('Trip overview (integration, requires Docker Postgres + Redis)', () => 
     weather: { ok: boolean; data?: { forecast: { days: unknown[] } }; code?: string };
     stays: { ok: boolean; data?: { list: unknown[] }; code?: string };
     eateries: { ok: boolean; data?: { list: unknown[] }; code?: string };
+    events: { ok: boolean; data?: { list: unknown[] }; code?: string };
   };
 
-  it('bundles all four sections ok:true when trip has dates + itinerary generated', async () => {
+  it('bundles all five sections ok:true when trip has dates + itinerary generated', async () => {
     if (!dbReachable) return;
     const { accessToken } = await registerUser('full');
     const trip = await createTrip(accessToken, {
@@ -247,9 +282,12 @@ describe('Trip overview (integration, requires Docker Postgres + Redis)', () => 
 
     expect(body.eateries.ok).toBe(true);
     expect(body.eateries.data!.list.length).toBeGreaterThan(0);
+
+    expect(body.events.ok).toBe(true);
+    expect(body.events.data!.list.length).toBeGreaterThan(0);
   });
 
-  it('dateless trip → stays section is ok:false with TRIP_DATES_REQUIRED, rest still ok', async () => {
+  it('dateless trip → stays + events sections ok:false with TRIP_DATES_REQUIRED, rest still ok', async () => {
     if (!dbReachable) return;
     const { accessToken } = await registerUser('no-dates');
     const trip = await createTrip(accessToken); // no dates
@@ -265,7 +303,11 @@ describe('Trip overview (integration, requires Docker Postgres + Redis)', () => 
     expect(body.stays.ok).toBe(false);
     expect(body.stays.code).toBe('TRIP_DATES_REQUIRED');
 
-    // Other sections should still be ok.
+    // Events also require dates — same skip code.
+    expect(body.events.ok).toBe(false);
+    expect(body.events.code).toBe('TRIP_DATES_REQUIRED');
+
+    // Weather + eateries don't require dates.
     expect(body.weather.ok).toBe(true);
     expect(body.eateries.ok).toBe(true);
     // Itinerary hasn't been generated for this trip — empty list is
@@ -298,6 +340,7 @@ describe('Trip overview (integration, requires Docker Postgres + Redis)', () => 
 
     expect(body.stays.ok).toBe(true);
     expect(body.eateries.ok).toBe(true);
+    expect(body.events.ok).toBe(true);
   });
 
   it('non-owner → 404 TRIP_NOT_FOUND, whole response fails (not partial)', async () => {
