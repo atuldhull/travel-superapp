@@ -12,16 +12,84 @@
 
 | Counter             | Value                                                                         |
 | ------------------- | ----------------------------------------------------------------------------- |
-| Prompts completed   | 76 (75 full + 1 foundation-only; Transport module v1 just shipped)            |
+| Prompts completed   | 77 (76 full + 1 foundation-only; Safety v1 scam reports just shipped)         |
 | Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5+6+7 shipped; JWKS rotation still follow-up) |
 | Prompts blocked     | 0                                                                             |
-| Last prompt         | `[IV.18.10.1]` — Transport v1: POST /transport/routes (mock + cache)          |
+| Last prompt         | `[IV.18.11.1]` — Safety v1: scam reports (user-report + nearby search)        |
 | Last commit date    | 2026-04-23                                                                    |
-| Phase               | Phase 1 — 6th cache consumer + new domain; 42 suites, 285 tests pass          |
+| Phase               | Phase 1 — Safety moat opened; 43 suites, 293 tests pass against Docker        |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.11.1] — Safety v1: scam reports (user-report + geo-scoped search)
+
+**Date:** 2026-04-23 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.7 (Safety)
+
+**What was done**
+
+Opens the Safety bounded context — the playbook's stated moat, at 0% for the entire prior session. First slice scopes to the cleanest primitive: **crowd-sourced scam reports**. An authenticated user reports a scam at a coordinate; any other authenticated user searches nearby scams. Crime layer, SOS events, agent marketplace, and moderation flip-`verified` all remain follow-ups.
+
+First domain with genuine write-path complexity beyond Trip — every prior new domain this session (Weather/Stays/Food/Places federation/Events/Transport) was read-only mock-backed.
+
+- **`GeoQueries` extended** with two new raw-SQL methods (PostGIS `coordinates` column; CLAUDE rule 11):
+  - `insertScamReport(input)` — straightforward INSERT + RETURNING with `ST_SetSRID(ST_MakePoint(lng, lat), 4326)::geography`.
+  - `findScamReportsWithinRadius(input)` — `ST_DWithin` for the radius filter, `ST_Distance` for ordering, threshold-style `minSeverity` via an inline CASE statement that ranks the enum values numerically.
+  - New input + result types co-located: `InsertScamReportInput`, `FindScamReportsInput`, `ScamReportWithDistance`.
+
+- **`apps/api/src/modules/safety/` scaffold:**
+  - `domain/scam-report.entity.ts` — plain-data `ScamReport` + `ScamReportWithDistance` + local `ScamSeverity` type mirroring the Prisma enum.
+  - `application/ports/scam-report.repository.ts` — `ScamReportRepository.report` (write) + `findNearby` (read). Two methods; moderation lands in its own slice.
+  - `infrastructure/prisma-scam-report.repository.ts` — delegates both methods to `GeoQueries`. Cross-package enum coercion handled via `as` casts at the adapter boundary (domain-local `ScamSeverity` ↔ Prisma-generated `ScamSeverity`).
+  - `application/report-scam.use-case.ts` — validates lat/lng; **`reporterId` comes from the JWT**, NEVER the request body (defence against cross-user report impersonation).
+  - `application/find-nearby-scams.use-case.ts` — validates lat/lng + radius `(0, 50]` (broader than Food/Places because scam patterns cluster at city scale: pickpocket district, tourist-trap overcharge zone). Optional `category` + `minSeverity` + `limit` (default 50, cap 200 — higher than the place-search default because safety-layer markers render densely on a map).
+  - `interface/dto/safety.dto.ts` — Zod schemas. `description` 10–2000 chars; `evidenceUrls` ≤ 5; severity enum.
+  - `interface/safety.controller.ts` — `POST /api/v1/safety/scam-reports` (create) + `POST /api/v1/safety/scam-reports/search` (read). Both authenticated. Search is POST (not GET) because the body has coord + filters — matches the pattern of every other search endpoint in the app.
+  - `safety.module.ts` — clean-hex wiring; `GeoQueries` comes from the global `DbModule`.
+
+- **`AppModule` imports `SafetyModule`**.
+
+- **8 integration tests** (`apps/api/test/safety.e2e-spec.ts`) — all hit real PostGIS through `GeoQueries` (no provider stubs — the domain is users, not an external API):
+  1. No bearer → 401.
+  2. Happy path: create → distance-scored `ScamReportWithDistance` found in nearby search. `verified: false` on submission. Distance < 300m for coords ~180m apart.
+  3. Cross-user visibility: Alice's report shows up in Bob's nearby search (explicit; this is crowd-safety, not private data).
+  4. `minSeverity: 'high'` filter — 4 reports seeded at low/medium/high/critical → response contains only high + critical (2 rows). Threshold semantics match the SQL `CASE` ranking.
+  5. `category: 'pickpocket'` filter — exact match narrows to one of two seeded reports.
+  6. Description < 10 chars → 422 `VALIDATION_FAILED` (Zod `.min(10)`).
+  7. Search radius 100km → 422 `INVALID_RADIUS` (domain, not Zod).
+  8. Invalid severity enum → 422 `VALIDATION_FAILED` (Zod).
+
+**Files created** (10) — under `apps/api/src/modules/safety/` + `test/safety.e2e-spec.ts`.
+**Files edited** (2) — `apps/api/src/common/db/geo-queries.ts` (+2 methods, +3 types, +1 import), `apps/api/src/app.module.ts` (+SafetyModule).
+
+**Dependencies** — none new.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Safety suite 8/8 pass.
+- ✅ **Full real-DB suite: 43 suites, 293 tests pass against live Docker.** (+1 suite, +8 tests.)
+
+**Acceptance criteria**
+
+- ✅ Authenticated users can submit scam reports pinned to a coordinate.
+- ✅ Any authenticated user can search nearby scams (the feature's whole point).
+- ✅ Reporter id comes from the JWT, not the body — no impersonation path.
+- ✅ Radius + severity + category filters work at SQL level (ST_DWithin + CASE rank).
+- ✅ Results sorted ascending by geodesic distance.
+- ✅ `verified` stays `false` on create — sets up a future moderation flow.
+
+**Notes**
+
+- **Why no cache in front of this (unlike the 6 other searches).** Scam reports are a WRITE path. If Alice reports a scam and then searches nearby, she must see her own report immediately — a cache would break the read-your-own-writes invariant. When moderation lands with a "show verified only" toggle, we can layer a cache on the verified-only read path (stable data, safe to serve slightly stale) without touching the write path.
+- **Why `minSeverity` as threshold, not exact match.** UX pattern: users want "show me serious stuff" not "show me only exactly medium-severity reports." Threshold naturally matches how a safety layer is toggled on a map.
+- **Why severity coerced via SQL `CASE` instead of Prisma query.** Prisma can't query enums with ordinal comparisons (`severity >= 'high'`) — the enum has no inherent order to the DB. The CASE statement makes the ordering explicit at the SQL layer. A follow-up refactor could add a numeric `severityRank` column maintained by a trigger, but that's premature until the query pattern is proven.
+- **Why `category` as free-form string.** Scam categories evolve (`crypto-atm-scam` didn't exist 3 years ago). Free text + a client-side catalog pattern (for autocomplete) beats a locked enum that requires a migration for every new scam type. If abuse becomes a problem, a moderation-curated allowlist can bolt on later.
+- **Why the first domain with real write paths waited until slice 77.** Every prior new domain (Weather/Stays/Food/Places federation/Events/Transport) was read-only through a mock provider. Safety couldn't be — there are no "scam report providers"; it IS the community. Forced us to exercise the `GeoQueries` raw-SQL INSERT path beyond what Places admin needs (ScamReport has `text[]` for evidence URLs, an enum column, and a reporter FK).
+- **Moat status: unlocked (v1).** One module with scam reports doesn't win a moat; six modules with scam reports + crime overlay + SOS + KYC'd local agent marketplace would. This is slice 1 of that build-out.
 
 ---
 
