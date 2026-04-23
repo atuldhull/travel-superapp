@@ -38,6 +38,7 @@ import { RefreshSessionUseCase } from './application/refresh-session.use-case';
 import { RegisterUseCase } from './application/register.use-case';
 import { RevokeSessionUseCase } from './application/revoke-session.use-case';
 import { SignInWithOAuthUseCase } from './application/sign-in-with-oauth.use-case';
+import { AppleOAuthProvider } from './infrastructure/apple-oauth-provider';
 import { GoogleOAuthProvider } from './infrastructure/google-oauth-provider';
 import { JwtTokenService } from './infrastructure/jwt-token.service';
 import { MockOAuthProvider } from './infrastructure/mock-oauth-provider';
@@ -50,11 +51,12 @@ import { TotpService } from './infrastructure/totp.service';
 import { AuthController } from './interface/auth.controller';
 
 /**
- * Builds the OAuth provider registry at module init. `google` only
- * registers when `GOOGLE_CLIENT_ID` is present — local dev + test
- * don't need the real adapter. `mock` registers only OUTSIDE
- * production so it can't leak into a live deployment. Tests override
- * the whole `OAUTH_PROVIDERS` token with their own registry.
+ * Builds the OAuth provider registry at module init. Each real
+ * provider registers only when its credentials are present in env
+ * (so local dev without Google/Apple creds still boots clean).
+ * `mock` registers only OUTSIDE production so it can't leak into a
+ * live deployment. Tests don't need to override — they drive the
+ * live `mock` adapter directly.
  */
 const oauthProvidersFactory = {
   provide: OAUTH_PROVIDERS,
@@ -71,6 +73,10 @@ const oauthProvidersFactory = {
     const googleClientId = config.get('GOOGLE_CLIENT_ID', { infer: true });
     if (googleClientId) {
       registry.set('google', new GoogleOAuthProvider(config));
+    }
+    const appleClientId = config.get('APPLE_CLIENT_ID', { infer: true });
+    if (appleClientId) {
+      registry.set('apple', new AppleOAuthProvider(config));
     }
     return { get: (name: string) => registry.get(name) };
   },
