@@ -94,6 +94,28 @@ describe('OAuth sign-in (integration, requires Docker Postgres)', () => {
     expect(JSON.parse(res.body).code).toBe('OAUTH_PROVIDER_UNKNOWN');
   });
 
+  it('apple provider gated on env — unregistered in test (no APPLE_CLIENT_ID) → 401 OAUTH_PROVIDER_UNKNOWN', async () => {
+    if (!dbReachable) return;
+    // Sanity: APPLE_CLIENT_ID isn't set in test/setup.ts, so the
+    // factory registry never registers the Apple adapter. The route
+    // still exists (path param routing), but the registry lookup
+    // misses → OAUTH_PROVIDER_UNKNOWN. Proves the env-gated
+    // registration pattern without needing to hit Apple's JWKS.
+    expect(process.env['APPLE_CLIENT_ID']).toBeUndefined();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/oauth/apple',
+      payload: {
+        idToken: mockToken({
+          providerUserId: 'apple-sub',
+          email: `${TEST_PREFIX}-apple@example.com`,
+        }),
+      },
+    });
+    expect(res.statusCode).toBe(401);
+    expect(JSON.parse(res.body).code).toBe('OAUTH_PROVIDER_UNKNOWN');
+  });
+
   it('first sign-in creates a new user + issues a session (returns access token + cookie)', async () => {
     if (!dbReachable) return;
     const email = `${TEST_PREFIX}-new-${Date.now()}@example.com`;
