@@ -12,16 +12,86 @@
 
 | Counter             | Value                                                                         |
 | ------------------- | ----------------------------------------------------------------------------- |
-| Prompts completed   | 75 (74 full + 1 foundation-only; Apple OAuth adapter just shipped)            |
+| Prompts completed   | 76 (75 full + 1 foundation-only; Transport module v1 just shipped)            |
 | Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5+6+7 shipped; JWKS rotation still follow-up) |
 | Prompts blocked     | 0                                                                             |
-| Last prompt         | `[III.13.2.7]` — Apple OAuth adapter (sibling to Google)                      |
+| Last prompt         | `[IV.18.10.1]` — Transport v1: POST /transport/routes (mock + cache)          |
 | Last commit date    | 2026-04-23                                                                    |
-| Phase               | Phase 1 — OAuth story complete (Google + Apple); 41 suites, 277 tests pass    |
+| Phase               | Phase 1 — 6th cache consumer + new domain; 42 suites, 285 tests pass          |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.10.1] — Transport & Routing v1: POST /transport/routes (mock provider + cache)
+
+**Date:** 2026-04-23 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.6 (Transport & Routing)
+
+**What was done**
+
+New bounded context opened — mode-fit routing between two coords. Sixth consumer of `TypedRedisCache<T>`. Deterministic mock provider using haversine + mode-specific speed/cost tables; real adapters (Google Directions, Mapbox, OpenRouteService, GTFS) land when credentials + licensing are sorted.
+
+- **`apps/api/src/modules/transport/` scaffold:**
+  - `domain/route-leg.entity.ts` — `TransportMode` type matching the Prisma enum (walk | bicycle | public_transit | two_wheeler | car | taxi | rideshare) + `RouteLeg` with `mode, distanceMeters, durationSeconds, estimatedCostUsd, confidence`.
+  - `application/ports/routing-provider.ts` — `RoutingProvider.getRoutes(input)` with optional `modes` filter hint.
+  - `application/ports/routing-cache.ts` — mirrors the pattern.
+  - `application/get-routes.use-case.ts` — validates lat/lng ranges, rejects identical origin/destination, caps straight-line distance at 500km (inter-city routing is a separate product concern — different cost models, different providers). Typed errors: `INVALID_COORDINATES`, `SAME_ORIGIN_DESTINATION`, `ROUTE_TOO_LONG`.
+  - `infrastructure/mock-routing-provider.ts` — haversine × 1.3 urban-overhead factor + mode-specific speeds/costs:
+
+    | mode           | speed (km/h) | cost         | omit when |
+    | -------------- | ------------ | ------------ | --------- |
+    | walk           | 5            | free         | >20 km    |
+    | bicycle        | 15           | free         | >80 km    |
+    | public_transit | 20           | base 2 USD   | >100 km   |
+    | two_wheeler    | 25           | 0.1 × km     | —         |
+    | car            | 20 (urban)   | 0.2 × km     | —         |
+    | taxi           | 20           | 2 + 1.5 × km | —         |
+    | rideshare      | 22           | 2 + 1.7 × km | —         |
+
+  - `infrastructure/redis-routing-cache.ts` — **~22 lines**; subclass of `TypedRedisCache<readonly RouteLeg[]>`. Namespace `routing`.
+  - `infrastructure/cached-routing-provider.ts` — decorator. **4-decimal coord precision** (~11m) in the cache key vs the 3-decimal the search caches use — routing legs are more sensitive to small position shifts (origin across a road = different leg). Modes list sorted so `[car, walk]` and `[walk, car]` share an entry. **TTL 10 min** (route durations depend on live traffic; stale drive-times at rush hour is the user-facing hit).
+  - `interface/dto/transport.dto.ts` — Zod enum matches the domain type.
+  - `interface/transport.controller.ts` — `POST /api/v1/transport/routes`.
+  - `transport.module.ts` + AppModule registration.
+
+- **8 integration tests** (`apps/api/test/transport.e2e-spec.ts`):
+  1. No bearer → 401.
+  2. 5km trip returns all 7 modes; walk slower + free, rideshare costlier than car.
+  3. 55km trip omits walk (>20km cap) but keeps car/taxi/transit.
+  4. `modes: ['walk', 'bicycle']` narrows the response to those two.
+  5. Identical origin/destination → 422 `SAME_ORIGIN_DESTINATION`.
+  6. NYC → Chicago (>500km straight-line) → 422 `ROUTE_TOO_LONG`.
+  7. `lat=999` → 422 `VALIDATION_FAILED` (Zod beats domain).
+  8. `modes: ['teleport']` → 422 `VALIDATION_FAILED` (Zod enum rejects).
+
+**Files created** (11) — under `apps/api/src/modules/transport/` + `test/transport.e2e-spec.ts`.
+**Files edited** (1) — `apps/api/src/app.module.ts` (+TransportModule).
+
+**Dependencies** — none new.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Transport suite 8/8 pass.
+- ✅ **Full real-DB suite: 42 suites, 285 tests pass against live Docker.** (+1 suite, +8 tests.)
+
+**Acceptance criteria**
+
+- ✅ Authenticated users can get mode-fit route options between two coords.
+- ✅ Domain-meaningful mode omissions (walk>20km, transit>100km) happen at the provider.
+- ✅ Radius cap (500km straight-line) enforced before provider call.
+- ✅ Mode filter flows through; defaults to "all supported modes."
+- ✅ 6th consumer of `TypedRedisCache<T>` — still zero base-class edits.
+
+**Notes**
+
+- **Why `Prisma.TransportMode` enum mirror rather than import.** `Prisma.TransportMode` is a generated enum; importing it couples the domain types to Prisma's shape. The handwritten `type TransportMode = 'walk' | ...` stays in sync with the schema by discipline — if they drift, `createdRouteLeg: Prisma.RouteLeg` assignments would fail at compile time (a future save-route slice lands that check).
+- **Why haversine × 1.3 for distance.** Real urban routes follow a road network that's ~1.3× the great-circle distance (standard urban-grid factor). Makes distances + durations honest vs "straight line, no traffic." Real providers replace this with actual leg geometries.
+- **Why 4-decimal cache precision (not 3 like the search caches).** Routing is sensitive to position on the order of ~10m: an origin on one side of a road vs the other has a different first turn. The search caches can coarsen aggressively because "place within 100m" is the same answer; routing can't.
+- **Why the 500km straight-line cap at the use-case, not the provider.** It's a domain invariant, not a provider quirk. A future Mapbox adapter would still want to reject 1,000km queries at the use-case layer — regional/inter-city routing is a separate product concern.
+- **Why no persistence in v1.** `RouteLeg` + `TransitSchedule` Prisma tables already exist (from the original schema), but nothing in v1 saves legs. "Save this route to my trip" is a separate follow-up that ties a User + Trip + RouteLeg together; the route endpoint itself is read-only.
 
 ---
 
