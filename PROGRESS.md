@@ -10,18 +10,92 @@
 
 ## Summary
 
-| Counter             | Value                                                                         |
-| ------------------- | ----------------------------------------------------------------------------- |
-| Prompts completed   | 78 (77 full + 1 foundation-only; SOS events just shipped)                     |
-| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5+6+7 shipped; JWKS rotation still follow-up) |
-| Prompts blocked     | 0                                                                             |
-| Last prompt         | `[IV.18.11.2]` — Safety: SOS events (trigger + list + resolve)                |
-| Last commit date    | 2026-04-24                                                                    |
-| Phase               | Phase 1 — Safety moat has both scam reports + SOS; 44 suites, 300 tests pass  |
+| Counter             | Value                                                                             |
+| ------------------- | --------------------------------------------------------------------------------- |
+| Prompts completed   | 79 (78 full + 1 foundation-only; Media v1 presigned uploads just shipped)         |
+| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5+6+7 shipped; JWKS rotation still follow-up)     |
+| Prompts blocked     | 0                                                                                 |
+| Last prompt         | `[IV.18.12.1]` — Media v1: presigned S3 uploads (upload-url + confirm + download) |
+| Last commit date    | 2026-04-24                                                                        |
+| Phase               | Phase 1 — 12th HTTP module (first real S3/MinIO infra); 45 suites, 307 tests pass |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.12.1] — Media v1: presigned S3 uploads (upload-url + confirm + download)
+
+**Date:** 2026-04-24 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.13 (Media & Memory)
+
+**What was done**
+
+Opens the Media bounded context — the first slice to exercise S3-compatible object storage (MinIO in dev/test via the `travel-minio` container that's been running idle the entire session; R2 / real S3 in prod). 12th HTTP module. The API brokers presigned URLs; bytes never flow through Node. Transcoding + EXIF stripping + thumbnails are out of scope here — they land in `media-service` (the extracted worker from Playbook §3.2).
+
+Three HTTP surfaces:
+
+| Route                                 | What it does                                                    |
+| ------------------------------------- | --------------------------------------------------------------- |
+| `POST /api/v1/media/upload-url`       | Create a `processing` row + return short-lived PUT URL (15 min) |
+| `POST /api/v1/media/:id/confirm`      | HEAD the S3 object to verify upload landed, flip row to `ready` |
+| `GET  /api/v1/media/:id/download-url` | Short-lived GET URL (5 min) for a `ready` asset                 |
+
+- **`apps/api/src/modules/media/` new module:**
+  - `domain/media-asset.entity.ts` — plain-data `MediaAsset` + `MediaKind` + `MediaStatus` (subset of the Prisma row; `variants`, `coordinates`, `takenAt` skipped in v1).
+  - `application/ports/media-asset.repository.ts` — `create` + `markReady` + `findByIdForOwner`. Owner-gated throughout (IDOR defence: 404 on wrong-id OR wrong-owner, never 403).
+  - `application/ports/storage-provider.ts` — 3-method port: `createPresignedUploadUrl` / `createPresignedDownloadUrl` / `objectExists`. Domain / application layers never see AWS SDK types.
+  - `infrastructure/prisma-media-asset.repository.ts` — direct Prisma (no PostGIS writes — v1 leaves `coordinates` null). `markReady` uses `updateMany` + count-gate for atomic owner-scope flip.
+  - `infrastructure/s3-storage-provider.ts` — AWS SDK v3 client. **Signs URLs with `getSignedUrl` then dispatches HTTP via native `fetch`** instead of `client.send()` — see gotcha below. `onModuleInit` runs `ensureBucket` (HeadBucket → 404 → CreateBucket) so MinIO dev/test stacks don't need a manual provisioning step.
+  - `application/create-upload-url.use-case.ts` — generates a key `${ownerId}/${randomHex}/${randomHex}`, inserts the row in `processing`, returns presigned PUT URL + asset id.
+  - `application/confirm-upload.use-case.ts` — owner-gated lookup, short-circuits if already `ready` (idempotent), HEADs the object, flips status.
+  - `application/get-media-download-url.use-case.ts` — owner-gated; 409 `UPLOAD_NOT_COMPLETED` if status ≠ `ready`; else 5-min presigned GET.
+  - `interface/dto/media.dto.ts` — Zod `CreateUploadUrlBodySchema` with `kind ∈ {image, video}` + `contentType` + optional `tripId`.
+  - `interface/media.controller.ts` — three routes above; all authed via the app-wide `JwtAuthGuard`.
+  - `media.module.ts` — wires the two port tokens + three use-cases + controller.
+- **`app.module.ts`** — +MediaModule.
+- **`apps/api/package.json`** — +`@aws-sdk/client-s3@^3.705.0`, +`@aws-sdk/s3-request-presigner@^3.705.0`.
+
+- **7 integration tests** (`apps/api/test/media.e2e-spec.ts`) against real MinIO + Postgres:
+  1. No bearer on `POST /media/upload-url` → 401.
+  2. **Full end-to-end**: request upload URL → PUT 4-byte payload to the presigned URL via Node native fetch → confirm → 200 + `status=ready` → request download URL → fetch the URL → **bytes come back byte-for-byte identical**.
+  3. Confirm before actual upload → 409 `UPLOAD_NOT_COMPLETED`.
+  4. User B confirms User A's asset → 404 `MEDIA_NOT_FOUND` (IDOR).
+  5. User B requests download URL for User A's asset (even after A uploaded + confirmed) → 404 `MEDIA_NOT_FOUND`.
+  6. Invalid `kind` (e.g. `'audio'`) → 422 `VALIDATION_FAILED`.
+  7. Double-confirm is idempotent — second call still returns 200 + `status=ready`.
+
+**Files created** (11) — `modules/media/domain/media-asset.entity.ts`, `modules/media/application/ports/media-asset.repository.ts`, `modules/media/application/ports/storage-provider.ts`, `modules/media/application/create-upload-url.use-case.ts`, `modules/media/application/confirm-upload.use-case.ts`, `modules/media/application/get-media-download-url.use-case.ts`, `modules/media/infrastructure/prisma-media-asset.repository.ts`, `modules/media/infrastructure/s3-storage-provider.ts`, `modules/media/interface/dto/media.dto.ts`, `modules/media/interface/media.controller.ts`, `modules/media/media.module.ts`, `test/media.e2e-spec.ts`.
+**Files edited** (2) — `apps/api/package.json` (+2 AWS SDK deps), `apps/api/src/app.module.ts` (+MediaModule).
+
+**Dependencies added** — `@aws-sdk/client-s3@^3.705.0`, `@aws-sdk/s3-request-presigner@^3.705.0`.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Media suite 7/7 pass — including auto-bucket-create (dropped `travel-test` before run; `ensureBucket` recreated it; happy-path PUT + confirm + download all succeeded).
+- ✅ **Full real-DB + real-MinIO suite: 45 suites, 307 tests pass against live Docker.** (+1 suite, +7 tests.)
+
+**Acceptance criteria**
+
+- ✅ Authenticated client can request a presigned PUT URL and a `MediaAsset` row exists in `processing` state.
+- ✅ Client PUTs bytes directly to MinIO (API never proxies bytes).
+- ✅ Confirm-upload verifies the object actually landed via HEAD before flipping status.
+- ✅ Download-URL is owner-gated + short-lived (5 min).
+- ✅ Cross-user IDOR attempts all collapse to 404 `MEDIA_NOT_FOUND`.
+- ✅ Idempotent double-confirm doesn't 409.
+- ✅ Bucket auto-creates on module init (MinIO dev ergonomics).
+
+**Notes**
+
+- **Why `getSignedUrl` + native fetch instead of `client.send()`.** The AWS SDK v3's `client.send` path does a dynamic `import()` to lazily load its HTTP handler. Jest's VM sandbox rejects those with `ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG: A dynamic import callback was invoked without --experimental-vm-modules`. Instead of forcing every test in the suite onto that flag, the adapter signs URLs (pure HMAC — no dynamic imports, works in every runtime including Jest VM, Cloudflare Workers, Deno) and dispatches actual HTTP via Node's built-in `fetch`. In prod this is a zero-cost difference: presigning is a sub-millisecond HMAC; the HTTP round-trip is identical. The same pattern covers HeadObject (probe in `objectExists`), HeadBucket (probe on init), and CreateBucket (auto-provision). Durable environment gotcha — every future slice that adds S3 ops should follow the same shape.
+- **Why auto-create the bucket on init.** MinIO dev containers start empty. Shipping a working "one command up" story (`docker compose up` then `pnpm dev`) means no manual `mc mb`. In prod the bucket pre-exists — `HeadBucket` succeeds on first boot and `CreateBucket` never runs. Any failure in `ensureBucket` is logged but not thrown, so a transient MinIO hiccup doesn't block API startup; the first real upload would surface a genuine misconfig.
+- **Why `status` flip happens in the API, not in an S3 event.** In prod, the "official" pattern is an S3 Event Notification → SQS → worker → status flip. That adds three new infra dependencies (SNS, SQS, a worker), none of which the current stack has. Confirming via a client-driven POST + a HEAD probe is simpler, works against MinIO in dev, and the eventual S3-events migration is a pure adapter swap.
+- **Why owner-prefix the S3 key.** Bucket listing stays tidy, per-user lifecycle policies become trivial, and eventual object-level ACL tightening (per-user encryption keys, GDPR right-to-erasure by prefix) is cheap. The `/` in the key is a visual delimiter only; MinIO/S3 don't create directories.
+- **Why 15-min upload / 5-min download TTLs.** Mobile uploads over flaky networks can take minutes; 15 reaps any client-side retries with margin. Downloads render fast — 5 min is plenty and minimises exposure window if a URL is logged/shared accidentally.
+- **Why the asset-row is inserted BEFORE the URL is returned.** The confirm step owner-gates by `id + ownerId` without an extra lookup. A row whose bytes never land stays in `processing` forever — a cleanup worker can reap them in a follow-up; v1 just tolerates the drift.
+- **First domain to have a genuinely-external infrastructure dep beyond Postgres + Redis.** Weather/Stays/Food/Places-federation/Events/Transport all mocked their upstreams. MinIO is the first real adapter this session, and proves the "port + external provider adapter" shape works end-to-end against a boxed service. Same shape will carry Payments (Stripe), Comms (Resend/Twilio), and Search (Meilisearch) when those slices land.
+- **Event emission deferred.** No `Media.UploadCompleted` event on confirm in v1. The reason is subtle: a worker-driven transcode path would be the natural subscriber, and that worker itself would emit `Media.VariantsReady`. Shipping the event now risks a premature shape. The confirm use-case has the exact right seam to add one later.
 
 ---
 
