@@ -12,16 +12,78 @@
 
 | Counter             | Value                                                                         |
 | ------------------- | ----------------------------------------------------------------------------- |
-| Prompts completed   | 77 (76 full + 1 foundation-only; Safety v1 scam reports just shipped)         |
+| Prompts completed   | 78 (77 full + 1 foundation-only; SOS events just shipped)                     |
 | Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5+6+7 shipped; JWKS rotation still follow-up) |
 | Prompts blocked     | 0                                                                             |
-| Last prompt         | `[IV.18.11.1]` — Safety v1: scam reports (user-report + nearby search)        |
-| Last commit date    | 2026-04-23                                                                    |
-| Phase               | Phase 1 — Safety moat opened; 43 suites, 293 tests pass against Docker        |
+| Last prompt         | `[IV.18.11.2]` — Safety: SOS events (trigger + list + resolve)                |
+| Last commit date    | 2026-04-24                                                                    |
+| Phase               | Phase 1 — Safety moat has both scam reports + SOS; 44 suites, 300 tests pass  |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.11.2] — Safety: SOS events (trigger + list-mine + resolve)
+
+**Date:** 2026-04-24 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.7 (Safety)
+
+**What was done**
+
+Second safety primitive alongside scam reports. Scam reports are "I saw something bad here for others to avoid"; SOS is "I need help right now." Three HTTP surfaces: trigger (create), list-mine (read), resolve (update).
+
+- **`GeoQueries.insertSosEvent`** — raw-SQL INSERT for the PostGIS `coordinates` column. Sparse-by-design: `resolvedAt` + note start null, flipped by the resolve path (not by insert).
+
+- **`apps/api/src/modules/safety/` extension:**
+  - `domain/sos-event.entity.ts` — `SosEvent` mirroring the Prisma row minus the PostGIS column.
+  - `domain/safety.events.ts` — **new file**; `Safety.SosTriggered` typed domain event + `makeSafetyEvent` factory. No handlers in this slice — the event fires so a future notification subscriber (push to emergency contacts / SMS to ops on-call) can latch on. Parity with how Identity/Trip shipped their events ahead of handlers.
+  - `application/ports/sos-event.repository.ts` — `create` + `listForUser` + `resolve`. Resolve is scoped to `(id, userId, resolvedAt: null)` so strangers can't resolve and repeats 404.
+  - `infrastructure/prisma-sos-event.repository.ts` — `create` via `GeoQueries`; list + resolve via direct Prisma delegates. Resolve uses `updateMany` + `count === 1` gate for the atomic owner-scope + unresolved-only filter (same trick the trip-share revoke uses).
+  - `application/trigger-sos.use-case.ts` — validates lat/lng, delegates to repo, emits `Safety.SosTriggered`. **Event-publish failure is swallowed-and-logged** — the row is already in the DB, and an emergency SOS path MUST NOT 500 because an event bus hiccuped.
+  - `application/list-my-sos-events.use-case.ts` — `listForUser(userId, limit)`. Default 50, cap 200.
+  - `application/resolve-sos.use-case.ts` — delegates to repo; `null` return → 404 `SOS_NOT_FOUND` (repeat-resolve, stranger-resolve, unknown-id all collapse to the same error — no IDOR leak).
+  - `interface/dto/safety.dto.ts` — +`TriggerSosBodySchema`, +`ResolveSosBodySchema`. Trigger is free-form 1–60 chars so `fall_detected` / `voice_command` etc. don't need schema migrations.
+  - `interface/sos.controller.ts` — **new controller** (`@Controller('safety/sos')`, separate from `SafetyController`). Three routes map to the three use-cases.
+  - `safety.module.ts` — two new providers, two new use-cases added, both controllers listed.
+
+- **7 integration tests** (`apps/api/test/sos.e2e-spec.ts`):
+  1. No bearer → 401.
+  2. Full flow: trigger → list shows unresolved → resolve with note → list now shows `resolvedAt` + `resolutionNote` populated.
+  3. Cross-user leak defence: Alice's list only returns Alice's events, not Bob's.
+  4. Bob tries to resolve Alice's SOS → 404 `SOS_NOT_FOUND` + Alice's event still unresolved.
+  5. Repeat resolve → second call returns 404 (already resolved; filter `resolvedAt: null` excludes the row).
+  6. Resolve unknown id → 404 `SOS_NOT_FOUND`.
+  7. `lat=999` → 422 `VALIDATION_FAILED`.
+
+**Files created** (7) — `modules/safety/domain/sos-event.entity.ts`, `modules/safety/domain/safety.events.ts`, `modules/safety/application/ports/sos-event.repository.ts`, `modules/safety/application/trigger-sos.use-case.ts`, `modules/safety/application/list-my-sos-events.use-case.ts`, `modules/safety/application/resolve-sos.use-case.ts`, `modules/safety/infrastructure/prisma-sos-event.repository.ts`, `modules/safety/interface/sos.controller.ts`, `test/sos.e2e-spec.ts`.
+**Files edited** (3) — `common/db/geo-queries.ts` (+insertSosEvent + `InsertSosEventInput`), `modules/safety/interface/dto/safety.dto.ts` (+TriggerSos + ResolveSos schemas), `modules/safety/safety.module.ts` (+4 providers + SosController).
+
+**Dependencies** — none new.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ SOS suite 7/7 pass.
+- ✅ **Full real-DB suite: 44 suites, 300 tests pass against live Docker.** (+1 suite, +7 tests. 300-test milestone.)
+
+**Acceptance criteria**
+
+- ✅ Authenticated user can trigger an SOS pinned to a coordinate.
+- ✅ User can list their own SOS history (most recent first), active + resolved.
+- ✅ Owner can resolve their own event with an optional note.
+- ✅ Non-owner / repeat / unknown resolves collapse to one 404 code.
+- ✅ `Safety.SosTriggered` domain event emitted on create (latch-point for future notification fan-out).
+- ✅ Event-bus hiccup doesn't 500 the SOS path.
+
+**Notes**
+
+- **Why the event-publish failure is swallowed-and-logged.** SOS is a life-safety path. The data integrity guarantee is "row is in the DB." Notification fan-out is a best-effort layer on top. If the event bus is down, the row still exists, ops can still query it, and the client still got its 201 with the id. Bubbling the publish error would violate the core contract for an optional-layer problem.
+- **Why `resolve` is POST not PATCH.** REST purists would say PATCH, but resolving an SOS is a state-machine transition ("I am no longer in danger"), not a partial edit. POST + explicit verb path matches how the app's other state transitions work (trip share revoke, MFA verify).
+- **Why the "already resolved" response is 404 not 409.** Callers don't distinguish between "never existed" and "existed but already in the terminal state" — both mean "you can't resolve it now." Trying a dozen error codes at the boundary is a UX cost with no win. Same call the trip-share revoke made.
+- **Why no "ops dashboard" endpoint for all active SOS.** That's an admin surface — different auth gate (role=admin), different data visibility (all users, including sensitive precise coordinates), different rate limits. When an ops team exists and there's a concrete UI for them, that surface lands in its own slice under `/admin/safety/sos`.
+- **Why free-form `trigger` string.** New SOS modes emerge (`apple_watch_fall`, `voice_assistant`, `shake_to_sos`). Locking to an enum would force a migration every time. A moderation-curated catalog can bolt on later if analytics wants consistent values. Same pattern scam-report `category` uses.
+- **First domain event emitted outside Identity + Trip.** Those two had events from day one because sessions and trips both have fan-out concerns (notifications, analytics). Safety joins that list naturally — an SOS is the canonical "tell the system something urgent happened" moment.
 
 ---
 
