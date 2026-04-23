@@ -26,6 +26,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { EventsModule as EventsSearchModule } from './modules/events/events.module';
 import { FoodModule } from './modules/food/food.module';
 import { IdentityModule } from './modules/identity/identity.module';
+import { MediaModule } from './modules/media/media.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PlacesModule } from './modules/places/places.module';
 import { SafetyModule } from './modules/safety/safety.module';
@@ -65,6 +66,7 @@ import { WeatherModule } from './modules/weather/weather.module';
     EventsSearchModule,
     TransportModule,
     SafetyModule,
+    MediaModule,
   ],
   providers: [
     AppNestLoggerService,
