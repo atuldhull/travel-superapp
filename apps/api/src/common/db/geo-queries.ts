@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
-import type { Place, Prisma, Trip } from '@prisma/client';
+import type { Place, Prisma, ScamReport, ScamSeverity, Trip } from '@prisma/client';
 import { PrismaService } from './prisma.service';
 
 /**
@@ -162,6 +162,103 @@ export class GeoQueries {
       WHERE id = ${id}
     `;
   }
+
+  /**
+   * Insert a ScamReport row. `coordinates` goes via PostGIS raw SQL
+   * (same Unsupported-column pattern as Place / Trip). `evidenceUrls`
+   * is a Postgres `text[]` — empty-array default keeps the NOT NULL
+   * column honest.
+   *
+   * Installed for prompt [IV.18.11.1].
+   */
+  async insertScamReport(input: InsertScamReportInput): Promise<ScamReport> {
+    const id = randomUUID();
+    const now = new Date();
+    const rows = await this.prisma.$queryRaw<ScamReport[]>`
+      INSERT INTO "ScamReport" (
+        id, "reporterId", category, severity, coordinates, description,
+        "evidenceUrls", verified, "createdAt", "updatedAt"
+      )
+      VALUES (
+        ${id},
+        ${input.reporterId},
+        ${input.category},
+        ${input.severity}::"ScamSeverity",
+        ST_SetSRID(ST_MakePoint(${input.lng}, ${input.lat}), 4326)::geography,
+        ${input.description},
+        ${input.evidenceUrls ?? []}::text[],
+        ${input.verified ?? false},
+        ${now},
+        ${now}
+      )
+      RETURNING
+        id, "reporterId", category, severity, description, "evidenceUrls",
+        verified, "createdAt", "updatedAt"
+    `;
+    const row = rows[0];
+    if (!row) {
+      throw new Error('insertScamReport: no row returned');
+    }
+    return row;
+  }
+
+  /**
+   * Find every ScamReport within `radiusKm` of (`lat`, `lng`),
+   * ordered ascending by distance. Optional category / min-severity
+   * filters. `minSeverity` is threshold-style: `medium` matches
+   * medium/high/critical.
+   *
+   * Installed for prompt [IV.18.11.1].
+   */
+  async findScamReportsWithinRadius(
+    input: FindScamReportsInput,
+  ): Promise<ScamReportWithDistance[]> {
+    const categoryFilter = input.filters?.category ?? null;
+    const minSeverityRank =
+      input.filters?.minSeverity === undefined ? null : severityRank(input.filters.minSeverity);
+    const radiusMeters = input.radiusKm * 1000;
+
+    return this.prisma.$queryRaw<ScamReportWithDistance[]>`
+      SELECT
+        id, "reporterId", category, severity, description, "evidenceUrls",
+        verified, "createdAt", "updatedAt",
+        ST_Distance(
+          coordinates,
+          ST_SetSRID(ST_MakePoint(${input.lng}, ${input.lat}), 4326)::geography
+        )::double precision AS "distanceMeters"
+      FROM "ScamReport"
+      WHERE
+        ST_DWithin(
+          coordinates,
+          ST_SetSRID(ST_MakePoint(${input.lng}, ${input.lat}), 4326)::geography,
+          ${radiusMeters}
+        )
+        AND (${categoryFilter}::text IS NULL OR category = ${categoryFilter}::text)
+        AND (
+          ${minSeverityRank}::int IS NULL
+          OR (CASE severity
+                WHEN 'low'      THEN 1
+                WHEN 'medium'   THEN 2
+                WHEN 'high'     THEN 3
+                WHEN 'critical' THEN 4
+              END) >= ${minSeverityRank}::int
+        )
+      ORDER BY "distanceMeters" ASC
+    `;
+  }
+}
+
+function severityRank(severity: ScamSeverity): number {
+  switch (severity) {
+    case 'low':
+      return 1;
+    case 'medium':
+      return 2;
+    case 'high':
+      return 3;
+    case 'critical':
+      return 4;
+  }
 }
 
 export interface InsertPlaceInput {
@@ -198,3 +295,26 @@ export interface InsertTripInput {
   readonly startsOn?: Date | null;
   readonly endsOn?: Date | null;
 }
+
+export interface InsertScamReportInput {
+  readonly reporterId: string;
+  readonly category: string;
+  readonly severity: ScamSeverity;
+  readonly lat: number;
+  readonly lng: number;
+  readonly description: string;
+  readonly evidenceUrls?: readonly string[];
+  readonly verified?: boolean;
+}
+
+export interface FindScamReportsInput {
+  readonly lat: number;
+  readonly lng: number;
+  readonly radiusKm: number;
+  readonly filters?: {
+    readonly category?: string;
+    readonly minSeverity?: ScamSeverity;
+  };
+}
+
+export type ScamReportWithDistance = ScamReport & { readonly distanceMeters: number };
