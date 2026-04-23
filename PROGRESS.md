@@ -10,18 +10,66 @@
 
 ## Summary
 
-| Counter             | Value                                                                        |
-| ------------------- | ---------------------------------------------------------------------------- |
-| Prompts completed   | 74 (73 full + 1 foundation-only; OAuth sign-in just shipped)                 |
-| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5+6 shipped; JWKS rotation still follow-up)  |
-| Prompts blocked     | 0                                                                            |
-| Last prompt         | `[III.13.2.6]` — OAuth sign-in: POST /auth/oauth/:provider (Google + Mock)   |
-| Last commit date    | 2026-04-22                                                                   |
-| Phase               | Phase 1 — Identity almost complete; 41 suites, 276 tests pass against Docker |
+| Counter             | Value                                                                         |
+| ------------------- | ----------------------------------------------------------------------------- |
+| Prompts completed   | 75 (74 full + 1 foundation-only; Apple OAuth adapter just shipped)            |
+| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5+6+7 shipped; JWKS rotation still follow-up) |
+| Prompts blocked     | 0                                                                             |
+| Last prompt         | `[III.13.2.7]` — Apple OAuth adapter (sibling to Google)                      |
+| Last commit date    | 2026-04-23                                                                    |
+| Phase               | Phase 1 — OAuth story complete (Google + Apple); 41 suites, 277 tests pass    |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [III.13.2.7] — Apple OAuth adapter (sibling to Google)
+
+**Date:** 2026-04-23 · **Status:** DONE · **Kind:** Build · **Playbook §** 13 (Identity, part 7)
+
+**What was done**
+
+Finishes the OAuth story opened in `[III.13.2.6]`. Same decorator-of-DI shape Google uses, different provider metadata.
+
+- **`AppleOAuthProvider`** — sibling class to `GoogleOAuthProvider`:
+  - Issuer: `https://appleid.apple.com` (single, no alternates like Google).
+  - JWKS URL: `https://appleid.apple.com/auth/keys`.
+  - Audience: `APPLE_CLIENT_ID` env var (bundle id for native, Services ID for web).
+  - **`email_verified` coercion**: Apple returns this as EITHER boolean `true` OR string `"true"`. `coerceBool(...)` handles both.
+  - **Name handling**: Apple doesn't put the name in the ID token. It sends the user's name via a separate form field on first sign-in only, which the client has to pass through. v1 leaves `displayName: null` in the returned profile; `SignInWithOAuthUseCase` already defaults to the email local-part when that's null. A follow-up slice can accept an optional `name` on the request body.
+  - **Private relay addresses**: `*@privaterelay.appleid.com` emails are permitted — they're valid Apple-issued and verified. Nothing special needed; the existing email validation accepts them.
+
+- **Module registry**: factory in `identity.module.ts` extended — Apple registers only when `APPLE_CLIENT_ID` is present (env schema already optional). No changes to the port, use-case, controller, or schema. The `POST /auth/oauth/:provider` route handles Apple identically to Google + Mock — the registry picks the right adapter by provider name.
+
+- **Test** (+1): a sanity check that when `APPLE_CLIENT_ID` isn't set (test env), `POST /auth/oauth/apple` returns 401 `OAUTH_PROVIDER_UNKNOWN`. Proves the env-gated registration pattern actually gates — the route still exists (path param), but the registry lookup misses. Doesn't hit Apple's JWKS (not possible in CI, and not useful — the Mock adapter already exercises the full HTTP → use-case → link-flow path).
+
+**Files created** (1) — `modules/identity/infrastructure/apple-oauth-provider.ts`.
+**Files edited** (2) — `modules/identity/identity.module.ts` (+AppleOAuthProvider import + env-gated registry entry), `test/oauth.e2e-spec.ts` (+1 test).
+
+**Dependencies** — none new (uses existing `jose`).
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ OAuth suite 8/8 pass (was 7; +1 for Apple-unregistered path).
+- ✅ **Full real-DB suite: 41 suites, 277 tests pass against live Docker.** (+1 test.)
+
+**Acceptance criteria**
+
+- ✅ Apple sign-in works at the same URL as Google: `POST /auth/oauth/apple`.
+- ✅ Apple-specific `email_verified` string/boolean quirk handled via `coerceBool`.
+- ✅ Private relay addresses accepted (no special code needed).
+- ✅ Apple only registers when `APPLE_CLIENT_ID` is set — local dev without Apple creds still boots.
+- ✅ When unregistered, lookup returns the same `OAUTH_PROVIDER_UNKNOWN` 401 as any other unknown provider name.
+
+**Notes**
+
+- **Why no deep integration test of the real Apple adapter.** Same reasoning as Google: we can't hit Apple's JWKS from CI, and the `Mock` adapter already exercises the full HTTP → use-case → link-flow chain. The Apple adapter's only novel logic (issuer/audience/`email_verified` coerce) is type-checked + unit-trivial. If we ever add true JWKS-stubbed tests, they can exercise both adapters the same way.
+- **Why one adapter per audience.** A single `AppleOAuthProvider` instance checks against a single audience value. If the product eventually needs iOS + web on the same deployment (different bundle id vs Services ID), register two adapters under different provider names (`apple-ios`, `apple-web`). The route param already lets that drop in without a port change.
+- **Why not capture the `name` form field in v1.** Apple only sends it on the FIRST sign-in, and only as client-side form data (not in the ID token). Supporting it properly means: (1) accepting an optional `name` on the request body, (2) using it ONLY when creating a new user (ignoring for repeat sign-ins so malicious clients can't rename other people's accounts). That's a real design decision worth its own slice; for now, email-local-part is a reasonable fallback.
+- **Identity module now covers**: email + password, MFA (TOTP + backup codes), account lockout, session rotation + reuse-detection cascade, Google OAuth, Apple OAuth, Mock OAuth. Still open: JWKS rotation + Redis-backed keyring persistence (the `@app/auth` package already supports it; the wiring in `jwt-token.service.ts` is stub-level single-key).
 
 ---
 
