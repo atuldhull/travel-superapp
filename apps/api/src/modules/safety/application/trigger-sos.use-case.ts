@@ -1,0 +1,86 @@
+/**
+ * Trigger an SOS event at the caller's reported coordinate.
+ * Authenticated path; `userId` comes from the JWT.
+ *
+ * Emits `Safety.SosTriggered` on success so a future notification
+ * subscriber can fan out to emergency contacts / ops on-call.
+ * Today the event fires but has no handlers — parity with
+ * Identity's `Session.*` + Trip's `Trip.*` events, which also had
+ * no subscribers on first landing.
+ *
+ * Installed by prompt [IV.18.11.2].
+ */
+import { Inject, Injectable } from '@nestjs/common';
+import { EVENT_BUS, type EventBus } from '@app/events';
+import { ValidationError } from '@app/errors';
+import { createLogger, getTraceContext } from '@app/logger';
+import type { SosEvent } from '../domain/sos-event.entity';
+import { makeSafetyEvent, type SosTriggeredEvent } from '../domain/safety.events';
+import { SOS_EVENT_REPOSITORY, type SosEventRepository } from './ports/sos-event.repository';
+
+const log = createLogger('safety.sos.trigger');
+
+export interface TriggerSosCommand {
+  readonly userId: string;
+  readonly trigger: string;
+  readonly lat: number;
+  readonly lng: number;
+}
+
+@Injectable()
+export class TriggerSosUseCase {
+  constructor(
+    @Inject(SOS_EVENT_REPOSITORY) private readonly sos: SosEventRepository,
+    @Inject(EVENT_BUS) private readonly events: EventBus,
+  ) {}
+
+  async execute(cmd: TriggerSosCommand): Promise<SosEvent> {
+    if (!Number.isFinite(cmd.lat) || cmd.lat < -90 || cmd.lat > 90) {
+      throw new ValidationError(
+        'Latitude out of range',
+        { lat: ['must be between -90 and 90'] },
+        { lat: cmd.lat },
+        'INVALID_COORDINATES',
+      );
+    }
+    if (!Number.isFinite(cmd.lng) || cmd.lng < -180 || cmd.lng > 180) {
+      throw new ValidationError(
+        'Longitude out of range',
+        { lng: ['must be between -180 and 180'] },
+        { lng: cmd.lng },
+        'INVALID_COORDINATES',
+      );
+    }
+
+    const created = await this.sos.create({
+      userId: cmd.userId,
+      trigger: cmd.trigger,
+      lat: cmd.lat,
+      lng: cmd.lng,
+    });
+
+    const evt: SosTriggeredEvent = makeSafetyEvent(
+      'Safety.SosTriggered',
+      {
+        userId: created.userId,
+        sosEventId: created.id,
+        trigger: created.trigger,
+        lat: cmd.lat,
+        lng: cmd.lng,
+      },
+      getTraceContext()?.traceId ? { traceId: getTraceContext()!.traceId } : {},
+    );
+    try {
+      await this.events.publish(evt);
+    } catch (err) {
+      // Event publishing must not bring the whole SOS path down —
+      // the row is already safely in the DB. Log + continue.
+      log.warn(
+        { err: err instanceof Error ? err.message : String(err), sosEventId: created.id },
+        'sos_event_publish_failed',
+      );
+    }
+
+    return created;
+  }
+}

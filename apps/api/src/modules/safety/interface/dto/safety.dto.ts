@@ -34,3 +34,23 @@ export const FindNearbyScamsBodySchema = z.object({
   limit: z.number().int().positive().max(200).optional(),
 });
 export type FindNearbyScamsBody = z.infer<typeof FindNearbyScamsBodySchema>;
+
+/**
+ * Body for `POST /safety/sos` — trigger an SOS event. `trigger` is
+ * free-form so new modes (`voice_command`, `smartwatch_tap`) don't
+ * need a migration. 60 chars caps pathological payloads.
+ */
+export const TriggerSosBodySchema = z.object({
+  center: Coord,
+  trigger: z.string().trim().min(1).max(60),
+});
+export type TriggerSosBody = z.infer<typeof TriggerSosBodySchema>;
+
+/**
+ * Body for `POST /safety/sos/:id/resolve`. Note optional; 500 char
+ * cap matches the scam-report description's ceiling.
+ */
+export const ResolveSosBodySchema = z.object({
+  note: z.string().trim().max(500).optional(),
+});
+export type ResolveSosBody = z.infer<typeof ResolveSosBodySchema>;

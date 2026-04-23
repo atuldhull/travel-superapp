@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
-import type { Place, Prisma, ScamReport, ScamSeverity, Trip } from '@prisma/client';
+import type { Place, Prisma, ScamReport, ScamSeverity, SosEvent, Trip } from '@prisma/client';
 import { PrismaService } from './prisma.service';
 
 /**
@@ -246,6 +246,34 @@ export class GeoQueries {
       ORDER BY "distanceMeters" ASC
     `;
   }
+
+  /**
+   * Insert an SosEvent row. Sparse-by-design — `resolvedAt` + note
+   * start null and get set by a separate resolve path. Coordinates
+   * via PostGIS raw SQL (same pattern as Place / Trip / ScamReport).
+   *
+   * Installed for prompt [IV.18.11.2].
+   */
+  async insertSosEvent(input: InsertSosEventInput): Promise<SosEvent> {
+    const id = randomUUID();
+    const now = new Date();
+    const rows = await this.prisma.$queryRaw<SosEvent[]>`
+      INSERT INTO "SosEvent" (id, "userId", coordinates, trigger, "createdAt")
+      VALUES (
+        ${id},
+        ${input.userId},
+        ST_SetSRID(ST_MakePoint(${input.lng}, ${input.lat}), 4326)::geography,
+        ${input.trigger},
+        ${now}
+      )
+      RETURNING id, "userId", trigger, "resolvedAt", "resolutionNote", "createdAt"
+    `;
+    const row = rows[0];
+    if (!row) {
+      throw new Error('insertSosEvent: no row returned');
+    }
+    return row;
+  }
 }
 
 function severityRank(severity: ScamSeverity): number {
@@ -318,3 +346,10 @@ export interface FindScamReportsInput {
 }
 
 export type ScamReportWithDistance = ScamReport & { readonly distanceMeters: number };
+
+export interface InsertSosEventInput {
+  readonly userId: string;
+  readonly trigger: string;
+  readonly lat: number;
+  readonly lng: number;
+}
