@@ -10,18 +10,95 @@
 
 ## Summary
 
-| Counter             | Value                                                                   |
-| ------------------- | ----------------------------------------------------------------------- |
-| Prompts completed   | 89 (88 full + 1 foundation-only; Scam search verifiedOnly just shipped) |
-| Prompts in progress | 0                                                                       |
-| Prompts blocked     | 0                                                                       |
-| Last prompt         | `[IV.18.11.6]` — Scam search verifiedOnly filter (closes mod flywheel)  |
-| Last commit date    | 2026-04-25                                                              |
-| Phase               | Phase 1 — Safety moderation loop end-to-end; 55 suites, 371 tests       |
+| Counter             | Value                                                                    |
+| ------------------- | ------------------------------------------------------------------------ |
+| Prompts completed   | 90 (89 full + 1 foundation-only; Social v1 voting just shipped)          |
+| Prompts in progress | 0                                                                        |
+| Prompts blocked     | 0                                                                        |
+| Last prompt         | `[IV.18.12.3]` — Social v1: collaborative trip voting (upsert + tally)   |
+| Last commit date    | 2026-04-25                                                               |
+| Phase               | Phase 1 — Social module (14th HTTP surface) opened; 56 suites, 380 tests |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.12.3] — Social v1: collaborative trip voting (upsert + tally + auth-gate)
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.12 (Social & Groups)
+
+**What was done**
+
+Opens the Social bounded context (14th HTTP module, first feature in §3.12). v1 scope is voting — expenses + reviews land in follow-up slices. Meatier-than-usual single slice: new module from zero, Prisma `Vote` table activated (schema had it since day one; no migration needed), cross-module gate that unlocks voting on shared trips.
+
+**Auth gate innovation** — the collaboration primitive of v1: "caller owns the trip OR trip has at least one active (non-revoked, non-expired) TripShare." Owner publishes a share → anyone authed can vote. Owner revokes the share → voting closes. The share itself is the auth token, no new collaborator ledger required. Weaker than per-user collaborator tracking but ships the 80% use case + defers the bigger lift.
+
+HTTP surface (all under `/trips/:tripId/votes`, all authed):
+
+| Route    | What it does                                 |
+| -------- | -------------------------------------------- |
+| `POST`   | cast/change a vote (upsert by unique key)    |
+| `DELETE` | revoke caller's own vote                     |
+| `GET`    | aggregated tallies per target + caller's own |
+
+- **`apps/api/src/modules/social/` — new module (9 files):**
+  - `domain/vote.entity.ts` — plain-data `Vote` + `VoteTally` (aggregated up/meh/down counts + net score + the authed caller's `mine` vote on each target).
+  - `application/ports/vote.repository.ts` — 4-method port: `upsert`, `deleteForUser`, `listForTrip`, `findForUser`.
+  - `infrastructure/prisma-vote.repository.ts` — Prisma `upsert` via the compound UNIQUE `(tripId, userId, targetType, targetId)`. Direct delegate, no raw SQL (no PostGIS in Vote).
+  - `application/cast-vote.use-case.ts` — runs the auth gate via an exported helper `assertCanVote(trips, shares, tripId, userId)` that both other use-cases reuse. Upsert on hit.
+  - `application/revoke-vote.use-case.ts` — same gate, then `deleteForUser`; 404 `VOTE_NOT_FOUND` if nothing to remove.
+  - `application/list-trip-votes.use-case.ts` — same gate, reads all rows, aggregates into `VoteTally[]` client-side (O(n) over the row set; small enough that a naive Map read cleaner than a GROUP BY + second query for `mine`). **Privacy**: per-user votes are not returned. Only aggregated counts + caller's own `mine` field.
+  - `interface/dto/social.dto.ts` — `CastVoteBodySchema` + `RevokeVoteBodySchema`. `targetType` is a Zod enum pinned to `'itinerary_item'` for v1; places + restaurants become votable in follow-up slices.
+  - `interface/social.controller.ts` — 3 routes at `/trips/:tripId/votes`. DELETE carries a body (`{ targetType, targetId }`) — explicitly allowed by RFC 9110 §9.3.5, works in Fastify.
+  - `social.module.ts` — imports TripModule (needs `TRIP_REPOSITORY` + `TRIP_SHARE_REPOSITORY`). Trip doesn't import back; strict one-way dep.
+
+- **`apps/api/src/modules/trip/application/ports/trip-share.repository.ts`** — adds `countActiveSharesForTrip(tripId)`. Used by the Social gate to answer "is this trip open for collaboration?" in one query.
+- **`apps/api/src/modules/trip/infrastructure/prisma-trip-share.repository.ts`** — implements the count via Prisma's `count()` with an OR clause on `expiresAt null | > now`.
+- **`apps/api/src/app.module.ts`** — +SocialModule.
+
+- **9 integration tests** (`apps/api/test/social-votes.e2e-spec.ts`) against real Postgres:
+  1. No bearer → 401.
+  2. Owner casts a vote; GET shows it with `mine` populated.
+  3. Non-owner cannot vote on a trip with no active share → 404 `TRIP_NOT_FOUND`.
+  4. Non-owner CAN vote once the trip has an active share; owner + collaborator votes aggregate correctly; `mine` on the owner's view shows owner's vote, not the collaborator's.
+  5. Recasting (thumbs-up → thumbs-down) upserts the existing row, doesn't create a new one (unique-index contract).
+  6. DELETE removes the vote; subsequent GET no longer includes the tally.
+  7. DELETE a vote that never existed → 404 `VOTE_NOT_FOUND`.
+  8. Revoking the trip share closes voting — collaborator who could vote a moment ago now gets 404.
+  9. Invalid value (e.g. `2`) → 422 `VALIDATION_FAILED`.
+
+**Files created** (10) — `modules/social/domain/vote.entity.ts`, `modules/social/application/ports/vote.repository.ts`, `modules/social/application/cast-vote.use-case.ts`, `modules/social/application/revoke-vote.use-case.ts`, `modules/social/application/list-trip-votes.use-case.ts`, `modules/social/infrastructure/prisma-vote.repository.ts`, `modules/social/interface/dto/social.dto.ts`, `modules/social/interface/social.controller.ts`, `modules/social/social.module.ts`, `test/social-votes.e2e-spec.ts`.
+**Files edited** (3) — `modules/trip/application/ports/trip-share.repository.ts` (+countActiveSharesForTrip), `modules/trip/infrastructure/prisma-trip-share.repository.ts` (+impl), `app.module.ts` (+SocialModule).
+
+**Dependencies** — none new. No Prisma migration (Vote table already in schema + DB).
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Social suite 9/9 pass (includes the full share-open → vote → share-revoke → vote-closed roundtrip).
+- ✅ **Full real-DB suite: 56 suites, 380 tests pass against live Docker.** (+1 suite, +9 tests.)
+
+**Acceptance criteria**
+
+- ✅ Owner can cast/revoke/list votes on their own trip.
+- ✅ Any authed user can vote on a trip that has an active share.
+- ✅ Revoking the share immediately closes voting for non-owners.
+- ✅ Tallies aggregate correctly across multiple users; `mine` is per-caller.
+- ✅ Recasting doesn't inflate counts (unique-index upsert).
+- ✅ DELETE-of-missing → 404, no silent no-op.
+- ✅ Per-user vote identities are not exposed in tallies (privacy invariant).
+
+**Notes**
+
+- **Why the "has active share" gate instead of a proper collaborators table.** A dedicated `TripCollaborator` (or `TripShareResolution`) table would be the right long-term design — each resolve of a share code writes a row, and voting gates on that specific resolution. Ship-in-one-slice required a simpler proxy: any active share opens the trip. Matches how link-shared Google Docs behave. The share-as-capability model is weaker (anyone authed can vote, not just those who opened the link) but the concrete attack is limited: a non-collaborator would have to guess the trip id + discover the trip is shared. The follow-up to tighten this ships when somebody actually cares about strict per-link binding.
+- **Why DELETE uses a body instead of query params.** The composite key is `(targetType, targetId)`. Two query params (`?targetType=itinerary_item&targetId=xxx`) work but read uglier than a JSON body + the types become string-everywhere parsing. RFC 9110 §9.3.5 explicitly allows DELETE bodies; Fastify handles it; Zod validates. The ergonomics win.
+- **Why aggregate client-side (in the use-case) instead of a SQL GROUP BY.** Two reasons. First, the `mine` field requires the caller's userId which a naive GROUP BY doesn't join in cleanly — you'd need a correlated subquery per row. Second, trip-scale vote counts are small (a trip has ~20 items, dozens of collaborators max) — O(n) over the row set in JS is microseconds. When vote volume per trip gets into the thousands (unlikely given the domain) the aggregate becomes a candidate for a materialized view.
+- **Why per-user vote identities aren't exposed.** If Alice can see Bob's vote, one-sided arguments ("why did you downvote my pick?") become friction. Aggregates + your-own-vote is enough signal for the UX ("this got 3 thumbs-up; you haven't voted yet"). A future owner-only "who voted what" admin surface can land separately if the product team decides transparency > interpersonal friction.
+- **Why `targetType` is a Zod enum pinned to `'itinerary_item'` for v1.** Future targets (`place`, `restaurant`) exist on the domain type for a reason — the schema is ready — but the HTTP layer only accepts one today. Flipping the Zod enum to include more targets is a 1-line change when their read surfaces render vote counts. Shipping all three at once would require aligning the search endpoints to decorate with tallies, which is a bigger change.
+- **Why the `Vote` table already existed on the schema.** It's been in `prisma/schema.prisma` since the initial `db push`, anticipating exactly this slice (generic `targetType + targetId + value` shape). Saved a migration + the live-DB-not-tracked-by-\_prisma_migrations dance. Small compounding win from a decision made months ago.
+- **First Social slice of any kind in the codebase.** The playbook lists `Social & Groups` with 4 models (TripShare, Vote, Expense, Review). TripShare shipped in [IV.18.2.13]; this adds Vote. Expense + Review are next in the Social arc. The module now has an import edge (TripModule) that future Social features inherit for free.
 
 ---
 
