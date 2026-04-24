@@ -42,6 +42,13 @@ export interface PlaceRepository {
    */
   findWithinRadius(input: FindPlacesInput): Promise<readonly PlaceWithDistance[]>;
 
+  /**
+   * Lookup by the dedup anchor (`sha256(provider:externalId)`).
+   * Returns the canonical row or `null`. Used by the federated
+   * write-through path to idempotently find-or-create.
+   */
+  findBySourceKey(sourceKey: string): Promise<Place | null>;
+
   /** Admin / seed-only. `sourceKey` must be unique; callers are
    *  expected to provide a stable id (`osm:way/12345`, `google:<id>`). */
   insert(input: InsertPlaceInput): Promise<Place>;

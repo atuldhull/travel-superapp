@@ -23,14 +23,18 @@ export const SearchPlacesBodySchema = z.object({
 export type SearchPlacesBody = z.infer<typeof SearchPlacesBodySchema>;
 
 /**
- * Federated search body — external provider(s) only, no local
- * catalog merge (that's a follow-up slice). Same shape as
- * `SearchPlacesBodySchema` minus `limit` (the provider controls
- * result count in v1).
+ * Federated search body — external provider(s) only. `ingest`
+ * defaults to false: federated-search remains a pure read in
+ * the no-flag case so test isolation + speed are preserved.
+ * Set `ingest: true` to write the results through to the
+ * canonical `Place` catalog (idempotent via sha256-anchored
+ * sourceKey dedup); response then carries the canonical
+ * `placeId` per result. [IV.18.4.2]
  */
 export const FederatedSearchPlacesBodySchema = z.object({
   center: Coord,
   radiusKm: z.number().positive().max(10_000),
   category: z.string().trim().min(1).max(60).optional(),
+  ingest: z.boolean().optional(),
 });
 export type FederatedSearchPlacesBody = z.infer<typeof FederatedSearchPlacesBodySchema>;
