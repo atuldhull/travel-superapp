@@ -10,18 +10,86 @@
 
 ## Summary
 
-| Counter             | Value                                                                           |
-| ------------------- | ------------------------------------------------------------------------------- |
-| Prompts completed   | 86 (85 full + 1 foundation-only; Safety crime-layer read just shipped)          |
-| Prompts in progress | 0                                                                               |
-| Prompts blocked     | 0                                                                               |
-| Last prompt         | `[IV.18.11.3]` — Safety crime-layer read (POST /safety/crimes/search)           |
-| Last commit date    | 2026-04-24                                                                      |
-| Phase               | Phase 1 — Safety module now 3 primitives (scam/SOS/crime); 52 suites, 351 tests |
+| Counter             | Value                                                                   |
+| ------------------- | ----------------------------------------------------------------------- |
+| Prompts completed   | 87 (86 full + 1 foundation-only; Safety score composite just shipped)   |
+| Prompts in progress | 0                                                                       |
+| Prompts blocked     | 0                                                                       |
+| Last prompt         | `[IV.18.11.4]` — Safety score composite (POST /safety/score, grade A–F) |
+| Last commit date    | 2026-04-24                                                              |
+| Phase               | Phase 1 — Safety moat functionally complete; 53 suites, 359 tests       |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.11.4] — Safety score composite (POST /safety/score, grade A–F)
+
+**Date:** 2026-04-24 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.7 (Safety)
+
+**What was done**
+
+Operationalises the playbook's safety moat argument. The three primitives shipped in [IV.18.11.1], [IV.18.11.2], [IV.18.11.3] each answered "what's around this coord?" for a single data shape. A traveler actually wants "is this area safe?" as a single number. This slice is that aggregator.
+
+Formula (v1, deliberately simple + auditable):
+
+```
+penalty = Σ crime_rank × 10 + Σ scam_rank × 5
+score   = max(0, 100 - penalty)
+grade   = A (90+) | B (75–89) | C (60–74) | D (40–59) | F (<40)
+```
+
+where `crime_rank = severity_rank ∈ {low: 1, medium: 2, high: 3, critical: 4}`. Crimes outweigh scams 2× because crime rows come from authoritative upstream feeds; scams are crowd-sourced. Radius default 2 km (walking context), max 10 km. Crime window fixed at 365 days (long-tail incidents aren't actionable for tonight's walk).
+
+**SOS events are deliberately excluded.** They're a personal distress signal; exposing aggregated counts near a coord would leak privacy-adjacent data about other users' emergencies. Verified by a test that triggers an SOS at the query coord + asserts the score stays 100.
+
+- **`apps/api/src/modules/safety/application/get-safety-score.use-case.ts`** — composes the existing `FindNearbyCrimesUseCase` + `FindNearbyScamsUseCase` in parallel. Validation shape mirrors the primitives (coords, radius cap, typed `INVALID_RADIUS`). Grade bucketing + severity ranking are pure functions at file scope.
+- **`apps/api/src/modules/safety/interface/safety-score.controller.ts`** — new controller at `/safety/score`. Separate from the three primitive controllers — composite reads don't own an entity, and one-concern-per-controller keeps the module's DI graph readable.
+- **`apps/api/src/modules/safety/interface/dto/safety.dto.ts`** — +`GetSafetyScoreBodySchema`; radius is optional (use-case defaults to 2km).
+- **`apps/api/src/modules/safety/safety.module.ts`** — +1 use-case provider, +1 controller.
+
+- **8 integration tests** (`apps/api/test/safety-score.e2e-spec.ts`), seeding real data via `GeoQueries.insertCrimeIncident` + `POST /scam-reports`:
+  1. No bearer → 401.
+  2. Empty area → score 100, grade A, empty breakdown.
+  3. One medium crime → exactly 20 penalty (2 × 10) → score 80, grade B.
+  4. One critical crime + one high scam → 40 + 15 = 55 penalty → score 45, grade D.
+  5. 4 critical crimes → penalty 160, score clamps to 0, grade F.
+  6. Incidents outside the radius don't count.
+  7. `radiusKm: 50` → 422 `INVALID_RADIUS`.
+  8. **SOS privacy invariant** — trigger SOS at score's query coord → score still 100; SOS does not leak into the breakdown.
+
+**Files created** (3) — `modules/safety/application/get-safety-score.use-case.ts`, `modules/safety/interface/safety-score.controller.ts`, `test/safety-score.e2e-spec.ts`.
+**Files edited** (2) — `modules/safety/interface/dto/safety.dto.ts` (+schema), `modules/safety/safety.module.ts` (+use-case + controller).
+
+**Dependencies** — none new.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Safety-score suite 8/8 pass, including exact-number assertions that lock the formula.
+- ✅ **Full real-DB suite: 53 suites, 359 tests pass against live Docker.** (+1 suite, +8 tests.)
+
+**Acceptance criteria**
+
+- ✅ Composite score over crime + scam data inside the requested radius.
+- ✅ Grade bucketing matches the documented A–F ranges.
+- ✅ Score clamps to 0 (never negative).
+- ✅ Radius default = 2km; max = 10km → typed 422 above the cap.
+- ✅ SOS events NEVER factor into the score (privacy invariant).
+- ✅ Incidents outside the radius aren't counted.
+
+**Notes**
+
+- **Why the exact-number assertions in tests.** The formula isn't provable a priori — it's a product/UX decision. Locking each scenario's exact expected score in a test turns any future formula change into a conversation ("this test asserts score=80; if we re-weight, update this number and document why") rather than a silent regression. Cheap way to keep subjective decisions honest over time.
+- **Why crime outweighs scam 2× (not 1× or 4×).** Scams are crowd-sourced — any authenticated user can report one, no verification in v1. Crime rows come from authoritative feeds (government data, Numbeo). A 2× multiplier respects the confidence gap without making user reports irrelevant; swap to 1× and a single noisy neighborhood floods the score, swap to 4× and citizen voice gets drowned out. The playbook's safety moat requires both signals — the multiplier pins the balance.
+- **Why SOS is excluded even in aggregate counts.** The tempting argument: "a cluster of SOS events means danger, so show it." The counter-argument (winning): anyone can hit this endpoint. An attacker iterating coordinates could map where SOS events happened — i.e. find where vulnerable users went through an emergency. That's privacy-adjacent reconnaissance. If we ever want a "dispatch priority heatmap," it lives on an admin-only surface with raw data + time-decay + k-anonymity, not this public score.
+- **Why the breakdown exposes per-severity counts.** The UI wants to render "3 critical crimes, 7 low scams" — not just "your grade is F." Clients can tailor messaging ("high severity incidents nearby; consider an alternate route") vs ("minor incident reports; use normal caution"). Costs ~40 bytes per response + no DB round-trips (already computed).
+- **Why fixed-365-day crime window, not configurable.** Crime data's signal-to-noise decays past ~1 year — a 2023 pickpocket record is meaningless for tonight's walk, and exposing a knob would just push that interpretation onto the caller. The `findNearbyCrimes` primitive already exposes `sinceDays` for analytics/admin; the score uses a reasonable default.
+- **Why parallel Promise.all on the two primitives.** Each already has its own cache (crime via Postgres + PostGIS index, scam via the same pattern). Serial would double latency without sharing work. Both use-cases run on a single Prisma connection pool, so fan-out doesn't create contention.
+- **Why not Redis-cache the composite score itself.** Tempting — safety score at a given coord is a hot read — but cache invalidation is nasty: ANY new crime or scam within the radius changes the score. Invalidation-by-(lat-bucket, lng-bucket) would work but the bucket size has to balance accuracy against cache hit rate. Defer until real traffic numbers justify the complexity. The primitive-level caches already amortise most of the cost.
+- **Safety moat is now functionally complete for v1.** Three primitives + one composite read. A future "safety timeline" (how has this area's score trended over the last 30 days?) or ML-based scoring sit cleanly on top of this shape without breaking the HTTP contract. This slice is the closing bracket on the `[IV.18.11.x]` Safety thread unless the product brief opens agents/marketplace next.
 
 ---
 
