@@ -36,6 +36,26 @@ export const FindNearbyScamsBodySchema = z.object({
 export type FindNearbyScamsBody = z.infer<typeof FindNearbyScamsBodySchema>;
 
 /**
+ * Body for `POST /safety/crimes/search`. Same coord + radius
+ * envelope as scam search, with an extra `sinceDays` filter for
+ * "hide long-tail historical incidents." Use-case enforces the
+ * 50km radius cap + the sinceDays > 0 invariant.
+ */
+export const FindNearbyCrimesBodySchema = z.object({
+  center: Coord,
+  radiusKm: z.number().positive().max(10_000),
+  category: z.string().trim().min(1).max(60).optional(),
+  minSeverity: ScamSeveritySchema.optional(),
+  sinceDays: z
+    .number()
+    .positive()
+    .max(365 * 5)
+    .optional(),
+  limit: z.number().int().positive().max(200).optional(),
+});
+export type FindNearbyCrimesBody = z.infer<typeof FindNearbyCrimesBodySchema>;
+
+/**
  * Body for `POST /safety/sos` — trigger an SOS event. `trigger` is
  * free-form so new modes (`voice_command`, `smartwatch_tap`) don't
  * need a migration. 60 chars caps pathological payloads.

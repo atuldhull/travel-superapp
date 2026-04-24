@@ -1,6 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
-import type { Place, Prisma, ScamReport, ScamSeverity, SosEvent, Trip } from '@prisma/client';
+import type {
+  CrimeIncident,
+  Place,
+  Prisma,
+  ScamReport,
+  ScamSeverity,
+  SosEvent,
+  Trip,
+} from '@prisma/client';
 import { PrismaService } from './prisma.service';
 
 /**
@@ -275,6 +283,89 @@ export class GeoQueries {
   }
 
   /**
+   * Insert a CrimeIncident row. Unlike ScamReport, CrimeIncident
+   * rows come from external data sources (government crime data,
+   * Numbeo, user-report aggregations) — there's no user-facing
+   * write path. Seed scripts + a future ingest worker use this
+   * method directly; tests also use it to pre-populate rows for
+   * the search path.
+   *
+   * Installed for prompt [IV.18.11.3].
+   */
+  async insertCrimeIncident(input: InsertCrimeIncidentInput): Promise<CrimeIncident> {
+    const id = randomUUID();
+    const now = new Date();
+    const rows = await this.prisma.$queryRaw<CrimeIncident[]>`
+      INSERT INTO "CrimeIncident" (
+        id, source, category, severity, coordinates, "reportedAt", "createdAt"
+      )
+      VALUES (
+        ${id},
+        ${input.source},
+        ${input.category},
+        ${input.severity ?? 'medium'}::"ScamSeverity",
+        ST_SetSRID(ST_MakePoint(${input.lng}, ${input.lat}), 4326)::geography,
+        ${input.reportedAt},
+        ${now}
+      )
+      RETURNING
+        id, source, category, severity, "reportedAt", "createdAt"
+    `;
+    const row = rows[0];
+    if (!row) {
+      throw new Error('insertCrimeIncident: no row returned');
+    }
+    return row;
+  }
+
+  /**
+   * Find every CrimeIncident within `radiusKm` of (`lat`, `lng`),
+   * ordered ascending by distance. Optional category / min-severity
+   * filters + an optional `sinceDays` window (ignore incidents
+   * older than N days — city data tends to have a long tail of
+   * stale low-priority records that aren't actionable).
+   *
+   * Installed for prompt [IV.18.11.3].
+   */
+  async findCrimeIncidentsWithinRadius(
+    input: FindCrimeIncidentsInput,
+  ): Promise<CrimeIncidentWithDistance[]> {
+    const categoryFilter = input.filters?.category ?? null;
+    const minSeverityRank =
+      input.filters?.minSeverity === undefined ? null : severityRank(input.filters.minSeverity);
+    const sinceFilter = input.filters?.since ?? null;
+    const radiusMeters = input.radiusKm * 1000;
+
+    return this.prisma.$queryRaw<CrimeIncidentWithDistance[]>`
+      SELECT
+        id, source, category, severity, "reportedAt", "createdAt",
+        ST_Distance(
+          coordinates,
+          ST_SetSRID(ST_MakePoint(${input.lng}, ${input.lat}), 4326)::geography
+        )::double precision AS "distanceMeters"
+      FROM "CrimeIncident"
+      WHERE
+        ST_DWithin(
+          coordinates,
+          ST_SetSRID(ST_MakePoint(${input.lng}, ${input.lat}), 4326)::geography,
+          ${radiusMeters}
+        )
+        AND (${categoryFilter}::text IS NULL OR category = ${categoryFilter}::text)
+        AND (
+          ${minSeverityRank}::int IS NULL
+          OR (CASE severity
+                WHEN 'low'      THEN 1
+                WHEN 'medium'   THEN 2
+                WHEN 'high'     THEN 3
+                WHEN 'critical' THEN 4
+              END) >= ${minSeverityRank}::int
+        )
+        AND (${sinceFilter}::timestamptz IS NULL OR "reportedAt" >= ${sinceFilter}::timestamptz)
+      ORDER BY "distanceMeters" ASC
+    `;
+  }
+
+  /**
    * Insert an SosEvent row. Sparse-by-design — `resolvedAt` + note
    * start null and get set by a separate resolve path. Coordinates
    * via PostGIS raw SQL (same pattern as Place / Trip / ScamReport).
@@ -380,3 +471,28 @@ export interface InsertSosEventInput {
   readonly lat: number;
   readonly lng: number;
 }
+
+export interface InsertCrimeIncidentInput {
+  /** Source tag — `numbeo`, `gov-us`, `gov-in`, `user-report-agg`, etc. */
+  readonly source: string;
+  readonly category: string;
+  readonly severity?: ScamSeverity;
+  readonly lat: number;
+  readonly lng: number;
+  /** When the incident was reported by its upstream source. */
+  readonly reportedAt: Date;
+}
+
+export interface FindCrimeIncidentsInput {
+  readonly lat: number;
+  readonly lng: number;
+  readonly radiusKm: number;
+  readonly filters?: {
+    readonly category?: string;
+    readonly minSeverity?: ScamSeverity;
+    /** Drop incidents with `reportedAt < since`. */
+    readonly since?: Date;
+  };
+}
+
+export type CrimeIncidentWithDistance = CrimeIncident & { readonly distanceMeters: number };
