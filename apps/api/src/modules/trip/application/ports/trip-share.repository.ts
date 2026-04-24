@@ -48,6 +48,18 @@ export interface TripShareRepository {
    * ownerId as a straightforward WHERE filter.
    */
   listByTripForOwner(tripId: string, ownerId: string): Promise<readonly TripShare[]>;
+
+  /**
+   * Count shares for `tripId` that are currently active — i.e.
+   * `publicRead = true` AND (no expiry OR expiry in the future).
+   * Used by the Social module's write gate: "if a trip has at
+   * least one active share, its owner has published it for
+   * collaboration, so any authed user can vote on it." Owner-
+   * scoping is intentionally absent — the Social use-case has
+   * already decided the caller isn't the owner and is probing
+   * whether the trip is share-open. [IV.18.12.3]
+   */
+  countActiveSharesForTrip(tripId: string): Promise<number>;
 }
 
 export const TRIP_SHARE_REPOSITORY = Symbol('TripShareRepository');
