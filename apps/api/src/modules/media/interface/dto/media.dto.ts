@@ -11,9 +11,28 @@ import { z } from 'zod';
 
 const MediaKindSchema = z.enum(['image', 'video']);
 
+/**
+ * Trip id shape. Mixed cuid + UUID in the DB — raw-SQL inserted
+ * rows (Place, Trip, ScamReport, SosEvent) use `randomUUID()`
+ * while Prisma-defaulted rows use `cuid()`. A loose `min(1)`
+ * string pattern covers both; existence is the real source of
+ * truth (enforced by the owner-gate lookup in the use-case).
+ */
+const TripIdSchema = z.string().trim().min(1).max(64);
+
 export const CreateUploadUrlBodySchema = z.object({
   kind: MediaKindSchema,
   contentType: z.string().trim().min(1).max(120),
-  tripId: z.string().cuid().optional(),
+  tripId: TripIdSchema.optional(),
 });
 export type CreateUploadUrlBody = z.infer<typeof CreateUploadUrlBodySchema>;
+
+/**
+ * Body for `PATCH /media/:id/trip`. `tripId: null` detaches; a
+ * non-empty string attaches. Empty body is rejected by Zod so the
+ * client always states intent.
+ */
+export const AttachMediaToTripBodySchema = z.object({
+  tripId: TripIdSchema.nullable(),
+});
+export type AttachMediaToTripBody = z.infer<typeof AttachMediaToTripBodySchema>;

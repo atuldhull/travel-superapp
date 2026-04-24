@@ -28,6 +28,22 @@ export interface MediaAssetRepository {
    */
   markReady(id: string, ownerId: string): Promise<MediaAsset | null>;
   findByIdForOwner(id: string, ownerId: string): Promise<MediaAsset | null>;
+  /**
+   * Set (or clear, with `null`) the asset's `tripId`. Owner-gated —
+   * returns `null` if the media row doesn't exist OR isn't owned
+   * by the caller, which the use-case maps to 404 `MEDIA_NOT_FOUND`.
+   * Trip existence + ownership is the use-case's job to validate
+   * before calling this — the repo doesn't re-check.
+   */
+  setTripForOwner(id: string, ownerId: string, tripId: string | null): Promise<MediaAsset | null>;
+  /**
+   * List the caller's media assets attached to `tripId`. Excludes
+   * `processing` rows — only `ready` rows are returned, so clients
+   * never render a broken thumbnail during the upload-confirm window.
+   * Most-recent-first ordering matches every other "list mine"
+   * surface in the codebase.
+   */
+  listForTripOwner(tripId: string, ownerId: string, limit: number): Promise<readonly MediaAsset[]>;
 }
 
 export const MEDIA_ASSET_REPOSITORY = Symbol('MediaAssetRepository');
