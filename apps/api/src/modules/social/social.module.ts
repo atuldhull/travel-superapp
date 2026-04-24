@@ -18,21 +18,33 @@
 import { Module } from '@nestjs/common';
 import { TripModule } from '../trip/trip.module';
 import { CastVoteUseCase } from './application/cast-vote.use-case';
+import { CreateExpenseUseCase } from './application/create-expense.use-case';
+import { DeleteExpenseUseCase } from './application/delete-expense.use-case';
+import { GetTripBalancesUseCase } from './application/get-trip-balances.use-case';
+import { ListTripExpensesUseCase } from './application/list-trip-expenses.use-case';
 import { ListTripVotesUseCase } from './application/list-trip-votes.use-case';
+import { EXPENSE_REPOSITORY } from './application/ports/expense.repository';
 import { VOTE_REPOSITORY } from './application/ports/vote.repository';
 import { RevokeVoteUseCase } from './application/revoke-vote.use-case';
+import { PrismaExpenseRepository } from './infrastructure/prisma-expense.repository';
 import { PrismaVoteRepository } from './infrastructure/prisma-vote.repository';
+import { ExpensesController } from './interface/expenses.controller';
 import { SocialController } from './interface/social.controller';
 
 @Module({
   imports: [TripModule],
-  controllers: [SocialController],
+  controllers: [SocialController, ExpensesController],
   providers: [
     { provide: VOTE_REPOSITORY, useClass: PrismaVoteRepository },
+    { provide: EXPENSE_REPOSITORY, useClass: PrismaExpenseRepository },
     CastVoteUseCase,
     RevokeVoteUseCase,
     ListTripVotesUseCase,
+    CreateExpenseUseCase,
+    DeleteExpenseUseCase,
+    ListTripExpensesUseCase,
+    GetTripBalancesUseCase,
   ],
-  exports: [VOTE_REPOSITORY],
+  exports: [VOTE_REPOSITORY, EXPENSE_REPOSITORY],
 })
 export class SocialModule {}
