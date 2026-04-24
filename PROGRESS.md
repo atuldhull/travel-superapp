@@ -10,18 +10,78 @@
 
 ## Summary
 
-| Counter             | Value                                                                              |
-| ------------------- | ---------------------------------------------------------------------------------- |
-| Prompts completed   | 82 (81 full + 1 foundation-only; Trip × Transport overlay just shipped)            |
-| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5+6+7 shipped; JWKS rotation still follow-up)      |
-| Prompts blocked     | 0                                                                                  |
-| Last prompt         | `[IV.18.10.2]` — Trip × Transport overlay (5th Trip section, folded into overview) |
-| Last commit date    | 2026-04-24                                                                         |
-| Phase               | Phase 1 — Trip overview now 6 sections; 48 suites, 324 tests                       |
+| Counter             | Value                                                                            |
+| ------------------- | -------------------------------------------------------------------------------- |
+| Prompts completed   | 83 (82 full + 1 foundation-only; JWKS rotation just shipped — Identity now 100%) |
+| Prompts in progress | 0 — all parts of `[III.13.2]` shipped (parts 1–7 + JWKS rotation in 13.2.8)      |
+| Prompts blocked     | 0                                                                                |
+| Last prompt         | `[III.13.2.8]` — JWKS keyring rotation (Redis-backed store + admin endpoint)     |
+| Last commit date    | 2026-04-24                                                                       |
+| Phase               | Phase 1 — Identity fully closed; 49 suites, 331 tests                            |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [III.13.2.8] — JWKS keyring rotation (Redis-backed store + admin endpoint)
+
+**Date:** 2026-04-24 · **Status:** DONE · **Kind:** Build · **Playbook §** 13.2 (Auth)
+
+**What was done**
+
+Closes the long-running Identity thread at ~97% → 100%. The `@app/auth` package was always rotation-capable (its `JwtKeyring` shape takes `current` + `previous[]`); what was missing was the Redis-backed store and an admin path to trigger rotation. With this slice an operator can rotate access or refresh signing keys without a deploy, and every outstanding token signed with the retiring kid continues to verify for as long as it lives in `previous[]`.
+
+- **`apps/api/src/modules/identity/application/ports/jwt-keyring.store.ts`** — new port. Three methods: `getRing(name)`, `rotate(name)`, `listKids()`. `RingName = 'access' | 'refresh'` mirrors the two token classes.
+- **`apps/api/src/modules/identity/infrastructure/redis-jwt-keyring.store.ts`** — new adapter. Stores each ring as a JSON blob under `travel-<env>:jwt-keyring:<ring>` with `current` + `previous[]`. Secrets are base64url-encoded on the wire; rehydrated to `Uint8Array` on read. **First-boot hydration**: a missing Redis key triggers a bootstrap from the env secret with kid `<ring>-bootstrap`, which is then persisted so subsequent reads hit the cache path. **Rotation**: generates 32 cryptographically-random bytes + an 8-hex-char kid (e.g. `access-a1b2c3d4`), pushes the old `current` onto `previous`, persists. **In-memory cache**: 30-second TTL so Redis traffic stays constant under load; invalidated in-process on every rotate so the caller's next sign/verify picks up the new ring immediately.
+- **`apps/api/src/modules/identity/infrastructure/jwt-token.service.ts`** — refactored. Was pulling env secrets directly at construction with hardcoded `access-v1` / `refresh-v1` kids (rotation required a full deploy). Now delegates keyring retrieval to the store on every sign + verify. TTL parsing stays here because expiries are policy, not key material.
+- **`apps/api/src/modules/identity/application/rotate-jwks.use-case.ts`** — new use case. Validates the ring name against the port's allow-list (`access` / `refresh` → `INVALID_RING` 422 otherwise), delegates to the store, returns `{ ring, newKid, previousKids }` for the admin client to log.
+- **`apps/api/src/modules/identity/interface/jwks-admin.controller.ts`** — new controller. Class-level `@Roles('admin')` gates every route; the global guard chain (rate-limit → JwtAuth → Roles) handles 401/403. Two surfaces:
+  - `POST /api/v1/admin/identity/jwks/rotate` — body `{ ring }`, returns `{ ring, newKid, previousKids }`.
+  - `GET /api/v1/admin/identity/jwks/kids` — list every kid in both rings for ops visibility.
+- **`apps/api/src/modules/identity/identity.module.ts`** — registers `JWT_KEYRING_STORE` + adapter, the rotate use-case, and the new controller. Exports `JWT_KEYRING_STORE` so a future `notification-worker` (verify-only) can share the same store.
+
+- **7 integration tests** (`apps/api/test/jwks-rotation.e2e-spec.ts`) against real Postgres + Redis:
+  1. No bearer → 401 `UNAUTHENTICATED`.
+  2. Non-admin bearer → 403 `ROLE_FORBIDDEN`.
+  3. Admin rotates access ring → new kid matches `/^access-[0-9a-f]{8}$/`; old kid retained in `previousKids`.
+  4. **Tokens issued BEFORE rotation still verify** after rotation (verified by hitting `GET /trips` with the pre-rotation token; 200 response proves the old kid is still in the keyring).
+  5. Tokens issued AFTER rotation use the new kid (asserted by decoding the JWT header).
+  6. Invalid ring (`'bogus'`) → 422 `INVALID_RING`.
+  7. `GET /admin/identity/jwks/kids` returns every kid in both rings, each prefixed with its ring name.
+
+**Files created** (4) — `modules/identity/application/ports/jwt-keyring.store.ts`, `modules/identity/infrastructure/redis-jwt-keyring.store.ts`, `modules/identity/application/rotate-jwks.use-case.ts`, `modules/identity/interface/jwks-admin.controller.ts`, `test/jwks-rotation.e2e-spec.ts`.
+**Files edited** (2) — `modules/identity/infrastructure/jwt-token.service.ts` (now delegates to store; no more hardcoded kids), `modules/identity/identity.module.ts` (registers + exports new port, adds controller + use-case).
+
+**Dependencies** — none new.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ JWKS rotation suite 7/7 pass.
+- ✅ **Full real-DB suite: 49 suites, 331 tests pass against live Docker.** (+1 suite, +7 tests.) Every prior Identity test still green — the bootstrap path preserves the env-secret behaviour that existing tokens rely on.
+
+**Acceptance criteria**
+
+- ✅ Operator can rotate a ring at runtime (no restart needed).
+- ✅ Pre-rotation tokens still verify until their natural expiry.
+- ✅ Post-rotation tokens are signed with the new kid.
+- ✅ Rotation is admin-gated; non-admin / unauthenticated → 403 / 401.
+- ✅ Keyring state survives app restart (Redis-persisted).
+- ✅ Multi-instance safe: any instance's rotate writes to Redis; other instances pick up the new ring within the 30s cache TTL.
+
+**Notes**
+
+- **Why Redis for HS256 secret storage.** Redis is already network-isolated + password-protected in the stack; the same channel carries session refresh tokens + rate-limit data, so the trust boundary doesn't move. When this eventually switches to RS256 the store holds only public keys + kids; private keys move to KMS. The port shape stays the same; only the adapter swaps. Deferred until the ai-service / notification-worker need to verify JWTs independently — at that point the JWKS endpoint becomes a real public surface, not just an ops convenience.
+- **Why a per-process 30s in-memory cache on top of Redis.** `getRing` is on the hot path — every sign + every verify. A naive "hit Redis every time" would add 0.5–2 ms per API call and a dependency on Redis for auth (bad blast-radius). 30 seconds is small enough that a rotation propagates across instances within one access-token TTL window (15 min default), which is the right ordering — a retiring kid stays valid longer than the cache lag, so no user sees a forced re-login.
+- **Why the rotate endpoint isn't idempotent.** It's explicitly the verb "rotate" — every call mints a new kid + pushes the old one onto `previous`. Calling it twice in a row is legitimate (e.g. after a suspected leak, rotate twice to make sure the new secret isn't in any ops log). Idempotent "upsert a specific kid" would solve a different problem.
+- **Why `previous[]` grows unboundedly in v1.** Trimming the tail is an ops decision tied to the longest token TTL (30d refresh), and automating it needs a "last-used-at" timestamp per kid which none of the sign/verify paths currently track. A dedicated follow-up can add a TTL on each `previous` entry + a background sweeper — for v1, the list adds ~80 bytes per rotated kid, which is negligible until a rotation cron runs weekly for a year.
+- **Why the kid format is `<ring>-<hex8>` (not a monotonic counter or UUID).** Hex8 is short enough to eyeball in logs, is random (no ordering leak) and won't collide across rotations even if two land in the same millisecond. A monotonic counter would need coordination across instances to stay unique; a UUID would bloat every JWT header by 30-ish bytes for no gain. The `<ring>-` prefix makes `/kids` output readable at a glance.
+- **Bootstrap kid is `<ring>-bootstrap`, not `<ring>-v1`.** Intentional rename from the old hardcoded `access-v1` / `refresh-v1`. The old names implied a version sequence that was never actually used (no `v2` ever minted); `bootstrap` is honest — it's the starter seed, not a versioning scheme.
+- **Why the env-hydration fallback instead of failing fast.** Existing environments have running tokens signed with the env secret + the old hardcoded kids. If this shipped as "Redis-only, error if missing," every deployed instance would refuse service until ops manually seeded Redis. Bootstrap-on-first-boot makes the upgrade transparent — any token signed before this slice lands continues to verify via the `access-bootstrap` kid (which uses the same env secret), and rotations layer on top cleanly.
+- **Identity module is now fully complete.** Parts 1–7 covered registration, login, refresh, logout, MFA (TOTP + backup codes), OAuth (Mock + Google + Apple), and failed-login lockout. Part 8 closes rotation. The `III.13.2` thread that's been "~97%" for the whole session now flips to DONE.
+- **First admin-surface rate of expansion.** Place curation was the only admin resource pre-slice. JWKS is the second. A future admin module refactor might extract a shared `AdminXModule` pattern — for now two tightly-scoped admin controllers (places + jwks) read cleaner than an umbrella.
 
 ---
 
