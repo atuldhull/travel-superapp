@@ -15,6 +15,7 @@ import {
   GeoQueries,
   type ScamReportWithDistance as GeoScamWithDistance,
 } from '../../../common/db/geo-queries';
+import { PrismaService } from '../../../common/db/prisma.service';
 import type {
   ScamReport,
   ScamReportWithDistance,
@@ -22,13 +23,17 @@ import type {
 } from '../domain/scam-report.entity';
 import type {
   FindNearbyScamsInput,
+  ListForModerationInput,
   ReportScamInput,
   ScamReportRepository,
 } from '../application/ports/scam-report.repository';
 
 @Injectable()
 export class PrismaScamReportRepository implements ScamReportRepository {
-  constructor(@Inject(GeoQueries) private readonly geo: GeoQueries) {}
+  constructor(
+    @Inject(GeoQueries) private readonly geo: GeoQueries,
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+  ) {}
 
   async report(input: ReportScamInput): Promise<ScamReport> {
     const row = await this.geo.insertScamReport({
@@ -60,6 +65,63 @@ export class PrismaScamReportRepository implements ScamReportRepository {
         : {}),
     });
     return rows.map(toDomainWithDistance);
+  }
+
+  async listForModeration(input: ListForModerationInput): Promise<readonly ScamReport[]> {
+    // Prisma-typed read with explicit `select` that skips the
+    // Unsupported `coordinates` column — moderation doesn't need
+    // geo data; reviewing text + reporter is the whole job.
+    const rows = await this.prisma.scamReport.findMany({
+      where: input.verified === undefined ? { verified: false } : { verified: input.verified },
+      orderBy: { createdAt: 'desc' },
+      take: Math.min(Math.max(input.limit, 1), 200),
+      select: {
+        id: true,
+        reporterId: true,
+        category: true,
+        severity: true,
+        description: true,
+        evidenceUrls: true,
+        verified: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+    return rows.map((r) => toDomain(r as PrismaScamReport));
+  }
+
+  async setVerified(id: string, verified: boolean): Promise<ScamReport | null> {
+    // updateMany + count gate — same pattern every other admin /
+    // owner-scoped mutation uses. Idempotent: re-setting to the
+    // same value still returns count=1 in Postgres.
+    const result = await this.prisma.scamReport.updateMany({
+      where: { id },
+      data: { verified },
+    });
+    if (result.count !== 1) return null;
+    const row = await this.prisma.scamReport.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        reporterId: true,
+        category: true,
+        severity: true,
+        description: true,
+        evidenceUrls: true,
+        verified: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+    return row ? toDomain(row as PrismaScamReport) : null;
+  }
+
+  async deleteById(id: string): Promise<boolean> {
+    // deleteMany not delete — delete runs findUniqueOrThrow first
+    // and Prisma's typed path can't read the Unsupported
+    // coordinates column. Same pattern PrismaPlaceRepository uses.
+    const result = await this.prisma.scamReport.deleteMany({ where: { id } });
+    return result.count === 1;
   }
 }
 
