@@ -10,18 +10,91 @@
 
 ## Summary
 
-| Counter             | Value                                                                    |
-| ------------------- | ------------------------------------------------------------------------ |
-| Prompts completed   | 90 (89 full + 1 foundation-only; Social v1 voting just shipped)          |
-| Prompts in progress | 0                                                                        |
-| Prompts blocked     | 0                                                                        |
-| Last prompt         | `[IV.18.12.3]` — Social v1: collaborative trip voting (upsert + tally)   |
-| Last commit date    | 2026-04-25                                                               |
-| Phase               | Phase 1 — Social module (14th HTTP surface) opened; 56 suites, 380 tests |
+| Counter             | Value                                                                     |
+| ------------------- | ------------------------------------------------------------------------- |
+| Prompts completed   | 91 (90 full + 1 foundation-only; Social expense-split just shipped)       |
+| Prompts in progress | 0                                                                         |
+| Prompts blocked     | 0                                                                         |
+| Last prompt         | `[IV.18.12.4]` — Social expense-split (create/list/balances + cents math) |
+| Last commit date    | 2026-04-25                                                                |
+| Phase               | Phase 1 — Social module: 2 of 4 primitives shipped; 57 suites, 389 tests  |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.12.4] — Social expense-split (create / list / balances + integer-cents math)
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.12 (Social & Groups)
+
+**What was done**
+
+Second Social primitive (after voting). Trip collaborators can record paid-for-group expenses + see a per-user net ledger ("who owes whom"). Same collaborative gate as voting ([IV.18.12.3]): caller owns the trip OR trip has an active TripShare. Third slice in a row that compounds cleanly on existing seams — the `Vote` gate helper (`assertCanVote`) is re-exported as `assertTripAccess` and reused verbatim in all three new expense use-cases.
+
+HTTP surface (all under `/trips/:tripId/expenses`, all authed + gated):
+
+| Route           | What it does                                  |
+| --------------- | --------------------------------------------- |
+| `POST /`        | record a new expense (201)                    |
+| `GET /`         | list expenses (default 50, cap 500)           |
+| `GET /balances` | per-user net ledger (positive = owed TO user) |
+| `DELETE /:id`   | payer-only delete (non-payer → 404)           |
+
+**Money handling: integer-cents throughout.** Prisma's `Decimal` DB type is `numeric(10,2)`; amounts carry across the seam as 2-dp fixed strings (e.g. `"40.00"`). Balance computation converts to integer cents, sums, and emits 2-dp strings. No `number`-typed amounts anywhere on the write path — saves us from binary-float drift (`33.33 / 3` problem) at the cost of one extra `toFixed(2)`.
+
+- **`apps/api/src/modules/social/domain/expense.entity.ts`** — `Expense` (id, tripId, paidById, amountUsd as string, currency, note, splitShare map, timestamps) + `UserBalance` (userId + netUsd). `SplitShareMap = Readonly<Record<string, number>>` keyed by userId, values sum to 1.0.
+- **`apps/api/src/modules/social/application/ports/expense.repository.ts`** — 4-method port: `create`, `listForTrip(limit)`, `findById`, `deleteForPayer(id, paidById)` (scoped deleteMany + count gate).
+- **`apps/api/src/modules/social/infrastructure/prisma-expense.repository.ts`** — Prisma direct delegate. Uses `new Prisma.Decimal(str)` on write; `row.amountUsd.toFixed(2)` on read for stable 2-dp strings.
+- **`apps/api/src/modules/social/application/create-expense.use-case.ts`** — extensive validation: amount shape (`^\d+(\.\d{1,2})?$` + `(0, 99999999.99]`), currency (3 uppercase letters), splitShare (non-empty, each share in (0, 1], sum == 1.0 ± 0.0001, payer must appear). Then runs `assertTripAccess` gate + inserts.
+- **`apps/api/src/modules/social/application/delete-expense.use-case.ts`** — payer-only delete; non-payer and missing-id both collapse to 404 `EXPENSE_NOT_FOUND`. No owner-override verb in v1 (conservative default — future admin surface if product asks).
+- **`apps/api/src/modules/social/application/list-trip-expenses.use-case.ts`** — gate + delegate; default 50, cap 500 (higher than votes because ledger readers want everything).
+- **`apps/api/src/modules/social/application/get-trip-balances.use-case.ts`** — the balance aggregator. For each expense: credit payer, debit each split participant. Computes in integer cents then divides by 100 at emission time → zero float drift. Sums over users always total exactly 0 (modulo rounding). Sorted largest-creditor-first.
+- **`apps/api/src/modules/social/interface/dto/social.dto.ts`** — adds `CreateExpenseBodySchema`. Amount as `z.string().min(1).max(20)` (let the use-case enforce the regex for a typed INVALID_AMOUNT error); splitShare as `z.record(z.string().min(1), z.number().positive().max(1))` with a non-empty refine.
+- **`apps/api/src/modules/social/interface/expenses.controller.ts`** — new controller at `/trips/:tripId/expenses`, 4 routes. Separate from SocialController (votes) — different route prefix + distinct DTO set.
+- **`apps/api/src/modules/social/social.module.ts`** — +ExpenseRepository provider, +4 use-cases, +ExpensesController.
+
+- **9 integration tests** (`apps/api/test/social-expenses.e2e-spec.ts`) against real Postgres:
+  1. No bearer → 401.
+  2. Owner records $40 dinner; 2-way split → Alice net +$20, Bob net -$20.
+  3. Three-way unequal split ($100, 0.4/0.3/0.3) → exact balances (+60/-30/-30).
+  4. Non-owner without share → 404 (gate).
+  5. Non-payer can't delete someone else's expense (404); payer can; balances zero out after.
+  6. `splitShare` sum != 1.0 → 422 `INVALID_SPLIT`.
+  7. Payer missing from splitShare → 422 `INVALID_SPLIT`.
+  8. Invalid amount shape (`"ten dollars"`) → 422 `INVALID_AMOUNT`.
+  9. Multiple expenses across two payers accumulate correctly: Alice paid $30, Bob paid $10, 50/50 splits → Alice net +$10, Bob net -$10.
+
+**Files created** (6) — `modules/social/domain/expense.entity.ts`, `modules/social/application/ports/expense.repository.ts`, `modules/social/infrastructure/prisma-expense.repository.ts`, `modules/social/application/create-expense.use-case.ts`, `modules/social/application/delete-expense.use-case.ts`, `modules/social/application/list-trip-expenses.use-case.ts`, `modules/social/application/get-trip-balances.use-case.ts`, `modules/social/interface/expenses.controller.ts`, `test/social-expenses.e2e-spec.ts`.
+**Files edited** (2) — `modules/social/interface/dto/social.dto.ts` (+CreateExpenseBodySchema), `modules/social/social.module.ts` (+provider, +4 use-cases, +controller).
+
+**Dependencies** — none new. No Prisma migration (Expense table in schema + DB since day one).
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Social-expenses suite 9/9 pass with exact-number balance assertions.
+- ✅ **Full real-DB suite: 57 suites, 389 tests pass against live Docker.** (+1 suite, +9 tests.)
+
+**Acceptance criteria**
+
+- ✅ Collaborators can record expenses when the trip has an active share.
+- ✅ Non-owners without a share are rejected (gate).
+- ✅ Per-user balances sum to exactly 0 for any set of expenses.
+- ✅ Only the payer can delete an expense.
+- ✅ Integer-cents math guarantees no float drift in balance totals.
+- ✅ Invariants on amount + currency + splitShare all enforced with typed errors.
+
+**Notes**
+
+- **Why money travels as strings.** `amountUsd` is `numeric(10,2)` in Postgres. JS `number` loses precision on innocent-looking values (`0.1 + 0.2 !== 0.3`; dividing $10 three ways creates `3.333333...`). Strings preserve exact 2-dp values across the seam. The balance aggregator converts to integer cents for math + back to strings for emission — one clean conversion at each end, zero float arithmetic in the critical path. The test for the three-way split catches regressions here: if we ever drift to JS float math, 0.3 × 100 = 30.00000000000001 becomes 3000.0000...01 cents, and the sum-to-zero invariant fails.
+- **Why balances are eager, not lazy.** Could compute per-user deltas inline on each expense insert + store in a separate `BalanceLedger` table. Would make `GET /balances` O(1). But invalidation gets hairy (delete an expense → rewind the ledger), expense volume per trip is small (hundreds max), and recomputing from scratch is O(n) over a cheap integer sum. The complexity isn't worth it; re-evaluate when real usage shows balance-read p95 above 50ms.
+- **Why the payer must appear in `splitShare`.** Real-world: if I pay for dinner and only Bob owes, my "share" is 0 — I ate for free because I paid for the group. That's a legitimate scenario but ambiguous at the gate: "did Alice enter 0 on purpose or forget?" The explicit error in v1 is "payer must be in the map" — force the client to make the intent explicit with a near-zero share or use a different "reimbursement" verb (follow-up). Clean is a 100% Bob owes, 0% Alice split → "INVALID_SPLIT: Alice (payer) must appear in splitShare" → UX prompt: "do you mean 100% to Bob?"
+- **Why no PATCH endpoint.** Splitwise + similar apps all use delete + re-record as the "edit" UX. Shipping PATCH would require splitShare-delta math or a full replace operation (same as delete + create), and neither wins over the simpler shape. Expense-edit is a pure DX improvement, not a correctness gain.
+- **Why DELETE is payer-only (not owner-override).** Conservative default. An owner deleting a collaborator's expense is a trust breach in a small group. If two people dispute an expense, the payer has to cancel theirs + the disputer records an offsetting one. A future admin-style "owner override" verb can land when product asks — the port shape (`deleteForPayer` vs. a new `deleteForOwner`) is clean to extend without changing the existing caller.
+- **Why the gate helper is `assertCanVote` imported as `assertTripAccess`.** Same function, different semantic label at the call site. The shape ("caller owns trip OR trip has active share") isn't specific to voting — it's the generic "you have collab access to this trip" check. Renaming the export in cast-vote.use-case.ts would affect [IV.18.12.3]'s test expectations; importing under a different alias at the consumer site reads cleaner without breaking anything. A follow-up cleanup could extract to a shared module file.
+- **Third slice compounding on the collaborative-gate pattern.** Voting ([IV.18.12.3]) introduced the gate; balance ledger reuses it; a future Reviews primitive (Social's 4th entity) will use the same shape. The collaboration capability is becoming a first-class cross-cutting concern the Social module owns.
 
 ---
 
