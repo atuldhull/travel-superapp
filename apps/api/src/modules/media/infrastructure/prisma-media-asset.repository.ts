@@ -52,6 +52,36 @@ export class PrismaMediaAssetRepository implements MediaAssetRepository {
     const row = await this.prisma.mediaAsset.findFirst({ where: { id, ownerId } });
     return row ? toDomain(row) : null;
   }
+
+  async setTripForOwner(
+    id: string,
+    ownerId: string,
+    tripId: string | null,
+  ): Promise<MediaAsset | null> {
+    // Owner-scoped updateMany — same pattern as `markReady`. Count
+    // being 0 means either the id is unknown or the caller isn't
+    // the owner; both collapse to a 404 at the use-case layer.
+    const result = await this.prisma.mediaAsset.updateMany({
+      where: { id, ownerId },
+      data: { tripId },
+    });
+    if (result.count !== 1) return null;
+    const row = await this.prisma.mediaAsset.findUnique({ where: { id } });
+    return row ? toDomain(row) : null;
+  }
+
+  async listForTripOwner(
+    tripId: string,
+    ownerId: string,
+    limit: number,
+  ): Promise<readonly MediaAsset[]> {
+    const rows = await this.prisma.mediaAsset.findMany({
+      where: { tripId, ownerId, status: 'ready' },
+      orderBy: { createdAt: 'desc' },
+      take: Math.min(Math.max(limit, 1), 200),
+    });
+    return rows.map(toDomain);
+  }
 }
 
 function toDomain(row: PrismaMediaAsset): MediaAsset {
