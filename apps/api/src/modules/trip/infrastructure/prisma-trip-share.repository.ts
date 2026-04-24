@@ -53,6 +53,19 @@ export class PrismaTripShareRepository implements TripShareRepository {
     });
     return rows.map(toDomain);
   }
+
+  async countActiveSharesForTrip(tripId: string): Promise<number> {
+    // Active = publicRead=true AND (no expiry OR expiry > now).
+    // Prisma's OR filter handles the nullable expiry cleanly.
+    const now = new Date();
+    return this.prisma.tripShare.count({
+      where: {
+        tripId,
+        publicRead: true,
+        OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+      },
+    });
+  }
 }
 
 function toDomain(row: PrismaTripShare): TripShare {
