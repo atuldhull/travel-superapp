@@ -19,24 +19,32 @@ import { Module } from '@nestjs/common';
 import { TripModule } from '../trip/trip.module';
 import { CastVoteUseCase } from './application/cast-vote.use-case';
 import { CreateExpenseUseCase } from './application/create-expense.use-case';
+import { CreateReviewUseCase } from './application/create-review.use-case';
 import { DeleteExpenseUseCase } from './application/delete-expense.use-case';
+import { DeleteReviewUseCase } from './application/delete-review.use-case';
 import { GetTripBalancesUseCase } from './application/get-trip-balances.use-case';
+import { ListMyReviewsUseCase } from './application/list-my-reviews.use-case';
+import { ListReviewsForTargetUseCase } from './application/list-reviews-for-target.use-case';
 import { ListTripExpensesUseCase } from './application/list-trip-expenses.use-case';
 import { ListTripVotesUseCase } from './application/list-trip-votes.use-case';
 import { EXPENSE_REPOSITORY } from './application/ports/expense.repository';
+import { REVIEW_REPOSITORY } from './application/ports/review.repository';
 import { VOTE_REPOSITORY } from './application/ports/vote.repository';
 import { RevokeVoteUseCase } from './application/revoke-vote.use-case';
 import { PrismaExpenseRepository } from './infrastructure/prisma-expense.repository';
+import { PrismaReviewRepository } from './infrastructure/prisma-review.repository';
 import { PrismaVoteRepository } from './infrastructure/prisma-vote.repository';
 import { ExpensesController } from './interface/expenses.controller';
+import { ReviewsController } from './interface/reviews.controller';
 import { SocialController } from './interface/social.controller';
 
 @Module({
   imports: [TripModule],
-  controllers: [SocialController, ExpensesController],
+  controllers: [SocialController, ExpensesController, ReviewsController],
   providers: [
     { provide: VOTE_REPOSITORY, useClass: PrismaVoteRepository },
     { provide: EXPENSE_REPOSITORY, useClass: PrismaExpenseRepository },
+    { provide: REVIEW_REPOSITORY, useClass: PrismaReviewRepository },
     CastVoteUseCase,
     RevokeVoteUseCase,
     ListTripVotesUseCase,
@@ -44,7 +52,11 @@ import { SocialController } from './interface/social.controller';
     DeleteExpenseUseCase,
     ListTripExpensesUseCase,
     GetTripBalancesUseCase,
+    CreateReviewUseCase,
+    DeleteReviewUseCase,
+    ListReviewsForTargetUseCase,
+    ListMyReviewsUseCase,
   ],
-  exports: [VOTE_REPOSITORY, EXPENSE_REPOSITORY],
+  exports: [VOTE_REPOSITORY, EXPENSE_REPOSITORY, REVIEW_REPOSITORY],
 })
 export class SocialModule {}
