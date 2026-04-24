@@ -17,6 +17,7 @@
 import { Module } from '@nestjs/common';
 import { FindNearbyCrimesUseCase } from './application/find-nearby-crimes.use-case';
 import { FindNearbyScamsUseCase } from './application/find-nearby-scams.use-case';
+import { GetSafetyScoreUseCase } from './application/get-safety-score.use-case';
 import { ListMySosEventsUseCase } from './application/list-my-sos-events.use-case';
 import { CRIME_INCIDENT_REPOSITORY } from './application/ports/crime-incident.repository';
 import { SCAM_REPORT_REPOSITORY } from './application/ports/scam-report.repository';
@@ -28,11 +29,12 @@ import { PrismaCrimeIncidentRepository } from './infrastructure/prisma-crime-inc
 import { PrismaScamReportRepository } from './infrastructure/prisma-scam-report.repository';
 import { PrismaSosEventRepository } from './infrastructure/prisma-sos-event.repository';
 import { CrimeLayerController } from './interface/crime.controller';
+import { SafetyScoreController } from './interface/safety-score.controller';
 import { SafetyController } from './interface/safety.controller';
 import { SosController } from './interface/sos.controller';
 
 @Module({
-  controllers: [SafetyController, SosController, CrimeLayerController],
+  controllers: [SafetyController, SosController, CrimeLayerController, SafetyScoreController],
   providers: [
     { provide: SCAM_REPORT_REPOSITORY, useClass: PrismaScamReportRepository },
     { provide: SOS_EVENT_REPOSITORY, useClass: PrismaSosEventRepository },
@@ -43,6 +45,7 @@ import { SosController } from './interface/sos.controller';
     ListMySosEventsUseCase,
     ResolveSosUseCase,
     FindNearbyCrimesUseCase,
+    GetSafetyScoreUseCase,
   ],
   exports: [SCAM_REPORT_REPOSITORY, SOS_EVENT_REPOSITORY, CRIME_INCIDENT_REPOSITORY],
 })
