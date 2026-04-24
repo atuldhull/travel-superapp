@@ -33,6 +33,7 @@ import type { WeatherForecast } from '../../weather/domain/weather-forecast.enti
 import type { ItineraryDay } from '../domain/itinerary.entity';
 import type { Trip } from '../domain/trip.entity';
 import { daysInclusive } from './generate-itinerary-stub.use-case';
+import { GetTripTransportLegsUseCase, type TransportLeg } from './get-trip-transport-legs.use-case';
 import { ITINERARY_REPOSITORY, type ItineraryRepository } from './ports/itinerary.repository';
 import { TRIP_REPOSITORY, type TripRepository } from './ports/trip.repository';
 
@@ -52,6 +53,7 @@ export interface TripOverview {
   readonly stays: Section<readonly StayListing[]>;
   readonly eateries: Section<readonly EateryListing[]>;
   readonly events: Section<readonly EventListing[]>;
+  readonly transport: Section<readonly TransportLeg[]>;
 }
 
 @Injectable()
@@ -64,6 +66,8 @@ export class GetTripOverviewUseCase {
     @Inject(SearchStaysUseCase) private readonly searchStays: SearchStaysUseCase,
     @Inject(SearchEateriesUseCase) private readonly searchEateries: SearchEateriesUseCase,
     @Inject(SearchEventsUseCase) private readonly searchEvents: SearchEventsUseCase,
+    @Inject(GetTripTransportLegsUseCase)
+    private readonly transportLegs: GetTripTransportLegsUseCase,
   ) {}
 
   async execute(tripId: string, userId: string): Promise<TripOverview> {
@@ -81,9 +85,9 @@ export class GetTripOverviewUseCase {
         ? Math.max(1, Math.min(WEATHER_MAX_DAYS, daysInclusive(trip.startsOn, trip.endsOn)))
         : 7;
 
-    // Run the five sub-fetches concurrently. Each is wrapped so a
+    // Run the six sub-fetches concurrently. Each is wrapped so a
     // single failure doesn't reject the whole bundle.
-    const [itinerary, weather, stays, eateries, events] = await Promise.all([
+    const [itinerary, weather, stays, eateries, events, transport] = await Promise.all([
       section(() => this.itinerary.listDays(trip.id)),
       section(() =>
         this.getForecast.execute({ lat: center.lat, lng: center.lng, days: weatherDays }),
@@ -123,9 +127,12 @@ export class GetTripOverviewUseCase {
           to: endExclusive.toISOString(),
         });
       }),
+      // Owner gate already ran above — call the internal compute
+      // entry point so we don't redo the trip + ownership lookup.
+      section(() => this.transportLegs.computeLegs(trip.id)),
     ]);
 
-    return { trip, itinerary, weather, stays, eateries, events };
+    return { trip, itinerary, weather, stays, eateries, events, transport };
   }
 }
 

@@ -17,6 +17,7 @@ import { EventsModule } from '../events/events.module';
 import { FoodModule } from '../food/food.module';
 import { PlacesModule } from '../places/places.module';
 import { StaysModule } from '../stays/stays.module';
+import { TransportModule } from '../transport/transport.module';
 import { WeatherModule } from '../weather/weather.module';
 import { CreateTripDraftUseCase } from './application/create-trip-draft.use-case';
 import { CreateTripShareUseCase } from './application/create-trip-share.use-case';
@@ -28,6 +29,7 @@ import { GetTripEateriesUseCase } from './application/get-trip-eateries.use-case
 import { GetTripEventsUseCase } from './application/get-trip-events.use-case';
 import { GetTripOverviewUseCase } from './application/get-trip-overview.use-case';
 import { GetTripStaysUseCase } from './application/get-trip-stays.use-case';
+import { GetTripTransportLegsUseCase } from './application/get-trip-transport-legs.use-case';
 import { GetTripWeatherUseCase } from './application/get-trip-weather.use-case';
 import { ListItineraryUseCase } from './application/list-itinerary.use-case';
 import { ListTripsUseCase } from './application/list-trips.use-case';
@@ -49,7 +51,7 @@ import { TripController } from './interface/trip.controller';
   // GetForecastUseCase / SearchStaysUseCase / SearchEateriesUseCase
   // for the Trip × * overlays). All one-way deps — none of those
   // modules knows about Trip.
-  imports: [PlacesModule, WeatherModule, StaysModule, FoodModule, EventsModule],
+  imports: [PlacesModule, WeatherModule, StaysModule, FoodModule, EventsModule, TransportModule],
   controllers: [TripController],
   providers: [
     { provide: TRIP_REPOSITORY, useClass: PrismaTripRepository },
@@ -71,6 +73,7 @@ import { TripController } from './interface/trip.controller';
     GetTripStaysUseCase,
     GetTripEateriesUseCase,
     GetTripEventsUseCase,
+    GetTripTransportLegsUseCase,
     GetTripOverviewUseCase,
   ],
   exports: [TRIP_REPOSITORY, ITINERARY_REPOSITORY, TRIP_SHARE_REPOSITORY],

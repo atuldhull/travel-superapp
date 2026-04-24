@@ -40,6 +40,10 @@ import { GetTripEateriesUseCase } from '../application/get-trip-eateries.use-cas
 import { GetTripEventsUseCase } from '../application/get-trip-events.use-case';
 import { GetTripOverviewUseCase, type Section } from '../application/get-trip-overview.use-case';
 import { GetTripStaysUseCase } from '../application/get-trip-stays.use-case';
+import {
+  GetTripTransportLegsUseCase,
+  type TransportLeg,
+} from '../application/get-trip-transport-legs.use-case';
 import { GetTripWeatherUseCase } from '../application/get-trip-weather.use-case';
 import type { EventListing } from '../../events/domain/event-listing.entity';
 import type { EateryListing } from '../../food/domain/eatery-listing.entity';
@@ -113,6 +117,7 @@ export class TripController {
     private readonly getTripEateries: GetTripEateriesUseCase,
     private readonly getTripOverview: GetTripOverviewUseCase,
     private readonly getTripEvents: GetTripEventsUseCase,
+    private readonly getTripTransportLegs: GetTripTransportLegsUseCase,
   ) {}
 
   @Post()
@@ -295,6 +300,7 @@ export class TripController {
       stays: mapSection(ov.stays, (list) => ({ list })),
       eateries: mapSection(ov.eateries, (list) => ({ list })),
       events: mapSection(ov.events, (list) => ({ list })),
+      transport: mapSection(ov.transport, (legs) => ({ legs })),
     };
   }
 
@@ -434,6 +440,25 @@ export class TripController {
     await this.revokeTripShare.execute(code, user.sub);
   }
 
+  /**
+   * Transport options between consecutive itinerary items pinned
+   * to Places. Owner-only. Pairs are silently skipped (NOT errored)
+   * when an item has no `placeId`, when the place is missing from
+   * the catalog, when origin === destination, or when the straight-
+   * line distance exceeds 500km — all "no leg here" states for the
+   * UI to render as a gap. Empty `legs: []` is the right answer
+   * for a trip with no itinerary or only single-item days.
+   */
+  @Get(':id/transport-legs')
+  @HttpCode(HttpStatus.OK)
+  async transportLegs(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ): Promise<{ legs: readonly TransportLeg[] }> {
+    const legs = await this.getTripTransportLegs.execute(id, user.sub);
+    return { legs };
+  }
+
   @Patch(':tripId/itinerary/:dayId')
   @HttpCode(HttpStatus.OK)
   async updateDay(
@@ -513,6 +538,7 @@ interface TripOverviewDto {
   readonly stays: SectionDto<{ readonly list: readonly StayListing[] }>;
   readonly eateries: SectionDto<{ readonly list: readonly EateryListing[] }>;
   readonly events: SectionDto<{ readonly list: readonly EventListing[] }>;
+  readonly transport: SectionDto<{ readonly legs: readonly TransportLeg[] }>;
 }
 
 function mapSection<T, U>(s: Section<T>, f: (t: T) => U): SectionDto<U> {
