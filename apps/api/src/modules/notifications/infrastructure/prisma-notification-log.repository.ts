@@ -50,6 +50,20 @@ export class PrismaNotificationLogRepository implements NotificationLogRepositor
     });
     return rows.map(toDomain);
   }
+
+  async markReadForUser(id: string, userId: string): Promise<NotificationLog | null> {
+    // Owner-scoped `updateMany` + count gate — same shape the
+    // Media module uses for `markReady` + `setTripForOwner`. A
+    // row that's already `read: true` still gets count=1 from
+    // Postgres, so the operation is naturally idempotent.
+    const result = await this.prisma.notificationLog.updateMany({
+      where: { id, userId },
+      data: { read: true },
+    });
+    if (result.count !== 1) return null;
+    const row = await this.prisma.notificationLog.findUnique({ where: { id } });
+    return row ? toDomain(row) : null;
+  }
 }
 
 function toDomain(row: PrismaNotificationLog): NotificationLog {
