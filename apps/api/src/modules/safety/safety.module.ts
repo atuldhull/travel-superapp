@@ -15,29 +15,35 @@
  * Installed by prompt [IV.18.11.1].
  */
 import { Module } from '@nestjs/common';
+import { FindNearbyCrimesUseCase } from './application/find-nearby-crimes.use-case';
 import { FindNearbyScamsUseCase } from './application/find-nearby-scams.use-case';
 import { ListMySosEventsUseCase } from './application/list-my-sos-events.use-case';
+import { CRIME_INCIDENT_REPOSITORY } from './application/ports/crime-incident.repository';
 import { SCAM_REPORT_REPOSITORY } from './application/ports/scam-report.repository';
 import { SOS_EVENT_REPOSITORY } from './application/ports/sos-event.repository';
 import { ReportScamUseCase } from './application/report-scam.use-case';
 import { ResolveSosUseCase } from './application/resolve-sos.use-case';
 import { TriggerSosUseCase } from './application/trigger-sos.use-case';
+import { PrismaCrimeIncidentRepository } from './infrastructure/prisma-crime-incident.repository';
 import { PrismaScamReportRepository } from './infrastructure/prisma-scam-report.repository';
 import { PrismaSosEventRepository } from './infrastructure/prisma-sos-event.repository';
+import { CrimeLayerController } from './interface/crime.controller';
 import { SafetyController } from './interface/safety.controller';
 import { SosController } from './interface/sos.controller';
 
 @Module({
-  controllers: [SafetyController, SosController],
+  controllers: [SafetyController, SosController, CrimeLayerController],
   providers: [
     { provide: SCAM_REPORT_REPOSITORY, useClass: PrismaScamReportRepository },
     { provide: SOS_EVENT_REPOSITORY, useClass: PrismaSosEventRepository },
+    { provide: CRIME_INCIDENT_REPOSITORY, useClass: PrismaCrimeIncidentRepository },
     ReportScamUseCase,
     FindNearbyScamsUseCase,
     TriggerSosUseCase,
     ListMySosEventsUseCase,
     ResolveSosUseCase,
+    FindNearbyCrimesUseCase,
   ],
-  exports: [SCAM_REPORT_REPOSITORY, SOS_EVENT_REPOSITORY],
+  exports: [SCAM_REPORT_REPOSITORY, SOS_EVENT_REPOSITORY, CRIME_INCIDENT_REPOSITORY],
 })
 export class SafetyModule {}
