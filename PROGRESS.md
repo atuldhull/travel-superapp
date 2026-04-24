@@ -10,18 +10,75 @@
 
 ## Summary
 
-| Counter             | Value                                                                                |
-| ------------------- | ------------------------------------------------------------------------------------ |
-| Prompts completed   | 80 (79 full + 1 foundation-only; Notifications v1 persistence + SOS handler shipped) |
-| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5+6+7 shipped; JWKS rotation still follow-up)        |
-| Prompts blocked     | 0                                                                                    |
-| Last prompt         | `[IV.18.15.1]` — Notifications v1: persist NotificationLog + SOS handler + GET /me   |
-| Last commit date    | 2026-04-24                                                                           |
-| Phase               | Phase 1 — 13th HTTP module (Notifications becomes queryable); 46 suites, 312 tests   |
+| Counter             | Value                                                                               |
+| ------------------- | ----------------------------------------------------------------------------------- |
+| Prompts completed   | 81 (80 full + 1 foundation-only; Federated→catalog write-through just shipped)      |
+| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5+6+7 shipped; JWKS rotation still follow-up)       |
+| Prompts blocked     | 0                                                                                   |
+| Last prompt         | `[IV.18.4.2]` — Federated → catalog write-through (sha256 sourceKey dedup + ingest) |
+| Last commit date    | 2026-04-24                                                                          |
+| Phase               | Phase 1 — first compounding-data-moat slice; 47 suites, 317 tests                   |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.4.2] — Federated → catalog write-through (sha256 sourceKey dedup + ingest opt-in)
+
+**Date:** 2026-04-24 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.3 (Places Catalog)
+
+**What was done**
+
+Closes the long-promised "follow-up slice" referenced inside [IV.18.4.1]'s comments. Federated provider results now have a path into the canonical `Place` catalog — opt-in via `ingest: true` on the existing `POST /places/federated-search`. First slice in the session whose value compounds with every passing day: the catalog grows organically from real user queries, and every downstream module that already searches Places benefits without code changes.
+
+The dedup key is the schema-defined `sourceKey = sha256(provider + ':' + externalId)` (matches the comment on `Place.sourceKey @unique`). Stable across provider id format changes — a future Google migration from `<placeId>` to `places/<placeId>` would NOT shift our keys.
+
+- **`apps/api/src/modules/places/` extension:**
+  - `application/ingest-federated-results.use-case.ts` — **new file**; `IngestFederatedResultsUseCase`. Per result: hash sourceKey → repo.findBySourceKey → if hit return existing + `created=false`, else repo.insert + `created=true`. Catches Prisma `P2002` (unique-constraint race from a concurrent insert), re-reads, returns the winner.
+  - `application/ports/place.repository.ts` — adds `findBySourceKey(sourceKey)` for the find-half of find-or-create. Returns `Place | null`.
+  - `infrastructure/prisma-place.repository.ts` — implements `findBySourceKey` via Prisma `findUnique` with explicit `select` (skips the `Unsupported` PostGIS column — no GeoQueries needed for the read; insert still goes through GeoQueries to satisfy CLAUDE rule 11).
+  - `interface/dto/places.dto.ts` — `FederatedSearchPlacesBodySchema` gains optional `ingest: boolean`.
+  - `interface/places.controller.ts` — federated route now accepts `ingest`; when true, calls `IngestFederatedResultsUseCase` after the search and decorates each response item with `placeId` + `created`. When absent, behaviour is unchanged (pure read, no DB writes, no `placeId` decoration).
+  - `places.module.ts` — registers + exports the new use-case.
+
+- **5 integration tests** (`apps/api/test/places-ingest.e2e-spec.ts`) using a stub `PlaceProvider` override (same pattern as `places-federated.e2e-spec.ts`):
+  1. `ingest=true` → 3 rows in DB + each response item has a `placeId` + `created=true`.
+  2. Repeat ingest with same payload → still 3 rows, `created=false`, `placeId` stable across calls.
+  3. Default (no `ingest`) → 0 rows in DB, no `placeId` / `created` decoration.
+  4. End-to-end roundtrip: ingest → `POST /places/search` near same anchor → finds the 3 rows with the test prefix.
+  5. `category=cafe` filter at ingest time → only the 1 matching row is persisted.
+
+**Files created** (2) — `modules/places/application/ingest-federated-results.use-case.ts`, `test/places-ingest.e2e-spec.ts`.
+**Files edited** (4) — `modules/places/application/ports/place.repository.ts` (+findBySourceKey), `modules/places/infrastructure/prisma-place.repository.ts` (+findBySourceKey impl), `modules/places/interface/dto/places.dto.ts` (+ingest optional), `modules/places/interface/places.controller.ts` (+ingest wiring + response decoration), `modules/places/places.module.ts` (+use-case provider/export).
+
+**Dependencies** — none new.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ All 4 places suites green: 25/25 (existing 20 + new 5).
+- ✅ **Full real-DB suite: 47 suites, 317 tests pass against live Docker.** (+1 suite, +5 tests.)
+
+**Acceptance criteria**
+
+- ✅ `POST /places/federated-search` with `ingest: true` persists rows into `Place`.
+- ✅ Idempotent — repeat call doesn't duplicate; `created=false` on second pass.
+- ✅ `placeId` is stable across calls (same row keeps its id).
+- ✅ Default behaviour unchanged — no DB writes, response shape backwards-compatible.
+- ✅ Concurrent inserts race safely (P2002 caught + re-read).
+- ✅ Ingested rows are findable via `POST /places/search` (canonical catalog read).
+
+**Notes**
+
+- **Why opt-in via `ingest: true` instead of always-on write-through.** Two reasons. First, test isolation: many existing federated-search tests don't expect DB row side-effects, and forcing them all to clean up Place rows is a real cost. Second, semantic separation: a "see what's around" exploration query is conceptually different from "save these to my catalog." Letting the client signal intent keeps the read surface fast + clean. The default stays read-only-safe; the data moat builds up when clients explicitly commit.
+- **Why sha256 the sourceKey instead of using the literal `provider:externalId`.** The schema's existing comment specifies sha256 — staying consistent with that. Hashing also normalises across format changes (URL-safe, fixed-width, doesn't leak provider IDs into other systems that scan the column). Trade-off: can't reverse-look-up the original IDs from sourceKey alone, but we store them in `metadata` for debug + future reconciliation.
+- **Why catch `P2002` and re-read instead of using Prisma `upsert`.** Two reasons. First, `upsert` would force every ingest call to attempt an UPDATE on the existing row, which would touch the `coordinates` column — breaking CLAUDE rule 11 (PostGIS columns can't be written through Prisma's typed path). Second, the find-then-insert + race-catch shape is exactly what the use-case wants: report `created=true` only when we actually inserted, `created=false` when we found-or-raced. `upsert` would flatten that distinction.
+- **Why `metadata: { provider, externalId }` on insert.** Provenance for ops/debug — `sourceKey` is opaque (it's a hash), so the metadata column lets a human (or a future re-ingest tool) trace which provider+id any given row came from. Costs ~30 bytes per row.
+- **Why the response decorates `FederatedPlaceResult` rather than returning a totally different shape.** Backwards compatibility — clients that don't pass `ingest=true` still get the existing shape, byte-for-byte. Clients that do pass it get extra optional fields (`placeId`, `created`) without breaking JSON deserializers that don't know about them.
+- **First "data moat" mechanism in the codebase.** Every prior slice was either pure read, scoped write to a user's own data (Trips, SOS, Media, Notifications), or admin-only seed (Places insert). This is the first slice where multiple users' federated queries cumulatively build a shared knowledge graph — the playbook's defensibility argument made operational.
+- **Sets up downstream slices**: future `places-ingestion-worker` (extracted) reads its inputs via this same use-case, just batched + scheduled. The port shape doesn't need to change.
 
 ---
 
