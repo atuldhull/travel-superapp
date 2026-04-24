@@ -10,18 +10,67 @@
 
 ## Summary
 
-| Counter             | Value                                                                           |
-| ------------------- | ------------------------------------------------------------------------------- |
-| Prompts completed   | 84 (83 full + 1 foundation-only; Media × Trip attachment just shipped)          |
-| Prompts in progress | 0                                                                               |
-| Prompts blocked     | 0                                                                               |
-| Last prompt         | `[IV.18.12.2]` — Media × Trip: attach/detach + list-by-trip (double owner gate) |
-| Last commit date    | 2026-04-24                                                                      |
-| Phase               | Phase 1 — first Media ↔ Trip cross-module edit path; 50 suites, 338 tests       |
+| Counter             | Value                                                                    |
+| ------------------- | ------------------------------------------------------------------------ |
+| Prompts completed   | 85 (84 full + 1 foundation-only; Notifications mark-read just shipped)   |
+| Prompts in progress | 0                                                                        |
+| Prompts blocked     | 0                                                                        |
+| Last prompt         | `[IV.18.15.2]` — Notifications: POST /:id/read (idempotent, IDOR-safe)   |
+| Last commit date    | 2026-04-24                                                               |
+| Phase               | Phase 1 — Notifications surface now read+mark-read; 51 suites, 343 tests |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.15.2] — Notifications: POST /:id/read (idempotent, IDOR-safe)
+
+**Date:** 2026-04-24 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.15 (Notifications)
+
+**What was done**
+
+Completes the minimum viable Notifications user-facing surface. Notifications v1 ([IV.18.15.1]) gave us a persistent ledger + a read API; this slice adds the edit verb so users can actually clear their unread count. Tiny slice by design — all the infrastructure was already in place (the `read: Boolean @default(false)` column has existed on `NotificationLog` since day one).
+
+- **`apps/api/src/modules/notifications/application/ports/notification-log.repository.ts`** — adds `markReadForUser(id, userId)`. Owner-scoped; returns `null` on miss/wrong-owner → use-case collapses to 404.
+- **`apps/api/src/modules/notifications/infrastructure/prisma-notification-log.repository.ts`** — implements via the same "owner-scoped `updateMany` + count===1 gate" pattern that Media's `markReady` and `setTripForOwner` use. Postgres returns count=1 even when the UPDATE sets `read = true` on a row that's already `true`, so the operation is naturally idempotent without a pre-read.
+- **`apps/api/src/modules/notifications/application/mark-notification-read.use-case.ts`** — new. Wrong-id and wrong-owner both collapse to 404 `NOTIFICATION_NOT_FOUND` (IDOR defence — stranger guessing cuids learns nothing).
+- **`apps/api/src/modules/notifications/interface/notifications.controller.ts`** — +`POST /notifications/:id/read` returning the updated row.
+- **`apps/api/src/modules/notifications/notifications.module.ts`** — registers the new use-case.
+
+- **5 integration tests** (`apps/api/test/notifications-mark-read.e2e-spec.ts`) against real Postgres:
+  1. No bearer → 401 `UNAUTHENTICATED`.
+  2. Happy path: register triggers SessionIssued handler → row persisted → POST `/:id/read` flips `read=true` → `GET /me` reflects it.
+  3. Unknown id → 404 `NOTIFICATION_NOT_FOUND`.
+  4. Cross-user: Bob marks Alice's → 404 `NOTIFICATION_NOT_FOUND`; Alice's row still `read=false` (verify no cross-user mutation slipped through).
+  5. Idempotent: second mark-read call still returns 200 + `read=true`.
+
+**Files created** (2) — `modules/notifications/application/mark-notification-read.use-case.ts`, `test/notifications-mark-read.e2e-spec.ts`.
+**Files edited** (3) — `modules/notifications/application/ports/notification-log.repository.ts` (+markReadForUser), `modules/notifications/infrastructure/prisma-notification-log.repository.ts` (+impl), `modules/notifications/interface/notifications.controller.ts` (+endpoint, MarkNotificationReadUseCase injection), `modules/notifications/notifications.module.ts` (+use-case provider).
+
+**Dependencies** — none new.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Mark-read suite 5/5 pass.
+- ✅ **Full real-DB suite: 51 suites, 343 tests pass against live Docker.** (+1 suite, +5 tests.) Existing Notifications suites still green — purely additive.
+
+**Acceptance criteria**
+
+- ✅ Authed user can flip `read=true` on their own notification.
+- ✅ Idempotent — second call doesn't 409 / 500.
+- ✅ Cross-user attempts collapse to 404 `NOTIFICATION_NOT_FOUND` (IDOR-safe, no existence leak).
+- ✅ `GET /me` surfaces the new read state.
+
+**Notes**
+
+- **Why POST not PATCH.** Matches every other "state-machine transition" verb in this codebase (trip share revoke, SOS resolve, MFA verify). PATCH implies arbitrary partial edits — this endpoint is specifically the "read" transition, and the state-machine is a single monotonic flip. A future mark-UNread (if it ever ships) gets its own verb rather than splitting this one. Keeping the response body to the updated row (not just 204) lets the client reconcile local state in one round-trip.
+- **Why no bulk mark-all-read endpoint yet.** It's a real UX want (clear-everything button), but it adds decisions: scope by channel? by age? by templateId? All are defensible; none are obvious. Shipping the per-row verb first lets real usage inform the bulk shape. The repo already supports the owner-gate, so a future `markAllReadForUser(userId)` is a 2-line add when the UX is pinned down.
+- **Why no `readAt` timestamp column.** The schema has `read: Boolean` + `createdAt` + `deliveredAt`, no `readAt`. Adding one needs a migration; for v1 the boolean alone answers "show me my unread count" and "show me my recent notifications," which are the only two things any real UI asks. If analytics later wants "how long between delivery and read" a migration can add the column + backfill nulls.
+- **Why the Prisma `updateMany` with count gate even when idempotency doesn't require it.** Two reasons. First, consistency — the same pattern appears in Media (`markReady`, `setTripForOwner`), SOS (`resolve`), and places-ingest (via find-or-create). Developers reading one recognize all the others. Second, single-query atomicity: `findUnique → check → update` is a two-round-trip race; `updateMany + count` is a single round-trip with the owner-gate predicate in the WHERE. Matters under contention even if the current load doesn't show it.
+- **IDOR defence cost-reward here is the cheapest version of the pattern.** No extra DB lookup over what a naive implementation would do. The owner-scoped `updateMany` either affects the row (count=1, success) or doesn't (count=0, 404). Same cost, cleanly safe.
 
 ---
 
