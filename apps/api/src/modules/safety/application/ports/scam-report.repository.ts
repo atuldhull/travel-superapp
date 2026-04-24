@@ -31,6 +31,13 @@ export interface FindNearbyScamsInput {
   readonly filters?: {
     readonly category?: string;
     readonly minSeverity?: ScamSeverity;
+    /**
+     * When present, restrict results to rows matching the flag.
+     * `true` = admin-verified only (public "trusted reports"
+     * view); absent = return both. `false` is accepted but not
+     * exposed on the public HTTP surface in v1. [IV.18.11.6]
+     */
+    readonly verified?: boolean;
   };
 }
 

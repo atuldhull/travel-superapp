@@ -31,6 +31,12 @@ export const FindNearbyScamsBodySchema = z.object({
   radiusKm: z.number().positive().max(10_000),
   category: z.string().trim().min(1).max(60).optional(),
   minSeverity: ScamSeveritySchema.optional(),
+  /**
+   * Restrict to admin-verified reports. Default absent/false —
+   * unverified reports still surface (crowd-sourcing flywheel);
+   * clients that want trusted-only pass `true`. [IV.18.11.6]
+   */
+  verifiedOnly: z.boolean().optional(),
   limit: z.number().int().positive().max(200).optional(),
 });
 export type FindNearbyScamsBody = z.infer<typeof FindNearbyScamsBodySchema>;

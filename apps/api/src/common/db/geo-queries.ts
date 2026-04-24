@@ -251,7 +251,42 @@ export class GeoQueries {
     const categoryFilter = input.filters?.category ?? null;
     const minSeverityRank =
       input.filters?.minSeverity === undefined ? null : severityRank(input.filters.minSeverity);
+    // Verified filter branches the query shape instead of using a
+    // parameter-casted `::boolean IS NULL` trick, which proved
+    // flaky under Prisma's $queryRaw (the parameter type inference
+    // didn't reliably activate the filter). Two explicit queries
+    // — one with the clause, one without — is boring + correct.
     const radiusMeters = input.radiusKm * 1000;
+
+    if (input.filters?.verified === undefined) {
+      return this.prisma.$queryRaw<ScamReportWithDistance[]>`
+        SELECT
+          id, "reporterId", category, severity, description, "evidenceUrls",
+          verified, "createdAt", "updatedAt",
+          ST_Distance(
+            coordinates,
+            ST_SetSRID(ST_MakePoint(${input.lng}, ${input.lat}), 4326)::geography
+          )::double precision AS "distanceMeters"
+        FROM "ScamReport"
+        WHERE
+          ST_DWithin(
+            coordinates,
+            ST_SetSRID(ST_MakePoint(${input.lng}, ${input.lat}), 4326)::geography,
+            ${radiusMeters}
+          )
+          AND (${categoryFilter}::text IS NULL OR category = ${categoryFilter}::text)
+          AND (
+            ${minSeverityRank}::int IS NULL
+            OR (CASE severity
+                  WHEN 'low'      THEN 1
+                  WHEN 'medium'   THEN 2
+                  WHEN 'high'     THEN 3
+                  WHEN 'critical' THEN 4
+                END) >= ${minSeverityRank}::int
+          )
+        ORDER BY "distanceMeters" ASC
+      `;
+    }
 
     return this.prisma.$queryRaw<ScamReportWithDistance[]>`
       SELECT
@@ -269,6 +304,7 @@ export class GeoQueries {
           ${radiusMeters}
         )
         AND (${categoryFilter}::text IS NULL OR category = ${categoryFilter}::text)
+        AND verified = ${input.filters.verified}
         AND (
           ${minSeverityRank}::int IS NULL
           OR (CASE severity
@@ -460,6 +496,10 @@ export interface FindScamReportsInput {
   readonly filters?: {
     readonly category?: string;
     readonly minSeverity?: ScamSeverity;
+    /** When present, restrict to rows matching this verified flag.
+     *  Typical use: `true` to restrict to admin-verified reports
+     *  only. Absent → return both. */
+    readonly verified?: boolean;
   };
 }
 

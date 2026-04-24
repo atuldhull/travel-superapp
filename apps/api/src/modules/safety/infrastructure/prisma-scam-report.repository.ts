@@ -49,16 +49,24 @@ export class PrismaScamReportRepository implements ScamReportRepository {
   }
 
   async findNearby(input: FindNearbyScamsInput): Promise<readonly ScamReportWithDistance[]> {
+    const hasFilters =
+      input.filters !== undefined &&
+      (input.filters.category !== undefined ||
+        input.filters.minSeverity !== undefined ||
+        input.filters.verified !== undefined);
     const rows = await this.geo.findScamReportsWithinRadius({
       lat: input.lat,
       lng: input.lng,
       radiusKm: input.radiusKm,
-      ...(input.filters?.category || input.filters?.minSeverity
+      ...(hasFilters
         ? {
             filters: {
-              ...(input.filters.category ? { category: input.filters.category } : {}),
-              ...(input.filters.minSeverity
+              ...(input.filters?.category ? { category: input.filters.category } : {}),
+              ...(input.filters?.minSeverity
                 ? { minSeverity: input.filters.minSeverity as PrismaScamSeverity }
+                : {}),
+              ...(input.filters?.verified !== undefined
+                ? { verified: input.filters.verified }
                 : {}),
             },
           }
