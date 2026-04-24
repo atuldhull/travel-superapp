@@ -1,7 +1,9 @@
 /**
  * In-monolith Notifications module. Subscribes to the shared
  * EventBus (provided by `EventsModule`) and dispatches
- * side-effects via the `NotificationSender` port.
+ * side-effects via the `NotificationSender` port. Persists every
+ * dispatched notification through the `NotificationLog` repo so
+ * users can query their own ledger via `GET /notifications/me`.
  *
  * ADR-002 trigger for extraction to a separate
  * `apps/notification-worker`:
@@ -16,23 +18,33 @@
  * handlers from the new app + switching EventsModule to the
  * RedisStreamsEventBus adapter.
  *
- * Installed by prompt [IV.18.2.8].
+ * Installed by prompt [IV.18.2.8]. Persistence + read-API +
+ * Safety.SosTriggered handler added in [IV.18.15.1].
  */
 import { Module } from '@nestjs/common';
 import { ItineraryReadyHandler } from './application/handlers/itinerary-ready.handler';
 import { SessionIssuedHandler } from './application/handlers/session-issued.handler';
+import { SosTriggeredHandler } from './application/handlers/sos-triggered.handler';
+import { ListMyNotificationsUseCase } from './application/list-my-notifications.use-case';
+import { NOTIFICATION_LOG_REPOSITORY } from './application/ports/notification-log.repository';
 import { NOTIFICATION_SENDER } from './application/ports/notification-sender';
 import { LoggingNotificationSender } from './infrastructure/logging-notification-sender';
+import { PrismaNotificationLogRepository } from './infrastructure/prisma-notification-log.repository';
+import { NotificationsController } from './interface/notifications.controller';
 
 @Module({
+  controllers: [NotificationsController],
   providers: [
+    { provide: NOTIFICATION_LOG_REPOSITORY, useClass: PrismaNotificationLogRepository },
     // Concrete sender — exposed as itself too so tests can
     // `moduleRef.get(LoggingNotificationSender)` to drain history.
     LoggingNotificationSender,
     { provide: NOTIFICATION_SENDER, useExisting: LoggingNotificationSender },
     SessionIssuedHandler,
     ItineraryReadyHandler,
+    SosTriggeredHandler,
+    ListMyNotificationsUseCase,
   ],
-  exports: [NOTIFICATION_SENDER, LoggingNotificationSender],
+  exports: [NOTIFICATION_SENDER, NOTIFICATION_LOG_REPOSITORY, LoggingNotificationSender],
 })
 export class NotificationsModule {}
