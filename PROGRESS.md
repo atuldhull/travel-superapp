@@ -10,18 +10,93 @@
 
 ## Summary
 
-| Counter             | Value                                                                     |
-| ------------------- | ------------------------------------------------------------------------- |
-| Prompts completed   | 91 (90 full + 1 foundation-only; Social expense-split just shipped)       |
-| Prompts in progress | 0                                                                         |
-| Prompts blocked     | 0                                                                         |
-| Last prompt         | `[IV.18.12.4]` — Social expense-split (create/list/balances + cents math) |
-| Last commit date    | 2026-04-25                                                                |
-| Phase               | Phase 1 — Social module: 2 of 4 primitives shipped; 57 suites, 389 tests  |
+| Counter             | Value                                                                    |
+| ------------------- | ------------------------------------------------------------------------ |
+| Prompts completed   | 92 (91 full + 1 foundation-only; Social reviews v1 just shipped)         |
+| Prompts in progress | 0                                                                        |
+| Prompts blocked     | 0                                                                        |
+| Last prompt         | `[IV.18.12.5]` — Social reviews v1 (trip-optional ratings on 4 targets)  |
+| Last commit date    | 2026-04-25                                                               |
+| Phase               | Phase 1 — Social module: 3 of 4 primitives shipped; 58 suites, 399 tests |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.12.5] — Social reviews v1 (trip-optional ratings on places / stays / eateries / agents)
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.12 (Social & Groups)
+
+**What was done**
+
+Third Social primitive after voting + expenses. Users rate 1–5 + write text reviews against places, stays, eateries, or agents (the 4 `targetType` values supported by the schema). Novel shape for this module: **trip-optional**. A standalone review of a place you visited solo just needs auth; attach to a trip via `body.tripId` and the collaborative-voting gate kicks in.
+
+Unlike Vote (unique per user+target) + Expense (unique by id only), Review explicitly permits **multiple reviews per user per target** — a traveler can rate the same place after different visits. No UNIQUE constraint in the schema enforces this; the test locks it in.
+
+HTTP surface (all authed):
+
+| Route                                        | What it does                                |
+| -------------------------------------------- | ------------------------------------------- |
+| `POST /api/v1/reviews`                       | create (standalone or trip-attached)        |
+| `GET  /api/v1/reviews?targetType=&targetId=` | list reviews on a target (public to authed) |
+| `GET  /api/v1/reviews/mine`                  | list caller's own reviews                   |
+| `DELETE /api/v1/reviews/:id`                 | author-only delete                          |
+
+- **`apps/api/src/modules/social/domain/review.entity.ts`** — `Review` + `ReviewTargetType` union (`'place' | 'stay' | 'eatery' | 'agent'`). tripId + language + verifiedBooking all preserved.
+- **`apps/api/src/modules/social/application/ports/review.repository.ts`** — 5-method port: `create`, `listByTarget`, `listByAuthor`, `findById`, `deleteForAuthor`.
+- **`apps/api/src/modules/social/infrastructure/prisma-review.repository.ts`** — Prisma direct delegate. Scoped `deleteMany` + count gate on delete (same idiom every other owner-scoped write uses).
+- **`apps/api/src/modules/social/application/create-review.use-case.ts`** — validates rating ∈ [1,5], body non-empty + ≤ 5000, language matches `^[a-z]{2}$`. If `tripId` is present, runs `assertTripAccess` helper (the shared gate from [IV.18.12.3]) → trip-collab gate. If absent, proceeds straight to insert.
+- **`apps/api/src/modules/social/application/delete-review.use-case.ts`** — author-only; 404 on missing OR non-author.
+- **`apps/api/src/modules/social/application/list-reviews-for-target.use-case.ts`** — public to authed; most-recent-first. Default 50, cap 200.
+- **`apps/api/src/modules/social/application/list-my-reviews.use-case.ts`** — authed, scoped to caller.
+- **`apps/api/src/modules/social/interface/dto/social.dto.ts`** — adds `ReviewTargetTypeSchema` (exported) + `CreateReviewBodySchema`. `language` defaults to `'en'` at the use-case.
+- **`apps/api/src/modules/social/interface/reviews.controller.ts`** — 4 routes at top-level `/reviews`. GET listing uses `?targetType=&targetId=` query params rather than nested `/places/:id/reviews` so a single handler covers all 4 targetTypes without route explosion. Missing query params → 400 `VALIDATION_FAILED`.
+- **`apps/api/src/modules/social/social.module.ts`** — registers the review provider + 4 use-cases + ReviewsController.
+
+- **10 integration tests** (`apps/api/test/social-reviews.e2e-spec.ts`):
+  1. No bearer → 401.
+  2. Standalone review (tripId absent) succeeds for any authed user; language defaults to `'en'`.
+  3. Trip-attached review: owner succeeds, non-owner without share → 404 `TRIP_NOT_FOUND`.
+  4. List-by-target returns every review, most-recent-first.
+  5. Missing query params on GET → 400 `VALIDATION_FAILED`.
+  6. `/reviews/mine` returns only caller's own reviews.
+  7. Author can delete; non-author → 404 `REVIEW_NOT_FOUND`.
+  8. Rating 6 → 422 `VALIDATION_FAILED` (Zod rejects first).
+  9. Empty body → 422 `VALIDATION_FAILED`.
+  10. Same user posting 3 reviews on the same target → all 3 persist (no unique constraint).
+
+**Files created** (8) — `modules/social/domain/review.entity.ts`, `modules/social/application/ports/review.repository.ts`, `modules/social/infrastructure/prisma-review.repository.ts`, `modules/social/application/create-review.use-case.ts`, `modules/social/application/delete-review.use-case.ts`, `modules/social/application/list-reviews-for-target.use-case.ts`, `modules/social/application/list-my-reviews.use-case.ts`, `modules/social/interface/reviews.controller.ts`, `test/social-reviews.e2e-spec.ts`.
+**Files edited** (2) — `modules/social/interface/dto/social.dto.ts` (+ReviewTargetTypeSchema + CreateReviewBodySchema), `modules/social/social.module.ts` (+provider + 4 use-cases + controller).
+
+**Dependencies** — none new. No Prisma migration — `Review` table has been in schema since day one.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Reviews suite 10/10 pass.
+- ✅ **Full real-DB suite: 58 suites, 399 tests pass against live Docker.** (+1 suite, +10 tests.)
+
+**Acceptance criteria**
+
+- ✅ Authenticated users can post reviews standalone or trip-attached.
+- ✅ Trip-attached reviews use the shared collab gate.
+- ✅ Reviews listable by target (targetType + targetId query).
+- ✅ Authors can delete their own reviews; non-authors 404.
+- ✅ Multiple reviews per user per target allowed.
+- ✅ Rating / body / language all validated with typed errors.
+
+**Notes**
+
+- **Why trip-optional.** Real-world review UX has two distinct flavors: "I wrote this after my Paris trip" (trip-attached, collab context, surfaces to other trip members) and "I went here for coffee last week solo, worth a review" (standalone, public to all authed). The schema supports both (`tripId` nullable with `onDelete: SetNull`); forcing one mode would lose the other. Switch to trip-required would kill the solo flow; switch to trip-forbidden would kill the collab flow.
+- **Why no uniqueness enforcement (user+target).** Vote has it because "Alice voted 👍" is a single state; changing the value rewrites it. Review is a time-series record — "Alice's review from her 2024 visit" and "Alice's review from her 2026 revisit" are both valid rows with different context. The test locks the no-unique behaviour in so a future schema change doesn't sneak it in without us noticing.
+- **Why query-param listing (`?targetType=&targetId=`) instead of nested routes.** A nested route per targetType (`/places/:id/reviews`, `/stays/:id/reviews`, `/eateries/:id/reviews`, `/agents/:id/reviews`) would be 4 handlers doing the same thing. The query-param shape collapses them. Trade-off: the OpenAPI spec reads less obviously "this endpoint is for places" — mitigated by the enum being explicit in the param docs.
+- **Why language defaults to `'en'` at the use-case, not Zod.** Zod accepts `language?` as optional; the use-case supplies `'en'` when absent. If Zod applied the default, an explicit `undefined` in the body would be equivalent to absence, but a `null` would fail (Zod doesn't accept nulls for strings). Pushing the default to the use-case keeps the shape of the DB row deterministic regardless of which "empty" shape the client sent.
+- **Why no moderation / flagging in v1.** Scam reports already have verify/dismiss (IV.18.11.5). Reviews would eventually want the same — "flag this as off-topic / abusive" + an admin queue. Shipping that alongside review create would double the slice's size without shipping a meaningful v1. Layer it on later via the exact same `admin-scam-moderation.controller` pattern.
+- **Why no PATCH endpoint.** Consistent with Expense ([IV.18.12.4]) — delete + re-create is the standard UX pattern for this kind of user-authored content. Shipping PATCH adds a ~2× code surface for a minor DX gain.
+- **Shared gate helper proves its value.** `assertCanVote` (exported from `cast-vote.use-case.ts`) is now reused by 3 primitives' use-cases (votes, expenses, reviews). Zero duplication; one audit point for the cross-cutting access policy. Future collaborators-only features drop in with one import line.
+- **Social module now 3-of-4 primitives.** Remaining: `Review`-adjacent "aggregated rating summary" (avg + count per target) would be a natural IV.18.12.6 — or, given the Social moat is in decent shape, pivot to an extracted service or compliance work.
 
 ---
 
