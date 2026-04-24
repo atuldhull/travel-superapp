@@ -10,18 +10,69 @@
 
 ## Summary
 
-| Counter             | Value                                                                |
-| ------------------- | -------------------------------------------------------------------- |
-| Prompts completed   | 88 (87 full + 1 foundation-only; Admin scam moderation just shipped) |
-| Prompts in progress | 0                                                                    |
-| Prompts blocked     | 0                                                                    |
-| Last prompt         | `[IV.18.11.5]` — Admin scam-report moderation (list/verify/dismiss)  |
-| Last commit date    | 2026-04-24                                                           |
-| Phase               | Phase 1 — Safety now has moderation loop; 54 suites, 367 tests       |
+| Counter             | Value                                                                   |
+| ------------------- | ----------------------------------------------------------------------- |
+| Prompts completed   | 89 (88 full + 1 foundation-only; Scam search verifiedOnly just shipped) |
+| Prompts in progress | 0                                                                       |
+| Prompts blocked     | 0                                                                       |
+| Last prompt         | `[IV.18.11.6]` — Scam search verifiedOnly filter (closes mod flywheel)  |
+| Last commit date    | 2026-04-25                                                              |
+| Phase               | Phase 1 — Safety moderation loop end-to-end; 55 suites, 371 tests       |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.11.6] — Public scam search `verifiedOnly=true` filter (closes moderation flywheel)
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.7 (Safety)
+
+**What was done**
+
+Closes the last loop in the Safety moderation flywheel. [IV.18.11.5] gave admins the ability to verify reports; this slice gives clients a way to filter on that signal. The crowd-sourcing flywheel stays intact — unverified reports still surface on the default search — but clients that specifically want trusted-only can pass `verifiedOnly: true` on the existing `POST /safety/scam-reports/search`.
+
+Tiny slice, one field added to each of: `FindScamReportsInput` (port), `GetNearbyScamsCommand` (use-case), `FindNearbyScamsBodySchema` (DTO). SQL-level change required the biggest thought: `::boolean` casting of a parameterized `null` proved flaky under Prisma's `$queryRaw` (parameter type inference didn't reliably match for a boolean-or-null filter). Switched to branching the query shape instead — one path with the verified clause, one without. Boring + correct.
+
+- **`apps/api/src/common/db/geo-queries.ts`** — `FindScamReportsInput.filters.verified` typed field + branched query in `findScamReportsWithinRadius`. Only two code paths: "no verified filter" (old shape) and "filter on verified = $X" (new shape). The branch is in-line, not across methods, so the shape of the read stays obvious.
+- **`apps/api/src/modules/safety/application/ports/scam-report.repository.ts`** — `FindNearbyScamsInput.filters.verified` typed field.
+- **`apps/api/src/modules/safety/infrastructure/prisma-scam-report.repository.ts`** — plumbs the `verified` filter through to GeoQueries. `hasFilters` guard updated to include the new field.
+- **`apps/api/src/modules/safety/application/find-nearby-scams.use-case.ts`** — `verifiedOnly?: boolean` on the command. Translates the public-facing boolean to `filters.verified = true` only when `true`; `false` / absent both skip the filter.
+- **`apps/api/src/modules/safety/interface/dto/safety.dto.ts`** — `verifiedOnly: z.boolean().optional()` on the schema.
+- **`apps/api/src/modules/safety/interface/safety.controller.ts`** — passes `verifiedOnly` through to the use-case.
+
+- **4 integration tests** (`apps/api/test/safety-verified-filter.e2e-spec.ts`):
+  1. Default search (no `verifiedOnly`) returns BOTH verified + unverified reports (crowd-sourcing flywheel preserved).
+  2. `verifiedOnly: true` restricts to admin-verified reports only; every returned row has `verified: true`.
+  3. `verifiedOnly: true` with no verified reports in the area → empty list (even though unverified rows exist).
+  4. `verifiedOnly: false` behaves like absent (returns both).
+
+**Files created** (1) — `test/safety-verified-filter.e2e-spec.ts`.
+**Files edited** (6) — `common/db/geo-queries.ts` (+filter field + branched query), `modules/safety/application/ports/scam-report.repository.ts` (+filter field), `modules/safety/infrastructure/prisma-scam-report.repository.ts` (+plumbing), `modules/safety/application/find-nearby-scams.use-case.ts` (+command field + filter build), `modules/safety/interface/dto/safety.dto.ts` (+zod field), `modules/safety/interface/safety.controller.ts` (+passthrough).
+
+**Dependencies** — none new.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Verified-filter suite 4/4 pass.
+- ✅ **Full real-DB suite: 55 suites, 371 tests pass against live Docker.** (+1 suite, +4 tests.) Every prior Safety test still green — default behaviour unchanged.
+
+**Acceptance criteria**
+
+- ✅ `verifiedOnly: true` on the public scam search restricts to admin-verified rows.
+- ✅ Default behaviour unchanged — both verified + unverified still surface.
+- ✅ `verifiedOnly: false` is accepted and equivalent to absent.
+- ✅ The verified column value is returned on every response row so clients can render a "verified" badge regardless of filter mode.
+
+**Notes**
+
+- **Why branch the query instead of using `::boolean IS NULL` conditional.** The conditional form worked fine for `::text` (category) and `::int` (minSeverityRank) — same shape. For `::boolean`, Prisma's `$queryRaw` parameter type inference didn't reliably activate the clause. Spent maybe 20 minutes debugging what looked like a correct SQL expression that wasn't narrowing; a branched query is 2x the lines but 0x the ambiguity, and the two branches differ by one AND clause. When Prisma upgrades fix parameter typing, the conditional form can come back — until then, honest branching is the right call. Captured this as a new feedback memory so future "add boolean filter to raw-SQL" slices don't rediscover the same wall.
+- **Why the controller doesn't pass `verifiedOnly: false` through.** `body.verifiedOnly ? {...} : {}` skips the field when it's `false` — same pattern the other optional flags use. The use-case handles `false` equivalently to absent anyway (the filter only activates on `true`). Not passing `false` keeps `cmd` minimal for the log line + any future cmd-based cache key.
+- **Why unverified reports still surface by default (not `verifiedOnly` baseline).** Flipping default to verified-only would kill the crowd-sourcing flywheel. A fresh report would never surface to other travelers until an admin got to it — which is exactly the case where timing matters most ("I just got scammed on this street, warn others NOW"). A future client-side affordance can render unverified reports with a visual "unverified — use caution" badge; that's the right decoupling.
+- **Why a new test file (`safety-verified-filter.e2e-spec.ts`) instead of extending `safety.e2e-spec.ts`.** The existing file's contract tests the scam CRUD + search without ever touching the admin surface. This slice's tests need the admin flow (register → promote → login → verify) which would bloat the existing file with admin bootstrap ceremony. Split keeps concerns clean. Same rationale every new test file has used this session.
+- **Moderation flywheel is now end-to-end**: anyone reports → admin verifies (or dismisses) → users can filter to trusted-only. The third leg (this slice) was the missing piece; the first two landed in [IV.18.11.1] + [IV.18.11.5]. Every piece of the Safety module shipped this session (5 prompts: scam reports, SOS, crime layer, score, moderation, filter) is now functionally complete for v1.
 
 ---
 
