@@ -40,3 +40,27 @@ export const CreateExpenseBodySchema = z.object({
     .refine((s) => Object.keys(s).length > 0, { message: 'splitShare must be non-empty' }),
 });
 export type CreateExpenseBody = z.infer<typeof CreateExpenseBodySchema>;
+
+/**
+ * Body for `POST /reviews`. `tripId` is optional — present to
+ * attach the review to a trip's collab space, absent for a
+ * standalone rating of a place / stay / eatery / agent.
+ *
+ * `targetType` allows the schema's 4 values — each gets its own
+ * listing surface (future: /places/:id/reviews etc.).
+ *
+ * rating/body/language invariants enforced in the use-case
+ * (typed INVALID_RATING / INVALID_REVIEW_BODY / INVALID_LANGUAGE
+ * errors instead of generic VALIDATION_FAILED). [IV.18.12.5]
+ */
+export const ReviewTargetTypeSchema = z.enum(['place', 'stay', 'eatery', 'agent']);
+
+export const CreateReviewBodySchema = z.object({
+  tripId: z.string().trim().min(1).max(64).nullable().optional(),
+  targetType: ReviewTargetTypeSchema,
+  targetId: z.string().trim().min(1).max(64),
+  rating: z.number().int().min(1).max(5),
+  body: z.string().trim().min(1).max(5000),
+  language: z.string().trim().length(2).optional(),
+});
+export type CreateReviewBody = z.infer<typeof CreateReviewBodySchema>;
