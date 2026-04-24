@@ -10,18 +10,79 @@
 
 ## Summary
 
-| Counter             | Value                                                                               |
-| ------------------- | ----------------------------------------------------------------------------------- |
-| Prompts completed   | 81 (80 full + 1 foundation-only; Federated→catalog write-through just shipped)      |
-| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5+6+7 shipped; JWKS rotation still follow-up)       |
-| Prompts blocked     | 0                                                                                   |
-| Last prompt         | `[IV.18.4.2]` — Federated → catalog write-through (sha256 sourceKey dedup + ingest) |
-| Last commit date    | 2026-04-24                                                                          |
-| Phase               | Phase 1 — first compounding-data-moat slice; 47 suites, 317 tests                   |
+| Counter             | Value                                                                              |
+| ------------------- | ---------------------------------------------------------------------------------- |
+| Prompts completed   | 82 (81 full + 1 foundation-only; Trip × Transport overlay just shipped)            |
+| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5+6+7 shipped; JWKS rotation still follow-up)      |
+| Prompts blocked     | 0                                                                                  |
+| Last prompt         | `[IV.18.10.2]` — Trip × Transport overlay (5th Trip section, folded into overview) |
+| Last commit date    | 2026-04-24                                                                         |
+| Phase               | Phase 1 — Trip overview now 6 sections; 48 suites, 324 tests                       |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.10.2] — Trip × Transport overlay (5th Trip section, folded into overview)
+
+**Date:** 2026-04-24 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.6 (Transport & Routing)
+
+**What was done**
+
+Fifth Trip × \* fold-in — after Weather, Stays, Eateries, Events. Adds `GET /api/v1/trips/:id/transport-legs`, which walks the itinerary day-by-day and returns route options between every consecutive pair of items pinned to a `Place`. Also folded into `GetTripOverviewUseCase` as the 6th Section so the bundled dashboard returns `transport` alongside the existing 5.
+
+Itineraries finally show how a user actually moves between activities. Until this slice an itinerary was just an ordered list of pins on a map; now the dashboard can render "Item 1 → Item 2: 8 min walk / 4 min car / $5.20 rideshare." Visible UX win that exercises the entire chain: Trip itinerary → Place coords → Transport routing → response.
+
+- **`apps/api/src/modules/trip/application/get-trip-transport-legs.use-case.ts`** — new use case. Owner-gated. For each day, walks consecutive items in `position` order; for each pair where both items have non-null `placeId`, looks up the coords (one batched `findCoordinatesForPlaceIds` query for the whole trip) and calls `GetRoutesUseCase`. Splits internal entry point `computeLegs(tripId)` so the overview can call it without re-running the owner gate.
+  - **Skip semantics** — pairs are silently dropped (NOT errored) when: an item has `placeId === null` (free-form note), the place isn't in the catalog (data drift), origin === destination (caught from routing's `SAME_ORIGIN_DESTINATION`), or distance > 500km (caught from `ROUTE_TOO_LONG`). All four are "no leg here" states for the UI to render as a gap.
+
+- **`apps/api/src/common/db/geo-queries.ts`** — adds `findCoordinatesForPlaceIds(ids)` returning `Map<id, {lat,lng}>`. PostGIS raw-SQL (CLAUDE rule 11). Empty input short-circuits.
+
+- **`apps/api/src/modules/trip/application/get-trip-overview.use-case.ts`** — adds `transport` Section. Calls the new use-case's `computeLegs` (skipping the redundant owner gate). 6 concurrent sub-fetches now run in `Promise.all`.
+
+- **`apps/api/src/modules/trip/interface/trip.controller.ts`** — `GET /:id/transport-legs` returns `{ legs }`. Overview DTO gets `transport: SectionDto<{ legs }>`.
+
+- **`apps/api/src/modules/trip/trip.module.ts`** — imports `TransportModule` (which exports `GetRoutesUseCase`). Registers `GetTripTransportLegsUseCase`.
+
+- **7 integration tests** (`apps/api/test/trip-transport.e2e-spec.ts`):
+  1. No bearer → 401.
+  2. Non-owner / unknown trip → 404 `TRIP_NOT_FOUND`.
+  3. Day with no items → empty `legs: []`.
+  4. Happy path: 3 items pinned to Places → 2 legs each with all 7 transport modes (walk + bicycle + 2-wheeler + car + taxi + rideshare + public_transit).
+  5. Free-form item between two Places → both adjacency-pairs have a null side, so empty result.
+  6. Two consecutive items at the same Place → silently dropped; the (same, p2) pair still yields a leg.
+  7. Overview now includes a `transport` section with the same legs.
+
+**Files created** (2) — `modules/trip/application/get-trip-transport-legs.use-case.ts`, `test/trip-transport.e2e-spec.ts`.
+**Files edited** (4) — `common/db/geo-queries.ts` (+findCoordinatesForPlaceIds), `modules/trip/application/get-trip-overview.use-case.ts` (+transport section), `modules/trip/interface/trip.controller.ts` (+endpoint, +overview DTO), `modules/trip/trip.module.ts` (+TransportModule import, +use-case provider).
+
+**Dependencies** — none new.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Trip-transport suite 7/7 pass.
+- ✅ **Full real-DB suite: 48 suites, 324 tests pass against live Docker.** (+1 suite, +7 tests.) Existing trip-overview tests still green — added a 6th section without breaking the 5 pre-existing ones.
+
+**Acceptance criteria**
+
+- ✅ `GET /trips/:id/transport-legs` returns one leg per consecutive Place-pinned pair, skipping the four "no leg" states.
+- ✅ Owner-gated; non-owner / missing trip → 404.
+- ✅ Folded into `GET /trips/:id/overview` as the `transport` section.
+- ✅ Overview's existing 5 sections unchanged in shape — purely additive.
+- ✅ Routing's existing 500km / same-coord caps map to silent skips, not 422s up the stack.
+
+**Notes**
+
+- **Why silently skip the four "no-leg" states instead of erroring.** A "skip" is the right answer, not a partial failure: the user's UI renders a gap instead of a route line, which matches the data exactly. Throwing would force every overview widget to defensively try/catch each section. The server's job is to say "this is what the data is"; the client's job is to render it.
+- **Why a separate `computeLegs(tripId)` entry point alongside `execute(tripId, userId)`.** The overview use-case already runs the owner gate at the top of its own `execute`. Calling the user-facing entry point from there would double-fetch the trip + double-check ownership for nothing. The split keeps the public path safe (owner gate first) while letting the trusted internal caller skip the redundant DB hits. Same trade-off the other 4 Trip × \* fold-ins make implicitly by inlining their search calls instead of going through the per-section use-cases.
+- **Why batch `findCoordinatesForPlaceIds(ids)` instead of one lookup per pair.** A typical day has 3-6 items. Two pairs would be 4 lookups under naive iteration, multiplied by N days. One `WHERE id = ANY($1)` query is a single round-trip regardless of trip size. The Map lookup in the loop is O(1).
+- **Why `findCoordinatesForPlaceIds` returns a `Map` instead of an array of `{id, lat, lng}`.** Callers always do "look up coords for placeId X." Returning a Map skips the array-find loop on every consecutive pair. The cost difference is invisible in this slice but adds up if the use-case is later reused inside a tight loop (a future "live re-plan" or "alternate-route exploration" use-case).
+- **Why no caching on the use-case itself.** The Transport module's `CachedRoutingProvider` already memoises by (origin, destination, modes) inside Redis with TTL. Wrapping the trip-level use-case in another cache would create stale-after-itinerary-edit entries and double the invalidation surface for zero new wins. The repeated lookups across users at the same coords are exactly what the lower cache catches.
+- **Why fold into overview now, not in a follow-up.** Five sections to six is a one-line change in the response shape; clients that ignore unknown fields are unaffected, and clients that DO want the section get it for free without a new round-trip. Holding it back would mean adding a second fetch in the mobile client for a value that's already computed alongside the rest.
+- **First Trip × \* fold-in that needs a sibling module's use-case (`GetRoutesUseCase`) AND raw PostGIS (`findCoordinatesForPlaceIds`) AND another use-case from within the same module (`GetTripTransportLegsUseCase` reused by overview).** Three-way composition that lands cleanly because each piece is already a port-shaped seam. Hex pays off here.
 
 ---
 
