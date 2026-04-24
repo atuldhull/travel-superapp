@@ -56,6 +56,17 @@ export const FindNearbyCrimesBodySchema = z.object({
 export type FindNearbyCrimesBody = z.infer<typeof FindNearbyCrimesBodySchema>;
 
 /**
+ * Body for `POST /safety/score`. Composite score over crime + scam
+ * data near a coordinate. Default radius 2km (walking context);
+ * max 10km (use-case). SOS events are deliberately NOT factored in.
+ */
+export const GetSafetyScoreBodySchema = z.object({
+  center: Coord,
+  radiusKm: z.number().positive().max(10_000).optional(),
+});
+export type GetSafetyScoreBody = z.infer<typeof GetSafetyScoreBodySchema>;
+
+/**
  * Body for `POST /safety/sos` — trigger an SOS event. `trigger` is
  * free-form so new modes (`voice_command`, `smartwatch_tap`) don't
  * need a migration. 60 chars caps pathological payloads.
