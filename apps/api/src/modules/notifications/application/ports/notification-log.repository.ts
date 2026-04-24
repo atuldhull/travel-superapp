@@ -29,6 +29,14 @@ export interface CreateNotificationLogInput {
 export interface NotificationLogRepository {
   create(input: CreateNotificationLogInput): Promise<NotificationLog>;
   listForUser(userId: string, limit: number): Promise<readonly NotificationLog[]>;
+  /**
+   * Flip `read = true` on a row the caller owns. Returns the
+   * updated row, or `null` when the id is unknown OR owned by a
+   * different user — the use-case collapses both signals to a
+   * single 404 for IDOR safety. Idempotent: re-marking an
+   * already-read row still returns the row.
+   */
+  markReadForUser(id: string, userId: string): Promise<NotificationLog | null>;
 }
 
 export const NOTIFICATION_LOG_REPOSITORY = Symbol('NotificationLogRepository');
