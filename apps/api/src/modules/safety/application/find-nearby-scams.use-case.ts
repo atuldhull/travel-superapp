@@ -31,6 +31,12 @@ export interface FindNearbyScamsCommand {
   readonly radiusKm: number;
   readonly category?: string;
   readonly minSeverity?: ScamSeverity;
+  /**
+   * When `true`, restrict to admin-verified reports only. Absent
+   * or `false` → return both verified + unverified (the default,
+   * to keep the crowd-sourcing flywheel alive). [IV.18.11.6]
+   */
+  readonly verifiedOnly?: boolean;
   readonly limit?: number;
 }
 
@@ -81,11 +87,12 @@ export class FindNearbyScamsUseCase {
       lat: cmd.lat,
       lng: cmd.lng,
       radiusKm: cmd.radiusKm,
-      ...(cmd.category || cmd.minSeverity
+      ...(cmd.category || cmd.minSeverity || cmd.verifiedOnly
         ? {
             filters: {
               ...(cmd.category ? { category: cmd.category } : {}),
               ...(cmd.minSeverity ? { minSeverity: cmd.minSeverity } : {}),
+              ...(cmd.verifiedOnly ? { verified: true } : {}),
             },
           }
         : {}),

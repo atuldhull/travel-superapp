@@ -94,6 +94,7 @@ export class SafetyController {
       radiusKm: body.radiusKm,
       ...(body.category ? { category: body.category } : {}),
       ...(body.minSeverity ? { minSeverity: body.minSeverity } : {}),
+      ...(body.verifiedOnly ? { verifiedOnly: body.verifiedOnly } : {}),
       ...(body.limit !== undefined ? { limit: body.limit } : {}),
     });
     return { reports: reports.map(toDistanceDto) };
