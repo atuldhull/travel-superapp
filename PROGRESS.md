@@ -10,18 +10,86 @@
 
 ## Summary
 
-| Counter             | Value                                                                   |
-| ------------------- | ----------------------------------------------------------------------- |
-| Prompts completed   | 87 (86 full + 1 foundation-only; Safety score composite just shipped)   |
-| Prompts in progress | 0                                                                       |
-| Prompts blocked     | 0                                                                       |
-| Last prompt         | `[IV.18.11.4]` — Safety score composite (POST /safety/score, grade A–F) |
-| Last commit date    | 2026-04-24                                                              |
-| Phase               | Phase 1 — Safety moat functionally complete; 53 suites, 359 tests       |
+| Counter             | Value                                                                |
+| ------------------- | -------------------------------------------------------------------- |
+| Prompts completed   | 88 (87 full + 1 foundation-only; Admin scam moderation just shipped) |
+| Prompts in progress | 0                                                                    |
+| Prompts blocked     | 0                                                                    |
+| Last prompt         | `[IV.18.11.5]` — Admin scam-report moderation (list/verify/dismiss)  |
+| Last commit date    | 2026-04-24                                                           |
+| Phase               | Phase 1 — Safety now has moderation loop; 54 suites, 367 tests       |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.11.5] — Admin scam-report moderation (list / verify / unverify / dismiss)
+
+**Date:** 2026-04-24 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.7 (Safety) · **Playbook §** 17 (Admin)
+
+**What was done**
+
+Closes a long-standing loop on the ScamReport feature. The schema has had `verified: Boolean @default(false)` since [IV.18.11.1] shipped; the column was never written. Admins now have the full queue-triage flow: list pending → verify good reports / dismiss spam → the verified pile becomes audit-able. Second admin surface in the codebase after JWKS ([III.13.2.8]).
+
+HTTP surface (all `@Roles('admin')`):
+
+| Route                                                    | What it does                    |
+| -------------------------------------------------------- | ------------------------------- |
+| `GET    /api/v1/admin/safety/scam-reports`               | list pending (verified=false)   |
+| `GET    /api/v1/admin/safety/scam-reports?verified=true` | audit the verified pile         |
+| `POST   /api/v1/admin/safety/scam-reports/:id/verify`    | flip `verified: true` (approve) |
+| `POST   /api/v1/admin/safety/scam-reports/:id/unverify`  | flip `verified: false` (revoke) |
+| `DELETE /api/v1/admin/safety/scam-reports/:id`           | hard delete (dismiss as spam)   |
+
+- **`apps/api/src/modules/safety/application/ports/scam-report.repository.ts`** — adds `listForModeration(input)`, `setVerified(id, value)`, `deleteById(id)`. `setVerified` is a single method for both verify + unverify (flag in, flag out) rather than two parallel methods — the verb is the same.
+- **`apps/api/src/modules/safety/infrastructure/prisma-scam-report.repository.ts`** — Prisma-typed reads with explicit `select` that skips the `Unsupported` coordinates column. Writes use `updateMany` + count gate (idempotent, Postgres-safe). Delete uses `deleteMany` — same Prisma-can't-read-coordinates workaround PrismaPlaceRepository uses.
+- **`apps/api/src/modules/safety/application/list-scam-reports-for-moderation.use-case.ts`** — default pending-only (verified=false); `?verified=true` flips to the audit view. Default 50, cap 200 — same shape as every other "list mine" surface.
+- **`apps/api/src/modules/safety/application/verify-scam-report.use-case.ts`** — thin wrapper: `null` from repo → 404 `SCAM_REPORT_NOT_FOUND`.
+- **`apps/api/src/modules/safety/application/dismiss-scam-report.use-case.ts`** — hard delete; 404 on unknown id. No event emission yet (reporter notification stays a follow-up).
+- **`apps/api/src/modules/safety/interface/admin-scam-moderation.controller.ts`** — class-level `@Roles('admin')`, 4 routes.
+- **`apps/api/src/modules/safety/safety.module.ts`** — registers the 3 new use-cases + new admin controller.
+
+- **8 integration tests** (`apps/api/test/admin-scam-moderation.e2e-spec.ts`) against real Postgres, exercising the full submit → moderate flow:
+  1. No bearer → 401 `UNAUTHENTICATED`.
+  2. Non-admin bearer → 403 `ROLE_FORBIDDEN`.
+  3. Admin sees user-submitted reports in the pending queue.
+  4. Verify flips the row; default pending list no longer shows it; `?verified=true` now does.
+  5. Unverify reverses a prior verify.
+  6. Dismiss (DELETE) removes the row; public search no longer returns it.
+  7. Verify unknown id → 404 `SCAM_REPORT_NOT_FOUND`.
+  8. Dismiss unknown id → 404 `SCAM_REPORT_NOT_FOUND`.
+
+**Files created** (5) — `modules/safety/application/list-scam-reports-for-moderation.use-case.ts`, `modules/safety/application/verify-scam-report.use-case.ts`, `modules/safety/application/dismiss-scam-report.use-case.ts`, `modules/safety/interface/admin-scam-moderation.controller.ts`, `test/admin-scam-moderation.e2e-spec.ts`.
+**Files edited** (3) — `modules/safety/application/ports/scam-report.repository.ts` (+3 methods + `ListForModerationInput`), `modules/safety/infrastructure/prisma-scam-report.repository.ts` (+3 impls + PrismaService injection), `modules/safety/safety.module.ts` (+3 use-cases + controller).
+
+**Dependencies** — none new.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Moderation suite 8/8 pass.
+- ✅ **Full real-DB suite: 54 suites, 367 tests pass against live Docker.** (+1 suite, +8 tests.)
+
+**Acceptance criteria**
+
+- ✅ Admin can list pending scam reports.
+- ✅ Admin can verify a report; it moves from pending → verified.
+- ✅ Admin can revoke verification.
+- ✅ Admin can dismiss (hard delete) a spam report.
+- ✅ Dismissed rows disappear from public search.
+- ✅ Unknown ids 404 cleanly.
+- ✅ Non-admin bearers get 403; unauthenticated requests get 401.
+
+**Notes**
+
+- **Why a single `setVerified(id, value)` instead of two parallel methods (verify + unverify).** The semantic is "set the flag to X" — branching at the port level would spread the update logic across two methods that have identical SQL. Branching belongs in the caller (the use-case can either pass `true` or `false`). The 2-route HTTP surface still reads clean because the verbs are different — the callers of the same use-case differ by intent.
+- **Why hard-delete for dismiss, not soft-delete.** The schema has no `dismissedAt` column. Adding one needs a migration + a new "exclude dismissed" filter in the public search + updates to every read path. Dismissal is terminal — a reporter whose spam was dismissed will just re-submit (and get re-dismissed) if they're actually malicious. Keeping the model simple while observability lives in server logs. If a "dismissed reasons" audit becomes a compliance need later, add a `ScamReportAudit` sibling table; don't contort the primary row.
+- **Why no event emission on verify/dismiss.** The playbook has `Safety.ScamReportVerified` + `Safety.ScamReportDismissed` sketched, but there's no subscriber today. Emitting-into-the-void happened twice (SosTriggered in [IV.18.11.2], Trip.\* in [IV.18.2.7]) and the first handler landed 14 slices later in [IV.18.15.1]. When the notification worker needs these events (probably when "your scam report was verified — thanks for keeping travelers safe" becomes a real email template), add the emission then. Meanwhile the admin flow works without it.
+- **Why `listForModeration` defaults to pending-only instead of a required query param.** The canonical use of this endpoint is the moderation queue. "Give me my triage inbox" is the default; "let me audit the verified pile" is a secondary intent that deserves an explicit flag. Shipping without a default would force every admin-queue UI to always pass `verified=false`, which is boilerplate.
+- **Why this admin controller lives inside SafetyModule rather than AdminModule.** Two reasons. First, it uses `SCAM_REPORT_REPOSITORY` directly — living in SafetyModule avoids a cross-module import back into Safety. Second, this is the established pattern for admin surfaces that operate on a specific module's data ([III.13.2.8] put the JWKS admin controller inside IdentityModule for the same reason). AdminModule stays for cross-cutting admin operations (like Place curation, which lives there because Places isn't admin-aware by itself).
+- **Why the public search still returns `verified: false` rows (for now).** Flipping the public search to `verifiedOnly=true` by default would make the crowd-sourcing flywheel useless — new reports wouldn't surface until an admin got around to them, which defeats the "warn other travelers quickly" purpose. The right follow-up is a client-side UI affordance: show unverified reports with a visual "unverified — use caution" badge. A `?verifiedOnly=true` query param can be a follow-up for contexts where strict filtering is wanted.
 
 ---
 
