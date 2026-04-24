@@ -149,6 +149,33 @@ export class GeoQueries {
   }
 
   /**
+   * Pluck the coordinates for a batch of Place ids. Returns a map
+   * keyed by id → `{ lat, lng }`. Missing ids are simply absent
+   * from the map (no error). Used by Trip × Transport to get the
+   * coords needed for routing between consecutive itinerary items.
+   *
+   * Empty `ids` short-circuits to an empty map — saves a no-op
+   * round-trip.
+   */
+  async findCoordinatesForPlaceIds(
+    ids: readonly string[],
+  ): Promise<Map<string, { lat: number; lng: number }>> {
+    if (ids.length === 0) return new Map();
+    const rows = await this.prisma.$queryRaw<Array<{ id: string; lat: number; lng: number }>>`
+      SELECT id,
+             ST_Y(coordinates::geometry) AS lat,
+             ST_X(coordinates::geometry) AS lng
+      FROM "Place"
+      WHERE id = ANY(${ids as string[]}::text[])
+    `;
+    const out = new Map<string, { lat: number; lng: number }>();
+    for (const r of rows) {
+      out.set(r.id, { lat: r.lat, lng: r.lng });
+    }
+    return out;
+  }
+
+  /**
    * Move an existing Place to a new lat/lng. Returns the row count
    * actually updated (0 if no Place with that id exists).
    */
