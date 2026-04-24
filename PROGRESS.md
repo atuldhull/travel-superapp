@@ -10,18 +10,78 @@
 
 ## Summary
 
-| Counter             | Value                                                                    |
-| ------------------- | ------------------------------------------------------------------------ |
-| Prompts completed   | 85 (84 full + 1 foundation-only; Notifications mark-read just shipped)   |
-| Prompts in progress | 0                                                                        |
-| Prompts blocked     | 0                                                                        |
-| Last prompt         | `[IV.18.15.2]` — Notifications: POST /:id/read (idempotent, IDOR-safe)   |
-| Last commit date    | 2026-04-24                                                               |
-| Phase               | Phase 1 — Notifications surface now read+mark-read; 51 suites, 343 tests |
+| Counter             | Value                                                                           |
+| ------------------- | ------------------------------------------------------------------------------- |
+| Prompts completed   | 86 (85 full + 1 foundation-only; Safety crime-layer read just shipped)          |
+| Prompts in progress | 0                                                                               |
+| Prompts blocked     | 0                                                                               |
+| Last prompt         | `[IV.18.11.3]` — Safety crime-layer read (POST /safety/crimes/search)           |
+| Last commit date    | 2026-04-24                                                                      |
+| Phase               | Phase 1 — Safety module now 3 primitives (scam/SOS/crime); 52 suites, 351 tests |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.11.3] — Safety crime-layer read (POST /safety/crimes/search)
+
+**Date:** 2026-04-24 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.7 (Safety)
+
+**What was done**
+
+Completes the Safety module's v1 read surface. Safety now has three primitives — user-reported scam reports (IV.18.11.1), user-triggered SOS events (IV.18.11.2), and upstream-ingested crime incidents (this slice). No user-facing write path for CrimeIncident — rows come from government feeds, Numbeo, and aggregated user reports, all driven by a seed script or future ingest worker. HTTP surface is read-only.
+
+Mirrors the scam-report search shape intentionally: same radius cap (50km), same category filter, same threshold-style `minSeverity` filter, same default/max limit. The only net-new parameter is `sinceDays` — crime feeds tend to carry long-tail historical data that's useful for analytics but noise for a traveler deciding where to walk tonight.
+
+- **`apps/api/src/common/db/geo-queries.ts`** — adds `insertCrimeIncident` + `findCrimeIncidentsWithinRadius` (PostGIS `ST_DWithin` + the existing `severityRank` CASE mapping; +`since` `timestamptz` filter). `+InsertCrimeIncidentInput` + `FindCrimeIncidentsInput` + `CrimeIncidentWithDistance` exports. Insert is used by seed scripts + the future ingest worker + tests; no HTTP route touches it.
+- **`apps/api/src/modules/safety/domain/crime-incident.entity.ts`** — new `CrimeIncident` + `CrimeIncidentWithDistance` plain-data entities. Re-exports `ScamSeverity` from the sister entity so consumers only import one file.
+- **`apps/api/src/modules/safety/application/ports/crime-incident.repository.ts`** — read-only port: `findNearby(input)`. No `insert` deliberately — the adapter delegates to `GeoQueries.insertCrimeIncident` for the seed path, but domain/application layers don't expose that surface.
+- **`apps/api/src/modules/safety/infrastructure/prisma-crime-incident.repository.ts`** — thin adapter over `GeoQueries.findCrimeIncidentsWithinRadius`. Same category-cast-at-boundary pattern as the scam-report adapter.
+- **`apps/api/src/modules/safety/application/find-nearby-crimes.use-case.ts`** — full validation suite (coords, radius, sinceDays) → repo. `sinceDays` converts to a Date in the use-case; the repo port takes the Date directly so a future adapter can choose a different "since" granularity without use-case churn.
+- **`apps/api/src/modules/safety/interface/dto/safety.dto.ts`** — `FindNearbyCrimesBodySchema` with the same Coord + radius + filters shape as scams, plus the optional `sinceDays` (positive, max 5 years).
+- **`apps/api/src/modules/safety/interface/crime.controller.ts`** — new controller at `/safety/crimes`. Kept separate from `SafetyController` / `SosController` — same one-controller-per-primitive rationale SOS used. Authed-only; no role gate in v1 (crime visibility is public to authenticated users, matching how safety data renders on every real-world traveler app).
+- **`apps/api/src/modules/safety/safety.module.ts`** — registers + exports the new provider / use-case / controller.
+
+- **8 integration tests** (`apps/api/test/safety-crime.e2e-spec.ts`) against real Postgres, seeding rows via `GeoQueries.insertCrimeIncident` directly (the future ingest worker's path):
+  1. No bearer → 401 `UNAUTHENTICATED`.
+  2. Empty DB → 200 with `incidents: []`.
+  3. Seeded rows → ordered by distance ascending; rows outside the radius excluded.
+  4. `category` exact-match filter narrows.
+  5. `minSeverity: 'medium'` returns medium/high/critical (threshold-style).
+  6. `sinceDays: 30` excludes incidents with `reportedAt` older than 30 days.
+  7. `radiusKm: 100` → 422 `INVALID_RADIUS`.
+  8. `limit: 2` caps the response array.
+
+**Files created** (6) — `common/db/` extension is in an existing file; fully new: `modules/safety/domain/crime-incident.entity.ts`, `modules/safety/application/ports/crime-incident.repository.ts`, `modules/safety/application/find-nearby-crimes.use-case.ts`, `modules/safety/infrastructure/prisma-crime-incident.repository.ts`, `modules/safety/interface/crime.controller.ts`, `test/safety-crime.e2e-spec.ts`.
+**Files edited** (3) — `common/db/geo-queries.ts` (+2 methods + 2 types + import `CrimeIncident`), `modules/safety/interface/dto/safety.dto.ts` (+FindNearbyCrimesBodySchema), `modules/safety/safety.module.ts` (+provider + use-case + controller + export).
+
+**Dependencies** — none new.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Crime suite 8/8 pass.
+- ✅ **Full real-DB suite: 52 suites, 351 tests pass against live Docker.** (+1 suite, +8 tests.)
+
+**Acceptance criteria**
+
+- ✅ `POST /safety/crimes/search` returns incidents within the requested radius, ordered by distance.
+- ✅ Category / minSeverity / sinceDays filters all work + compose.
+- ✅ Threshold-style severity matches scam-report semantics exactly.
+- ✅ Radius cap enforced at 50km with the typed `INVALID_RADIUS` error (not VALIDATION_FAILED).
+- ✅ Default + max limit match the scam-report surface (default 50, max 200).
+- ✅ No user-facing write path — CrimeIncident rows can only be created via `GeoQueries.insertCrimeIncident` from a seed script / ingest worker.
+
+**Notes**
+
+- **Why no user-facing write path.** CrimeIncident rows come from external upstream data (government crime feeds, Numbeo, aggregated user reports). Exposing a public `POST /crimes` would blur the provenance — the `source` column is meaningful ("numbeo", "gov-us", "user-report-agg") and conflating citizen reports with authoritative feeds would undermine the safety-score computation a future slice will build on top of this. Users who want to report something submit a `ScamReport`, which has its own write path + a moderation flow. A future "promote verified scam reports into the crime layer" batch job is the canonical migration path from user data to the crime layer.
+- **Why `sinceDays` is a use-case concern, not a port concern.** The port takes `since: Date` (absolute cutoff). The use-case owns the relative "N days ago" conversion. This keeps the port shape testable without freezing time — a future worker that already has a `since` timestamp can call the port directly without constructing a fake `sinceDays`. Same split the event-search use-cases use for their own from/to windows.
+- **Why a separate `CrimeLayerController` instead of folding routes into `SafetyController`.** Three safety primitives now (scam / SOS / crime) each have subtly different auth stories — scam has user POST, SOS has owner-only operations, crime is authed-only read. Splitting the controllers keeps each one's DI graph minimal + makes the route surface easy to reason about. Same rationale Safety used when it split `SosController` in [IV.18.11.2].
+- **Why the `sinceDays` max is 5 years (365 × 5).** Arbitrary cap that's high enough no UI would hit it in practice + low enough that a misbehaving client can't request a timestamp from Unix epoch and trigger a full-table scan on a big crime table. Same kind of belt-and-braces the radius cap uses at 10_000km in Zod (the use-case tightens to 50km).
+- **Why tests seed via `GeoQueries.insertCrimeIncident` directly.** Mimics the future ingest worker's code path — if the seed method has a bug, the test catches it the same way the worker would in prod. A future `ingest-crime-data.worker.ts` will call the same method, so the two code paths stay coupled by design.
+- **Safety moat is now functionally complete for v1.** The playbook's safety story was the primary competitive differentiator; this slice closes it. Crime-layer curation + a "safety score at this coord" composite metric are follow-ups but sit cleanly on top of the three primitives now in place. The next Safety prompt is unlikely to be another primitive — it'll be either a "combined safety score" aggregator or a moderation surface.
 
 ---
 
