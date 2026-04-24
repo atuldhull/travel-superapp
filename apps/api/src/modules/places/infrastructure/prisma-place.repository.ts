@@ -41,6 +41,28 @@ export class PrismaPlaceRepository implements PlaceRepository {
     return toDomain(row);
   }
 
+  async findBySourceKey(sourceKey: string): Promise<Place | null> {
+    // Explicit `select` skips the `Unsupported` PostGIS column —
+    // Prisma's typed path tolerates that. No raw SQL needed for
+    // the read.
+    const row = await this.prisma.place.findUnique({
+      where: { sourceKey },
+      select: {
+        id: true,
+        sourceKey: true,
+        name: true,
+        category: true,
+        address: true,
+        countryCode: true,
+        relaxationScore: true,
+        metadata: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+    return row ? toDomain(row as PrismaPlace) : null;
+  }
+
   async exists(id: string): Promise<boolean> {
     // `select: { id: true }` is the lightest Prisma probe — no
     // `coordinates` column touch, no extra joins. PostGIS

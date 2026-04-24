@@ -16,6 +16,7 @@
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { FederatedSearchPlacesUseCase } from '../application/federated-search-places.use-case';
+import { IngestFederatedResultsUseCase } from '../application/ingest-federated-results.use-case';
 import { SearchPlacesUseCase } from '../application/search-places.use-case';
 import type { FederatedPlaceResult } from '../domain/federated-place-result.entity';
 import type { PlaceWithDistance } from '../domain/place.entity';
@@ -54,11 +55,24 @@ function toDto(p: PlaceWithDistance): PlaceDto {
   };
 }
 
+interface FederatedResultDto extends FederatedPlaceResult {
+  /**
+   * Canonical Place id when `ingest=true` was passed (and the row
+   * was either freshly inserted or already in the catalog).
+   * Omitted on a pure read.
+   */
+  readonly placeId?: string;
+  /** True iff this call inserted the row; false if already cached
+   *  in the catalog. Omitted on a pure read. */
+  readonly created?: boolean;
+}
+
 @Controller('places')
 export class PlacesController {
   constructor(
     private readonly searchPlaces: SearchPlacesUseCase,
     private readonly federatedSearch: FederatedSearchPlacesUseCase,
+    private readonly ingest: IngestFederatedResultsUseCase,
   ) {}
 
   @Post('search')
@@ -87,22 +101,35 @@ export class PlacesController {
 
   /**
    * Federated search — external providers only (Google / FSQ / OSM
-   * mocks in v1). No merge with the local catalog; clients either
-   * render the external results directly, or a future follow-up
-   * slice writes them through to the `Place` table and returns
-   * merged results via `POST /places/search`.
+   * mocks in v1). With `ingest: true`, results are also written
+   * through to the canonical `Place` catalog (idempotent via
+   * sha256-anchored `sourceKey` dedup), and each response item
+   * carries the canonical `placeId`. Without `ingest`, the call is
+   * a pure read — no DB writes, no canonical id lookup.
    */
   @Post('federated-search')
   @HttpCode(HttpStatus.OK)
   async federated(
     @Body(new ZodValidationPipe(FederatedSearchPlacesBodySchema))
     body: FederatedSearchPlacesBody,
-  ): Promise<{ results: readonly FederatedPlaceResult[] }> {
+  ): Promise<{ results: readonly FederatedResultDto[] }> {
     const results = await this.federatedSearch.execute({
       center: body.center,
       radiusKm: body.radiusKm,
       ...(body.category ? { category: body.category } : {}),
     });
-    return { results };
+
+    if (!body.ingest) {
+      return { results };
+    }
+
+    const ingested = await this.ingest.execute(results);
+    // `ingest.execute` preserves input order so a positional zip is
+    // safe; cheaper than a Map lookup per row.
+    const merged: FederatedResultDto[] = results.map((r, i) => {
+      const row = ingested[i]!;
+      return { ...r, placeId: row.place.id, created: row.created };
+    });
+    return { results: merged };
   }
 }

@@ -14,6 +14,7 @@
  */
 import { Module } from '@nestjs/common';
 import { FederatedSearchPlacesUseCase } from './application/federated-search-places.use-case';
+import { IngestFederatedResultsUseCase } from './application/ingest-federated-results.use-case';
 import { SearchPlacesUseCase } from './application/search-places.use-case';
 import { PLACE_PROVIDER } from './application/ports/place-provider';
 import { PLACE_SEARCH_CACHE } from './application/ports/place-search-cache';
@@ -38,7 +39,13 @@ import { PlacesController } from './interface/places.controller';
     { provide: PLACE_SEARCH_CACHE, useClass: RedisPlaceSearchCache },
     { provide: PLACE_PROVIDER, useClass: CachedPlaceProvider },
     FederatedSearchPlacesUseCase,
+    IngestFederatedResultsUseCase,
   ],
-  exports: [PLACE_REPOSITORY, PLACE_PROVIDER, FederatedSearchPlacesUseCase],
+  exports: [
+    PLACE_REPOSITORY,
+    PLACE_PROVIDER,
+    FederatedSearchPlacesUseCase,
+    IngestFederatedResultsUseCase,
+  ],
 })
 export class PlacesModule {}
