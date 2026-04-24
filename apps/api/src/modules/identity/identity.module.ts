@@ -16,6 +16,7 @@ import { Module, type Provider } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Env } from '@app/config';
 import { IssueSessionUseCase } from './application/issue-session.use-case';
+import { JWT_KEYRING_STORE } from './application/ports/jwt-keyring.store';
 import { LoginUseCase } from './application/login.use-case';
 import {
   DisableMfaUseCase,
@@ -37,6 +38,7 @@ import { USER_OAUTH_IDENTITY_REPOSITORY } from './application/ports/user-oauth-i
 import { RefreshSessionUseCase } from './application/refresh-session.use-case';
 import { RegisterUseCase } from './application/register.use-case';
 import { RevokeSessionUseCase } from './application/revoke-session.use-case';
+import { RotateJwksUseCase } from './application/rotate-jwks.use-case';
 import { SignInWithOAuthUseCase } from './application/sign-in-with-oauth.use-case';
 import { AppleOAuthProvider } from './infrastructure/apple-oauth-provider';
 import { GoogleOAuthProvider } from './infrastructure/google-oauth-provider';
@@ -47,8 +49,10 @@ import { PrismaSessionRepository } from './infrastructure/prisma-session.reposit
 import { PrismaUserOAuthIdentityRepository } from './infrastructure/prisma-user-oauth-identity.repository';
 import { PrismaUserRepository } from './infrastructure/prisma-user.repository';
 import { RedisFailedLoginCounter } from './infrastructure/redis-failed-login-counter';
+import { RedisJwtKeyringStore } from './infrastructure/redis-jwt-keyring.store';
 import { TotpService } from './infrastructure/totp.service';
 import { AuthController } from './interface/auth.controller';
+import { JwksAdminController } from './interface/jwks-admin.controller';
 
 /**
  * Builds the OAuth provider registry at module init. Each real
@@ -83,13 +87,14 @@ const oauthProvidersFactory = {
 } satisfies Provider;
 
 @Module({
-  controllers: [AuthController],
+  controllers: [AuthController, JwksAdminController],
   providers: [
     // Ports → adapters.
     { provide: SESSION_REPOSITORY, useClass: PrismaSessionRepository },
     { provide: USER_REPOSITORY, useClass: PrismaUserRepository },
     { provide: BACKUP_CODE_REPOSITORY, useClass: PrismaBackupCodeRepository },
     { provide: FAILED_LOGIN_COUNTER, useClass: RedisFailedLoginCounter },
+    { provide: JWT_KEYRING_STORE, useClass: RedisJwtKeyringStore },
     { provide: TOKEN_SERVICE, useClass: JwtTokenService },
     {
       provide: USER_OAUTH_IDENTITY_REPOSITORY,
@@ -109,7 +114,14 @@ const oauthProvidersFactory = {
     DisableMfaUseCase,
     RegenerateBackupCodesUseCase,
     SignInWithOAuthUseCase,
+    RotateJwksUseCase,
   ],
-  exports: [SESSION_REPOSITORY, USER_REPOSITORY, TOKEN_SERVICE, RefreshSessionUseCase],
+  exports: [
+    SESSION_REPOSITORY,
+    USER_REPOSITORY,
+    TOKEN_SERVICE,
+    JWT_KEYRING_STORE,
+    RefreshSessionUseCase,
+  ],
 })
 export class IdentityModule {}

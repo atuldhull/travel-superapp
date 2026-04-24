@@ -1,31 +1,28 @@
 /**
  * Concrete `TokenService` — wraps `@app/auth`'s `signJwt` / `verifyJwt`
- * with env-derived keyrings.
+ * with a keyring resolved through the `JwtKeyringStore` port.
  *
- * Keyring shape: today we have a single active key id per token type
- * (`access-v1`, `refresh-v1`). `@app/auth` already supports a
- * rotation-aware keyring; the JWKS rotation cron + Redis-backed
- * keyring persistence are deferred to their own prompt. Swapping HS256
- * → RS256 is a signer-swap in `@app/auth`, not a shape change here.
+ * Before [III.13.2.8] this service built its keyring once at module
+ * init from env secrets + hardcoded `access-v1` / `refresh-v1`
+ * kids; rotation required a full deploy. It now delegates keyring
+ * retrieval to the store on every sign + verify, which:
+ *   - lets `POST /admin/identity/jwks/rotate` take effect process-
+ *     wide without restart,
+ *   - keeps the multi-instance story clean (Redis is the source of
+ *     truth; each instance hits its own 30s in-memory cache),
+ *   - makes the eventual HS256 → RS256 swap an adapter change in
+ *     the store, not a protocol shift here.
  *
- * TTL parsing: `JWT_ACCESS_EXPIRY` + `JWT_REFRESH_EXPIRY` come from
- * env as `"15m"` / `"30d"` strings. We parse them to seconds once at
- * module init.
+ * TTL parsing stays here — expiries are policy, not key material.
  *
- * Installed by prompt [III.13.2] part 2.
+ * Installed by prompt [III.13.2] part 2. Refactored for rotation
+ * in [III.13.2.8].
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import {
-  signJwt,
-  verifyJwt,
-  secretFromString,
-  type AccessTokenClaims,
-  type JwtKey,
-  type JwtKeyring,
-  type RefreshTokenClaims,
-} from '@app/auth';
+import { signJwt, verifyJwt, type AccessTokenClaims, type RefreshTokenClaims } from '@app/auth';
 import type { Env } from '@app/config';
+import { JWT_KEYRING_STORE, type JwtKeyringStore } from '../application/ports/jwt-keyring.store';
 import type {
   IssueAccessParams,
   IssueRefreshParams,
@@ -35,23 +32,13 @@ import type {
 
 @Injectable()
 export class JwtTokenService implements TokenService {
-  private readonly accessRing: JwtKeyring;
-  private readonly refreshRing: JwtKeyring;
   private readonly accessTtlSeconds: number;
   private readonly refreshTtlSeconds: number;
 
-  constructor(@Inject(ConfigService) config: ConfigService<Env, true>) {
-    const accessKey: JwtKey = {
-      kid: 'access-v1',
-      secret: secretFromString(config.get('JWT_ACCESS_SECRET', { infer: true })),
-    };
-    const refreshKey: JwtKey = {
-      kid: 'refresh-v1',
-      secret: secretFromString(config.get('JWT_REFRESH_SECRET', { infer: true })),
-    };
-    this.accessRing = { current: accessKey, previous: [] };
-    this.refreshRing = { current: refreshKey, previous: [] };
-
+  constructor(
+    @Inject(ConfigService) config: ConfigService<Env, true>,
+    @Inject(JWT_KEYRING_STORE) private readonly keyrings: JwtKeyringStore,
+  ) {
     this.accessTtlSeconds = parseDuration(config.get('JWT_ACCESS_EXPIRY', { infer: true }));
     this.refreshTtlSeconds = parseDuration(config.get('JWT_REFRESH_EXPIRY', { infer: true }));
   }
@@ -63,7 +50,8 @@ export class JwtTokenService implements TokenService {
       role: params.role,
       typ: 'access',
     };
-    const token = await signJwt(claims, this.accessRing.current, {
+    const ring = await this.keyrings.getRing('access');
+    const token = await signJwt(claims, ring.current, {
       expiresInSeconds: this.accessTtlSeconds,
     });
     return { token, expiresAt: futureDate(this.accessTtlSeconds) };
@@ -76,18 +64,21 @@ export class JwtTokenService implements TokenService {
       dfp: params.deviceFingerprint,
       typ: 'refresh',
     };
-    const token = await signJwt(claims, this.refreshRing.current, {
+    const ring = await this.keyrings.getRing('refresh');
+    const token = await signJwt(claims, ring.current, {
       expiresInSeconds: this.refreshTtlSeconds,
     });
     return { token, expiresAt: futureDate(this.refreshTtlSeconds) };
   }
 
   async verifyAccessToken(token: string): Promise<AccessTokenClaims> {
-    return verifyJwt<AccessTokenClaims>(token, this.accessRing);
+    const ring = await this.keyrings.getRing('access');
+    return verifyJwt<AccessTokenClaims>(token, ring);
   }
 
   async verifyRefreshToken(token: string): Promise<RefreshTokenClaims> {
-    return verifyJwt<RefreshTokenClaims>(token, this.refreshRing);
+    const ring = await this.keyrings.getRing('refresh');
+    return verifyJwt<RefreshTokenClaims>(token, ring);
   }
 }
 
