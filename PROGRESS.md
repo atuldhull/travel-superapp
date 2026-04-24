@@ -10,18 +10,100 @@
 
 ## Summary
 
-| Counter             | Value                                                                    |
-| ------------------- | ------------------------------------------------------------------------ |
-| Prompts completed   | 92 (91 full + 1 foundation-only; Social reviews v1 just shipped)         |
-| Prompts in progress | 0                                                                        |
-| Prompts blocked     | 0                                                                        |
-| Last prompt         | `[IV.18.12.5]` — Social reviews v1 (trip-optional ratings on 4 targets)  |
-| Last commit date    | 2026-04-25                                                               |
-| Phase               | Phase 1 — Social module: 3 of 4 primitives shipped; 58 suites, 399 tests |
+| Counter             | Value                                                                      |
+| ------------------- | -------------------------------------------------------------------------- |
+| Prompts completed   | 93 (92 full + 1 foundation-only; Memory Book v1 just shipped)              |
+| Prompts in progress | 0                                                                          |
+| Prompts blocked     | 0                                                                          |
+| Last prompt         | `[IV.18.12.6]` — Memory Book v1 (CRUD + media attach/detach, cascade-safe) |
+| Last commit date    | 2026-04-25                                                                 |
+| Phase               | Phase 1 — Media module now 2 entities; 59 suites, 409 tests                |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.12.6] — Memory Book v1 (CRUD + media attach/detach, cascade-safe delete)
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.13 (Media & Memory)
+
+**What was done**
+
+Second Media entity after MediaAsset. A Memory Book bundles a user's `ready` `MediaAsset` rows into a named, themed album — the "trip photo album" UX. Schema's `MemoryBook` model + `MediaAsset.memoryBookId` FK (with `onDelete: SetNull`) have existed since day one; this slice wires the CRUD + attach/detach surface.
+
+Mirrors the attach-to-trip shape from [IV.18.12.2] almost exactly — double owner-gate (media + book), symmetric attach/detach endpoint, same "don't cascade media on book delete" semantic.
+
+HTTP surface (all authed, all owner-gated):
+
+| Route                                  | What it does                                 |
+| -------------------------------------- | -------------------------------------------- |
+| `POST   /api/v1/memory-books`          | create (title + optional theme + coverS3Key) |
+| `GET    /api/v1/memory-books`          | list mine (default 50, cap 200)              |
+| `GET    /api/v1/memory-books/:id`      | get one + attached `ready` asset ids         |
+| `PATCH  /api/v1/memory-books/:id`      | update title / theme / coverS3Key            |
+| `DELETE /api/v1/memory-books/:id`      | delete (MediaAsset.memoryBookId → null)      |
+| `PATCH  /api/v1/media/:id/memory-book` | attach/detach (body: `{ memoryBookId }`)     |
+
+- **`apps/api/src/modules/media/domain/memory-book.entity.ts`** — `MemoryBook` (id, ownerId, title, coverS3Key, theme, publishedAt, timestamps) + `MemoryBookWithAssets` envelope. `publishedAt` is dormant in v1 — the column exists for a future public-publish slice that adds a share-code surface; no HTTP route flips it today.
+- **`apps/api/src/modules/media/application/ports/memory-book.repository.ts`** — `create`, `findByIdForOwner`, `listForOwner`, `updateForOwner` (partial, nothing-to-update is a no-op read), `deleteForOwner`, `listAssetIdsForOwner` (`ready`-only, owner-scoped, desc by createdAt).
+- **`apps/api/src/modules/media/infrastructure/prisma-memory-book.repository.ts`** — Prisma direct delegate. Partial-update builder skips `undefined` keys so an accidental `theme: undefined` doesn't wipe the column. Asset-ids lookup uses `select: { id: true }` — avoids pulling full MediaAsset rows when callers only want ids.
+- **`apps/api/src/modules/media/application/ports/media-asset.repository.ts`** — adds `setMemoryBookForOwner` (symmetric with `setTripForOwner`).
+- **`apps/api/src/modules/media/infrastructure/prisma-media-asset.repository.ts`** — implements it via the same `updateMany` + count-gate pattern.
+- **6 new use-cases in `modules/media/application/`**:
+  - `create-memory-book.use-case.ts` — title 1..120, theme ≤ 32 (empty → `'classic'`), coverS3Key passthrough. Typed `INVALID_TITLE` / `INVALID_THEME` errors.
+  - `get-memory-book.use-case.ts` — owner-gated; 404 → `MEMORY_BOOK_NOT_FOUND`. Returns `{ book, assetIds }`.
+  - `list-memory-books.use-case.ts` — default 50, cap 200.
+  - `update-memory-book.use-case.ts` — partial update; empty patch is a no-op read. Same validation as create.
+  - `delete-memory-book.use-case.ts` — owner-scoped delete; FK's `SetNull` preserves the attached media.
+  - `attach-media-to-book.use-case.ts` — double owner-gate (media + book); 404 on wrong-owner on either side with the matching code.
+- **`apps/api/src/modules/media/interface/dto/media.dto.ts`** — +`CreateMemoryBookBodySchema` + `UpdateMemoryBookBodySchema` + `AttachMediaToBookBodySchema`.
+- **`apps/api/src/modules/media/interface/memory-book.controller.ts`** — new controller at `/memory-books`, 5 routes.
+- **`apps/api/src/modules/media/interface/media.controller.ts`** — +`PATCH /:id/memory-book` (co-located with the existing attach-to-trip surface for discoverability).
+- **`apps/api/src/modules/media/media.module.ts`** — +repo provider + 6 use-cases + MemoryBookController.
+
+- **10 integration tests** (`apps/api/test/memory-book.e2e-spec.ts`) against real Postgres + MinIO:
+  1. No bearer → 401.
+  2. Full CRUD roundtrip: create → list → get → update (title only, theme unchanged) → delete → gone (404).
+  3. Default theme is `'classic'` when omitted.
+  4. Attach media → `GET /memory-books/:id` returns it in `assetIds`; detach → empty again.
+  5. Attach to another user's book → 404 `MEMORY_BOOK_NOT_FOUND` (IDOR).
+  6. Attach someone else's media to my book → 404 `MEDIA_NOT_FOUND`.
+  7. GET another user's book → 404 `MEMORY_BOOK_NOT_FOUND`.
+  8. **Cascade invariant**: delete a book with attached media → book gone, but `MediaAsset.memoryBookId` NULLs (verified via `GET /media/:id/download-url` still succeeding — media row survives).
+  9. Empty title → 422 `VALIDATION_FAILED`.
+  10. List returns only the caller's own books.
+
+**Files created** (9) — `modules/media/domain/memory-book.entity.ts`, `modules/media/application/ports/memory-book.repository.ts`, `modules/media/infrastructure/prisma-memory-book.repository.ts`, 6× `modules/media/application/*-memory-book.use-case.ts`, `modules/media/application/attach-media-to-book.use-case.ts`, `modules/media/interface/memory-book.controller.ts`, `test/memory-book.e2e-spec.ts`.
+**Files edited** (5) — `modules/media/application/ports/media-asset.repository.ts` (+setMemoryBookForOwner), `modules/media/infrastructure/prisma-media-asset.repository.ts` (+impl), `modules/media/interface/dto/media.dto.ts` (+3 schemas), `modules/media/interface/media.controller.ts` (+attach-to-book route), `modules/media/media.module.ts` (+6 providers + controller).
+
+**Dependencies** — none new. No Prisma migration — `MemoryBook` table + `MediaAsset.memoryBookId` FK both in schema + DB since day one.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Memory Book suite 10/10 pass, including the cascade invariant (book delete doesn't nuke media).
+- ✅ **Full real-DB + MinIO suite: 59 suites, 409 tests pass against live Docker.** (+1 suite, +10 tests.)
+
+**Acceptance criteria**
+
+- ✅ Owner can create, list, get, update, delete their own books.
+- ✅ Attach/detach media via `PATCH /media/:id/memory-book`.
+- ✅ GET returns attached asset ids (ready-only, desc by createdAt).
+- ✅ Deleting a book SetNulls the media — photos survive.
+- ✅ Cross-user IDOR attempts on either side → 404 with the right code.
+- ✅ Default theme applied when omitted.
+
+**Notes**
+
+- **Why asset ids, not full MediaAsset rows, in the book response.** Typical album has 50-200 photos. Returning full rows with s3Key + status + timestamps etc. bloats the book-get response 5-10×, and clients have to hit `GET /media/:id/download-url` per asset anyway (presigned URLs can't be pre-minted + stuffed into the response — they'd expire before the user even scrolled). Ids-only keeps the response tight + lets clients render thumbnails lazily as they enter the viewport.
+- **Why `onDelete: SetNull` (not `Cascade`) on `MediaAsset.memoryBookId`.** Deleting a photo album means "I don't want these grouped anymore," not "nuke the photos." Cascade would conflate the two operations into one destructive verb — a user who meant "rename this book" but mis-clicked delete would lose photos. SetNull preserves the library while removing the organisation. The invariant test locks this in.
+- **Why `publishedAt` is dormant in v1.** Publishing a memory book (making it readable by strangers via a share code) is a distinct feature: needs a public read surface, a share-code mint flow, expiry semantics, and a separate "shared-book view" controller. Bundled with v1 it would triple the slice size while adding complexity most users don't need for private albums. Shipping the column but keeping the setter absent keeps the door open without blocking this slice.
+- **Why nothing-to-update returns the current row (not 400 or 304).** Clients that PATCH with an empty body probably have a stale form state bug. Returning 200 with the current row is the kindest response — no data is lost, no spurious error surfaces, and the client state self-heals. 304 would require clients to handle a different response shape; 400 would punish innocent clients. Matches the UPDATE conventions used elsewhere (Identity session update, Trip update).
+- **Why attach/detach lives on `/media/:id/memory-book`, not `/memory-books/:id/media/:mediaId`.** The attach operation is fundamentally a mutation on the media asset (its `memoryBookId` FK). Keeping it under `/media/` co-locates it with the existing `PATCH /media/:id/trip` — symmetric semantics + same handler-shape for clients. A future "bulk attach" endpoint (`POST /memory-books/:id/media` with a `{ mediaIds: [] }` body) can land separately.
+- **Why the title validation happens in the use-case, not only Zod.** Zod's `min(1).max(120)` matches the use-case's bounds exactly today, but the use-case also trims + re-checks to catch whitespace-only payloads (`"   "` would pass Zod's min-length but fail meaningfully at the use-case's trim-then-check). The typed `INVALID_TITLE` error carries the current length in `context` for debugging. Same layered-validation pattern expense use-case uses for `amountUsd`.
+- **Media module now 2 entities** (MediaAsset + MemoryBook) — 14th HTTP-surface module but the first non-Identity module to ship two distinct entities. Natural next Media slice: publish flow (share code + public read), or EXIF-strip worker hook for the MediaAsset side.
 
 ---
 
