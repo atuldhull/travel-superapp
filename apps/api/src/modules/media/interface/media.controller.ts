@@ -27,6 +27,7 @@ import {
 } from '@nestjs/common';
 import { type AuthenticatedUser, CurrentUser } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
+import { AttachMediaToBookUseCase } from '../application/attach-media-to-book.use-case';
 import { AttachMediaToTripUseCase } from '../application/attach-media-to-trip.use-case';
 import { ConfirmUploadUseCase } from '../application/confirm-upload.use-case';
 import { CreateUploadUrlUseCase } from '../application/create-upload-url.use-case';
@@ -34,8 +35,10 @@ import { GetMediaDownloadUrlUseCase } from '../application/get-media-download-ur
 import { ListTripMediaUseCase } from '../application/list-trip-media.use-case';
 import type { MediaAsset } from '../domain/media-asset.entity';
 import {
+  AttachMediaToBookBodySchema,
   AttachMediaToTripBodySchema,
   CreateUploadUrlBodySchema,
+  type AttachMediaToBookBody,
   type AttachMediaToTripBody,
   type CreateUploadUrlBody,
 } from './dto/media.dto';
@@ -68,6 +71,7 @@ export class MediaController {
     private readonly downloadUc: GetMediaDownloadUrlUseCase,
     private readonly attachUc: AttachMediaToTripUseCase,
     private readonly listTripUc: ListTripMediaUseCase,
+    private readonly attachBookUc: AttachMediaToBookUseCase,
   ) {}
 
   @Post('upload-url')
@@ -159,5 +163,27 @@ export class MediaController {
       limit: parsed,
     });
     return { media: assets.map(toDto) };
+  }
+
+  /**
+   * Attach this media to a memory book (`{ memoryBookId: "cuid" }`)
+   * or detach it (`{ memoryBookId: null }`). Double owner-gated —
+   * both the media AND the book (when attaching) must belong to
+   * the caller. Wrong-owner on either side → 404 with the
+   * corresponding code.
+   */
+  @Patch(':id/memory-book')
+  @HttpCode(HttpStatus.OK)
+  async attachToBook(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(AttachMediaToBookBodySchema)) body: AttachMediaToBookBody,
+  ): Promise<MediaAssetDto> {
+    const asset = await this.attachBookUc.execute({
+      mediaId: id,
+      ownerId: user.sub,
+      memoryBookId: body.memoryBookId,
+    });
+    return toDto(asset);
   }
 }

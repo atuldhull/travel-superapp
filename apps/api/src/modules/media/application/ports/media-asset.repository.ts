@@ -44,6 +44,17 @@ export interface MediaAssetRepository {
    * surface in the codebase.
    */
   listForTripOwner(tripId: string, ownerId: string, limit: number): Promise<readonly MediaAsset[]>;
+  /**
+   * Set (or clear, with `null`) the asset's `memoryBookId`. Same
+   * owner-gated shape as `setTripForOwner`. The use-case validates
+   * that the target memory book exists + is owned by the caller
+   * before calling this. [IV.18.12.6]
+   */
+  setMemoryBookForOwner(
+    id: string,
+    ownerId: string,
+    memoryBookId: string | null,
+  ): Promise<MediaAsset | null>;
 }
 
 export const MEDIA_ASSET_REPOSITORY = Symbol('MediaAssetRepository');

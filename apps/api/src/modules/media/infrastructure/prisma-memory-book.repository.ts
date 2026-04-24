@@ -1,0 +1,103 @@
+/**
+ * Prisma adapter for `MemoryBookRepository`. Direct delegate —
+ * `MemoryBook` has no PostGIS / vector columns. Asset-ids lookup
+ * cross-queries `MediaAsset` with `{ memoryBookId, ownerId,
+ * status: 'ready' }` — same owner-scoping + `ready`-filter the
+ * trip-listing adapter uses.
+ *
+ * Installed by prompt [IV.18.12.6].
+ */
+import { Inject, Injectable } from '@nestjs/common';
+import type { MemoryBook as PrismaMemoryBook } from '@prisma/client';
+import { PrismaService } from '../../../common/db/prisma.service';
+import type { MemoryBook } from '../domain/memory-book.entity';
+import type {
+  CreateMemoryBookInput,
+  MemoryBookRepository,
+  UpdateMemoryBookInput,
+} from '../application/ports/memory-book.repository';
+
+@Injectable()
+export class PrismaMemoryBookRepository implements MemoryBookRepository {
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+
+  async create(input: CreateMemoryBookInput): Promise<MemoryBook> {
+    const row = await this.prisma.memoryBook.create({
+      data: {
+        ownerId: input.ownerId,
+        title: input.title,
+        theme: input.theme,
+        coverS3Key: input.coverS3Key,
+      },
+    });
+    return toDomain(row);
+  }
+
+  async findByIdForOwner(id: string, ownerId: string): Promise<MemoryBook | null> {
+    const row = await this.prisma.memoryBook.findFirst({ where: { id, ownerId } });
+    return row ? toDomain(row) : null;
+  }
+
+  async listForOwner(ownerId: string, limit: number): Promise<readonly MemoryBook[]> {
+    const rows = await this.prisma.memoryBook.findMany({
+      where: { ownerId },
+      orderBy: { createdAt: 'desc' },
+      take: Math.min(Math.max(limit, 1), 200),
+    });
+    return rows.map(toDomain);
+  }
+
+  async updateForOwner(
+    id: string,
+    ownerId: string,
+    patch: UpdateMemoryBookInput,
+  ): Promise<MemoryBook | null> {
+    // Owner-scoped updateMany — atomic gate. Only build the
+    // data object from present keys so an `undefined` value
+    // never accidentally wipes a column.
+    const data: { title?: string; theme?: string; coverS3Key?: string | null } = {};
+    if (patch.title !== undefined) data.title = patch.title;
+    if (patch.theme !== undefined) data.theme = patch.theme;
+    if (patch.coverS3Key !== undefined) data.coverS3Key = patch.coverS3Key;
+    if (Object.keys(data).length === 0) {
+      // Nothing to update — just return the current row (or null).
+      return this.findByIdForOwner(id, ownerId);
+    }
+    const result = await this.prisma.memoryBook.updateMany({
+      where: { id, ownerId },
+      data,
+    });
+    if (result.count !== 1) return null;
+    const row = await this.prisma.memoryBook.findUnique({ where: { id } });
+    return row ? toDomain(row) : null;
+  }
+
+  async deleteForOwner(id: string, ownerId: string): Promise<boolean> {
+    const result = await this.prisma.memoryBook.deleteMany({
+      where: { id, ownerId },
+    });
+    return result.count === 1;
+  }
+
+  async listAssetIdsForOwner(bookId: string, ownerId: string): Promise<readonly string[]> {
+    const rows = await this.prisma.mediaAsset.findMany({
+      where: { memoryBookId: bookId, ownerId, status: 'ready' },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true },
+    });
+    return rows.map((r) => r.id);
+  }
+}
+
+function toDomain(row: PrismaMemoryBook): MemoryBook {
+  return {
+    id: row.id,
+    ownerId: row.ownerId,
+    title: row.title,
+    coverS3Key: row.coverS3Key,
+    theme: row.theme,
+    publishedAt: row.publishedAt,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}

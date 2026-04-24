@@ -82,6 +82,23 @@ export class PrismaMediaAssetRepository implements MediaAssetRepository {
     });
     return rows.map(toDomain);
   }
+
+  async setMemoryBookForOwner(
+    id: string,
+    ownerId: string,
+    memoryBookId: string | null,
+  ): Promise<MediaAsset | null> {
+    // Same owner-scoped updateMany pattern as setTripForOwner.
+    // The book-owner check lives in the use-case; the repo only
+    // gates on the asset's owner.
+    const result = await this.prisma.mediaAsset.updateMany({
+      where: { id, ownerId },
+      data: { memoryBookId },
+    });
+    if (result.count !== 1) return null;
+    const row = await this.prisma.mediaAsset.findUnique({ where: { id } });
+    return row ? toDomain(row) : null;
+  }
 }
 
 function toDomain(row: PrismaMediaAsset): MediaAsset {
