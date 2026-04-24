@@ -36,3 +36,33 @@ export const AttachMediaToTripBodySchema = z.object({
   tripId: TripIdSchema.nullable(),
 });
 export type AttachMediaToTripBody = z.infer<typeof AttachMediaToTripBodySchema>;
+
+/**
+ * Memory-book schemas. Same id-shape tolerance as TripIdSchema
+ * (cuid vs UUID mixed in the DB) — the repo's owner-gated lookup
+ * is the real existence check.
+ */
+const MemoryBookIdSchema = z.string().trim().min(1).max(64);
+
+export const CreateMemoryBookBodySchema = z.object({
+  title: z.string().trim().min(1).max(120),
+  theme: z.string().trim().max(32).optional(),
+  coverS3Key: z.string().trim().max(512).nullable().optional(),
+});
+export type CreateMemoryBookBody = z.infer<typeof CreateMemoryBookBodySchema>;
+
+export const UpdateMemoryBookBodySchema = z.object({
+  title: z.string().trim().min(1).max(120).optional(),
+  theme: z.string().trim().min(1).max(32).optional(),
+  coverS3Key: z.string().trim().max(512).nullable().optional(),
+});
+export type UpdateMemoryBookBody = z.infer<typeof UpdateMemoryBookBodySchema>;
+
+/**
+ * Body for `PATCH /media/:id/memory-book`. Same null-or-string
+ * shape as `AttachMediaToTripBody`.
+ */
+export const AttachMediaToBookBodySchema = z.object({
+  memoryBookId: MemoryBookIdSchema.nullable(),
+});
+export type AttachMediaToBookBody = z.infer<typeof AttachMediaToBookBodySchema>;
