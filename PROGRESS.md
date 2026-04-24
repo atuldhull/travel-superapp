@@ -10,18 +10,77 @@
 
 ## Summary
 
-| Counter             | Value                                                                             |
-| ------------------- | --------------------------------------------------------------------------------- |
-| Prompts completed   | 79 (78 full + 1 foundation-only; Media v1 presigned uploads just shipped)         |
-| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5+6+7 shipped; JWKS rotation still follow-up)     |
-| Prompts blocked     | 0                                                                                 |
-| Last prompt         | `[IV.18.12.1]` — Media v1: presigned S3 uploads (upload-url + confirm + download) |
-| Last commit date    | 2026-04-24                                                                        |
-| Phase               | Phase 1 — 12th HTTP module (first real S3/MinIO infra); 45 suites, 307 tests pass |
+| Counter             | Value                                                                                |
+| ------------------- | ------------------------------------------------------------------------------------ |
+| Prompts completed   | 80 (79 full + 1 foundation-only; Notifications v1 persistence + SOS handler shipped) |
+| Prompts in progress | 1 (`[III.13.2]` — parts 1+2+3+4+5+6+7 shipped; JWKS rotation still follow-up)        |
+| Prompts blocked     | 0                                                                                    |
+| Last prompt         | `[IV.18.15.1]` — Notifications v1: persist NotificationLog + SOS handler + GET /me   |
+| Last commit date    | 2026-04-24                                                                           |
+| Phase               | Phase 1 — 13th HTTP module (Notifications becomes queryable); 46 suites, 312 tests   |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.15.1] — Notifications v1: persist NotificationLog + SOS handler + GET /notifications/me
+
+**Date:** 2026-04-24 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.15 (Notifications)
+
+**What was done**
+
+Closes the long-running "events fire into the void" gap. Three independent gains in one slice: a missing handler is added (Safety.SosTriggered, the highest-value unhandled event), the in-memory-only sender becomes a persistent ledger (every dispatched notification lands in `NotificationLog`), and the ledger gets a queryable HTTP surface (`GET /api/v1/notifications/me`). 13th HTTP module surface; first read-API for the Notifications module.
+
+- **`apps/api/src/modules/notifications/` extension:**
+  - `domain/notification-log.entity.ts` — **new file**; plain-data `NotificationLog` mirroring the Prisma row (channel, templateId, status, payload JSON, read, deliveredAt).
+  - `application/ports/notification-log.repository.ts` — **new file**; 2-method port: `create` (called by sender) + `listForUser` (called by use-case).
+  - `infrastructure/prisma-notification-log.repository.ts` — **new file**; direct Prisma adapter. Uses Prisma's enum types via cast at the boundary.
+  - `infrastructure/logging-notification-sender.ts` — **wired through repo**. Every `send()` now does logging + in-memory ring buffer push + DB row insert. **Persistence failure is swallowed-and-logged** — same policy as the SOS event-publish path. The handler must not propagate errors back to the EventBus, which would otherwise retry the whole event and cause duplicate sends.
+  - `application/handlers/sos-triggered.handler.ts` — **new handler**; subscribes to `Safety.SosTriggered` at `OnApplicationBootstrap`, sends a "SOS received" push stub through the same sender port. Confirmation back to the caller; future emergency-contacts fan-out latches on the same event.
+  - `application/list-my-notifications.use-case.ts` — **new use case**; default 50, cap 200. Same shape as ListMySosEventsUseCase.
+  - `interface/notifications.controller.ts` — **new controller**; `GET /notifications/me` returns the authed user's recent rows, owner-gated by JWT sub.
+  - `notifications.module.ts` — registers the new repo, handler, use-case, controller. Existing exports preserved.
+
+- **5 integration tests** (`apps/api/test/notifications-persistence.e2e-spec.ts`):
+  1. No bearer on `GET /notifications/me` → 401.
+  2. Register triggers SessionIssued → row appears in DB → `GET /me` surfaces it with `templateId=session_issued_new_device`, `channel=email`, `status=delivered`, non-null `deliveredAt`.
+  3. POST SOS → SosTriggeredHandler subscribed at boot → push row persisted with `templateId=safety_sos_received`, `payload.context.sosEventId` matches, `payload.context.trigger` matches.
+  4. Cross-user leak defence — Bob's SOS doesn't show up in Alice's `/me`.
+  5. `?limit=2` query param caps results.
+
+  Existing 4 tests in `notifications.e2e-spec.ts` (in-memory log assertions for SessionIssued + ItineraryGenerated) still pass — adding DB persistence on top didn't break the in-memory contract.
+
+**Files created** (8) — `modules/notifications/domain/notification-log.entity.ts`, `modules/notifications/application/ports/notification-log.repository.ts`, `modules/notifications/infrastructure/prisma-notification-log.repository.ts`, `modules/notifications/application/handlers/sos-triggered.handler.ts`, `modules/notifications/application/list-my-notifications.use-case.ts`, `modules/notifications/interface/notifications.controller.ts`, `test/notifications-persistence.e2e-spec.ts`.
+**Files edited** (2) — `modules/notifications/infrastructure/logging-notification-sender.ts` (+constructor injection of repo, +DB insert in send()), `modules/notifications/notifications.module.ts` (+4 providers + controller).
+
+**Dependencies** — none new.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Notifications + persistence suites both green: 9/9 (4 existing + 5 new).
+- ✅ **Full real-DB suite: 46 suites, 312 tests pass against live Docker.** (+1 suite, +5 tests.)
+
+**Acceptance criteria**
+
+- ✅ `Safety.SosTriggered` now has a real subscriber; previously emitted into the void.
+- ✅ Every notification dispatched through `NotificationSender` writes a `NotificationLog` row.
+- ✅ Authenticated users can `GET /notifications/me` to see their own ledger.
+- ✅ Cross-user `GET /me` does not leak other users' notifications.
+- ✅ DB-write failure in the sender does not bubble to the EventBus (no duplicate sends).
+- ✅ Existing in-memory-log test contract unbroken — `peekSent` / `drainSent` still work.
+
+**Notes**
+
+- **Why persist in the sender, not in a parallel handler.** Two reasons. First, every dispatched notification — regardless of which event triggered it — should appear in the ledger; putting persistence in the sender means a future `Trip.ShareIssued` handler that's added later automatically gets persisted without a co-located DB call. Second, it keeps handlers thin (one responsibility: translate event → SendNotificationInput) and the sender becomes the single integration point for "what does it mean to send."
+- **Why swallow-and-log persistence failures.** The handler runs inside the EventBus consumer loop. A thrown error there triggers retry-then-DLQ. If the DB is down for 30 seconds, every retry would re-log + re-call the sender's in-memory buffer — duplicate user-visible state. The persistent ledger is "best effort to record what we already sent"; the in-memory dispatch is the source of truth. Same policy SOS event-publish uses.
+- **Why `delivered` status immediately for the logging stub.** The stub is fully synchronous; there is no provider ack to wait for. When a real Resend/Twilio adapter lands, it'll start the row in `queued`, return, then a webhook handler flips it to `delivered` / `failed`. The `status` column is already enum-correct for that future.
+- **Why no mark-as-read endpoint in v1.** The schema has `read` for it (defaulted false), and the column is in the index — but adding `POST /:id/mark-read` is a separate slice with its own auth + bulk-update considerations. Keeping v1 to "ledger fills + you can read it" matches the discipline applied to every other module's first slice.
+- **Why a separate test file (`notifications-persistence.e2e-spec.ts`) instead of extending `notifications.e2e-spec.ts`.** The existing file's contract is "events drive in-memory log assertions." Conflating those with DB assertions would force every test to clean up rows, making the suite slower without buying clarity. Split files keep the SCAN-DEL / row-clean / sender-drain ceremonies scoped to the file that needs them.
+- **Why `list-my-notifications` has the same shape as `list-my-sos-events`.** Pure consistency — every "my own list" use-case in the codebase now returns up to 200 items, defaults to 50, accepts an optional `limit` query param, and clamps to the same bounds. Less to remember.
+- **Notification fan-out is now end-to-end testable** without subscribing test code to the EventBus directly. The DB row is the assertion; that's strictly more durable than peeking in-memory state.
 
 ---
 
