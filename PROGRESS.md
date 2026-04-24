@@ -10,18 +10,80 @@
 
 ## Summary
 
-| Counter             | Value                                                                            |
-| ------------------- | -------------------------------------------------------------------------------- |
-| Prompts completed   | 83 (82 full + 1 foundation-only; JWKS rotation just shipped — Identity now 100%) |
-| Prompts in progress | 0 — all parts of `[III.13.2]` shipped (parts 1–7 + JWKS rotation in 13.2.8)      |
-| Prompts blocked     | 0                                                                                |
-| Last prompt         | `[III.13.2.8]` — JWKS keyring rotation (Redis-backed store + admin endpoint)     |
-| Last commit date    | 2026-04-24                                                                       |
-| Phase               | Phase 1 — Identity fully closed; 49 suites, 331 tests                            |
+| Counter             | Value                                                                           |
+| ------------------- | ------------------------------------------------------------------------------- |
+| Prompts completed   | 84 (83 full + 1 foundation-only; Media × Trip attachment just shipped)          |
+| Prompts in progress | 0                                                                               |
+| Prompts blocked     | 0                                                                               |
+| Last prompt         | `[IV.18.12.2]` — Media × Trip: attach/detach + list-by-trip (double owner gate) |
+| Last commit date    | 2026-04-24                                                                      |
+| Phase               | Phase 1 — first Media ↔ Trip cross-module edit path; 50 suites, 338 tests       |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.12.2] — Media × Trip: attach/detach + list-by-trip (double owner gate)
+
+**Date:** 2026-04-24 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.13 (Media & Memory)
+
+**What was done**
+
+Builds on Media v1 (shipped in [IV.18.12.1]) — the `MediaAsset.tripId` column has existed on the schema since day one; this slice wires the edit path and the by-trip read. Gives users a way to organize their photos under trips; gives the trip overview a seam to eventually render "photos from this trip" without a new cross-module lift.
+
+Double owner gate is the notable shape: both the media row AND the trip must belong to the caller for an attach to succeed. Detach (`tripId: null`) is always allowed on the caller's own media.
+
+- **`apps/api/src/modules/media/application/ports/media-asset.repository.ts`** — adds `setTripForOwner(id, ownerId, tripId | null)` + `listForTripOwner(tripId, ownerId, limit)`. Listing filters on `status: 'ready'` so clients never render a broken thumbnail mid-upload.
+- **`apps/api/src/modules/media/infrastructure/prisma-media-asset.repository.ts`** — implements both via owner-scoped `updateMany` + Prisma `findMany`. Same "updateMany + count === 1 gate" pattern `markReady` already uses.
+- **`apps/api/src/modules/media/application/attach-media-to-trip.use-case.ts`** — new use case. For attach (`tripId !== null`), runs the trip owner-gate first via `TRIP_REPOSITORY.findByIdForUser` → 404 `TRIP_NOT_FOUND` on miss/wrong-owner. For detach, skips the trip lookup entirely. Then owner-scoped updateMany on media → 404 `MEDIA_NOT_FOUND` on miss.
+- **`apps/api/src/modules/media/application/list-trip-media.use-case.ts`** — new use case. Trip owner-gate first (a stranger can't probe whether a guessed trip id exists), then delegate to `listForTripOwner`. Default 50, cap 200 — same shape as every other "list mine" use-case.
+- **`apps/api/src/modules/media/interface/media.controller.ts`** — +2 routes:
+  - `PATCH /api/v1/media/:id/trip` — body `{ tripId: string | null }`.
+  - `GET /api/v1/media/trip/:tripId` — list mine for a trip, `?limit=N`.
+- **`apps/api/src/modules/media/interface/dto/media.dto.ts`** — `AttachMediaToTripBodySchema` + relaxed tripId validation to `z.string().trim().min(1).max(64)` (Zod `.cuid()` was rejecting raw-SQL-inserted UUIDs — Trip / Place / ScamReport / SosEvent IDs all use `randomUUID()` not cuid; the use-case's owner-gate lookup is the real existence check anyway).
+- **`apps/api/src/modules/media/media.module.ts`** — imports `TripModule` (already exports `TRIP_REPOSITORY`), registers the two new use-cases.
+
+- **7 integration tests** (`apps/api/test/media-attach-trip.e2e-spec.ts`) against real Postgres + MinIO, reusing the full `[IV.18.12.1]` upload → confirm flow to produce `ready`-status assets:
+  1. Happy path: attach → `tripId` set → `GET /trip/:tripId` lists it → detach clears it → list empty.
+  2. Attach to another user's trip → 404 `TRIP_NOT_FOUND` (IDOR defence).
+  3. Attach another user's media → 404 `MEDIA_NOT_FOUND` (IDOR defence).
+  4. `GET /media/trip/:tripId` on another user's trip → 404 `TRIP_NOT_FOUND`.
+  5. `processing`-status media is NOT listed by `GET /media/trip/:tripId`.
+  6. Detach is always allowed on own media (even when currently unattached — idempotent no-op).
+  7. `PATCH` with no body → 422 `VALIDATION_FAILED` (Zod requires `tripId` key explicitly; no ambiguity between "don't touch" and "detach").
+
+**Files created** (3) — `modules/media/application/attach-media-to-trip.use-case.ts`, `modules/media/application/list-trip-media.use-case.ts`, `test/media-attach-trip.e2e-spec.ts`.
+**Files edited** (4) — `modules/media/application/ports/media-asset.repository.ts` (+2 methods), `modules/media/infrastructure/prisma-media-asset.repository.ts` (+impls), `modules/media/interface/dto/media.dto.ts` (+schema + relaxed tripId validation), `modules/media/interface/media.controller.ts` (+2 endpoints), `modules/media/media.module.ts` (+TripModule import + 2 use-case providers).
+
+**Dependencies** — none new.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Media-attach suite 7/7 pass.
+- ✅ **Full real-DB + real-MinIO suite: 50 suites, 338 tests pass against live Docker.** (+1 suite, +7 tests.) Existing Media + Trip suites still green — this slice didn't change any pre-existing endpoint.
+
+**Acceptance criteria**
+
+- ✅ `PATCH /media/:id/trip { tripId }` attaches to a trip the caller owns.
+- ✅ `PATCH /media/:id/trip { tripId: null }` detaches.
+- ✅ `GET /media/trip/:tripId` lists the caller's `ready` media for a trip.
+- ✅ Attach to another user's trip → 404 `TRIP_NOT_FOUND`.
+- ✅ Touch another user's media → 404 `MEDIA_NOT_FOUND`.
+- ✅ List on another user's trip → 404 `TRIP_NOT_FOUND`.
+- ✅ `processing`-status rows stay out of the trip-listing surface.
+
+**Notes**
+
+- **Why the double owner-gate (media owner AND trip owner).** An attacker with a valid session could otherwise probe the trip-id space just by attempting to attach their own media to guessed ids. Running `TRIP_REPOSITORY.findByIdForUser` first → 404 on wrong-owner means the only signal an attacker gets is "not yours," never "exists but not yours." Matches the IDOR defence every other cross-resource endpoint uses.
+- **Why detach skips the trip lookup entirely.** Detach has no trip reference to validate — `tripId: null` is a self-contained edit on the media row. Running the trip lookup anyway would force clients to know what trip the media is currently on (they might not), and would introduce a second 404 failure mode for a legitimate operation.
+- **Why the listing filters on `status: 'ready'`.** A `processing` row means the bytes haven't landed yet (presigned-URL flow). Returning those to a UI would either show a broken thumbnail or race with the upload-confirm flow. Filtering at the repo level guarantees the client gets a renderable set. Clients that want to see their unconfirmed uploads can hit a future "my pending" endpoint; v1 keeps the trip-listing clean.
+- **Why `tripId` uses `z.string().trim().min(1).max(64)` instead of `.cuid()`.** Three models in this codebase use `randomUUID()` for ids (Trip / Place / ScamReport / SosEvent) because raw-SQL inserts (GeoQueries) don't run through Prisma's cuid default. Zod's `.cuid()` rejects UUIDs. The use-case's owner-gate lookup is the real existence check (a bogus string just hits 404); a character-shape pre-check would be defence against... nothing the owner-gate doesn't already catch, at the cost of rejecting perfectly-valid UUID-formatted trip ids. The existing `CreateUploadUrlBodySchema.tripId.optional()` had the same latent bug — fixed in this slice by factoring `TripIdSchema` into one place. A follow-up slice could unify id generation on either cuid or uuid across the codebase, but that's a bigger cleanup.
+- **Why a separate DTO field for "explicit null" detach.** Zod distinguishes `{ tripId: null }` (attach-null = detach) from `{}` (key missing = 422). Clients that want to "leave it alone" don't call PATCH at all. This matches HTTP PATCH semantics cleanly — every field in the body is an explicit edit; silence on an omitted key would be a footgun when a later slice adds more patchable fields.
+- **Why the list endpoint lives under `/media/trip/:tripId` and not `/trips/:id/media`.** Both are defensible; this choice keeps the Media module's HTTP surface self-contained and avoids a cross-module endpoint that would need cross-module test coverage in the Trip suites. A future "render trip with photos" endpoint under `/trips/:id/media` (or a 7th section in the trip overview) can re-use `ListTripMediaUseCase` verbatim — no DI graph churn.
+- **First Media-module cross-module edit path.** Media v1's three endpoints were all self-contained (presigned URL + confirm + download). This slice is the first one where the Media use-case calls into another module's port (`TRIP_REPOSITORY`) — validates the module-boundary model + proves the "import sibling modules in the module.ts" pattern reads cleanly a second time (Trip already imports 5 modules for its overlays; Media now imports 1).
 
 ---
 
