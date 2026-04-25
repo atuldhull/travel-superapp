@@ -65,6 +65,27 @@ export interface CacheStats {
 }
 
 export abstract class TypedRedisCache<T> implements OnModuleDestroy {
+  /**
+   * Process-global registry of every constructed cache. The
+   * MetricsService (added by `[IV.18.10.6]`) walks this set at
+   * scrape time to emit `cache_hit_total{cache=<namespace>}` /
+   * `cache_miss_total{...}` from each cache's `getStats()`.
+   *
+   * Static, not DI-injected, because:
+   *   - The base class can't easily inject a service through every
+   *     subclass constructor without forcing 7+ subclasses to
+   *     forward the dep.
+   *   - Cache instances are process-singletons under Nest DI; a
+   *     static `Set` is safe-by-construction here.
+   *   - `onModuleDestroy` removes the instance, so test runs that
+   *     spin up + tear down the module don't leak references.
+   */
+  private static readonly instances = new Set<TypedRedisCache<unknown>>();
+
+  static getAllInstances(): readonly TypedRedisCache<unknown>[] {
+    return Array.from(TypedRedisCache.instances);
+  }
+
   private readonly redis: Redis;
   private readonly keyPrefix: string;
   private hits = 0;
@@ -89,6 +110,7 @@ export abstract class TypedRedisCache<T> implements OnModuleDestroy {
     });
     const env = config.get('NODE_ENV', { infer: true });
     this.keyPrefix = `travel-${env}:${namespace}:`;
+    TypedRedisCache.instances.add(this);
   }
 
   /**
@@ -179,6 +201,7 @@ export abstract class TypedRedisCache<T> implements OnModuleDestroy {
   }
 
   async onModuleDestroy(): Promise<void> {
+    TypedRedisCache.instances.delete(this);
     try {
       await this.redis.quit();
     } catch {

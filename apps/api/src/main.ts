@@ -66,9 +66,11 @@ async function bootstrap(): Promise<void> {
   //    Plain Error / HttpException fall through to AllExceptionFilter.
   app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
 
-  // 5. `/api/v1` prefix for business routes; `/health/*` stays bare for probes.
+  // 5. `/api/v1` prefix for business routes; `/health/*` stays bare for
+  //    probes; `/metrics` stays bare for Prometheus scrapers (added by
+  //    `[IV.18.10.6]`).
   app.setGlobalPrefix('api/v1', {
-    exclude: ['health', 'health/(.*)'],
+    exclude: ['health', 'health/(.*)', 'metrics'],
   });
 
   // 6. HTTP perimeter: helmet (CSP + COOP/COEP + HSTS + …) + CORS +
