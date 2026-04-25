@@ -20,6 +20,9 @@ import { PlacesModule } from '../places/places.module';
 import { StaysModule } from '../stays/stays.module';
 import { TransportModule } from '../transport/transport.module';
 import { WeatherModule } from '../weather/weather.module';
+import { AdminArchiveTripUseCase } from './application/admin-archive-trip.use-case';
+import { AdminDeleteTripUseCase } from './application/admin-delete-trip.use-case';
+import { AdminListTripsUseCase } from './application/admin-list-trips.use-case';
 import { CreateTripDraftUseCase } from './application/create-trip-draft.use-case';
 import { CreateTripShareUseCase } from './application/create-trip-share.use-case';
 import { ListTripSharesUseCase } from './application/list-trip-shares.use-case';
@@ -44,6 +47,7 @@ import { UpdateTripUseCase } from './application/update-trip.use-case';
 import { PrismaItineraryRepository } from './infrastructure/prisma-itinerary.repository';
 import { PrismaTripRepository } from './infrastructure/prisma-trip.repository';
 import { PrismaTripShareRepository } from './infrastructure/prisma-trip-share.repository';
+import { AdminTripsController } from './interface/admin-trips.controller';
 import { TripController } from './interface/trip.controller';
 
 @Module({
@@ -67,7 +71,7 @@ import { TripController } from './interface/trip.controller';
     TransportModule,
     forwardRef(() => MediaModule),
   ],
-  controllers: [TripController],
+  controllers: [TripController, AdminTripsController],
   providers: [
     { provide: TRIP_REPOSITORY, useClass: PrismaTripRepository },
     { provide: ITINERARY_REPOSITORY, useClass: PrismaItineraryRepository },
@@ -90,6 +94,9 @@ import { TripController } from './interface/trip.controller';
     GetTripEventsUseCase,
     GetTripTransportLegsUseCase,
     GetTripOverviewUseCase,
+    AdminListTripsUseCase,
+    AdminArchiveTripUseCase,
+    AdminDeleteTripUseCase,
   ],
   exports: [TRIP_REPOSITORY, ITINERARY_REPOSITORY, TRIP_SHARE_REPOSITORY],
 })
