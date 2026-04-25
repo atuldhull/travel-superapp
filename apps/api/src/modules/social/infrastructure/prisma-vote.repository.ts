@@ -15,6 +15,7 @@ import type {
   FindVoteInput,
   UpsertVoteInput,
   VoteRepository,
+  VoteSummary,
 } from '../application/ports/vote.repository';
 
 @Injectable()
@@ -75,6 +76,30 @@ export class PrismaVoteRepository implements VoteRepository {
       },
     });
     return row ? toDomain(row) : null;
+  }
+
+  async aggregateByTarget(targetType: VoteTargetType, targetId: string): Promise<VoteSummary> {
+    // groupBy hits the existing `[targetType, targetId]` index.
+    // At most 3 rows back (one per -1 / 0 / +1 bucket), regardless
+    // of vote volume. Same pattern as Review.aggregateByTarget.
+    const rows = await this.prisma.vote.groupBy({
+      by: ['value'],
+      where: { targetType, targetId },
+      _count: { _all: true },
+    });
+
+    let up = 0;
+    let meh = 0;
+    let down = 0;
+    for (const row of rows) {
+      const count = row._count._all;
+      if (row.value === 1) up = count;
+      else if (row.value === 0) meh = count;
+      else if (row.value === -1) down = count;
+      // Defensive: any other integer is a schema-drift signal —
+      // skip silently rather than crash a public endpoint.
+    }
+    return { targetType, targetId, up, meh, down, score: up - down };
   }
 }
 

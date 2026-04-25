@@ -11,6 +11,18 @@ import { z } from 'zod';
 export const VoteTargetTypeSchema = z.enum(['itinerary_item']);
 export const VoteValueSchema = z.union([z.literal(-1), z.literal(0), z.literal(1)]);
 
+/**
+ * Wider target-type acceptance for the cross-trip
+ * `GET /votes/summary` endpoint. The summary is read-side-only
+ * and the domain type already allows `place` + `restaurant` —
+ * accepting them here lets a place / restaurant detail page query
+ * vote counts without waiting on the corresponding write-side
+ * slice. Casting a vote on a place / restaurant still returns
+ * VALIDATION_FAILED via `VoteTargetTypeSchema` until that slice
+ * lands.
+ */
+export const VoteSummaryTargetTypeSchema = z.enum(['itinerary_item', 'place', 'restaurant']);
+
 export const CastVoteBodySchema = z.object({
   targetType: VoteTargetTypeSchema,
   targetId: z.string().trim().min(1).max(64),
