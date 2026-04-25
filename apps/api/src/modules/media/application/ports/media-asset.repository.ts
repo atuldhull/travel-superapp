@@ -7,9 +7,10 @@
  *   - `findByIdForOwner` — owner-gated lookup. Returns `null` for
  *                     wrong-id OR wrong-owner (IDOR-safe 404).
  *
- * Installed by prompt [IV.18.12.1].
+ * Installed by prompt [IV.18.12.1]. Admin-flavored methods added
+ * by [IV.18.18.4].
  */
-import type { MediaAsset, MediaKind } from '../../domain/media-asset.entity';
+import type { MediaAsset, MediaKind, MediaStatus } from '../../domain/media-asset.entity';
 
 export interface CreateMediaAssetInput {
   readonly ownerId: string;
@@ -55,6 +56,40 @@ export interface MediaAssetRepository {
     ownerId: string,
     memoryBookId: string | null,
   ): Promise<MediaAsset | null>;
+
+  /**
+   * Admin paginated list across ALL users — drives the media
+   * moderation queue. Returns `{ rows, total }`. Filters:
+   * `ownerId` (exact match), `kind` (image|video), `status`
+   * (processing|ready|failed). Most-recent-first ordering.
+   * Added by `[IV.18.18.4]`.
+   */
+  adminList(input: AdminMediaListInput): Promise<AdminMediaListResult>;
+
+  /**
+   * Admin hard-delete (no owner scope) for takedowns of abusive
+   * content. Returns `true` iff a row was actually removed.
+   * Schema-level `SetNull` on `tripId` and `memoryBookId` means
+   * attached trips and memory books survive (they just lose the
+   * media reference). The S3 object behind `s3KeyRaw` is NOT
+   * cleaned up here — orphan-object sweep is a future cron
+   * concern.
+   * Added by `[IV.18.18.4]`.
+   */
+  adminDelete(id: string): Promise<boolean>;
+}
+
+export interface AdminMediaListInput {
+  readonly ownerId?: string;
+  readonly kind?: MediaKind;
+  readonly status?: MediaStatus;
+  readonly limit: number;
+  readonly offset: number;
+}
+
+export interface AdminMediaListResult {
+  readonly rows: readonly MediaAsset[];
+  readonly total: number;
 }
 
 export const MEDIA_ASSET_REPOSITORY = Symbol('MediaAssetRepository');

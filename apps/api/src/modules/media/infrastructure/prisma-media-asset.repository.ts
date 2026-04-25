@@ -13,10 +13,12 @@
  * Installed by prompt [IV.18.12.1].
  */
 import { Inject, Injectable } from '@nestjs/common';
-import type { MediaAsset as PrismaMediaAsset } from '@prisma/client';
+import type { MediaAsset as PrismaMediaAsset, Prisma } from '@prisma/client';
 import { PrismaService } from '../../../common/db/prisma.service';
 import type { MediaAsset, MediaKind, MediaStatus } from '../domain/media-asset.entity';
 import type {
+  AdminMediaListInput,
+  AdminMediaListResult,
   CreateMediaAssetInput,
   MediaAssetRepository,
 } from '../application/ports/media-asset.repository';
@@ -98,6 +100,32 @@ export class PrismaMediaAssetRepository implements MediaAssetRepository {
     if (result.count !== 1) return null;
     const row = await this.prisma.mediaAsset.findUnique({ where: { id } });
     return row ? toDomain(row) : null;
+  }
+
+  async adminList(input: AdminMediaListInput): Promise<AdminMediaListResult> {
+    const where: Prisma.MediaAssetWhereInput = {};
+    if (input.ownerId !== undefined) where.ownerId = input.ownerId;
+    if (input.kind !== undefined) where.kind = input.kind;
+    if (input.status !== undefined) where.status = input.status;
+    const [rows, total] = await Promise.all([
+      this.prisma.mediaAsset.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: input.offset,
+        take: input.limit,
+      }),
+      this.prisma.mediaAsset.count({ where }),
+    ]);
+    return { rows: rows.map(toDomain), total };
+  }
+
+  async adminDelete(id: string): Promise<boolean> {
+    // No owner scope — admin can wipe any media. The schema's
+    // SetNull cascade on `MediaAsset.tripId` + `memoryBookId`
+    // means attached trips and memory books survive (they just
+    // lose their reference to this media row).
+    const result = await this.prisma.mediaAsset.deleteMany({ where: { id } });
+    return result.count === 1;
   }
 }
 

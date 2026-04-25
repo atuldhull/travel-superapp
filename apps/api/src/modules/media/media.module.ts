@@ -17,6 +17,8 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { TRIP_MEDIA_PORT } from '../trip/application/ports/trip-media.port';
 import { TripModule } from '../trip/trip.module';
+import { AdminDeleteMediaUseCase } from './application/admin-delete-media.use-case';
+import { AdminListMediaUseCase } from './application/admin-list-media.use-case';
 import { AttachMediaToBookUseCase } from './application/attach-media-to-book.use-case';
 import { AttachMediaToTripUseCase } from './application/attach-media-to-trip.use-case';
 import { ConfirmUploadUseCase } from './application/confirm-upload.use-case';
@@ -39,6 +41,7 @@ import { PrismaMediaAssetRepository } from './infrastructure/prisma-media-asset.
 import { PrismaMemoryBookRepository } from './infrastructure/prisma-memory-book.repository';
 import { S3StorageProvider } from './infrastructure/s3-storage-provider';
 import { TripMediaAdapter } from './infrastructure/trip-media.adapter';
+import { AdminMediaController } from './interface/admin-media.controller';
 import { MediaController } from './interface/media.controller';
 import { MemoryBookController } from './interface/memory-book.controller';
 
@@ -49,7 +52,7 @@ import { MemoryBookController } from './interface/memory-book.controller';
   // (Trip overview folds a media section via TRIP_MEDIA_PORT
   // implemented here).
   imports: [forwardRef(() => TripModule)],
-  controllers: [MediaController, MemoryBookController],
+  controllers: [MediaController, MemoryBookController, AdminMediaController],
   providers: [
     { provide: MEDIA_ASSET_REPOSITORY, useClass: PrismaMediaAssetRepository },
     { provide: MEMORY_BOOK_REPOSITORY, useClass: PrismaMemoryBookRepository },
@@ -72,6 +75,8 @@ import { MemoryBookController } from './interface/memory-book.controller';
     // `TRIP_MEDIA_PORT` is owned by Trip but implemented here —
     // [IV.18.12.10] establishes the cross-module port pattern.
     { provide: TRIP_MEDIA_PORT, useClass: TripMediaAdapter },
+    AdminListMediaUseCase,
+    AdminDeleteMediaUseCase,
   ],
   exports: [MEDIA_ASSET_REPOSITORY, MEMORY_BOOK_REPOSITORY, STORAGE_PROVIDER, TRIP_MEDIA_PORT],
 })
