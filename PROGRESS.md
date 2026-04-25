@@ -10,18 +10,62 @@
 
 ## Summary
 
-| Counter             | Value                                                                            |
-| ------------------- | -------------------------------------------------------------------------------- |
-| Prompts completed   | 116 (115 full + 1 foundation-only; per-channel notification filter just shipped) |
-| Prompts in progress | 0                                                                                |
-| Prompts blocked     | 0                                                                                |
-| Last prompt         | `[IV.18.12.13]` — per-channel notification filter (?channel=push\|email\|sms)    |
-| Last commit date    | 2026-04-25                                                                       |
-| Phase               | Phase 1 — notification inbox channel-segmentable; 83 suites, 543 tests           |
+| Counter             | Value                                                                         |
+| ------------------- | ----------------------------------------------------------------------------- |
+| Prompts completed   | 117 (116 full + 1 foundation-only; S3 orphan-object sweep cron just shipped)  |
+| Prompts in progress | 0                                                                             |
+| Prompts blocked     | 0                                                                             |
+| Last prompt         | `[IV.18.18.5]` — S3 orphan-object sweep cron (closes admin-delete bytes loop) |
+| Last commit date    | 2026-04-25                                                                    |
+| Phase               | Phase 1 — admin-delete bytes loop closed; 84 suites, 545 tests                |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.18.5] — S3 orphan-object sweep cron (closes admin-delete bytes loop)
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.13 (Media & Memory) + 3.17 (Admin & Ops)
+
+**What was done**
+
+Companion to `[IV.18.18.4]`. Admin media delete intentionally leaves S3 bytes behind (DB row controls reachability; clients can't enumerate S3 keys, so a hard-deleted media row is "gone" from every authed surface even before the bytes are wiped). This slice closes the bytes loop async: any bucket key not referenced by a current MediaAsset row gets deleted on the next sweep tick.
+
+**Architecture.**
+
+- `OrphanS3SweepUseCase` (application) — orchestration; `bucketKeys.filter(k => !dbKeys.has(k)).forEach(deleteObject)`. Per-key error → log + continue (next sweep retries).
+- `OrphanS3SweepScheduler` (interface) — mirrors `AccountPurgeScheduler` shape: plain `setInterval` inside `OnModuleInit`, skipped under `NODE_ENV=test`, `.unref()`, `clearInterval` in `onModuleDestroy`. Re-entrant guard so a long sweep doesn't stack on itself. 24h tick (compliance backstop, not a hot path).
+- Two new methods on `StorageProvider` port: `listAllKeys()` + `deleteObject(key)`. Both use the existing `getSignedUrl` + native `fetch` pattern (per memory `feedback_aws_sdk_jest_vm.md` — never `client.send()` in Jest VM).
+- One new method on `MediaAssetRepository` port: `listAllS3Keys()` returns `ReadonlySet<string>` for O(1) per-key membership check.
+
+**Race-window note.** Bucket-list-then-DB-list ordering: any row created during the bucket walk lands in the DB set, so in-flight uploads aren't mistaken for orphans. The reverse order would create a false-positive window.
+
+**XML parsing.** ListObjectsV2 returns `application/xml`; we extract `<Key>`, `<IsTruncated>`, `<NextContinuationToken>` with a narrow `extractXmlElements` helper rather than pulling in `fast-xml-parser`. The S3 response schema is locked by the spec, and S3 keys cannot contain literal `<` or `>` (they're %-escaped on the wire), so the regex-free string-scan is trivially safe.
+
+**Pagination cap.** Hard upper bound of 1000 pages (= 1M keys) inside `listAllKeys` so the loop unconditionally terminates even if a malformed response somehow drops `IsTruncated=false`. Several lifetimes of v1 traffic.
+
+HTTP surface: none. This is a pure background worker.
+
+**Files**
+
+- `apps/api/src/modules/media/application/ports/storage-provider.ts` — `listAllKeys()` + `deleteObject(key)` on the port
+- `apps/api/src/modules/media/application/ports/media-asset.repository.ts` — `listAllS3Keys()` on the port
+- `apps/api/src/modules/media/application/orphan-s3-sweep.use-case.ts` (new) — orchestrator
+- `apps/api/src/modules/media/infrastructure/s3-storage-provider.ts` — `listAllKeys` + `deleteObject` impls + XML helper
+- `apps/api/src/modules/media/infrastructure/prisma-media-asset.repository.ts` — `listAllS3Keys` impl
+- `apps/api/src/modules/media/interface/orphan-s3-sweep.scheduler.ts` (new) — 24h tick + `OnModuleInit` lifecycle
+- `apps/api/src/modules/media/media.module.ts` — register both providers
+- `apps/api/test/orphan-s3-sweep.e2e-spec.ts` (new) — seeds orphan + referenced keys against MinIO; asserts orphan deleted, referenced survives, second sweep idempotent
+
+**Verification**
+
+`pnpm --filter=api typecheck` green. Full integration suite: **84 passed, 545 passed**. Background-workers count goes from 1 → 2.
+
+**Commits**
+
+- `7a0df1f` — feat(IV.18.18.5) S3 orphan-object sweep cron
 
 ---
 
