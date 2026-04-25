@@ -37,6 +37,18 @@ export interface NotificationLogRepository {
    * already-read row still returns the row.
    */
   markReadForUser(id: string, userId: string): Promise<NotificationLog | null>;
+  /**
+   * Mark every unread notification for the caller as read in
+   * one round-trip. Returns the number of rows actually flipped
+   * (0 when the inbox was empty or already-fully-read). Idempotent
+   * by construction — second call with no new unread rows returns
+   * 0.
+   *
+   * Owner-scoped on `userId`. The `read: false` clause skips
+   * already-read rows so the operation cost scales with unread
+   * count, not total inbox size.
+   */
+  markAllReadForUser(userId: string): Promise<number>;
 }
 
 export const NOTIFICATION_LOG_REPOSITORY = Symbol('NotificationLogRepository');
