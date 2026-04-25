@@ -3,7 +3,11 @@
  *
  *   GET  /api/v1/notifications/me              — list the authed
  *                                                user's recent
- *                                                deliveries.
+ *                                                deliveries. Optional
+ *                                                ?channel=push|email|sms
+ *                                                narrows to one
+ *                                                delivery channel
+ *                                                ([IV.18.12.13]).
  *   GET  /api/v1/notifications/me/unread-count  — `{ unread: N }`
  *                                                badge primitive
  *                                                without paginating
@@ -18,21 +22,33 @@
  *                                                Returns `{ marked }`.
  *                                                Idempotent.
  *
- * Per-channel filtering lands in a follow-up slice. Any future
- * "mark-as-unread" verb belongs here too.
+ * Per-channel filtering shipped in `[IV.18.12.13]` via the
+ * `?channel=push|email|sms` query param on `GET /me`. Any
+ * future "mark-as-unread" verb belongs here too.
  *
  * Installed by prompt [IV.18.15.1]. `POST /:id/read` added in
  * [IV.18.15.2]. `POST /read-all` added in [IV.18.15.3].
  * `GET /me/unread-count` added in [IV.18.15.4].
  */
-import { Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { type AuthenticatedUser, CurrentUser } from '../../../common/auth';
 import { GetUnreadCountUseCase } from '../application/get-unread-count.use-case';
 import { ListMyNotificationsUseCase } from '../application/list-my-notifications.use-case';
 import { MarkAllNotificationsReadUseCase } from '../application/mark-all-notifications-read.use-case';
 import { MarkNotificationReadUseCase } from '../application/mark-notification-read.use-case';
 import { MarkNotificationUnreadUseCase } from '../application/mark-notification-unread.use-case';
-import type { NotificationLog } from '../domain/notification-log.entity';
+import type { NotificationChannel, NotificationLog } from '../domain/notification-log.entity';
+
+const VALID_CHANNELS: readonly NotificationChannel[] = ['push', 'email', 'sms'];
 
 interface NotificationLogDto {
   readonly id: string;
@@ -85,9 +101,20 @@ export class NotificationsController {
   async listMine(
     @CurrentUser() user: AuthenticatedUser,
     @Query('limit') limit?: string,
+    @Query('channel') channel?: string,
   ): Promise<{ notifications: NotificationLogDto[] }> {
     const parsed = limit ? Math.max(1, Math.min(200, Number(limit) || 50)) : 50;
-    const rows = await this.listUc.execute(user.sub, parsed);
+    let parsedChannel: NotificationChannel | undefined;
+    if (channel !== undefined) {
+      if (!VALID_CHANNELS.includes(channel as NotificationChannel)) {
+        throw new BadRequestException({
+          code: 'VALIDATION_FAILED',
+          message: `channel must be one of: ${VALID_CHANNELS.join(' | ')}`,
+        });
+      }
+      parsedChannel = channel as NotificationChannel;
+    }
+    const rows = await this.listUc.execute(user.sub, parsed, parsedChannel);
     return { notifications: rows.map(toDto) };
   }
 

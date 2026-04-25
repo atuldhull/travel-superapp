@@ -28,7 +28,18 @@ export interface CreateNotificationLogInput {
 
 export interface NotificationLogRepository {
   create(input: CreateNotificationLogInput): Promise<NotificationLog>;
-  listForUser(userId: string, limit: number): Promise<readonly NotificationLog[]>;
+  /**
+   * Owner-scoped, most-recent-first inbox read. Optional `channel`
+   * narrows to a single delivery channel (push / email / sms) for
+   * channel-segmented inbox views; absence returns the union.
+   *
+   * Channel filter added by `[IV.18.12.13]`.
+   */
+  listForUser(
+    userId: string,
+    limit: number,
+    channel?: NotificationChannel,
+  ): Promise<readonly NotificationLog[]>;
   /**
    * Flip `read = true` on a row the caller owns. Returns the
    * updated row, or `null` when the id is unknown OR owned by a
