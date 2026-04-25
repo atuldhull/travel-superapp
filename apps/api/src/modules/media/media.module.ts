@@ -14,7 +14,8 @@
  *
  * Installed by prompt [IV.18.12.1].
  */
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
+import { TRIP_MEDIA_PORT } from '../trip/application/ports/trip-media.port';
 import { TripModule } from '../trip/trip.module';
 import { AttachMediaToBookUseCase } from './application/attach-media-to-book.use-case';
 import { AttachMediaToTripUseCase } from './application/attach-media-to-trip.use-case';
@@ -37,13 +38,17 @@ import { UpdateMemoryBookUseCase } from './application/update-memory-book.use-ca
 import { PrismaMediaAssetRepository } from './infrastructure/prisma-media-asset.repository';
 import { PrismaMemoryBookRepository } from './infrastructure/prisma-memory-book.repository';
 import { S3StorageProvider } from './infrastructure/s3-storage-provider';
+import { TripMediaAdapter } from './infrastructure/trip-media.adapter';
 import { MediaController } from './interface/media.controller';
 import { MemoryBookController } from './interface/memory-book.controller';
 
 @Module({
   // Import TripModule so the trip-attachment + list-by-trip
   // use-cases can inject TRIP_REPOSITORY for the trip-owner gate.
-  imports: [TripModule],
+  // `forwardRef` since [IV.18.12.10] added the reverse direction
+  // (Trip overview folds a media section via TRIP_MEDIA_PORT
+  // implemented here).
+  imports: [forwardRef(() => TripModule)],
   controllers: [MediaController, MemoryBookController],
   providers: [
     { provide: MEDIA_ASSET_REPOSITORY, useClass: PrismaMediaAssetRepository },
@@ -64,7 +69,10 @@ import { MemoryBookController } from './interface/memory-book.controller';
     UnpublishMemoryBookUseCase,
     GetPublishedMemoryBookUseCase,
     GetPublishedAssetDownloadUrlUseCase,
+    // `TRIP_MEDIA_PORT` is owned by Trip but implemented here —
+    // [IV.18.12.10] establishes the cross-module port pattern.
+    { provide: TRIP_MEDIA_PORT, useClass: TripMediaAdapter },
   ],
-  exports: [MEDIA_ASSET_REPOSITORY, MEMORY_BOOK_REPOSITORY, STORAGE_PROVIDER],
+  exports: [MEDIA_ASSET_REPOSITORY, MEMORY_BOOK_REPOSITORY, STORAGE_PROVIDER, TRIP_MEDIA_PORT],
 })
 export class MediaModule {}

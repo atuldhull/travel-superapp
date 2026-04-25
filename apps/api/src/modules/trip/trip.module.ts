@@ -12,9 +12,10 @@
  *
  * Installed by prompt [IV.18.2.3].
  */
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { EventsModule } from '../events/events.module';
 import { FoodModule } from '../food/food.module';
+import { MediaModule } from '../media/media.module';
 import { PlacesModule } from '../places/places.module';
 import { StaysModule } from '../stays/stays.module';
 import { TransportModule } from '../transport/transport.module';
@@ -51,7 +52,21 @@ import { TripController } from './interface/trip.controller';
   // GetForecastUseCase / SearchStaysUseCase / SearchEateriesUseCase
   // for the Trip × * overlays). All one-way deps — none of those
   // modules knows about Trip.
-  imports: [PlacesModule, WeatherModule, StaysModule, FoodModule, EventsModule, TransportModule],
+  // `forwardRef(() => MediaModule)` breaks the Trip↔Media circular
+  // dependency: Media imports Trip for the trip-attach owner gate
+  // (existing); Trip now imports Media so the overview use-case
+  // can fold a `media` section via `TRIP_MEDIA_PORT`. Both sides
+  // use `forwardRef` — Nest's documented pattern.
+  // Installed in [IV.18.12.10].
+  imports: [
+    PlacesModule,
+    WeatherModule,
+    StaysModule,
+    FoodModule,
+    EventsModule,
+    TransportModule,
+    forwardRef(() => MediaModule),
+  ],
   controllers: [TripController],
   providers: [
     { provide: TRIP_REPOSITORY, useClass: PrismaTripRepository },

@@ -301,6 +301,15 @@ export class TripController {
       eateries: mapSection(ov.eateries, (list) => ({ list })),
       events: mapSection(ov.events, (list) => ({ list })),
       transport: mapSection(ov.transport, (legs) => ({ legs })),
+      media: mapSection(ov.media, (m) => ({
+        count: m.count,
+        recent: m.recent.map((a) => ({
+          id: a.id,
+          kind: a.kind,
+          s3KeyRaw: a.s3KeyRaw,
+          createdAt: a.createdAt.toISOString(),
+        })),
+      })),
     };
   }
 
@@ -531,6 +540,16 @@ type SectionDto<T> =
   | { readonly ok: true; readonly data: T }
   | { readonly ok: false; readonly code: string };
 
+interface TripMediaDto {
+  readonly count: number;
+  readonly recent: ReadonlyArray<{
+    readonly id: string;
+    readonly kind: 'image' | 'video';
+    readonly s3KeyRaw: string;
+    readonly createdAt: string;
+  }>;
+}
+
 interface TripOverviewDto {
   readonly trip: TripDto;
   readonly itinerary: SectionDto<{ readonly days: readonly ItineraryDayDto[] }>;
@@ -539,6 +558,7 @@ interface TripOverviewDto {
   readonly eateries: SectionDto<{ readonly list: readonly EateryListing[] }>;
   readonly events: SectionDto<{ readonly list: readonly EventListing[] }>;
   readonly transport: SectionDto<{ readonly legs: readonly TransportLeg[] }>;
+  readonly media: SectionDto<TripMediaDto>;
 }
 
 function mapSection<T, U>(s: Section<T>, f: (t: T) => U): SectionDto<U> {
