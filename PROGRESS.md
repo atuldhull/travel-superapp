@@ -10,18 +10,90 @@
 
 ## Summary
 
-| Counter             | Value                                                                       |
-| ------------------- | --------------------------------------------------------------------------- |
-| Prompts completed   | 130 (129 full + 1 foundation-only; bundled security workflow + seed script) |
-| Prompts in progress | 0                                                                           |
-| Prompts blocked     | 0                                                                           |
-| Last prompt         | `[IV.18.19.4]` — demo-deploy seed script (bundled with `[IV.18.19.3]`)      |
-| Last commit date    | 2026-04-25                                                                  |
-| Phase               | Phase 1 — deployment-readiness wave: security scans + demo seed             |
+| Counter             | Value                                                                           |
+| ------------------- | ------------------------------------------------------------------------------- |
+| Prompts completed   | 132 (131 full + 1 foundation-only; bundled k6 scaffold + Dockerfile + runbook)  |
+| Prompts in progress | 0                                                                               |
+| Prompts blocked     | 0                                                                               |
+| Last prompt         | `[IV.18.19.6]` — production multistage Dockerfile (bundled with `[IV.18.19.5]`) |
+| Last commit date    | 2026-04-26                                                                      |
+| Phase               | Phase 1 — deployment-readiness wave: load-test rig + container image            |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.19.6] — Production multistage Dockerfile + runbook (bundled with `[IV.18.19.5]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 12.2 (Deployment)
+
+**What was done**
+
+`apps/api/Dockerfile` didn't exist yet — the originally-locked-in scope was "audit existing Dockerfile", but since there was nothing to audit, the slice pivoted to **create + document**. Same ~3-file footprint, larger payoff (now there's an artifact to deploy at all).
+
+Three-stage build:
+
+1. **`deps`** — pnpm fetch from lockfile only. Cached on `pnpm-lock.yaml` hash.
+2. **`builder`** — full source + offline pnpm install + `turbo build` of `@app/*` workspace packages + api + Prisma `db:generate`.
+3. **`runner`** — `gcr.io/distroless/nodejs22-debian12:nonroot`. No shell, no package manager. `uid 65532`. Copies dist + production node_modules + Prisma engine binaries + the OTel `instrumentation.ts` entrypoint (loaded as line 1 of `main.ts`).
+
+**Pinned base versions** (`node:22.12.0-alpine` + dated distroless tag) for reproducible rebuilds — bumps are deliberate, not opportunistic.
+
+**`.dockerignore`** keeps the `COPY . .` builder layer slim (excludes `test/`, `.env*`, `docs/`, other apps' source, lock-step-only files).
+
+**Runbook (`docs/runbooks/dockerfile.md`)** documents:
+
+- Invariants table (multistage / distroless / non-root / no `.env*` / pinned bases / Prisma engines / OTel-first) with verification commands
+- Build + run invocations (with `host.docker.internal` notes for macOS/Windows vs. Linux)
+- ~280 MB runner-image size baseline (alarm if it grows past ~350 MB)
+- Migration posture: image does **NOT** auto-migrate on start — apply out-of-band in CI/CD via the distroless-friendly `prisma/build/index.js` invocation
+- Common failure modes (Prisma client not found, env-validation, 502 with healthy image, accidental whole-`/workspace` COPY)
+
+Trivy fs-scan from `[IV.18.19.3]` already covers the dependency tree; image-scan is queued for when the prod registry decision lands.
+
+**Files**
+
+- `apps/api/Dockerfile` (new) — three-stage build
+- `apps/api/.dockerignore` (new) — slim-COPY rules
+- `docs/runbooks/dockerfile.md` (new) — invariants + ops guide
+
+**Commits**
+
+- `e81ee04` — feat(IV.18.19.6) production multistage Dockerfile + runbook
+
+---
+
+### [IV.18.19.5] — k6 load-test scaffold (bundled with `[IV.18.19.6]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 10 (Testing pyramid — k6 nightly load) + 11 (SLO baselines)
+
+**What was done**
+
+Two scripts under `infra/k6/scripts/`, one purpose: catch latency / throughput regressions before they ship.
+
+**`smoke.js`** — 1 VU × 30s. CI/CD-gate quick check that the deploy is alive: `/health/{live,ready}` + `/metrics` + `featured` memory books + a public review-summary surface. Asserts no failures, p95 < 500ms (loose).
+
+**`load.js`** — 50 → 200 → 500 VUs over 6 min. Nightly / pre-release. Public-read group asserts the playbook §11 SLO (p95 < 300ms, p99 < 800ms). Optional `authed` group unlocked via `BEARER_TOKEN` env exercises the heaviest composite (the trip-overview cache from `[IV.18.2.15]`) with slightly looser thresholds (p95 < 500ms / p99 < 1500ms) accounting for the 7-sub-fetch fan-out on cold cache.
+
+**Both scripts hit the demo opaque ids** that `db:seed:demo` seeds (`[IV.18.19.4]`) so a freshly-seeded deploy returns populated review counts rather than empty shapes — exercises the actual code paths that matter under load, not just zero-row fast paths.
+
+**`infra/k6/README.md`** walks the local + staging invocations + explains why the threshold numbers were chosen. CI integration is gated on a k6-preinstalled runner profile; nightly invocation is the v1 story.
+
+**Files**
+
+- `infra/k6/scripts/smoke.js` (new)
+- `infra/k6/scripts/load.js` (new)
+- `infra/k6/README.md` (new)
+
+**Combined verification (both bundled slices)**
+
+`pnpm --filter=api typecheck` green. Full integration suite: **93 passed, 578 passed** — config-only, baseline unchanged.
+
+**Commits**
+
+- `a226399` — feat(IV.18.19.5) k6 load-test scaffold
 
 ---
 
