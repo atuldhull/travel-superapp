@@ -10,18 +10,85 @@
 
 ## Summary
 
-| Counter             | Value                                                                  |
-| ------------------- | ---------------------------------------------------------------------- |
-| Prompts completed   | 112 (111 full + 1 foundation-only; admin trip moderation just shipped) |
-| Prompts in progress | 0                                                                      |
-| Prompts blocked     | 0                                                                      |
-| Last prompt         | `[IV.18.18.3]` — admin trip moderation (list + archive + delete)       |
-| Last commit date    | 2026-04-25                                                             |
-| Phase               | Phase 1 — admin operator surface complete; 79 suites, 520 tests        |
+| Counter             | Value                                                                     |
+| ------------------- | ------------------------------------------------------------------------- |
+| Prompts completed   | 113 (112 full + 1 foundation-only; mark-as-unread just shipped)           |
+| Prompts in progress | 0                                                                         |
+| Prompts blocked     | 0                                                                         |
+| Last prompt         | `[IV.18.15.5]` — notification mark-as-unread                              |
+| Last commit date    | 2026-04-25                                                                |
+| Phase               | Phase 1 — Notifications surface fully bidirectional; 80 suites, 525 tests |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.15.5] — Notification mark-as-unread
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.15 (Notifications)
+
+**What was done**
+
+Symmetric companion to `POST /:id/read` — adds `POST /api/v1/notifications/:id/unread` so a user can flip a previously-read notification back to unread. Useful UX pattern: user accidentally read something they wanted to come back to. Notifications surface is now fully bidirectional.
+
+Implementation mirrors mark-read exactly: owner-scoped `updateMany({ where: { id, userId } }, { read: false })` with the same count-gate idempotency. Already-unread rows still return count=1 (Postgres updates the row whether or not the value changes), so re-marking is a no-op success — same posture as mark-read.
+
+**IDOR defence**: wrong-id OR wrong-owner collapse to a single 404 `NOTIFICATION_NOT_FOUND`. Same code as mark-read so client error handlers don't have to special-case the verb.
+
+HTTP surface (Notifications module is now feature-complete v1):
+
+| Route                                        | Auth   | What it does                    |
+| -------------------------------------------- | ------ | ------------------------------- |
+| `GET  /api/v1/notifications/me`              | bearer | List notifications              |
+| `GET  /api/v1/notifications/me/unread-count` | bearer | `{ unread: N }` badge primitive |
+| `POST /api/v1/notifications/:id/read`        | bearer | Mark single read                |
+| `POST /api/v1/notifications/:id/unread`      | bearer | Mark single unread (NEW)        |
+| `POST /api/v1/notifications/read-all`        | bearer | Bulk mark-all-read              |
+
+**Files created** (2)
+
+- `apps/api/src/modules/notifications/application/mark-notification-unread.use-case.ts` — orchestrator (one-liner over the port).
+- `apps/api/test/notifications-mark-unread.e2e-spec.ts` — 5 integration tests against real Postgres.
+
+**Files edited** (3)
+
+- `apps/api/src/modules/notifications/application/ports/notification-log.repository.ts` — adds `markUnreadForUser(id, userId)`.
+- `apps/api/src/modules/notifications/infrastructure/prisma-notification-log.repository.ts` — implements via owner-scoped `updateMany` + count gate (mirrors mark-read).
+- `apps/api/src/modules/notifications/interface/notifications.controller.ts` — adds `@Post(':id/unread')`.
+- `apps/api/src/modules/notifications/notifications.module.ts` — registers `MarkNotificationUnreadUseCase`.
+
+**Tests** (5 cases, real-Postgres):
+
+1. No bearer → 401.
+2. Happy path: mark a row read, verify unread-count=0, mark unread, verify row.read=false + unread-count=1. End-to-end with mark-read + unread-count.
+3. IDOR defence: Bob marks Alice's notification → 404 `NOTIFICATION_NOT_FOUND` (same code as mark-read).
+4. Idempotent: marking an already-unread row returns 200 with read=false.
+5. Unknown id → 404 `NOTIFICATION_NOT_FOUND`.
+
+**Dependencies** — none new. No Prisma migration.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Mark-unread suite 5/5 pass.
+- ✅ **Full real-DB + MinIO + Redis suite: 80 suites, 525 tests pass against live Docker.** (+1 suite, +5 tests vs. previous baseline.)
+
+**Acceptance criteria**
+
+- ✅ Authed caller can flip a read notification back to unread.
+- ✅ IDOR defence: wrong owner returns same 404 as missing id.
+- ✅ Idempotent: re-marking an unread row succeeds.
+- ✅ End-to-end with mark-read + unread-count works (read↔unread cycle).
+- ✅ Same error code as mark-read so client handlers don't fork.
+
+**Notes**
+
+- **Why parity with mark-read down to the error code.** Clients shouldn't need to know whether they called `/read` or `/unread` to interpret a 404 — both verbs operate on the same resource via the same access rules. Returning the same `NOTIFICATION_NOT_FOUND` keeps client error handling DRY.
+- **Why idempotent (re-marking unread succeeds), not strict.** Same posture as mark-read. The user-intent semantics — "I want this row in the unread state" — is satisfied whether or not the row was already there. A strict "must currently be read" gate would surface as 404 to clients calling unread-on-already-unread, which is a useless distinction for the UX (the row IS unread, that's what they wanted).
+- **Notifications surface is now feature-complete for v1.** The 5-endpoint set (list + unread-count + mark-read + mark-unread + mark-all-read) covers every interaction a typical inbox screen needs. Per-channel filtering + push-token registration are the remaining pieces; both are deferred until product needs each one.
+- **Pattern-cost summary.** Mark-as-unread took ~70 lines of production code + 5 tests. The previous notification slices established every primitive this needed (port + adapter + use-case + controller + module wiring); each one is now a templated fill-in-the-blank.
 
 ---
 
