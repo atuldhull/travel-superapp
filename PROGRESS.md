@@ -10,18 +10,79 @@
 
 ## Summary
 
-| Counter             | Value                                                                              |
-| ------------------- | ---------------------------------------------------------------------------------- |
-| Prompts completed   | 104 (103 full + 1 foundation-only; admin force-purge + SOS dashboard just shipped) |
-| Prompts in progress | 0                                                                                  |
-| Prompts blocked     | 0                                                                                  |
-| Last prompt         | `[IV.18.18.2]` — admin force-purge endpoint + admin SOS triage dashboard           |
-| Last commit date    | 2026-04-25                                                                         |
-| Phase               | Phase 1 — admin ops triage surface; 71 suites, 479 tests                           |
+| Counter             | Value                                                                        |
+| ------------------- | ---------------------------------------------------------------------------- |
+| Prompts completed   | 105 (104 full + 1 foundation-only; activity feed extra sources just shipped) |
+| Prompts in progress | 0                                                                            |
+| Prompts blocked     | 0                                                                            |
+| Last prompt         | `[IV.18.17.2]` — feed extra sources (sos + expense + vote)                   |
+| Last commit date    | 2026-04-25                                                                   |
+| Phase               | Phase 1 — feed at 7 sources; 72 suites, 483 tests                            |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.17.2] — Activity feed: 3 extra sources (sos_triggered + expense_added + vote_cast)
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.16 (Analytics & home dashboard)
+
+**What was done**
+
+Extends the personal activity feed (`[IV.18.17.1]`) from 4 sources to 7. The multi-provider `FEED_SOURCES` factory absorbs the new adapters automatically — the use-case + controller stay unchanged. Three new feed item kinds:
+
+- `'sos_triggered'` — SosEvent rows where `userId == caller`. Payload `{ sosEventId, trigger, resolvedAt }` so a feed card can render "active" vs "resolved" without a second lookup.
+- `'expense_added'` — Expense rows where `paidById == caller`. Mirrors the `[IV.18.16.1]` data-export choice: only direct authorship is surfaced, not "rows I appear in via splitShare". Including the latter needs JSON-key indexing or a per-user shadow row, neither of which exists. `amountUsd` rendered as 2-decimal string for wire stability.
+- `'vote_cast'` — Vote rows where `userId == caller`. Excludes `value=0` (abstain) — abstaining isn't really an "I did something" signal worth a feed card; only thumbs-up / thumbs-down rows surface. Filter at the SQL level via `value: { in: [-1, 1] }`.
+
+**Pattern proof.** This slice is the validation that the multi-provider DI pattern from `[IV.18.17.1]` is genuinely cheap to extend: 3 new sources = 3 new adapter files + 3 lines in the factory. Zero changes to use-case, controller, or pagination logic. The `FEED_SOURCES` symbol absorbs the additions automatically.
+
+**Files created** (4)
+
+- `apps/api/src/modules/feed/infrastructure/sos-triggered-feed-source.ts` — Prisma read on `[userId, createdAt]` index.
+- `apps/api/src/modules/feed/infrastructure/expense-added-feed-source.ts` — Prisma read on `[tripId, createdAt]` index (filter by `paidById = userId`).
+- `apps/api/src/modules/feed/infrastructure/vote-cast-feed-source.ts` — Prisma read with `value: { in: [-1, 1] }` filter to exclude abstains.
+- `apps/api/test/feed-extra-sources.e2e-spec.ts` — 4 integration tests against real Postgres.
+
+**Files edited** (2)
+
+- `apps/api/src/modules/feed/domain/feed-item.entity.ts` — extends the discriminated union with 3 new kinds + per-kind payload shapes.
+- `apps/api/src/modules/feed/feed.module.ts` — adds 3 providers + extends the factory's `inject` array + return tuple.
+
+**Tests** (4 cases, real-Postgres):
+
+1. SOS-triggered surfaces in the feed with `resolvedAt: null` payload (active SOS).
+2. expense_added surfaces with the correct `expenseId`, `tripId`, currency + 2-decimal `amountUsd: "42.50"` (verifies the 2-decimal serialization for an integer-cents stable wire shape).
+3. vote_cast for value=±1 surfaces; an abstain (value=0) row seeded alongside is verified absent from the response.
+4. Cross-user isolation: Alice generates one of each new kind; Bob's feed contains none of those kinds; Alice's feed contains all three.
+
+Tests seed Vote and Expense rows directly via Prisma — the public cast-flows have collab-trip / itinerary-item gates that are irrelevant to a read-aggregator test. SOS uses the public endpoint because it's the only path that goes through `GeoQueries` for the PostGIS coordinate column.
+
+**Dependencies** — none new. No Prisma migration — every source table has been on the schema since its respective slice (SosEvent in [IV.18.11.2], Expense in [IV.18.12.4], Vote in [IV.18.12.3]).
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Feed-extra-sources suite 4/4 pass.
+- ✅ **Full real-DB + MinIO suite: 72 suites, 483 tests pass against live Docker.** (+1 suite, +4 tests vs. previous baseline.)
+
+**Acceptance criteria**
+
+- ✅ All 3 new kinds appear in the feed for an authenticated caller.
+- ✅ Vote abstains (value=0) excluded.
+- ✅ Cross-user isolation continues to hold for the new sources.
+- ✅ Existing 4-source feed test still green (no regression).
+- ✅ Pattern proven: zero changes to use-case / controller — multi-provider absorption works as designed.
+
+**Notes**
+
+- **Why a separate `feed-extra-sources.e2e-spec.ts` instead of editing the original `feed.e2e-spec.ts`.** The original tests verify pagination, cross-kind sorting, and end-of-stream cursor semantics — orthogonal concerns from "do these new sources surface correctly". Keeping them in separate files makes the diff isolated and the new test legible without re-reading the merge logic. The cost is one extra `beforeAll` boot (~5s) — fine in a real-Docker test suite that's already 47s end-to-end.
+- **Why surface the `Vote.value` field in the payload (not just up/down).** A future feed card might want to render the symbol differently for thumbs-up vs thumbs-down (or for a future 5-star vote variant). Surfacing the raw value lets clients decide; aggregating to up/down would force a rebuild if the contract widens.
+- **Why `expense_added` uses `amountUsd.toFixed(2)`.** Same reasoning as the account-export adapter (`[IV.18.16.1]`): Prisma `Decimal` values pass through JSON as strings already, but the serialization isn't stable across versions, and `Number(amount)` loses precision on the client. Forcing 2-decimal-string at the boundary makes the wire shape predictable and consumer-trivial.
+- **Why exclude `value=0` votes from the feed but include them in the cross-trip vote summary.** Different concerns. The summary is "how does the population feel about this target" — abstains are real population signal. The personal feed is "things I did" — abstaining isn't a thing you "did" in any meaningful UX sense. The same row shape can be filtered differently at different consumer surfaces; the multi-provider pattern lets each source pick its own filter.
+- **Pattern-cost validation.** The original FEED_SOURCES factory was 1 file, 4 sources (`[IV.18.17.1]`). This slice took 4 files (3 adapters + 1 test) and ~150 lines including comments to add 3 more sources. Roughly 50 lines per source — if the pattern were not cheap, it would show up here as a pull-back-into-the-use-case refactor. It didn't. The pattern is durable; future slices that want to add a source (notification-receipt? media-upload-confirmed? trip-share-published?) can confidently follow this template.
 
 ---
 
