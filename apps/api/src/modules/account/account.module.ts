@@ -37,10 +37,11 @@ import { PrismaAdminUserQuery } from './infrastructure/prisma-admin-user-query';
 import { PrismaUserDataAggregator } from './infrastructure/prisma-user-data-aggregator';
 import { AccountPurgeScheduler } from './interface/account-purge.scheduler';
 import { AccountController } from './interface/account.controller';
+import { AdminPurgeController } from './interface/admin-purge.controller';
 import { AdminUsersController } from './interface/admin-users.controller';
 
 @Module({
-  controllers: [AccountController, AdminUsersController],
+  controllers: [AccountController, AdminUsersController, AdminPurgeController],
   providers: [
     { provide: USER_DATA_AGGREGATOR, useClass: PrismaUserDataAggregator },
     { provide: ACCOUNT_DELETER, useClass: PrismaAccountDeleter },

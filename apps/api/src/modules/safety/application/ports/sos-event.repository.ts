@@ -25,6 +25,31 @@ export interface ResolveSosInput {
   readonly note: string | null;
 }
 
+/**
+ * Admin-side filters for the SOS dashboard ([IV.18.18.2]).
+ * `status: 'active'` = `resolvedAt IS NULL`; `status: 'resolved'`
+ * = `resolvedAt IS NOT NULL`; absent = both. The dashboard
+ * defaults to active in the controller because that's the
+ * actionable triage queue.
+ */
+export type AdminSosListStatus = 'active' | 'resolved';
+
+export interface AdminSosListInput {
+  readonly status?: AdminSosListStatus;
+  readonly limit: number;
+  readonly offset: number;
+}
+
+export interface AdminSosListResult {
+  readonly rows: readonly SosEvent[];
+  readonly total: number;
+}
+
+export interface AdminResolveSosInput {
+  readonly id: string;
+  readonly note: string | null;
+}
+
 export interface SosEventRepository {
   create(input: CreateSosInput): Promise<SosEvent>;
   /**
@@ -38,6 +63,26 @@ export interface SosEventRepository {
    * resolve) returns `null`, which the use-case maps to 404.
    */
   resolve(input: ResolveSosInput): Promise<SosEvent | null>;
+  /**
+   * Admin paginated list across ALL users — drives the SOS
+   * triage dashboard. Filter by `status` to narrow to active or
+   * resolved events. Returns `{ rows, total }` so the UI can
+   * render "Showing N of M". Most-recent-first.
+   *
+   * Added by `[IV.18.18.2]` for the admin SOS dashboard.
+   */
+  adminList(input: AdminSosListInput): Promise<AdminSosListResult>;
+  /**
+   * Admin-driven resolve. Same `updateMany + count === 1` gate
+   * as the user `resolve` method but without the `userId`
+   * scope — lets ops mark someone else's SOS resolved (e.g. a
+   * support agent confirms with the user out-of-band that
+   * they're safe). The `resolvedAt: null` clause keeps it
+   * idempotent: a repeat resolve returns `null` → 404.
+   *
+   * Added by `[IV.18.18.2]`.
+   */
+  adminResolve(input: AdminResolveSosInput): Promise<SosEvent | null>;
 }
 
 export const SOS_EVENT_REPOSITORY = Symbol('SosEventRepository');

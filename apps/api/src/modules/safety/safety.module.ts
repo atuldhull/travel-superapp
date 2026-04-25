@@ -15,6 +15,8 @@
  * Installed by prompt [IV.18.11.1].
  */
 import { Module } from '@nestjs/common';
+import { AdminListSosEventsUseCase } from './application/admin-list-sos-events.use-case';
+import { AdminResolveSosUseCase } from './application/admin-resolve-sos.use-case';
 import { DismissScamReportUseCase } from './application/dismiss-scam-report.use-case';
 import { FindNearbyCrimesUseCase } from './application/find-nearby-crimes.use-case';
 import { FindNearbyScamsUseCase } from './application/find-nearby-scams.use-case';
@@ -32,6 +34,7 @@ import { PrismaCrimeIncidentRepository } from './infrastructure/prisma-crime-inc
 import { PrismaScamReportRepository } from './infrastructure/prisma-scam-report.repository';
 import { PrismaSosEventRepository } from './infrastructure/prisma-sos-event.repository';
 import { AdminScamModerationController } from './interface/admin-scam-moderation.controller';
+import { AdminSosController } from './interface/admin-sos.controller';
 import { CrimeLayerController } from './interface/crime.controller';
 import { SafetyScoreController } from './interface/safety-score.controller';
 import { SafetyController } from './interface/safety.controller';
@@ -44,6 +47,7 @@ import { SosController } from './interface/sos.controller';
     CrimeLayerController,
     SafetyScoreController,
     AdminScamModerationController,
+    AdminSosController,
   ],
   providers: [
     { provide: SCAM_REPORT_REPOSITORY, useClass: PrismaScamReportRepository },
@@ -59,6 +63,8 @@ import { SosController } from './interface/sos.controller';
     ListScamReportsForModerationUseCase,
     VerifyScamReportUseCase,
     DismissScamReportUseCase,
+    AdminListSosEventsUseCase,
+    AdminResolveSosUseCase,
   ],
   exports: [SCAM_REPORT_REPOSITORY, SOS_EVENT_REPOSITORY, CRIME_INCIDENT_REPOSITORY],
 })
