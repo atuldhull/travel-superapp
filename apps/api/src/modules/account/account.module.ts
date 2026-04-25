@@ -26,6 +26,7 @@ import { AdminListUsersUseCase } from './application/admin-list-users.use-case';
 import { AdminUnbanUserUseCase } from './application/admin-unban-user.use-case';
 import { DeleteAccountUseCase } from './application/delete-account.use-case';
 import { ExportUserDataUseCase } from './application/export-user-data.use-case';
+import { StreamAccountExportUseCase } from './application/stream-account-export.use-case';
 import { ACCOUNT_DELETER } from './application/ports/account-deleter';
 import { ACCOUNT_PURGER } from './application/ports/account-purger';
 import { ADMIN_USER_QUERY } from './application/ports/admin-user-query';
@@ -48,6 +49,7 @@ import { AdminUsersController } from './interface/admin-users.controller';
     { provide: ACCOUNT_PURGER, useClass: PrismaAccountPurger },
     { provide: ADMIN_USER_QUERY, useClass: PrismaAdminUserQuery },
     ExportUserDataUseCase,
+    StreamAccountExportUseCase,
     DeleteAccountUseCase,
     PurgeSoftDeletedUsersUseCase,
     AccountPurgeScheduler,
