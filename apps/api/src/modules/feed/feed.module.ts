@@ -1,6 +1,7 @@
 /**
  * Feed module — personal activity feed across the user's own
- * trips, reviews, memory book publishes, and scam reports.
+ * trips, reviews, memory book publishes, scam reports, SOS
+ * events, expenses paid, and votes cast.
  *
  * Routes:
  *   - `GET /feed/me` — merged chronological stream with
@@ -16,19 +17,24 @@
  * `FEED_SOURCES` is a multi-provider symbol — every adapter
  * registers under the same token, and the use-case injects
  * the array (standard Nest pattern for "all implementations
- * of an interface"). Adding a new feed source (e.g. SOS
- * triggered, expense added) is a one-file diff: drop a new
- * adapter into `infrastructure/` and append it here.
+ * of an interface"). Adding a new feed source is a one-file
+ * diff: drop a new adapter into `infrastructure/` and append
+ * it here.
  *
- * Installed by prompt [IV.18.17.1].
+ * Installed by prompt [IV.18.17.1]. Extended in [IV.18.17.2]
+ * with `sos_triggered` + `expense_added` + `vote_cast`
+ * sources.
  */
 import { Module } from '@nestjs/common';
 import { GetMyFeedUseCase } from './application/get-my-feed.use-case';
 import { FEED_SOURCES } from './application/ports/feed-source';
+import { ExpenseAddedFeedSource } from './infrastructure/expense-added-feed-source';
 import { MemoryBookPublishedFeedSource } from './infrastructure/memory-book-published-feed-source';
 import { ReviewFeedSource } from './infrastructure/review-feed-source';
 import { ScamReportFeedSource } from './infrastructure/scam-report-feed-source';
+import { SosTriggeredFeedSource } from './infrastructure/sos-triggered-feed-source';
 import { TripFeedSource } from './infrastructure/trip-feed-source';
+import { VoteCastFeedSource } from './infrastructure/vote-cast-feed-source';
 import { FeedController } from './interface/feed.controller';
 
 @Module({
@@ -40,6 +46,9 @@ import { FeedController } from './interface/feed.controller';
     ReviewFeedSource,
     MemoryBookPublishedFeedSource,
     ScamReportFeedSource,
+    SosTriggeredFeedSource,
+    ExpenseAddedFeedSource,
+    VoteCastFeedSource,
     {
       provide: FEED_SOURCES,
       useFactory: (
@@ -47,12 +56,18 @@ import { FeedController } from './interface/feed.controller';
         review: ReviewFeedSource,
         book: MemoryBookPublishedFeedSource,
         scam: ScamReportFeedSource,
-      ) => [trip, review, book, scam],
+        sos: SosTriggeredFeedSource,
+        expense: ExpenseAddedFeedSource,
+        vote: VoteCastFeedSource,
+      ) => [trip, review, book, scam, sos, expense, vote],
       inject: [
         TripFeedSource,
         ReviewFeedSource,
         MemoryBookPublishedFeedSource,
         ScamReportFeedSource,
+        SosTriggeredFeedSource,
+        ExpenseAddedFeedSource,
+        VoteCastFeedSource,
       ],
     },
     GetMyFeedUseCase,
