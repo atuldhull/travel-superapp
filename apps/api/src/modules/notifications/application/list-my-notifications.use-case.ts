@@ -3,10 +3,15 @@
  * Reads through the repo port; default 50, cap 200 — same shape
  * as `ListMySosEventsUseCase`.
  *
+ * Optional `channel` filter narrows to a single delivery channel
+ * (push / email / sms) so a channel-segmented inbox view (e.g.
+ * "push tab") doesn't have to client-filter the union.
+ * Channel filter added by `[IV.18.12.13]`.
+ *
  * Installed by prompt [IV.18.15.1].
  */
 import { Inject, Injectable } from '@nestjs/common';
-import type { NotificationLog } from '../domain/notification-log.entity';
+import type { NotificationChannel, NotificationLog } from '../domain/notification-log.entity';
 import {
   NOTIFICATION_LOG_REPOSITORY,
   type NotificationLogRepository,
@@ -21,9 +26,13 @@ export class ListMyNotificationsUseCase {
     @Inject(NOTIFICATION_LOG_REPOSITORY) private readonly repo: NotificationLogRepository,
   ) {}
 
-  async execute(userId: string, limit?: number): Promise<readonly NotificationLog[]> {
+  async execute(
+    userId: string,
+    limit?: number,
+    channel?: NotificationChannel,
+  ): Promise<readonly NotificationLog[]> {
     const clamped =
       limit === undefined ? DEFAULT_LIMIT : Math.max(1, Math.min(MAX_LIMIT, Math.floor(limit)));
-    return this.repo.listForUser(userId, clamped);
+    return this.repo.listForUser(userId, clamped, channel);
   }
 }

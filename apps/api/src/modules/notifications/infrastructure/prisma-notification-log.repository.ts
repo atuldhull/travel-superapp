@@ -42,9 +42,16 @@ export class PrismaNotificationLogRepository implements NotificationLogRepositor
     return toDomain(row);
   }
 
-  async listForUser(userId: string, limit: number): Promise<readonly NotificationLog[]> {
+  async listForUser(
+    userId: string,
+    limit: number,
+    channel?: NotificationChannel,
+  ): Promise<readonly NotificationLog[]> {
     const rows = await this.prisma.notificationLog.findMany({
-      where: { userId },
+      where: {
+        userId,
+        ...(channel !== undefined ? { channel: channel as PrismaNotificationChannel } : {}),
+      },
       orderBy: { createdAt: 'desc' },
       take: Math.min(Math.max(limit, 1), 200),
     });
