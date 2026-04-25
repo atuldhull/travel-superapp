@@ -10,18 +10,56 @@
 
 ## Summary
 
-| Counter             | Value                                                                           |
-| ------------------- | ------------------------------------------------------------------------------- |
-| Prompts completed   | 115 (114 full + 1 foundation-only; agent review summary composite just shipped) |
-| Prompts in progress | 0                                                                               |
-| Prompts blocked     | 0                                                                               |
-| Last prompt         | `[IV.18.12.12]` — agent review summary composite (closes 4-of-4 review-targets) |
-| Last commit date    | 2026-04-25                                                                      |
-| Phase               | Phase 1 — review-bundle composite arc complete (4-of-4); 82 suites, 538 tests   |
+| Counter             | Value                                                                            |
+| ------------------- | -------------------------------------------------------------------------------- |
+| Prompts completed   | 116 (115 full + 1 foundation-only; per-channel notification filter just shipped) |
+| Prompts in progress | 0                                                                                |
+| Prompts blocked     | 0                                                                                |
+| Last prompt         | `[IV.18.12.13]` — per-channel notification filter (?channel=push\|email\|sms)    |
+| Last commit date    | 2026-04-25                                                                       |
+| Phase               | Phase 1 — notification inbox channel-segmentable; 83 suites, 543 tests           |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.12.13] — Per-channel notification filter (?channel=push|email|sms)
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.15 (Notifications)
+
+**What was done**
+
+Tiny extension to `GET /api/v1/notifications/me`: optional `?channel=push|email|sms` narrows the inbox to one delivery channel. Threaded cleanly through the existing port → adapter → use-case → controller layering; absence preserves the union behavior (regression-tested). Validates against the schema enum; unknown values return `400 VALIDATION_FAILED`.
+
+**Why a server filter, not a client filter.** The frontend already differentiates push / email / sms at the badge layer (e.g. a "Push" tab in the inbox). Until this slice it had to fetch the full union and filter client-side, which (a) wastes a round-trip on the discarded rows and (b) breaks the `limit=N` semantic — the client could ask for 50 and receive 50 minus the rows it would discard. Pushing the filter to the API fixes both.
+
+**Index posture.** No new index added. `where: { userId, channel }` lands on the existing `[userId, read, createdAt]` composite — userId is the leading column, channel is then a small filtered scan over the matching range. Inboxes are bounded (200-row cap) and per-user, so the cost is negligible vs. shipping a dedicated `[userId, channel, createdAt]` index. If channel-filtering hot paths ever scale, revisit.
+
+HTTP surface delta:
+
+| Route                                        | Param                          | Effect                                             |
+| -------------------------------------------- | ------------------------------ | -------------------------------------------------- |
+| `GET /api/v1/notifications/me?channel=push`  | `channel ∈ {push, email, sms}` | Narrows inbox to one channel.                      |
+| `GET /api/v1/notifications/me?channel=bogus` | unknown enum value             | `400 VALIDATION_FAILED`.                           |
+| `GET /api/v1/notifications/me`               | (omitted)                      | Unchanged — returns the union (regression-pinned). |
+
+**Files**
+
+- `apps/api/src/modules/notifications/application/ports/notification-log.repository.ts` — `listForUser` gains optional `channel?: NotificationChannel`
+- `apps/api/src/modules/notifications/application/list-my-notifications.use-case.ts` — accepts + forwards optional `channel`
+- `apps/api/src/modules/notifications/infrastructure/prisma-notification-log.repository.ts` — passes through to `where.channel`
+- `apps/api/src/modules/notifications/interface/notifications.controller.ts` — parses `?channel`, validates against `VALID_CHANNELS`, delegates to use-case
+- `apps/api/test/notifications-channel-filter.e2e-spec.ts` (new) — 5 tests (union, push-only, email-only, sms-empty, bogus → 400)
+
+**Verification**
+
+`pnpm --filter=api typecheck` green. Full integration suite: **83 passed, 543 passed**. New `notifications-channel-filter.e2e-spec.ts` is the 83rd suite; `+5 tests` over baseline.
+
+**Commits**
+
+- `6bebd24` — feat(IV.18.12.13) per-channel notification filter
 
 ---
 
