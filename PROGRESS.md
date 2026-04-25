@@ -10,18 +10,91 @@
 
 ## Summary
 
-| Counter             | Value                                                                    |
-| ------------------- | ------------------------------------------------------------------------ |
-| Prompts completed   | 95 (94 full + 1 foundation-only; GDPR data-export endpoint just shipped) |
-| Prompts in progress | 0                                                                        |
-| Prompts blocked     | 0                                                                        |
-| Last prompt         | `[IV.18.16.1]` — GDPR / DPDP / COPPA data-export endpoint                |
-| Last commit date    | 2026-04-25                                                               |
-| Phase               | Phase 1 — first compliance surface; 61 suites, 421 tests                 |
+| Counter             | Value                                                                |
+| ------------------- | -------------------------------------------------------------------- |
+| Prompts completed   | 96 (95 full + 1 foundation-only; right-to-erasure flow just shipped) |
+| Prompts in progress | 0                                                                    |
+| Prompts blocked     | 0                                                                    |
+| Last prompt         | `[IV.18.16.2]` — right-to-erasure (DELETE /account)                  |
+| Last commit date    | 2026-04-25                                                           |
+| Phase               | Phase 1 — GDPR core complete; 62 suites, 427 tests                   |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.16.2] — Right-to-erasure (DELETE /account; soft-delete + session revoke)
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 13.10 (Compliance & Privacy)
+
+**What was done**
+
+Pairs with `[IV.18.16.1]`'s data-export to complete the GDPR Art. 17 / India DPDP §12 / COPPA right-to-erasure core. Single authed `DELETE /api/v1/account` route that atomically:
+
+1. Sets `User.deletedAt = now()` (using `updateMany` + `deletedAt: null` clause as a "set if not already deleted" gate).
+2. Revokes every live `Session` row for the user (`revokedAt = now()` where `revokedAt IS NULL`).
+
+Both writes happen in a single `prisma.$transaction([...])` so the system can never end up with `User.deletedAt` set but sessions still live (or vice-versa). Local writes only — no network calls inside the transaction (CLAUDE rule 13).
+
+**Effect:**
+
+- Subsequent login → 401 `INVALID_CREDENTIALS` (the user repository already filters `deletedAt != null` rows out as absent — same code path as a wrong email).
+- Subsequent `/refresh` → 401 (session was revoked at delete time; `RefreshSessionUseCase` sees a revoked-row replay and either cascades or returns `REFRESH_USER_MISSING`).
+- Already-issued access tokens continue to verify until their 15-min TTL expires. **This is the documented v1 trade-off** — the alternative (per-request DB lookup on every authed call) is too expensive for what the session revoke already gives us. The session revoke caps the worst-case unauthed-access window at the access-token TTL.
+
+HTTP surface:
+
+| Route                    | Auth   | What it does                                           |
+| ------------------------ | ------ | ------------------------------------------------------ |
+| `DELETE /api/v1/account` | bearer | Soft-delete + revoke all live sessions; 204 No Content |
+
+**Files created** (3)
+
+- `apps/api/src/modules/account/application/ports/account-deleter.ts` — single-method port: `softDeleteAndRevokeSessions(userId, deletedAt): Promise<boolean>`. Returns `false` when the row was missing or already-deleted; the use-case maps that to 404 `USER_NOT_FOUND`.
+- `apps/api/src/modules/account/application/delete-account.use-case.ts` — wraps the adapter; `false` from the port → `UserNotFoundError`.
+- `apps/api/src/modules/account/infrastructure/prisma-account-deleter.ts` — two-step `$transaction([userUpdate, sessionUpdate])`. The user update uses `updateMany({ id, deletedAt: null }, { deletedAt })` so the operation is naturally idempotent under concurrent calls (only the first one gets `count === 1`).
+
+**Files edited** (2) — `apps/api/src/modules/account/account.module.ts` (+1 provider, +1 use-case), `apps/api/src/modules/account/interface/account.controller.ts` (+1 `DELETE` route).
+
+**Files created** (1 more) — `apps/api/test/account-delete.e2e-spec.ts`.
+
+**Tests** (`apps/api/test/account-delete.e2e-spec.ts`, 6 cases, real-Postgres):
+
+1. No bearer → 401 `UNAUTHENTICATED`.
+2. Happy path → 204; `User.deletedAt` set; live session count drops to 0.
+3. After delete, login with the same credentials → 401 `INVALID_CREDENTIALS` (repo treats the row as absent).
+4. After delete, `/refresh` with the original cookie → 401. The exact code is one of `REFRESH_REUSE_DETECTED`, `REFRESH_USER_MISSING`, or `REFRESH_EXPIRED` — all three are correct security signals after a delete; the test asserts the set, not the exact code (gives the existing reuse-cascade logic room to evolve).
+5. Cross-user isolation: Alice's delete sets `Alice.deletedAt` only; Bob's row + sessions stay clean and Bob can still hit `/account/export`.
+6. Idempotent guard: a second `DELETE` with Alice's still-valid access token → 404 `USER_NOT_FOUND` (the `updateMany` `deletedAt: null` clause returns `count === 0` on the already-deleted row → port returns `false` → use-case throws). Documents the v1 access-token TTL trade-off.
+
+**Dependencies** — none new. No Prisma migration — `User.deletedAt` has been on the schema since `[III.12.1]` for exactly this flow.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Account-delete suite 6/6 pass.
+- ✅ **Full real-DB + MinIO suite: 62 suites, 427 tests pass against live Docker.** (+1 suite, +6 tests vs. previous baseline.)
+
+**Acceptance criteria**
+
+- ✅ Authed caller can delete their own account; route returns 204.
+- ✅ `User.deletedAt` set on the row.
+- ✅ All live sessions revoked atomically with the soft-delete.
+- ✅ Subsequent login fails (login flow already filters soft-deleted via `findByEmailHash`).
+- ✅ Subsequent refresh fails (session revoked + user soft-delete).
+- ✅ Cross-user isolation holds.
+- ✅ Second delete with the same access token → 404 (idempotent semantics for the row, error semantics at the API).
+
+**Notes**
+
+- **Why a `$transaction` and not two sequential awaits.** A crash between the user update and the session revoke would leave the system in a "soft-deleted user with live sessions" state — which means the user could refresh-then-export their own data while their account is supposedly gone. The transaction makes both writes succeed-or-rollback together. Both are local DB writes; CLAUDE rule 13 (no network calls inside `$transaction`) is satisfied.
+- **Why `updateMany` + `deletedAt: null` clause and not `update` + check `deletedAt`.** `update` with a unique ID always returns the row even if it's already-deleted, requiring a follow-up "was this our delete or a no-op" check. `updateMany` with `where: { id, deletedAt: null }` makes the gate atomic — `count === 1` means _we_ did the delete, `count === 0` means the row was missing or already-deleted. Same pattern the rest of the codebase uses for owner-scoped writes (Media, Safety, Notifications, Memory Book).
+- **Why access tokens stay valid for their TTL after delete.** Two reasons: (1) JWT verification is stateless by design — adding a per-request DB lookup defeats the architecture. (2) The session revoke is the actual security boundary — the worst-case unauthed-access window after a delete is the access-token TTL (15 min), bounded by the moment the access token expires AND the user can't refresh AND the user can't log back in. Three independent gates close the loop. The cost of doing better (per-request DB lookup) is too high for the marginal security gain.
+- **Why `false` (port) → 404 (HTTP) for an already-deleted row.** Idempotency at the API surface vs. at the row level is a design choice. Returning 204 on a no-op-double-delete would obscure a client bug ("why did my second DELETE succeed when I thought I just got rid of this account?"). 404 makes the second call distinguishable. The row-level operation IS still idempotent — calling it twice does no harm; only the second response shape changes.
+- **Why no per-section deletion of dependent rows here.** Schema-level `onDelete: Cascade` on every user-scoped FK means the future hard-delete cron can call a single `prisma.user.delete({ where })` and Prisma will wipe Trip + ItineraryDay + ScamReport + SosEvent + MediaAsset + MemoryBook + Vote + Expense + Review + StayBooking + Subscription + EscrowHold + Commission + Agent + LiveEvent + UserOAuthIdentity + Session + MfaBackupCode + Preferences + Device + NotificationPreference + NotificationLog automatically. This slice does NOT delete those — that's the 7-day-window cron's job. v1 is "soft-delete + revoke; cron sweeps later".
+- **GDPR core is now functionally complete.** Right-of-access (Art. 15) shipped in `[IV.18.16.1]`; right-to-erasure (Art. 17) shipped here. Right-to-rectification is implicit (the user can edit their profile via existing identity routes); right-to-portability falls out of `/account/export` returning structured JSON. The remaining piece is the hard-delete cron, which is a deployment-readiness concern more than a correctness one.
 
 ---
 
