@@ -30,6 +30,8 @@ import { AppNestLoggerService, createLogger } from '@app/logger';
 import { AppModule } from './app.module';
 import { AllExceptionFilter } from './common/filters/all-exception.filter';
 import { DomainExceptionFilter } from './common/filters/domain-exception.filter';
+import { registerHttpMetricsMiddleware } from './common/metrics/http-metrics.middleware';
+import { MetricsService } from './common/metrics/metrics.service';
 import { registerSecurity } from './common/security/security.register';
 import { registerTraceMiddleware } from './common/trace/register-trace-middleware';
 
@@ -86,6 +88,11 @@ async function bootstrap(): Promise<void> {
   //     per request so every log line + every DomainError response
   //     body carries a correlatable `traceId`.
   await registerTraceMiddleware(app);
+
+  // 6d. HTTP request-duration histogram — Fastify onRequest +
+  //     onResponse hooks observe `http_request_duration_seconds`
+  //     labeled by method/route/status. Added by `[IV.18.10.8]`.
+  await registerHttpMetricsMiddleware(app, app.get(MetricsService));
 
   // 7. Shutdown hooks so SIGTERM drains in-flight requests cleanly (Fly.io / k8s).
   app.enableShutdownHooks();
