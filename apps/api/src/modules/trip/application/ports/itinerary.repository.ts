@@ -54,6 +54,14 @@ export interface ItineraryRepository {
    * (empty when the day has none).
    */
   findDayForUser(dayId: string, userId: string): Promise<ItineraryDay | null>;
+  /**
+   * Look up a single day by id WITHOUT an owner gate. The caller
+   * is responsible for running an access gate (owner or active
+   * trip-share) before invoking. Used by collab-edit paths
+   * `[IV.18.2.14]` where access can be granted via a TripShare
+   * the caller doesn't directly own.
+   */
+  findDayById(dayId: string): Promise<ItineraryDay | null>;
 
   /**
    * Atomically replace every item for a day. Empty `items` wipes

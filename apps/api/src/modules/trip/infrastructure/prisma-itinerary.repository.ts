@@ -94,6 +94,16 @@ export class PrismaItineraryRepository implements ItineraryRepository {
     return row ? toDayDomain(row) : null;
   }
 
+  async findDayById(dayId: string): Promise<ItineraryDay | null> {
+    // Unscoped lookup — caller is responsible for running an
+    // access gate first. Used by `[IV.18.2.14]` co-edit path.
+    const row = await this.prisma.itineraryDay.findUnique({
+      where: { id: dayId },
+      include: { items: { orderBy: { position: 'asc' } } },
+    });
+    return row ? toDayDomain(row) : null;
+  }
+
   async replaceItemsForDay(
     dayId: string,
     items: readonly CreateItemInput[],
