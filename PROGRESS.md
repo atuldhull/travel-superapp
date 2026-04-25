@@ -10,18 +10,82 @@
 
 ## Summary
 
-| Counter             | Value                                                                    |
-| ------------------- | ------------------------------------------------------------------------ |
-| Prompts completed   | 97 (96 full + 1 foundation-only; aggregated review summary just shipped) |
-| Prompts in progress | 0                                                                        |
-| Prompts blocked     | 0                                                                        |
-| Last prompt         | `[IV.18.12.8]` — aggregated review rating summary                        |
-| Last commit date    | 2026-04-25                                                               |
-| Phase               | Phase 1 — review consumer surface; 63 suites, 433 tests                  |
+| Counter             | Value                                                                      |
+| ------------------- | -------------------------------------------------------------------------- |
+| Prompts completed   | 98 (97 full + 1 foundation-only; notifications mark-all-read just shipped) |
+| Prompts in progress | 0                                                                          |
+| Prompts blocked     | 0                                                                          |
+| Last prompt         | `[IV.18.15.3]` — notifications mark-all-read                               |
+| Last commit date    | 2026-04-25                                                                 |
+| Phase               | Phase 1 — inbox clear-the-badge; 64 suites, 437 tests                      |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.15.3] — Notifications mark-all-read (POST /notifications/read-all)
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.15 (Notifications)
+
+**What was done**
+
+Inbox "clear the badge" surface: a single authed `POST /api/v1/notifications/read-all` flips `read = true` on every unread row for the caller and returns `{ marked: <count> }`. Saves clients an N-round-trip walk over the inbox; lets the unread badge reset in one call.
+
+Implementation: `prisma.notificationLog.updateMany({ where: { userId, read: false }, data: { read: true } })`. The `read: false` clause skips already-read rows so the operation cost scales with unread count, not total inbox size — the existing `[userId, read, createdAt]` index makes the lookup of unread rows cheap.
+
+Idempotent by construction: a second call with no new unread rows returns `{ marked: 0 }`. Empty inbox → 200 with `{ marked: 0 }` — NOT 404. (Same "empty ≠ missing" precedent as the review summary endpoint shipped in `[IV.18.12.8]`.)
+
+HTTP surface:
+
+| Route                                 | Auth   | What it does                                              |
+| ------------------------------------- | ------ | --------------------------------------------------------- |
+| `POST /api/v1/notifications/read-all` | bearer | Mark every unread row read; returns `{ marked: <count> }` |
+
+**Files created** (2)
+
+- `apps/api/src/modules/notifications/application/mark-all-notifications-read.use-case.ts` — orchestrator (one-liner over the port).
+- `apps/api/test/notifications-mark-all-read.e2e-spec.ts` — 4 integration tests against real Postgres.
+
+**Files edited** (3)
+
+- `apps/api/src/modules/notifications/application/ports/notification-log.repository.ts` — adds `markAllReadForUser(userId): Promise<number>` method.
+- `apps/api/src/modules/notifications/infrastructure/prisma-notification-log.repository.ts` — implements `markAllReadForUser` via owner-scoped `updateMany`.
+- `apps/api/src/modules/notifications/interface/notifications.controller.ts` — adds `@Post('read-all')`. Declared BEFORE `@Post(':id/read')` so a future `:id` route definition can't shadow the literal `read-all` segment (defensive ordering, same pattern as `/reviews/summary` and the public memory-book routes).
+- `apps/api/src/modules/notifications/notifications.module.ts` — registers `MarkAllNotificationsReadUseCase`.
+
+**Tests** (4 cases, real-Postgres):
+
+1. No bearer → 401 `UNAUTHENTICATED`.
+2. Happy path: register user (mints 1 `session_issued_new_device` row) + seed 3 more unread → `{ marked: 4 }`; subsequent unread count = 0; second call → `{ marked: 0 }`.
+3. Cross-user isolation: Alice has 6 unread, Bob has 3. Bob's `read-all` returns `{ marked: 3 }`; Bob's unread count drops to 0; Alice's 6 unread remain untouched.
+4. Empty inbox (registration row pre-marked) → 200 `{ marked: 0 }` (not 404).
+
+**Dependencies** — none new. No Prisma migration — NotificationLog has been on the schema since `[IV.18.15.1]`.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Mark-all-read suite 4/4 pass.
+- ✅ **Full real-DB + MinIO suite: 64 suites, 437 tests pass against live Docker.** (+1 suite, +4 tests vs. previous baseline.)
+
+**Acceptance criteria**
+
+- ✅ Authed caller can mark every unread row read in one round-trip.
+- ✅ Returns `{ marked: <count> }` so clients can update the badge without re-fetching.
+- ✅ Idempotent — second call returns `{ marked: 0 }`.
+- ✅ Empty inbox returns 200, not 404.
+- ✅ Cross-user isolation holds (owner-scoped `where { userId }`).
+- ✅ Already-read rows are skipped (the `read: false` clause).
+
+**Notes**
+
+- **Why `read: false` clause and not just "set read=true on every row".** Postgres `updateMany` returns `{ count }` — the count tells the client how many rows actually changed. Without the `read: false` clause, the count would equal the entire inbox size on every call, which is misleading ("I marked 50 things read" when 49 were already read). The clause makes `marked` semantically meaningful.
+- **Why `{ marked }` and not `{ count }` or `{ updated }`.** Past-tense verb-shape mirrors the operation: "this call marked N notifications as read". Self-explaining to any client without consulting docs. Same pattern conventions used elsewhere in the codebase (e.g. revoke-all-sessions returns `{ revoked }`).
+- **Why declare `read-all` BEFORE `:id/read`.** Nest matches routes in declaration order. `read-all` is a literal path segment and would never match `:id/read` (different segment count), so technically the order doesn't matter today. Declaring it first is defensive: a future refactor that adds `@Post(':action')` or similar would silently shadow `read-all` if it came after. Same defensive ordering pattern used by `/reviews/summary` and the public memory-book routes.
+- **Why empty inbox → 200, not 404.** The route operates on the _caller's own inbox_, which always exists by virtue of the caller being authenticated. Returning 404 would be lying — the inbox isn't missing, it's just zero-unread. Same "empty ≠ missing" reasoning as the review summary endpoint (`[IV.18.12.8]`).
+- **Why no domain entity / no use-case-side validation.** `markAllReadForUser` is a pure ownership-scoped bulk update — there's nothing to validate. Even the userId comes from the JWT claim, not the request body. The use-case is a one-liner pass-through that exists only to keep the controller free of the repository import (clean-arch dependency rule).
 
 ---
 
