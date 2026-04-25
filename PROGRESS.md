@@ -10,18 +10,96 @@
 
 ## Summary
 
-| Counter             | Value                                                               |
-| ------------------- | ------------------------------------------------------------------- |
-| Prompts completed   | 111 (110 full + 1 foundation-only; trip-share co-edit just shipped) |
-| Prompts in progress | 0                                                                   |
-| Prompts blocked     | 0                                                                   |
-| Last prompt         | `[IV.18.2.14]` — trip-share co-edit (PATCH itinerary days)          |
-| Last commit date    | 2026-04-25                                                          |
-| Phase               | Phase 1 — collaborative trip planning live; 78 suites, 510 tests    |
+| Counter             | Value                                                                  |
+| ------------------- | ---------------------------------------------------------------------- |
+| Prompts completed   | 112 (111 full + 1 foundation-only; admin trip moderation just shipped) |
+| Prompts in progress | 0                                                                      |
+| Prompts blocked     | 0                                                                      |
+| Last prompt         | `[IV.18.18.3]` — admin trip moderation (list + archive + delete)       |
+| Last commit date    | 2026-04-25                                                             |
+| Phase               | Phase 1 — admin operator surface complete; 79 suites, 520 tests        |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.18.3] — Admin trip moderation (list + archive + delete)
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.2 (Trip Planning) + 3.17 (Admin & Ops)
+
+**What was done**
+
+Last gap on the admin operator surface: trip moderation. Without it, ops had no way to take down spam / abusive trips short of banning the owner outright. Three routes, all gated by `@Roles('admin')`:
+
+- `GET    /api/v1/admin/trips?q=&status=&limit=&offset=` — paginated cross-user list with optional filters (case-insensitive title substring + TripStatus).
+- `POST   /api/v1/admin/trips/:id/archive` — soft moderation; flips `status = 'archived'`. Trip + child rows survive; owner can unarchive via the existing PATCH /trips/:id flow.
+- `DELETE /api/v1/admin/trips/:id` — hard delete for clearly-abusive takedowns. Cascades to itinerary days/items, votes, expenses, reviews, media via Prisma `onDelete: Cascade` settings already wired at the schema level.
+
+Lives in TripModule — admin-in-owning-module pattern, fifth precedent now (scam moderation in Safety, places curation in Places, user moderation in Account, SOS triage in Safety, trip moderation in Trip).
+
+**Repo signature additions.** Three new methods on `TripRepository`:
+
+- `adminList(input)` — `findMany + count` in parallel; dynamic `where` from optional filters. Returns `{ rows, total }` so the UI can render "Showing N of M".
+- `adminArchive(id)` — `updateMany({ where: { id } }, { status: 'archived' })`. Idempotent: re-archiving an already-archived trip still returns `count === 1` (the row exists; values match).
+- `adminDelete(id)` — `deleteMany({ where: { id } })`. Returns `count === 1` on success.
+
+All three skip the owner scope on purpose — admin endpoints exist exactly to bypass owner gates.
+
+**Files created** (5)
+
+- `apps/api/src/modules/trip/application/admin-list-trips.use-case.ts` — clamps limit (50/200) + offset; passes filters through.
+- `apps/api/src/modules/trip/application/admin-archive-trip.use-case.ts` — calls `adminArchive`; `false` → 404 `TRIP_NOT_FOUND`.
+- `apps/api/src/modules/trip/application/admin-delete-trip.use-case.ts` — calls `adminDelete`; `false` → 404.
+- `apps/api/src/modules/trip/interface/admin-trips.controller.ts` — class-level `@Roles('admin')`; status filter validated against the schema enum.
+- `apps/api/test/admin-trips.e2e-spec.ts` — 10 integration tests against real Postgres.
+
+**Files edited** (3)
+
+- `apps/api/src/modules/trip/application/ports/trip.repository.ts` — adds `adminList`, `adminArchive`, `adminDelete` + the `AdminTripListInput` / `AdminTripListResult` types.
+- `apps/api/src/modules/trip/infrastructure/prisma-trip.repository.ts` — implements all three.
+- `apps/api/src/modules/trip/trip.module.ts` — registers controller + 3 use-cases.
+
+**Tests** (10 cases, real-Postgres):
+
+1. No bearer → 401.
+2. Non-admin → 403.
+3. `?q=` case-insensitive substring on title; cross-user verified (admin sees Alice's trip from Bob's perspective).
+4. `?status=archived` returns only archived.
+5. **Archive is soft moderation**: trip + itinerary days survive after archive; status flipped to `archived`. Trip created with dates + itinerary generated to seed real child rows so the no-cascade assertion is meaningful.
+6. **Delete cascades**: trip + itinerary days both wiped after delete (verified via direct Prisma counts before + after).
+7. Archive on missing trip → 404 `TRIP_NOT_FOUND`.
+8. Delete on missing trip → 404.
+9. Unknown status param → 400 `VALIDATION_FAILED`.
+10. Non-admin caller can't archive (403); target's status stays unchanged.
+
+**Dependencies** — none new. No Prisma migration — Trip + TripStatus enum + onDelete cascade settings have all been on the schema since `[III.12.1]`.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Admin-trips suite 10/10 pass.
+- ✅ **Full real-DB + MinIO + Redis suite: 79 suites, 520 tests pass against live Docker.** (+1 suite, +10 tests vs. previous baseline.)
+
+**Acceptance criteria**
+
+- ✅ Admin can list cross-user trips with optional filters.
+- ✅ Admin can archive (soft moderation; child rows survive).
+- ✅ Admin can delete (hard, cascades to all child rows).
+- ✅ Non-admin callers get 403.
+- ✅ Both archive + delete idempotent for missing → 404.
+- ✅ Status filter validated against the schema enum.
+
+**Notes**
+
+- **Why archive flips `status='archived'` rather than introducing a separate moderation flag.** The TripStatus enum already had `archived` as a value — the schema designer anticipated this. Using it is preferable to adding a new column (e.g. `moderationState`) because: (1) zero migration; (2) the same `archived` semantics already exist for owner-driven archival, so a future "self-archive" feature lands on the same column; (3) clients filter by status uniformly, no special-case for moderation. The cost is that an admin-archived trip and an owner-archived trip look identical to clients — acceptable in v1; if a future product requirement needs to distinguish, add `archivedReason: 'owner' | 'moderation' | null`.
+- **Why hard-delete instead of just always archiving.** Some content is illegal/malicious enough that even leaving an archived row in the DB is a problem (CSAM, doxxing, etc.). Hard-delete is the takedown tool; archive is the soft tool. Two verbs because they have different policy contexts.
+- **Why the cascade test seeds itinerary days specifically.** Validates the schema's cascade wiring end-to-end. If a future Prisma migration accidentally weakened a cascade FK, this test would catch it before deploy. Same posture the account-purge cascade test uses (verifies dependent rows wipe alongside the user).
+- **Why the admin list isn't ordered by trip status (e.g. archived last).** Most-recent-first is the moderation operator's expected ordering ("show me what just got created so I can spot abuse early"). Status filter handles "show me only archived" if needed; mixing both into a sort would surprise.
+- **Why archive is idempotent (re-archive returns success) but bann/delete operations elsewhere 404.** Different semantics: ban (`[IV.18.16.2]`) needs the strict "your prior call already succeeded; second call is a bug" signal because banning is a major lifecycle event. Archive is reversible + idempotent in concept — re-archiving an already-archived trip is a benign retry. The pattern split is intentional, not an oversight.
+- **Admin operator surface is now functionally complete for v1**: places curation, JWKS rotation, scam moderation, user moderation (ban + unban), SOS triage, force-purge, trip moderation. Missing: media moderation, expense/review takedown — these are smaller variations of the same pattern; deferred to product-prioritization if/when needed.
+- **Pattern consolidation continues**: this is the fourth time the "admin endpoint over existing atomic-transition repo method" pattern has shipped (after scam moderation, user moderation, SOS triage). Fifth includes the slight twist of an additional admin method (`adminArchive` adds new state-transition semantics rather than reusing an existing one). Still cheap.
 
 ---
 
