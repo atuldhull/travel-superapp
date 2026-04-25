@@ -22,6 +22,7 @@ import { CreateExpenseUseCase } from './application/create-expense.use-case';
 import { CreateReviewUseCase } from './application/create-review.use-case';
 import { DeleteExpenseUseCase } from './application/delete-expense.use-case';
 import { DeleteReviewUseCase } from './application/delete-review.use-case';
+import { GetReviewSummaryUseCase } from './application/get-review-summary.use-case';
 import { GetTripBalancesUseCase } from './application/get-trip-balances.use-case';
 import { ListMyReviewsUseCase } from './application/list-my-reviews.use-case';
 import { ListReviewsForTargetUseCase } from './application/list-reviews-for-target.use-case';
@@ -56,6 +57,7 @@ import { SocialController } from './interface/social.controller';
     DeleteReviewUseCase,
     ListReviewsForTargetUseCase,
     ListMyReviewsUseCase,
+    GetReviewSummaryUseCase,
   ],
   exports: [VOTE_REPOSITORY, EXPENSE_REPOSITORY, REVIEW_REPOSITORY],
 })

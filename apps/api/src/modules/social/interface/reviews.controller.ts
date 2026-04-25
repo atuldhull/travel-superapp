@@ -23,13 +23,15 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { type AuthenticatedUser, CurrentUser } from '../../../common/auth';
+import { type AuthenticatedUser, CurrentUser, Public } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { CreateReviewUseCase } from '../application/create-review.use-case';
 import { DeleteReviewUseCase } from '../application/delete-review.use-case';
+import { GetReviewSummaryUseCase } from '../application/get-review-summary.use-case';
 import { ListMyReviewsUseCase } from '../application/list-my-reviews.use-case';
 import { ListReviewsForTargetUseCase } from '../application/list-reviews-for-target.use-case';
 import type { Review, ReviewTargetType } from '../domain/review.entity';
+import type { ReviewSummary } from '../application/ports/review.repository';
 import {
   CreateReviewBodySchema,
   ReviewTargetTypeSchema,
@@ -66,6 +68,24 @@ function toDto(r: Review): ReviewDto {
   };
 }
 
+interface ReviewSummaryDto {
+  readonly targetType: string;
+  readonly targetId: string;
+  readonly count: number;
+  readonly average: number;
+  readonly histogram: Readonly<Record<string, number>>;
+}
+
+function summaryToDto(s: ReviewSummary): ReviewSummaryDto {
+  return {
+    targetType: s.targetType,
+    targetId: s.targetId,
+    count: s.count,
+    average: s.average,
+    histogram: s.histogram as unknown as Readonly<Record<string, number>>,
+  };
+}
+
 @Controller('reviews')
 export class ReviewsController {
   constructor(
@@ -73,6 +93,7 @@ export class ReviewsController {
     private readonly listTargetUc: ListReviewsForTargetUseCase,
     private readonly listMineUc: ListMyReviewsUseCase,
     private readonly deleteUc: DeleteReviewUseCase,
+    private readonly summaryUc: GetReviewSummaryUseCase,
   ) {}
 
   @Post()
@@ -91,6 +112,44 @@ export class ReviewsController {
       language: body.language ?? 'en',
     });
     return toDto(review);
+  }
+
+  /**
+   * Aggregated rating summary for a target. `@Public()` — review
+   * summaries are public crowd-signal, no auth needed. Empty
+   * target → 200 with zero-filled shape (not 404).
+   *
+   * Declared BEFORE `@Get()` (which uses query params) and
+   * `@Get(':id')` would be — Nest matches in declaration order, so
+   * the literal `summary` segment lands here cleanly.
+   *
+   * Installed by [IV.18.12.8].
+   */
+  @Get('summary')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  async summary(
+    @Query('targetType') targetType?: string,
+    @Query('targetId') targetId?: string,
+  ): Promise<ReviewSummaryDto> {
+    if (!targetType || !targetId) {
+      throw new BadRequestException({
+        code: 'VALIDATION_FAILED',
+        message: 'targetType and targetId query params are required',
+      });
+    }
+    const parsed = ReviewTargetTypeSchema.safeParse(targetType);
+    if (!parsed.success) {
+      throw new BadRequestException({
+        code: 'VALIDATION_FAILED',
+        message: 'targetType must be one of: place | stay | eatery | agent',
+      });
+    }
+    const result = await this.summaryUc.execute({
+      targetType: parsed.data as ReviewTargetType,
+      targetId,
+    });
+    return summaryToDto(result);
   }
 
   /**
