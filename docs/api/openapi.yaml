@@ -1,0 +1,1602 @@
+openapi: 3.0.0
+paths:
+  /metrics:
+    get:
+      operationId: MetricsController_scrape
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - Metrics
+  /health/live:
+    get:
+      operationId: HealthController_live
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags: &a4
+        - Health
+  /health/ready:
+    get:
+      operationId: HealthController_ready
+      parameters: []
+      responses:
+        '200':
+          description: The Health Check is successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  info:
+                    type: object
+                    example: &a1
+                      database: &a2
+                        status: up
+                    additionalProperties:
+                      type: object
+                      required:
+                        - status
+                      properties:
+                        status:
+                          type: string
+                      additionalProperties: true
+                    nullable: true
+                  error:
+                    type: object
+                    example: {}
+                    additionalProperties:
+                      type: object
+                      required:
+                        - status
+                      properties:
+                        status:
+                          type: string
+                      additionalProperties: true
+                    nullable: true
+                  details:
+                    type: object
+                    example: *a1
+                    additionalProperties:
+                      type: object
+                      required:
+                        - status
+                      properties:
+                        status:
+                          type: string
+                      additionalProperties: true
+        '503':
+          description: The Health Check is not successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: error
+                  info:
+                    type: object
+                    example: *a1
+                    additionalProperties:
+                      type: object
+                      required:
+                        - status
+                      properties:
+                        status:
+                          type: string
+                      additionalProperties: true
+                    nullable: true
+                  error:
+                    type: object
+                    example:
+                      redis: &a3
+                        status: down
+                        message: Could not connect
+                    additionalProperties:
+                      type: object
+                      required:
+                        - status
+                      properties:
+                        status:
+                          type: string
+                      additionalProperties: true
+                    nullable: true
+                  details:
+                    type: object
+                    example:
+                      database: *a2
+                      redis: *a3
+                    additionalProperties:
+                      type: object
+                      required:
+                        - status
+                      properties:
+                        status:
+                          type: string
+                      additionalProperties: true
+      tags: *a4
+  /health/startup:
+    get:
+      operationId: HealthController_startup
+      parameters: []
+      responses:
+        '200':
+          description: The Health Check is successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  info:
+                    type: object
+                    example: &a5
+                      database: &a6
+                        status: up
+                    additionalProperties:
+                      type: object
+                      required:
+                        - status
+                      properties:
+                        status:
+                          type: string
+                      additionalProperties: true
+                    nullable: true
+                  error:
+                    type: object
+                    example: {}
+                    additionalProperties:
+                      type: object
+                      required:
+                        - status
+                      properties:
+                        status:
+                          type: string
+                      additionalProperties: true
+                    nullable: true
+                  details:
+                    type: object
+                    example: *a5
+                    additionalProperties:
+                      type: object
+                      required:
+                        - status
+                      properties:
+                        status:
+                          type: string
+                      additionalProperties: true
+        '503':
+          description: The Health Check is not successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: error
+                  info:
+                    type: object
+                    example: *a5
+                    additionalProperties:
+                      type: object
+                      required:
+                        - status
+                      properties:
+                        status:
+                          type: string
+                      additionalProperties: true
+                    nullable: true
+                  error:
+                    type: object
+                    example:
+                      redis: &a7
+                        status: down
+                        message: Could not connect
+                    additionalProperties:
+                      type: object
+                      required:
+                        - status
+                      properties:
+                        status:
+                          type: string
+                      additionalProperties: true
+                    nullable: true
+                  details:
+                    type: object
+                    example:
+                      database: *a6
+                      redis: *a7
+                    additionalProperties:
+                      type: object
+                      required:
+                        - status
+                      properties:
+                        status:
+                          type: string
+                      additionalProperties: true
+      tags: *a4
+  /api/v1/auth/register:
+    post:
+      operationId: AuthController_register
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: &a8
+        - Auth
+  /api/v1/auth/oauth/{provider}:
+    post:
+      operationId: AuthController_oauth
+      parameters:
+        - name: provider
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a8
+  /api/v1/auth/login:
+    post:
+      operationId: AuthController_login
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags: *a8
+  /api/v1/auth/refresh:
+    post:
+      operationId: AuthController_refresh
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags: *a8
+  /api/v1/auth/me:
+    get:
+      operationId: AuthController_me
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags: *a8
+  /api/v1/auth/mfa/setup:
+    post:
+      operationId: AuthController_mfaSetup
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags: *a8
+  /api/v1/auth/mfa/verify:
+    post:
+      operationId: AuthController_mfaVerify
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags: *a8
+  /api/v1/auth/mfa/backup-codes/regenerate:
+    post:
+      operationId: AuthController_regenerateBackupCodes
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags: *a8
+  /api/v1/auth/mfa/disable:
+    post:
+      operationId: AuthController_mfaDisable
+      parameters: []
+      responses:
+        '204':
+          description: ''
+      tags: *a8
+  /api/v1/auth/logout:
+    post:
+      operationId: AuthController_logout
+      parameters: []
+      responses:
+        '204':
+          description: ''
+      tags: *a8
+  /api/v1/admin/identity/jwks/rotate:
+    post:
+      operationId: JwksAdminController_rotate
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags: &a9
+        - JwksAdmin
+  /api/v1/admin/identity/jwks/kids:
+    get:
+      operationId: JwksAdminController_kids
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags: *a9
+  /api/v1/trips:
+    post:
+      operationId: TripController_create
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: &a10
+        - Trip
+    get:
+      operationId: TripController_list
+      parameters:
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a10
+  /api/v1/trips/{id}:
+    get:
+      operationId: TripController_getOne
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a10
+    patch:
+      operationId: TripController_update
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a10
+    delete:
+      operationId: TripController_remove
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '204':
+          description: ''
+      tags: *a10
+  /api/v1/trips/{id}/itinerary:
+    post:
+      operationId: TripController_buildItinerary
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a10
+    get:
+      operationId: TripController_getItinerary
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a10
+  /api/v1/trips/{id}/share:
+    post:
+      operationId: TripController_share
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+      tags: *a10
+  /api/v1/trips/shared/{code}:
+    get:
+      operationId: TripController_getSharedTrip
+      parameters:
+        - name: code
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a10
+  /api/v1/trips/{id}/overview:
+    get:
+      operationId: TripController_overview
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a10
+  /api/v1/trips/{id}/eateries:
+    get:
+      operationId: TripController_eateries
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: cuisineTag
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: maxPriceTier
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a10
+  /api/v1/trips/{id}/events:
+    get:
+      operationId: TripController_events
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: category
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a10
+  /api/v1/trips/{id}/stays:
+    get:
+      operationId: TripController_stays
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: guests
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a10
+  /api/v1/trips/{id}/weather:
+    get:
+      operationId: TripController_weather
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a10
+  /api/v1/trips/{id}/shares:
+    get:
+      operationId: TripController_listShares
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a10
+  /api/v1/trips/{id}/share/{code}:
+    delete:
+      operationId: TripController_revokeShare
+      parameters:
+        - name: code
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '204':
+          description: ''
+      tags: *a10
+  /api/v1/trips/{id}/transport-legs:
+    get:
+      operationId: TripController_transportLegs
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a10
+  /api/v1/trips/{tripId}/itinerary/{dayId}:
+    patch:
+      operationId: TripController_updateDay
+      parameters:
+        - name: tripId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: dayId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a10
+  /api/v1/admin/trips:
+    get:
+      operationId: AdminTripsController_list
+      parameters:
+        - name: q
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: status
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: offset
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: &a11
+        - AdminTrips
+  /api/v1/admin/trips/{id}/archive:
+    post:
+      operationId: AdminTripsController_archive
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '204':
+          description: ''
+      tags: *a11
+  /api/v1/admin/trips/{id}:
+    delete:
+      operationId: AdminTripsController_remove
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '204':
+          description: ''
+      tags: *a11
+  /api/v1/places/search:
+    post:
+      operationId: PlacesController_search
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags: &a12
+        - Places
+  /api/v1/places/federated-search:
+    post:
+      operationId: PlacesController_federated
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags: *a12
+  /api/v1/weather/forecast:
+    get:
+      operationId: WeatherController_forecast
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - Weather
+  /api/v1/stays/search:
+    post:
+      operationId: StaysController_search
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - Stays
+  /api/v1/eateries/search:
+    post:
+      operationId: FoodController_search
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - Food
+  /api/v1/events/search:
+    post:
+      operationId: EventsController_search
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - Events
+  /api/v1/transport/routes:
+    post:
+      operationId: TransportController_routes
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - Transport
+  /api/v1/media/upload-url:
+    post:
+      operationId: MediaController_createUploadUrl
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: &a13
+        - Media
+  /api/v1/media/{id}/confirm:
+    post:
+      operationId: MediaController_confirm
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a13
+  /api/v1/media/{id}/download-url:
+    get:
+      operationId: MediaController_downloadUrl
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a13
+  /api/v1/media/{id}/trip:
+    patch:
+      operationId: MediaController_attachToTrip
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a13
+  /api/v1/media/trip/{tripId}:
+    get:
+      operationId: MediaController_listByTrip
+      parameters:
+        - name: tripId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a13
+  /api/v1/media/{id}/memory-book:
+    patch:
+      operationId: MediaController_attachToBook
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a13
+  /api/v1/memory-books/featured:
+    get:
+      operationId: MemoryBookController_featured
+      parameters:
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: &a14
+        - MemoryBook
+  /api/v1/memory-books/public/{id}:
+    get:
+      operationId: MemoryBookController_getPublic
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a14
+  /api/v1/memory-books/public/{id}/assets/{assetId}/download-url:
+    get:
+      operationId: MemoryBookController_getPublicAssetDownloadUrl
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: assetId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a14
+  /api/v1/memory-books:
+    post:
+      operationId: MemoryBookController_create
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: *a14
+    get:
+      operationId: MemoryBookController_list
+      parameters:
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a14
+  /api/v1/memory-books/{id}:
+    get:
+      operationId: MemoryBookController_getOne
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a14
+    patch:
+      operationId: MemoryBookController_update
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a14
+    delete:
+      operationId: MemoryBookController_remove
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '204':
+          description: ''
+      tags: *a14
+  /api/v1/memory-books/{id}/publish:
+    post:
+      operationId: MemoryBookController_publish
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a14
+  /api/v1/memory-books/{id}/unpublish:
+    post:
+      operationId: MemoryBookController_unpublish
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a14
+  /api/v1/admin/media:
+    get:
+      operationId: AdminMediaController_list
+      parameters:
+        - name: ownerId
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: kind
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: status
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: offset
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: &a15
+        - AdminMedia
+  /api/v1/admin/media/{id}:
+    delete:
+      operationId: AdminMediaController_remove
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '204':
+          description: ''
+      tags: *a15
+  /api/v1/notifications/me/unread-count:
+    get:
+      operationId: NotificationsController_unreadCount
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags: &a16
+        - Notifications
+  /api/v1/notifications/me:
+    get:
+      operationId: NotificationsController_listMine
+      parameters:
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: channel
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a16
+  /api/v1/notifications/read-all:
+    post:
+      operationId: NotificationsController_markAllRead
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags: *a16
+  /api/v1/notifications/{id}/read:
+    post:
+      operationId: NotificationsController_markRead
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a16
+  /api/v1/notifications/{id}/unread:
+    post:
+      operationId: NotificationsController_markUnread
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a16
+  /api/v1/notifications/{id}:
+    delete:
+      operationId: NotificationsController_remove
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '204':
+          description: ''
+      tags: *a16
+  /api/v1/admin/places:
+    post:
+      operationId: AdminController_create
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: &a17
+        - Admin
+  /api/v1/admin/places/{id}:
+    delete:
+      operationId: AdminController_remove
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '204':
+          description: ''
+      tags: *a17
+  /api/v1/safety/scam-reports:
+    post:
+      operationId: SafetyController_report
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: &a18
+        - Safety
+  /api/v1/safety/scam-reports/search:
+    post:
+      operationId: SafetyController_search
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags: *a18
+  /api/v1/safety/sos:
+    post:
+      operationId: SosController_trigger
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: &a19
+        - Sos
+    get:
+      operationId: SosController_listMine
+      parameters:
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a19
+  /api/v1/safety/sos/{id}/resolve:
+    post:
+      operationId: SosController_resolve
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a19
+  /api/v1/safety/crimes/search:
+    post:
+      operationId: CrimeLayerController_search
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - CrimeLayer
+  /api/v1/safety/score:
+    post:
+      operationId: SafetyScoreController_score
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - SafetyScore
+  /api/v1/admin/safety/scam-reports:
+    get:
+      operationId: AdminScamModerationController_list
+      parameters:
+        - name: verified
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: &a20
+        - AdminScamModeration
+  /api/v1/admin/safety/scam-reports/{id}/verify:
+    post:
+      operationId: AdminScamModerationController_verify
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a20
+  /api/v1/admin/safety/scam-reports/{id}/unverify:
+    post:
+      operationId: AdminScamModerationController_unverify
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a20
+  /api/v1/admin/safety/scam-reports/{id}:
+    delete:
+      operationId: AdminScamModerationController_dismiss
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '204':
+          description: ''
+      tags: *a20
+  /api/v1/admin/safety/sos-events:
+    get:
+      operationId: AdminSosController_list
+      parameters:
+        - name: status
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: offset
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: &a21
+        - AdminSos
+  /api/v1/admin/safety/sos-events/{id}/resolve:
+    post:
+      operationId: AdminSosController_resolve
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a21
+  /api/v1/trips/{tripId}/votes:
+    post:
+      operationId: SocialController_cast
+      parameters:
+        - name: tripId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: &a22
+        - Social
+    delete:
+      operationId: SocialController_revoke
+      parameters:
+        - name: tripId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '204':
+          description: ''
+      tags: *a22
+    get:
+      operationId: SocialController_list
+      parameters:
+        - name: tripId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a22
+  /api/v1/trips/{tripId}/expenses:
+    post:
+      operationId: ExpensesController_create
+      parameters:
+        - name: tripId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+      tags: &a23
+        - Expenses
+    get:
+      operationId: ExpensesController_list
+      parameters:
+        - name: tripId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a23
+  /api/v1/trips/{tripId}/expenses/balances:
+    get:
+      operationId: ExpensesController_balances
+      parameters:
+        - name: tripId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a23
+  /api/v1/trips/{tripId}/expenses/{id}:
+    delete:
+      operationId: ExpensesController_remove
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '204':
+          description: ''
+      tags: *a23
+  /api/v1/reviews:
+    post:
+      operationId: ReviewsController_create
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: &a24
+        - Reviews
+    get:
+      operationId: ReviewsController_listForTarget
+      parameters:
+        - name: targetType
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: targetId
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a24
+  /api/v1/reviews/summary:
+    get:
+      operationId: ReviewsController_summary
+      parameters:
+        - name: targetType
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: targetId
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a24
+  /api/v1/reviews/mine:
+    get:
+      operationId: ReviewsController_listMine
+      parameters:
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a24
+  /api/v1/reviews/{id}:
+    delete:
+      operationId: ReviewsController_remove
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '204':
+          description: ''
+      tags: *a24
+  /api/v1/votes/summary:
+    get:
+      operationId: VotesController_summary
+      parameters:
+        - name: targetType
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: targetId
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - Votes
+  /api/v1/places/{id}/review-summary:
+    get:
+      operationId: PlaceReviewSummaryController_summary
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - PlaceReviewSummary
+  /api/v1/stays/{id}/review-summary:
+    get:
+      operationId: StayReviewSummaryController_summary
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - StayReviewSummary
+  /api/v1/eateries/{id}/review-summary:
+    get:
+      operationId: EateryReviewSummaryController_summary
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - EateryReviewSummary
+  /api/v1/agents/{id}/review-summary:
+    get:
+      operationId: AgentReviewSummaryController_summary
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - AgentReviewSummary
+  /api/v1/account/export:
+    get:
+      operationId: AccountController_exportMyData
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags: &a25
+        - Account
+  /api/v1/account/export.ndjson:
+    get:
+      operationId: AccountController_exportMyDataNdjson
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags: *a25
+  /api/v1/account:
+    delete:
+      operationId: AccountController_deleteMyAccount
+      parameters: []
+      responses:
+        '204':
+          description: ''
+      tags: *a25
+  /api/v1/admin/users:
+    get:
+      operationId: AdminUsersController_list
+      parameters:
+        - name: role
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: deleted
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: q
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: offset
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: &a26
+        - AdminUsers
+  /api/v1/admin/users/{id}/ban:
+    post:
+      operationId: AdminUsersController_ban
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '204':
+          description: ''
+      tags: *a26
+  /api/v1/admin/users/{id}/unban:
+    post:
+      operationId: AdminUsersController_unban
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '204':
+          description: ''
+      tags: *a26
+  /api/v1/admin/account-purge:
+    post:
+      operationId: AdminPurgeController_forcePurge
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - AdminPurge
+  /api/v1/feed/me:
+    get:
+      operationId: FeedController_me
+      parameters:
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: before
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - Feed
+info:
+  title: TravelSuperApp API
+  description: OpenAPI export from the running NestJS app. Per-route schemas land
+    progressively as @ApiBody / @ApiResponse decorators get added module by
+    module — see docs/api/README.md.
+  version: v1
+  contact: {}
+tags:
+  - name: identity
+    description: Auth, sessions, profile, MFA
+  - name: trip
+    description: Trip CRUD, itinerary, sharing, overview composite
+  - name: media
+    description: Media uploads, memory books
+  - name: social
+    description: Reviews, votes, expenses, balances
+  - name: notifications
+    description: Inbox + delivery channels
+  - name: admin
+    description: Operator-only moderation surfaces
+  - name: account
+    description: GDPR / DPDP / COPPA self-export + delete
+servers: []
+components:
+  securitySchemes:
+    bearer:
+      scheme: bearer
+      bearerFormat: JWT
+      type: http
+      description: 'Access token issued by POST /auth/login or rotated via POST
+        /auth/refresh. Lifetime: 15 minutes (configurable via
+        JWT_ACCESS_EXPIRY).'
+  schemas: {}
