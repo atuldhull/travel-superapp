@@ -10,18 +10,87 @@
 
 ## Summary
 
-| Counter             | Value                                                             |
-| ------------------- | ----------------------------------------------------------------- |
-| Prompts completed   | 99 (98 full + 1 foundation-only; vote tally summary just shipped) |
-| Prompts in progress | 0                                                                 |
-| Prompts blocked     | 0                                                                 |
-| Last prompt         | `[IV.18.12.9]` — cross-trip vote tally summary                    |
-| Last commit date    | 2026-04-25                                                        |
-| Phase               | Phase 1 — vote consumer surface; 65 suites, 443 tests             |
+| Counter             | Value                                                                      |
+| ------------------- | -------------------------------------------------------------------------- |
+| Prompts completed   | 100 (99 full + 1 foundation-only; trip × media overview fold just shipped) |
+| Prompts in progress | 0                                                                          |
+| Prompts blocked     | 0                                                                          |
+| Last prompt         | `[IV.18.12.10]` — trip × media overview fold (7th section)                 |
+| Last commit date    | 2026-04-25                                                                 |
+| Phase               | Phase 1 — trip-detail single round-trip; 66 suites, 447 tests              |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.12.10] — Trip × Media overview fold (7th section)
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.13 (Media & Memory) + 3.2 (Trip Planning)
+
+**What was done**
+
+Folds a `media` section into `GET /trips/:id/overview`, joining the existing 6 sections (itinerary + weather + stays + eateries + events + transport). The trip-detail screen now arrives in one round-trip: clients no longer have to fan out to `/trips/:id/overview` AND `/media?tripId=...` to render the trip + a thumbnail strip.
+
+Section shape: `media: Section<{ count: number; recent: TripMediaSummaryAsset[] }>` — the same `Section<T>` discriminated union that the other 6 sections use, so a media adapter failure degrades to `{ ok: false, code }` without 500-ing the whole bundle. `count` reflects ALL ready rows for the trip+owner; `recent` is capped at 12 (4×3 thumb grid). Clients use `count > recent.length` to render "and N more".
+
+**The Trip↔Media circular dependency.** Media imports Trip for the trip-attach owner gate (existing since `[IV.18.12.2]`). Adding the reverse direction (Trip imports Media for overview) introduces a circular dep that Nest can only resolve via `forwardRef()` on both module imports. The alternative — extracting a shared seam package — would force every cross-module read to live in `packages/...` and dilute the modular-monolith boundary. `forwardRef` is the documented Nest pattern; first cross-module port in the codebase that uses it. The pattern is now precedented for the next time a similar overlay is needed (e.g. Notifications × Trip, Social × Trip aggregations on the dashboard).
+
+The port `TRIP_MEDIA_PORT` is **owned by Trip** (consumer-defined interface) and **implemented by Media** (`TripMediaAdapter` delegates to `MEDIA_ASSET_REPOSITORY` plus a count query). This keeps the dependency graph honest: Trip says what it needs; Media implements it without leaking MediaAsset internals into Trip.
+
+HTTP surface: existing route, expanded payload.
+
+| Route                            | Auth   | What's new                                                          |
+| -------------------------------- | ------ | ------------------------------------------------------------------- |
+| `GET /api/v1/trips/:id/overview` | bearer | Adds `media: { count, recent[] }` section with graceful degradation |
+
+**Files created** (3)
+
+- `apps/api/src/modules/trip/application/ports/trip-media.port.ts` — port owned by Trip. Defines `TripMediaSummary` + `TripMediaSummaryAsset` shapes + `TRIP_MEDIA_PORT` symbol.
+- `apps/api/src/modules/media/infrastructure/trip-media.adapter.ts` — `TripMediaAdapter` implements the port via `Promise.all([listForTripOwner, count])`. Both queries hit existing indexes (`[tripId, createdAt]`, `[ownerId, createdAt]`) — no new index needed.
+- `apps/api/test/trip-overview-media.e2e-spec.ts` — 4 integration tests against real Postgres.
+
+**Files edited** (4)
+
+- `apps/api/src/modules/trip/application/get-trip-overview.use-case.ts` — adds the 7th `section()` call + injects `TRIP_MEDIA_PORT` via `forwardRef`. Recent-list cap is `MEDIA_RECENT_LIMIT = 12`.
+- `apps/api/src/modules/trip/interface/trip.controller.ts` — extends `TripOverviewDto` + the response mapper to include the media section.
+- `apps/api/src/modules/trip/trip.module.ts` — `imports: [..., forwardRef(() => MediaModule)]`.
+- `apps/api/src/modules/media/media.module.ts` — `imports: [forwardRef(() => TripModule)]` + provides + exports `TRIP_MEDIA_PORT` via `TripMediaAdapter`.
+
+**Tests** (4 cases, real-Postgres):
+
+1. Trip with no attached media → media section `ok: true`, `count: 0`, `recent: []`.
+2. Trip with 3 attached ready media (seeded directly via Prisma; the upload→confirm flow is irrelevant to the read aggregator and is covered by `media.e2e-spec`) → `count: 3`, `recent` length 3, sorted desc by createdAt (verified by checking the last seeded id appears first).
+3. Cross-user isolation: Alice has 5 media on her trip; Bob has 2 on his. Each user's overview returns only their own count + recent — verified by looking up each returned media row's `ownerId` against the caller's userId.
+4. Recent list capped at 12: 15 seeded → `count: 15`, `recent.length: 12`. Confirms the count query and the listing query are independent.
+
+**Dependencies** — none new. No Prisma migration — `MediaAsset.tripId` has been on the schema since `[IV.18.12.1]`.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Existing trip-overview suite 5/5 still passes (no regression in the 6 prior sections).
+- ✅ New overview-media suite 4/4 pass.
+- ✅ **Full real-DB + MinIO suite: 66 suites, 447 tests pass against live Docker.** (+1 suite, +4 tests vs. previous baseline.)
+
+**Acceptance criteria**
+
+- ✅ `GET /trips/:id/overview` returns a 7th `media` section.
+- ✅ Section follows the existing `Section<T>` discriminated-union pattern.
+- ✅ Adapter failure degrades gracefully (the existing `section()` wrapper handles it).
+- ✅ Owner-scoped: cross-user IDOR isolation verified end-to-end.
+- ✅ `count` reflects total ready media; `recent` capped at 12.
+- ✅ Trip↔Media circular dep resolved via symmetric `forwardRef()`.
+
+**Notes**
+
+- **Why a port owned by Trip, not a direct call to `ListTripMediaUseCase`.** Reusing the use-case would force its trip-owner gate to run a SECOND time inside the overview (the overview already verifies ownership at the top), redundant DB round-trip for no security gain. Defining a thin port lets Trip ask exactly the question it needs ("summarize the trip's media"), and the adapter trusts the caller to have already gated. Same posture as `transportLegs.computeLegs` (the internal entry point that skips the redundant gate).
+- **Why `forwardRef` and not extracting a shared package.** A `packages/trip-media-port` would be 1 file. Nest's `forwardRef` is also 2 lines per module. The package adds a workspace dep edge + rebuild step + a "where do I put this?" decision for every future cross-module port. `forwardRef` keeps the cross-module port co-located with the consumer module — Trip owns the port file, Media owns the adapter, both files travel with their domain. Extraction is the right move when 5+ ports cross the boundary; today there's exactly one.
+- **Why `count` is a separate query, not `recent.length`.** Recent is capped at 12. A trip with 200 photos would surface as `recent.length === 12` if we conflated them, hiding the actual total. Two queries via `Promise.all` keep the clean signal: "you have 200 photos, here are the 12 most recent". Both queries hit indexes; the cost is ~one extra index lookup, not a full scan.
+- **Why 12 thumbs and not 6 / 24.** 4×3 grid is the standard mobile thumbnail strip; 6 looks sparse on tablets, 24 starts feeling like a separate screen. 12 is the median across iOS Photos, Google Photos, Pinterest, Instagram for "recent" strips. If it's wrong we'll learn from analytics; the constant lives in the use-case so changing it is one line.
+- **Why bypass the upload→confirm flow in tests.** The flow is covered by `media.e2e-spec` + `media-attach-trip.e2e-spec`. This test verifies the read aggregator + the cross-module port wiring + ownership isolation — the upload mechanics are upstream and orthogonal. Direct `prisma.mediaAsset.create` is faster, more deterministic, and exercises the exact rows the adapter would see in production.
+- **First `forwardRef()` cross-module port in the codebase.** Establishes the pattern for future overlays: define the port in the consumer module, implement in the producer module, `forwardRef()` on both module imports, register the symbol via `useClass`. The Trip-overview pattern is now ready for additional sections (Social aggregation summaries on the dashboard, Notifications inbox-preview on the home screen, etc.) when those become product priorities.
 
 ---
 
