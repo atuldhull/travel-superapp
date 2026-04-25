@@ -10,18 +10,90 @@
 
 ## Summary
 
-| Counter             | Value                                                                       |
-| ------------------- | --------------------------------------------------------------------------- |
-| Prompts completed   | 106 (105 full + 1 foundation-only; notifications unread-count just shipped) |
-| Prompts in progress | 0                                                                           |
-| Prompts blocked     | 0                                                                           |
-| Last prompt         | `[IV.18.15.4]` — notifications unread-count badge endpoint                  |
-| Last commit date    | 2026-04-25                                                                  |
-| Phase               | Phase 1 — home-screen badge primitive; 73 suites, 488 tests                 |
+| Counter             | Value                                                                           |
+| ------------------- | ------------------------------------------------------------------------------- |
+| Prompts completed   | 107 (106 full + 1 foundation-only; place review summary composite just shipped) |
+| Prompts in progress | 0                                                                               |
+| Prompts blocked     | 0                                                                               |
+| Last prompt         | `[IV.18.12.11]` — place review summary composite (review + vote + recent)       |
+| Last commit date    | 2026-04-25                                                                      |
+| Phase               | Phase 1 — place detail page bundle; 74 suites, 493 tests                        |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.12.11] — Place review summary composite (review + vote + recent)
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.12 (Social) + 3.3 (Places)
+
+**What was done**
+
+Composite read endpoint for the place detail page: `GET /api/v1/places/:id/review-summary` returns `{ placeId, reviews, votes, recentReviews }` in one round-trip. Bundles three Social aggregations that previously required 3 client-side calls:
+
+- `reviews: { count, average, histogram }` — from `GetReviewSummaryUseCase` (`[IV.18.12.8]`).
+- `votes: { up, meh, down, score }` — from `GetVoteSummaryUseCase` (`[IV.18.12.9]`).
+- `recentReviews: Review[]` — top 5 most-recent reviews from `ListReviewsForTargetUseCase` (`[IV.18.12.5]`).
+
+`@Public()` — same precedent as the underlying `/reviews/summary` and `/votes/summary` endpoints. Empty place → 200 with all-zero shape (NOT 404), continuing the "empty ≠ missing" rule for public aggregation surfaces.
+
+**Architecture: where the composite lives.** Initially planned for PlacesModule so the URL would be `/places/:id/review-summary` — but PlacesModule importing SocialModule would create a cycle (Places → Social → Trip → Places). Resolved by keeping the controller in **SocialModule** and mounting it at `/places/:id/review-summary` — Nest doesn't tie URL prefixes to module boundaries. The owning module is Social because the data + the use-cases are Social's; the URL is Places-flavored because the resource is the place. New durable rule for memory: when an endpoint's natural URL crosses a module that would create a cycle, the URL doesn't have to follow the module structure.
+
+`forwardRef` would have been the alternative — equally valid, slightly noisier. Moving the file is cleaner because there's no actual mutual-dependency need; the composite only reads from Social.
+
+HTTP surface:
+
+| Route                                   | Auth        | What it does                                             |
+| --------------------------------------- | ----------- | -------------------------------------------------------- |
+| `GET /api/v1/places/:id/review-summary` | `@Public()` | Composite of reviews + votes + recent for a single place |
+
+**Files created** (3)
+
+- `apps/api/src/modules/social/application/get-place-review-summary.use-case.ts` — `Promise.all` over the 3 use-cases. Composite returns in roughly the slowest sub-fetch's time, not the sum.
+- `apps/api/src/modules/social/interface/place-review-summary.controller.ts` — single `@Get(':id/review-summary')` `@Public()` route. The controller is `@Controller('places')` — that's how Nest mounts a route at `/places/:id/...` from inside SocialModule.
+- `apps/api/test/place-review-summary.e2e-spec.ts` — 5 integration tests against real Postgres.
+
+**Files edited** (1)
+
+- `apps/api/src/modules/social/social.module.ts` — registers `GetPlaceReviewSummaryUseCase` + `PlaceReviewSummaryController`. Three earlier (and reverted) edits had also tried to export the underlying use-cases for cross-module consumption — backed out once the cycle was identified.
+
+**Tests** (5 cases, real-Postgres):
+
+1. Empty place + no bearer → 200 with `{ count: 0, average: 0, histogram: {1:0..5:0} }`, `{ up: 0, meh: 0, down: 0, score: 0 }`, `recentReviews: []`. Verifies `@Public()` works and zero-fill shape.
+2. Place with 3 reviews (5/4/2) + 3 votes (2 up, 1 down) → correct average (3.67), histogram, vote score, all 3 recent reviews returned.
+3. recentReviews capped at 5 — 7 reviews seeded → `count: 7` but `recentReviews.length: 5`.
+4. Cross-target isolation: 2 reviews on place A → A returns count=2; B returns count=0 + empty recent.
+5. Echoes `placeId` in the response so clients can validate the cursor matches the requested resource.
+
+Tests use a real Place (created via `GeoQueries.insertPlace` since PostGIS is involved) and seed reviews via the public API + votes via direct Prisma (the cast-vote endpoint is gated; read-aggregator tests don't need to exercise the gate).
+
+**Dependencies** — none new. No Prisma migration — every entity has been on the schema since its respective slice.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Place-review-summary suite 5/5 pass.
+- ✅ **Full real-DB + MinIO suite: 74 suites, 493 tests pass against live Docker.** (+1 suite, +5 tests vs. previous baseline.)
+
+**Acceptance criteria**
+
+- ✅ Single endpoint returns review summary + vote summary + recent reviews for a place.
+- ✅ `@Public()` works without bearer.
+- ✅ Empty place → 200 with zero-filled shape.
+- ✅ recentReviews capped at 5; reviews.count reflects all.
+- ✅ Cross-target isolation holds.
+- ✅ No new persistence; pure orchestration over existing use-cases.
+
+**Notes**
+
+- **Why the cycle happened.** PlacesModule importing SocialModule would have created `Places → Social → Trip → Places`. Trip has imported Places since `[IV.18.2.9]` for itinerary-item resolution. The cycle wasn't obvious from the prompt-time plan because each individual edge looked one-way. Lesson: before adding a new module-import edge, walk the existing graph to confirm no cycle. `forwardRef` is always a fallback, but only if the cycle is unavoidable (bidirectional dependency); when the new edge is pure read-side, moving the file is cleaner.
+- **Why move the file rather than `forwardRef`.** `forwardRef` is the right tool for genuine bidirectional dependencies (Trip↔Media in `[IV.18.12.10]` — both modules need each other's exports). Here the composite only needs to _read_ Social's use-cases; Places gains nothing by being the file's home except a more discoverable URL pattern. URL is decoupled from module by design — `@Controller('places')` inside SocialModule routes at `/places/:id/...` cleanly. No reason to take on `forwardRef` overhead.
+- **Why `Promise.all` and not sequential.** Three independent reads against three different Prisma calls. Postgres handles them concurrently with no contention; the composite's wall-clock is `max()` not `sum()`. Same posture as the trip-overview fan-out and the account-export aggregator — established pattern.
+- **Why 5 recent reviews, not 3 or 10.** 5 fits a "what people are saying" panel without overwhelming the place detail page. Clients that want more pages of reviews use the existing `GET /reviews?targetType=&targetId=` endpoint. The constant lives in the use-case; trivial to tune later.
+- **Why echo `placeId` in the response.** Clients sometimes hold multiple in-flight requests for different places; echoing the id lets them route the response to the correct UI without cross-referencing the URL. One field; cheap; defensive.
+- **Pattern: composite read endpoints.** This is the third composite-bundling endpoint shipped (after `[IV.18.7.3]` trip overview + `[IV.18.16.1]` account export). The shape is durable: orchestrator use-case + `Promise.all` + thin controller. Each composite eliminates one or more frontend round-trips, which compounds across screens. Future composites should follow this template.
 
 ---
 
