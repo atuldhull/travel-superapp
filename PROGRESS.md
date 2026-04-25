@@ -10,18 +10,93 @@
 
 ## Summary
 
-| Counter             | Value                                                                      |
-| ------------------- | -------------------------------------------------------------------------- |
-| Prompts completed   | 93 (92 full + 1 foundation-only; Memory Book v1 just shipped)              |
-| Prompts in progress | 0                                                                          |
-| Prompts blocked     | 0                                                                          |
-| Last prompt         | `[IV.18.12.6]` — Memory Book v1 (CRUD + media attach/detach, cascade-safe) |
-| Last commit date    | 2026-04-25                                                                 |
-| Phase               | Phase 1 — Media module now 2 entities; 59 suites, 409 tests                |
+| Counter             | Value                                                                     |
+| ------------------- | ------------------------------------------------------------------------- |
+| Prompts completed   | 94 (93 full + 1 foundation-only; Memory Book publish flow just shipped)   |
+| Prompts in progress | 0                                                                         |
+| Prompts blocked     | 0                                                                         |
+| Last prompt         | `[IV.18.12.7]` — Memory Book publish flow (public read + presigned bytes) |
+| Last commit date    | 2026-04-25                                                                |
+| Phase               | Phase 1 — first public-readable Media surface; 60 suites, 416 tests       |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.12.7] — Memory Book publish flow (public read + presigned bytes from MinIO)
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.13 (Media & Memory)
+
+**What was done**
+
+Closes the Memory Book v1 story by adding the share-with-the-world UX. Owner publishes a book (flips `publishedAt` to `now()`); strangers fetch `GET /memory-books/public/:id` without auth + render the album by hitting per-asset presigned download URLs. Unpublish clears the flag; the public read 404s immediately while already-issued presigned URLs continue to work for their TTL window (S3 contract).
+
+**Design choice: bookId IS the share token.** No new schema column, no separate share-code mint flow. The cuid id has ~130 bits of entropy — unguessable on its own. This is the same security argument behind the existing `TripShare.shareCode` (also opaque random). The advantage: no migration, simpler mental model, same security posture. A future per-share TTL / revocable code can layer on if/when the product needs it.
+
+HTTP surface:
+
+| Route                                                                 | Auth        | What it does                   |
+| --------------------------------------------------------------------- | ----------- | ------------------------------ |
+| `POST   /api/v1/memory-books/:id/publish`                             | owner       | flip `publishedAt = now`       |
+| `POST   /api/v1/memory-books/:id/unpublish`                           | owner       | clear `publishedAt`            |
+| `GET    /api/v1/memory-books/public/:id`                              | `@Public()` | read book (404 if unpublished) |
+| `GET    /api/v1/memory-books/public/:id/assets/:assetId/download-url` | `@Public()` | presigned 5-min download URL   |
+
+- **`apps/api/src/modules/media/application/ports/memory-book.repository.ts`** — adds 3 methods:
+  - `setPublishedAtForOwner(id, ownerId, publishedAt | null)` — owner-scoped update.
+  - `findPublishedById(id)` — public read; only returns rows with `publishedAt IS NOT NULL`.
+  - `findPublishedAssetForBook(bookId, assetId)` — three-clause gate (asset attached + asset ready + book published) in a single Prisma query via the relation filter `memoryBook: { publishedAt: { not: null } }`. Single round-trip.
+- **`apps/api/src/modules/media/infrastructure/prisma-memory-book.repository.ts`** — implements all 3 with the established updateMany-+-count + findFirst patterns.
+- **4 new use-cases**:
+  - `publish-memory-book.use-case.ts` — owner-gated; republishing refreshes the timestamp.
+  - `unpublish-memory-book.use-case.ts` — owner-gated; idempotent (already-unpublished is a success).
+  - `get-published-memory-book.use-case.ts` — public; 404 collapses missing-id + unpublished into one signal.
+  - `get-published-asset-download-url.use-case.ts` — public; calls `STORAGE_PROVIDER.createPresignedDownloadUrl` with 5-min TTL after the repo's three-clause gate.
+- **`apps/api/src/modules/media/interface/memory-book.controller.ts`** — +4 routes. Public routes declared FIRST so Nest's order-of-declaration matcher can't shadow them with the `:id` paths (belt-and-braces — `'public'` is a literal segment so this is technically not required).
+- **`apps/api/src/modules/media/media.module.ts`** — +4 use-case providers.
+
+- **7 integration tests** (`apps/api/test/memory-book-publish.e2e-spec.ts`) against real Postgres + MinIO:
+  1. Public GET on an unpublished book → 404 (no auth needed to probe; book privacy preserved).
+  2. **End-to-end happy path**: publish → public GET succeeds → public download URL → fetch URL → bytes match the original PNG. No bearer needed for any public step.
+  3. Unpublish → public GET 404s; new download URL request 404s; **but** previously-issued presigned URLs still fetch (S3 contract).
+  4. Publish on someone else's book → 404.
+  5. Asking for an asset that isn't attached to the book → 404 (the three-clause gate).
+  6. Public GET response contains NO `ownerId` (privacy invariant — strangers shouldn't enumerate publishers).
+  7. Re-publishing refreshes `publishedAt` (book stays public; timestamp moves forward).
+
+**Files created** (5) — `application/publish-memory-book.use-case.ts`, `application/unpublish-memory-book.use-case.ts`, `application/get-published-memory-book.use-case.ts`, `application/get-published-asset-download-url.use-case.ts`, `test/memory-book-publish.e2e-spec.ts`.
+**Files edited** (3) — `application/ports/memory-book.repository.ts` (+3 methods), `infrastructure/prisma-memory-book.repository.ts` (+impls), `interface/memory-book.controller.ts` (+4 routes + PublicBookDto), `media.module.ts` (+4 use-case providers).
+
+**Dependencies** — none new. No Prisma migration — `publishedAt` column has been on the schema since day one.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Publish suite 7/7 pass — including the unauth'd bytes-out-of-MinIO end-to-end.
+- ✅ **Full real-DB + MinIO suite: 60 suites, 416 tests pass against live Docker.** (+1 suite, +7 tests.)
+
+**Acceptance criteria**
+
+- ✅ Owner can publish + unpublish their own books.
+- ✅ Public GET works without auth on a published book.
+- ✅ Public download-URL works without auth, returns bytes that match the upload.
+- ✅ Unpublish 404s the public GET immediately.
+- ✅ Published presigned URLs continue working for their TTL after unpublish (documented S3 contract).
+- ✅ Public DTO does NOT leak ownerId.
+- ✅ Cross-user publish/unpublish → 404.
+
+**Notes**
+
+- **Why bookId is the share token.** A separate `MemoryBookShare` table would let a single book have multiple revocable codes (à la `TripShare`). For v1 the trade-off doesn't pay off: a book has one canonical "share me" intent, and the cuid id is already 25 chars / ~130 bits of entropy, indistinguishable from a random token. Saved a migration + a join + 4 new endpoints. When the product asks for "give me 3 different shareable links to track who clicked" — that's the slice that introduces the share table. Today it would be over-engineering.
+- **Why public routes go first in the controller.** Nest's route resolver matches in declaration order. `'public'` IS a literal path segment so it would resolve correctly even after `:id`, but declaring public-first makes the intent obvious + protects against a future `@Get('public')` collision when extending. Cheap defensive ordering.
+- **Why already-issued URLs survive unpublish.** S3 (and MinIO) don't ask the issuer's API "is this URL still valid?" on each request — the URL signature is self-validating against the credentials at sign-time. There's no server-side mechanism to revoke an in-flight presigned URL short of rotating the bucket access keys (catastrophic). For v1 the 5-min TTL is the bound; if a creator unpublishes for a privacy reason, they should expect a 5-min "already-clicked-the-link" tail. Documented in the use-case JSDoc + asserted by the test.
+- **Why the public DTO omits ownerId.** A stranger reading a published book shouldn't be able to enumerate the user id of the publisher — that's a privacy-adjacent leak. The owner's `displayName` could legitimately appear ("Published by Alice") but that requires a cross-module Identity lookup, deferred. v1 ships title + theme + cover + publishedAt + createdAt — enough for a clean album header.
+- **Why republish refreshes the timestamp.** A publish-on-already-published is a legitimate user action ("I just added more photos to my Paris album, freshen the share"). The new timestamp lets a future analytics surface ("recently-republished books") track activity. The cost is one extra column write on a re-publish — negligible.
+- **Why the three-clause gate runs in a single Prisma query (not three).** Asset-attached + asset-ready + book-published is a JOIN-style condition that Prisma's relation filter (`memoryBook: { publishedAt: { not: null } }`) compiles to a single SELECT. Three sequential queries would be 3× the latency for a public read that's likely to be hot. Single round-trip + the failure mode (any clause false → null → 404) is identical from outside.
+- **First public-readable Media surface.** The codebase had `GET /trips/shared/:code` since [IV.18.2.13]; this is the second `@Public()` route + the first one that streams bytes from object storage to unauthenticated clients. The `@Public()` decorator + `JwtAuthGuard` skip pattern from Identity has now been validated for two distinct domains.
+- **Memory Book primitive is now functionally complete.** CRUD, attach/detach, publish/unpublish, public read, public asset download. Memory-book → printed-book / PDF-export / collaborative editing remain follow-ups but the v1 publish-album-of-photos UX is fully shippable.
 
 ---
 
