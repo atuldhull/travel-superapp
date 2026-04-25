@@ -26,9 +26,13 @@ export interface ExpenseRepository {
   /** Most-recent-first. `limit` clamped by caller. */
   listForTrip(tripId: string, limit: number): Promise<readonly Expense[]>;
   findById(id: string): Promise<Expense | null>;
-  /** Delete a row the caller paid for. Returns `true` iff a row
-   *  was actually removed. Use-case maps `false` to 404. */
-  deleteForPayer(id: string, paidById: string): Promise<boolean>;
+  /** Delete a row the caller paid for. Returns `{ tripId }` of
+   *  the deleted row on success (so the caller can invalidate
+   *  trip-scoped caches), or `null` when no row was removed
+   *  (use-case maps `null` to 404). Signature widened in
+   *  `[IV.18.10.4]` to support trip-balances cache invalidation
+   *  without an extra `findById` round-trip. */
+  deleteForPayer(id: string, paidById: string): Promise<{ tripId: string } | null>;
 }
 
 export const EXPENSE_REPOSITORY = Symbol('ExpenseRepository');

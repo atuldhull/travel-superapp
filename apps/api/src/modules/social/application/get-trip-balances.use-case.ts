@@ -32,8 +32,14 @@ import {
   type TripShareRepository,
 } from '../../trip/application/ports/trip-share.repository';
 import type { UserBalance } from '../domain/expense.entity';
+import { TripBalancesCache } from '../infrastructure/trip-balances-cache';
 import { assertCanVote as assertTripAccess } from './cast-vote.use-case';
 import { EXPENSE_REPOSITORY, type ExpenseRepository } from './ports/expense.repository';
+
+/** 5 minutes — short enough that a missed invalidation
+ *  self-heals quickly; long enough that the cache actually
+ *  pays off on a screen that polls or re-renders. */
+const TRIP_BALANCES_CACHE_TTL_SECONDS = 300;
 
 export interface GetTripBalancesCommand {
   readonly tripId: string;
@@ -46,15 +52,29 @@ export class GetTripBalancesUseCase {
     @Inject(EXPENSE_REPOSITORY) private readonly expenses: ExpenseRepository,
     @Inject(TRIP_REPOSITORY) private readonly trips: TripRepository,
     @Inject(TRIP_SHARE_REPOSITORY) private readonly shares: TripShareRepository,
+    @Inject(TripBalancesCache) private readonly cache: TripBalancesCache,
   ) {}
 
   async execute(cmd: GetTripBalancesCommand): Promise<readonly UserBalance[]> {
+    // Auth gate runs BEFORE cache read so a stranger probing
+    // a guessed tripId can't pull a cached result. Same
+    // posture trip-overview uses for ownership.
     await assertTripAccess(this.trips, this.shares, cmd.tripId, cmd.userId);
+
+    const cached = await this.cache.get(cmd.tripId);
+    if (cached !== null) return cached;
+
+    const fresh = await this.compute(cmd.tripId);
+    await this.cache.set(cmd.tripId, fresh, TRIP_BALANCES_CACHE_TTL_SECONDS);
+    return fresh;
+  }
+
+  private async compute(tripId: string): Promise<readonly UserBalance[]> {
     // Pull every expense in one go — the aggregate math is
     // per-trip, not per-query, so fetching all rows once and
     // computing in JS is simpler than N GROUP BYs. 500 cap from
     // the repo is the safety rail.
-    const rows = await this.expenses.listForTrip(cmd.tripId, 500);
+    const rows = await this.expenses.listForTrip(tripId, 500);
 
     // Work in cents (2-dp × 100) to avoid float drift. All
     // amounts are 2-dp fixed strings already.

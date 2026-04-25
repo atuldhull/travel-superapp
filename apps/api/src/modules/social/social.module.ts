@@ -37,6 +37,7 @@ import { RevokeVoteUseCase } from './application/revoke-vote.use-case';
 import { PrismaExpenseRepository } from './infrastructure/prisma-expense.repository';
 import { PrismaReviewRepository } from './infrastructure/prisma-review.repository';
 import { PrismaVoteRepository } from './infrastructure/prisma-vote.repository';
+import { TripBalancesCache } from './infrastructure/trip-balances-cache';
 import { EateryReviewSummaryController } from './interface/eatery-review-summary.controller';
 import { ExpensesController } from './interface/expenses.controller';
 import { PlaceReviewSummaryController } from './interface/place-review-summary.controller';
@@ -74,6 +75,7 @@ import { VotesController } from './interface/votes.controller';
     GetReviewSummaryUseCase,
     GetVoteSummaryUseCase,
     GetReviewBundleForTargetUseCase,
+    TripBalancesCache,
   ],
   exports: [VOTE_REPOSITORY, EXPENSE_REPOSITORY, REVIEW_REPOSITORY],
 })

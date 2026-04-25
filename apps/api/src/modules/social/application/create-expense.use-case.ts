@@ -29,6 +29,7 @@ import {
   type TripShareRepository,
 } from '../../trip/application/ports/trip-share.repository';
 import type { Expense, SplitShareMap } from '../domain/expense.entity';
+import { TripBalancesCache } from '../infrastructure/trip-balances-cache';
 import { assertCanVote as assertTripAccess } from './cast-vote.use-case';
 import { EXPENSE_REPOSITORY, type ExpenseRepository } from './ports/expense.repository';
 
@@ -52,12 +53,13 @@ export class CreateExpenseUseCase {
     @Inject(EXPENSE_REPOSITORY) private readonly expenses: ExpenseRepository,
     @Inject(TRIP_REPOSITORY) private readonly trips: TripRepository,
     @Inject(TRIP_SHARE_REPOSITORY) private readonly shares: TripShareRepository,
+    @Inject(TripBalancesCache) private readonly balancesCache: TripBalancesCache,
   ) {}
 
   async execute(cmd: CreateExpenseCommand): Promise<Expense> {
     this.validate(cmd);
     await assertTripAccess(this.trips, this.shares, cmd.tripId, cmd.payerId);
-    return this.expenses.create({
+    const expense = await this.expenses.create({
       tripId: cmd.tripId,
       paidById: cmd.payerId,
       amountUsd: cmd.amountUsd,
@@ -65,6 +67,10 @@ export class CreateExpenseUseCase {
       note: cmd.note,
       splitShare: cmd.splitShare,
     });
+    // Invalidate the trip-balances cache so the next read
+    // recomputes against the new expense set.
+    await this.balancesCache.del(cmd.tripId);
+    return expense;
   }
 
   private validate(cmd: CreateExpenseCommand): void {

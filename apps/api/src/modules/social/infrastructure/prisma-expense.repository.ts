@@ -48,14 +48,22 @@ export class PrismaExpenseRepository implements ExpenseRepository {
     return row ? toDomain(row) : null;
   }
 
-  async deleteForPayer(id: string, paidById: string): Promise<boolean> {
-    // Scoped deleteMany — atomic "remove only if I paid for it"
-    // check. count=0 means either the id is missing or the caller
-    // isn't the payer; both collapse to 404 at the use-case.
+  async deleteForPayer(id: string, paidById: string): Promise<{ tripId: string } | null> {
+    // findFirst before delete so we can return the tripId for
+    // cache invalidation without an extra round-trip after the
+    // row is gone. The combined where-clause (`id, paidById`)
+    // keeps the IDOR guarantee intact: a stranger reading via
+    // findFirst can't see someone else's expense.
+    const row = await this.prisma.expense.findFirst({
+      where: { id, paidById },
+      select: { tripId: true },
+    });
+    if (!row) return null;
     const result = await this.prisma.expense.deleteMany({
       where: { id, paidById },
     });
-    return result.count === 1;
+    if (result.count !== 1) return null;
+    return { tripId: row.tripId };
   }
 }
 

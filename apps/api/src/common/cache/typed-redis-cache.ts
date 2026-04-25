@@ -109,6 +109,31 @@ export abstract class TypedRedisCache<T> implements OnModuleDestroy {
     }
   }
 
+  /**
+   * Invalidate a cached key. No-op when the key is absent.
+   * Used by write paths whose freshness contract requires the
+   * next read to bypass the cache (e.g. trip-balances after an
+   * expense write — `[IV.18.10.4]`). Most cache consumers are
+   * TTL-only and never call this.
+   *
+   * Swallows on failure: a cache invalidation failure is
+   * recoverable on the next TTL expiry; we don't want to fail
+   * the originating write because Redis is down.
+   *
+   * Added by `[IV.18.10.4]`.
+   */
+  async del(key: string): Promise<void> {
+    try {
+      await this.ensureConnected();
+      await this.redis.del(this.keyPrefix + key);
+    } catch (err) {
+      this.log.warn(
+        { err: err instanceof Error ? err.message : String(err) },
+        `${this.namespace}_cache_del_failed`,
+      );
+    }
+  }
+
   async onModuleDestroy(): Promise<void> {
     try {
       await this.redis.quit();
