@@ -1,0 +1,43 @@
+# Anything that isn't needed for the build — keeps the COPY . .
+# layer in the builder stage small and fast.
+#
+# Installed by prompt [IV.18.19.6].
+
+**/node_modules
+**/dist
+**/.turbo
+**/.next
+**/coverage
+**/*.log
+
+# Dev-only files
+**/.env*
+**/*.local
+.git
+.github
+.husky
+.vscode
+.idea
+.DS_Store
+
+# Tests + fixtures
+**/test
+**/__tests__
+**/*.spec.ts
+**/*.test.ts
+
+# Other apps' build output that the api doesn't need.
+apps/web
+apps/mobile
+apps/ai-service
+
+# Storybook / preview artifacts
+**/storybook-static
+
+# Docker artifacts
+**/Dockerfile
+**/.dockerignore
+
+# Documentation that doesn't ship in the runtime image
+docs
+*.md
