@@ -1,24 +1,33 @@
 /**
  * Notifications HTTP surface.
  *
- *   GET  /api/v1/notifications/me       — list the authed user's
- *                                         recent deliveries.
- *   POST /api/v1/notifications/:id/read — flip `read = true` on
- *                                         a notification the caller
- *                                         owns. Idempotent.
- *   POST /api/v1/notifications/read-all — flip `read = true` on
- *                                         every unread row for the
- *                                         caller. Returns
- *                                         `{ marked }`. Idempotent.
+ *   GET  /api/v1/notifications/me              — list the authed
+ *                                                user's recent
+ *                                                deliveries.
+ *   GET  /api/v1/notifications/me/unread-count  — `{ unread: N }`
+ *                                                badge primitive
+ *                                                without paginating
+ *                                                the inbox.
+ *   POST /api/v1/notifications/:id/read         — flip `read = true`
+ *                                                on a notification
+ *                                                the caller owns.
+ *                                                Idempotent.
+ *   POST /api/v1/notifications/read-all         — flip `read = true`
+ *                                                on every unread row
+ *                                                for the caller.
+ *                                                Returns `{ marked }`.
+ *                                                Idempotent.
  *
  * Per-channel filtering lands in a follow-up slice. Any future
  * "mark-as-unread" verb belongs here too.
  *
  * Installed by prompt [IV.18.15.1]. `POST /:id/read` added in
  * [IV.18.15.2]. `POST /read-all` added in [IV.18.15.3].
+ * `GET /me/unread-count` added in [IV.18.15.4].
  */
 import { Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from '@nestjs/common';
 import { type AuthenticatedUser, CurrentUser } from '../../../common/auth';
+import { GetUnreadCountUseCase } from '../application/get-unread-count.use-case';
 import { ListMyNotificationsUseCase } from '../application/list-my-notifications.use-case';
 import { MarkAllNotificationsReadUseCase } from '../application/mark-all-notifications-read.use-case';
 import { MarkNotificationReadUseCase } from '../application/mark-notification-read.use-case';
@@ -54,7 +63,20 @@ export class NotificationsController {
     private readonly listUc: ListMyNotificationsUseCase,
     private readonly markReadUc: MarkNotificationReadUseCase,
     private readonly markAllReadUc: MarkAllNotificationsReadUseCase,
+    private readonly unreadCountUc: GetUnreadCountUseCase,
   ) {}
+
+  /**
+   * Declared BEFORE `me` — Nest matches in declaration order, and
+   * `me/unread-count` is a more specific path that should land
+   * here, not on the `me` lister. Defensive ordering even though
+   * Nest's path matcher would resolve segment counts correctly.
+   */
+  @Get('me/unread-count')
+  @HttpCode(HttpStatus.OK)
+  async unreadCount(@CurrentUser() user: AuthenticatedUser): Promise<{ unread: number }> {
+    return this.unreadCountUc.execute(user.sub);
+  }
 
   @Get('me')
   @HttpCode(HttpStatus.OK)

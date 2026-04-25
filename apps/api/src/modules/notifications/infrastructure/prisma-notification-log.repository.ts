@@ -77,6 +77,16 @@ export class PrismaNotificationLogRepository implements NotificationLogRepositor
     });
     return result.count;
   }
+
+  async countUnreadForUser(userId: string): Promise<number> {
+    // Same `[userId, read, createdAt]` index as markAllReadForUser.
+    // Postgres `count` on an indexed-prefix `where` is O(log n) +
+    // a heap-only-tuple scan of the matching range — cheap even
+    // at large inbox sizes.
+    return this.prisma.notificationLog.count({
+      where: { userId, read: false },
+    });
+  }
 }
 
 function toDomain(row: PrismaNotificationLog): NotificationLog {

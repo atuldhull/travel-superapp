@@ -49,6 +49,15 @@ export interface NotificationLogRepository {
    * count, not total inbox size.
    */
   markAllReadForUser(userId: string): Promise<number>;
+  /**
+   * Count unread notifications for the caller. Single indexed
+   * Prisma `count` — hits the existing `[userId, read, createdAt]`
+   * index. Drives the home-screen unread badge: clients render
+   * "5" without paginating the inbox.
+   *
+   * Added by `[IV.18.15.4]`.
+   */
+  countUnreadForUser(userId: string): Promise<number>;
 }
 
 export const NOTIFICATION_LOG_REPOSITORY = Symbol('NotificationLogRepository');
