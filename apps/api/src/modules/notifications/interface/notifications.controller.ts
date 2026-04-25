@@ -31,6 +31,7 @@ import { GetUnreadCountUseCase } from '../application/get-unread-count.use-case'
 import { ListMyNotificationsUseCase } from '../application/list-my-notifications.use-case';
 import { MarkAllNotificationsReadUseCase } from '../application/mark-all-notifications-read.use-case';
 import { MarkNotificationReadUseCase } from '../application/mark-notification-read.use-case';
+import { MarkNotificationUnreadUseCase } from '../application/mark-notification-unread.use-case';
 import type { NotificationLog } from '../domain/notification-log.entity';
 
 interface NotificationLogDto {
@@ -64,6 +65,7 @@ export class NotificationsController {
     private readonly markReadUc: MarkNotificationReadUseCase,
     private readonly markAllReadUc: MarkAllNotificationsReadUseCase,
     private readonly unreadCountUc: GetUnreadCountUseCase,
+    private readonly markUnreadUc: MarkNotificationUnreadUseCase,
   ) {}
 
   /**
@@ -109,6 +111,16 @@ export class NotificationsController {
     @Param('id') id: string,
   ): Promise<NotificationLogDto> {
     const row = await this.markReadUc.execute({ id, userId: user.sub });
+    return toDto(row);
+  }
+
+  @Post(':id/unread')
+  @HttpCode(HttpStatus.OK)
+  async markUnread(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ): Promise<NotificationLogDto> {
+    const row = await this.markUnreadUc.execute({ id, userId: user.sub });
     return toDto(row);
   }
 }

@@ -87,6 +87,20 @@ export class PrismaNotificationLogRepository implements NotificationLogRepositor
       where: { userId, read: false },
     });
   }
+
+  async markUnreadForUser(id: string, userId: string): Promise<NotificationLog | null> {
+    // Symmetric to `markReadForUser`. Same `updateMany` + count
+    // gate; owner-scoped on `(id, userId)` for IDOR safety. Already-
+    // unread rows still get count=1 (Postgres updates the row even
+    // when values match), so the operation is idempotent.
+    const result = await this.prisma.notificationLog.updateMany({
+      where: { id, userId },
+      data: { read: false },
+    });
+    if (result.count !== 1) return null;
+    const row = await this.prisma.notificationLog.findUnique({ where: { id } });
+    return row ? toDomain(row) : null;
+  }
 }
 
 function toDomain(row: PrismaNotificationLog): NotificationLog {

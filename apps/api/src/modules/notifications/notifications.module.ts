@@ -29,6 +29,7 @@ import { GetUnreadCountUseCase } from './application/get-unread-count.use-case';
 import { ListMyNotificationsUseCase } from './application/list-my-notifications.use-case';
 import { MarkAllNotificationsReadUseCase } from './application/mark-all-notifications-read.use-case';
 import { MarkNotificationReadUseCase } from './application/mark-notification-read.use-case';
+import { MarkNotificationUnreadUseCase } from './application/mark-notification-unread.use-case';
 import { NOTIFICATION_LOG_REPOSITORY } from './application/ports/notification-log.repository';
 import { NOTIFICATION_SENDER } from './application/ports/notification-sender';
 import { LoggingNotificationSender } from './infrastructure/logging-notification-sender';
@@ -50,6 +51,7 @@ import { NotificationsController } from './interface/notifications.controller';
     MarkNotificationReadUseCase,
     MarkAllNotificationsReadUseCase,
     GetUnreadCountUseCase,
+    MarkNotificationUnreadUseCase,
   ],
   exports: [NOTIFICATION_SENDER, NOTIFICATION_LOG_REPOSITORY, LoggingNotificationSender],
 })
