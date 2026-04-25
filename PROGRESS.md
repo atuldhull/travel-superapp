@@ -10,18 +10,73 @@
 
 ## Summary
 
-| Counter             | Value                                                                          |
-| ------------------- | ------------------------------------------------------------------------------ |
-| Prompts completed   | 108 (107 full + 1 foundation-only; stay review summary composite just shipped) |
-| Prompts in progress | 0                                                                              |
-| Prompts blocked     | 0                                                                              |
-| Last prompt         | `[IV.18.6.5]` — stay review summary composite + use-case generalization        |
-| Last commit date    | 2026-04-25                                                                     |
-| Phase               | Phase 1 — composite generalized for any review-target; 75 suites, 497 tests    |
+| Counter             | Value                                                                            |
+| ------------------- | -------------------------------------------------------------------------------- |
+| Prompts completed   | 109 (108 full + 1 foundation-only; eatery review summary composite just shipped) |
+| Prompts in progress | 0                                                                                |
+| Prompts blocked     | 0                                                                                |
+| Last prompt         | `[IV.18.7.7]` — eatery review summary composite                                  |
+| Last commit date    | 2026-04-25                                                                       |
+| Phase               | Phase 1 — composite at 3-of-4 review-target resources; 76 suites, 501 tests      |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.7.7] — Eatery review summary composite
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.7 (Food) + 3.12 (Social)
+
+**What was done**
+
+Adds `GET /api/v1/eateries/:id/review-summary` — third resource on the generalized review-bundle composite, after place (`[IV.18.12.11]`) and stay (`[IV.18.6.5]`). Same orchestrator (`GetReviewBundleForTargetUseCase`), same DTO shape, same `@Public()` posture. Eateries don't track votes today, so the votes block returns all zeros via the same map the stay path uses.
+
+**Pattern proof.** This slice is the validation that the generalized-composite shape codified in `[IV.18.6.5]` is genuinely cheap to extend: 1 controller file + 1 module-list diff + 1 test file. No use-case changes, no new DTO. The fourth/final v1 resource (agent) would be the same template if/when that comes.
+
+HTTP surface:
+
+| Route                                     | Auth        | What it does                                            |
+| ----------------------------------------- | ----------- | ------------------------------------------------------- |
+| `GET /api/v1/eateries/:id/review-summary` | `@Public()` | Composite bundle for an eatery; votes always zero today |
+
+**Files created** (2)
+
+- `apps/api/src/modules/social/interface/eatery-review-summary.controller.ts` — clone of stay controller, swapped `'stay'` → `'eatery'` and `stayId` → `eateryId`. Mounted at `/eateries/:id/review-summary` despite living in SocialModule (URL-vs-module-boundary decoupling rule).
+- `apps/api/test/eatery-review-summary.e2e-spec.ts` — 4 integration tests against real Postgres, mirrors stay test.
+
+**Files edited** (1)
+
+- `apps/api/src/modules/social/social.module.ts` — registers `EateryReviewSummaryController`.
+
+**Tests** (4 cases, real-Postgres):
+
+1. Empty eatery + no bearer → 200 with all-zero shape; votes always zero.
+2. Eatery with 3 reviews (5/4/2) → average 3.67, correct histogram, all 3 recent reviews. Votes block stays all zeros.
+3. Cross-target isolation between two eateries.
+4. **Cross-targetType isolation across all 3 resource types**: same opaque id used for eatery + stay + place. Eatery endpoint returns count=1; both stay and place return count=0. Strongest version of the cross-targetType invariant — proves the use-case correctly partitions by `targetType` across all three currently-supported resources.
+
+**Dependencies** — none new. No Prisma migration — Eatery model has been on the schema since `[IV.18.7.1]`.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Eatery-review-summary suite 4/4 pass.
+- ✅ **Full real-DB + MinIO suite: 76 suites, 501 tests pass against live Docker.** (+1 suite, +4 tests vs. previous baseline.) Crossed the 500-test threshold.
+
+**Acceptance criteria**
+
+- ✅ `/eateries/:id/review-summary` returns composite bundle.
+- ✅ Same DTO shape as `/places/:id/review-summary` + `/stays/:id/review-summary` (only id field name differs).
+- ✅ Votes block zero-filled for eateries (correct: no vote rows reference eatery targets today).
+- ✅ Cross-targetType isolation verified across place + stay + eatery.
+
+**Notes**
+
+- **Pattern stability validated.** Three resources (place + stay + eatery), same generalized use-case, same DTO mapper. The cost-per-resource is now empirically known: 2 files. The fourth resource (agent) — if/when product asks — slots in identically. This is exactly the payoff that the `[IV.18.6.5]` generalization promised: composite expansion without use-case duplication.
+- **Why include the cross-targetType isolation test for all 3 types.** The single-pair version (in stay test, with stay+place) already covered the bug class. Adding the triple here is defensive: if a future refactor accidentally collapsed two targetTypes into a shared filter, the triple-isolation test catches it where the pair test might not. Cheap insurance.
+- **500-test milestone.** The suite crossed 500 tests at this slice (501 total). All real-Docker (no mocks for the things that matter — Postgres + Redis + MinIO are live containers throughout). Worth flagging in the phase counter as a quality signal.
 
 ---
 
