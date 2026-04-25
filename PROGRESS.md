@@ -12,16 +12,74 @@
 
 | Counter             | Value                                                                           |
 | ------------------- | ------------------------------------------------------------------------------- |
-| Prompts completed   | 132 (131 full + 1 foundation-only; bundled k6 scaffold + Dockerfile + runbook)  |
+| Prompts completed   | 134 (133 full + 1 foundation-only; bundled 4 ADRs + 2 ops runbooks)             |
 | Prompts in progress | 0                                                                               |
 | Prompts blocked     | 0                                                                               |
-| Last prompt         | `[IV.18.19.6]` — production multistage Dockerfile (bundled with `[IV.18.19.5]`) |
+| Last prompt         | `[IV.18.19.8]` — secrets + env-reference runbooks (bundled with `[IV.18.19.7]`) |
 | Last commit date    | 2026-04-26                                                                      |
-| Phase               | Phase 1 — deployment-readiness wave: load-test rig + container image            |
+| Phase               | Phase 1 — deployment-readiness wave: ADR catalog filled + secrets/env runbooks  |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.19.8] — Secrets + env-reference runbooks (bundled with `[IV.18.19.7]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 12.3 (CI/CD) + §9 (Security)
+
+**What was done**
+
+Two ops docs that fill the gap between CLAUDE.md's "secrets in Doppler" rule and the actual deploy story:
+
+**`docs/runbooks/secrets.md`** (new) — Doppler architecture diagram (per-env configs), laptop bootstrap commands (`doppler login` + `doppler setup`), per-environment injection table (local / CI / preview / staging / prod), rotation cadence per secret class (JWT routine vs. pepper migration vs. provider-driven), the dual-hash pepper rotation flow for `EMAIL_PEPPER` / `BACKUP_CODE_PEPPER`, breakglass procedure for when Doppler itself is unreachable, and "what is NOT a secret" to right-size handling.
+
+**`docs/runbooks/env-reference.md`** (new) — every env var documented from `packages/config/src/schema.ts`: required-vs-optional, type constraints, default, what-it-does. 15 required vars (boot-fails-without), ~25 optional gates. `openssl` one-liners for generating dev-quality values. Honest "this doc isn't auto-verified against the schema — schema wins" caveat for future maintainers.
+
+Both files cross-reference each other, the source-of-truth schema, the Dockerfile runbook from `[IV.18.19.6]`, and the relevant ADRs. CLAUDE.md rule 5 ("no secrets") gets concrete operational backing.
+
+**Files**
+
+- `docs/runbooks/secrets.md` (new)
+- `docs/runbooks/env-reference.md` (new)
+
+**Combined verification (both bundled slices)**
+
+`pnpm --filter=api typecheck` green. Full integration suite: **93 passed, 578 passed** — pure docs, baseline unchanged.
+
+**Commits**
+
+- `41f0e9d` — feat(IV.18.19.8) secrets management + env-reference runbooks
+
+---
+
+### [IV.18.19.7] — Four ADRs codifying post-Phase-0 patterns (bundled with `[IV.18.19.8]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** all (architectural patterns)
+
+**What was done**
+
+Original autopilot plan was "5 ADRs (modular monolith / EventBus / observability / TypedRedisCache / owner-scoped updateMany)" — but `ADR-001..010` already cover the first three. Pivoted to write the four that filled real gaps:
+
+**`ADR-011 — TypedRedisCache shared base + write-invalidated subset`** — codifies the abstract-class-not-factory choice from `[IV.18.8.1]`, the per-instance Redis client failure-domain rule, the swallow-and-log error posture, and the static-instance registry pattern that lets prom-client metrics (`[IV.18.10.6]`) auto-discover every cache.
+
+**`ADR-012 — Owner-scoped updateMany + count gate`** — ratifies the IDOR-safe write pattern that now appears in 30+ adapter methods. Variants table covers standard owner-scoped writes, deletes, bulk writes, atomic-state transitions, admin (no-owner) writes, and cross-module bidirectional writes.
+
+**`ADR-013 — Per-section graceful degradation`** — `Section<T>` discriminated union + `section()` wrapper + `GracefulSkip` marker class. Dashboard never 500s because one panel failed. Pattern reused across trip-overview (7 sections) + review-bundle composite (3 sections).
+
+**`ADR-014 — Admin endpoints in the owning module`** — locality-of-reasoning + bounded-context preservation. Seven admin verbs across six modules; AdminModule keeps only genuinely cross-cutting work (purge scheduler, JWKS rotation).
+
+**Files**
+
+- `docs/adr/ADR-011-typed-redis-cache-base.md` (new)
+- `docs/adr/ADR-012-owner-scoped-updatemany-pattern.md` (new)
+- `docs/adr/ADR-013-section-graceful-degradation.md` (new)
+- `docs/adr/ADR-014-admin-in-owning-module.md` (new)
+
+**Commits**
+
+- `26aff2d` — feat(IV.18.19.7) four ADRs codifying patterns that emerged after ADR-001..010
 
 ---
 
