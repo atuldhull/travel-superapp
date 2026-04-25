@@ -58,6 +58,17 @@ export interface NotificationLogRepository {
    * Added by `[IV.18.15.4]`.
    */
   countUnreadForUser(userId: string): Promise<number>;
+  /**
+   * Symmetric companion to `markReadForUser` — flips `read = false`
+   * on a row the caller owns. Returns the updated row, or `null`
+   * when the id is unknown OR owned by a different user (the
+   * use-case collapses both to a single 404 for IDOR safety).
+   * Idempotent: re-marking an already-unread row still returns
+   * the row.
+   *
+   * Added by `[IV.18.15.5]`.
+   */
+  markUnreadForUser(id: string, userId: string): Promise<NotificationLog | null>;
 }
 
 export const NOTIFICATION_LOG_REPOSITORY = Symbol('NotificationLogRepository');
