@@ -127,6 +127,16 @@ export class PrismaMediaAssetRepository implements MediaAssetRepository {
     const result = await this.prisma.mediaAsset.deleteMany({ where: { id } });
     return result.count === 1;
   }
+
+  async listAllS3Keys(): Promise<ReadonlySet<string>> {
+    // Single SELECT of just the s3KeyRaw column — cheap even at
+    // moderate inbox sizes. The orphan-sweep cron consumes this
+    // as a Set so the per-key membership check is O(1).
+    const rows = await this.prisma.mediaAsset.findMany({
+      select: { s3KeyRaw: true },
+    });
+    return new Set(rows.map((r) => r.s3KeyRaw));
+  }
 }
 
 function toDomain(row: PrismaMediaAsset): MediaAsset {

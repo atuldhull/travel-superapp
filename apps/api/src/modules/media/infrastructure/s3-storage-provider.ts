@@ -21,9 +21,11 @@
  */
 import {
   CreateBucketCommand,
+  DeleteObjectCommand,
   GetObjectCommand,
   HeadBucketCommand,
   HeadObjectCommand,
+  ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
@@ -91,6 +93,63 @@ export class S3StorageProvider implements StorageProvider, OnModuleInit {
     throw new Error(`Unexpected HeadObject status ${res.status}`);
   }
 
+  /**
+   * Paginates ListObjectsV2 until `IsTruncated=false`. Returns
+   * every key in the bucket. Same presign-then-fetch pattern as
+   * the rest of this adapter so the AWS SDK's dynamic-import path
+   * never executes (Jest VM compatibility).
+   *
+   * Response is `application/xml`; we extract `<Key>` elements
+   * with a narrow regex rather than pulling in a full XML parser
+   * — the response schema is locked by the S3 spec, and the
+   * extraction shape ("everything between `<Key>` tags") is
+   * trivially safe for keys that S3 itself accepts.
+   *
+   * Continuation token is XML-encoded; we URL-encode it for the
+   * next request. Page size is bounded by S3 at 1000.
+   */
+  async listAllKeys(): Promise<readonly string[]> {
+    const keys: string[] = [];
+    let continuationToken: string | undefined;
+    // Hard upper bound to make the loop unconditionally terminating
+    // even if a malformed response somehow lacked an IsTruncated
+    // close. 1M keys is several lifetimes of v1 traffic.
+    for (let page = 0; page < 1000; page++) {
+      const cmd = new ListObjectsV2Command({
+        Bucket: this.bucket,
+        ...(continuationToken !== undefined ? { ContinuationToken: continuationToken } : {}),
+      });
+      const url = await getSignedUrl(this.client, cmd, { expiresIn: INTERNAL_SIG_TTL_SEC });
+      const res = await fetch(url, { method: 'GET' });
+      if (!res.ok) {
+        throw new Error(`ListObjectsV2 status ${res.status}`);
+      }
+      const body = await res.text();
+      const pageKeys = extractXmlElements(body, 'Key');
+      keys.push(...pageKeys);
+      const truncated = extractXmlElements(body, 'IsTruncated')[0] === 'true';
+      if (!truncated) return keys;
+      const nextToken = extractXmlElements(body, 'NextContinuationToken')[0];
+      if (nextToken === undefined) return keys;
+      continuationToken = nextToken;
+    }
+    log.warn(
+      { bucket: this.bucket, pages: 1000 },
+      'list_all_keys_hit_safety_cap_returning_partial',
+    );
+    return keys;
+  }
+
+  async deleteObject(key: string): Promise<void> {
+    const cmd = new DeleteObjectCommand({ Bucket: this.bucket, Key: key });
+    const url = await getSignedUrl(this.client, cmd, { expiresIn: INTERNAL_SIG_TTL_SEC });
+    const res = await fetch(url, { method: 'DELETE' });
+    // S3 returns 204 for both "deleted" and "didn't exist" — both
+    // are success from our caller's POV (idempotent semantics).
+    if (res.status === 204 || res.ok) return;
+    throw new Error(`DeleteObject status ${res.status}`);
+  }
+
   private async ensureBucket(): Promise<void> {
     const headCmd = new HeadBucketCommand({ Bucket: this.bucket });
     let headUrl: string;
@@ -143,5 +202,27 @@ export class S3StorageProvider implements StorageProvider, OnModuleInit {
         'create_bucket_failed_nonfatal',
       );
     }
+  }
+}
+
+/**
+ * Extract every text node wrapped in `<tag>...</tag>` from an
+ * XML string. Narrow on purpose — the S3 ListObjectsV2 response
+ * has a flat enough shape that we don't need a real XML parser.
+ * Skips self-closing tags. Greedy-safe because S3 keys cannot
+ * contain literal `<` or `>` (they're %-escaped on the wire).
+ */
+function extractXmlElements(xml: string, tag: string): string[] {
+  const out: string[] = [];
+  const open = `<${tag}>`;
+  const close = `</${tag}>`;
+  let cursor = 0;
+  while (true) {
+    const start = xml.indexOf(open, cursor);
+    if (start === -1) return out;
+    const end = xml.indexOf(close, start + open.length);
+    if (end === -1) return out;
+    out.push(xml.slice(start + open.length, end));
+    cursor = end + close.length;
   }
 }
