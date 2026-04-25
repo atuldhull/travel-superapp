@@ -50,6 +50,44 @@ export interface TripRepository {
    * TripVersion + Share rows.
    */
   deleteForUser(id: string, userId: string): Promise<boolean>;
+
+  /**
+   * Admin paginated list across ALL users — drives the trip
+   * moderation queue. Returns `{ rows, total }`. Filters: `q`
+   * (case-insensitive substring on `title`), `status` (single
+   * TripStatus value). Most-recent-first ordering. Added by
+   * `[IV.18.18.3]`.
+   */
+  adminList(input: AdminTripListInput): Promise<AdminTripListResult>;
+
+  /**
+   * Admin archive — flips `status = 'archived'` regardless of
+   * owner. Returns `true` when a row was matched (idempotent
+   * — re-archiving an already-archived trip still returns `true`).
+   * Returns `false` only when the trip row is missing.
+   * Added by `[IV.18.18.3]`.
+   */
+  adminArchive(id: string): Promise<boolean>;
+
+  /**
+   * Admin hard-delete (no owner scope). Cascades to itinerary
+   * days + items + votes + expenses + reviews + media via
+   * Prisma's `onDelete: Cascade`. Returns `true` iff a row was
+   * actually removed. Added by `[IV.18.18.3]`.
+   */
+  adminDelete(id: string): Promise<boolean>;
+}
+
+export interface AdminTripListInput {
+  readonly q?: string;
+  readonly status?: TripStatus;
+  readonly limit: number;
+  readonly offset: number;
+}
+
+export interface AdminTripListResult {
+  readonly rows: readonly Trip[];
+  readonly total: number;
 }
 
 /**

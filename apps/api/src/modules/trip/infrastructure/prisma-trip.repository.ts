@@ -10,8 +10,11 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { Trip as PrismaTrip } from '@prisma/client';
 import { GeoQueries } from '../../../common/db/geo-queries';
 import { PrismaService } from '../../../common/db/prisma.service';
+import type { Prisma } from '@prisma/client';
 import type { Trip, TripStatus } from '../domain/trip.entity';
 import type {
+  AdminTripListInput,
+  AdminTripListResult,
   CreateTripDraftInput,
   TripRepository,
   UpdateTripPatch,
@@ -88,6 +91,43 @@ export class PrismaTripRepository implements TripRepository {
   async deleteForUser(id: string, userId: string): Promise<boolean> {
     // `deleteMany` returns count — atomic "delete only if owned".
     const result = await this.prisma.trip.deleteMany({ where: { id, userId } });
+    return result.count === 1;
+  }
+
+  async adminList(input: AdminTripListInput): Promise<AdminTripListResult> {
+    const where: Prisma.TripWhereInput = {};
+    if (input.status !== undefined) where.status = input.status;
+    if (input.q !== undefined && input.q.length > 0) {
+      where.title = { contains: input.q, mode: 'insensitive' };
+    }
+    const [rows, total] = await Promise.all([
+      this.prisma.trip.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: input.offset,
+        take: input.limit,
+      }),
+      this.prisma.trip.count({ where }),
+    ]);
+    return { rows: rows.map(toDomain), total };
+  }
+
+  async adminArchive(id: string): Promise<boolean> {
+    // updateMany returns count — `1` for an existing row even if
+    // the status was already `archived` (Postgres updates the row
+    // but values match). Use `updateMany` so a missing row returns
+    // `0` instead of throwing.
+    const result = await this.prisma.trip.updateMany({
+      where: { id },
+      data: { status: 'archived' },
+    });
+    return result.count === 1;
+  }
+
+  async adminDelete(id: string): Promise<boolean> {
+    // No owner scope — admin can wipe any trip. Cascades via
+    // Prisma onDelete settings.
+    const result = await this.prisma.trip.deleteMany({ where: { id } });
     return result.count === 1;
   }
 }
