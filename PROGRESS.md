@@ -10,18 +10,95 @@
 
 ## Summary
 
-| Counter             | Value                                                              |
-| ------------------- | ------------------------------------------------------------------ |
-| Prompts completed   | 101 (100 full + 1 foundation-only; hard-delete cron just shipped)  |
-| Prompts in progress | 0                                                                  |
-| Prompts blocked     | 0                                                                  |
-| Last prompt         | `[IV.18.16.3]` — hard-delete cron sweep (GDPR retention close-out) |
-| Last commit date    | 2026-04-25                                                         |
-| Phase               | Phase 1 — GDPR/DPDP erasure complete; 67 suites, 452 tests         |
+| Counter             | Value                                                          |
+| ------------------- | -------------------------------------------------------------- |
+| Prompts completed   | 102 (101 full + 1 foundation-only; activity feed just shipped) |
+| Prompts in progress | 0                                                              |
+| Prompts blocked     | 0                                                              |
+| Last prompt         | `[IV.18.17.1]` — personal activity feed (16th HTTP module)     |
+| Last commit date    | 2026-04-25                                                     |
+| Phase               | Phase 1 — home-screen primitive shipped; 68 suites, 457 tests  |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.17.1] — Personal activity feed (GET /feed/me)
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.16 (Analytics & home dashboard)
+
+**What was done**
+
+Ships the home-screen / dashboard primitive: a single authed `GET /api/v1/feed/me?limit=&before=` returns the caller's recent activity merged across 4 sources — trips created/updated, reviews authored, memory book publishes, scam reports filed — sorted desc by `occurredAt` with cursor pagination.
+
+**16th HTTP module.** Lives in a new `feed/` directory because it cuts across 4 owning modules; making it a member of any one of them would force arbitrary asymmetric ownership.
+
+**Architecture: multi-provider port pattern.** A single `FEED_SOURCES` symbol is the DI token; every adapter registers under the same token via a factory provider that returns the array; the use-case injects the array and fans out. Standard Nest pattern for "all implementations of an interface". Adding a new feed source (e.g. SOS triggered, expense added, vote cast) is a one-file diff: drop a new adapter into `infrastructure/`, append it to the factory.
+
+**Pagination: cursor over `occurredAt`.** Each source over-fetches up to `limit` rows older than the optional `before` cursor; the use-case merges + sorts desc + slices to top `limit`. `nextBefore` is the `occurredAt` of the last returned item (`null` when fewer than `limit` came back, signaling end-of-stream). Page transitions are stable across new activity arriving (offset-pagination would shift; cursor stays anchored on the timestamp).
+
+**Why fan-out + merge in app code, not a single SQL `UNION ALL`:** the source rows live in 4 different tables with 4 different shapes, owned by different modules. A union query would either need raw SQL with JSON shape erasure OR cross-module Prisma access that violates the clean-arch boundary. Fan-out is N tiny indexed reads (one per source); merge is in-memory over `limit×N` rows. Cost stays cheap because each source over-fetches just `limit`, not a full scan. The Account export aggregator (`[IV.18.16.1]`) established this same precedent.
+
+**Trip's `occurredAt` is `updatedAt`, not `createdAt`.** Editing an old trip bumps it back to the top of the feed, which is what users expect: "I just worked on this trip" is the meaningful signal. The payload's `action` field distinguishes `created` (when `updatedAt === createdAt`) from `updated`. Other sources use `createdAt` directly except `memory_book_published`, which uses `publishedAt` — drafted-but-never-published books never appear in the feed (the publish IS the meaningful event).
+
+HTTP surface:
+
+| Route                                | Auth   | What it does                                                     |
+| ------------------------------------ | ------ | ---------------------------------------------------------------- |
+| `GET /api/v1/feed/me?limit=&before=` | bearer | Merged chronological stream + `nextBefore` cursor for pagination |
+
+**Files created** (8)
+
+- `apps/api/src/modules/feed/domain/feed-item.entity.ts` — discriminated union over 4 kinds + per-kind payload shapes.
+- `apps/api/src/modules/feed/application/ports/feed-source.ts` — single-method port + `FEED_SOURCES` multi-provider symbol.
+- `apps/api/src/modules/feed/application/get-my-feed.use-case.ts` — fan-out + merge + slice + `nextBefore` cursor derivation. Default 20, cap 50.
+- `apps/api/src/modules/feed/infrastructure/trip-feed-source.ts` — Trip rows; `occurredAt = updatedAt`; derives `created`/`updated` action.
+- `apps/api/src/modules/feed/infrastructure/review-feed-source.ts` — Review rows authored by the user.
+- `apps/api/src/modules/feed/infrastructure/memory-book-published-feed-source.ts` — MemoryBook rows where `publishedAt IS NOT NULL`; `occurredAt = publishedAt`.
+- `apps/api/src/modules/feed/infrastructure/scam-report-feed-source.ts` — ScamReport rows where reporterId == caller.
+- `apps/api/src/modules/feed/interface/feed.controller.ts` — `GET /feed/me`, validates `before` (ISO) + `limit` (positive int), maps domain → DTO.
+- `apps/api/src/modules/feed/feed.module.ts` — registers 4 sources + factory provider that wires them into `FEED_SOURCES`.
+- `apps/api/test/feed.e2e-spec.ts` — 5 integration tests against real Postgres.
+
+**Files edited** (1) — `apps/api/src/app.module.ts` (+1 module import: `FeedModule`).
+
+**Tests** (5 cases, real-Postgres):
+
+1. No bearer → 401 `UNAUTHENTICATED`.
+2. Empty user → 200 `{ items: [], nextBefore: null }`.
+3. Rich user (trip + review + memory book publish + scam report, sequenced with 30ms gaps so timestamps strictly order) → all 4 kinds present in the feed; sorted desc by occurredAt; the newest event (scam report, last seeded) is first.
+4. Cursor pagination: 5 reviews seeded, `?limit=2` returns top 2 + a `nextBefore`; passing the cursor back returns strictly older items with no overlap on review IDs.
+5. Cross-user isolation: Alice generates 3 activities; Bob's feed returns `{ items: [], nextBefore: null }`. Alice's feed contains all 3.
+
+**Dependencies** — none new. No Prisma migration — every source table has been on the schema since its respective slice.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Feed suite 5/5 pass.
+- ✅ **Full real-DB + MinIO suite: 68 suites, 457 tests pass against live Docker.** (+1 suite, +5 tests vs. previous baseline.)
+
+**Acceptance criteria**
+
+- ✅ Authed caller can fetch their merged activity feed.
+- ✅ All 4 sources (trip / review / memory book publish / scam report) appear when present.
+- ✅ Items sorted desc by `occurredAt`.
+- ✅ Cursor pagination via `before` is exclusive + returns strictly older items.
+- ✅ `nextBefore: null` signals end-of-stream.
+- ✅ Cross-user IDOR isolation verified end-to-end.
+- ✅ Trip's `updatedAt` (not `createdAt`) drives ordering — edits bubble back up.
+
+**Notes**
+
+- **Why a discriminated union, not a Generic `{ kind, payload: unknown }`.** Type narrowing on `kind` lets every consumer (controller mapper, future analytics dashboard, etc.) work with strictly-typed payloads. The cost is one type signature per kind; the payoff is no `as` casts in consumer code. Same posture as the Trip-overview `Section<T>` discriminated union.
+- **Why `FEED_SOURCES` is a multi-provider array, not 4 named tokens.** Adding a 5th source (e.g. SOS triggered) should be a one-file diff: drop the adapter in, append to the factory's `inject` + return array. Named tokens would force the use-case to inject N specific dependencies and the array would have to be assembled there too — same wiring duplicated. The factory provider is the cleanest "all implementations of X" pattern Nest gives.
+- **Why over-fetch `limit` per source instead of `limit / N`.** A user with 200 reviews and 0 trips should still get a coherent first page. Fetching `limit / N` per source would force the merge to top-up from arbitrary sources, complicating the cursor. Over-fetching `limit` keeps the merge well-formed; the cost is at most 4×limit rows in memory (≤ 200 rows for default 50 limit).
+- **Why `nextBefore: null` when fewer than `limit` items came back.** It's an explicit end-of-stream signal so clients don't have to special-case "exactly limit means try again". When the merged set has exactly `limit` items, the next page might be empty or might have more — clients pass the cursor back to find out. The cursor format is a plain ISO timestamp; no opaque-cursor-with-server-secret nonsense needed at this scale.
+- **Why a separate Feed module instead of folding into Account or Notifications.** Account is GDPR/compliance; Notifications is push/email/SMS dispatch. Activity feed is "what's been happening in my account" — a third concept. Cohabiting it with Account would dilute Account's compliance focus; with Notifications would imply push semantics it doesn't have. New module = clean concern boundary.
+- **The Account export aggregator (`[IV.18.16.1]`) is the structural precedent.** Both modules are thin read-side projections that fan out across many tables via direct `PrismaService` reads, without going through producer modules' repository ports. The pattern is: producer modules don't need to know about cross-cutting consumer surfaces; consumer modules read the tables they need and own the projection.
+- **Why `Trip.updatedAt` for the cursor + `created`/`updated` derivation.** "I just edited my Tokyo trip itinerary" is a real signal users want to see in the feed. Sorting by `createdAt` would bury edits forever. Using `updatedAt` puts the edit at the top; the `action` payload field tells the client whether to render "created" vs "updated" in the card.
 
 ---
 
