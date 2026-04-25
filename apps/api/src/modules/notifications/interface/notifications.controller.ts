@@ -21,6 +21,9 @@
  *                                                for the caller.
  *                                                Returns `{ marked }`.
  *                                                Idempotent.
+ *   DELETE /api/v1/notifications/:id            — owner hard-delete.
+ *                                                Inbox prune.
+ *                                                ([IV.18.15.6]).
  *
  * Per-channel filtering shipped in `[IV.18.12.13]` via the
  * `?channel=push|email|sms` query param on `GET /me`. Any
@@ -33,6 +36,7 @@
 import {
   BadRequestException,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -41,6 +45,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { type AuthenticatedUser, CurrentUser } from '../../../common/auth';
+import { DeleteNotificationUseCase } from '../application/delete-notification.use-case';
 import { GetUnreadCountUseCase } from '../application/get-unread-count.use-case';
 import { ListMyNotificationsUseCase } from '../application/list-my-notifications.use-case';
 import { MarkAllNotificationsReadUseCase } from '../application/mark-all-notifications-read.use-case';
@@ -82,6 +87,7 @@ export class NotificationsController {
     private readonly markAllReadUc: MarkAllNotificationsReadUseCase,
     private readonly unreadCountUc: GetUnreadCountUseCase,
     private readonly markUnreadUc: MarkNotificationUnreadUseCase,
+    private readonly deleteUc: DeleteNotificationUseCase,
   ) {}
 
   /**
@@ -149,5 +155,17 @@ export class NotificationsController {
   ): Promise<NotificationLogDto> {
     const row = await this.markUnreadUc.execute({ id, userId: user.sub });
     return toDto(row);
+  }
+
+  /**
+   * Owner-scoped hard-delete. Lets a user prune their inbox
+   * instead of just flagging-as-read in perpetuity. 404 (not 403)
+   * on cross-user / missing — IDOR-safe collapsing. Added by
+   * `[IV.18.15.6]`.
+   */
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async remove(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string): Promise<void> {
+    await this.deleteUc.execute({ id, userId: user.sub });
   }
 }

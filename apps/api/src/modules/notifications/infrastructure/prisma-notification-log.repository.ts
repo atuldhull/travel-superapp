@@ -108,6 +108,16 @@ export class PrismaNotificationLogRepository implements NotificationLogRepositor
     const row = await this.prisma.notificationLog.findUnique({ where: { id } });
     return row ? toDomain(row) : null;
   }
+
+  async deleteForUser(id: string, userId: string): Promise<boolean> {
+    // Owner-scoped `deleteMany` + count gate — same shape Media's
+    // adminDelete uses. Wrong owner / missing id both yield count=0,
+    // which the use-case maps to 404 NOTIFICATION_NOT_FOUND.
+    const result = await this.prisma.notificationLog.deleteMany({
+      where: { id, userId },
+    });
+    return result.count === 1;
+  }
 }
 
 function toDomain(row: PrismaNotificationLog): NotificationLog {
