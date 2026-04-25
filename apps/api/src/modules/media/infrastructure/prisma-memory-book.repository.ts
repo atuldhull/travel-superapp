@@ -87,6 +87,55 @@ export class PrismaMemoryBookRepository implements MemoryBookRepository {
     });
     return rows.map((r) => r.id);
   }
+
+  async setPublishedAtForOwner(
+    id: string,
+    ownerId: string,
+    publishedAt: Date | null,
+  ): Promise<MemoryBook | null> {
+    // Same updateMany + count gate as the metadata update path.
+    const result = await this.prisma.memoryBook.updateMany({
+      where: { id, ownerId },
+      data: { publishedAt },
+    });
+    if (result.count !== 1) return null;
+    const row = await this.prisma.memoryBook.findUnique({ where: { id } });
+    return row ? toDomain(row) : null;
+  }
+
+  async findPublishedById(id: string): Promise<MemoryBook | null> {
+    // No owner filter — public read. Gate is on `publishedAt`
+    // being non-null. An unpublished book + a missing id collapse
+    // to the same `null` (mapped to 404), so a stranger probing
+    // the id space learns nothing about whether the book exists.
+    const row = await this.prisma.memoryBook.findFirst({
+      where: { id, publishedAt: { not: null } },
+    });
+    return row ? toDomain(row) : null;
+  }
+
+  async findPublishedAssetForBook(
+    bookId: string,
+    assetId: string,
+  ): Promise<{ readonly s3KeyRaw: string } | null> {
+    // Three-clause gate in one query:
+    //   1. The asset's `memoryBookId` matches the book.
+    //   2. The asset is `ready`.
+    //   3. The book is published (joined relation filter).
+    // Joining via `memoryBook: { publishedAt: { not: null } }`
+    // pushes the gate into a single round-trip — no N+1, no
+    // separate "is the book published?" probe in the use-case.
+    const row = await this.prisma.mediaAsset.findFirst({
+      where: {
+        id: assetId,
+        memoryBookId: bookId,
+        status: 'ready',
+        memoryBook: { publishedAt: { not: null } },
+      },
+      select: { s3KeyRaw: true },
+    });
+    return row ? { s3KeyRaw: row.s3KeyRaw } : null;
+  }
 }
 
 function toDomain(row: PrismaMemoryBook): MemoryBook {

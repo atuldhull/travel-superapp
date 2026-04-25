@@ -1,18 +1,22 @@
 /**
  * Memory-book HTTP surface.
  *
- *   POST   /api/v1/memory-books                      — create
- *   GET    /api/v1/memory-books                      — list mine
- *   GET    /api/v1/memory-books/:id                  — get one + attached asset ids
- *   PATCH  /api/v1/memory-books/:id                  — update metadata
- *   DELETE /api/v1/memory-books/:id                  — delete (SetNull on MediaAsset.memoryBookId)
+ *   POST   /api/v1/memory-books                                — create
+ *   GET    /api/v1/memory-books                                — list mine
+ *   GET    /api/v1/memory-books/:id                            — get one + attached asset ids
+ *   PATCH  /api/v1/memory-books/:id                            — update metadata
+ *   DELETE /api/v1/memory-books/:id                            — delete (SetNull on MediaAsset.memoryBookId)
+ *   POST   /api/v1/memory-books/:id/publish                    — flip publishedAt = now
+ *   POST   /api/v1/memory-books/:id/unpublish                  — clear publishedAt
+ *   GET    /api/v1/memory-books/public/:id                     — @Public() — public read of published book
+ *   GET    /api/v1/memory-books/public/:id/assets/:assetId/download-url — @Public() — presigned URL
  *
  * The attach/detach verb lives on the `MediaController` alongside
  * the existing attach-to-trip route (`PATCH /media/:id/memory-book`)
  * — symmetric with the trip attachment shape, keeps all media-
  * attachment operations co-located.
  *
- * Installed by prompt [IV.18.12.6].
+ * Installed by prompt [IV.18.12.6]. Publish flow added in [IV.18.12.7].
  */
 import {
   Body,
@@ -26,12 +30,16 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { type AuthenticatedUser, CurrentUser } from '../../../common/auth';
+import { type AuthenticatedUser, CurrentUser, Public } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { CreateMemoryBookUseCase } from '../application/create-memory-book.use-case';
 import { DeleteMemoryBookUseCase } from '../application/delete-memory-book.use-case';
 import { GetMemoryBookUseCase } from '../application/get-memory-book.use-case';
+import { GetPublishedAssetDownloadUrlUseCase } from '../application/get-published-asset-download-url.use-case';
+import { GetPublishedMemoryBookUseCase } from '../application/get-published-memory-book.use-case';
 import { ListMemoryBooksUseCase } from '../application/list-memory-books.use-case';
+import { PublishMemoryBookUseCase } from '../application/publish-memory-book.use-case';
+import { UnpublishMemoryBookUseCase } from '../application/unpublish-memory-book.use-case';
 import { UpdateMemoryBookUseCase } from '../application/update-memory-book.use-case';
 import type { MemoryBook } from '../domain/memory-book.entity';
 import {
@@ -65,6 +73,28 @@ function toDto(b: MemoryBook): MemoryBookDto {
   };
 }
 
+interface PublicBookDto {
+  readonly id: string;
+  readonly title: string;
+  readonly theme: string;
+  readonly coverS3Key: string | null;
+  readonly publishedAt: string;
+  readonly createdAt: string;
+}
+
+function toPublicDto(b: MemoryBook): PublicBookDto {
+  return {
+    id: b.id,
+    title: b.title,
+    theme: b.theme,
+    coverS3Key: b.coverS3Key,
+    // Non-null by contract — `findPublishedById` only returns rows
+    // where `publishedAt IS NOT NULL`. Cast is safe.
+    publishedAt: (b.publishedAt as Date).toISOString(),
+    createdAt: b.createdAt.toISOString(),
+  };
+}
+
 @Controller('memory-books')
 export class MemoryBookController {
   constructor(
@@ -73,7 +103,37 @@ export class MemoryBookController {
     private readonly listUc: ListMemoryBooksUseCase,
     private readonly updateUc: UpdateMemoryBookUseCase,
     private readonly deleteUc: DeleteMemoryBookUseCase,
+    private readonly publishUc: PublishMemoryBookUseCase,
+    private readonly unpublishUc: UnpublishMemoryBookUseCase,
+    private readonly getPublishedUc: GetPublishedMemoryBookUseCase,
+    private readonly publishedAssetDlUc: GetPublishedAssetDownloadUrlUseCase,
   ) {}
+
+  // ─── Public-read routes — declared first so Nest's order-of-
+  //     declaration route matcher can't accidentally shadow them
+  //     with the `:id` paths below. (`'public'` is a literal
+  //     segment, so this is belt-and-braces, not strictly
+  //     required.) ─────────────────────────────────────────────
+  @Public()
+  @Get('public/:id')
+  @HttpCode(HttpStatus.OK)
+  async getPublic(
+    @Param('id') id: string,
+  ): Promise<{ book: PublicBookDto; assetIds: readonly string[] }> {
+    const { book, assetIds } = await this.getPublishedUc.execute(id);
+    return { book: toPublicDto(book), assetIds };
+  }
+
+  @Public()
+  @Get('public/:id/assets/:assetId/download-url')
+  @HttpCode(HttpStatus.OK)
+  async getPublicAssetDownloadUrl(
+    @Param('id') bookId: string,
+    @Param('assetId') assetId: string,
+  ): Promise<{ url: string; expiresAt: string }> {
+    const { url, expiresAt } = await this.publishedAssetDlUc.execute({ bookId, assetId });
+    return { url, expiresAt: expiresAt.toISOString() };
+  }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -132,5 +192,25 @@ export class MemoryBookController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string): Promise<void> {
     await this.deleteUc.execute({ id, ownerId: user.sub });
+  }
+
+  @Post(':id/publish')
+  @HttpCode(HttpStatus.OK)
+  async publish(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ): Promise<MemoryBookDto> {
+    const book = await this.publishUc.execute({ id, ownerId: user.sub });
+    return toDto(book);
+  }
+
+  @Post(':id/unpublish')
+  @HttpCode(HttpStatus.OK)
+  async unpublish(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ): Promise<MemoryBookDto> {
+    const book = await this.unpublishUc.execute({ id, ownerId: user.sub });
+    return toDto(book);
   }
 }
