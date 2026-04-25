@@ -10,18 +10,112 @@
 
 ## Summary
 
-| Counter             | Value                                                                  |
-| ------------------- | ---------------------------------------------------------------------- |
-| Prompts completed   | 103 (102 full + 1 foundation-only; admin user moderation just shipped) |
-| Prompts in progress | 0                                                                      |
-| Prompts blocked     | 0                                                                      |
-| Last prompt         | `[IV.18.18.1]` — admin user moderation (list / ban / unban)            |
-| Last commit date    | 2026-04-25                                                             |
-| Phase               | Phase 1 — admin user-management surface; 69 suites, 468 tests          |
+| Counter             | Value                                                                              |
+| ------------------- | ---------------------------------------------------------------------------------- |
+| Prompts completed   | 104 (103 full + 1 foundation-only; admin force-purge + SOS dashboard just shipped) |
+| Prompts in progress | 0                                                                                  |
+| Prompts blocked     | 0                                                                                  |
+| Last prompt         | `[IV.18.18.2]` — admin force-purge endpoint + admin SOS triage dashboard           |
+| Last commit date    | 2026-04-25                                                                         |
+| Phase               | Phase 1 — admin ops triage surface; 71 suites, 479 tests                           |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.18.2] — Admin force-purge endpoint + admin SOS triage dashboard
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.7 (Safety) + 3.17 (Admin & Ops)
+
+**What was done**
+
+Two small admin-quality slices bundled together — both follow the "thin admin endpoint over an existing port" pattern and individually wouldn't justify the per-slice ritual. Together they round out the operator surface:
+
+**A — Force-purge endpoint (`apps/api/src/modules/account/`)**
+
+`POST /api/v1/admin/account-purge` triggers `AccountPurgeScheduler.runTick()` — the same method the daily `setInterval` calls. Useful when retention rules change and ops wants to apply them immediately, when an oncall wants to confirm cron health post-deploy, or for a privacy incident requiring accelerated cleanup. The 7-day retention window still applies (the endpoint only fires the sweep, not the retention math).
+
+The scheduler's `runTick` already has a re-entrant guard, so concurrent calls don't stack — a second call while the first is still running returns immediately. The endpoint returns `{ ok: true }` regardless; idempotent in effect.
+
+**B — Admin SOS triage dashboard (`apps/api/src/modules/safety/`)**
+
+Two routes for the safety operator triage queue:
+
+- `GET  /api/v1/admin/safety/sos-events?status=&limit=&offset=` — cross-user paginated list. `status=active` (resolvedAt null) is the actionable triage queue; `status=resolved` is the audit trail; absent returns both. Default 50, cap 200.
+- `POST /api/v1/admin/safety/sos-events/:id/resolve` — admin-driven resolve with optional note. Same atomic `updateMany + count === 1` gate as the user-self-resolve, but without the `userId` scope so ops can mark someone else's SOS resolved (e.g. support agent confirms user is safe out-of-band). Already-resolved → 404 `SOS_NOT_FOUND` (idempotent guard).
+
+Lives in Safety module — admin-in-owning-module pattern, same as scam moderation (`[IV.18.11.5]`).
+
+HTTP surface:
+
+| Route                                              | Auth              | What it does                                           |
+| -------------------------------------------------- | ----------------- | ------------------------------------------------------ |
+| `POST /api/v1/admin/account-purge`                 | `@Roles('admin')` | Fire the purge sweep; `{ ok: true }`                   |
+| `GET  /api/v1/admin/safety/sos-events`             | `@Roles('admin')` | Cross-user list with status filter + offset pagination |
+| `POST /api/v1/admin/safety/sos-events/:id/resolve` | `@Roles('admin')` | Mark someone else's SOS resolved (optional note)       |
+
+**Files created** (5)
+
+- `apps/api/src/modules/account/interface/admin-purge.controller.ts` — single `@Post()` route that calls the existing scheduler.
+- `apps/api/src/modules/safety/application/admin-list-sos-events.use-case.ts` — clamps limit + offset; passes through to the new repo method.
+- `apps/api/src/modules/safety/application/admin-resolve-sos.use-case.ts` — `false` → `NotFoundError(SOS_NOT_FOUND)`.
+- `apps/api/src/modules/safety/interface/admin-sos.controller.ts` — class-level `@Roles('admin')`, validates status param against `'active' | 'resolved'`.
+- `apps/api/test/admin-account-purge.e2e-spec.ts` — 4 integration tests.
+- `apps/api/test/admin-sos.e2e-spec.ts` — 7 integration tests.
+
+**Files edited** (4)
+
+- `apps/api/src/modules/account/account.module.ts` — registers `AdminPurgeController`.
+- `apps/api/src/modules/safety/application/ports/sos-event.repository.ts` — adds `AdminSosListInput`, `AdminSosListResult`, `AdminResolveSosInput` types + `adminList(...)` and `adminResolve(...)` methods on the port.
+- `apps/api/src/modules/safety/infrastructure/prisma-sos-event.repository.ts` — implements both: `adminList` via parallel `findMany + count` with status-derived `where`; `adminResolve` via `updateMany` + `resolvedAt: null` clause (no `userId` scope).
+- `apps/api/src/modules/safety/safety.module.ts` — registers 2 new use-cases + the controller.
+
+**Tests** (11 cases total, real-Postgres):
+
+Force-purge (4):
+
+1. No bearer → 401.
+2. Non-admin → 403.
+3. Admin: 200 `{ ok: true }`; verifies an 8-day-old soft-deleted user is actually swept by the call.
+4. Idempotent: a second admin call still returns `{ ok: true }`.
+
+SOS dashboard (7):
+
+1. No bearer → 401.
+2. Non-admin → 403.
+3. `?status=active` returns only unresolved events; admin sees ALL users' events (cross-user verified by triggering SOS as Alice + Bob, resolving Alice's, then asserting Bob's id appears in the active list and Alice's doesn't).
+4. `?status=resolved` returns only resolved events.
+5. Unknown status → 400 `VALIDATION_FAILED`.
+6. Admin resolve sets `resolvedAt` + `resolutionNote` on someone else's SOS; row in DB confirms.
+7. Admin resolve on already-resolved → 404 `SOS_NOT_FOUND` (idempotent guard).
+
+**Dependencies** — none new. No Prisma migration — `SosEvent.resolvedAt` has been on the schema since `[IV.18.11.2]`.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Force-purge suite 4/4 pass; SOS dashboard suite 7/7 pass.
+- ✅ **Full real-DB + MinIO suite: 71 suites, 479 tests pass against live Docker.** (+2 suites, +11 tests vs. previous baseline.)
+
+**Acceptance criteria**
+
+- ✅ Admin can fire the purge sweep on demand; eligible rows are wiped end-to-end.
+- ✅ Admin can list cross-user SOS events with status filter + pagination.
+- ✅ Admin can mark someone else's SOS resolved with an optional note.
+- ✅ All routes 401 without bearer + 403 for non-admin.
+- ✅ Both resolve paths (user-self + admin) idempotent — second resolve → 404.
+
+**Notes**
+
+- **Why bundle these two slices into one prompt.** Each is too small to justify a per-slice PROGRESS entry on its own (~3 files, ~4 tests). They share the structural shape ("thin admin endpoint over existing port") and ship in adjacent owning modules. Bundling keeps autopilot momentum while staying within the per-slice spirit (one PROGRESS entry per logical unit of work). If they had touched different concerns or different domains (e.g. force-purge + a new feature surface), I'd ship separately.
+- **Why force-purge wraps `runTick()` rather than calling the use-case directly.** `runTick` adds the re-entrant guard + the failure-isolation try/catch + the structured logging. Calling the use-case directly would skip those safety nets and force the controller to re-implement them. The scheduler's existing public method is the right contract.
+- **Why admin-resolve doesn't have a `userId` parameter, only `id`.** The whole point of the admin endpoint is to bypass the owner gate — ops doesn't need to know which user owns the SOS, they need the operation to succeed regardless. Adding a `userId` param would invite incorrect usage ("pass the admin's userId" / "pass the target's userId" — both wrong). The route just takes the SOS id; same shape as admin-resolve in any moderation surface.
+- **Why `adminList` doesn't accept a `userId` filter.** A future "show all SOS events for user X" surface might want it, but v1 doesn't — the active/resolved filter + chronological ordering is enough for the triage queue. Adding it later is a non-breaking change.
+- **Why offset pagination on the SOS list.** Same reasoning as the admin user list (`[IV.18.18.1]`): admin-only, small set even at scale, filterable, UI-driven. Cursor would force "scroll back" UX where "page 7" makes sense for the operator.
+- **Cross-user list IS the feature.** The user-self list (`GET /safety/sos`) is owner-scoped; the admin list deliberately ISN'T. This is the only way to triage incoming SOS events across the platform — there's no privacy concern because the admin role is the explicit gate. The cross-user verification in the test (Alice's resolved, Bob's active) is the proof.
+- **Pattern consolidation.** This slice is the third "admin lifecycle endpoint reusing a user lifecycle port" precedent: admin scam verify/dismiss reuses scam-report repo (`[IV.18.11.5]`), admin user ban/unban reuses AccountDeleter (`[IV.18.18.1]`), admin SOS resolve reuses the SOS-event repo (this slice). The lesson: when admin and user surfaces operate on the same atomic state transition, the right architectural move is to add an admin-flavored repo method (no owner scope) rather than fork into a parallel module. Memory updated.
 
 ---
 
