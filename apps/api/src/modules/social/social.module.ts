@@ -22,6 +22,7 @@ import { CreateExpenseUseCase } from './application/create-expense.use-case';
 import { CreateReviewUseCase } from './application/create-review.use-case';
 import { DeleteExpenseUseCase } from './application/delete-expense.use-case';
 import { DeleteReviewUseCase } from './application/delete-review.use-case';
+import { GetPlaceReviewSummaryUseCase } from './application/get-place-review-summary.use-case';
 import { GetReviewSummaryUseCase } from './application/get-review-summary.use-case';
 import { GetTripBalancesUseCase } from './application/get-trip-balances.use-case';
 import { GetVoteSummaryUseCase } from './application/get-vote-summary.use-case';
@@ -37,13 +38,20 @@ import { PrismaExpenseRepository } from './infrastructure/prisma-expense.reposit
 import { PrismaReviewRepository } from './infrastructure/prisma-review.repository';
 import { PrismaVoteRepository } from './infrastructure/prisma-vote.repository';
 import { ExpensesController } from './interface/expenses.controller';
+import { PlaceReviewSummaryController } from './interface/place-review-summary.controller';
 import { ReviewsController } from './interface/reviews.controller';
 import { SocialController } from './interface/social.controller';
 import { VotesController } from './interface/votes.controller';
 
 @Module({
   imports: [TripModule],
-  controllers: [SocialController, ExpensesController, ReviewsController, VotesController],
+  controllers: [
+    SocialController,
+    ExpensesController,
+    ReviewsController,
+    VotesController,
+    PlaceReviewSummaryController,
+  ],
   providers: [
     { provide: VOTE_REPOSITORY, useClass: PrismaVoteRepository },
     { provide: EXPENSE_REPOSITORY, useClass: PrismaExpenseRepository },
@@ -61,6 +69,7 @@ import { VotesController } from './interface/votes.controller';
     ListMyReviewsUseCase,
     GetReviewSummaryUseCase,
     GetVoteSummaryUseCase,
+    GetPlaceReviewSummaryUseCase,
   ],
   exports: [VOTE_REPOSITORY, EXPENSE_REPOSITORY, REVIEW_REPOSITORY],
 })
