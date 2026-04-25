@@ -80,6 +80,19 @@ export interface NotificationLogRepository {
    * Added by `[IV.18.15.5]`.
    */
   markUnreadForUser(id: string, userId: string): Promise<NotificationLog | null>;
+
+  /**
+   * Owner-scoped hard delete. Returns `true` iff a row was actually
+   * removed. The id-unknown and wrong-owner cases collapse into a
+   * single `false`, mapped to 404 `NOTIFICATION_NOT_FOUND` at the
+   * use-case layer for IDOR safety. Hard-delete (not soft) — read
+   * status doesn't matter; users prune their inbox by removing the
+   * row entirely. NotificationLog has no FK dependents, so cascade
+   * is trivial.
+   *
+   * Added by `[IV.18.15.6]`.
+   */
+  deleteForUser(id: string, userId: string): Promise<boolean>;
 }
 
 export const NOTIFICATION_LOG_REPOSITORY = Symbol('NotificationLogRepository');

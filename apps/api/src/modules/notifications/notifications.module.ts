@@ -22,6 +22,7 @@
  * Safety.SosTriggered handler added in [IV.18.15.1].
  */
 import { Module } from '@nestjs/common';
+import { DeleteNotificationUseCase } from './application/delete-notification.use-case';
 import { ItineraryReadyHandler } from './application/handlers/itinerary-ready.handler';
 import { SessionIssuedHandler } from './application/handlers/session-issued.handler';
 import { SosTriggeredHandler } from './application/handlers/sos-triggered.handler';
@@ -52,6 +53,7 @@ import { NotificationsController } from './interface/notifications.controller';
     MarkAllNotificationsReadUseCase,
     GetUnreadCountUseCase,
     MarkNotificationUnreadUseCase,
+    DeleteNotificationUseCase,
   ],
   exports: [NOTIFICATION_SENDER, NOTIFICATION_LOG_REPOSITORY, LoggingNotificationSender],
 })
