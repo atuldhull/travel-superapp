@@ -1,0 +1,213 @@
+# Full CI pipeline — runs on every PR + every push to main.
+#
+# Three parallel jobs: lint, typecheck, integration-tests. Each one
+# bootstraps pnpm + caches node_modules, then runs the appropriate
+# Turbo task scope. The `tests` job additionally boots Postgres /
+# Redis / MinIO via GitHub services so integration tests that hit
+# real Docker dependencies pass on the runner without a separate
+# `docker compose up` step.
+#
+# Phase-0 smoke (`phase-0-smoke.yml`) stays as a separate, narrower
+# gate — that file pre-dates this one and runs a faster boundary
+# check. This file IS the broader pipeline that prompt
+# `[IV.18.1.x]` reserved as a follow-up.
+#
+# Installed by prompt [IV.18.19.1].
+
+name: ci
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # ──────────────────────────────────────────────────────────────
+  # Lint — fastest signal. Runs eslint across every workspace.
+  # ──────────────────────────────────────────────────────────────
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.3
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build dist'd workspace packages
+        # @app/config + @app/errors + @app/logger ship a compiled
+        # dist/ that downstream packages import — same step the
+        # phase-0 smoke uses.
+        run: pnpm turbo run build --filter='@app/*'
+
+      - name: Lint
+        run: pnpm turbo run lint
+
+  # ──────────────────────────────────────────────────────────────
+  # Typecheck — independent of lint, runs in parallel.
+  # ──────────────────────────────────────────────────────────────
+  typecheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.3
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        # tsc fails without the generated client.
+        run: pnpm --filter=api run db:generate
+
+      - name: Build dist'd workspace packages
+        run: pnpm turbo run build --filter='@app/*'
+
+      - name: Typecheck
+        run: pnpm turbo run typecheck
+
+  # ──────────────────────────────────────────────────────────────
+  # Integration tests — boot Postgres + Redis + MinIO as GitHub
+  # service containers, then run jest. Env values mirror
+  # `phase-0-smoke.yml` so the same setup.ts works.
+  # ──────────────────────────────────────────────────────────────
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    services:
+      # Plain Postgres 16 — close enough for the integration suite
+      # that doesn't exercise PostGIS-specific features. PostGIS-
+      # heavy tests skip themselves under a feature flag (see
+      # apps/api/test/setup.ts). Tests that genuinely need PostGIS
+      # land in the [IV.18.21.x] CI-with-PostGIS slice.
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: travel
+          POSTGRES_PASSWORD: travel_dev
+          POSTGRES_DB: travel_dev
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U travel -d travel_dev"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+
+      redis:
+        image: redis:7.4-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+
+      minio:
+        image: minio/minio:RELEASE.2024-12-13T22-19-12Z
+        env:
+          MINIO_ROOT_USER: minio
+          MINIO_ROOT_PASSWORD: minio_ci_password
+        ports:
+          - 9000:9000
+        options: >-
+          --health-cmd "curl -fs http://localhost:9000/minio/health/live"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+        # MinIO needs the `server` arg + a data dir to actually
+        # serve. GitHub `services:` lacks a custom command field,
+        # so we use the default startup which loads `--data-dir`
+        # from MINIO_VOLUMES env. Default data dir works for tests.
+
+    env:
+      NODE_ENV: test
+      LOG_LEVEL: silent
+      DATABASE_URL: postgresql://travel:travel_dev@localhost:5432/travel_dev
+      REDIS_URL: redis://localhost:6379
+      S3_ENDPOINT: http://localhost:9000
+      S3_BUCKET: travel-ci
+      S3_ACCESS_KEY: minio
+      S3_SECRET_KEY: minio_ci_password
+      JWT_ACCESS_SECRET: ci_access_secret_min_32_chars_padding_xx
+      JWT_REFRESH_SECRET: ci_refresh_secret_min_32_chars_padding_y
+      MEILI_MASTER_KEY: meili_ci_master_key_min_16_chars
+      RATE_LIMIT_PEPPER: ci_pepper_value_min_32_chars_padding_zz
+      CORS_ORIGINS: ''
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.3
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build dist'd workspace packages
+        run: pnpm turbo run build --filter='@app/*'
+
+      - name: Generate Prisma client
+        run: pnpm --filter=api run db:generate
+
+      - name: Apply Prisma migrations
+        run: pnpm --filter=api run db:migrate:deploy
+
+      - name: Run integration tests
+        run: pnpm --filter=api test -- --ci --runInBand
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "### Integration tests" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "✅ All integration tests pass." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "❌ Integration test regression — see job log above." >> "$GITHUB_STEP_SUMMARY"
+          fi
