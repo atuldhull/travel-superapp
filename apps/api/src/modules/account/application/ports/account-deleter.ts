@@ -25,6 +25,23 @@ export interface AccountDeleter {
    * user didn't exist or was already deleted.
    */
   softDeleteAndRevokeSessions(userId: string, deletedAt: Date): Promise<boolean>;
+  /**
+   * Reverse of `softDeleteAndRevokeSessions` — clears `deletedAt`
+   * back to `null`. Sessions stay revoked (the user has to log
+   * in again; we don't restore in-flight refresh tokens).
+   *
+   * Returns `true` when a row was actually restored, `false`
+   * when the user didn't exist OR was not soft-deleted (already
+   * active). Caller maps `false` to 404.
+   *
+   * Restore is only viable while the row is still in the
+   * 7-day retention window before the hard-delete cron
+   * (`[IV.18.16.3]`) sweeps it. Once swept, restore returns
+   * `false` (row gone) — the user must re-register.
+   *
+   * Added by `[IV.18.18.1]` for admin unban.
+   */
+  restoreUser(userId: string): Promise<boolean>;
 }
 
 export const ACCOUNT_DELETER = Symbol('ACCOUNT_DELETER');

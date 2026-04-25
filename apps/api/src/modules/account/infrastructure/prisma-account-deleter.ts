@@ -42,4 +42,15 @@ export class PrismaAccountDeleter implements AccountDeleter {
     ]);
     return userUpdate.count === 1;
   }
+
+  async restoreUser(userId: string): Promise<boolean> {
+    // `deletedAt: { not: null }` clause = "set if currently
+    // soft-deleted". Mirrors the `deletedAt: null` clause on
+    // softDelete — both gates are atomic in Postgres.
+    const result = await this.prisma.user.updateMany({
+      where: { id: userId, deletedAt: { not: null } },
+      data: { deletedAt: null },
+    });
+    return result.count === 1;
+  }
 }
