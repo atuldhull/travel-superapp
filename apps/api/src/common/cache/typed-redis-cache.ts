@@ -47,9 +47,28 @@ import { createLogger } from '@app/logger';
 
 type PinoLogger = ReturnType<typeof createLogger>;
 
+/**
+ * Per-instance hit/miss counters + the cache's namespace label,
+ * surfaced for observability. A future `/metrics` controller (the
+ * prom-client swap noted in `[IV.18.10.5]`) iterates the registered
+ * caches and emits `cache_hit_total{cache=<namespace>}` from these
+ * counters; until then, ops can pivot the structured `cache_hit` /
+ * `cache_miss` log events in Loki / Grafana.
+ *
+ * Numbers are monotonic since process start; the metrics collector
+ * is responsible for rate-converting if needed.
+ */
+export interface CacheStats {
+  readonly namespace: string;
+  readonly hits: number;
+  readonly misses: number;
+}
+
 export abstract class TypedRedisCache<T> implements OnModuleDestroy {
   private readonly redis: Redis;
   private readonly keyPrefix: string;
+  private hits = 0;
+  private misses = 0;
   protected readonly namespace: string;
   protected readonly log: PinoLogger;
 
@@ -72,6 +91,17 @@ export abstract class TypedRedisCache<T> implements OnModuleDestroy {
     this.keyPrefix = `travel-${env}:${namespace}:`;
   }
 
+  /**
+   * Read-only snapshot of the per-instance hit/miss counters.
+   * Public so a future `/metrics` controller can roll them up
+   * across every registered cache. The numbers are monotonic
+   * counts since process start; rate-conversion is the
+   * collector's job. Added by `[IV.18.10.5]`.
+   */
+  getStats(): CacheStats {
+    return { namespace: this.namespace, hits: this.hits, misses: this.misses };
+  }
+
   private async ensureConnected(): Promise<void> {
     if (
       this.redis.status === 'wait' ||
@@ -86,9 +116,23 @@ export abstract class TypedRedisCache<T> implements OnModuleDestroy {
     try {
       await this.ensureConnected();
       const raw = await this.redis.get(this.keyPrefix + key);
-      if (!raw) return null;
+      if (!raw) {
+        // Treat absent values + Redis outages identically: both
+        // count as miss + force the caller's fresh-read path.
+        // Outages are already surfaced via the `<namespace>_cache_redis_error`
+        // log channel; double-counting them as misses here would
+        // skew the hit-ratio metric in a way that doesn't reflect
+        // the question we want to answer ("is the cache populated
+        // when consumers ask?").
+        this.misses++;
+        this.log.debug({ namespace: this.namespace, key }, 'cache_miss');
+        return null;
+      }
+      this.hits++;
+      this.log.debug({ namespace: this.namespace, key }, 'cache_hit');
       return JSON.parse(raw) as T;
     } catch (err) {
+      this.misses++;
       this.log.warn(
         { err: err instanceof Error ? err.message : String(err) },
         `${this.namespace}_cache_get_failed`,
