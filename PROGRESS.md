@@ -12,16 +12,50 @@
 
 | Counter             | Value                                                                         |
 | ------------------- | ----------------------------------------------------------------------------- |
-| Prompts completed   | 117 (116 full + 1 foundation-only; S3 orphan-object sweep cron just shipped)  |
+| Prompts completed   | 118 (117 full + 1 foundation-only; cache hit/miss observability just shipped) |
 | Prompts in progress | 0                                                                             |
 | Prompts blocked     | 0                                                                             |
-| Last prompt         | `[IV.18.18.5]` — S3 orphan-object sweep cron (closes admin-delete bytes loop) |
+| Last prompt         | `[IV.18.10.5]` — cache hit/miss observability (TypedRedisCache.getStats)      |
 | Last commit date    | 2026-04-25                                                                    |
-| Phase               | Phase 1 — admin-delete bytes loop closed; 84 suites, 545 tests                |
+| Phase               | Phase 1 — caches now observable; 85 suites, 549 tests                         |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.10.5] — Cache hit/miss observability (TypedRedisCache.getStats)
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 11 (Observability)
+
+**What was done**
+
+Caches were observability black boxes — six of them in production, no signal for "are they actually doing their job?". This slice instruments the shared `TypedRedisCache` base with per-instance hit and miss counters + structured `cache_hit` / `cache_miss` debug log events. All 6 cache subclasses (trip-balances + weather + stays + food + places + events + transport) inherit the instrumentation automatically — zero subclass churn.
+
+**Scope decision: zero-dep first cut.** The original pitch was "Prometheus counters via prom-client + a `/metrics` route", but that adds a new dep + 7 subclass wirings + a new HTTP surface — material scope creep relative to a "small observability win". Pivoted to a no-dep variant: counters live in memory on each cache instance, `getStats()` exposes `{ namespace, hits, misses }`, and ops can sample the same signal via the structured log events in Loki / Grafana today. The prom-client swap is a clean 1-file follow-up: a `/metrics` controller iterates registered caches and emits `cache_hit_total{cache=<namespace>}`. No cache code re-touch required.
+
+**Counter semantics.**
+
+- **Hit**: `redis.get` returns a non-empty string → `JSON.parse` → caller gets a `T`.
+- **Miss**: anything else — empty key, Redis outage, JSON parse failure.
+
+The semantic question this metric answers is "is the cache populated when consumers ask?", which collapses both empty-key and outage paths. Outages stay visible separately via the existing `<namespace>_cache_redis_error` log channel, so a hit-ratio regression caused by Redis being down is still diagnosable.
+
+**Numbers are monotonic since process start.** The collector is responsible for rate-converting if needed (Prometheus does this natively via `rate()`).
+
+**Files**
+
+- `apps/api/src/common/cache/typed-redis-cache.ts` — adds `hits` + `misses` private fields, increments on `get`, exposes via `getStats()`. New `cache_hit` / `cache_miss` debug log events.
+- `apps/api/test/cache-stats.e2e-spec.ts` (new) — 4 tests via `TripBalancesCache`: namespace label correct, cold get → miss++, warm get → hit++, mixed pattern monotonic.
+
+**Verification**
+
+`pnpm --filter=api typecheck` green. Full integration suite: **85 passed, 549 passed**. New `cache-stats.e2e-spec.ts` is the 85th suite; +4 tests over baseline.
+
+**Commits**
+
+- `5e12c19` — feat(IV.18.10.5) cache hit/miss observability
 
 ---
 
