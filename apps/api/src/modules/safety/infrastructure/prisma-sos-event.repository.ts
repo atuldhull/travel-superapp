@@ -16,6 +16,9 @@ import { GeoQueries } from '../../../common/db/geo-queries';
 import { PrismaService } from '../../../common/db/prisma.service';
 import type { SosEvent } from '../domain/sos-event.entity';
 import type {
+  AdminResolveSosInput,
+  AdminSosListInput,
+  AdminSosListResult,
   CreateSosInput,
   ResolveSosInput,
   SosEventRepository,
@@ -46,6 +49,37 @@ export class PrismaSosEventRepository implements SosEventRepository {
     const now = new Date();
     const result = await this.prisma.sosEvent.updateMany({
       where: { id: input.id, userId: input.userId, resolvedAt: null },
+      data: { resolvedAt: now, resolutionNote: input.note },
+    });
+    if (result.count !== 1) return null;
+    const row = await this.prisma.sosEvent.findUnique({ where: { id: input.id } });
+    return row ? toDomain(row) : null;
+  }
+
+  async adminList(input: AdminSosListInput): Promise<AdminSosListResult> {
+    const where =
+      input.status === 'active'
+        ? { resolvedAt: null }
+        : input.status === 'resolved'
+          ? { resolvedAt: { not: null } }
+          : {};
+    const [rows, total] = await Promise.all([
+      this.prisma.sosEvent.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: input.offset,
+        take: input.limit,
+      }),
+      this.prisma.sosEvent.count({ where }),
+    ]);
+    return { rows: rows.map(toDomain), total };
+  }
+
+  async adminResolve(input: AdminResolveSosInput): Promise<SosEvent | null> {
+    const now = new Date();
+    const result = await this.prisma.sosEvent.updateMany({
+      // No userId scope — admin can resolve any active event.
+      where: { id: input.id, resolvedAt: null },
       data: { resolvedAt: now, resolutionNote: input.note },
     });
     if (result.count !== 1) return null;
