@@ -10,18 +10,92 @@
 
 ## Summary
 
-| Counter             | Value                                                                             |
-| ------------------- | --------------------------------------------------------------------------------- |
-| Prompts completed   | 126 (125 full + 1 foundation-only; bundled NDJSON export + featured memory books) |
-| Prompts in progress | 0                                                                                 |
-| Prompts blocked     | 0                                                                                 |
-| Last prompt         | `[IV.18.13.1]` — public memory book listing (bundled with `[IV.18.16.4]`)         |
-| Last commit date    | 2026-04-25                                                                        |
-| Phase               | Phase 1 — NDJSON export + public discovery surface live; 93 suites, 578 tests     |
+| Counter             | Value                                                                        |
+| ------------------- | ---------------------------------------------------------------------------- |
+| Prompts completed   | 128 (127 full + 1 foundation-only; bundled CI workflow + Grafana dashboards) |
+| Prompts in progress | 0                                                                            |
+| Prompts blocked     | 0                                                                            |
+| Last prompt         | `[IV.18.19.2]` — Grafana dashboard JSONs (bundled with `[IV.18.19.1]`)       |
+| Last commit date    | 2026-04-25                                                                   |
+| Phase               | Phase 1 — deployment-readiness wave: CI gating + observability dashboards    |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.19.2] — Grafana dashboard JSONs (bundled with `[IV.18.19.1]`)
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 11 (Observability) + 15.7 (Dashboards as Code)
+
+**What was done**
+
+Two pre-built Grafana dashboards auto-loaded by the existing provisioning config (`infra/grafana/provisioning/dashboards/dashboards.yml` already points at the `json/` folder shipped by `[IX.32.2]` — this slice is the JSON content that scaffold reserved).
+
+**`api-overview.json`** (uid: `api-overview`):
+
+- HTTP request duration p95/p99 by route — SLO-aligned thresholds (300ms reads / 800ms AI per playbook §11)
+- HTTP request rate by route × status — 5xx spikes are the canonical "something broke" signal
+- Cache hit ratio per namespace — thresholded green/yellow/red at 0.8 / 0.5 / 0
+- Cache hit + miss rates — separate panel for cold-vs-hot diagnosis
+- Node process CPU + RSS — from `prom-client.collectDefaultMetrics`
+- Event-loop lag — sustained > 0.1s = process starvation canary
+
+**`domain-events.json`** (uid: `domain-events`):
+
+- Total event throughput (sum rate) — sudden zero is the "bus broken / handlers detached" canary
+- Per-event-name rate — `Identity.SessionIssued` tracks signups/logins, `Safety.SosTriggered` is the priority canary, `Trip.*` tracks core product usage
+- Cumulative event count table — instant query, useful for post-deploy "have we shipped the new event?" confirmation
+
+Pure JSON; no code, no runtime impact. A fresh `docker compose up grafana` picks both up automatically.
+
+**Files**
+
+- `infra/grafana/provisioning/dashboards/json/api-overview.json` (new)
+- `infra/grafana/provisioning/dashboards/json/domain-events.json` (new)
+
+**Commits**
+
+- `bd03f26` — feat(IV.18.19.2) Grafana dashboard JSONs
+
+---
+
+### [IV.18.19.1] — Full CI workflow (bundled with `[IV.18.19.2]`)
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 12.3 (CI/CD)
+
+**What was done**
+
+`.github/workflows/ci.yml` — three parallel jobs gating every PR + push to main:
+
+1. **`lint`** — eslint across every workspace via `pnpm turbo run lint`
+2. **`typecheck`** — `tsc --noEmit` across every workspace
+3. **`tests`** — full integration suite against Postgres + Redis + MinIO booted as GitHub `services:` containers
+
+The narrower `phase-0-smoke.yml` stays as the foundation gate; this is the broader pipeline that prompt `[IV.18.1.x]` reserved as a follow-up.
+
+**Service container choices.** Plain Postgres 16 (not PostGIS) — close enough for the suites that don't exercise PostGIS-specific features. Suites that need PostGIS already gracefully skip via the `dbReachable` / probe pattern. A PostGIS-enabled CI variant lands in `[IV.18.21.x]` when geo-test density justifies the slower service boot.
+
+**Migration path.** `pnpm --filter=api run db:migrate:deploy` runs before jest so the schema is ready before tests land.
+
+**Concurrency.** `cancel-in-progress: true` on the same ref keeps stale jobs from queuing up after a quick follow-up commit.
+
+**Files**
+
+- `.github/workflows/ci.yml` (new)
+
+**Verification**
+
+`pnpm --filter=api typecheck` green locally. CI workflow itself runs only on the next push — verification is "the file parses + the steps reference real scripts that already exist", which I confirmed by tracing each `pnpm` command against the package.json.
+
+**Combined verification (both bundled slices)**
+
+Pure-config — no integration test impact. Local typecheck green; the 93-suite / 578-test baseline is unchanged.
+
+**Commits**
+
+- `6307aaf` — feat(IV.18.19.1) full CI workflow
 
 ---
 
