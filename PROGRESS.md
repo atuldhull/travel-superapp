@@ -10,18 +10,87 @@
 
 ## Summary
 
-| Counter             | Value                                                                |
-| ------------------- | -------------------------------------------------------------------- |
-| Prompts completed   | 110 (109 full + 1 foundation-only; trip-balances cache just shipped) |
-| Prompts in progress | 0                                                                    |
-| Prompts blocked     | 0                                                                    |
-| Last prompt         | `[IV.18.10.4]` — trip expense balances cache + invalidation          |
-| Last commit date    | 2026-04-25                                                           |
-| Phase               | Phase 1 — first write-invalidated cache; 77 suites, 505 tests        |
+| Counter             | Value                                                               |
+| ------------------- | ------------------------------------------------------------------- |
+| Prompts completed   | 111 (110 full + 1 foundation-only; trip-share co-edit just shipped) |
+| Prompts in progress | 0                                                                   |
+| Prompts blocked     | 0                                                                   |
+| Last prompt         | `[IV.18.2.14]` — trip-share co-edit (PATCH itinerary days)          |
+| Last commit date    | 2026-04-25                                                          |
+| Phase               | Phase 1 — collaborative trip planning live; 78 suites, 510 tests    |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.2.14] — Trip-share co-edit (PATCH itinerary days)
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.2 (Trip Planning)
+
+**What was done**
+
+Closes the read-only gap on `TripShare`. `PATCH /api/v1/trips/:tripId/itinerary/:dayId` was owner-only; now any authed user can edit days on a trip that has at least one active TripShare. Same gate Social's voting + expenses + reviews use (`assertCanVote`'s "owner OR active share" semantics) — group trip planning is now actually collaborative across the editor surface, not just the read + vote surfaces.
+
+**Why parity with the voting gate, not stricter.** Voting is "I express opinion"; editing is "I modify the trip" — naturally a stronger operation. Considered requiring `publicRead: false` (the explicit collab variant) for edits but rejected: parity keeps the gate auditable as one rule, not two. If product later wants tiered access (view-only shares can't edit), that's a cross-cutting policy slice that touches voting + expenses + reviews + edits simultaneously, not a one-endpoint divergence.
+
+**Architecture: gate inlined, not imported from Social.** The natural reuse target is `assertCanVote` in Social. But Social already imports Trip — importing back the other way creates a Trip → Social → Trip cycle. Inlined the 4-line gate in `UpdateDayItemsUseCase` instead. The duplication is trivial; if a third call site emerges it gets extracted to a Trip-owned helper.
+
+**Architecture: unscoped `findDayById` + cross-trip leak defence.** The day lookup was previously `findDayForUser(dayId, userId)` — owner-scoped. The new path needs to look up the day BEFORE knowing who owns it (the access gate already passed via the share path). Added `findDayById(dayId)` to the port. The use-case then verifies `day.tripId === cmd.tripId` so a non-owner caller can't pass an arbitrary dayId pointing at a DIFFERENT trip they have no share for. This bug class is invisible without an explicit cross-trip dayId test — added.
+
+HTTP surface (unchanged URL, widened access):
+
+| Route                                          | Auth   | What changed                                                        |
+| ---------------------------------------------- | ------ | ------------------------------------------------------------------- |
+| `PATCH /api/v1/trips/:tripId/itinerary/:dayId` | bearer | Now accepts edits from any authed caller when trip has active share |
+
+**Files created** (1)
+
+- `apps/api/test/itinerary-share-coedit.e2e-spec.ts` — 5 integration tests against real Postgres.
+
+**Files edited** (3)
+
+- `apps/api/src/modules/trip/application/ports/itinerary.repository.ts` — adds `findDayById(dayId)` (no owner scope).
+- `apps/api/src/modules/trip/infrastructure/prisma-itinerary.repository.ts` — implements `findDayById` via `findUnique`.
+- `apps/api/src/modules/trip/application/update-day-items.use-case.ts` — replaces the owner-scoped `findDayForUser` + Trip-owner check with an inline 4-line "owner OR active share" gate followed by `findDayById` + cmd.tripId verification.
+
+**Tests** (5 cases, real-Postgres):
+
+1. Owner can still PATCH (regression — full end-to-end including itinerary generation).
+2. Non-owner with active share → 200 (collab edit succeeds; the share is the gate).
+3. Non-owner with NO active share → 404 `TRIP_NOT_FOUND` (IDOR-safe).
+4. **Cross-trip dayId leak defence**: Bob has share access to trip A. He PATCHes the URL `/trips/A/itinerary/<trip-B's-dayId>`. The collab gate passes (trip A has a share) but the day lookup must reject because `day.tripId !== A`. Returns 404. The whole point of adding `findDayById` was to enable this path while keeping it safe — this test proves the safety.
+5. PATCH without bearer → 401.
+
+Plus 25 existing tests (`itinerary-day-edit` + `itinerary-items` + `trip-crud`) still pass — owner-path regression is clean.
+
+**Dependencies** — none new. No Prisma migration.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Itinerary-share-coedit suite 5/5 pass.
+- ✅ Existing 25 itinerary/trip tests still pass (no regression on owner path).
+- ✅ **Full real-DB + MinIO + Redis suite: 78 suites, 510 tests pass against live Docker.** (+1 suite, +5 tests vs. previous baseline.)
+
+**Acceptance criteria**
+
+- ✅ Owner can still PATCH (no behavior change for the existing path).
+- ✅ Non-owner with an active share can PATCH (the new path).
+- ✅ Non-owner with no active share gets 404.
+- ✅ Cross-trip dayId leak defence holds (the dayId-vs-URL-tripId check).
+- ✅ Unauthenticated → 401.
+- ✅ Gate parity with Social's collab-trip rule (one rule across voting + expenses + reviews + edits).
+
+**Notes**
+
+- **Why not import `assertCanVote` from Social.** Trip → Social would create a cycle (Social already depends on Trip). Inlining 4 lines is cheaper than `forwardRef` or extracting a third package. If a third Trip-side call site appears, extract to a Trip-owned `assertTripCollabAccess` helper and have Social switch over (one-way refactor, not a cycle).
+- **Why ANY authed user, not "must have resolved this share code".** Same v1 simplification Social uses. Stronger binding requires a `TripShareResolution` ledger that records "user X clicked share code Y" — out of scope for this slice. The current gate is the lightest possible "the owner published this for collaboration; anyone authed can act" model.
+- **Why the cross-trip dayId leak test is critical.** Without it, the unscoped `findDayById` would let Bob (with share access to trip A) edit days on trip B (no share access) by passing trip A's id in the URL but trip B's dayId as the param. The day lookup would succeed; the gate would pass for trip A; the write would land on trip B. Adding `day.tripId === cmd.tripId` after the lookup closes the hole. The test is what makes the hole findable in code review later.
+- **What changed in the existing day-edit suite's behavior.** Nothing — the owner path goes through the same gate (owner branch returns true before checking shares). The 25 existing tests passed without modification, which is the strongest signal that the refactor preserved owner semantics exactly.
+- **Pattern consolidation.** This is the second time the "owner OR active share" gate has been applied (first was Social's voting/expenses/reviews). The third time it appears, extract to a shared helper. For now, two parallel implementations with identical 4-line semantics is acceptable.
+- **Collab UX is now real.** Vote + expense + review + edit all work for share recipients. The remaining trip-share follow-ups (TripShareResolution ledger; tiered view/edit/admin shares; share-recipient comments) are product polish, not v1-blocking. Trip-planner MVP just crossed a meaningful threshold: a group of friends can actually plan a trip together end-to-end.
 
 ---
 
