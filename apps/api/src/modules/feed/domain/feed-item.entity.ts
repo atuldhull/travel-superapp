@@ -12,10 +12,18 @@
  * "I just shared this album" is the meaningful event, not "I
  * created this draft last month").
  *
- * Installed by prompt [IV.18.17.1].
+ * Installed by prompt [IV.18.17.1]. Extended by [IV.18.17.2]
+ * with sos_triggered + expense_added + vote_cast kinds.
  */
 
-export type FeedItemKind = 'trip' | 'review' | 'memory_book_published' | 'scam_report';
+export type FeedItemKind =
+  | 'trip'
+  | 'review'
+  | 'memory_book_published'
+  | 'scam_report'
+  | 'sos_triggered'
+  | 'expense_added'
+  | 'vote_cast';
 
 export interface FeedItemTripPayload {
   readonly tripId: string;
@@ -43,6 +51,27 @@ export interface FeedItemScamReportPayload {
   readonly verified: boolean;
 }
 
+export interface FeedItemSosTriggeredPayload {
+  readonly sosEventId: string;
+  readonly trigger: string;
+  readonly resolvedAt: string | null;
+}
+
+export interface FeedItemExpenseAddedPayload {
+  readonly expenseId: string;
+  readonly tripId: string;
+  readonly amountUsd: string;
+  readonly currency: string;
+}
+
+export interface FeedItemVoteCastPayload {
+  readonly voteId: string;
+  readonly tripId: string;
+  readonly targetType: string;
+  readonly targetId: string;
+  readonly value: number;
+}
+
 interface FeedItemBase {
   readonly occurredAt: Date;
 }
@@ -57,4 +86,16 @@ export type FeedItem =
   | (FeedItemBase & {
       readonly kind: 'scam_report';
       readonly payload: FeedItemScamReportPayload;
+    })
+  | (FeedItemBase & {
+      readonly kind: 'sos_triggered';
+      readonly payload: FeedItemSosTriggeredPayload;
+    })
+  | (FeedItemBase & {
+      readonly kind: 'expense_added';
+      readonly payload: FeedItemExpenseAddedPayload;
+    })
+  | (FeedItemBase & {
+      readonly kind: 'vote_cast';
+      readonly payload: FeedItemVoteCastPayload;
     });
