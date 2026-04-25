@@ -77,6 +77,19 @@ export interface MediaAssetRepository {
    * Added by `[IV.18.18.4]`.
    */
   adminDelete(id: string): Promise<boolean>;
+
+  /**
+   * Returns the set of all `s3KeyRaw` values currently referenced
+   * by some MediaAsset row. Used by the orphan-sweep cron to decide
+   * which bucket objects are reachable and which are orphaned.
+   *
+   * Bounded by total media-row count; v1 inboxes are small, but a
+   * future scale-up may want a streaming/chunked variant or a
+   * smarter "diff S3 against DB in pages" approach.
+   *
+   * Added by `[IV.18.18.5]`.
+   */
+  listAllS3Keys(): Promise<ReadonlySet<string>>;
 }
 
 export interface AdminMediaListInput {

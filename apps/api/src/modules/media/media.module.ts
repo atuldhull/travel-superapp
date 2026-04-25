@@ -31,6 +31,7 @@ import { GetPublishedAssetDownloadUrlUseCase } from './application/get-published
 import { GetPublishedMemoryBookUseCase } from './application/get-published-memory-book.use-case';
 import { ListMemoryBooksUseCase } from './application/list-memory-books.use-case';
 import { ListTripMediaUseCase } from './application/list-trip-media.use-case';
+import { OrphanS3SweepUseCase } from './application/orphan-s3-sweep.use-case';
 import { MEDIA_ASSET_REPOSITORY } from './application/ports/media-asset.repository';
 import { MEMORY_BOOK_REPOSITORY } from './application/ports/memory-book.repository';
 import { STORAGE_PROVIDER } from './application/ports/storage-provider';
@@ -44,6 +45,7 @@ import { TripMediaAdapter } from './infrastructure/trip-media.adapter';
 import { AdminMediaController } from './interface/admin-media.controller';
 import { MediaController } from './interface/media.controller';
 import { MemoryBookController } from './interface/memory-book.controller';
+import { OrphanS3SweepScheduler } from './interface/orphan-s3-sweep.scheduler';
 
 @Module({
   // Import TripModule so the trip-attachment + list-by-trip
@@ -77,6 +79,8 @@ import { MemoryBookController } from './interface/memory-book.controller';
     { provide: TRIP_MEDIA_PORT, useClass: TripMediaAdapter },
     AdminListMediaUseCase,
     AdminDeleteMediaUseCase,
+    OrphanS3SweepUseCase,
+    OrphanS3SweepScheduler,
   ],
   exports: [MEDIA_ASSET_REPOSITORY, MEMORY_BOOK_REPOSITORY, STORAGE_PROVIDER, TRIP_MEDIA_PORT],
 })

@@ -11,6 +11,18 @@
  *                                    before we flip the row to
  *                                    `ready`. `true` only if the
  *                                    object is present.
+ *   - `listAllKeys`                — paginated bucket enumeration
+ *                                    used by the orphan-sweep cron.
+ *                                    Returns every object key in
+ *                                    the bucket. Bounded by the
+ *                                    bucket size; v1 inboxes are
+ *                                    small, but a future scale-up
+ *                                    may want a streaming variant.
+ *                                    Added by `[IV.18.18.5]`.
+ *   - `deleteObject`               — drop a single key. Idempotent
+ *                                    by S3 contract: deleting a
+ *                                    missing key is a no-op + 204.
+ *                                    Added by `[IV.18.18.5]`.
  *
  * Installed by prompt [IV.18.12.1].
  */
@@ -24,6 +36,8 @@ export interface StorageProvider {
   createPresignedUploadUrl(req: PresignedUploadRequest): Promise<string>;
   createPresignedDownloadUrl(key: string, expiresSec: number): Promise<string>;
   objectExists(key: string): Promise<boolean>;
+  listAllKeys(): Promise<readonly string[]>;
+  deleteObject(key: string): Promise<void>;
 }
 
 export const STORAGE_PROVIDER = Symbol('StorageProvider');
