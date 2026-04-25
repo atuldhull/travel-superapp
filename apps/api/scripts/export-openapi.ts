@@ -111,7 +111,12 @@ async function main(): Promise<void> {
   // commented out — flip on if/when the future orval SDK generator
   // wants the canonical form.
   const yaml = await import('yaml').catch(() => null);
-  const outDir = join(process.cwd(), 'docs', 'api');
+  // Resolve docs/api/ from the script's location so the output
+  // always lands at the repo root regardless of where the script
+  // is invoked from. `pnpm --filter=api api:openapi` sets cwd to
+  // `apps/api`; `pnpm` from the repo root sets cwd to repo root.
+  // Either way, this file lives at apps/api/scripts/.
+  const outDir = join(__dirname, '..', '..', '..', 'docs', 'api');
   mkdirSync(outDir, { recursive: true });
 
   if (yaml) {
