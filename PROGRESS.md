@@ -10,18 +10,82 @@
 
 ## Summary
 
-| Counter             | Value                                                                              |
-| ------------------- | ---------------------------------------------------------------------------------- |
-| Prompts completed   | 120 (119 full + 1 foundation-only; bundled EXIF-strip stub + prom-client /metrics) |
-| Prompts in progress | 0                                                                                  |
-| Prompts blocked     | 0                                                                                  |
-| Last prompt         | `[IV.18.10.6]` — prom-client /metrics endpoint (bundled with `[IV.18.12.14]`)      |
-| Last commit date    | 2026-04-25                                                                         |
-| Phase               | Phase 1 — Prometheus scrape live + EXIF gate flagged; 87 suites, 556 tests         |
+| Counter             | Value                                                                               |
+| ------------------- | ----------------------------------------------------------------------------------- |
+| Prompts completed   | 122 (121 full + 1 foundation-only; bundled trip-overview cache + domain event ctrs) |
+| Prompts in progress | 0                                                                                   |
+| Prompts blocked     | 0                                                                                   |
+| Last prompt         | `[IV.18.10.7]` — domain event counters (bundled with `[IV.18.2.15]`)                |
+| Last commit date    | 2026-04-25                                                                          |
+| Phase               | Phase 1 — overview cache live + event metrics live; 89 suites, 562 tests            |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.10.7] — Domain event counters (bundled with `[IV.18.2.15]`)
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 11 (Observability)
+
+**What was done**
+
+Hooks every domain-event publish into the prom-client registry from `[IV.18.10.6]`. New metric:
+
+- `domain_events_total{event="<name>"}` — Counter, monotonic across process lifetime.
+
+**Why a decorator + provider swap.** The bus implementation lives in `@app/events` workspace package, intentionally decoupled from app-specific concerns like prom-client. Instrumenting the package directly would couple it. The decorator pattern lets `apps/api/src/common/events/events.module.ts` wrap the underlying `InMemoryEventBus` (or future `RedisStreamsEventBus`) at the wiring layer — same decorator covers either. Subscribe + close pass through unchanged; only `publish` records.
+
+**Real Counter, not Gauge.** Unlike cache metrics (which read a running snapshot), every `publish` is a discrete `.inc()` call mapped 1:1 onto the prom-client Counter contract. No delta-tracker needed.
+
+**Cardinality stays tiny.** Bounded by the distinct event-name catalog (~10 events today across `Identity.*`, `Trip.*`, `Safety.*`), no user-derived labels. A future "every endpoint hit" event would need a sampler before joining; today's catalog is safe to label-as-is.
+
+**Failure semantics.** `metrics.recordEvent` is a no-op before `MetricsService.onModuleInit` wires the counter. Failures (none expected) wouldn't propagate — the inner bus's publish runs unconditionally afterward. Metric drops never break the primary write path.
+
+**Files**
+
+- `apps/api/src/common/metrics/metrics.service.ts` — adds `domain_events_total` Counter + `recordEvent(name)` method
+- `apps/api/src/common/events/metrics-recording-event-bus.ts` (new) — decorator implementing `EventBus`
+- `apps/api/src/common/events/events.module.ts` — `EVENT_BUS` token now resolved via factory wrapping `InMemoryEventBus` with metrics
+- `apps/api/test/metrics-domain-events.e2e-spec.ts` (new) — 3 tests: register triggers `Identity.SessionIssued`, monotonic across multiple registrations, prom-format label shape
+
+**Commits**
+
+- `a9e57a7` — feat(IV.18.10.7) domain event counters
+
+---
+
+### [IV.18.2.15] — Trip overview cache (bundled with `[IV.18.10.7]`)
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 11 (Caching) + 3.2 (Trip Planning)
+
+**What was done**
+
+`GET /trips/:id/overview` is the heaviest composite endpoint in the API — it folds 7 sub-fetches (itinerary, weather, stays, eateries, events, transport, media) via `Promise.all` on every request. This slice wraps the controller's `overview()` with a `TypedRedisCache` keyed by `<tripId>:<userId>`. First call computes + caches; subsequent calls within 60s short-circuit straight to cache.
+
+**Per-user keying makes the cache safe under collab-trip sharing.** A TripShare grant or revoke for some other user can't leak a stale "you have access" view to them — their cache key is independent. Slight cost is duplicate cached payloads when 2+ users collab on the same trip, but the simplicity win on the auth posture is worth it.
+
+**Cache type: `TypedRedisCache<unknown>` with a controller-side cast on read.** The `TripOverviewDto` shape is JSON-clean (every field is a string/number/array of those after the `toDto()` mappings), so JSON round-trip is lossless. Casting is the pragmatic shortcut that avoids dragging `TripOverviewDto` out of the controller (which would otherwise force a clean-hex layer detour to share the type with the cache class).
+
+**Invalidation: TTL-only.** Trip-balances was write-invalidated because expense writes are localized to one cache; overview blends 7+ data sources, so write-invalidation would require hooking every writer in every module. 60-second staleness window is the right trade — long enough that a tab refresh / nav-back hits the warmed cache, short enough that itinerary edits and new stays show up "promptly" without explicit invalidation.
+
+**Auto-instrumented by `[IV.18.10.5]` + `[IV.18.10.6]`.** The new cache shows up on `/metrics` as `cache_hit_total{cache="trip-overview"}` + `cache_miss_total{...}` with zero extra wiring (static-instance registry pattern from `[IV.18.10.6]`).
+
+**Files**
+
+- `apps/api/src/modules/trip/infrastructure/trip-overview-cache.ts` (new) — `TypedRedisCache<unknown>` subclass + `TRIP_OVERVIEW_CACHE_TTL_SEC` constant
+- `apps/api/src/modules/trip/interface/trip.controller.ts` — `overview()` wraps cache.get → compute → cache.set
+- `apps/api/src/modules/trip/trip.module.ts` — register `TripOverviewCache` provider
+- `apps/api/test/trip-overview-cache.e2e-spec.ts` (new) — 3 tests: cold-miss → warm-hit increment, payload equality across cold/warm, namespace label correct
+
+**Combined verification**
+
+`pnpm --filter=api typecheck` green. Full integration suite: **89 passed, 562 passed** (covers both bundled slices).
+
+**Commits**
+
+- `14292fe` — feat(IV.18.2.15) trip overview cache
 
 ---
 
