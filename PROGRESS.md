@@ -10,18 +10,81 @@
 
 ## Summary
 
-| Counter             | Value                                                                      |
-| ------------------- | -------------------------------------------------------------------------- |
-| Prompts completed   | 100 (99 full + 1 foundation-only; trip × media overview fold just shipped) |
-| Prompts in progress | 0                                                                          |
-| Prompts blocked     | 0                                                                          |
-| Last prompt         | `[IV.18.12.10]` — trip × media overview fold (7th section)                 |
-| Last commit date    | 2026-04-25                                                                 |
-| Phase               | Phase 1 — trip-detail single round-trip; 66 suites, 447 tests              |
+| Counter             | Value                                                              |
+| ------------------- | ------------------------------------------------------------------ |
+| Prompts completed   | 101 (100 full + 1 foundation-only; hard-delete cron just shipped)  |
+| Prompts in progress | 0                                                                  |
+| Prompts blocked     | 0                                                                  |
+| Last prompt         | `[IV.18.16.3]` — hard-delete cron sweep (GDPR retention close-out) |
+| Last commit date    | 2026-04-25                                                         |
+| Phase               | Phase 1 — GDPR/DPDP erasure complete; 67 suites, 452 tests         |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.16.3] — Hard-delete cron sweep (GDPR retention close-out)
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 13.10 (Compliance & Privacy)
+
+**What was done**
+
+Closes the GDPR Art. 17 / DPDP §12 right-to-erasure story shipped across `[IV.18.16.1]` (data export) and `[IV.18.16.2]` (soft-delete + session revoke). A daily background tick wipes user rows whose `deletedAt` is older than the 7-day retention window. The retention window gives a soft-deleted user a support-recoverable mistake-window while still satisfying "delete within reasonable timeframe".
+
+The Postgres-cascade does the heavy lifting: every user-scoped FK in the schema has `onDelete: Cascade` (Trip, Session, MediaAsset, MemoryBook, NotificationLog, Vote, Expense, Review, ScamReport, SosEvent, StayBooking, Subscription, EscrowHold, Commission, Agent, LiveEvent, UserOAuthIdentity, MfaBackupCode, Preferences, Device, NotificationPreference). A single `prisma.user.deleteMany({ where: { deletedAt: { not: null, lte: cutoff } } })` wipes the user + every dependent row in one Postgres transaction. No manual fan-out needed.
+
+**Scheduler choice: `setInterval` over `@nestjs/schedule`.** The cron package isn't in deps and this slice doesn't justify pulling it in (single-instance v1, no cron-syntax requirements). Plain `setInterval` inside an `OnModuleInit` lifecycle, paired with `OnModuleDestroy` `clearInterval`. Critical detail: the scheduler skips itself when `NODE_ENV === 'test'` so Jest test processes don't leak 24-hour timer handles. When the deploy goes multi-instance OR the schedule needs cron syntax, swap in `@nestjs/schedule` + `@Cron(...)` — the use-case + adapter stay unchanged (the scheduler is the only thing that touches the package).
+
+**Files created** (5)
+
+- `apps/api/src/modules/account/application/ports/account-purger.ts` — single-method port: `purgeOlderThan(cutoff: Date): Promise<number>`.
+- `apps/api/src/modules/account/application/purge-soft-deleted-users.use-case.ts` — computes cutoff (`now - retentionDays`), calls the port, returns `{ purged: count }`. `retentionDays` + `now` are command-overrideable for tests; default 7 days.
+- `apps/api/src/modules/account/infrastructure/prisma-account-purger.ts` — single `prisma.user.deleteMany({ where: { deletedAt: { not: null, lte: cutoff } } })`. The `not: null` guard means active users (deletedAt null) can never be swept, even if a future bug sets a malformed cutoff.
+- `apps/api/src/modules/account/interface/account-purge.scheduler.ts` — `OnModuleInit` schedules a 24h `setInterval` + runs one tick immediately (a deploy after long downtime catches up); `OnModuleDestroy` clears it. Re-entrant guard prevents stacked ticks. NODE_ENV=test skip so Jest exits cleanly. Each tick is wrapped in try/catch — a failed sweep becomes the next day's bigger sweep, eventual-consistency posture for a compliance backstop.
+- `apps/api/test/account-purge.e2e-spec.ts` — 5 integration tests against real Postgres.
+
+**Files edited** (1)
+
+- `apps/api/src/modules/account/account.module.ts` — registers `ACCOUNT_PURGER` provider, `PurgeSoftDeletedUsersUseCase`, `AccountPurgeScheduler`. Exports the use-case for tests + a future admin-trigger surface.
+
+**Tests** (5 cases, real-Postgres):
+
+1. User soft-deleted older than 7 days → purged + cascades wipe dependents (verified via a seeded Trip + NotificationLog that disappear in the same call).
+2. User soft-deleted within 7 days (3 days ago) → still present after sweep.
+3. Active user (deletedAt null) → never swept.
+4. Idempotent: a second sweep with the same cutoff returns purged ≥ 0 (the eligible row is gone; the count can't be negative; specific row verified deleted).
+5. Mixed cohort: 1 eligible + 1 fresh + 1 active → only the eligible row dies.
+
+Test scaffolding backdates `User.deletedAt` directly via `prisma.user.update` to simulate the retention window passing — much faster than waiting 7 days. The use-case is retrieved via `moduleRef.get(PurgeSoftDeletedUsersUseCase)` and called directly; the `setInterval` scheduler skip in NODE_ENV=test means we don't deal with the actual cron tick in any test.
+
+**Dependencies** — none new. The scheduler intentionally avoids `@nestjs/schedule` to stay within CLAUDE.md rule 2 (dep-lock); see the scheduler JSDoc for the swap path.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Account-purge suite 5/5 pass.
+- ✅ **Full real-DB + MinIO suite: 67 suites, 452 tests pass against live Docker.** (+1 suite, +5 tests vs. previous baseline.)
+
+**Acceptance criteria**
+
+- ✅ Soft-deleted users older than 7 days are hard-deleted.
+- ✅ Cascades wipe every user-scoped dependent row in the same Postgres transaction.
+- ✅ Active users + recently-soft-deleted users are untouched.
+- ✅ Sweep is idempotent.
+- ✅ Scheduler runs daily, fires immediately at module init for catch-up.
+- ✅ Scheduler is test-safe (NODE_ENV=test skips the timer).
+
+**Notes**
+
+- **Why 7 days, not 30 / 14 / 24h.** Two competing pressures: (1) the user must have a real grace period to recover from a mistake-delete (24h is too short — people delete on impulse and reconsider). (2) "Reasonable timeframe" for compliance. 7 days is the modal industry choice (Google, Microsoft, Stripe all use 30 days for some flows + 7 for others; 7 is a fair compromise that satisfies the spirit of the regs without indefinite retention). Configurable via the use-case's `retentionDays` argument if the product needs to tune it later.
+- **Why Postgres `onDelete: Cascade` over manual fan-out in a `$transaction`.** The schema already has cascades wired on every user-scoped FK (this was set up in `[III.12.1]`). Re-implementing the fan-out in app code would: (1) be slower (multiple queries vs. one cascade); (2) be a maintenance burden every time a new user-scoped table lands; (3) risk a bug where a forgotten table becomes an orphan. The cascade IS the transaction.
+- **Why `setInterval` and `OnModuleInit` over `@nestjs/schedule`.** Schedule's cron syntax is a power feature — daily-at-midnight matters when you want to align maintenance windows. v1 doesn't care about midnight; it just needs "roughly every 24 hours". Plain `setInterval` is enough, avoids a new dep, and the swap path is one file (the scheduler) when requirements change. The use-case + adapter are framework-agnostic.
+- **Why fire-and-forget on the immediate tick.** A deploy after long downtime might face hours of accumulated soft-deletes. Awaiting the first tick during `onModuleInit` would block app boot for that initial sweep — observability is happier with a quick boot + an async first sweep that may take longer. The fire-and-forget pattern is acceptable here because the use-case has its own try/catch logging.
+- **Why the re-entrant guard.** A single sweep should never run on top of itself. With a 24h interval that's nearly always true, but a long sweep on a heavily-soft-deleted DB could overrun. The `running` flag is cheap insurance; the alternative (queuing) adds complexity for a problem that probably never occurs in practice.
+- **Why `unref()` the timer.** A non-test Node process should be kept alive by its real work (the HTTP server). The purge timer is a backstop, not a primary lifetime gate. `.unref()` ensures a future graceful-shutdown path that closes the HTTP server can exit without waiting for the next 24h tick.
+- **GDPR/DPDP erasure is now functionally complete.** The triad: `[IV.18.16.1]` Art. 15 (right of access), `[IV.18.16.2]` Art. 17 soft-delete + session revoke, `[IV.18.16.3]` Art. 17 hard-delete cron. Plus right-to-portability (export-as-JSON falls out of `[IV.18.16.1]`'s structured response) and right-to-rectification (the user can edit their profile via existing identity routes). The Account/GDPR module is at functional 100%.
 
 ---
 
