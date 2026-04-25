@@ -26,12 +26,13 @@
  * Installed by prompt [IV.18.10.6].
  */
 import { Injectable, type OnModuleInit } from '@nestjs/common';
-import { collectDefaultMetrics, Gauge, Registry } from 'prom-client';
+import { collectDefaultMetrics, Counter, Gauge, Registry } from 'prom-client';
 import { TypedRedisCache } from '../cache/typed-redis-cache';
 
 @Injectable()
 export class MetricsService implements OnModuleInit {
   private readonly registry: Registry;
+  private domainEventsCounter!: Counter<'event'>;
 
   constructor() {
     this.registry = new Registry();
@@ -65,6 +66,31 @@ export class MetricsService implements OnModuleInit {
         }
       },
     });
+
+    // Real Counter (not Gauge) for domain events: each publish is
+    // a discrete `inc()` at the EventBus seam, so the prom-client
+    // Counter contract maps perfectly. Cardinality bounded by the
+    // distinct event-name catalog (~10 events today: Identity.*,
+    // Trip.*, Safety.*, etc.). Added by `[IV.18.10.7]`.
+    this.domainEventsCounter = new Counter({
+      name: 'domain_events_total',
+      help: 'Cumulative count of domain events published, per event name.',
+      labelNames: ['event'],
+      registers: [this.registry],
+    });
+  }
+
+  /**
+   * Increment `domain_events_total{event=<name>}`. Called by the
+   * MetricsRecordingEventBus decorator on every publish. No-op
+   * before `onModuleInit` has wired the counter (e.g., during
+   * test module construction); a real publish in that window is
+   * not observable but also not harmful.
+   *
+   * Added by `[IV.18.10.7]`.
+   */
+  recordEvent(eventName: string): void {
+    this.domainEventsCounter?.labels(eventName).inc();
   }
 
   /** Renders the current scrape as Prometheus text-format. */
