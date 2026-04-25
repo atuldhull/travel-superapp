@@ -17,6 +17,8 @@
 import { Global, Injectable, Module, OnModuleDestroy } from '@nestjs/common';
 import { EVENT_BUS, InMemoryEventBus, type EventBus } from '@app/events';
 import { createLogger } from '@app/logger';
+import { MetricsService } from '../metrics/metrics.service';
+import { MetricsRecordingEventBus } from './metrics-recording-event-bus';
 
 const log = createLogger('events.module');
 
@@ -43,8 +45,15 @@ class EventBusLifecycle implements OnModuleDestroy {
     // env-gate lives (`if (env.EVENTS_BACKEND === 'redis') ...`).
     InMemoryEventBus,
     {
+      // EVENT_BUS resolves to the metrics-decorated bus. Every
+      // publish lands a `domain_events_total{event=<name>}` inc
+      // before delegating to the underlying InMemoryEventBus.
+      // Wiring lives here (not inside @app/events) so the events
+      // package stays prom-client-free. Added by `[IV.18.10.7]`.
       provide: EVENT_BUS,
-      useExisting: InMemoryEventBus,
+      useFactory: (bus: InMemoryEventBus, metrics: MetricsService) =>
+        new MetricsRecordingEventBus(bus, metrics),
+      inject: [InMemoryEventBus, MetricsService],
     },
     // Lifecycle holder so Nest calls `bus.close()` on shutdown.
     // Adding the provider chain ensures the `bus` argument is
