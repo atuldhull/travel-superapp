@@ -10,18 +10,99 @@
 
 ## Summary
 
-| Counter             | Value                                                                     |
-| ------------------- | ------------------------------------------------------------------------- |
-| Prompts completed   | 94 (93 full + 1 foundation-only; Memory Book publish flow just shipped)   |
-| Prompts in progress | 0                                                                         |
-| Prompts blocked     | 0                                                                         |
-| Last prompt         | `[IV.18.12.7]` — Memory Book publish flow (public read + presigned bytes) |
-| Last commit date    | 2026-04-25                                                                |
-| Phase               | Phase 1 — first public-readable Media surface; 60 suites, 416 tests       |
+| Counter             | Value                                                                    |
+| ------------------- | ------------------------------------------------------------------------ |
+| Prompts completed   | 95 (94 full + 1 foundation-only; GDPR data-export endpoint just shipped) |
+| Prompts in progress | 0                                                                        |
+| Prompts blocked     | 0                                                                        |
+| Last prompt         | `[IV.18.16.1]` — GDPR / DPDP / COPPA data-export endpoint                |
+| Last commit date    | 2026-04-25                                                               |
+| Phase               | Phase 1 — first compliance surface; 61 suites, 421 tests                 |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.16.1] — GDPR / DPDP / COPPA data-export endpoint (give-me-my-data)
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 13.10 (Compliance & Privacy)
+
+**What was done**
+
+Ships the first compliance-driven surface: a single authenticated `GET /api/v1/account/export` that returns the caller's full data bundle as JSON. Every user-attributable row across all 14 modules is fanned out via owner-scoped Prisma reads in a single `Promise.all`, so the bundle returns in roughly the slowest-section's time, not the sum.
+
+**Why one endpoint, not 14 per-module exports?** GDPR Art. 15 / India DPDP §11 / COPPA all phrase the right as "everything you have on me, in one request". Per-module exports force clients to know the schema and the right call order. Single endpoint = single audit point + single response shape. Memory budget is fine — even a power user has < 10MB of typed rows.
+
+HTTP surface:
+
+| Route                        | Auth   | What it does                                                |
+| ---------------------------- | ------ | ----------------------------------------------------------- |
+| `GET /api/v1/account/export` | bearer | Returns full owner-scoped data bundle for the authed caller |
+
+**Files created** (6)
+
+- `apps/api/src/modules/account/account.module.ts` — 15th HTTP module.
+- `apps/api/src/modules/account/domain/user-data-export.entity.ts` — strict-typed envelope: per-section `{ count, rows[] }` + `metadata: { exportedAt, formatVersion: 1, userId }`. 23 distinct row shapes — every Prisma model that has a user-attributable column.
+- `apps/api/src/modules/account/application/ports/user-data-aggregator.ts` — single-method port: `aggregateForUser(userId): Promise<UserDataBundle | null>`.
+- `apps/api/src/modules/account/application/export-user-data.use-case.ts` — wraps the aggregator with the metadata envelope; `null` from the port → 404 `USER_NOT_FOUND`.
+- `apps/api/src/modules/account/infrastructure/prisma-user-data-aggregator.ts` — owner-scoped fan-out across 26 Prisma reads via `Promise.all`. Itinerary days/items use Prisma relation filters (`day: { trip: { userId } }`) to scope by the user's own trips in a single SQL roundtrip. Decimal columns (`amountUsd`, `priceUsd`, `totalPriceUsd`) emit as `.toFixed(2)` strings to avoid precision loss in JSON serialization.
+- `apps/api/test/account-export.e2e-spec.ts` — 5 integration tests against real Postgres + MinIO (5th leans on MinIO via the rich-user media path).
+
+**Files edited** (1) — `apps/api/src/app.module.ts` (+1 module import: `AccountModule`).
+
+**Privacy invariants enforced by the adapter (NOT the domain shape):**
+
+- `User.passwordHash`, `User.mfaSecret`, `User.emailEncrypted` — NEVER included.
+- MFA backup codes — emit `{ id, used, usedAt, createdAt }` only; the codeHash and original plaintext are never in the bundle.
+- Sessions — emit `userAgent` + timestamps + revocation; `refreshTokenH` (sha256 hash) and `ipHash` are NOT in the bundle (operationally useful, not user-meaningful).
+- PostGIS columns (`Trip.center`, `MediaAsset.coordinates`, `ScamReport.coordinates`, `SosEvent.coordinates`) — intentionally omitted in v1. Bringing them back as `{ lng, lat }` requires raw-SQL extraction via `GeoQueries` (CLAUDE.md rule 11) and is queued for v2.
+
+**Cross-trip social rows** — v1 only includes rows the caller directly authored:
+
+- `Vote` where `userId == caller`.
+- `Expense` where `paidById == caller` (NOT participation-only via `splitShare` JSON keys).
+- `Review` where `authorId == caller`.
+
+A user appearing as a participant key in someone else's `Expense.splitShare` is NOT in this bundle. Adding that requires JSON-key indexing or a per-user shadow row, neither of which exists today; queued for v2.
+
+**Tests** (`apps/api/test/account-export.e2e-spec.ts`):
+
+1. No bearer → 401 `UNAUTHENTICATED`.
+2. Empty user (just registered) → 200; only Identity is populated (User row + ≥1 Session + ≥1 NotificationLog from `session_issued_new_device`); every other section is `{ count: 0, rows: [] }`.
+3. Rich user (created trip + scam report + media asset + memory book) → bundle contains every authored row.
+4. Cross-user IDOR — Bob's bundle contains zero of Alice's rows even when both seed similar shapes; Alice's bundle still contains all of hers. The owner-scoped queries are the security boundary.
+5. Itinerary fan-out — trip with generated itinerary → exact day count present in `itineraryDays`; items section empty (correct v1 shape since itinerary generation only mints day skeletons).
+
+**Dependencies** — none new. No Prisma migration — every entity exported has been on the schema since day one.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Account-export suite 5/5 pass.
+- ✅ **Full real-DB + MinIO suite: 61 suites, 421 tests pass against live Docker.** (+1 suite, +5 tests vs. previous baseline.)
+
+**Acceptance criteria**
+
+- ✅ Authed caller can fetch their full bundle.
+- ✅ Bundle includes metadata (`exportedAt`, `formatVersion: 1`, `userId`).
+- ✅ Every section is `{ count, rows[] }` shape.
+- ✅ Cross-user IDOR isolation — Bob never sees Alice's rows.
+- ✅ Sensitive Identity columns (passwordHash, mfaSecret, emailEncrypted, refreshTokenH, ipHash) NOT in the bundle.
+- ✅ PostGIS columns omitted in v1 (documented + safe).
+- ✅ Decimal columns serialize as `.toFixed(2)` strings.
+
+**Notes**
+
+- **Why a port + adapter, not direct Prisma in the use-case.** The aggregator is the cross-module read. Routing it through a port keeps the application layer free of Prisma imports + lets a future deployment topology (sharded tenant DB, per-section read-replica routing) ship as a second adapter without touching the use-case. The clean-arch dependency rule (CLAUDE.md rule 10) holds.
+- **Why parallel `Promise.all` over 26 reads, not sequential.** Postgres handles 26 short owner-scoped indexed reads concurrently with no contention — they all touch different tables. Sequential would cost ~26 × per-roundtrip-latency. Parallel costs ~max(per-section-latency). Power-user export goes from "noticeably slow" to "indistinguishable from a single query".
+- **Why the use-case fails on adapter error rather than partial-export.** Partial exports silently under-disclose, which defeats the legal point of the surface. Any read fails → 500 → caller retries. This is the right failure mode for a compliance endpoint: never emit a bundle that's incomplete-and-claims-to-be-complete.
+- **Why `formatVersion: 1` not `formatVersion: "1.0.0"`.** A single integer is enough for "the wire shape changed; tooling that snapshots a user's bundle should diff or re-fetch". Semver would imply we'd ship `1.0.1` for a bug fix — bug fixes don't change the wire shape, they fix what's wrong with it. Integer monotonic; cheap.
+- **Why `User.emailHash` is in the bundle but not `emailEncrypted`.** The hash is opaque (sha256 of pepper+email) — it can't be reversed to the plaintext email without the pepper, and the user already knows their own email. The encrypted form requires the pgcrypto key to decrypt, which is a system secret; shipping it would either be useless (still encrypted) or a leak (if we decrypted it, we'd be exposing the key). The hash communicates "yes, we have a record of you" without giving the user data they'd need a key to make sense of.
+- **Why no Subscription / EscrowHold / Commission filtering even though v1 has zero of these rows.** The aggregator exports them anyway — Phase 2 will populate the tables, and the export shape is then already in place. Cost: 3 indexed reads that return 0 rows on every Phase 1 export. Effectively free.
+- **First compliance surface in the codebase.** Production-readiness for "GDPR / DPDP / COPPA give-me-my-data" went from 0% to ~80% — the missing 20% is the right-to-erasure flow (`POST /account/delete` with a 7-day soft-delete window + hard-delete cron), which is the natural follow-up. Mentioned in the controller JSDoc but explicitly NOT in this slice.
+- **15th HTTP module.** Account joins identity, trip, places, stays, food, events, weather, transport, safety, admin, health, media, notifications, social. The pattern of a tiny module that cuts across domains (this one reads from 13 of the others) is precedented by `admin/places-curation` (cross-cuts Places + ModerationItem).
 
 ---
 
