@@ -47,6 +47,7 @@ import { UpdateTripUseCase } from './application/update-trip.use-case';
 import { PrismaItineraryRepository } from './infrastructure/prisma-itinerary.repository';
 import { PrismaTripRepository } from './infrastructure/prisma-trip.repository';
 import { PrismaTripShareRepository } from './infrastructure/prisma-trip-share.repository';
+import { TripOverviewCache } from './infrastructure/trip-overview-cache';
 import { AdminTripsController } from './interface/admin-trips.controller';
 import { TripController } from './interface/trip.controller';
 
@@ -94,6 +95,7 @@ import { TripController } from './interface/trip.controller';
     GetTripEventsUseCase,
     GetTripTransportLegsUseCase,
     GetTripOverviewUseCase,
+    TripOverviewCache,
     AdminListTripsUseCase,
     AdminArchiveTripUseCase,
     AdminDeleteTripUseCase,

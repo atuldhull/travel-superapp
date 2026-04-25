@@ -59,6 +59,10 @@ import { UpdateTripUseCase } from '../application/update-trip.use-case';
 import type { ItineraryDay } from '../domain/itinerary.entity';
 import type { Trip } from '../domain/trip.entity';
 import {
+  TRIP_OVERVIEW_CACHE_TTL_SEC,
+  TripOverviewCache,
+} from '../infrastructure/trip-overview-cache';
+import {
   CreateTripBodySchema,
   CreateTripShareBodySchema,
   UpdateDayItemsBodySchema,
@@ -118,6 +122,7 @@ export class TripController {
     private readonly getTripOverview: GetTripOverviewUseCase,
     private readonly getTripEvents: GetTripEventsUseCase,
     private readonly getTripTransportLegs: GetTripTransportLegsUseCase,
+    private readonly tripOverviewCache: TripOverviewCache,
   ) {}
 
   @Post()
@@ -292,8 +297,18 @@ export class TripController {
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
   ): Promise<TripOverviewDto> {
+    // Per-user cache key — see `TripOverviewCache` JSDoc for the
+    // collab-trip auth-posture rationale. Cache hit short-circuits
+    // the 7-section composite fetch entirely; cache miss falls back
+    // to the use-case + DTO mapping below.
+    const cacheKey = `${id}:${user.sub}`;
+    const cached = await this.tripOverviewCache.get(cacheKey);
+    if (cached !== null) {
+      return cached as TripOverviewDto;
+    }
+
     const ov = await this.getTripOverview.execute(id, user.sub);
-    return {
+    const dto: TripOverviewDto = {
       trip: toDto(ov.trip),
       itinerary: mapSection(ov.itinerary, (days) => ({ days: days.map(toDayDto) })),
       weather: mapSection(ov.weather, (f) => ({ forecast: f })),
@@ -311,6 +326,8 @@ export class TripController {
         })),
       })),
     };
+    await this.tripOverviewCache.set(cacheKey, dto, TRIP_OVERVIEW_CACHE_TTL_SEC);
+    return dto;
   }
 
   /**
