@@ -10,18 +10,78 @@
 
 ## Summary
 
-| Counter             | Value                                                                              |
-| ------------------- | ---------------------------------------------------------------------------------- |
-| Prompts completed   | 124 (123 full + 1 foundation-only; bundled HTTP duration histogram + notif delete) |
-| Prompts in progress | 0                                                                                  |
-| Prompts blocked     | 0                                                                                  |
-| Last prompt         | `[IV.18.15.6]` — notification delete verb (bundled with `[IV.18.10.8]`)            |
-| Last commit date    | 2026-04-25                                                                         |
-| Phase               | Phase 1 — RED metrics live + inbox prune verb; 91 suites, 569 tests                |
+| Counter             | Value                                                                             |
+| ------------------- | --------------------------------------------------------------------------------- |
+| Prompts completed   | 126 (125 full + 1 foundation-only; bundled NDJSON export + featured memory books) |
+| Prompts in progress | 0                                                                                 |
+| Prompts blocked     | 0                                                                                 |
+| Last prompt         | `[IV.18.13.1]` — public memory book listing (bundled with `[IV.18.16.4]`)         |
+| Last commit date    | 2026-04-25                                                                        |
+| Phase               | Phase 1 — NDJSON export + public discovery surface live; 93 suites, 578 tests     |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.13.1] — Public memory book listing (bundled with `[IV.18.16.4]`)
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.13 (Media & Memory)
+
+**What was done**
+
+Public discovery surface — `GET /memory-books/featured`. Lists currently-published memory books across all users, ordered by `publishedAt DESC`, default 20 / cap 100. `@Public()` so the marketing / explore frontend can consume it without authed sessions.
+
+**Pivot note.** Originally locked-in slice 2 was `[IV.18.15.7]` notification archive verb, but that needed a Prisma schema migration (`archived` column on NotificationLog). CLAUDE.md rule 8 makes schema-edits append-only-with-explicit-permission, so pivoted to this slice — same ~3-file footprint, zero schema impact.
+
+**Auto-exclusion of soft-purged users.** FK cascade on User delete already removes their MemoryBook rows; no extra filter needed in `listPublished`. The `publishedAt IS NOT NULL` predicate is the same gate `findPublishedById` uses, so consistency is guaranteed (an unpublished book never leaks via either route).
+
+**Files**
+
+- `apps/api/src/modules/media/application/ports/memory-book.repository.ts` — `listPublished(limit)` on the port
+- `apps/api/src/modules/media/infrastructure/prisma-memory-book.repository.ts` — `where: { publishedAt: { not: null } }`, `orderBy: { publishedAt: 'desc' }`
+- `apps/api/src/modules/media/application/list-published-memory-books.use-case.ts` (new) — clamp + delegate
+- `apps/api/src/modules/media/interface/memory-book.controller.ts` — `@Public() @Get('featured')` declared above `:id` paths
+- `apps/api/src/modules/media/media.module.ts` — register
+- `apps/api/test/memory-books-featured.e2e-spec.ts` (new) — 5 tests: @Public access, exclude unpublished, cross-user, publishedAt-DESC ordering, ?limit clamp
+
+**Commits**
+
+- `6c73ef3` — feat(IV.18.13.1) public memory book listing
+
+---
+
+### [IV.18.16.4] — Account export NDJSON streaming (bundled with `[IV.18.13.1]`)
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.1 (Identity / GDPR)
+
+**What was done**
+
+`GET /api/v1/account/export.ndjson` — line-by-line NDJSON variant of the GDPR account-export bundle. Each line is one envelope `{"type":"<section>","data":{...}}\n` so downstream tooling (jq -c, ndjson-cli, line-readers) can parse incrementally.
+
+**Envelope order:** `metadata` → `user` → `preferences` / `notification_preference` / `agent_profile` (each 0-or-1) → row-per-row across collection sections (sessions, devices, oauth_identities, mfa_backup_codes, trips, itinerary_days, itinerary_items, trip_versions, trip_shares, scam_reports, sos_events, notification_logs, media_assets, memory_books, votes, expenses, reviews, dish_reports, stay_bookings, subscriptions, escrow_holds, commissions, live_events).
+
+**Format invariant:** every line is a complete JSON object terminated by `\n`. No array wrap, no trailing comma. Empty sections emit zero lines (count is implicit in line count of that type).
+
+**Honest scope caveat.** This slice is wire-format streaming only — the use-case still calls the existing aggregator under the hood, which builds the full bundle in memory before yielding lines. Server-side memory profile is unchanged for v1; clients still benefit from line-by-line parsing. True cursor-based section-by-section streaming is queued for v2 and requires per-section pagination on the aggregator port.
+
+**Error path consistency.** Controller probes the first generator chunk before wiring the response stream so `UserNotFoundError` surfaces with the standard Nest exception path (uniform JSON error body), not mid-stream.
+
+**Files**
+
+- `apps/api/src/modules/account/application/stream-account-export.use-case.ts` (new) — async generator yielding NDJSON-encoded strings
+- `apps/api/src/modules/account/interface/account.controller.ts` — `@Get('export.ndjson')` returns `Readable.from(generator)` with `application/x-ndjson` content-type
+- `apps/api/src/modules/account/account.module.ts` — register
+- `apps/api/test/account-export-streaming.e2e-spec.ts` (new) — 4 tests: 401 without bearer, content-type, envelope shape, first-two-lines order, format invariants
+
+**Combined verification**
+
+`pnpm --filter=api typecheck` green. Full integration suite: **93 passed, 578 passed** (covers both bundled slices).
+
+**Commits**
+
+- `4fce9e7` — feat(IV.18.16.4) account export NDJSON streaming endpoint
 
 ---
 
