@@ -23,6 +23,7 @@ import { RateLimitModule } from './common/rate-limit/rate-limit.module';
 import { HealthModule } from './health/health.module';
 import { AccountModule } from './modules/account/account.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { FeedModule } from './modules/feed/feed.module';
 // Aliased to distinguish from the common/events domain-event-bus module.
 import { EventsModule as EventsSearchModule } from './modules/events/events.module';
 import { FoodModule } from './modules/food/food.module';
@@ -71,6 +72,7 @@ import { WeatherModule } from './modules/weather/weather.module';
     MediaModule,
     SocialModule,
     AccountModule,
+    FeedModule,
   ],
   providers: [
     AppNestLoggerService,
