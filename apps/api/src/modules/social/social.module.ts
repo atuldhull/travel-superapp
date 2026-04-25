@@ -37,6 +37,7 @@ import { RevokeVoteUseCase } from './application/revoke-vote.use-case';
 import { PrismaExpenseRepository } from './infrastructure/prisma-expense.repository';
 import { PrismaReviewRepository } from './infrastructure/prisma-review.repository';
 import { PrismaVoteRepository } from './infrastructure/prisma-vote.repository';
+import { EateryReviewSummaryController } from './interface/eatery-review-summary.controller';
 import { ExpensesController } from './interface/expenses.controller';
 import { PlaceReviewSummaryController } from './interface/place-review-summary.controller';
 import { ReviewsController } from './interface/reviews.controller';
@@ -53,6 +54,7 @@ import { VotesController } from './interface/votes.controller';
     VotesController,
     PlaceReviewSummaryController,
     StayReviewSummaryController,
+    EateryReviewSummaryController,
   ],
   providers: [
     { provide: VOTE_REPOSITORY, useClass: PrismaVoteRepository },
