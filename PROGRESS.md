@@ -10,18 +10,79 @@
 
 ## Summary
 
-| Counter             | Value                                                                               |
-| ------------------- | ----------------------------------------------------------------------------------- |
-| Prompts completed   | 122 (121 full + 1 foundation-only; bundled trip-overview cache + domain event ctrs) |
-| Prompts in progress | 0                                                                                   |
-| Prompts blocked     | 0                                                                                   |
-| Last prompt         | `[IV.18.10.7]` — domain event counters (bundled with `[IV.18.2.15]`)                |
-| Last commit date    | 2026-04-25                                                                          |
-| Phase               | Phase 1 — overview cache live + event metrics live; 89 suites, 562 tests            |
+| Counter             | Value                                                                              |
+| ------------------- | ---------------------------------------------------------------------------------- |
+| Prompts completed   | 124 (123 full + 1 foundation-only; bundled HTTP duration histogram + notif delete) |
+| Prompts in progress | 0                                                                                  |
+| Prompts blocked     | 0                                                                                  |
+| Last prompt         | `[IV.18.15.6]` — notification delete verb (bundled with `[IV.18.10.8]`)            |
+| Last commit date    | 2026-04-25                                                                         |
+| Phase               | Phase 1 — RED metrics live + inbox prune verb; 91 suites, 569 tests                |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.15.6] — Notification delete verb (bundled with `[IV.18.10.8]`)
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.15 (Notifications)
+
+**What was done**
+
+Closes the inbox-management arc started by `[IV.18.15.2]` (mark-read). Owner-scoped hard-delete:
+
+- `DELETE /api/v1/notifications/:id` → 204 on success, 404 `NOTIFICATION_NOT_FOUND` on cross-user / missing (collapsed for IDOR safety).
+
+**Hard-delete, not soft.** Read-state doesn't matter for inbox curation — users prune by removing the row entirely. NotificationLog has no FK dependents so the delete is trivially safe; no cascade concerns.
+
+**Files**
+
+- `apps/api/src/modules/notifications/application/ports/notification-log.repository.ts` — `deleteForUser(id, userId): boolean`
+- `apps/api/src/modules/notifications/infrastructure/prisma-notification-log.repository.ts` — `deleteMany` + count gate
+- `apps/api/src/modules/notifications/application/delete-notification.use-case.ts` (new) — collapses false → 404
+- `apps/api/src/modules/notifications/interface/notifications.controller.ts` — `@Delete(':id')` with 204
+- `apps/api/src/modules/notifications/notifications.module.ts` — register
+- `apps/api/test/notifications-delete.e2e-spec.ts` (new) — 4 tests: 401, owner-204, cross-user-404, missing-404
+
+**Commits**
+
+- `3b5c124` — feat(IV.18.15.6) notification delete verb
+
+---
+
+### [IV.18.10.8] — HTTP request duration histogram (bundled with `[IV.18.15.6]`)
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 11 (Observability)
+
+**What was done**
+
+Completes the "RED metrics per endpoint" goal from playbook §11. Fastify `onRequest` + `onResponse` hooks observe every request's duration and record it on a `prom-client` Histogram:
+
+- `http_request_duration_seconds_bucket{method, route, status}` — bucketed observations
+- `http_request_duration_seconds_count{...}` + `_sum{...}` — totals
+
+**Bucket boundaries** cover the SLO range from playbook §11: p95 < 300ms reads, < 800ms AI endpoints. Buckets at `[0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10]` give meaningful resolution from "very fast" to "investigate this".
+
+**Route label = matched template, not raw path.** Fastify exposes `req.routeOptions.url` (e.g. `/api/v1/trips/:id/overview`); using the raw path would explode label cardinality on any id-bearing route. Unmatched paths (404s on unrouted hits) get `route="unknown"` so random scanner traffic can't blow up the metric.
+
+**Anti-recursion guard:** `/metrics` is excluded from the histogram. Recording the scrape's own latency would feed the histogram with self-traffic and create a positive feedback loop on Prometheus's scrape_duration metric.
+
+**Files**
+
+- `apps/api/src/common/metrics/metrics.service.ts` — adds `http_request_duration_seconds` Histogram + `recordHttp(method, route, status, durationSec)` method
+- `apps/api/src/common/metrics/http-metrics.middleware.ts` (new) — Fastify hooks; uses `process.hrtime.bigint()` for nanosecond precision; `Symbol`-keyed start time stash on the request
+- `apps/api/src/main.ts` — registers the middleware as bootstrap step 6d (after trace middleware)
+- `apps/api/test/metrics-http-duration.e2e-spec.ts` (new) — 3 tests: HELP/TYPE/bucket/count/sum lines emitted, route label is template (not raw path), `/metrics` self-excluded across multiple scrapes
+
+**Combined verification**
+
+`pnpm --filter=api typecheck` green. Full integration suite: **91 passed, 569 passed** (covers both bundled slices).
+
+**Commits**
+
+- `043c786` — feat(IV.18.10.8) http_request_duration_seconds histogram
 
 ---
 
