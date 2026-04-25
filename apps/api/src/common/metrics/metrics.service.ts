@@ -26,13 +26,14 @@
  * Installed by prompt [IV.18.10.6].
  */
 import { Injectable, type OnModuleInit } from '@nestjs/common';
-import { collectDefaultMetrics, Counter, Gauge, Registry } from 'prom-client';
+import { collectDefaultMetrics, Counter, Gauge, Histogram, Registry } from 'prom-client';
 import { TypedRedisCache } from '../cache/typed-redis-cache';
 
 @Injectable()
 export class MetricsService implements OnModuleInit {
   private readonly registry: Registry;
   private domainEventsCounter!: Counter<'event'>;
+  private httpDurationHistogram!: Histogram<'method' | 'route' | 'status'>;
 
   constructor() {
     this.registry = new Registry();
@@ -78,6 +79,22 @@ export class MetricsService implements OnModuleInit {
       labelNames: ['event'],
       registers: [this.registry],
     });
+
+    // HTTP request duration histogram. Bucket boundaries cover the
+    // SLO range from playbook §11: p95 < 300ms reads, < 800ms AI
+    // endpoints. We add buckets above for tail visibility (slow DB
+    // queries, lagging upstreams). Method × route × status keeps
+    // cardinality bounded — `route` is the matched template (e.g.
+    // `/trips/:id/overview`), NOT the raw path, so a million
+    // distinct trip ids don't explode the metric.
+    // Added by `[IV.18.10.8]`.
+    this.httpDurationHistogram = new Histogram({
+      name: 'http_request_duration_seconds',
+      help: 'HTTP request duration in seconds, labeled by method/route/status.',
+      labelNames: ['method', 'route', 'status'],
+      buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10],
+      registers: [this.registry],
+    });
   }
 
   /**
@@ -91,6 +108,23 @@ export class MetricsService implements OnModuleInit {
    */
   recordEvent(eventName: string): void {
     this.domainEventsCounter?.labels(eventName).inc();
+  }
+
+  /**
+   * Record one HTTP request's duration. Called by the Fastify
+   * onResponse hook (`http-metrics.middleware.ts`). Duration is
+   * in seconds (Prometheus convention; the histogram buckets are
+   * second-scale).
+   *
+   * `route` is the matched route template — e.g.
+   * `/api/v1/trips/:id/overview`. Falls back to `unknown` when
+   * Fastify couldn't resolve the route (404s on unrouted paths).
+   * That keeps cardinality bounded against random scanner traffic.
+   *
+   * Added by `[IV.18.10.8]`.
+   */
+  recordHttp(method: string, route: string, status: number, durationSec: number): void {
+    this.httpDurationHistogram?.labels(method, route, String(status)).observe(durationSec);
   }
 
   /** Renders the current scrape as Prometheus text-format. */
