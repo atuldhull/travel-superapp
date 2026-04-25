@@ -30,6 +30,7 @@ import { GetMemoryBookUseCase } from './application/get-memory-book.use-case';
 import { GetPublishedAssetDownloadUrlUseCase } from './application/get-published-asset-download-url.use-case';
 import { GetPublishedMemoryBookUseCase } from './application/get-published-memory-book.use-case';
 import { ListMemoryBooksUseCase } from './application/list-memory-books.use-case';
+import { ListPublishedMemoryBooksUseCase } from './application/list-published-memory-books.use-case';
 import { ListTripMediaUseCase } from './application/list-trip-media.use-case';
 import { OrphanS3SweepUseCase } from './application/orphan-s3-sweep.use-case';
 import { MEDIA_ASSET_REPOSITORY } from './application/ports/media-asset.repository';
@@ -74,6 +75,7 @@ import { OrphanS3SweepScheduler } from './interface/orphan-s3-sweep.scheduler';
     UnpublishMemoryBookUseCase,
     GetPublishedMemoryBookUseCase,
     GetPublishedAssetDownloadUrlUseCase,
+    ListPublishedMemoryBooksUseCase,
     // `TRIP_MEDIA_PORT` is owned by Trip but implemented here —
     // [IV.18.12.10] establishes the cross-module port pattern.
     { provide: TRIP_MEDIA_PORT, useClass: TripMediaAdapter },

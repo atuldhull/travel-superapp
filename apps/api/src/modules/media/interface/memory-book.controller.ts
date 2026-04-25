@@ -38,6 +38,7 @@ import { GetMemoryBookUseCase } from '../application/get-memory-book.use-case';
 import { GetPublishedAssetDownloadUrlUseCase } from '../application/get-published-asset-download-url.use-case';
 import { GetPublishedMemoryBookUseCase } from '../application/get-published-memory-book.use-case';
 import { ListMemoryBooksUseCase } from '../application/list-memory-books.use-case';
+import { ListPublishedMemoryBooksUseCase } from '../application/list-published-memory-books.use-case';
 import { PublishMemoryBookUseCase } from '../application/publish-memory-book.use-case';
 import { UnpublishMemoryBookUseCase } from '../application/unpublish-memory-book.use-case';
 import { UpdateMemoryBookUseCase } from '../application/update-memory-book.use-case';
@@ -107,13 +108,30 @@ export class MemoryBookController {
     private readonly unpublishUc: UnpublishMemoryBookUseCase,
     private readonly getPublishedUc: GetPublishedMemoryBookUseCase,
     private readonly publishedAssetDlUc: GetPublishedAssetDownloadUrlUseCase,
+    private readonly listPublishedUc: ListPublishedMemoryBooksUseCase,
   ) {}
 
   // ─── Public-read routes — declared first so Nest's order-of-
   //     declaration route matcher can't accidentally shadow them
-  //     with the `:id` paths below. (`'public'` is a literal
-  //     segment, so this is belt-and-braces, not strictly
-  //     required.) ─────────────────────────────────────────────
+  //     with the `:id` paths below. (`'public'` / `'featured'`
+  //     are literal segments, so this is belt-and-braces, not
+  //     strictly required.) ───────────────────────────────────
+
+  /**
+   * Public discovery — currently-published memory books across
+   * all users, most-recently-published first. Drives the
+   * marketing / explore surface. Default limit 20, cap 100.
+   * Added by `[IV.18.13.1]`.
+   */
+  @Public()
+  @Get('featured')
+  @HttpCode(HttpStatus.OK)
+  async featured(@Query('limit') limit?: string): Promise<{ books: PublicBookDto[] }> {
+    const parsed = limit ? Math.max(1, Math.min(100, Number(limit) || 20)) : undefined;
+    const books = await this.listPublishedUc.execute(parsed);
+    return { books: books.map(toPublicDto) };
+  }
+
   @Public()
   @Get('public/:id')
   @HttpCode(HttpStatus.OK)

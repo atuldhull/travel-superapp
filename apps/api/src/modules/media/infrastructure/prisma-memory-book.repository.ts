@@ -114,6 +114,19 @@ export class PrismaMemoryBookRepository implements MemoryBookRepository {
     return row ? toDomain(row) : null;
   }
 
+  async listPublished(limit: number): Promise<readonly MemoryBook[]> {
+    // Public listing — no owner filter, only `publishedAt IS NOT NULL`.
+    // FK cascade on User soft-purge already removes books for purged
+    // users so we don't need to re-filter here. Sort by publishedAt
+    // (newest first) — the marketing surface wants "what's new".
+    const rows = await this.prisma.memoryBook.findMany({
+      where: { publishedAt: { not: null } },
+      orderBy: { publishedAt: 'desc' },
+      take: Math.min(Math.max(limit, 1), 200),
+    });
+    return rows.map(toDomain);
+  }
+
   async findPublishedAssetForBook(
     bookId: string,
     assetId: string,

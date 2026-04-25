@@ -81,6 +81,17 @@ export interface MemoryBookRepository {
     bookId: string,
     assetId: string,
   ): Promise<{ readonly s3KeyRaw: string } | null>;
+
+  /**
+   * Public listing of currently-published memory books. Returns at
+   * most `limit` rows, ordered by `publishedAt DESC` (most-recently
+   * published first). Cross-user — drives the public marketing /
+   * discovery surface. Excludes unpublished and soft-purged user
+   * rows automatically (the FK cascade nukes the books too).
+   *
+   * Added by `[IV.18.13.1]`.
+   */
+  listPublished(limit: number): Promise<readonly MemoryBook[]>;
 }
 
 export const MEMORY_BOOK_REPOSITORY = Symbol('MemoryBookRepository');
