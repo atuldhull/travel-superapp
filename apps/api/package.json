@@ -20,7 +20,8 @@
     "db:studio": "prisma studio",
     "db:validate": "prisma validate",
     "admin:promote": "tsx scripts/promote-admin.ts",
-    "db:seed:demo": "tsx scripts/seed-demo.ts"
+    "db:seed:demo": "tsx scripts/seed-demo.ts",
+    "api:openapi": "ts-node --transpile-only scripts/export-openapi.ts"
   },
   "dependencies": {
     "@app/auth": "workspace:*",
@@ -38,6 +39,7 @@
     "@nestjs/config": "^4.0.0",
     "@nestjs/core": "^11.0.11",
     "@nestjs/platform-fastify": "^11.0.11",
+    "@nestjs/swagger": "^11.0.0",
     "@nestjs/terminus": "11.1.1",
     "@nestjs/throttler": "6.5.0",
     "@prisma/client": "5.22.0",
@@ -48,6 +50,7 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "speakeasy": "2.0.0",
+    "yaml": "^2.7.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {
@@ -61,6 +64,7 @@
     "prisma": "5.22.0",
     "rimraf": "^6.0.1",
     "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   }
