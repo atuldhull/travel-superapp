@@ -128,6 +128,19 @@ export class PrismaMediaAssetRepository implements MediaAssetRepository {
     return result.count === 1;
   }
 
+  async markExifStrippedForOwner(id: string, ownerId: string): Promise<MediaAsset | null> {
+    // Same updateMany + count gate the rest of this adapter uses.
+    // Already-stripped rows still get count=1 from Postgres, so
+    // re-call is naturally idempotent.
+    const result = await this.prisma.mediaAsset.updateMany({
+      where: { id, ownerId },
+      data: { exifStripped: true },
+    });
+    if (result.count !== 1) return null;
+    const row = await this.prisma.mediaAsset.findUnique({ where: { id } });
+    return row ? toDomain(row) : null;
+  }
+
   async listAllS3Keys(): Promise<ReadonlySet<string>> {
     // Single SELECT of just the s3KeyRaw column — cheap even at
     // moderate inbox sizes. The orphan-sweep cron consumes this
@@ -147,6 +160,7 @@ function toDomain(row: PrismaMediaAsset): MediaAsset {
     kind: row.kind as MediaKind,
     status: row.status as MediaStatus,
     s3KeyRaw: row.s3KeyRaw,
+    exifStripped: row.exifStripped,
     createdAt: row.createdAt,
   };
 }

@@ -90,6 +90,22 @@ export interface MediaAssetRepository {
    * Added by `[IV.18.18.5]`.
    */
   listAllS3Keys(): Promise<ReadonlySet<string>>;
+
+  /**
+   * Atomically flip `exifStripped = true` on a row the caller
+   * owns. Returns the updated row, or `null` when the id is
+   * unknown OR owned by a different user (collapsed to 404 at
+   * the use-case layer for IDOR safety). Idempotent: a re-call
+   * on an already-stripped row still returns the row.
+   *
+   * v1 stub semantics: the byte-level EXIF strip happens
+   * out-of-band in `media-service`; this just records that the
+   * stub flag has been set. Any feature that surfaces raw
+   * location/EXIF to other users MUST gate on this flag.
+   *
+   * Added by `[IV.18.12.14]`.
+   */
+  markExifStrippedForOwner(id: string, ownerId: string): Promise<MediaAsset | null>;
 }
 
 export interface AdminMediaListInput {
