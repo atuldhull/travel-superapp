@@ -10,18 +10,91 @@
 
 ## Summary
 
-| Counter             | Value                                                                      |
-| ------------------- | -------------------------------------------------------------------------- |
-| Prompts completed   | 98 (97 full + 1 foundation-only; notifications mark-all-read just shipped) |
-| Prompts in progress | 0                                                                          |
-| Prompts blocked     | 0                                                                          |
-| Last prompt         | `[IV.18.15.3]` — notifications mark-all-read                               |
-| Last commit date    | 2026-04-25                                                                 |
-| Phase               | Phase 1 — inbox clear-the-badge; 64 suites, 437 tests                      |
+| Counter             | Value                                                             |
+| ------------------- | ----------------------------------------------------------------- |
+| Prompts completed   | 99 (98 full + 1 foundation-only; vote tally summary just shipped) |
+| Prompts in progress | 0                                                                 |
+| Prompts blocked     | 0                                                                 |
+| Last prompt         | `[IV.18.12.9]` — cross-trip vote tally summary                    |
+| Last commit date    | 2026-04-25                                                        |
+| Phase               | Phase 1 — vote consumer surface; 65 suites, 443 tests             |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.12.9] — Cross-trip vote tally summary (GET /votes/summary)
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.12 (Social & Groups)
+
+**What was done**
+
+Companion to `[IV.18.12.8]`'s review summary. Public-readable cross-trip aggregate of every vote on a target: `GET /votes/summary?targetType=&targetId=` returns `{ targetType, targetId, up, meh, down, score }`. Drives the vote-count widget on every itinerary item / place / restaurant detail page — without it, every vote-rendering screen has to fetch a list and reduce in JS, the same scaling problem Reviews had before `summary`.
+
+Implementation: `prisma.vote.groupBy({ by: ['value'], where: { targetType, targetId }, _count: true })`. At most 3 rows back (one per `-1`/`0`/`+1` bucket), regardless of vote volume. Hits the existing `(targetType, targetId)` index. `score = up - down`. `value=0` ("meh") rows are surfaced separately so a future "show neutral count" UI doesn't need a schema change — they're explicitly excluded from `up`/`down`.
+
+`@Public()` — vote counts are crowd signal, no PII. No per-user vote disclosure, just bucket counts. Same precedent as `/reviews/summary` (`[IV.18.12.8]`) and the published memory book reads (`[IV.18.12.7]`).
+
+**Cross-trip semantics.** A vote on an itinerary-item that's part of a shared trip is intrinsically cross-trip — multiple trips could reference the same target id (a popular Place, for instance). The summary aggregates across every trip the target appears in. The trip-scoped tally on `GET /trips/:tripId/votes` (shipped `[IV.18.12.3]`) remains the right surface for "what did the people on THIS trip vote" — different question, different answer.
+
+HTTP surface:
+
+| Route                           | Auth        | What it does                                                       |
+| ------------------------------- | ----------- | ------------------------------------------------------------------ |
+| `GET /api/v1/votes/summary?...` | `@Public()` | `{ targetType, targetId, up, meh, down, score }` across every trip |
+
+**Files created** (3)
+
+- `apps/api/src/modules/social/application/get-vote-summary.use-case.ts` — orchestrator (one-liner over the port).
+- `apps/api/src/modules/social/interface/votes.controller.ts` — new top-level controller mounted at `/votes` (separate from the trip-scoped `SocialController` at `/trips/:tripId/votes`). Avoids forcing a single controller's auth model to be the LCD of "trip-collab gate vs. @Public()".
+- `apps/api/test/social-vote-summary.e2e-spec.ts` — 6 integration tests against real-Postgres.
+
+**Files edited** (4)
+
+- `apps/api/src/modules/social/application/ports/vote.repository.ts` — adds `VoteSummary` envelope + `aggregateByTarget(targetType, targetId): Promise<VoteSummary>` method.
+- `apps/api/src/modules/social/infrastructure/prisma-vote.repository.ts` — implements `aggregateByTarget` via `groupBy` + bucket-walk + score derivation.
+- `apps/api/src/modules/social/interface/dto/social.dto.ts` — adds `VoteSummaryTargetTypeSchema` (3-value: `itinerary_item | place | restaurant`). The existing `VoteTargetTypeSchema` stays narrow at 1 value (`itinerary_item`) since cast-vote on places/restaurants doesn't ship until the corresponding write-side slice. The summary endpoint accepts the wider set so a place/restaurant detail page can query vote counts without waiting on the cast surface.
+- `apps/api/src/modules/social/social.module.ts` — registers `VotesController` + `GetVoteSummaryUseCase`.
+
+**Tests** (6 cases, real-Postgres):
+
+1. Empty target → 200 with `{ up: 0, meh: 0, down: 0, score: 0 }`. NOT 404.
+2. 3 up + 1 meh + 1 down (5th seeded across 2 trips for the same user — different trip, valid because the unique key is `(tripId, userId, targetType, targetId)`) → `up: 3, meh: 1, down: 1, score: 2`.
+3. Cross-target isolation: votes on target A return correct counts; target B returns all-zeros.
+4. Missing query params → 400 `VALIDATION_FAILED`.
+5. Unknown `targetType` → 400 `VALIDATION_FAILED` (zod-narrow on the controller side).
+6. No bearer → 200 (the `@Public()` decorator skips JwtAuthGuard).
+
+Tests seed Vote rows directly via `prisma.vote.create` rather than going through the cast-vote endpoint — the cast flow is gated by the collab-trip rule + needs a real itinerary item, which is irrelevant to what we're testing here (the read aggregator). Trips themselves still come through the API because `Trip.center` is PostGIS (CLAUDE rule 11).
+
+**Dependencies** — none new. No Prisma migration — Vote model has been on the schema since `[IV.18.12.3]`.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Vote-summary suite 6/6 pass.
+- ✅ **Full real-DB + MinIO suite: 65 suites, 443 tests pass against live Docker.** (+1 suite, +6 tests vs. previous baseline.)
+
+**Acceptance criteria**
+
+- ✅ Empty target → 200 with all-zeros shape.
+- ✅ Mix of `+1`/`0`/`-1` votes → correct `up` / `meh` / `down` / `score`.
+- ✅ `score = up - down` (meh excluded).
+- ✅ Cross-target isolation holds.
+- ✅ `@Public()` works without bearer.
+- ✅ `groupBy` hits the existing `(targetType, targetId)` index — no new index needed.
+
+**Notes**
+
+- **Why a separate top-level `VotesController` instead of adding the route to `SocialController`.** `SocialController` is mounted at `/trips/:tripId/votes` — it's the trip-scoped collab surface, gated by the `assertCanVote` helper. Adding a `@Public()` cross-trip route there would force the controller to mix auth models, which is a code-smell I want to avoid. Splitting into two controllers (one trip-scoped, one global) keeps each surface's auth posture obvious.
+- **Why surface `meh` separately and not silently drop it.** A future UI might want to render "12 up, 3 down, 5 abstained" — different signal than just "12 up, 3 down". Surfacing it now costs nothing (it's already in the groupBy result); hiding it would force a schema change later. `score` deliberately ignores it: an abstain isn't half a yes.
+- **Why `score` is plain `up - down` and not weighted.** v1 keeps the math obvious. Future ranking experiments (Reddit's "controversy score", upvote-velocity, etc.) belong in their own slice — at that point `score` becomes one of several derived scores, not THE score. Today it's the rank signal that drives "show me the popular itinerary items" lists; one number, easy to sort.
+- **Why the controller-side schema for `targetType` is wider than the cast-vote schema.** The summary is read-side-only and the domain type already allows `place` + `restaurant`. Accepting them on the read endpoint lets a place / restaurant detail page query vote counts before the corresponding cast-vote slice ships. Casting a vote on a place / restaurant still returns `VALIDATION_FAILED` via the narrower `VoteTargetTypeSchema` until that slice lands.
+- **Why aggregation in the DB, not "fetch + reduce in app".** Same reason as the review summary: a popular target with thousands of votes returns thousands of rows over the wire if we list-and-aggregate; `groupBy` returns at most 3. Latency stays ~constant regardless of vote volume — the slice that lets Votes ship at scale.
+- **Why empty target → 200, not 404.** Two reasons: (1) "this place has no votes yet" is meaningfully different from "this place doesn't exist"; (2) the route is `@Public()`, and 404-on-empty would let a stranger probe target id space via the vote surface. Same precedent as the review summary endpoint.
+- **Pattern consolidation.** Three aggregation surfaces shipped in close succession (`[IV.18.12.8]` review summary, `[IV.18.15.3]` mark-all-read, `[IV.18.12.9]` vote summary) — all using `groupBy` or filtered `updateMany`, all returning meaningful counts in their response, all returning 200 on empty rather than 404. The pattern is now codified in memory as the right shape for any "consumer aggregation" surface.
 
 ---
 
