@@ -10,18 +10,74 @@
 
 ## Summary
 
-| Counter             | Value                                                                        |
-| ------------------- | ---------------------------------------------------------------------------- |
-| Prompts completed   | 128 (127 full + 1 foundation-only; bundled CI workflow + Grafana dashboards) |
-| Prompts in progress | 0                                                                            |
-| Prompts blocked     | 0                                                                            |
-| Last prompt         | `[IV.18.19.2]` — Grafana dashboard JSONs (bundled with `[IV.18.19.1]`)       |
-| Last commit date    | 2026-04-25                                                                   |
-| Phase               | Phase 1 — deployment-readiness wave: CI gating + observability dashboards    |
+| Counter             | Value                                                                       |
+| ------------------- | --------------------------------------------------------------------------- |
+| Prompts completed   | 130 (129 full + 1 foundation-only; bundled security workflow + seed script) |
+| Prompts in progress | 0                                                                           |
+| Prompts blocked     | 0                                                                           |
+| Last prompt         | `[IV.18.19.4]` — demo-deploy seed script (bundled with `[IV.18.19.3]`)      |
+| Last commit date    | 2026-04-25                                                                  |
+| Phase               | Phase 1 — deployment-readiness wave: security scans + demo seed             |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.19.4] — Demo-deploy seed script (bundled with `[IV.18.19.3]`)
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 12 (DevOps)
+
+**What was done**
+
+`pnpm --filter=api db:seed:demo` boots AppModule + FastifyAdapter in-process and calls the real HTTP surface via `app.inject` so every seeded row goes through the same auth + ownership + validation gates as production traffic. No Prisma-shortcut writes that would sidestep PostGIS / domain rules / CLAUDE.md rule 11.
+
+**Loads per run:**
+
+- 2 demo users (alice, bob) with timestamp-suffixed emails
+- 3 trips per user across Tokyo / Lisbon / Mexico City with real coordinates + date ranges, each with itinerary stub generated
+- 1 published memory book per user (visible on the public `/memory-books/featured` surface from `[IV.18.13.1]` immediately)
+- 3 sample reviews per user against stable demo opaque ids (place + agent + eatery) — accumulates signal across runs on the `/<resource>/<id>/review-summary` endpoints from `[IV.18.12.11..12]`
+
+**Honest scope caveat.** NOT idempotent — re-running doubles the data because users are timestamp-suffixed. For a clean demo: drop the DB first or run against a freshly-migrated instance. Idempotent by-content seeding is a v2 follow-up.
+
+**Files**
+
+- `apps/api/scripts/seed-demo.ts` (new) — main orchestrator
+- `apps/api/package.json` — `db:seed:demo` script entry next to existing `admin:promote`
+
+**Commits**
+
+- `2618b7e` — feat(IV.18.19.4) demo-deploy seed script
+
+---
+
+### [IV.18.19.3] — Security scanning workflow (bundled with `[IV.18.19.4]`)
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 9 (Security) + 12.3 (CI/CD)
+
+**What was done**
+
+`.github/workflows/security.yml` — three independent jobs, each scoped to one concern:
+
+1. **gitleaks** — secret-scan repo + git history. Hard gate: any leaked secret blocks the merge. `fetch-depth: 0` so the walk covers every commit, not just the diff.
+2. **pnpm-audit** — transitive-vuln scan. HIGH/CRITICAL block; LOW/MODERATE surface in logs without failing. Posture is "ship-now, tighten later" — adjust `--audit-level` to raise the floor.
+3. **trivy-fs** — filesystem scan covering misconfigured Dockerfiles, vulnerable lockfile entries, known-bad bases. Uploads SARIF to GitHub's Security tab so findings show up alongside Dependabot.
+
+**Independent of `ci.yml`** so a flaky security scan (Trivy DB transient, e.g.) doesn't block code merges. Scheduled weekly on Monday 03:00 UTC so newly-disclosed CVEs surface even on unchanged branches.
+
+**Files**
+
+- `.github/workflows/security.yml` (new)
+
+**Combined verification (both bundled slices)**
+
+`pnpm --filter=api typecheck` green. Full integration suite: **93 passed, 578 passed** (unchanged baseline — both slices are config / scripts, no runtime code touched). Security workflow runs only on next push; verification is "the file parses + the action references resolve to known versions".
+
+**Commits**
+
+- `33704aa` — feat(IV.18.19.3) security scanning workflow
 
 ---
 
