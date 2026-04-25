@@ -64,6 +64,19 @@ export class PrismaNotificationLogRepository implements NotificationLogRepositor
     const row = await this.prisma.notificationLog.findUnique({ where: { id } });
     return row ? toDomain(row) : null;
   }
+
+  async markAllReadForUser(userId: string): Promise<number> {
+    // Owner-scoped + `read: false` clause — Postgres skips already-
+    // read rows, so the cost scales with unread count not inbox
+    // size. The `[userId, read, createdAt]` index on NotificationLog
+    // makes the lookup of unread rows cheap (it's the same index
+    // the unread-badge query uses).
+    const result = await this.prisma.notificationLog.updateMany({
+      where: { userId, read: false },
+      data: { read: true },
+    });
+    return result.count;
+  }
 }
 
 function toDomain(row: PrismaNotificationLog): NotificationLog {

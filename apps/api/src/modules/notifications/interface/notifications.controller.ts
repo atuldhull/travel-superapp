@@ -6,16 +6,21 @@
  *   POST /api/v1/notifications/:id/read — flip `read = true` on
  *                                         a notification the caller
  *                                         owns. Idempotent.
+ *   POST /api/v1/notifications/read-all — flip `read = true` on
+ *                                         every unread row for the
+ *                                         caller. Returns
+ *                                         `{ marked }`. Idempotent.
  *
- * Per-channel filtering + a bulk mark-all-read land in follow-up
- * slices. Any future "mark-as-unread" verb belongs here too.
+ * Per-channel filtering lands in a follow-up slice. Any future
+ * "mark-as-unread" verb belongs here too.
  *
  * Installed by prompt [IV.18.15.1]. `POST /:id/read` added in
- * [IV.18.15.2].
+ * [IV.18.15.2]. `POST /read-all` added in [IV.18.15.3].
  */
 import { Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from '@nestjs/common';
 import { type AuthenticatedUser, CurrentUser } from '../../../common/auth';
 import { ListMyNotificationsUseCase } from '../application/list-my-notifications.use-case';
+import { MarkAllNotificationsReadUseCase } from '../application/mark-all-notifications-read.use-case';
 import { MarkNotificationReadUseCase } from '../application/mark-notification-read.use-case';
 import type { NotificationLog } from '../domain/notification-log.entity';
 
@@ -48,6 +53,7 @@ export class NotificationsController {
   constructor(
     private readonly listUc: ListMyNotificationsUseCase,
     private readonly markReadUc: MarkNotificationReadUseCase,
+    private readonly markAllReadUc: MarkAllNotificationsReadUseCase,
   ) {}
 
   @Get('me')
@@ -59,6 +65,19 @@ export class NotificationsController {
     const parsed = limit ? Math.max(1, Math.min(200, Number(limit) || 50)) : 50;
     const rows = await this.listUc.execute(user.sub, parsed);
     return { notifications: rows.map(toDto) };
+  }
+
+  /**
+   * Declared BEFORE `:id/read` — Nest matches in declaration order
+   * and `read-all` is a literal segment, but explicit ordering
+   * prevents a future `:id` route definition from accidentally
+   * shadowing it. Same defensive pattern used by `/reviews/summary`
+   * and the public memory-book routes.
+   */
+  @Post('read-all')
+  @HttpCode(HttpStatus.OK)
+  async markAllRead(@CurrentUser() user: AuthenticatedUser): Promise<{ marked: number }> {
+    return this.markAllReadUc.execute(user.sub);
   }
 
   @Post(':id/read')

@@ -26,6 +26,7 @@ import { ItineraryReadyHandler } from './application/handlers/itinerary-ready.ha
 import { SessionIssuedHandler } from './application/handlers/session-issued.handler';
 import { SosTriggeredHandler } from './application/handlers/sos-triggered.handler';
 import { ListMyNotificationsUseCase } from './application/list-my-notifications.use-case';
+import { MarkAllNotificationsReadUseCase } from './application/mark-all-notifications-read.use-case';
 import { MarkNotificationReadUseCase } from './application/mark-notification-read.use-case';
 import { NOTIFICATION_LOG_REPOSITORY } from './application/ports/notification-log.repository';
 import { NOTIFICATION_SENDER } from './application/ports/notification-sender';
@@ -46,6 +47,7 @@ import { NotificationsController } from './interface/notifications.controller';
     SosTriggeredHandler,
     ListMyNotificationsUseCase,
     MarkNotificationReadUseCase,
+    MarkAllNotificationsReadUseCase,
   ],
   exports: [NOTIFICATION_SENDER, NOTIFICATION_LOG_REPOSITORY, LoggingNotificationSender],
 })
