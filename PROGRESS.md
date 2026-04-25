@@ -10,18 +10,84 @@
 
 ## Summary
 
-| Counter             | Value                                                                           |
-| ------------------- | ------------------------------------------------------------------------------- |
-| Prompts completed   | 134 (133 full + 1 foundation-only; bundled 4 ADRs + 2 ops runbooks)             |
-| Prompts in progress | 0                                                                               |
-| Prompts blocked     | 0                                                                               |
-| Last prompt         | `[IV.18.19.8]` — secrets + env-reference runbooks (bundled with `[IV.18.19.7]`) |
-| Last commit date    | 2026-04-26                                                                      |
-| Phase               | Phase 1 — deployment-readiness wave: ADR catalog filled + secrets/env runbooks  |
+| Counter             | Value                                                                       |
+| ------------------- | --------------------------------------------------------------------------- |
+| Prompts completed   | 136 (135 full + 1 foundation-only; bundled onboarding doc + OpenAPI export) |
+| Prompts in progress | 0                                                                           |
+| Prompts blocked     | 0                                                                           |
+| Last prompt         | `[IV.18.19.10]` — OpenAPI export pipeline (bundled with `[IV.18.19.9]`)     |
+| Last commit date    | 2026-04-26                                                                  |
+| Phase               | Phase 1 — deployment-readiness wave: onboarding + machine-readable API spec |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.19.10] — OpenAPI export pipeline (bundled with `[IV.18.19.9]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 13 (Documentation) + §6 (SDK gen)
+
+**What was done**
+
+`pnpm --filter=api api:openapi` boots `AppModule` in-process, walks Nest's controller + route metadata via `@nestjs/swagger`'s `SwaggerModule.createDocument`, and writes `docs/api/openapi.yaml` (1607 lines, every route enumerated with module-level tags + bearer-auth security scheme).
+
+**Wiring decisions:**
+
+- **`ts-node`, not `tsx`.** tsx (esbuild-based) doesn't emit Nest's `Reflect.metadata("design:paramtypes", ...)` calls that DI instantiation needs at runtime. ts-node's tsc-based path emits them correctly. `--transpile-only` skips strict typechecking (tsc covers that separately via `pnpm typecheck`).
+- **Placeholder env injection** before `AppModule` import. `AppConfigModule.forRoot()` validates env at module-load time, so missing required vars would explode boot. The script sets `process.env.X ??= 'placeholder'` for the 12 required vars (real Doppler values still take precedence via `??=`). Dynamic import of `AppModule` ensures the timing works.
+- **Output path resolved via `__dirname`**, not `process.cwd()`. `pnpm --filter=api` sets cwd to `apps/api/`; resolving relative to the script's location (`apps/api/scripts/`) ensures the output lands at the repo-root `docs/api/` regardless of invocation context. (Caught + fixed in a follow-up commit during this slice.)
+- **YAML output**, not JSON. Diffs are readable in PRs. JSON fallback if `yaml` dep is missing.
+- **DocumentBuilder tags** seeded for the 7 owning modules + bearer-auth security scheme declared.
+
+**What you get today:** route enumeration tagged by module + global auth scheme. **What you DON'T get:** per-route request/response body schemas — those land progressively as `@ApiBody` / `@ApiResponse` decorators get added module-by-module. Roadmap documented in `docs/api/README.md`.
+
+**Deps added:** `@nestjs/swagger@^11`, `yaml@^2.7`, `ts-node@^10.9` (dev).
+
+**Files**
+
+- `apps/api/scripts/export-openapi.ts` (new) — main export script
+- `apps/api/package.json` — `api:openapi` script entry
+- `docs/api/README.md` (new) — what the file is + how to regenerate
+- `docs/api/openapi.yaml` (new, generated) — the artifact
+
+**Commits**
+
+- `dffa3d2` — feat(IV.18.19.10) OpenAPI export pipeline
+- `c963d03` — fix(IV.18.19.10) resolve openapi.yaml output via \_\_dirname
+
+---
+
+### [IV.18.19.9] — Engineer onboarding doc (bundled with `[IV.18.19.10]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 13 (Documentation)
+
+**What was done**
+
+`docs/onboarding.md` walks a new engineer from clone-to-first-PR in ~3 hours: prereqs (Node 22+, pnpm 9+, Docker, Doppler), clone + install, boot the local stack, apply migrations + seed demo data, verify via `/health` + `/metrics` + `/memory-books/featured` (smoke-tests the full chain), run the integration suite, then a curated reading order through CLAUDE.md → playbook §1-4 → 8 specific ADRs → 2 runbooks → PROGRESS.md.
+
+**PR checklist + common gotchas** pulled from real friction points seen during recent slices:
+
+- Prisma generate (forgotten → `Cannot find module @prisma/client`)
+- "DB not reachable" → `docker compose ps`
+- PostGIS Docker image (build, don't use plain `postgres:16-alpine`)
+- `NODE_ENV=test` for scheduler skip
+- `$queryRaw` boolean folklore (from `memory/feedback_prisma_raw_boolean.md`)
+
+**Goal per playbook §13:** new engineer productive in one day. Doc ends with explicit week-1 / week-2 expectations so onboarding has a visible exit ramp.
+
+**Files**
+
+- `docs/onboarding.md` (new)
+
+**Combined verification (both bundled slices)**
+
+`pnpm --filter=api typecheck` green. Full integration suite: **93 passed, 578 passed** — pure docs / config / scripts, baseline unchanged. The OpenAPI export was run end-to-end; the generated `docs/api/openapi.yaml` is ~1600 lines and committed.
+
+**Commits**
+
+- `df9de43` — feat(IV.18.19.9) engineer onboarding doc
 
 ---
 
