@@ -11,7 +11,9 @@ import type { Review, ReviewTargetType } from '../domain/review.entity';
 import type {
   CreateReviewInput,
   ListByTargetInput,
+  ReviewRatingHistogram,
   ReviewRepository,
+  ReviewSummary,
 } from '../application/ports/review.repository';
 
 @Injectable()
@@ -63,6 +65,41 @@ export class PrismaReviewRepository implements ReviewRepository {
       where: { id, authorId },
     });
     return result.count === 1;
+  }
+
+  async aggregateByTarget(targetType: ReviewTargetType, targetId: string): Promise<ReviewSummary> {
+    // groupBy hits the existing `(targetType, targetId)` index +
+    // returns at most 5 rows (one per rating bucket). The DB does
+    // the count/average; we only zero-fill missing buckets.
+    const rows = await this.prisma.review.groupBy({
+      by: ['rating'],
+      where: { targetType, targetId },
+      _count: { _all: true },
+    });
+
+    const histogram: Record<1 | 2 | 3 | 4 | 5, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    let total = 0;
+    let weighted = 0;
+    for (const row of rows) {
+      const bucket = row.rating as 1 | 2 | 3 | 4 | 5;
+      // Defensive — schema guarantees rating ∈ [1..5] but a future
+      // schema change shouldn't crash the public summary endpoint.
+      if (bucket < 1 || bucket > 5) continue;
+      const count = row._count._all;
+      histogram[bucket] = count;
+      total += count;
+      weighted += bucket * count;
+    }
+    // Round to 2 decimals so the wire shape is stable + clients
+    // don't render `4.333333333333333` in a star widget.
+    const average = total === 0 ? 0 : Math.round((weighted / total) * 100) / 100;
+    return {
+      targetType,
+      targetId,
+      count: total,
+      average,
+      histogram: histogram as ReviewRatingHistogram,
+    };
   }
 }
 
