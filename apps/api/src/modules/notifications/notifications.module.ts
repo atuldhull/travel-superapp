@@ -25,6 +25,7 @@ import { Module } from '@nestjs/common';
 import { ItineraryReadyHandler } from './application/handlers/itinerary-ready.handler';
 import { SessionIssuedHandler } from './application/handlers/session-issued.handler';
 import { SosTriggeredHandler } from './application/handlers/sos-triggered.handler';
+import { GetUnreadCountUseCase } from './application/get-unread-count.use-case';
 import { ListMyNotificationsUseCase } from './application/list-my-notifications.use-case';
 import { MarkAllNotificationsReadUseCase } from './application/mark-all-notifications-read.use-case';
 import { MarkNotificationReadUseCase } from './application/mark-notification-read.use-case';
@@ -48,6 +49,7 @@ import { NotificationsController } from './interface/notifications.controller';
     ListMyNotificationsUseCase,
     MarkNotificationReadUseCase,
     MarkAllNotificationsReadUseCase,
+    GetUnreadCountUseCase,
   ],
   exports: [NOTIFICATION_SENDER, NOTIFICATION_LOG_REPOSITORY, LoggingNotificationSender],
 })
