@@ -10,18 +10,81 @@
 
 ## Summary
 
-| Counter             | Value                                                                        |
-| ------------------- | ---------------------------------------------------------------------------- |
-| Prompts completed   | 105 (104 full + 1 foundation-only; activity feed extra sources just shipped) |
-| Prompts in progress | 0                                                                            |
-| Prompts blocked     | 0                                                                            |
-| Last prompt         | `[IV.18.17.2]` — feed extra sources (sos + expense + vote)                   |
-| Last commit date    | 2026-04-25                                                                   |
-| Phase               | Phase 1 — feed at 7 sources; 72 suites, 483 tests                            |
+| Counter             | Value                                                                       |
+| ------------------- | --------------------------------------------------------------------------- |
+| Prompts completed   | 106 (105 full + 1 foundation-only; notifications unread-count just shipped) |
+| Prompts in progress | 0                                                                           |
+| Prompts blocked     | 0                                                                           |
+| Last prompt         | `[IV.18.15.4]` — notifications unread-count badge endpoint                  |
+| Last commit date    | 2026-04-25                                                                  |
+| Phase               | Phase 1 — home-screen badge primitive; 73 suites, 488 tests                 |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.15.4] — Notifications unread-count badge endpoint
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.15 (Notifications)
+
+**What was done**
+
+Home-screen badge primitive: `GET /api/v1/notifications/me/unread-count` returns `{ unread: number }`. Drives the unread-count badge on every authed surface — clients render "5" without paginating the inbox via `GET /me`.
+
+Single `prisma.notificationLog.count({ where: { userId, read: false } })`. Hits the existing `[userId, read, createdAt]` index — same one `mark-all-read` (`[IV.18.15.3]`) uses. Postgres `count` on an indexed-prefix `where` is O(log n) + a heap-only-tuple scan of the matching range; cheap even at large inbox sizes.
+
+Response shape is `{ unread: number }` (NOT a bare integer) so the surface stays stable when it evolves to include extra fields (e.g. `unread_critical`, `last_at`).
+
+HTTP surface:
+
+| Route                                       | Auth   | What it does                         |
+| ------------------------------------------- | ------ | ------------------------------------ |
+| `GET /api/v1/notifications/me/unread-count` | bearer | `{ unread: <count> }` for the caller |
+
+**Files created** (2)
+
+- `apps/api/src/modules/notifications/application/get-unread-count.use-case.ts` — orchestrator (one-liner over the port).
+- `apps/api/test/notifications-unread-count.e2e-spec.ts` — 5 integration tests against real Postgres.
+
+**Files edited** (3)
+
+- `apps/api/src/modules/notifications/application/ports/notification-log.repository.ts` — adds `countUnreadForUser(userId): Promise<number>` method.
+- `apps/api/src/modules/notifications/infrastructure/prisma-notification-log.repository.ts` — implements `countUnreadForUser` via owner-scoped `count`.
+- `apps/api/src/modules/notifications/interface/notifications.controller.ts` — adds `@Get('me/unread-count')`. Declared BEFORE `@Get('me')` — defensive ordering, even though Nest's path matcher would resolve segment-count differences correctly.
+- `apps/api/src/modules/notifications/notifications.module.ts` — registers `GetUnreadCountUseCase`.
+
+**Tests** (5 cases, real-Postgres):
+
+1. No bearer → 401 `UNAUTHENTICATED`.
+2. Empty inbox (registration row pre-marked) → `{ unread: 0 }`.
+3. Fresh registration mints 1 unread (session_issued); seeding 4 more → `{ unread: 5 }`.
+4. After `POST /read-all` → `{ unread: 0 }` (verifies the mark-all-read interaction).
+5. Cross-user isolation: Alice has 8 unread (1 reg + 7 seeded); Bob has 1 (just reg) — Bob's count returns 1, not Alice's 8.
+
+**Dependencies** — none new. No Prisma migration — NotificationLog has been on the schema since `[IV.18.15.1]`.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Unread-count suite 5/5 pass.
+- ✅ **Full real-DB + MinIO suite: 73 suites, 488 tests pass against live Docker.** (+1 suite, +5 tests vs. previous baseline.)
+
+**Acceptance criteria**
+
+- ✅ Authed caller gets a single integer count without paginating.
+- ✅ Empty inbox → `{ unread: 0 }`, NOT 404 (continues the "empty ≠ missing" precedent).
+- ✅ Cross-user isolation holds (owner-scoped `where { userId }`).
+- ✅ Response shape `{ unread: N }` not a bare integer — stable for future evolution.
+- ✅ `GET me/unread-count` declared BEFORE `GET me` — defensive ordering.
+
+**Notes**
+
+- **Why `{ unread: number }` and not `unread: number` (bare).** The wire shape is part of the API contract. Returning `5` directly leaves no room to add `last_at` or `unread_by_channel` later without a breaking change. Wrapping in an object is one extra byte (`{":}`) for forward-compat — cheap.
+- **Why a separate endpoint and not a header on `GET /me`.** Two reasons: (1) the badge query is the dominant call from the home screen; making clients fetch a 50-row list to read the count is wasteful at scale. (2) Headers on a paginated endpoint are awkward — clients have to read the response twice (json body + headers) and the count would need to reflect the FULL inbox not just the current page, which is non-obvious from the response shape. A dedicated endpoint is cleaner.
+- **Why declare the new route BEFORE `me`.** Nest's path matcher handles `me/unread-count` and `me` as different routes (different segment count) — there's no actual collision. Ordering still matters defensively: a future refactor that adds `@Get('me/:section')` would shadow `me/unread-count` if it were declared after. Same defensive-ordering rule the codebase already uses for `read-all` before `:id/read` and `summary` before `:id`.
+- **Notifications surface is now feature-complete for v1.** List + per-row read + bulk mark-all-read + unread badge. The remaining work (per-channel filtering, mark-as-unread, pagination cursor) is incremental and lands when product needs each piece. The 4 endpoints together let any client render the inbox screen + badge in two round-trips.
 
 ---
 
