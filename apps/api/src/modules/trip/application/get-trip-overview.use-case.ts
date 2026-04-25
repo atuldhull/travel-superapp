@@ -19,7 +19,7 @@
  *
  * Installed by prompt [IV.18.7.3].
  */
-import { Inject, Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { NotFoundError } from '@app/errors';
 import { GeoQueries } from '../../../common/db/geo-queries';
 import { SearchEventsUseCase } from '../../events/application/search-events.use-case';
@@ -36,11 +36,20 @@ import { daysInclusive } from './generate-itinerary-stub.use-case';
 import { GetTripTransportLegsUseCase, type TransportLeg } from './get-trip-transport-legs.use-case';
 import { ITINERARY_REPOSITORY, type ItineraryRepository } from './ports/itinerary.repository';
 import { TRIP_REPOSITORY, type TripRepository } from './ports/trip.repository';
+import {
+  TRIP_MEDIA_PORT,
+  type TripMediaPort,
+  type TripMediaSummary,
+} from './ports/trip-media.port';
 
 const WEATHER_MAX_DAYS = 16;
 const STAYS_MAX_RADIUS_KM = 50;
 const EATERIES_MAX_RADIUS_KM = 25;
 const EVENTS_MAX_RADIUS_KM = 30;
+// Trip-overview only renders a thumbnail strip — the full media
+// surface is `GET /media?tripId=...`. 12 thumbs covers a 4×3
+// grid; clients use `count` to render "and N more".
+const MEDIA_RECENT_LIMIT = 12;
 
 export type Section<T> =
   | { readonly ok: true; readonly data: T }
@@ -54,6 +63,7 @@ export interface TripOverview {
   readonly eateries: Section<readonly EateryListing[]>;
   readonly events: Section<readonly EventListing[]>;
   readonly transport: Section<readonly TransportLeg[]>;
+  readonly media: Section<TripMediaSummary>;
 }
 
 @Injectable()
@@ -68,6 +78,11 @@ export class GetTripOverviewUseCase {
     @Inject(SearchEventsUseCase) private readonly searchEvents: SearchEventsUseCase,
     @Inject(GetTripTransportLegsUseCase)
     private readonly transportLegs: GetTripTransportLegsUseCase,
+    // forwardRef because TRIP_MEDIA_PORT is implemented in
+    // MediaModule, which imports TripModule for the trip-attach
+    // gate. Symmetric `forwardRef()` on both module imports.
+    @Inject(forwardRef(() => TRIP_MEDIA_PORT))
+    private readonly tripMedia: TripMediaPort,
   ) {}
 
   async execute(tripId: string, userId: string): Promise<TripOverview> {
@@ -85,9 +100,9 @@ export class GetTripOverviewUseCase {
         ? Math.max(1, Math.min(WEATHER_MAX_DAYS, daysInclusive(trip.startsOn, trip.endsOn)))
         : 7;
 
-    // Run the six sub-fetches concurrently. Each is wrapped so a
+    // Run the seven sub-fetches concurrently. Each is wrapped so a
     // single failure doesn't reject the whole bundle.
-    const [itinerary, weather, stays, eateries, events, transport] = await Promise.all([
+    const [itinerary, weather, stays, eateries, events, transport, media] = await Promise.all([
       section(() => this.itinerary.listDays(trip.id)),
       section(() =>
         this.getForecast.execute({ lat: center.lat, lng: center.lng, days: weatherDays }),
@@ -130,9 +145,13 @@ export class GetTripOverviewUseCase {
       // Owner gate already ran above — call the internal compute
       // entry point so we don't redo the trip + ownership lookup.
       section(() => this.transportLegs.computeLegs(trip.id)),
+      // Owner-scoped media summary. Owner gate already ran above;
+      // the adapter still re-applies the ownerId filter as a
+      // defense-in-depth — same posture as transportLegs above.
+      section(() => this.tripMedia.summarizeForTrip(trip.id, userId, MEDIA_RECENT_LIMIT)),
     ]);
 
-    return { trip, itinerary, weather, stays, eateries, events, transport };
+    return { trip, itinerary, weather, stays, eateries, events, transport, media };
   }
 }
 
