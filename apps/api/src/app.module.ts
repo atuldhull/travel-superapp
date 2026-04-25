@@ -18,6 +18,7 @@ import { AppNestLoggerService } from '@app/logger';
 import { JwtAuthGuard, RolesGuard } from './common/auth';
 import { DbModule } from './common/db/db.module';
 import { EventsModule } from './common/events/events.module';
+import { MetricsModule } from './common/metrics/metrics.module';
 import { RateLimitGuard } from './common/rate-limit/rate-limit.guard';
 import { RateLimitModule } from './common/rate-limit/rate-limit.module';
 import { HealthModule } from './health/health.module';
@@ -56,6 +57,7 @@ import { WeatherModule } from './modules/weather/weather.module';
     AppConfigModule.forRoot(),
     DbModule,
     EventsModule,
+    MetricsModule,
     RateLimitModule,
     HealthModule,
     IdentityModule,
