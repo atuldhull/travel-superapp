@@ -10,18 +10,90 @@
 
 ## Summary
 
-| Counter             | Value                                                                         |
-| ------------------- | ----------------------------------------------------------------------------- |
-| Prompts completed   | 118 (117 full + 1 foundation-only; cache hit/miss observability just shipped) |
-| Prompts in progress | 0                                                                             |
-| Prompts blocked     | 0                                                                             |
-| Last prompt         | `[IV.18.10.5]` — cache hit/miss observability (TypedRedisCache.getStats)      |
-| Last commit date    | 2026-04-25                                                                    |
-| Phase               | Phase 1 — caches now observable; 85 suites, 549 tests                         |
+| Counter             | Value                                                                              |
+| ------------------- | ---------------------------------------------------------------------------------- |
+| Prompts completed   | 120 (119 full + 1 foundation-only; bundled EXIF-strip stub + prom-client /metrics) |
+| Prompts in progress | 0                                                                                  |
+| Prompts blocked     | 0                                                                                  |
+| Last prompt         | `[IV.18.10.6]` — prom-client /metrics endpoint (bundled with `[IV.18.12.14]`)      |
+| Last commit date    | 2026-04-25                                                                         |
+| Phase               | Phase 1 — Prometheus scrape live + EXIF gate flagged; 87 suites, 556 tests         |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.10.6] — Prom-client /metrics endpoint (bundled with `[IV.18.12.14]`)
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 11 (Observability)
+
+**What was done**
+
+Natural follow-up to `[IV.18.10.5]` — the cache hit/miss counters now have a real Prometheus surface. `GET /metrics` (Public, bare path — excluded from the `/api/v1` prefix so prom scrapers hit `/metrics` directly) returns text-format prom output via `prom-client@15`.
+
+Two app-level metrics, both labeled by `cache` namespace:
+
+- `cache_hit_total{cache="..."}` — monotonic hit count
+- `cache_miss_total{cache="..."}` — monotonic miss count
+
+**Why Gauge, not Counter.** The source-of-truth is the running `getStats()` snapshot on each `TypedRedisCache` instance. `Counter` only supports `.inc()`, so emitting "current cumulative value" would require a delta-tracker. `Gauge` `collect()` reads the snapshot directly at scrape time. Prometheus `rate()` works equally well over either; the only loss is the `_total` naming convention, which we keep for grok-ability.
+
+**Static-instance registry.** `TypedRedisCache` gains a static `Set<TypedRedisCache<unknown>>` that each cache joins in its constructor + leaves in `onModuleDestroy`. The `MetricsService` walks the set at scrape time. No DI gymnastics, no subclass churn — every existing cache (trip-balances + weather + stays + food + places + events + transport) automatically participates.
+
+**Default node metrics for free.** `collectDefaultMetrics()` rolls in process CPU, memory, event-loop lag, GC stats, fd count — baseline production-readiness lift in exchange for a few extra KB per scrape. Prometheus dashboards can now answer "is the API healthy at the process level?" without any extra wiring.
+
+**Auth posture.** Route is `@Public()` so prom scrapers don't carry JWTs. Production hardening is network-layer (k8s NetworkPolicy / VPC SG / scrape sidecar) — the same pattern used by `/health/*`. Adding bearer-auth here would block standard prom scrapers without a real security gain (the metrics expose hit counts, not user data).
+
+**Cardinality stays tiny:** labels bounded by cache count (currently 6), no user-derived labels.
+
+**Files**
+
+- `apps/api/package.json` + `pnpm-lock.yaml` — `prom-client@^15.1.0` dep
+- `apps/api/src/common/cache/typed-redis-cache.ts` — static instance registry (+ onModuleDestroy cleanup)
+- `apps/api/src/common/metrics/metrics.service.ts` (new) — Registry + 2 Gauges with `collect()` callbacks
+- `apps/api/src/common/metrics/metrics.controller.ts` (new) — `@Controller('metrics') @Public()` GET /
+- `apps/api/src/common/metrics/metrics.module.ts` (new) — `@Global()`
+- `apps/api/src/app.module.ts` — register MetricsModule
+- `apps/api/src/main.ts` — exclude `/metrics` from `/api/v1` prefix
+- `apps/api/test/metrics-endpoint.e2e-spec.ts` (new) — 4 tests: public access, labeled cache lines, hits-increase-between-scrapes, default node metrics surfaced
+
+**Verification**
+
+`pnpm --filter=api typecheck` green. Full integration suite: **87 passed, 556 passed** (covers both bundled slices).
+
+**Commits**
+
+- `f1d0d78` — feat(IV.18.10.6) prom-client /metrics endpoint
+
+---
+
+### [IV.18.12.14] — EXIF-strip stub on confirm-upload (bundled with `[IV.18.10.6]`)
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.13 (Media & Memory) + 9 (Security — PII / OWASP Mobile)
+
+**What was done**
+
+`ConfirmUploadUseCase` now flips `exifStripped = true` after `markReady` for `kind: 'image'`. Stub semantics: the real byte-level strip-then-reupload runs out-of-band in `media-service` per playbook §3.2. This slice lays the gate so any future feature that derives location/EXIF from a media asset can refuse to surface raw data until the worker has confirmed strip.
+
+Videos defer entirely to the worker (transcode + EXIF in one pass).
+
+**Why now.** Schema column was already in place (`exifStripped Boolean @default(false)`) — no migration needed. Wiring the use-case + flag flow now means location-aware features (e.g. trip overview's photo-spot suggestions, public memory book sharing) ship with the privacy gate baked in instead of retrofitted later.
+
+**Idempotency.** Re-confirming an already-`ready` row short-circuits before reaching the strip path; the flag stays `true`. Failure to flip the flag is non-fatal — the `markReady` transition is already committed; an unflagged image gets re-stripped by a future reconciliation job rather than failing the upload.
+
+**Files**
+
+- `apps/api/src/modules/media/domain/media-asset.entity.ts` — adds `readonly exifStripped: boolean`
+- `apps/api/src/modules/media/application/ports/media-asset.repository.ts` — adds `markExifStrippedForOwner(id, ownerId)`
+- `apps/api/src/modules/media/infrastructure/prisma-media-asset.repository.ts` — implements port + exposes column via `toDomain`
+- `apps/api/src/modules/media/application/confirm-upload.use-case.ts` — calls strip-mark for `kind: 'image'`
+- `apps/api/test/media-exif-strip.e2e-spec.ts` (new) — 3 tests: image flips flag, video leaves false, re-confirm idempotent
+
+**Commits**
+
+- `93fe594` — feat(IV.18.12.14) EXIF-strip stub on confirm-upload
 
 ---
 
