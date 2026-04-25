@@ -10,18 +10,67 @@
 
 ## Summary
 
-| Counter             | Value                                                                   |
-| ------------------- | ----------------------------------------------------------------------- |
-| Prompts completed   | 114 (113 full + 1 foundation-only; admin media moderation just shipped) |
-| Prompts in progress | 0                                                                       |
-| Prompts blocked     | 0                                                                       |
-| Last prompt         | `[IV.18.18.4]` — admin media moderation (list + delete)                 |
-| Last commit date    | 2026-04-25                                                              |
-| Phase               | Phase 1 — admin operator surface complete v1; 81 suites, 534 tests      |
+| Counter             | Value                                                                           |
+| ------------------- | ------------------------------------------------------------------------------- |
+| Prompts completed   | 115 (114 full + 1 foundation-only; agent review summary composite just shipped) |
+| Prompts in progress | 0                                                                               |
+| Prompts blocked     | 0                                                                               |
+| Last prompt         | `[IV.18.12.12]` — agent review summary composite (closes 4-of-4 review-targets) |
+| Last commit date    | 2026-04-25                                                                      |
+| Phase               | Phase 1 — review-bundle composite arc complete (4-of-4); 82 suites, 538 tests   |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.12.12] — Agent review summary composite (closes 4-of-4 review-targets)
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.7 (Safety — agents) + 3.12 (Social & Groups)
+
+**What was done**
+
+Fourth and final v1 review-bundle composite. Mirrors the eatery variant exactly, swapping `targetType: 'eatery'` → `'agent'` and the DTO field `eateryId` → `agentId`. No new use-case — `GetReviewBundleForTargetUseCase` was already generalized in `[IV.18.6.5]`. No new persistence either.
+
+- `GET /api/v1/agents/:id/review-summary` — `@Public()`, returns `{ agentId, reviews, votes, recentReviews }`.
+- Lives in SocialModule (NOT SafetyModule, where the Agent entity itself lives) — same URL-vs-module-boundary decoupling rule from `[IV.18.12.11]`. Route mounts at `/agents/:id/review-summary` regardless of owning module.
+
+**Why no votes for agents.** The vote target enum today only allows `place | restaurant | itinerary_item` per `[IV.18.12.9]`. The use-case maps non-place review targets to a zero-filled `VoteSummary` without touching the votes table. Agents may get vote support later (e.g. "would book again" thumbs-up); when that happens, extend the `reviewToVoteTargetType` map.
+
+**Closes the review-bundle composite arc for v1.** Four target types — place, stay, eatery, agent — all bundled through one orchestrator. Cost per new resource was 2 files (controller + test) once the use-case was generalized in `[IV.18.6.5]`. The 4-way isolation test pins the contract end-to-end: same opaque id used across all four `/review-summary` routes returns isolated counts.
+
+HTTP surface:
+
+| Route                                   | Auth   | What it does                                                            |
+| --------------------------------------- | ------ | ----------------------------------------------------------------------- |
+| `GET /api/v1/agents/:id/review-summary` | Public | Bundles agent's review summary + zero-filled vote summary + recent (5). |
+
+**Files**
+
+- `apps/api/src/modules/social/interface/agent-review-summary.controller.ts` (new) — thin wrapper over the bundle use-case
+- `apps/api/src/modules/social/social.module.ts` — register `AgentReviewSummaryController`
+- `apps/api/test/agent-review-summary.e2e-spec.ts` (new) — 4 tests (empty agent, rich agent, A↔B isolation, 4-way targetType isolation across agent + eatery + stay + place)
+- `apps/api/test/admin-media.e2e-spec.ts` — drive-by fix: removed leftover `body.trips` from prior `[IV.18.18.4]` slice (tsc strict caught it; runtime was fine via `??` short-circuit)
+
+**Verification**
+
+`pnpm --filter=api typecheck` green. Full integration suite: **82 passed, 538 passed**. New `agent-review-summary.e2e-spec.ts` file is the 82nd suite.
+
+**Production-readiness deltas**
+
+- Full super-app: ~36% → ~37%
+- Phase-1 MVP: ~63% → ~64%
+- Narrow trip-planner MVP: ~78% → ~79%
+
+**What this enables**
+
+A consistent review-detail composite shape across every reviewable resource. Frontend can hit one endpoint per resource type without per-target special-casing. The 4-way isolation contract means same-id collisions across resource types are now a tested invariant, not a hope.
+
+**Commits**
+
+- `2e519c7` — fix(IV.18.18.4) drive-by typecheck fix
+- `28beed6` — feat(IV.18.12.12) agent review summary composite
 
 ---
 
