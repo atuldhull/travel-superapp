@@ -10,18 +10,87 @@
 
 ## Summary
 
-| Counter             | Value                                                                           |
-| ------------------- | ------------------------------------------------------------------------------- |
-| Prompts completed   | 107 (106 full + 1 foundation-only; place review summary composite just shipped) |
-| Prompts in progress | 0                                                                               |
-| Prompts blocked     | 0                                                                               |
-| Last prompt         | `[IV.18.12.11]` — place review summary composite (review + vote + recent)       |
-| Last commit date    | 2026-04-25                                                                      |
-| Phase               | Phase 1 — place detail page bundle; 74 suites, 493 tests                        |
+| Counter             | Value                                                                          |
+| ------------------- | ------------------------------------------------------------------------------ |
+| Prompts completed   | 108 (107 full + 1 foundation-only; stay review summary composite just shipped) |
+| Prompts in progress | 0                                                                              |
+| Prompts blocked     | 0                                                                              |
+| Last prompt         | `[IV.18.6.5]` — stay review summary composite + use-case generalization        |
+| Last commit date    | 2026-04-25                                                                     |
+| Phase               | Phase 1 — composite generalized for any review-target; 75 suites, 497 tests    |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.6.5] — Stay review summary composite + use-case generalization
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.6 (Stays) + 3.12 (Social)
+
+**What was done**
+
+Adds `GET /api/v1/stays/:id/review-summary` — same composite shape as the place version (`[IV.18.12.11]`) but for stay resources. Refactors the previously-place-specific `GetPlaceReviewSummaryUseCase` into the generic `GetReviewBundleForTargetUseCase`, parameterized by `targetType: ReviewTargetType`. Two thin controllers (place + stay) both delegate to the same orchestrator; adding eatery / agent in future is a one-controller-file diff.
+
+**Vote / review target-type mismatch.** Reviews allow `place | stay | eatery | agent`; votes today only allow `place | restaurant | itinerary_item` (per `[IV.18.12.9]`). The use-case maps `place → vote 'place'` and skips the votes call entirely for everything else, returning a zero-filled vote summary in that branch. As stay / eatery / agent voting opens up, extend the map (`reviewToVoteTargetType` helper).
+
+**DTO shape.** Each controller wraps the shared `ReviewBundleResponseDto` with its resource-specific id field — `placeId` for `/places/:id/review-summary`, `stayId` for `/stays/:id/review-summary`. Keeps the wire shape feeling first-class for each resource without forcing clients to remember a generic `targetId` field.
+
+HTTP surface:
+
+| Route                                   | Auth        | What it does                                         |
+| --------------------------------------- | ----------- | ---------------------------------------------------- |
+| `GET /api/v1/places/:id/review-summary` | `@Public()` | Composite bundle for a place (unchanged URL/shape)   |
+| `GET /api/v1/stays/:id/review-summary`  | `@Public()` | Composite bundle for a stay; votes always zero today |
+
+**Files created** (3)
+
+- `apps/api/src/modules/social/application/get-review-bundle-for-target.use-case.ts` — generalized use-case (renamed from `get-place-review-summary.use-case.ts`). Handles the review→vote target-type map + the no-vote-target zero-fill branch.
+- `apps/api/src/modules/social/interface/dto/review-bundle.dto.ts` — shared `ReviewBundleResponseDto` + `reviewBundleToDto()` mapper. Both controllers wrap it with their resource-specific id field.
+- `apps/api/src/modules/social/interface/stay-review-summary.controller.ts` — `@Controller('stays')` + `@Get(':id/review-summary')`, mounted at `/stays/:id/review-summary` despite living in SocialModule (URL-vs-module-boundary decoupling rule from `[IV.18.12.11]`).
+- `apps/api/test/stay-review-summary.e2e-spec.ts` — 4 integration tests against real Postgres.
+
+**Files edited** (2)
+
+- `apps/api/src/modules/social/interface/place-review-summary.controller.ts` — switched to `GetReviewBundleForTargetUseCase`; uses the shared DTO mapper. Wire shape (`placeId` field + nested reviews/votes/recentReviews) unchanged.
+- `apps/api/src/modules/social/social.module.ts` — registers the renamed use-case + the new stay controller.
+
+**Tests** (4 cases for stay, plus 5 unchanged for place):
+
+Stay tests (real-Postgres):
+
+1. Empty stay + no bearer → 200 with all-zero shape; votes block always all zeros.
+2. Stay with 3 reviews (5/4/3, three different authors) → average 4.0, correct histogram, recentReviews list. Votes block stays all zeros (verifies the no-vote-target-mapping branch).
+3. Cross-target isolation: stayA vs. stayB.
+4. **Cross-targetType isolation**: same opaque `targetId` used for both a stay review AND a place GET. The stay endpoint returns count=1; the place endpoint returns count=0. Proves the endpoints filter by `targetType`, not just `targetId` — a subtle bug we'd want to catch if the use-case ever started passing the wrong target type to the underlying summary calls.
+
+Existing 5 place tests still green — verified end-to-end no regression.
+
+**Dependencies** — none new. No Prisma migration — Stay model has been on the schema since `[IV.18.6.1]`.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Stay-review-summary suite 4/4 pass.
+- ✅ Place-review-summary suite 5/5 still pass (no regression).
+- ✅ **Full real-DB + MinIO suite: 75 suites, 497 tests pass against live Docker.** (+1 suite, +4 tests vs. previous baseline.)
+
+**Acceptance criteria**
+
+- ✅ `/stays/:id/review-summary` returns the composite bundle.
+- ✅ Same DTO shape as `/places/:id/review-summary` (only the id field name differs).
+- ✅ Votes block is zero-filled for stays (correct: no vote rows reference stay targets today).
+- ✅ Existing place endpoint shape unchanged.
+- ✅ Use-case generalized; eatery/agent variants are one-controller-file additions.
+
+**Notes**
+
+- **Why generalize the use-case rather than copy-paste.** The place + stay composites are 95% identical; the only differences are the `targetType` constant and the resource-specific id field name. Copy-pasting would have been faster for this slice but would force the same change to land twice (and three times when eatery + agent come) every time the composite shape evolves. Generalizing now is the cheap-now-cheap-later choice.
+- **Why each controller has its own DTO with `placeId` / `stayId`.** Could have unified on `targetId` and made one shared DTO. Decided against: clients calling `/places/:id/review-summary` think of the resource as a place — the response field reading "placeId" is more discoverable than "targetId". Two trivial controller-side mappers; the use-case stays generic.
+- **Why the no-vote-target branch returns zero-fill instead of throwing.** Stays / eateries / agents conceptually CAN have votes someday; the schema's vote `targetType` enum is just narrower than the review enum today. Returning zero-fill matches the "empty ≠ missing" rule already established for the underlying summary endpoints. As voting opens up, the map gets one more entry and existing clients see real numbers without a wire-shape change.
+- **Why test the cross-targetType isolation case.** It's the one bug class that would be invisible under happy-path tests: if the use-case ever lost track of `targetType` and queried by `targetId` alone, the stay endpoint would start showing place reviews (and vice versa). The shared-id test makes that bug class impossible to ship undetected.
+- **Pattern proven again.** The third composite-bundling endpoint (after trip overview + account export + place review summary) — and the first time the underlying use-case got generalized for reuse. Confirms the composite pattern is genuinely cheap to extend: ~2 files (controller + test) per new resource, no use-case duplication.
 
 ---
 
