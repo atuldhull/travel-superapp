@@ -10,18 +10,89 @@
 
 ## Summary
 
-| Counter             | Value                                                                            |
-| ------------------- | -------------------------------------------------------------------------------- |
-| Prompts completed   | 109 (108 full + 1 foundation-only; eatery review summary composite just shipped) |
-| Prompts in progress | 0                                                                                |
-| Prompts blocked     | 0                                                                                |
-| Last prompt         | `[IV.18.7.7]` — eatery review summary composite                                  |
-| Last commit date    | 2026-04-25                                                                       |
-| Phase               | Phase 1 — composite at 3-of-4 review-target resources; 76 suites, 501 tests      |
+| Counter             | Value                                                                |
+| ------------------- | -------------------------------------------------------------------- |
+| Prompts completed   | 110 (109 full + 1 foundation-only; trip-balances cache just shipped) |
+| Prompts in progress | 0                                                                    |
+| Prompts blocked     | 0                                                                    |
+| Last prompt         | `[IV.18.10.4]` — trip expense balances cache + invalidation          |
+| Last commit date    | 2026-04-25                                                           |
+| Phase               | Phase 1 — first write-invalidated cache; 77 suites, 505 tests        |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.10.4] — Trip expense balances cache + invalidation
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.12 (Social) + 8 (Performance)
+
+**What was done**
+
+Pivot from feature slices to a quality / scale slice. Wrap `GetTripBalancesUseCase` with a Redis cache so the per-trip balance computation (currently scans every Expense + reduces in JS on every call) returns from Redis on subsequent reads. Invalidate on every Expense write so the cache stays correct. First write-invalidated cache in the codebase — previous caches (Weather, Stays, Food, Events, Places) are TTL-only.
+
+**Cache key**: `travel-<env>:trip-balances:<tripId>`. **TTL**: 5 minutes — short enough that a missed invalidation self-heals quickly; long enough that the cache actually pays off on screens that poll or re-render. **Invalidation**: `CreateExpenseUseCase` + `DeleteExpenseUseCase` both call `cache.del(tripId)` after a successful write.
+
+**Auth gate runs BEFORE cache read.** A stranger probing a guessed tripId can't pull a cached result — same posture trip-overview uses for ownership.
+
+**Repo signature change.** `ExpenseRepository.deleteForPayer` widened from `Promise<boolean>` to `Promise<{ tripId: string } | null>` so the use-case can invalidate the cache without an extra `findById` round-trip. The Prisma adapter does `findFirst({ id, paidById, select: { tripId } })` then `deleteMany({ id, paidById })` — both queries scoped by `(id, paidById)` so the IDOR guarantee stays intact.
+
+**Generic `del()` added to `TypedRedisCache` base.** Most cache consumers today are TTL-only; the new `del(key)` method lets any future write-invalidated cache re-use the pattern (~10 lines per cache).
+
+**Files created** (2)
+
+- `apps/api/src/modules/social/infrastructure/trip-balances-cache.ts` — `TypedRedisCache<readonly UserBalance[]>` subclass, ~10 lines.
+- `apps/api/test/trip-balances-cache.e2e-spec.ts` — 4 integration tests against real Postgres + Redis.
+
+**Files edited** (5)
+
+- `apps/api/src/common/cache/typed-redis-cache.ts` — adds `del(key): Promise<void>` method (swallows on failure, same posture as get/set).
+- `apps/api/src/modules/social/application/get-trip-balances.use-case.ts` — wraps the existing computation in cache get → compute → cache set. Auth gate first, then cache read, then compute on miss.
+- `apps/api/src/modules/social/application/create-expense.use-case.ts` — calls `balancesCache.del(tripId)` after successful create.
+- `apps/api/src/modules/social/application/delete-expense.use-case.ts` — same after successful delete; uses the new repo return shape.
+- `apps/api/src/modules/social/application/ports/expense.repository.ts` — `deleteForPayer` returns `{ tripId } | null`.
+- `apps/api/src/modules/social/infrastructure/prisma-expense.repository.ts` — implements the new shape.
+- `apps/api/src/modules/social/social.module.ts` — registers `TripBalancesCache`.
+
+**Tests** (4 cases, real-Postgres + Redis):
+
+The test design exploits direct Prisma writes to detect cache-vs-source-of-truth divergence:
+
+1. **Cache hit confirmed**: warm the cache via API → directly insert a `999` expense via Prisma (bypasses CreateExpenseUseCase + invalidation) → next balance read returns the OLD (cached) value, NOT reflecting the bypass insert. Proves the cache is actually serving.
+2. **Create invalidates**: warm cache → API-create another expense → cache invalidated → next read recomputes (verified via the trip-expenses list endpoint showing all 4 rows).
+3. **Delete invalidates**: warm cache with 2 expenses → API-delete one → next balance read shows only 1 expense's effect.
+4. **Cross-trip isolation**: warm caches for trip A + trip B independently → API-create on trip A invalidates ONLY trip A's cache → direct Prisma insert into trip B's expense table → next trip B read returns the OLD cached value (proving trip B's cache survived the trip A invalidation). Cache key is correctly per-trip.
+
+Plus 9 existing `social-expenses.e2e-spec.ts` tests still pass — no regression in the underlying CRUD behavior.
+
+**Dependencies** — none new. No Prisma migration.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Trip-balances-cache suite 4/4 pass.
+- ✅ Existing social-expenses suite 9/9 still pass (no regression).
+- ✅ **Full real-DB + MinIO + Redis suite: 77 suites, 505 tests pass against live Docker.** (+1 suite, +4 tests vs. previous baseline.)
+
+**Acceptance criteria**
+
+- ✅ Repeat balance reads serve from Redis (verified via direct-Prisma bypass technique).
+- ✅ Create-expense invalidates the cache.
+- ✅ Delete-expense invalidates the cache.
+- ✅ Cross-trip isolation: each trip's balances cache is independent.
+- ✅ Auth gate runs before cache read (no result-leak via guessed tripId).
+- ✅ Generic `del(key)` added to `TypedRedisCache` for future reuse.
+
+**Notes**
+
+- **Why this is the first write-invalidated cache.** Previous caches are all on read paths whose source-of-truth is external (Open-Meteo weather, Foursquare places, etc.) — TTL is sufficient because the upstream changes on its own schedule, and a stale entry is fine for a few minutes. Trip balances are computed from internal state (Expense rows we control writes for), so we KNOW exactly when the cache becomes stale. Explicit invalidation is the right tool; TTL alone would mean "user creates expense, sees old balance for 5 min" which is bad UX.
+- **Why widen the repo's `deleteForPayer` signature instead of doing `findById` first in the use-case.** Two queries vs one in the adapter, but the adapter's `findFirst` + `deleteMany` is one round-trip-equivalent (both queries hit the same PK index) and the use-case stays a single call. The wider type is also self-documenting — future consumers see immediately that "delete returns the tripId for cache invalidation".
+- **Why test caching with the direct-Prisma-bypass trick rather than mocking Prisma.** Mocking the underlying ORM in a NestJS DI graph is ~50 lines of test setup per case, plus you're testing the mock not the cache. The bypass trick directly proves the cache served by exhibiting a value that COULDN'T be the source-of-truth. Same trick should be used for any future write-invalidated cache test.
+- **Why 5-minute TTL.** Three signals: (1) The compute is cheap-ish today (a few hundred Expense rows max per trip in v1) — long TTL would over-cache. (2) A missed invalidation should self-heal "within a meal" not "next day". (3) Most balance-page activity is bursts (open-the-app: 3-5 reads in 30s) — 5 min covers the burst with one DB hit. Tunable in the use-case constant if metrics suggest different.
+- **Why auth gate before cache read, not after.** Same posture as trip-overview. A stranger guessing a tripId shouldn't be able to time-attack the cache lookup ("if it returns fast, the trip exists + has cached data"). Running auth first means the cache becomes a strict performance optimization, not a probable-target oracle.
+- **Pattern consolidation.** `del()` on the cache base + `cache.del()` from the writing use-case + auth-before-cache in the reading use-case = the durable shape for any future write-invalidated cache. Future candidates: trip overview (heavy fan-out), feed (multi-source), place review summary (composite). All wait until profile data justifies them — premature caching is a real cost.
 
 ---
 
