@@ -38,6 +38,7 @@ import { PrismaExpenseRepository } from './infrastructure/prisma-expense.reposit
 import { PrismaReviewRepository } from './infrastructure/prisma-review.repository';
 import { PrismaVoteRepository } from './infrastructure/prisma-vote.repository';
 import { TripBalancesCache } from './infrastructure/trip-balances-cache';
+import { AgentReviewSummaryController } from './interface/agent-review-summary.controller';
 import { EateryReviewSummaryController } from './interface/eatery-review-summary.controller';
 import { ExpensesController } from './interface/expenses.controller';
 import { PlaceReviewSummaryController } from './interface/place-review-summary.controller';
@@ -56,6 +57,7 @@ import { VotesController } from './interface/votes.controller';
     PlaceReviewSummaryController,
     StayReviewSummaryController,
     EateryReviewSummaryController,
+    AgentReviewSummaryController,
   ],
   providers: [
     { provide: VOTE_REPOSITORY, useClass: PrismaVoteRepository },
