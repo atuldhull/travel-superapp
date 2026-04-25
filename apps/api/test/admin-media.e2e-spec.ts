@@ -161,7 +161,7 @@ describe('Admin media moderation (integration, requires Docker Postgres)', () =>
     await seedMedia(bob.userId, 'b-img');
 
     const body = await adminList(adminToken, `?ownerId=${alice.userId}`);
-    expect(body.trips ?? body.media.length).toBeGreaterThanOrEqual(1);
+    expect(body.media.length).toBeGreaterThanOrEqual(1);
     for (const m of body.media) expect(m.ownerId).toBe(alice.userId);
     expect(body.media.some((m) => m.id === aliceMedia)).toBe(true);
   });
