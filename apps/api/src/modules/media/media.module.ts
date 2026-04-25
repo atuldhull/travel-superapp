@@ -24,11 +24,15 @@ import { CreateUploadUrlUseCase } from './application/create-upload-url.use-case
 import { DeleteMemoryBookUseCase } from './application/delete-memory-book.use-case';
 import { GetMediaDownloadUrlUseCase } from './application/get-media-download-url.use-case';
 import { GetMemoryBookUseCase } from './application/get-memory-book.use-case';
+import { GetPublishedAssetDownloadUrlUseCase } from './application/get-published-asset-download-url.use-case';
+import { GetPublishedMemoryBookUseCase } from './application/get-published-memory-book.use-case';
 import { ListMemoryBooksUseCase } from './application/list-memory-books.use-case';
 import { ListTripMediaUseCase } from './application/list-trip-media.use-case';
 import { MEDIA_ASSET_REPOSITORY } from './application/ports/media-asset.repository';
 import { MEMORY_BOOK_REPOSITORY } from './application/ports/memory-book.repository';
 import { STORAGE_PROVIDER } from './application/ports/storage-provider';
+import { PublishMemoryBookUseCase } from './application/publish-memory-book.use-case';
+import { UnpublishMemoryBookUseCase } from './application/unpublish-memory-book.use-case';
 import { UpdateMemoryBookUseCase } from './application/update-memory-book.use-case';
 import { PrismaMediaAssetRepository } from './infrastructure/prisma-media-asset.repository';
 import { PrismaMemoryBookRepository } from './infrastructure/prisma-memory-book.repository';
@@ -56,6 +60,10 @@ import { MemoryBookController } from './interface/memory-book.controller';
     UpdateMemoryBookUseCase,
     DeleteMemoryBookUseCase,
     AttachMediaToBookUseCase,
+    PublishMemoryBookUseCase,
+    UnpublishMemoryBookUseCase,
+    GetPublishedMemoryBookUseCase,
+    GetPublishedAssetDownloadUrlUseCase,
   ],
   exports: [MEDIA_ASSET_REPOSITORY, MEMORY_BOOK_REPOSITORY, STORAGE_PROVIDER],
 })

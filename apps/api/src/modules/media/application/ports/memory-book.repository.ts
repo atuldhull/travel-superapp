@@ -46,6 +46,41 @@ export interface MemoryBookRepository {
    *  v1 returns `ready`-only (same filter the trip-listing uses).
    *  Ordered by `MediaAsset.createdAt` desc. */
   listAssetIdsForOwner(bookId: string, ownerId: string): Promise<readonly string[]>;
+
+  /**
+   * Owner-scoped publish toggle. Pass a `Date` to publish (or
+   * republish — refresh the `publishedAt` timestamp), `null` to
+   * unpublish. Returns the updated row, or `null` on miss /
+   * non-owner. [IV.18.12.7]
+   */
+  setPublishedAtForOwner(
+    id: string,
+    ownerId: string,
+    publishedAt: Date | null,
+  ): Promise<MemoryBook | null>;
+
+  /**
+   * Public read path — no owner filter. Returns the book ONLY if
+   * `publishedAt IS NOT NULL`; an unpublished book (or a missing
+   * id) returns `null`, mapped to 404 at the use-case. The
+   * cuid id itself is the unguessable token (~130 bits of
+   * entropy); no separate share code in v1. [IV.18.12.7]
+   */
+  findPublishedById(id: string): Promise<MemoryBook | null>;
+
+  /**
+   * Public asset-membership probe. Returns the asset's storage
+   * key + `ready` status iff:
+   *   - The book is published (`publishedAt IS NOT NULL`).
+   *   - The asset is currently attached (`memoryBookId === bookId`).
+   *   - The asset is `ready` (no half-uploaded thumbnails leak).
+   * Returns `null` otherwise. Used by the public download-URL
+   * surface to gate presigned-URL generation. [IV.18.12.7]
+   */
+  findPublishedAssetForBook(
+    bookId: string,
+    assetId: string,
+  ): Promise<{ readonly s3KeyRaw: string } | null>;
 }
 
 export const MEMORY_BOOK_REPOSITORY = Symbol('MemoryBookRepository');
