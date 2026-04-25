@@ -10,18 +10,111 @@
 
 ## Summary
 
-| Counter             | Value                                                          |
-| ------------------- | -------------------------------------------------------------- |
-| Prompts completed   | 102 (101 full + 1 foundation-only; activity feed just shipped) |
-| Prompts in progress | 0                                                              |
-| Prompts blocked     | 0                                                              |
-| Last prompt         | `[IV.18.17.1]` — personal activity feed (16th HTTP module)     |
-| Last commit date    | 2026-04-25                                                     |
-| Phase               | Phase 1 — home-screen primitive shipped; 68 suites, 457 tests  |
+| Counter             | Value                                                                  |
+| ------------------- | ---------------------------------------------------------------------- |
+| Prompts completed   | 103 (102 full + 1 foundation-only; admin user moderation just shipped) |
+| Prompts in progress | 0                                                                      |
+| Prompts blocked     | 0                                                                      |
+| Last prompt         | `[IV.18.18.1]` — admin user moderation (list / ban / unban)            |
+| Last commit date    | 2026-04-25                                                             |
+| Phase               | Phase 1 — admin user-management surface; 69 suites, 468 tests          |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.18.1] — Admin user moderation (list / ban / unban)
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.17 (Admin & Ops)
+
+**What was done**
+
+First user-management admin surface. Without it ops had no way to ban abusive users without dropping into the DB. Three routes, all gated by `@Roles('admin')`:
+
+- `GET  /api/v1/admin/users?role=&deleted=&q=&limit=&offset=` — paginated list with optional filters.
+- `POST /api/v1/admin/users/:id/ban` — soft-delete + revoke sessions for the target user.
+- `POST /api/v1/admin/users/:id/unban` — clear `User.deletedAt` so login works again.
+
+**Reuses `AccountDeleter` from `[IV.18.16.2]`.** The ban path is exactly the same plumbing as the user-self-delete: set `deletedAt = now()` + revoke sessions atomically in a `prisma.$transaction`. The only difference is the auth posture (admin role gate vs. self-bearer) and which user id gets passed in. Adding `restoreUser(userId)` to the existing `AccountDeleter` port for the unban path keeps both lifecycle transitions on one port — symmetric with the `softDeleteAndRevokeSessions` method already there. The unban adapter uses `updateMany({ where: { id, deletedAt: { not: null } }, data: { deletedAt: null } })` — atomic "set if currently soft-deleted" gate, mirrors the soft-delete shape.
+
+**Where it lives.** Account module, NOT AdminModule. Continues the pattern set by admin scam moderation (`[IV.18.11.5]` in Safety) and admin places curation (`[IV.18.3.x]` in Places): admin endpoints live in the OWNING module. Account already owns `User.deletedAt`; the admin ban endpoint is a different auth posture on the same lifecycle. An umbrella `AdminModule` would force every admin surface to import every owning module's repos, which dilutes ownership.
+
+**List filters:**
+
+- `role` — single role from `user | premium | agent | admin`. Invalid values → 400 `VALIDATION_FAILED`.
+- `deleted` — `true` returns only soft-deleted users; `false` returns only active; absent returns both.
+- `q` — case-insensitive substring on `displayName` via Prisma's `contains` + `mode: 'insensitive'` (Postgres ILIKE). **Email is intentionally NOT searchable**: the schema stores `emailHash` (sha256 + pepper) and `emailEncrypted` (pgcrypto), neither of which supports substring search. Looking up a user by email goes through the hashing seam (different ops surface).
+- `limit` 50 default, 200 cap; `offset` for offset-based pagination. Cursor pagination would be cleaner but the admin list is small + supports filtering — offset is fine here.
+
+**Sensitive columns excluded from the list response:** `passwordHash`, `mfaSecret`, `emailEncrypted`. The `emailHash` IS shipped because admins need SOMETHING to identify users (combined with `displayName`).
+
+HTTP surface:
+
+| Route                                | Auth              | What it does                                  |
+| ------------------------------------ | ----------------- | --------------------------------------------- |
+| `GET  /api/v1/admin/users`           | `@Roles('admin')` | Paginated list with role/deleted/q filters    |
+| `POST /api/v1/admin/users/:id/ban`   | `@Roles('admin')` | Soft-delete + revoke sessions; 204 No Content |
+| `POST /api/v1/admin/users/:id/unban` | `@Roles('admin')` | Clear deletedAt; 204 No Content               |
+
+**Files created** (8)
+
+- `apps/api/src/modules/account/application/ports/admin-user-query.ts` — read-side port for the list. Defines `AdminUserListInput`, `AdminUserListResult`, `AdminUserRow` shapes.
+- `apps/api/src/modules/account/application/admin-list-users.use-case.ts` — clamps `limit` (default 50, cap 200) + non-negative `offset`; passes filters through to the port.
+- `apps/api/src/modules/account/application/admin-ban-user.use-case.ts` — calls `AccountDeleter.softDeleteAndRevokeSessions`. `false` from the port → 404 `USER_NOT_FOUND` (target gone or already banned).
+- `apps/api/src/modules/account/application/admin-unban-user.use-case.ts` — calls `AccountDeleter.restoreUser`. `false` → 404 (target gone OR already active).
+- `apps/api/src/modules/account/infrastructure/prisma-admin-user-query.ts` — builds dynamic Prisma `where`; parallel `findMany` + `count` via `Promise.all`.
+- `apps/api/src/modules/account/interface/admin-users.controller.ts` — class-level `@Roles('admin')` gates every method. 3 routes, request validation for role / deleted / limit / offset.
+- `apps/api/test/admin-users.e2e-spec.ts` — 11 integration tests against real Postgres.
+
+**Files edited** (3)
+
+- `apps/api/src/modules/account/application/ports/account-deleter.ts` — adds `restoreUser(userId): Promise<boolean>` method.
+- `apps/api/src/modules/account/infrastructure/prisma-account-deleter.ts` — implements `restoreUser` via `updateMany` + `deletedAt: { not: null }` clause.
+- `apps/api/src/modules/account/account.module.ts` — registers `ADMIN_USER_QUERY` provider, 3 use-cases, `AdminUsersController`.
+
+**Tests** (11 cases, real-Postgres):
+
+1. No bearer → 401.
+2. Non-admin caller → 403.
+3. Admin list with no filters returns paginated users + `total`; sensitive columns absent.
+4. `?role=admin` returns only admins.
+5. `?deleted=true` returns only soft-deleted users.
+6. `?q=<displayName>` does case-insensitive substring match on displayName.
+7. Ban: target user is soft-deleted + sessions revoked + subsequent login fails with `INVALID_CREDENTIALS`.
+8. Ban idempotent guard: a second ban on an already-banned user → 404 `USER_NOT_FOUND`.
+9. Unban: clears `deletedAt`; user can log in again.
+10. Unban on never-banned user → 404 `USER_NOT_FOUND`.
+11. Non-admin caller can't ban (403); target's `deletedAt` stays null.
+
+**Dependencies** — none new. No Prisma migration — `User.deletedAt` + `User.role` have been on the schema since `[III.12.1]`.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Admin-users suite 11/11 pass.
+- ✅ **Full real-DB + MinIO suite: 69 suites, 468 tests pass against live Docker.** (+1 suite, +11 tests vs. previous baseline.)
+
+**Acceptance criteria**
+
+- ✅ Admin can list users with optional role / deleted / displayName filters.
+- ✅ Sensitive columns (passwordHash, mfaSecret, emailEncrypted) absent from response.
+- ✅ Admin can ban: target soft-deleted + sessions revoked + login fails.
+- ✅ Admin can unban: deletedAt cleared + login works again.
+- ✅ Non-admin callers get 403.
+- ✅ Both ban + unban have idempotent guards (404 on no-op).
+
+**Notes**
+
+- **Why ban reuses `AccountDeleter` instead of having its own port.** The ban operation IS the soft-delete: same DB writes, same atomicity requirement, same session-revoke contract. Forking into a separate port would mean maintaining two adapters that must stay in sync forever — a recipe for the bug where one path revokes sessions and the other doesn't. Using the same port is the simplest correctness guarantee.
+- **Why `restoreUser` lives on `AccountDeleter`.** The port is functionally an "AccountLifecycle" port — it owns transitions of `User.deletedAt`. Both methods are under one rule (atomic state changes); one port. Renaming to `AccountLifecycle` would be cleaner but is out of scope for this slice — every consumer of `ACCOUNT_DELETER` would need to change, for zero behavior gain. The `// Added by [IV.18.18.1]` JSDoc is the breadcrumb if a future refactor wants to rename.
+- **Why offset pagination for the admin list, not cursor.** Admin user lists are small (tens of thousands at scale), filterable, and accessed via UI. Offset works fine and lets admins jump to "page 7" — cursor-only would force "scroll back" UX. Activity feed (`[IV.18.17.1]`) used cursor because it's a personal stream where new items arrive at the top; that posture doesn't apply here.
+- **Why displayName-only search, not email-substring.** The email schema stores `emailHash` (sha256 of pepper+email) and `emailEncrypted` (pgcrypto) — neither supports substring match. Adding email-search would require either decrypting every row in app code (catastrophic perf + key-handling risk) or a separate ILIKE-able column (storage-wasteful + privacy-leaking). The right ops surface for "find user by email" is the existing email-hash-lookup path; not in this slice.
+- **Why ban/unban idempotency surfaces as 404.** A second ban on an already-banned user is a client bug — the admin already banned them; they shouldn't be able to call it twice and get success. Surfacing 404 makes the bug discoverable. Same posture as the user-self-delete idempotency guard (`[IV.18.16.2]`).
+- **Why sessions stay revoked through unban.** When you unban a user, you're saying "this account is allowed to operate again" — you're NOT saying "every refresh token they had at the moment of ban should be honored". Forcing re-authentication after unban is the correct security posture: stale tokens issued before the ban don't get auto-validated.
+- **Hard-delete cron + admin ban interaction.** A banned user's `deletedAt` is set; 7 days later the `AccountPurgeScheduler` cron (`[IV.18.16.3]`) sweeps the row + cascades. Admin can `unban` within those 7 days; after that the row is gone and unban returns 404 (the user must re-register). The retention window is the same for self-deletes and admin bans — no special-casing.
+- **Admin-endpoints-in-owning-module pattern.** Three precedents now: scam moderation in Safety (`[IV.18.11.5]`), places curation in Places (`[IV.18.3.x]`), user moderation in Account (this slice). The pattern is durable: AdminModule stays small and reserved for cross-cutting admin tooling (JWKS rotation lives in Identity but is admin-gated; that's the analogous case).
 
 ---
 
