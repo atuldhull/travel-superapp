@@ -10,18 +10,85 @@
 
 ## Summary
 
-| Counter             | Value                                                                |
-| ------------------- | -------------------------------------------------------------------- |
-| Prompts completed   | 96 (95 full + 1 foundation-only; right-to-erasure flow just shipped) |
-| Prompts in progress | 0                                                                    |
-| Prompts blocked     | 0                                                                    |
-| Last prompt         | `[IV.18.16.2]` — right-to-erasure (DELETE /account)                  |
-| Last commit date    | 2026-04-25                                                           |
-| Phase               | Phase 1 — GDPR core complete; 62 suites, 427 tests                   |
+| Counter             | Value                                                                    |
+| ------------------- | ------------------------------------------------------------------------ |
+| Prompts completed   | 97 (96 full + 1 foundation-only; aggregated review summary just shipped) |
+| Prompts in progress | 0                                                                        |
+| Prompts blocked     | 0                                                                        |
+| Last prompt         | `[IV.18.12.8]` — aggregated review rating summary                        |
+| Last commit date    | 2026-04-25                                                               |
+| Phase               | Phase 1 — review consumer surface; 63 suites, 433 tests                  |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.12.8] — Aggregated review rating summary (GET /reviews/summary)
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.12 (Social & Groups)
+
+**What was done**
+
+Public-readable aggregation surface for the Reviews primitive: `GET /reviews/summary?targetType=&targetId=` returns `{ targetType, targetId, count, average, histogram }`. Drives the rating widget on every place / stay / eatery / agent detail page — without it, clients have to fetch the full review list and aggregate in JS, which doesn't scale past a few thousand reviews.
+
+Single `prisma.review.groupBy({ by: ['rating'], where: { targetType, targetId }, _count: true })` query, hits the existing `(targetType, targetId)` index, returns at most 5 rows (one per rating bucket). The DB does the count; we zero-fill missing buckets and compute the average in JS.
+
+`@Public()` — review summaries are crowd signal, no PII. Same precedent as published memory book reads (`[IV.18.12.7]`). Empty target → 200 with zero-filled shape (NOT 404) — aggregation of zero rows is a valid response, and a route that 404s on "no reviews" would leak target existence to strangers.
+
+HTTP surface:
+
+| Route                             | Auth        | What it does                                          |
+| --------------------------------- | ----------- | ----------------------------------------------------- |
+| `GET /api/v1/reviews/summary?...` | `@Public()` | `{ targetType, targetId, count, average, histogram }` |
+
+**Files created** (2)
+
+- `apps/api/src/modules/social/application/get-review-summary.use-case.ts` — orchestrator (one-liner over the port).
+- `apps/api/test/social-review-summary.e2e-spec.ts` — 6 integration tests against real-Postgres.
+
+**Files edited** (3)
+
+- `apps/api/src/modules/social/application/ports/review.repository.ts` — adds `ReviewRatingHistogram` (5-bucket type alias) + `ReviewSummary` envelope + `aggregateByTarget(targetType, targetId): Promise<ReviewSummary>` method.
+- `apps/api/src/modules/social/infrastructure/prisma-review.repository.ts` — implements `aggregateByTarget` via `groupBy` + zero-fill + 2-decimal rounding.
+- `apps/api/src/modules/social/interface/reviews.controller.ts` — adds `@Get('summary')` + `@Public()` + a `ReviewSummaryDto` mapper. Declared BEFORE `@Get()` and `@Get(':id')` would be — Nest matches in declaration order, so the literal `summary` segment lands cleanly.
+- `apps/api/src/modules/social/social.module.ts` — registers `GetReviewSummaryUseCase`.
+
+**Tests** (6 cases, real-Postgres):
+
+1. Empty target → 200; `count: 0`, `average: 0`, histogram is `{ 1:0, 2:0, 3:0, 4:0, 5:0 }`. NOT 404.
+2. 5 reviews of ratings (5,5,4,3,1) → `count: 5`, `average: 3.6` (exact), histogram is `{ 1:1, 2:0, 3:1, 4:1, 5:2 }`. Three different authors used so any future unique-key constraint can't bite.
+3. Cross-target isolation: 2 reviews on target A → A returns count=2; B (different id, no reviews) returns count=0 + zero-filled histogram.
+4. Missing query params → 400 `VALIDATION_FAILED`.
+5. Unknown `targetType` → 400 `VALIDATION_FAILED` (zod-narrow on the controller side).
+6. No bearer → 200 (the `@Public()` decorator skips JwtAuthGuard).
+
+**Dependencies** — none new. No Prisma migration — Review model has been on the schema since `[IV.18.12.5]`.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Review-summary suite 6/6 pass.
+- ✅ **Full real-DB + MinIO suite: 63 suites, 433 tests pass against live Docker.** (+1 suite, +6 tests vs. previous baseline.)
+
+**Acceptance criteria**
+
+- ✅ Empty target → 200 with zero-filled shape.
+- ✅ Average rounded to 2 decimals (no `4.333333333333333` in JSON).
+- ✅ Histogram always contains all 5 keys (1..5), zero-filled for empty buckets.
+- ✅ Cross-target isolation holds.
+- ✅ `@Public()` works without a bearer.
+- ✅ `groupBy` hits the existing `(targetType, targetId)` index — no new index needed.
+
+**Notes**
+
+- **Why aggregation in the DB, not "fetch + count in app".** A target with 10k reviews returns 10k rows over the wire if we list-and-aggregate; `groupBy` returns at most 5. The diff scales with review count — per-target latency stays ~constant regardless of volume. This is the slice that lets Reviews actually ship at scale.
+- **Why zero-fill in the adapter, not the use-case.** The histogram shape `{ 1:0, ..., 5:0 }` is part of the wire contract — every consumer renders the bar chart by iterating buckets, so the API has to guarantee all 5 keys exist. Centralizing the fill in the adapter keeps the use-case a pure pass-through; if a future adapter (e.g. a cached read-model) implements `aggregateByTarget` differently it still has to honor the same contract.
+- **Why round to 2 decimals at the boundary.** A star widget renders `4.32` — not `4.32999999999999`. Doing the rounding here means the wire shape is stable and clients don't have to repeat the same `toFixed(2)` everywhere. The exact unrounded value is recoverable as `(weighted/total)` from the histogram if any consumer ever needs it.
+- **Why empty target → 200, not 404.** Two reasons: (1) "this place has no reviews yet" is meaningfully different from "this place doesn't exist" — collapsing them into 404 confuses clients. (2) The route is `@Public()`; 404-on-empty would let a stranger probe target id space ("does this place exist?") via the review surface, which is a privacy-adjacent leak even if the target id is technically public. Returning the same zero-filled shape regardless of target existence closes that channel.
+- **Why this is the right slice to ship next.** Reviews-v1 (`[IV.18.12.5]`) shipped the write + raw-list reads but not the consumer surface. Without `summary`, every Reviews-rendering screen had to fetch all-reviews and aggregate in JS — which is fine at < 100 reviews, broken at > 1000. Adding the endpoint here costs ~4 files; deferring it forces a frontend rewrite later.
+- **Why the controller-side zod-narrow on `targetType` and not just trust it.** The query param is a free string; Prisma would happily run `where: { targetType: 'bogus' }` and return zero rows. The narrow rejects the request explicitly with `VALIDATION_FAILED` instead of silently returning an empty histogram for a malformed query — strictly better debugging for the caller.
 
 ---
 
