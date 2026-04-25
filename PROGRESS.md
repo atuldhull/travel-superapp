@@ -10,18 +10,95 @@
 
 ## Summary
 
-| Counter             | Value                                                                     |
-| ------------------- | ------------------------------------------------------------------------- |
-| Prompts completed   | 113 (112 full + 1 foundation-only; mark-as-unread just shipped)           |
-| Prompts in progress | 0                                                                         |
-| Prompts blocked     | 0                                                                         |
-| Last prompt         | `[IV.18.15.5]` — notification mark-as-unread                              |
-| Last commit date    | 2026-04-25                                                                |
-| Phase               | Phase 1 — Notifications surface fully bidirectional; 80 suites, 525 tests |
+| Counter             | Value                                                                   |
+| ------------------- | ----------------------------------------------------------------------- |
+| Prompts completed   | 114 (113 full + 1 foundation-only; admin media moderation just shipped) |
+| Prompts in progress | 0                                                                       |
+| Prompts blocked     | 0                                                                       |
+| Last prompt         | `[IV.18.18.4]` — admin media moderation (list + delete)                 |
+| Last commit date    | 2026-04-25                                                              |
+| Phase               | Phase 1 — admin operator surface complete v1; 81 suites, 534 tests      |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.18.4] — Admin media moderation (list + delete)
+
+**Date:** 2026-04-25 · **Status:** DONE · **Kind:** Build · **Playbook §** 3.13 (Media & Memory) + 3.17 (Admin & Ops)
+
+**What was done**
+
+Closes the admin operator surface for v1. Without it, ops had no way to take down abusive media (CSAM, doxxing, etc.) short of banning the uploading user. Two routes, both gated by `@Roles('admin')`:
+
+- `GET    /api/v1/admin/media?ownerId=&kind=&status=&limit=&offset=` — paginated cross-user list with optional filters.
+- `DELETE /api/v1/admin/media/:id` — hard delete (no owner scope).
+
+Lives in MediaModule (admin-in-owning-module pattern, sixth precedent: scam moderation in Safety, places curation in Places, user moderation in Account, SOS triage in Safety, trip moderation in Trip, media moderation in Media).
+
+**Why no archive verb here.** Trip has `status='archived'` as a soft-moderation value already in the schema; MediaAsset doesn't. The only soft-action option for media would be `status='failed'`, which would conflate moderation with an upload-failure semantic and confuse the existing flow. v1 ships hard-delete only; if product needs soft moderation later, add a dedicated `moderationState` column.
+
+**Cascade behavior.** `MediaAsset.tripId` and `MediaAsset.memoryBookId` use `SetNull` cascade (verified at the schema level). When admin deletes a media row, the attached trip + memory book survive — they just lose the media reference. Test exercises this end-to-end.
+
+**S3 object cleanup**: NOT done in this slice. The S3 object behind `s3KeyRaw` becomes orphaned. The trade-off: an immediate-effect takedown verb at the cost of some S3 garbage that an orphan-object sweep cron eventually picks up. The DB row goes away immediately (which is what matters for "the abusive content stops being served via my API"); the underlying bytes survive a bit longer but aren't reachable through any authed endpoint. Documented in the use-case JSDoc as the natural follow-up.
+
+HTTP surface:
+
+| Route                            | Auth              | What it does                                              |
+| -------------------------------- | ----------------- | --------------------------------------------------------- |
+| `GET    /api/v1/admin/media`     | `@Roles('admin')` | Cross-user list with ownerId / kind / status filters      |
+| `DELETE /api/v1/admin/media/:id` | `@Roles('admin')` | Hard delete; SetNull cascade preserves trip + memory book |
+
+**Files created** (4)
+
+- `apps/api/src/modules/media/application/admin-list-media.use-case.ts` — clamps limit/offset; passes filters through.
+- `apps/api/src/modules/media/application/admin-delete-media.use-case.ts` — calls `adminDelete`; `false` → 404 `MEDIA_NOT_FOUND`.
+- `apps/api/src/modules/media/interface/admin-media.controller.ts` — class-level `@Roles('admin')`; kind + status filters validated against schema enums.
+- `apps/api/test/admin-media.e2e-spec.ts` — 9 integration tests against real Postgres.
+
+**Files edited** (3)
+
+- `apps/api/src/modules/media/application/ports/media-asset.repository.ts` — adds `adminList(input)` + `adminDelete(id)` methods + `AdminMediaListInput` / `AdminMediaListResult` types.
+- `apps/api/src/modules/media/infrastructure/prisma-media-asset.repository.ts` — implements both: parallel `findMany + count` for list, `deleteMany` for delete.
+- `apps/api/src/modules/media/media.module.ts` — registers controller + 2 use-cases.
+
+**Tests** (9 cases, real-Postgres):
+
+1. No bearer → 401.
+2. Non-admin → 403.
+3. Admin list cross-user with `?ownerId=<aliceId>` filters to Alice's media; verifies admin sees Alice's row from a different account.
+4. `?kind=image` filters by kind.
+5. `?status=processing` filters by status.
+6. **Admin delete cascade**: media attached to a trip → admin deletes media → media row gone, trip row survives (SetNull cascade verified end-to-end).
+7. Admin delete on missing id → 404 `MEDIA_NOT_FOUND`.
+8. Unknown kind / status param → 400 `VALIDATION_FAILED` (both branches tested).
+9. Non-admin caller can't delete (403); target's media row stays.
+
+**Dependencies** — none new. No Prisma migration — MediaAsset + its enums + SetNull cascade have all been on the schema since `[III.12.1]`.
+
+**Verification**
+
+- ✅ `tsc --noEmit` green.
+- ✅ Admin-media suite 9/9 pass.
+- ✅ **Full real-DB + MinIO + Redis suite: 81 suites, 534 tests pass against live Docker.** (+1 suite, +9 tests vs. previous baseline.)
+
+**Acceptance criteria**
+
+- ✅ Admin can list cross-user media with filters.
+- ✅ Admin can delete; SetNull cascade preserves attached trip + memory book.
+- ✅ Non-admin → 403.
+- ✅ Missing id → 404.
+- ✅ Filter validation against schema enums.
+
+**Notes**
+
+- **Why test the cascade specifically.** The schema's `SetNull` on the FK is a contract: deleting a media row should NOT delete its attached trip. If a future migration accidentally tightened this to `Cascade`, an admin trying to take down a single bad photo would wipe the user's entire trip. The cascade test catches that drift before it ships.
+- **Why no `archive` verb.** Considered three options: (a) archive via `status='failed'` (conflates moderation with upload state — bad), (b) add a new `archived` status value (DB migration + every list endpoint needs to filter it out — too much surface for v1), (c) skip soft moderation entirely. Picked (c). Hard-delete is the right primitive for media takedowns: the content needs to stop being served NOW, not after a 7-day window.
+- **Why the orphaned-S3-object concern is acceptable.** Three reasons: (1) The DB row controls reachability — clients can't enumerate S3 keys directly. (2) S3 storage is cheap; a few orphan objects per moderation action don't move the cost needle. (3) Building the cleanup cron now would gate this slice on a non-essential dep; it's a separate concern. The future cron lives in a sibling slice when ops asks for it.
+- **Admin operator surface is now functionally complete v1.** Seven moderation verbs across six modules: places curation, JWKS rotation, scam moderation (verify/dismiss), user moderation (ban/unban), SOS triage (list/resolve), force-purge, trip moderation (list/archive/delete), media moderation (list/delete). Phase-1 admin needs are covered; remaining work is product polish (e.g. mod queue analytics, audit trail, takedown templates).
+- **Pattern stability.** Sixth iteration of the "admin endpoint over existing repo with admin-flavored methods" pattern. Each iteration is now ~6-8 files of templated work with predictable test scaffolding. The pattern doesn't show signs of needing extraction into a generic helper — each module's admin surface has slightly different filter shapes (status enum varies, ownerId filter only applies to Media, etc.) so a generic abstraction would be over-engineered. Keep the per-module duplication.
 
 ---
 
