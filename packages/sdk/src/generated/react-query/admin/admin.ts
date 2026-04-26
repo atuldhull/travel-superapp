@@ -14,7 +14,23 @@ import type {
   UseQueryResult,
 } from '@tanstack/react-query';
 
-import type { AdminMediaControllerListParams, AdminTripsControllerListParams } from '../../schemas';
+import type {
+  AdminCreatePlaceRequestDto,
+  AdminListMediaResponseDto,
+  AdminListScamReportsResponseDto,
+  AdminListSosEventsResponseDto,
+  AdminListUsersResponseDto,
+  AdminMediaControllerListParams,
+  AdminPlaceDto,
+  AdminPurgeForceResponseDto,
+  AdminResolveSosRequestDto,
+  AdminScamModerationControllerListParams,
+  AdminSosControllerListParams,
+  AdminTripsControllerListParams,
+  AdminUsersControllerListParams,
+  ScamReportDto,
+  SosEventDto,
+} from '../../schemas';
 
 import { apiFetch } from '../../../runtime/fetcher';
 
@@ -621,14 +637,25 @@ export const useAdminTripsControllerRemove = <TError = unknown, TContext = unkno
  * @summary Cross-user list of media with optional ?ownerId, ?kind, ?status filters. Admin-only.
  */
 export type adminMediaControllerListResponse200 = {
-  data: void;
+  data: AdminListMediaResponseDto;
   status: 200;
+};
+
+export type adminMediaControllerListResponse400 = {
+  data: void;
+  status: 400;
 };
 
 export type adminMediaControllerListResponseSuccess = adminMediaControllerListResponse200 & {
   headers: Headers;
 };
-export type adminMediaControllerListResponse = adminMediaControllerListResponseSuccess;
+export type adminMediaControllerListResponseError = adminMediaControllerListResponse400 & {
+  headers: Headers;
+};
+
+export type adminMediaControllerListResponse =
+  | adminMediaControllerListResponseSuccess
+  | adminMediaControllerListResponseError;
 
 export const getAdminMediaControllerListUrl = (params: AdminMediaControllerListParams) => {
   const normalizedParams = new URLSearchParams();
@@ -668,7 +695,7 @@ export const getAdminMediaControllerListQueryKey = (params?: AdminMediaControlle
 
 export const getAdminMediaControllerListInfiniteQueryOptions = <
   TData = Awaited<ReturnType<typeof adminMediaControllerList>>,
-  TError = unknown,
+  TError = void,
 >(
   params: AdminMediaControllerListParams,
   options?: {
@@ -703,7 +730,7 @@ export const getAdminMediaControllerListInfiniteQueryOptions = <
 export type AdminMediaControllerListInfiniteQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminMediaControllerList>>
 >;
-export type AdminMediaControllerListInfiniteQueryError = unknown;
+export type AdminMediaControllerListInfiniteQueryError = void;
 
 /**
  * @summary Cross-user list of media with optional ?ownerId, ?kind, ?status filters. Admin-only.
@@ -711,7 +738,7 @@ export type AdminMediaControllerListInfiniteQueryError = unknown;
 
 export function useAdminMediaControllerListInfinite<
   TData = Awaited<ReturnType<typeof adminMediaControllerList>>,
-  TError = unknown,
+  TError = void,
 >(
   params: AdminMediaControllerListParams,
   options?: {
@@ -736,7 +763,7 @@ export function useAdminMediaControllerListInfinite<
 
 export const getAdminMediaControllerListQueryOptions = <
   TData = Awaited<ReturnType<typeof adminMediaControllerList>>,
-  TError = unknown,
+  TError = void,
 >(
   params: AdminMediaControllerListParams,
   options?: {
@@ -762,7 +789,7 @@ export const getAdminMediaControllerListQueryOptions = <
 export type AdminMediaControllerListQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminMediaControllerList>>
 >;
-export type AdminMediaControllerListQueryError = unknown;
+export type AdminMediaControllerListQueryError = void;
 
 /**
  * @summary Cross-user list of media with optional ?ownerId, ?kind, ?status filters. Admin-only.
@@ -770,7 +797,7 @@ export type AdminMediaControllerListQueryError = unknown;
 
 export function useAdminMediaControllerList<
   TData = Awaited<ReturnType<typeof adminMediaControllerList>>,
-  TError = unknown,
+  TError = void,
 >(
   params: AdminMediaControllerListParams,
   options?: {
@@ -795,10 +822,21 @@ export type adminMediaControllerRemoveResponse204 = {
   status: 204;
 };
 
+export type adminMediaControllerRemoveResponse404 = {
+  data: void;
+  status: 404;
+};
+
 export type adminMediaControllerRemoveResponseSuccess = adminMediaControllerRemoveResponse204 & {
   headers: Headers;
 };
-export type adminMediaControllerRemoveResponse = adminMediaControllerRemoveResponseSuccess;
+export type adminMediaControllerRemoveResponseError = adminMediaControllerRemoveResponse404 & {
+  headers: Headers;
+};
+
+export type adminMediaControllerRemoveResponse =
+  | adminMediaControllerRemoveResponseSuccess
+  | adminMediaControllerRemoveResponseError;
 
 export const getAdminMediaControllerRemoveUrl = (id: string) => {
   return `/api/v1/admin/media/${id}`;
@@ -815,7 +853,7 @@ export const adminMediaControllerRemove = async (
 };
 
 export const getAdminMediaControllerRemoveMutationOptions = <
-  TError = unknown,
+  TError = void,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -854,12 +892,12 @@ export type AdminMediaControllerRemoveMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminMediaControllerRemove>>
 >;
 
-export type AdminMediaControllerRemoveMutationError = unknown;
+export type AdminMediaControllerRemoveMutationError = void;
 
 /**
  * @summary Hard-delete media (takedown). Trip + memory book references SetNull-cascade.
  */
-export const useAdminMediaControllerRemove = <TError = unknown, TContext = unknown>(options?: {
+export const useAdminMediaControllerRemove = <TError = void, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof adminMediaControllerRemove>>,
     TError,
@@ -877,8 +915,11 @@ export const useAdminMediaControllerRemove = <TError = unknown, TContext = unkno
 
   return useMutation(mutationOptions);
 };
+/**
+ * @summary Curate a new Place into the canonical catalog. Admin-only.
+ */
 export type adminControllerCreateResponse201 = {
-  data: void;
+  data: AdminPlaceDto;
   status: 201;
 };
 
@@ -892,11 +933,14 @@ export const getAdminControllerCreateUrl = () => {
 };
 
 export const adminControllerCreate = async (
+  adminCreatePlaceRequestDto: AdminCreatePlaceRequestDto,
   options?: RequestInit,
 ): Promise<adminControllerCreateResponse> => {
   return apiFetch<adminControllerCreateResponse>(getAdminControllerCreateUrl(), {
     ...options,
     method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(adminCreatePlaceRequestDto),
   });
 };
 
@@ -907,14 +951,14 @@ export const getAdminControllerCreateMutationOptions = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof adminControllerCreate>>,
     TError,
-    void,
+    { data: AdminCreatePlaceRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof adminControllerCreate>>,
   TError,
-  void,
+  { data: AdminCreatePlaceRequestDto },
   TContext
 > => {
   const mutationKey = ['adminControllerCreate'];
@@ -926,9 +970,11 @@ export const getAdminControllerCreateMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof adminControllerCreate>>,
-    void
-  > = () => {
-    return adminControllerCreate(requestOptions);
+    { data: AdminCreatePlaceRequestDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminControllerCreate(data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -937,36 +983,53 @@ export const getAdminControllerCreateMutationOptions = <
 export type AdminControllerCreateMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminControllerCreate>>
 >;
-
+export type AdminControllerCreateMutationBody = AdminCreatePlaceRequestDto;
 export type AdminControllerCreateMutationError = unknown;
 
+/**
+ * @summary Curate a new Place into the canonical catalog. Admin-only.
+ */
 export const useAdminControllerCreate = <TError = unknown, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof adminControllerCreate>>,
     TError,
-    void,
+    { data: AdminCreatePlaceRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationResult<
   Awaited<ReturnType<typeof adminControllerCreate>>,
   TError,
-  void,
+  { data: AdminCreatePlaceRequestDto },
   TContext
 > => {
   const mutationOptions = getAdminControllerCreateMutationOptions(options);
 
   return useMutation(mutationOptions);
 };
+/**
+ * @summary Remove a Place from the canonical catalog. Admin-only.
+ */
 export type adminControllerRemoveResponse204 = {
   data: void;
   status: 204;
 };
 
+export type adminControllerRemoveResponse404 = {
+  data: void;
+  status: 404;
+};
+
 export type adminControllerRemoveResponseSuccess = adminControllerRemoveResponse204 & {
   headers: Headers;
 };
-export type adminControllerRemoveResponse = adminControllerRemoveResponseSuccess;
+export type adminControllerRemoveResponseError = adminControllerRemoveResponse404 & {
+  headers: Headers;
+};
+
+export type adminControllerRemoveResponse =
+  | adminControllerRemoveResponseSuccess
+  | adminControllerRemoveResponseError;
 
 export const getAdminControllerRemoveUrl = (id: string) => {
   return `/api/v1/admin/places/${id}`;
@@ -983,7 +1046,7 @@ export const adminControllerRemove = async (
 };
 
 export const getAdminControllerRemoveMutationOptions = <
-  TError = unknown,
+  TError = void,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -1022,9 +1085,12 @@ export type AdminControllerRemoveMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminControllerRemove>>
 >;
 
-export type AdminControllerRemoveMutationError = unknown;
+export type AdminControllerRemoveMutationError = void;
 
-export const useAdminControllerRemove = <TError = unknown, TContext = unknown>(options?: {
+/**
+ * @summary Remove a Place from the canonical catalog. Admin-only.
+ */
+export const useAdminControllerRemove = <TError = void, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof adminControllerRemove>>,
     TError,
@@ -1039,6 +1105,1276 @@ export const useAdminControllerRemove = <TError = unknown, TContext = unknown>(o
   TContext
 > => {
   const mutationOptions = getAdminControllerRemoveMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary List scam reports for moderation. Default = pending; ?verified=true for the verified pile.
+ */
+export type adminScamModerationControllerListResponse200 = {
+  data: AdminListScamReportsResponseDto;
+  status: 200;
+};
+
+export type adminScamModerationControllerListResponseSuccess =
+  adminScamModerationControllerListResponse200 & {
+    headers: Headers;
+  };
+export type adminScamModerationControllerListResponse =
+  adminScamModerationControllerListResponseSuccess;
+
+export const getAdminScamModerationControllerListUrl = (
+  params: AdminScamModerationControllerListParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/admin/safety/scam-reports?${stringifiedParams}`
+    : `/api/v1/admin/safety/scam-reports`;
+};
+
+export const adminScamModerationControllerList = async (
+  params: AdminScamModerationControllerListParams,
+  options?: RequestInit,
+): Promise<adminScamModerationControllerListResponse> => {
+  return apiFetch<adminScamModerationControllerListResponse>(
+    getAdminScamModerationControllerListUrl(params),
+    {
+      ...options,
+      method: 'GET',
+    },
+  );
+};
+
+export const getAdminScamModerationControllerListInfiniteQueryKey = (
+  params?: AdminScamModerationControllerListParams,
+) => {
+  return ['infinite', `/api/v1/admin/safety/scam-reports`, ...(params ? [params] : [])] as const;
+};
+
+export const getAdminScamModerationControllerListQueryKey = (
+  params?: AdminScamModerationControllerListParams,
+) => {
+  return [`/api/v1/admin/safety/scam-reports`, ...(params ? [params] : [])] as const;
+};
+
+export const getAdminScamModerationControllerListInfiniteQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminScamModerationControllerList>>,
+  TError = unknown,
+>(
+  params: AdminScamModerationControllerListParams,
+  options?: {
+    query?: UseInfiniteQueryOptions<
+      Awaited<ReturnType<typeof adminScamModerationControllerList>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminScamModerationControllerListInfiniteQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof adminScamModerationControllerList>>> = ({
+    signal,
+    pageParam,
+  }) =>
+    adminScamModerationControllerList(
+      { ...params, limit: pageParam || params?.['limit'] },
+      { signal, ...requestOptions },
+    );
+
+  return { queryKey, queryFn, staleTime: 30000, ...queryOptions } as UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof adminScamModerationControllerList>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminScamModerationControllerListInfiniteQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminScamModerationControllerList>>
+>;
+export type AdminScamModerationControllerListInfiniteQueryError = unknown;
+
+/**
+ * @summary List scam reports for moderation. Default = pending; ?verified=true for the verified pile.
+ */
+
+export function useAdminScamModerationControllerListInfinite<
+  TData = Awaited<ReturnType<typeof adminScamModerationControllerList>>,
+  TError = unknown,
+>(
+  params: AdminScamModerationControllerListParams,
+  options?: {
+    query?: UseInfiniteQueryOptions<
+      Awaited<ReturnType<typeof adminScamModerationControllerList>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+): UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminScamModerationControllerListInfiniteQueryOptions(params, options);
+
+  const query = useInfiniteQuery(queryOptions) as UseInfiniteQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getAdminScamModerationControllerListQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminScamModerationControllerList>>,
+  TError = unknown,
+>(
+  params: AdminScamModerationControllerListParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof adminScamModerationControllerList>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAdminScamModerationControllerListQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof adminScamModerationControllerList>>> = ({
+    signal,
+  }) => adminScamModerationControllerList(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, staleTime: 30000, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminScamModerationControllerList>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminScamModerationControllerListQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminScamModerationControllerList>>
+>;
+export type AdminScamModerationControllerListQueryError = unknown;
+
+/**
+ * @summary List scam reports for moderation. Default = pending; ?verified=true for the verified pile.
+ */
+
+export function useAdminScamModerationControllerList<
+  TData = Awaited<ReturnType<typeof adminScamModerationControllerList>>,
+  TError = unknown,
+>(
+  params: AdminScamModerationControllerListParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof adminScamModerationControllerList>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminScamModerationControllerListQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary Mark a scam report verified.
+ */
+export type adminScamModerationControllerVerifyResponse200 = {
+  data: ScamReportDto;
+  status: 200;
+};
+
+export type adminScamModerationControllerVerifyResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type adminScamModerationControllerVerifyResponseSuccess =
+  adminScamModerationControllerVerifyResponse200 & {
+    headers: Headers;
+  };
+export type adminScamModerationControllerVerifyResponseError =
+  adminScamModerationControllerVerifyResponse404 & {
+    headers: Headers;
+  };
+
+export type adminScamModerationControllerVerifyResponse =
+  | adminScamModerationControllerVerifyResponseSuccess
+  | adminScamModerationControllerVerifyResponseError;
+
+export const getAdminScamModerationControllerVerifyUrl = (id: string) => {
+  return `/api/v1/admin/safety/scam-reports/${id}/verify`;
+};
+
+export const adminScamModerationControllerVerify = async (
+  id: string,
+  options?: RequestInit,
+): Promise<adminScamModerationControllerVerifyResponse> => {
+  return apiFetch<adminScamModerationControllerVerifyResponse>(
+    getAdminScamModerationControllerVerifyUrl(id),
+    {
+      ...options,
+      method: 'POST',
+    },
+  );
+};
+
+export const getAdminScamModerationControllerVerifyMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminScamModerationControllerVerify>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminScamModerationControllerVerify>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ['adminScamModerationControllerVerify'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminScamModerationControllerVerify>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return adminScamModerationControllerVerify(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminScamModerationControllerVerifyMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminScamModerationControllerVerify>>
+>;
+
+export type AdminScamModerationControllerVerifyMutationError = void;
+
+/**
+ * @summary Mark a scam report verified.
+ */
+export const useAdminScamModerationControllerVerify = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminScamModerationControllerVerify>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminScamModerationControllerVerify>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationOptions = getAdminScamModerationControllerVerifyMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Flip a verified report back to pending.
+ */
+export type adminScamModerationControllerUnverifyResponse200 = {
+  data: ScamReportDto;
+  status: 200;
+};
+
+export type adminScamModerationControllerUnverifyResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type adminScamModerationControllerUnverifyResponseSuccess =
+  adminScamModerationControllerUnverifyResponse200 & {
+    headers: Headers;
+  };
+export type adminScamModerationControllerUnverifyResponseError =
+  adminScamModerationControllerUnverifyResponse404 & {
+    headers: Headers;
+  };
+
+export type adminScamModerationControllerUnverifyResponse =
+  | adminScamModerationControllerUnverifyResponseSuccess
+  | adminScamModerationControllerUnverifyResponseError;
+
+export const getAdminScamModerationControllerUnverifyUrl = (id: string) => {
+  return `/api/v1/admin/safety/scam-reports/${id}/unverify`;
+};
+
+export const adminScamModerationControllerUnverify = async (
+  id: string,
+  options?: RequestInit,
+): Promise<adminScamModerationControllerUnverifyResponse> => {
+  return apiFetch<adminScamModerationControllerUnverifyResponse>(
+    getAdminScamModerationControllerUnverifyUrl(id),
+    {
+      ...options,
+      method: 'POST',
+    },
+  );
+};
+
+export const getAdminScamModerationControllerUnverifyMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminScamModerationControllerUnverify>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminScamModerationControllerUnverify>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ['adminScamModerationControllerUnverify'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminScamModerationControllerUnverify>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return adminScamModerationControllerUnverify(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminScamModerationControllerUnverifyMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminScamModerationControllerUnverify>>
+>;
+
+export type AdminScamModerationControllerUnverifyMutationError = void;
+
+/**
+ * @summary Flip a verified report back to pending.
+ */
+export const useAdminScamModerationControllerUnverify = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminScamModerationControllerUnverify>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminScamModerationControllerUnverify>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationOptions = getAdminScamModerationControllerUnverifyMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Dismiss a scam report (hard-delete).
+ */
+export type adminScamModerationControllerDismissResponse204 = {
+  data: void;
+  status: 204;
+};
+
+export type adminScamModerationControllerDismissResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type adminScamModerationControllerDismissResponseSuccess =
+  adminScamModerationControllerDismissResponse204 & {
+    headers: Headers;
+  };
+export type adminScamModerationControllerDismissResponseError =
+  adminScamModerationControllerDismissResponse404 & {
+    headers: Headers;
+  };
+
+export type adminScamModerationControllerDismissResponse =
+  | adminScamModerationControllerDismissResponseSuccess
+  | adminScamModerationControllerDismissResponseError;
+
+export const getAdminScamModerationControllerDismissUrl = (id: string) => {
+  return `/api/v1/admin/safety/scam-reports/${id}`;
+};
+
+export const adminScamModerationControllerDismiss = async (
+  id: string,
+  options?: RequestInit,
+): Promise<adminScamModerationControllerDismissResponse> => {
+  return apiFetch<adminScamModerationControllerDismissResponse>(
+    getAdminScamModerationControllerDismissUrl(id),
+    {
+      ...options,
+      method: 'DELETE',
+    },
+  );
+};
+
+export const getAdminScamModerationControllerDismissMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminScamModerationControllerDismiss>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminScamModerationControllerDismiss>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ['adminScamModerationControllerDismiss'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminScamModerationControllerDismiss>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return adminScamModerationControllerDismiss(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminScamModerationControllerDismissMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminScamModerationControllerDismiss>>
+>;
+
+export type AdminScamModerationControllerDismissMutationError = void;
+
+/**
+ * @summary Dismiss a scam report (hard-delete).
+ */
+export const useAdminScamModerationControllerDismiss = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminScamModerationControllerDismiss>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminScamModerationControllerDismiss>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationOptions = getAdminScamModerationControllerDismissMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Triage list of SOS events. ?status=active|resolved (default: both). Offset pagination.
+ */
+export type adminSosControllerListResponse200 = {
+  data: AdminListSosEventsResponseDto;
+  status: 200;
+};
+
+export type adminSosControllerListResponse400 = {
+  data: void;
+  status: 400;
+};
+
+export type adminSosControllerListResponseSuccess = adminSosControllerListResponse200 & {
+  headers: Headers;
+};
+export type adminSosControllerListResponseError = adminSosControllerListResponse400 & {
+  headers: Headers;
+};
+
+export type adminSosControllerListResponse =
+  | adminSosControllerListResponseSuccess
+  | adminSosControllerListResponseError;
+
+export const getAdminSosControllerListUrl = (params: AdminSosControllerListParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/admin/safety/sos-events?${stringifiedParams}`
+    : `/api/v1/admin/safety/sos-events`;
+};
+
+export const adminSosControllerList = async (
+  params: AdminSosControllerListParams,
+  options?: RequestInit,
+): Promise<adminSosControllerListResponse> => {
+  return apiFetch<adminSosControllerListResponse>(getAdminSosControllerListUrl(params), {
+    ...options,
+    method: 'GET',
+  });
+};
+
+export const getAdminSosControllerListInfiniteQueryKey = (
+  params?: AdminSosControllerListParams,
+) => {
+  return ['infinite', `/api/v1/admin/safety/sos-events`, ...(params ? [params] : [])] as const;
+};
+
+export const getAdminSosControllerListQueryKey = (params?: AdminSosControllerListParams) => {
+  return [`/api/v1/admin/safety/sos-events`, ...(params ? [params] : [])] as const;
+};
+
+export const getAdminSosControllerListInfiniteQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminSosControllerList>>,
+  TError = void,
+>(
+  params: AdminSosControllerListParams,
+  options?: {
+    query?: UseInfiniteQueryOptions<
+      Awaited<ReturnType<typeof adminSosControllerList>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAdminSosControllerListInfiniteQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof adminSosControllerList>>> = ({
+    signal,
+    pageParam,
+  }) =>
+    adminSosControllerList(
+      { ...params, limit: pageParam || params?.['limit'] },
+      { signal, ...requestOptions },
+    );
+
+  return { queryKey, queryFn, staleTime: 30000, ...queryOptions } as UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof adminSosControllerList>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminSosControllerListInfiniteQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminSosControllerList>>
+>;
+export type AdminSosControllerListInfiniteQueryError = void;
+
+/**
+ * @summary Triage list of SOS events. ?status=active|resolved (default: both). Offset pagination.
+ */
+
+export function useAdminSosControllerListInfinite<
+  TData = Awaited<ReturnType<typeof adminSosControllerList>>,
+  TError = void,
+>(
+  params: AdminSosControllerListParams,
+  options?: {
+    query?: UseInfiniteQueryOptions<
+      Awaited<ReturnType<typeof adminSosControllerList>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+): UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminSosControllerListInfiniteQueryOptions(params, options);
+
+  const query = useInfiniteQuery(queryOptions) as UseInfiniteQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getAdminSosControllerListQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminSosControllerList>>,
+  TError = void,
+>(
+  params: AdminSosControllerListParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof adminSosControllerList>>, TError, TData>;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAdminSosControllerListQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof adminSosControllerList>>> = ({ signal }) =>
+    adminSosControllerList(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, staleTime: 30000, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminSosControllerList>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminSosControllerListQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminSosControllerList>>
+>;
+export type AdminSosControllerListQueryError = void;
+
+/**
+ * @summary Triage list of SOS events. ?status=active|resolved (default: both). Offset pagination.
+ */
+
+export function useAdminSosControllerList<
+  TData = Awaited<ReturnType<typeof adminSosControllerList>>,
+  TError = void,
+>(
+  params: AdminSosControllerListParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof adminSosControllerList>>, TError, TData>;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminSosControllerListQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary Admin-resolve an SOS event with an optional resolution note.
+ */
+export type adminSosControllerResolveResponse200 = {
+  data: SosEventDto;
+  status: 200;
+};
+
+export type adminSosControllerResolveResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type adminSosControllerResolveResponseSuccess = adminSosControllerResolveResponse200 & {
+  headers: Headers;
+};
+export type adminSosControllerResolveResponseError = adminSosControllerResolveResponse404 & {
+  headers: Headers;
+};
+
+export type adminSosControllerResolveResponse =
+  | adminSosControllerResolveResponseSuccess
+  | adminSosControllerResolveResponseError;
+
+export const getAdminSosControllerResolveUrl = (id: string) => {
+  return `/api/v1/admin/safety/sos-events/${id}/resolve`;
+};
+
+export const adminSosControllerResolve = async (
+  id: string,
+  adminResolveSosRequestDto: AdminResolveSosRequestDto,
+  options?: RequestInit,
+): Promise<adminSosControllerResolveResponse> => {
+  return apiFetch<adminSosControllerResolveResponse>(getAdminSosControllerResolveUrl(id), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(adminResolveSosRequestDto),
+  });
+};
+
+export const getAdminSosControllerResolveMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminSosControllerResolve>>,
+    TError,
+    { id: string; data: AdminResolveSosRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminSosControllerResolve>>,
+  TError,
+  { id: string; data: AdminResolveSosRequestDto },
+  TContext
+> => {
+  const mutationKey = ['adminSosControllerResolve'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminSosControllerResolve>>,
+    { id: string; data: AdminResolveSosRequestDto }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return adminSosControllerResolve(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminSosControllerResolveMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminSosControllerResolve>>
+>;
+export type AdminSosControllerResolveMutationBody = AdminResolveSosRequestDto;
+export type AdminSosControllerResolveMutationError = void;
+
+/**
+ * @summary Admin-resolve an SOS event with an optional resolution note.
+ */
+export const useAdminSosControllerResolve = <TError = void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminSosControllerResolve>>,
+    TError,
+    { id: string; data: AdminResolveSosRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminSosControllerResolve>>,
+  TError,
+  { id: string; data: AdminResolveSosRequestDto },
+  TContext
+> => {
+  const mutationOptions = getAdminSosControllerResolveMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary List users with optional ?role / ?deleted / ?q filters. Offset pagination via ?limit + ?offset. Admin-only.
+ */
+export type adminUsersControllerListResponse200 = {
+  data: AdminListUsersResponseDto;
+  status: 200;
+};
+
+export type adminUsersControllerListResponse400 = {
+  data: void;
+  status: 400;
+};
+
+export type adminUsersControllerListResponseSuccess = adminUsersControllerListResponse200 & {
+  headers: Headers;
+};
+export type adminUsersControllerListResponseError = adminUsersControllerListResponse400 & {
+  headers: Headers;
+};
+
+export type adminUsersControllerListResponse =
+  | adminUsersControllerListResponseSuccess
+  | adminUsersControllerListResponseError;
+
+export const getAdminUsersControllerListUrl = (params: AdminUsersControllerListParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/admin/users?${stringifiedParams}`
+    : `/api/v1/admin/users`;
+};
+
+export const adminUsersControllerList = async (
+  params: AdminUsersControllerListParams,
+  options?: RequestInit,
+): Promise<adminUsersControllerListResponse> => {
+  return apiFetch<adminUsersControllerListResponse>(getAdminUsersControllerListUrl(params), {
+    ...options,
+    method: 'GET',
+  });
+};
+
+export const getAdminUsersControllerListInfiniteQueryKey = (
+  params?: AdminUsersControllerListParams,
+) => {
+  return ['infinite', `/api/v1/admin/users`, ...(params ? [params] : [])] as const;
+};
+
+export const getAdminUsersControllerListQueryKey = (params?: AdminUsersControllerListParams) => {
+  return [`/api/v1/admin/users`, ...(params ? [params] : [])] as const;
+};
+
+export const getAdminUsersControllerListInfiniteQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminUsersControllerList>>,
+  TError = void,
+>(
+  params: AdminUsersControllerListParams,
+  options?: {
+    query?: UseInfiniteQueryOptions<
+      Awaited<ReturnType<typeof adminUsersControllerList>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAdminUsersControllerListInfiniteQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof adminUsersControllerList>>> = ({
+    signal,
+    pageParam,
+  }) =>
+    adminUsersControllerList(
+      { ...params, limit: pageParam || params?.['limit'] },
+      { signal, ...requestOptions },
+    );
+
+  return { queryKey, queryFn, staleTime: 30000, ...queryOptions } as UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof adminUsersControllerList>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminUsersControllerListInfiniteQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminUsersControllerList>>
+>;
+export type AdminUsersControllerListInfiniteQueryError = void;
+
+/**
+ * @summary List users with optional ?role / ?deleted / ?q filters. Offset pagination via ?limit + ?offset. Admin-only.
+ */
+
+export function useAdminUsersControllerListInfinite<
+  TData = Awaited<ReturnType<typeof adminUsersControllerList>>,
+  TError = void,
+>(
+  params: AdminUsersControllerListParams,
+  options?: {
+    query?: UseInfiniteQueryOptions<
+      Awaited<ReturnType<typeof adminUsersControllerList>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+): UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminUsersControllerListInfiniteQueryOptions(params, options);
+
+  const query = useInfiniteQuery(queryOptions) as UseInfiniteQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getAdminUsersControllerListQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminUsersControllerList>>,
+  TError = void,
+>(
+  params: AdminUsersControllerListParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof adminUsersControllerList>>, TError, TData>;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAdminUsersControllerListQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof adminUsersControllerList>>> = ({
+    signal,
+  }) => adminUsersControllerList(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, staleTime: 30000, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminUsersControllerList>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminUsersControllerListQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminUsersControllerList>>
+>;
+export type AdminUsersControllerListQueryError = void;
+
+/**
+ * @summary List users with optional ?role / ?deleted / ?q filters. Offset pagination via ?limit + ?offset. Admin-only.
+ */
+
+export function useAdminUsersControllerList<
+  TData = Awaited<ReturnType<typeof adminUsersControllerList>>,
+  TError = void,
+>(
+  params: AdminUsersControllerListParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof adminUsersControllerList>>, TError, TData>;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminUsersControllerListQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary Ban a user (soft-delete + revoke sessions). Admin-only.
+ */
+export type adminUsersControllerBanResponse204 = {
+  data: void;
+  status: 204;
+};
+
+export type adminUsersControllerBanResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type adminUsersControllerBanResponseSuccess = adminUsersControllerBanResponse204 & {
+  headers: Headers;
+};
+export type adminUsersControllerBanResponseError = adminUsersControllerBanResponse404 & {
+  headers: Headers;
+};
+
+export type adminUsersControllerBanResponse =
+  | adminUsersControllerBanResponseSuccess
+  | adminUsersControllerBanResponseError;
+
+export const getAdminUsersControllerBanUrl = (id: string) => {
+  return `/api/v1/admin/users/${id}/ban`;
+};
+
+export const adminUsersControllerBan = async (
+  id: string,
+  options?: RequestInit,
+): Promise<adminUsersControllerBanResponse> => {
+  return apiFetch<adminUsersControllerBanResponse>(getAdminUsersControllerBanUrl(id), {
+    ...options,
+    method: 'POST',
+  });
+};
+
+export const getAdminUsersControllerBanMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUsersControllerBan>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminUsersControllerBan>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ['adminUsersControllerBan'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminUsersControllerBan>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return adminUsersControllerBan(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminUsersControllerBanMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminUsersControllerBan>>
+>;
+
+export type AdminUsersControllerBanMutationError = void;
+
+/**
+ * @summary Ban a user (soft-delete + revoke sessions). Admin-only.
+ */
+export const useAdminUsersControllerBan = <TError = void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUsersControllerBan>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminUsersControllerBan>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationOptions = getAdminUsersControllerBanMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Unban a user (clear deletedAt). Admin-only.
+ */
+export type adminUsersControllerUnbanResponse204 = {
+  data: void;
+  status: 204;
+};
+
+export type adminUsersControllerUnbanResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type adminUsersControllerUnbanResponseSuccess = adminUsersControllerUnbanResponse204 & {
+  headers: Headers;
+};
+export type adminUsersControllerUnbanResponseError = adminUsersControllerUnbanResponse404 & {
+  headers: Headers;
+};
+
+export type adminUsersControllerUnbanResponse =
+  | adminUsersControllerUnbanResponseSuccess
+  | adminUsersControllerUnbanResponseError;
+
+export const getAdminUsersControllerUnbanUrl = (id: string) => {
+  return `/api/v1/admin/users/${id}/unban`;
+};
+
+export const adminUsersControllerUnban = async (
+  id: string,
+  options?: RequestInit,
+): Promise<adminUsersControllerUnbanResponse> => {
+  return apiFetch<adminUsersControllerUnbanResponse>(getAdminUsersControllerUnbanUrl(id), {
+    ...options,
+    method: 'POST',
+  });
+};
+
+export const getAdminUsersControllerUnbanMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUsersControllerUnban>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminUsersControllerUnban>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ['adminUsersControllerUnban'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminUsersControllerUnban>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return adminUsersControllerUnban(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminUsersControllerUnbanMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminUsersControllerUnban>>
+>;
+
+export type AdminUsersControllerUnbanMutationError = void;
+
+/**
+ * @summary Unban a user (clear deletedAt). Admin-only.
+ */
+export const useAdminUsersControllerUnban = <TError = void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUsersControllerUnban>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminUsersControllerUnban>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationOptions = getAdminUsersControllerUnbanMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Force the account-purge scheduler tick. Idempotent — re-entrant guard skips overlapping calls.
+ */
+export type adminPurgeControllerForcePurgeResponse200 = {
+  data: AdminPurgeForceResponseDto;
+  status: 200;
+};
+
+export type adminPurgeControllerForcePurgeResponseSuccess =
+  adminPurgeControllerForcePurgeResponse200 & {
+    headers: Headers;
+  };
+export type adminPurgeControllerForcePurgeResponse = adminPurgeControllerForcePurgeResponseSuccess;
+
+export const getAdminPurgeControllerForcePurgeUrl = () => {
+  return `/api/v1/admin/account-purge`;
+};
+
+export const adminPurgeControllerForcePurge = async (
+  options?: RequestInit,
+): Promise<adminPurgeControllerForcePurgeResponse> => {
+  return apiFetch<adminPurgeControllerForcePurgeResponse>(getAdminPurgeControllerForcePurgeUrl(), {
+    ...options,
+    method: 'POST',
+  });
+};
+
+export const getAdminPurgeControllerForcePurgeMutationOptions = <
+  TError = unknown,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminPurgeControllerForcePurge>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminPurgeControllerForcePurge>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ['adminPurgeControllerForcePurge'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminPurgeControllerForcePurge>>,
+    void
+  > = () => {
+    return adminPurgeControllerForcePurge(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminPurgeControllerForcePurgeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminPurgeControllerForcePurge>>
+>;
+
+export type AdminPurgeControllerForcePurgeMutationError = unknown;
+
+/**
+ * @summary Force the account-purge scheduler tick. Idempotent — re-entrant guard skips overlapping calls.
+ */
+export const useAdminPurgeControllerForcePurge = <TError = unknown, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminPurgeControllerForcePurge>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminPurgeControllerForcePurge>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationOptions = getAdminPurgeControllerForcePurgeMutationOptions(options);
 
   return useMutation(mutationOptions);
 };

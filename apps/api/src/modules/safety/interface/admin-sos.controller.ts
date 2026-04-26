@@ -26,12 +26,18 @@ import {
   Query,
 } from '@nestjs/common';
 import { z } from 'zod';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { AdminListSosEventsUseCase } from '../application/admin-list-sos-events.use-case';
 import { AdminResolveSosUseCase } from '../application/admin-resolve-sos.use-case';
 import type { AdminSosListStatus } from '../application/ports/sos-event.repository';
 import type { SosEvent } from '../domain/sos-event.entity';
+import { SosEventDto as SosEventResponseDto } from './dto/safety-subs-response.dto';
+import {
+  AdminListSosEventsResponseDto,
+  AdminResolveSosRequestDto,
+} from './dto/admin-safety-response.dto';
 
 const VALID_STATUSES: readonly AdminSosListStatus[] = ['active', 'resolved'];
 
@@ -60,6 +66,8 @@ function toDto(s: SosEvent): SosEventDto {
   };
 }
 
+@ApiTags('admin')
+@ApiBearerAuth()
 @Controller('admin/safety/sos-events')
 @Roles('admin')
 export class AdminSosController {
@@ -68,6 +76,12 @@ export class AdminSosController {
     private readonly resolveUc: AdminResolveSosUseCase,
   ) {}
 
+  @ApiOperation({
+    summary:
+      'Triage list of SOS events. ?status=active|resolved (default: both). Offset pagination.',
+  })
+  @ApiResponse({ status: 200, description: 'Events + total.', type: AdminListSosEventsResponseDto })
+  @ApiResponse({ status: 400, description: 'VALIDATION_FAILED — status not in active|resolved.' })
   @Get()
   @HttpCode(HttpStatus.OK)
   async list(
@@ -95,6 +109,10 @@ export class AdminSosController {
     return { events: result.rows.map(toDto), total: result.total };
   }
 
+  @ApiOperation({ summary: 'Admin-resolve an SOS event with an optional resolution note.' })
+  @ApiBody({ type: AdminResolveSosRequestDto })
+  @ApiResponse({ status: 200, description: 'Resolved event row.', type: SosEventResponseDto })
+  @ApiResponse({ status: 404, description: 'SOS_NOT_FOUND.' })
   @Post(':id/resolve')
   @HttpCode(HttpStatus.OK)
   async resolve(
