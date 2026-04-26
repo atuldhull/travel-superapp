@@ -2,12 +2,12 @@
  * Public memory-book viewer — `/memory-books/:id`. The api route is
  * `@Public()` so unauthenticated callers (and the auth-less Featured
  * page) can hit it. Returns book metadata + the list of attached asset
- * ids; per-asset thumbnails would require minting a presigned download
- * URL each (`GET /memory-books/public/:id/assets/:assetId/download-url`)
- * which is intentionally a follow-up — the current openapi spec types
- * that endpoint's body as `void`, so we'd need a schema pass first.
+ * ids; each tile resolves its own presigned URL via
+ * `GET /memory-books/public/:id/assets/:assetId/download-url` and
+ * renders an `<img>` once the URL lands. The placeholder stays put on
+ * loading / error so a single broken asset can't take down the grid.
  *
- * Installed by prompt [IV.18.19.48].
+ * Installed by prompt [IV.18.19.48]; thumbnail rendering [IV.18.19.50].
  */
 'use client';
 
@@ -15,6 +15,8 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import {
   useMemoryBookControllerGetPublic,
+  useMemoryBookControllerGetPublicAssetDownloadUrl,
+  type PublicDownloadUrlResponseDto,
   type PublicMemoryBookDto,
   type PublicMemoryBookWithAssetsResponseDto,
 } from '@app/sdk';
@@ -101,29 +103,46 @@ export default function PublicMemoryBookPage() {
             <CardTitle>Assets</CardTitle>
             <Badge variant="neutral">{assetIds.length}</Badge>
           </div>
-          <CardSubtitle>
-            Per-asset thumbnails arrive in a follow-up — needs the public download-URL endpoint to
-            land its swagger schema.
-          </CardSubtitle>
         </CardHeader>
         {assetIds.length === 0 ? (
           <p className="text-sm text-muted">This book has no attached assets yet.</p>
         ) : (
           <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {assetIds.map((aid) => (
-              <li
-                key={aid}
-                className="flex flex-col rounded border border-muted/15 bg-muted/5 p-2 text-xs"
-              >
-                <div className="flex aspect-square items-center justify-center rounded bg-muted/20 text-2xl">
-                  🖼️
-                </div>
-                <p className="mt-1 truncate font-mono text-[10px] text-muted">{aid.slice(0, 8)}…</p>
-              </li>
+              <AssetThumb key={aid} bookId={id} assetId={aid} />
             ))}
           </ul>
         )}
       </Card>
     </main>
+  );
+}
+
+function AssetThumb({ bookId, assetId }: { bookId: string; assetId: string }) {
+  const { data, isLoading, isError } = useMemoryBookControllerGetPublicAssetDownloadUrl(
+    bookId,
+    assetId,
+    { query: { retry: false, staleTime: 60_000 } },
+  );
+  const url = (data?.data as unknown as PublicDownloadUrlResponseDto | undefined)?.url ?? null;
+
+  return (
+    <li className="flex flex-col rounded border border-muted/15 bg-muted/5 p-2 text-xs">
+      <div className="relative flex aspect-square items-center justify-center overflow-hidden rounded bg-muted/20">
+        {url ? (
+          <img
+            src={url}
+            alt={`Asset ${assetId.slice(0, 8)}`}
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
+        ) : (
+          <span className="text-2xl" aria-label={isError ? 'failed to load' : 'loading'}>
+            {isLoading ? '…' : isError ? '⚠️' : '🖼️'}
+          </span>
+        )}
+      </div>
+      <p className="mt-1 truncate font-mono text-[10px] text-muted">{assetId.slice(0, 8)}…</p>
+    </li>
   );
 }
