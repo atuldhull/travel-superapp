@@ -16,6 +16,7 @@
 'use client';
 
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -29,6 +30,15 @@ import { Button } from '../../../components/ui/button';
 import { Field } from '../../../components/ui/input';
 import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
 import { useEffect } from 'react';
+
+// MapPicker is client-only (Leaflet touches `window`). next/dynamic
+// with ssr:false keeps it out of the prerender pass.
+const MapPicker = dynamic(() => import('../../../components/map-picker').then((m) => m.MapPicker), {
+  ssr: false,
+  loading: () => (
+    <div className="h-72 w-full animate-pulse rounded-md border border-muted/30 bg-muted/10" />
+  ),
+});
 
 interface ApiError extends Error {
   readonly code?: string;
@@ -125,29 +135,52 @@ export default function NewTripPage() {
           required
           help="1..120 characters."
         />
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field
-            label="Center longitude"
-            type="number"
-            step="any"
-            min={-180}
-            max={180}
-            value={lng}
-            onChange={(e) => setLng(e.target.value)}
-            required
-            help="-180..180"
+        <div className="space-y-2">
+          <span className="block text-sm font-medium">Center</span>
+          <MapPicker
+            className="h-72 w-full"
+            value={
+              lng !== '' &&
+              lat !== '' &&
+              Number.isFinite(Number(lng)) &&
+              Number.isFinite(Number(lat))
+                ? { lng: Number(lng), lat: Number(lat) }
+                : null
+            }
+            onChange={({ lng: nextLng, lat: nextLat }) => {
+              // Round to 6 decimal places (~10cm precision) so the
+              // text fields stay readable.
+              setLng(nextLng.toFixed(6));
+              setLat(nextLat.toFixed(6));
+            }}
           />
-          <Field
-            label="Center latitude"
-            type="number"
-            step="any"
-            min={-90}
-            max={90}
-            value={lat}
-            onChange={(e) => setLat(e.target.value)}
-            required
-            help="-90..90"
-          />
+          <p className="text-xs text-muted">
+            Click the map to drop a pin. Or type coordinates below if you already know them.
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field
+              label="Longitude"
+              type="number"
+              step="any"
+              min={-180}
+              max={180}
+              value={lng}
+              onChange={(e) => setLng(e.target.value)}
+              required
+              help="-180..180"
+            />
+            <Field
+              label="Latitude"
+              type="number"
+              step="any"
+              min={-90}
+              max={90}
+              value={lat}
+              onChange={(e) => setLat(e.target.value)}
+              required
+              help="-90..90"
+            />
+          </div>
         </div>
         <Field
           label="Radius (km)"
