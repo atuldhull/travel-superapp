@@ -15,9 +15,13 @@
 import { Module, type Provider } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Env } from '@app/config';
+import { ConsumeMagicLinkUseCase } from './application/consume-magic-link.use-case';
 import { IssueSessionUseCase } from './application/issue-session.use-case';
 import { JWT_KEYRING_STORE } from './application/ports/jwt-keyring.store';
 import { LoginUseCase } from './application/login.use-case';
+import { MAGIC_LINK_TOKEN_REPOSITORY } from './application/ports/magic-link-token.repository';
+import { MAILER_PORT } from './application/ports/mailer.port';
+import { RequestMagicLinkUseCase } from './application/request-magic-link.use-case';
 import {
   DisableMfaUseCase,
   RegenerateBackupCodesUseCase,
@@ -45,11 +49,13 @@ import { GoogleOAuthProvider } from './infrastructure/google-oauth-provider';
 import { JwtTokenService } from './infrastructure/jwt-token.service';
 import { MockOAuthProvider } from './infrastructure/mock-oauth-provider';
 import { PrismaBackupCodeRepository } from './infrastructure/prisma-backup-code.repository';
+import { PrismaMagicLinkTokenRepository } from './infrastructure/prisma-magic-link-token.repository';
 import { PrismaSessionRepository } from './infrastructure/prisma-session.repository';
 import { PrismaUserOAuthIdentityRepository } from './infrastructure/prisma-user-oauth-identity.repository';
 import { PrismaUserRepository } from './infrastructure/prisma-user.repository';
 import { RedisFailedLoginCounter } from './infrastructure/redis-failed-login-counter';
 import { RedisJwtKeyringStore } from './infrastructure/redis-jwt-keyring.store';
+import { StubMailerAdapter } from './infrastructure/stub-mailer.adapter';
 import { TotpService } from './infrastructure/totp.service';
 import { AuthController } from './interface/auth.controller';
 import { JwksAdminController } from './interface/jwks-admin.controller';
@@ -100,6 +106,15 @@ const oauthProvidersFactory = {
       provide: USER_OAUTH_IDENTITY_REPOSITORY,
       useClass: PrismaUserOAuthIdentityRepository,
     },
+    {
+      provide: MAGIC_LINK_TOKEN_REPOSITORY,
+      useClass: PrismaMagicLinkTokenRepository,
+    },
+    // Mailer port — stub adapter is the only adapter today. A
+    // real-provider (Resend / SES) wires in via a useFactory once
+    // RESEND_API_KEY is provisioned (CLAUDE rule 5: never commit
+    // real keys; gated on env).
+    { provide: MAILER_PORT, useClass: StubMailerAdapter },
     MockOAuthProvider,
     oauthProvidersFactory,
     TotpService,
@@ -114,6 +129,8 @@ const oauthProvidersFactory = {
     DisableMfaUseCase,
     RegenerateBackupCodesUseCase,
     SignInWithOAuthUseCase,
+    RequestMagicLinkUseCase,
+    ConsumeMagicLinkUseCase,
     RotateJwksUseCase,
   ],
   exports: [

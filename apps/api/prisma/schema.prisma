@@ -216,6 +216,31 @@ model Session {
   @@index([expiresAt])
 }
 
+// Single-use, short-TTL passwordless sign-in token. Issued by
+// `POST /auth/magic-link/request`; consumed by
+// `POST /auth/magic-link/consume`. The plaintext token is sent by
+// email and never stored — only `tokenHash` (sha256(token + pepper))
+// lives in the database. Existing users get an immediate session;
+// first-time emails create a new password-less User row at consume
+// time.
+//
+// Installed by prompt [V.UX.2].
+model MagicLinkToken {
+  id          String    @id @default(cuid())
+  // Hash of the email so repeat requests against the same address
+  // can be quickly counted for rate-limiting + GDPR-friendly
+  // (no plaintext addresses sitting around).
+  emailHash   String
+  // sha256(token + pepper) — never store raw token.
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  consumedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([emailHash, createdAt])
+  @@index([expiresAt])
+}
+
 // Single-use MFA recovery codes. Issued at enrolment (10 at a time)
 // + on explicit /mfa/backup-codes/regenerate. `codeHash` is sha256
 // of (BACKUP_CODE_PEPPER + plaintext) — the plaintext is returned

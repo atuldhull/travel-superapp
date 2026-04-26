@@ -18,6 +18,29 @@ export const RegisterBodySchema = z.object({
 });
 export type RegisterBody = z.infer<typeof RegisterBodySchema>;
 
+/**
+ * Body for `POST /auth/magic-link/request`. Email-only — no password,
+ * no displayName. The request endpoint is intentionally non-revealing:
+ * it always returns 200 regardless of whether the email is registered.
+ *
+ * Installed by prompt [V.UX.2].
+ */
+export const MagicLinkRequestBodySchema = z.object({
+  email: z.string().trim().toLowerCase().email().max(254),
+});
+export type MagicLinkRequestBody = z.infer<typeof MagicLinkRequestBodySchema>;
+
+/**
+ * Body for `POST /auth/magic-link/consume`. The token is the URL
+ * fragment from the email link — 64 hex chars (32 random bytes).
+ *
+ * Installed by prompt [V.UX.2].
+ */
+export const MagicLinkConsumeBodySchema = z.object({
+  token: z.string().regex(/^[0-9a-f]{64}$/, 'token must be 64 lower-case hex characters'),
+});
+export type MagicLinkConsumeBody = z.infer<typeof MagicLinkConsumeBodySchema>;
+
 export const LoginBodySchema = z.object({
   email: z.string().trim().toLowerCase().email().max(254),
   password: z.string().min(1).max(128),

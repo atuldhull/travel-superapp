@@ -43,6 +43,22 @@ export class RefreshSuccessResponseDto {
 }
 
 /**
+ * Response of `POST /auth/magic-link/request`. Always returns success
+ * regardless of whether the email is registered (privacy + enumeration
+ * defence). Body is intentionally minimal — the meaningful side-effect
+ * is the email send, not the response payload.
+ *
+ * Installed by prompt [V.UX.2].
+ */
+export class MagicLinkRequestResponseDto {
+  @ApiProperty({
+    enum: ['ok'],
+    description: "Always 'ok'. Doesn't reveal whether the email is registered.",
+  })
+  declare status: string;
+}
+
+/**
  * Response of `GET /auth/me`. Mirrors `AuthenticatedUser` —
  * deliberately minimal: just the stable JWT claims. Hydrating
  * displayName / email / flags is a follow-up use-case.

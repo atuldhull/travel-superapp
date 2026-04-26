@@ -95,6 +95,20 @@ const CommsSchema = z.object({
   TWILIO_ACCOUNT_SID: z.string().optional(),
   TWILIO_AUTH_TOKEN: z.string().optional(),
   TWILIO_FROM_NUMBER: z.string().optional(),
+  /**
+   * Public web base URL — used to build email links (magic-link, password
+   * reset, etc.). Defaults to the local Next.js dev origin so the stub
+   * mailer URL works out of the box. In staging/prod, set to the canonical
+   * https origin.
+   *
+   * Installed by prompt [V.UX.2].
+   */
+  WEB_BASE_URL: z.string().url().default('http://localhost:3001'),
+  /** Display "from" name for transactional email. */
+  EMAIL_FROM_NAME: z.string().default('TravelSuperApp'),
+  /** Address used as the From: header. Stub mailer logs it; real provider
+   *  must use a verified-sender address. */
+  EMAIL_FROM_ADDRESS: z.string().default('no-reply@travel.local'),
 });
 
 // ─── Meilisearch (typo-tolerant full-text) ──────────────────────────────

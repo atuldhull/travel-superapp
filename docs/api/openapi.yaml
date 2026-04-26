@@ -275,6 +275,48 @@ paths:
       summary: OAuth sign-in. Verifies a provider id token (Google / Apple / mock);
         auto-links by email or creates a passwordless account.
       tags: *a8
+  /api/v1/auth/magic-link/request:
+    post:
+      operationId: AuthController_magicLinkRequest
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MagicLinkRequestRequestDto'
+      responses:
+        '200':
+          description: Always ok. Email may or may not have been sent.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MagicLinkRequestResponseDto'
+      summary: "Passwordless sign-in step 1: email a magic link. Always returns 'ok' —
+        doesn't reveal whether the email is registered."
+      tags: *a8
+  /api/v1/auth/magic-link/consume:
+    post:
+      operationId: AuthController_magicLinkConsume
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MagicLinkConsumeRequestDto'
+      responses:
+        '200':
+          description: Sign-in succeeded; refresh-cookie set; access token returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSuccessResponseDto'
+        '401':
+          description: MAGIC_LINK_INVALID.
+      summary: 'Passwordless sign-in step 2: consume the magic-link token + issue a
+        session. Single-use, 15-min TTL.'
+      tags: *a8
   /api/v1/auth/login:
     post:
       operationId: AuthController_login
@@ -2593,6 +2635,37 @@ components:
           maxLength: 8192
       required:
         - idToken
+    MagicLinkRequestRequestDto:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+      required:
+        - email
+    MagicLinkRequestResponseDto:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+          description: Always 'ok'. Doesn't reveal whether the email is registered.
+      required:
+        - status
+    MagicLinkConsumeRequestDto:
+      type: object
+      properties:
+        token:
+          type: string
+          description: 64 lower-case hex characters (32 random bytes) from the email link
+            URL.
+          pattern: ^[0-9a-f]{64}$
+          minLength: 64
+          maxLength: 64
+      required:
+        - token
     LoginRequestDto:
       type: object
       properties:
