@@ -74,3 +74,82 @@ export class PublicDownloadUrlResponseDto {
   })
   declare expiresAt: string;
 }
+
+// ─── Owner-side surface ──────────────────────────────────────────
+//
+// Symmetric with the public surface above but exposes the full
+// row (including ownerId + updatedAt + the nullable publishedAt).
+// Used by the 7 owner-scoped routes on `MemoryBookController`.
+//
+// Installed by prompt [IV.18.19.51].
+
+export class MemoryBookDto {
+  @ApiProperty({ format: 'cuid' })
+  declare id: string;
+
+  @ApiProperty({ format: 'cuid', description: 'Owner of the book — caller-only on owner routes.' })
+  declare ownerId: string;
+
+  @ApiProperty()
+  declare title: string;
+
+  @ApiProperty({ description: 'Theme slug (e.g. "minimal", "vintage").' })
+  declare theme: string;
+
+  @ApiProperty({ nullable: true })
+  declare coverS3Key: string | null;
+
+  @ApiProperty({
+    nullable: true,
+    format: 'date-time',
+    description: 'ISO-8601 publish timestamp; null while the book is a draft.',
+  })
+  declare publishedAt: string | null;
+
+  @ApiProperty({ format: 'date-time' })
+  declare createdAt: string;
+
+  @ApiProperty({ format: 'date-time' })
+  declare updatedAt: string;
+}
+
+export class ListMemoryBooksResponseDto {
+  @ApiProperty({
+    type: [MemoryBookDto],
+    description: 'Caller-owned memory books, newest first. Default 50 / cap 200.',
+  })
+  declare books: MemoryBookDto[];
+}
+
+export class MemoryBookWithAssetsResponseDto {
+  @ApiProperty({ type: MemoryBookDto })
+  declare book: MemoryBookDto;
+
+  @ApiProperty({
+    type: [String],
+    description: 'Asset ids attached to this book (any status).',
+  })
+  declare assetIds: string[];
+}
+
+export class CreateMemoryBookRequestDto {
+  @ApiProperty({ minLength: 1, maxLength: 120 })
+  declare title: string;
+
+  @ApiProperty({ required: false, maxLength: 32 })
+  declare theme?: string;
+
+  @ApiProperty({ required: false, nullable: true, maxLength: 512 })
+  declare coverS3Key?: string | null;
+}
+
+export class UpdateMemoryBookRequestDto {
+  @ApiProperty({ required: false, minLength: 1, maxLength: 120 })
+  declare title?: string;
+
+  @ApiProperty({ required: false, minLength: 1, maxLength: 32 })
+  declare theme?: string;
+
+  @ApiProperty({ required: false, nullable: true, maxLength: 512 })
+  declare coverS3Key?: string | null;
+}

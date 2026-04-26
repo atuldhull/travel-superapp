@@ -30,7 +30,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { type AuthenticatedUser, CurrentUser, Public } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { CreateMemoryBookUseCase } from '../application/create-memory-book.use-case';
@@ -51,9 +51,14 @@ import {
   type UpdateMemoryBookBody,
 } from './dto/media.dto';
 import {
+  CreateMemoryBookRequestDto,
   FeaturedMemoryBooksResponseDto,
+  ListMemoryBooksResponseDto,
+  MemoryBookDto as MemoryBookResponseDto,
+  MemoryBookWithAssetsResponseDto,
   PublicDownloadUrlResponseDto,
   PublicMemoryBookWithAssetsResponseDto,
+  UpdateMemoryBookRequestDto,
 } from './dto/memory-book-response.dto';
 
 interface MemoryBookDto {
@@ -192,6 +197,9 @@ export class MemoryBookController {
     return { url, expiresAt: expiresAt.toISOString() };
   }
 
+  @ApiOperation({ summary: 'Create a memory book (draft). Owner = caller.' })
+  @ApiBody({ type: CreateMemoryBookRequestDto })
+  @ApiResponse({ status: 201, description: 'Newly-created book row.', type: MemoryBookResponseDto })
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(
@@ -207,6 +215,15 @@ export class MemoryBookController {
     return toDto(book);
   }
 
+  @ApiOperation({
+    summary:
+      "List the caller's memory books, newest first. ?limit=N (1..200, default 50). Owner-scoped.",
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Caller-owned memory books, newest first.',
+    type: ListMemoryBooksResponseDto,
+  })
   @Get()
   @HttpCode(HttpStatus.OK)
   async list(
@@ -218,6 +235,13 @@ export class MemoryBookController {
     return { books: books.map(toDto) };
   }
 
+  @ApiOperation({ summary: 'Get one of the caller-owned books + the attached asset ids.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Book row + ids of attached assets (any status).',
+    type: MemoryBookWithAssetsResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'BOOK_NOT_FOUND.' })
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   async getOne(
@@ -228,6 +252,10 @@ export class MemoryBookController {
     return { book: toDto(book), assetIds };
   }
 
+  @ApiOperation({ summary: 'Update one of the caller-owned books. Partial update.' })
+  @ApiBody({ type: UpdateMemoryBookRequestDto })
+  @ApiResponse({ status: 200, description: 'Updated book row.', type: MemoryBookResponseDto })
+  @ApiResponse({ status: 404, description: 'BOOK_NOT_FOUND.' })
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
   async update(
@@ -245,12 +273,20 @@ export class MemoryBookController {
     return toDto(book);
   }
 
+  @ApiOperation({
+    summary: 'Delete one of the caller-owned books. SetNull on MediaAsset.memoryBookId.',
+  })
+  @ApiResponse({ status: 204, description: 'Deleted.' })
+  @ApiResponse({ status: 404, description: 'BOOK_NOT_FOUND.' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string): Promise<void> {
     await this.deleteUc.execute({ id, ownerId: user.sub });
   }
 
+  @ApiOperation({ summary: 'Publish a book — flips publishedAt to now (idempotent).' })
+  @ApiResponse({ status: 200, description: 'Published book row.', type: MemoryBookResponseDto })
+  @ApiResponse({ status: 404, description: 'BOOK_NOT_FOUND.' })
   @Post(':id/publish')
   @HttpCode(HttpStatus.OK)
   async publish(
@@ -261,6 +297,9 @@ export class MemoryBookController {
     return toDto(book);
   }
 
+  @ApiOperation({ summary: 'Unpublish a book — clears publishedAt (idempotent).' })
+  @ApiResponse({ status: 200, description: 'Updated book row.', type: MemoryBookResponseDto })
+  @ApiResponse({ status: 404, description: 'BOOK_NOT_FOUND.' })
   @Post(':id/unpublish')
   @HttpCode(HttpStatus.OK)
   async unpublish(

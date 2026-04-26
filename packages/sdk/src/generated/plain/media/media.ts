@@ -3,16 +3,21 @@
 // Regenerate via: pnpm --filter=@app/sdk sdk:gen
 import type {
   AttachMediaToTripRequestDto,
+  CreateMemoryBookRequestDto,
   CreateUploadUrlRequestDto,
   CreateUploadUrlResponseDto,
   FeaturedMemoryBooksResponseDto,
+  ListMemoryBooksResponseDto,
   ListTripMediaResponseDto,
   MediaAssetDto,
   MediaControllerListByTripParams,
   MemoryBookControllerFeaturedParams,
   MemoryBookControllerListParams,
+  MemoryBookDto,
+  MemoryBookWithAssetsResponseDto,
   PublicDownloadUrlResponseDto,
   PublicMemoryBookWithAssetsResponseDto,
+  UpdateMemoryBookRequestDto,
 } from '../../schemas';
 
 import { apiFetch } from '../../../runtime/fetcher';
@@ -356,8 +361,11 @@ export const memoryBookControllerGetPublicAssetDownloadUrl = async (
   );
 };
 
+/**
+ * @summary Create a memory book (draft). Owner = caller.
+ */
 export type memoryBookControllerCreateResponse201 = {
-  data: void;
+  data: MemoryBookDto;
   status: 201;
 };
 
@@ -371,16 +379,22 @@ export const getMemoryBookControllerCreateUrl = () => {
 };
 
 export const memoryBookControllerCreate = async (
+  createMemoryBookRequestDto: CreateMemoryBookRequestDto,
   options?: RequestInit,
 ): Promise<memoryBookControllerCreateResponse> => {
   return apiFetch<memoryBookControllerCreateResponse>(getMemoryBookControllerCreateUrl(), {
     ...options,
     method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createMemoryBookRequestDto),
   });
 };
 
+/**
+ * @summary List the caller's memory books, newest first. ?limit=N (1..200, default 50). Owner-scoped.
+ */
 export type memoryBookControllerListResponse200 = {
-  data: void;
+  data: ListMemoryBooksResponseDto;
   status: 200;
 };
 
@@ -415,15 +429,29 @@ export const memoryBookControllerList = async (
   });
 };
 
+/**
+ * @summary Get one of the caller-owned books + the attached asset ids.
+ */
 export type memoryBookControllerGetOneResponse200 = {
-  data: void;
+  data: MemoryBookWithAssetsResponseDto;
   status: 200;
+};
+
+export type memoryBookControllerGetOneResponse404 = {
+  data: void;
+  status: 404;
 };
 
 export type memoryBookControllerGetOneResponseSuccess = memoryBookControllerGetOneResponse200 & {
   headers: Headers;
 };
-export type memoryBookControllerGetOneResponse = memoryBookControllerGetOneResponseSuccess;
+export type memoryBookControllerGetOneResponseError = memoryBookControllerGetOneResponse404 & {
+  headers: Headers;
+};
+
+export type memoryBookControllerGetOneResponse =
+  | memoryBookControllerGetOneResponseSuccess
+  | memoryBookControllerGetOneResponseError;
 
 export const getMemoryBookControllerGetOneUrl = (id: string) => {
   return `/api/v1/memory-books/${id}`;
@@ -439,15 +467,29 @@ export const memoryBookControllerGetOne = async (
   });
 };
 
+/**
+ * @summary Update one of the caller-owned books. Partial update.
+ */
 export type memoryBookControllerUpdateResponse200 = {
-  data: void;
+  data: MemoryBookDto;
   status: 200;
+};
+
+export type memoryBookControllerUpdateResponse404 = {
+  data: void;
+  status: 404;
 };
 
 export type memoryBookControllerUpdateResponseSuccess = memoryBookControllerUpdateResponse200 & {
   headers: Headers;
 };
-export type memoryBookControllerUpdateResponse = memoryBookControllerUpdateResponseSuccess;
+export type memoryBookControllerUpdateResponseError = memoryBookControllerUpdateResponse404 & {
+  headers: Headers;
+};
+
+export type memoryBookControllerUpdateResponse =
+  | memoryBookControllerUpdateResponseSuccess
+  | memoryBookControllerUpdateResponseError;
 
 export const getMemoryBookControllerUpdateUrl = (id: string) => {
   return `/api/v1/memory-books/${id}`;
@@ -455,23 +497,40 @@ export const getMemoryBookControllerUpdateUrl = (id: string) => {
 
 export const memoryBookControllerUpdate = async (
   id: string,
+  updateMemoryBookRequestDto: UpdateMemoryBookRequestDto,
   options?: RequestInit,
 ): Promise<memoryBookControllerUpdateResponse> => {
   return apiFetch<memoryBookControllerUpdateResponse>(getMemoryBookControllerUpdateUrl(id), {
     ...options,
     method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateMemoryBookRequestDto),
   });
 };
 
+/**
+ * @summary Delete one of the caller-owned books. SetNull on MediaAsset.memoryBookId.
+ */
 export type memoryBookControllerRemoveResponse204 = {
   data: void;
   status: 204;
 };
 
+export type memoryBookControllerRemoveResponse404 = {
+  data: void;
+  status: 404;
+};
+
 export type memoryBookControllerRemoveResponseSuccess = memoryBookControllerRemoveResponse204 & {
   headers: Headers;
 };
-export type memoryBookControllerRemoveResponse = memoryBookControllerRemoveResponseSuccess;
+export type memoryBookControllerRemoveResponseError = memoryBookControllerRemoveResponse404 & {
+  headers: Headers;
+};
+
+export type memoryBookControllerRemoveResponse =
+  | memoryBookControllerRemoveResponseSuccess
+  | memoryBookControllerRemoveResponseError;
 
 export const getMemoryBookControllerRemoveUrl = (id: string) => {
   return `/api/v1/memory-books/${id}`;
@@ -487,15 +546,29 @@ export const memoryBookControllerRemove = async (
   });
 };
 
+/**
+ * @summary Publish a book — flips publishedAt to now (idempotent).
+ */
 export type memoryBookControllerPublishResponse200 = {
-  data: void;
+  data: MemoryBookDto;
   status: 200;
+};
+
+export type memoryBookControllerPublishResponse404 = {
+  data: void;
+  status: 404;
 };
 
 export type memoryBookControllerPublishResponseSuccess = memoryBookControllerPublishResponse200 & {
   headers: Headers;
 };
-export type memoryBookControllerPublishResponse = memoryBookControllerPublishResponseSuccess;
+export type memoryBookControllerPublishResponseError = memoryBookControllerPublishResponse404 & {
+  headers: Headers;
+};
+
+export type memoryBookControllerPublishResponse =
+  | memoryBookControllerPublishResponseSuccess
+  | memoryBookControllerPublishResponseError;
 
 export const getMemoryBookControllerPublishUrl = (id: string) => {
   return `/api/v1/memory-books/${id}/publish`;
@@ -511,16 +584,31 @@ export const memoryBookControllerPublish = async (
   });
 };
 
+/**
+ * @summary Unpublish a book — clears publishedAt (idempotent).
+ */
 export type memoryBookControllerUnpublishResponse200 = {
-  data: void;
+  data: MemoryBookDto;
   status: 200;
+};
+
+export type memoryBookControllerUnpublishResponse404 = {
+  data: void;
+  status: 404;
 };
 
 export type memoryBookControllerUnpublishResponseSuccess =
   memoryBookControllerUnpublishResponse200 & {
     headers: Headers;
   };
-export type memoryBookControllerUnpublishResponse = memoryBookControllerUnpublishResponseSuccess;
+export type memoryBookControllerUnpublishResponseError =
+  memoryBookControllerUnpublishResponse404 & {
+    headers: Headers;
+  };
+
+export type memoryBookControllerUnpublishResponse =
+  | memoryBookControllerUnpublishResponseSuccess
+  | memoryBookControllerUnpublishResponseError;
 
 export const getMemoryBookControllerUnpublishUrl = (id: string) => {
   return `/api/v1/memory-books/${id}/unpublish`;
