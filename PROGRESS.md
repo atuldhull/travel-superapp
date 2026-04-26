@@ -10,18 +10,73 @@
 
 ## Summary
 
-| Counter             | Value                                                                                |
-| ------------------- | ------------------------------------------------------------------------------------ |
-| Prompts completed   | 152 (150 prior + bundled Trip composer + MFA UI)                                     |
-| Prompts in progress | 0                                                                                    |
-| Prompts blocked     | 0                                                                                    |
-| Last prompt         | `[IV.18.19.26]` — MFA UI on web (bundled with `[IV.18.19.25]`)                       |
-| Last commit date    | 2026-04-26                                                                           |
-| Phase               | Phase 1 — full-loop demo: register/login/MFA → composer → /trips, all themed + typed |
+| Counter             | Value                                                                              |
+| ------------------- | ---------------------------------------------------------------------------------- |
+| Prompts completed   | 154 (152 prior + bundled Card/Skeleton/Badge primitives + dark mode)               |
+| Prompts in progress | 0                                                                                  |
+| Prompts blocked     | 0                                                                                  |
+| Last prompt         | `[IV.18.19.28]` — Tailwind dark mode + theme toggle (bundled with `[IV.18.19.27]`) |
+| Last commit date    | 2026-04-26                                                                         |
+| Phase               | Phase 1 — design system depth (6 primitives) + full light/dark theme support       |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.19.28] — Tailwind dark mode + three-state theme toggle (bundled with `[IV.18.19.27]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 5 (Frontend stack)
+
+**What was done**
+
+Light/Dark/Auto theme support across the web shell, with no flash-of-wrong-theme on first paint.
+
+- `globals.css` adds `@custom-variant dark (&:where(.dark, .dark *));` so `dark:` utilities key off an explicit `.dark` class on `<html>` instead of the OS preference (user choice wins). The dark-color block shadows the `@theme` defaults via plain CSS variables — Tailwind 4's idiom for theme variants. Brand inverts to a lighter blue; surface flips slate-900/slate-100; muted shifts to slate-400.
+- New `apps/web/src/lib/theme-store.ts` — three-state preference (light / dark / system) persisted to `localStorage`. Theme is NOT a security secret so CLAUDE rule 12 doesn't apply here. Pub/sub matches the `auth-store` pattern.
+- New `apps/web/src/lib/use-theme.ts` — `useSyncExternalStore` bridge.
+- New `apps/web/src/components/ui/theme-toggle.tsx` — segmented control (Light / Dark / Auto) renders in the layout header.
+- `layout.tsx` adds an inline `beforeInteractive` Script that reads localStorage + the OS preference and applies the `dark` class BEFORE React hydrates — eliminates flash-of-wrong-theme on first paint. `suppressHydrationWarning` on `<html>` because the boot script mutates it pre-hydration.
+
+**Verification**
+
+- `pnpm --filter=web typecheck` + `pnpm --filter=web build` clean. 6 prerendered routes; First Load JS bumps to ~126KB across the protected pages (+~1KB for the toggle + theme store).
+- 93 / 578 api tests still pass.
+
+**Commit**
+
+`7cb6c59 feat(IV.18.19.28): Tailwind dark mode + three-state theme toggle`
+
+---
+
+### [IV.18.19.27] — UI primitives: Card, Skeleton, Badge; refactor /featured + /trips (bundled with `[IV.18.19.28]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 5 (Frontend stack)
+
+**What was done**
+
+Doubles the UI primitive count (3 → 6) and wires the new ones into the two existing list pages.
+
+- New `apps/web/src/components/ui/card.tsx`: themed surface primitive with `Card` / `CardHeader` / `CardTitle` / `CardSubtitle` / `CardBody`. `Card` accepts `as="li"` for use inside `<ul>`.
+- New `apps/web/src/components/ui/skeleton.tsx`: animated placeholder bar; `count` prop for stacked variants.
+- New `apps/web/src/components/ui/badge.tsx`: 3 variants (neutral / brand / danger) for status chips.
+- Refactor `apps/web/src/app/featured/page.tsx`:
+  - Inline card markup → `<Card><CardHeader>...</CardHeader></Card>`.
+  - Loading state renders 4 skeleton cards instead of "Loading…" — preserves layout, no jump on data arrival.
+- Refactor `apps/web/src/app/trips/page.tsx`:
+  - Same Card refactor; status field rendered as `<Badge>`.
+  - Loading skeleton matches /featured.
+  - Empty-state copy updated to point at the New trip button.
+
+**Verification**
+
+- `pnpm --filter=web typecheck` clean.
+- No api change; tests unchanged.
+
+**Commit**
+
+`fd02936 feat(IV.18.19.27): UI primitives — Card, Skeleton, Badge; refactor /featured + /trips`
 
 ---
 
