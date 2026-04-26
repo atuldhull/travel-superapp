@@ -14,6 +14,7 @@
  * Installed by prompt [IV.18.12.9].
  */
 import { BadRequestException, Controller, Get, HttpCode, HttpStatus, Query } from '@nestjs/common';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public } from '../../../common/auth';
 import { GetVoteSummaryUseCase } from '../application/get-vote-summary.use-case';
 import type { VoteSummary } from '../application/ports/vote.repository';
@@ -40,10 +41,15 @@ function toDto(s: VoteSummary): VoteSummaryDto {
   };
 }
 
+@ApiTags('social')
 @Controller('votes')
 export class VotesController {
   constructor(private readonly summaryUc: GetVoteSummaryUseCase) {}
 
+  @ApiOperation({
+    summary:
+      'Cross-trip vote tally for { targetType, targetId }. @Public — crowd-signal aggregation.',
+  })
   @Get('summary')
   @Public()
   @HttpCode(HttpStatus.OK)

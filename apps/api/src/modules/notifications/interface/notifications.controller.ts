@@ -44,6 +44,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { type AuthenticatedUser, CurrentUser } from '../../../common/auth';
 import { DeleteNotificationUseCase } from '../application/delete-notification.use-case';
 import { GetUnreadCountUseCase } from '../application/get-unread-count.use-case';
@@ -79,6 +80,8 @@ function toDto(n: NotificationLog): NotificationLogDto {
   };
 }
 
+@ApiTags('notifications')
+@ApiBearerAuth()
 @Controller('notifications')
 export class NotificationsController {
   constructor(
@@ -96,12 +99,19 @@ export class NotificationsController {
    * here, not on the `me` lister. Defensive ordering even though
    * Nest's path matcher would resolve segment counts correctly.
    */
+  @ApiOperation({
+    summary: 'Returns { unread: N } for the home-screen badge. Single indexed COUNT — cheap.',
+  })
   @Get('me/unread-count')
   @HttpCode(HttpStatus.OK)
   async unreadCount(@CurrentUser() user: AuthenticatedUser): Promise<{ unread: number }> {
     return this.unreadCountUc.execute(user.sub);
   }
 
+  @ApiOperation({
+    summary:
+      "List the caller's recent notifications. Optional ?channel=push|email|sms narrows to one delivery channel.",
+  })
   @Get('me')
   @HttpCode(HttpStatus.OK)
   async listMine(
@@ -131,12 +141,19 @@ export class NotificationsController {
    * shadowing it. Same defensive pattern used by `/reviews/summary`
    * and the public memory-book routes.
    */
+  @ApiOperation({
+    summary:
+      'Mark every unread row as read. Returns { marked: N }. Idempotent (second call returns 0).',
+  })
   @Post('read-all')
   @HttpCode(HttpStatus.OK)
   async markAllRead(@CurrentUser() user: AuthenticatedUser): Promise<{ marked: number }> {
     return this.markAllReadUc.execute(user.sub);
   }
 
+  @ApiOperation({
+    summary: 'Mark one notification as read. Owner-gated; 404 on cross-user / missing.',
+  })
   @Post(':id/read')
   @HttpCode(HttpStatus.OK)
   async markRead(
@@ -147,6 +164,7 @@ export class NotificationsController {
     return toDto(row);
   }
 
+  @ApiOperation({ summary: 'Mark one notification as UNread (symmetric to /read). Owner-gated.' })
   @Post(':id/unread')
   @HttpCode(HttpStatus.OK)
   async markUnread(
@@ -163,6 +181,9 @@ export class NotificationsController {
    * on cross-user / missing — IDOR-safe collapsing. Added by
    * `[IV.18.15.6]`.
    */
+  @ApiOperation({
+    summary: 'Hard-delete a notification (inbox prune). Owner-gated; 404 on cross-user / missing.',
+  })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string): Promise<void> {

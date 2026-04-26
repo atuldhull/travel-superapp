@@ -26,6 +26,7 @@ import {
   Param,
   Query,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../../../common/auth';
 import { AdminDeleteMediaUseCase } from '../application/admin-delete-media.use-case';
 import { AdminListMediaUseCase } from '../application/admin-list-media.use-case';
@@ -56,6 +57,8 @@ function toDto(m: MediaAsset): AdminMediaDto {
   };
 }
 
+@ApiTags('admin')
+@ApiBearerAuth()
 @Controller('admin/media')
 @Roles('admin')
 export class AdminMediaController {
@@ -64,6 +67,9 @@ export class AdminMediaController {
     private readonly deleteUc: AdminDeleteMediaUseCase,
   ) {}
 
+  @ApiOperation({
+    summary: 'Cross-user list of media with optional ?ownerId, ?kind, ?status filters. Admin-only.',
+  })
   @Get()
   @HttpCode(HttpStatus.OK)
   async list(
@@ -107,6 +113,9 @@ export class AdminMediaController {
     return { media: result.rows.map(toDto), total: result.total };
   }
 
+  @ApiOperation({
+    summary: 'Hard-delete media (takedown). Trip + memory book references SetNull-cascade.',
+  })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id') id: string): Promise<void> {
