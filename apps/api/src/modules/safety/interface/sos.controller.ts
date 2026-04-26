@@ -12,6 +12,7 @@
  * Installed by prompt [IV.18.11.2].
  */
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { type AuthenticatedUser, CurrentUser } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { ListMySosEventsUseCase } from '../application/list-my-sos-events.use-case';
@@ -24,6 +25,12 @@ import {
   type ResolveSosBody,
   type TriggerSosBody,
 } from './dto/safety.dto';
+import {
+  ListSosEventsResponseDto,
+  ResolveSosRequestDto,
+  SosEventDto as SosEventResponseDto,
+  TriggerSosRequestDto,
+} from './dto/safety-subs-response.dto';
 
 interface SosEventDto {
   readonly id: string;
@@ -45,6 +52,8 @@ function toDto(e: SosEvent): SosEventDto {
   };
 }
 
+@ApiTags('safety')
+@ApiBearerAuth()
 @Controller('safety/sos')
 export class SosController {
   constructor(
@@ -53,6 +62,9 @@ export class SosController {
     private readonly resolveUc: ResolveSosUseCase,
   ) {}
 
+  @ApiOperation({ summary: 'Trigger an SOS event at the given coordinates.' })
+  @ApiBody({ type: TriggerSosRequestDto })
+  @ApiResponse({ status: 201, description: 'New SOS event row.', type: SosEventResponseDto })
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async trigger(
@@ -68,6 +80,10 @@ export class SosController {
     return toDto(sos);
   }
 
+  @ApiOperation({
+    summary: "List the caller's SOS events, most-recent-first. ?limit (1..200, default 50).",
+  })
+  @ApiResponse({ status: 200, description: "Caller's events.", type: ListSosEventsResponseDto })
   @Get()
   @HttpCode(HttpStatus.OK)
   async listMine(
@@ -79,6 +95,10 @@ export class SosController {
     return { events: events.map(toDto) };
   }
 
+  @ApiOperation({ summary: 'Mark an SOS event resolved (owner-only).' })
+  @ApiBody({ type: ResolveSosRequestDto })
+  @ApiResponse({ status: 200, description: 'Resolved event row.', type: SosEventResponseDto })
+  @ApiResponse({ status: 404, description: 'SOS_NOT_FOUND.' })
   @Post(':id/resolve')
   @HttpCode(HttpStatus.OK)
   async resolve(

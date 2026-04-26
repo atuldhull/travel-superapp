@@ -17,10 +17,15 @@
  * Installed by prompt [IV.18.11.3].
  */
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { FindNearbyCrimesUseCase } from '../application/find-nearby-crimes.use-case';
 import type { CrimeIncidentWithDistance } from '../domain/crime-incident.entity';
 import { FindNearbyCrimesBodySchema, type FindNearbyCrimesBody } from './dto/safety.dto';
+import {
+  FindNearbyCrimesRequestDto,
+  FindNearbyCrimesResponseDto,
+} from './dto/safety-subs-response.dto';
 
 interface CrimeIncidentDto {
   readonly id: string;
@@ -42,10 +47,22 @@ function toDto(c: CrimeIncidentWithDistance): CrimeIncidentDto {
   };
 }
 
+@ApiTags('safety')
+@ApiBearerAuth()
 @Controller('safety/crimes')
 export class CrimeLayerController {
   constructor(private readonly findUc: FindNearbyCrimesUseCase) {}
 
+  @ApiOperation({
+    summary:
+      'Find crime incidents within a radius. Optional category / minSeverity / sinceDays filters.',
+  })
+  @ApiBody({ type: FindNearbyCrimesRequestDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Matching incidents, nearest-first.',
+    type: FindNearbyCrimesResponseDto,
+  })
   @Post('search')
   @HttpCode(HttpStatus.OK)
   async search(

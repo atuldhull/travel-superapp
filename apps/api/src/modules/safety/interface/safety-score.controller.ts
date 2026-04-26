@@ -13,9 +13,11 @@
  * Installed by prompt [IV.18.11.4].
  */
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { GetSafetyScoreUseCase, type SafetyScore } from '../application/get-safety-score.use-case';
 import { GetSafetyScoreBodySchema, type GetSafetyScoreBody } from './dto/safety.dto';
+import { SafetyScoreRequestDto, SafetyScoreResponseDto } from './dto/safety-subs-response.dto';
 
 interface SafetyScoreDto {
   readonly lat: number;
@@ -44,10 +46,22 @@ function toDto(s: SafetyScore): SafetyScoreDto {
   };
 }
 
+@ApiTags('safety')
+@ApiBearerAuth()
 @Controller('safety/score')
 export class SafetyScoreController {
   constructor(private readonly scoreUc: GetSafetyScoreUseCase) {}
 
+  @ApiOperation({
+    summary:
+      'Composite safety score for a coord (crime + scam density). Returns letter grade + breakdown.',
+  })
+  @ApiBody({ type: SafetyScoreRequestDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Composite score + breakdown.',
+    type: SafetyScoreResponseDto,
+  })
   @Post()
   @HttpCode(HttpStatus.OK)
   async score(
