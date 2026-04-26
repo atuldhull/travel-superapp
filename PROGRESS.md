@@ -10,18 +10,67 @@
 
 ## Summary
 
-| Counter             | Value                                                                          |
-| ------------------- | ------------------------------------------------------------------------------ |
-| Prompts completed   | 162 (160 prior + bundled apiFetch envelope rework + Trip itinerary subsection) |
-| Prompts in progress | 0                                                                              |
-| Prompts blocked     | 0                                                                              |
-| Last prompt         | `[IV.18.19.36]` — Trip itinerary subsection (bundled with `[IV.18.19.35]`)     |
-| Last commit date    | 2026-04-26                                                                     |
-| Phase               | Phase 1 — typed envelope across the SDK + itinerary CRUD on /trips/[id]        |
+| Counter             | Value                                                                         |
+| ------------------- | ----------------------------------------------------------------------------- |
+| Prompts completed   | 164 (162 prior + bundled generate-itinerary button + map-picker)              |
+| Prompts in progress | 0                                                                             |
+| Prompts blocked     | 0                                                                             |
+| Last prompt         | `[IV.18.19.38]` — map-picker for /trips/new (bundled with `[IV.18.19.37]`)    |
+| Last commit date    | 2026-04-26                                                                    |
+| Phase               | Phase 1 — interactive itinerary generation + click-to-pick trip center on web |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.19.38] — Map-picker for /trips/new (Leaflet + OSM tiles) (bundled with `[IV.18.19.37]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 5 (Frontend stack)
+
+**What was done**
+
+Replaces the lng/lat number-fields-only composer with a click-to-pick map. Drops the friction of having to know coordinates before creating a trip.
+
+- Add `leaflet@^1.9.4` + `@types/leaflet@^1.9.14` to apps/web. No react-leaflet — vanilla Leaflet keeps the React-version dance out of the way (same component contract works React 18 → 19+). OSM tiles, no API key needed in dev.
+- New `apps/web/src/components/map-picker.tsx`: client-only `MapPicker` with two effects (one-time map setup + reactive marker on value changes). Inline SVG pin icon avoids the Leaflet default-icon asset wrangling that breaks under Next's bundler.
+- /trips/new renders the MapPicker via `next/dynamic({ssr:false})` (Leaflet touches `window`). Loading state is a pulsing skeleton block.
+- The lng/lat number fields stay below the map as a manual fallback; click-to-pick rounds to 6dp (~10cm). Form value flows both ways.
+
+**Verification**
+
+- All typechecks + builds clean. /trips/new bundle: 2.21KB → 3.40KB (Leaflet split-loaded via dynamic import, doesn't touch initial First Load JS).
+- 93 / 578 api tests still pass.
+
+**Commit**
+
+`4df2266 feat(IV.18.19.38): map-picker for /trips/new (Leaflet + OSM tiles)`
+
+---
+
+### [IV.18.19.37] — Generate-itinerary button on /trips/[id] (bundled with `[IV.18.19.38]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 5 (Frontend stack) + §6 (SDK / API contract)
+
+**What was done**
+
+Last write-side hole on the Trip surface closed. Users can now generate (or regenerate) the itinerary stub from the UI.
+
+- Wire `@ApiResponse({type: ItineraryListResponseDto})` + 422 TRIP_DATES_REQUIRED on `POST /trips/:id/itinerary` so the build hook emits a typed response shape (matches the GET counterpart). Regenerated openapi.yaml + SDK.
+- ItinerarySection on /trips/[id] now shows a Generate / Regenerate Button next to the day count Badge:
+  - Calls `useTripControllerBuildItinerary({id})` from @app/sdk.
+  - On success, invalidates `getTripControllerGetItineraryQueryKey(id)` so the day list re-fetches without a hard reload.
+  - 422 TRIP_DATES_REQUIRED surfaces with a friendly inline hint pointing at the Edit form.
+  - Empty state copy now points at the button instead of the api curl command.
+
+**Verification**
+
+- All typechecks clean.
+
+**Commit**
+
+`ae9cc6a feat(IV.18.19.37): Generate-itinerary button on /trips/[id]`
 
 ---
 
