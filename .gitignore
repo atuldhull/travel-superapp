@@ -73,3 +73,4 @@ apps/*/src/**/*.d.ts.map
 # Misc
 .cache/
 tmp/
+*.tsbuildinfo
