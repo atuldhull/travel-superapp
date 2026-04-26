@@ -25,6 +25,55 @@
 
 ---
 
+### [IV.18.19.58] — per-module Swagger rollout — notifications (bundled with `[IV.18.19.57]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 6 (SDK / API contract)
+
+**What was done**
+
+Decorates the 6 routes on `NotificationsController` (unread-count, list, read-all, read, unread, delete) with typed `@ApiResponse` using four new DTOs in `dto/notifications-response.dto.ts`:
+
+- `NotificationLogDto` (id, channel enum, templateId, status enum, payload, read, createdAt, deliveredAt nullable).
+- `ListMyNotificationsResponseDto` (`{ notifications: NotificationLogDto[] }`).
+- `UnreadCountResponseDto` (`{ unread: number }`).
+- `MarkAllReadResponseDto` (`{ marked: number }`).
+
+Bundles the SDK regen for both .57 (account) and .58 (notifications) into one orval pass — single set of generated-file diffs instead of two. Re-exports the new schemas (4 notif + 2 account) from `@app/sdk`.
+
+Routes flipped from `data: void` to typed envelopes: `GET /account/export`, `GET /notifications/me/unread-count`, `GET /notifications/me`, `POST /notifications/read-all`, `POST /notifications/:id/read`, `POST /notifications/:id/unread`.
+
+**Verification**
+
+- api typecheck + sdk typecheck + web typecheck clean. 93 / 578 api tests pass.
+
+**Commit**
+
+`c8b37dd feat(IV.18.19.58): per-module Swagger rollout — notifications + combined SDK regen`
+
+---
+
+### [IV.18.19.57] — per-module Swagger rollout — account (bundled with `[IV.18.19.58]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 6 (SDK / API contract)
+
+**What was done**
+
+Decorates the 3 routes on `AccountController` (export JSON / export NDJSON / DELETE) with `@ApiTags` + `@ApiBearerAuth` + `@ApiOperation` + `@ApiResponse`. Adds a lightweight `UserDataExportResponseDto` + `UserDataExportMetadataDto` in `dto/account-response.dto.ts`.
+
+The export bundle is ~30 sections deep (see `user-data-export.entity.ts`). The top-level envelope + metadata header are typed strongly; per-section row shapes use `additionalProperties: true` to keep the swagger payload manageable. Downstream tooling can deepen specific sections in follow-ups if a real consumer needs one strongly typed.
+
+The matching SDK regen lands together with the .58 commit — both schema additions go through one regen cycle to avoid double-churn on the 150+ generated files.
+
+**Verification**
+
+- api typecheck clean (sdk regen + e2e tests run alongside .58 — see that entry).
+
+**Commit**
+
+`66d2766 feat(IV.18.19.57): per-module Swagger rollout — account`
+
+---
+
 ### [IV.18.19.56] — asset attach/detach + thumbnail tiles on /memory-books/[id]/edit (bundled with `[IV.18.19.55]`)
 
 **Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 5 (Frontend stack)
