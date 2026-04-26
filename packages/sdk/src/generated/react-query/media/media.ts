@@ -15,9 +15,11 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  FeaturedMemoryBooksResponseDto,
   MediaControllerListByTripParams,
   MemoryBookControllerFeaturedParams,
   MemoryBookControllerListParams,
+  PublicMemoryBookWithAssetsResponseDto,
 } from '../../schemas';
 
 import { apiFetch } from '../../../runtime/fetcher';
@@ -740,7 +742,7 @@ export const useMediaControllerAttachToBook = <TError = unknown, TContext = unkn
  * @summary Public discovery — currently-published memory books across all users, ordered by publishedAt DESC.
  */
 export type memoryBookControllerFeaturedResponse200 = {
-  data: void;
+  data: FeaturedMemoryBooksResponseDto;
   status: 200;
 };
 
@@ -925,15 +927,27 @@ export function useMemoryBookControllerFeatured<
  * @summary Public read of a published memory book by id. The cuid is the unguessable token.
  */
 export type memoryBookControllerGetPublicResponse200 = {
-  data: void;
+  data: PublicMemoryBookWithAssetsResponseDto;
   status: 200;
+};
+
+export type memoryBookControllerGetPublicResponse404 = {
+  data: void;
+  status: 404;
 };
 
 export type memoryBookControllerGetPublicResponseSuccess =
   memoryBookControllerGetPublicResponse200 & {
     headers: Headers;
   };
-export type memoryBookControllerGetPublicResponse = memoryBookControllerGetPublicResponseSuccess;
+export type memoryBookControllerGetPublicResponseError =
+  memoryBookControllerGetPublicResponse404 & {
+    headers: Headers;
+  };
+
+export type memoryBookControllerGetPublicResponse =
+  | memoryBookControllerGetPublicResponseSuccess
+  | memoryBookControllerGetPublicResponseError;
 
 export const getMemoryBookControllerGetPublicUrl = (id: string) => {
   return `/api/v1/memory-books/public/${id}`;
@@ -959,7 +973,7 @@ export const getMemoryBookControllerGetPublicQueryKey = (id?: string) => {
 
 export const getMemoryBookControllerGetPublicInfiniteQueryOptions = <
   TData = Awaited<ReturnType<typeof memoryBookControllerGetPublic>>,
-  TError = unknown,
+  TError = void,
 >(
   id: string,
   options?: {
@@ -995,7 +1009,7 @@ export const getMemoryBookControllerGetPublicInfiniteQueryOptions = <
 export type MemoryBookControllerGetPublicInfiniteQueryResult = NonNullable<
   Awaited<ReturnType<typeof memoryBookControllerGetPublic>>
 >;
-export type MemoryBookControllerGetPublicInfiniteQueryError = unknown;
+export type MemoryBookControllerGetPublicInfiniteQueryError = void;
 
 /**
  * @summary Public read of a published memory book by id. The cuid is the unguessable token.
@@ -1003,7 +1017,7 @@ export type MemoryBookControllerGetPublicInfiniteQueryError = unknown;
 
 export function useMemoryBookControllerGetPublicInfinite<
   TData = Awaited<ReturnType<typeof memoryBookControllerGetPublic>>,
-  TError = unknown,
+  TError = void,
 >(
   id: string,
   options?: {
@@ -1028,7 +1042,7 @@ export function useMemoryBookControllerGetPublicInfinite<
 
 export const getMemoryBookControllerGetPublicQueryOptions = <
   TData = Awaited<ReturnType<typeof memoryBookControllerGetPublic>>,
-  TError = unknown,
+  TError = void,
 >(
   id: string,
   options?: {
@@ -1058,7 +1072,7 @@ export const getMemoryBookControllerGetPublicQueryOptions = <
 export type MemoryBookControllerGetPublicQueryResult = NonNullable<
   Awaited<ReturnType<typeof memoryBookControllerGetPublic>>
 >;
-export type MemoryBookControllerGetPublicQueryError = unknown;
+export type MemoryBookControllerGetPublicQueryError = void;
 
 /**
  * @summary Public read of a published memory book by id. The cuid is the unguessable token.
@@ -1066,7 +1080,7 @@ export type MemoryBookControllerGetPublicQueryError = unknown;
 
 export function useMemoryBookControllerGetPublic<
   TData = Awaited<ReturnType<typeof memoryBookControllerGetPublic>>,
-  TError = unknown,
+  TError = void,
 >(
   id: string,
   options?: {

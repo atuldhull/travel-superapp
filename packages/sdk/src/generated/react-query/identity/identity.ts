@@ -14,6 +14,8 @@ import type {
   UseQueryResult,
 } from '@tanstack/react-query';
 
+import type { AuthSuccessResponseDto, RefreshSuccessResponseDto } from '../../schemas';
+
 import { apiFetch } from '../../../runtime/fetcher';
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
@@ -22,7 +24,7 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
  * @summary Create a new account. Email + password + displayName. Sets the refresh-cookie + returns access token.
  */
 export type authControllerRegisterResponse201 = {
-  data: void;
+  data: AuthSuccessResponseDto;
   status: 201;
 };
 
@@ -120,7 +122,7 @@ export const useAuthControllerRegister = <TError = void, TContext = unknown>(opt
  * @summary OAuth sign-in. Verifies a provider id token (Google / Apple / mock); auto-links by email or creates a passwordless account.
  */
 export type authControllerOauthResponse200 = {
-  data: void;
+  data: AuthSuccessResponseDto;
   status: 200;
 };
 
@@ -218,7 +220,7 @@ export const useAuthControllerOauth = <TError = void, TContext = unknown>(option
  * @summary Email + password login. With MFA enabled, mfaCode is required on the second call.
  */
 export type authControllerLoginResponse200 = {
-  data: void;
+  data: AuthSuccessResponseDto;
   status: 200;
 };
 
@@ -303,7 +305,7 @@ export const useAuthControllerLogin = <TError = void, TContext = unknown>(option
  * @summary Rotate the access + refresh tokens. Reads the httpOnly refresh cookie; rejects if missing or stolen-detected.
  */
 export type authControllerRefreshResponse200 = {
-  data: void;
+  data: RefreshSuccessResponseDto;
   status: 200;
 };
 

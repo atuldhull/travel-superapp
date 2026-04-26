@@ -20,20 +20,21 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemoryBookControllerFeatured } from '@app/sdk';
-
-interface PublicBook {
-  readonly id: string;
-  readonly title: string;
-  readonly theme: string;
-  readonly publishedAt: string;
-}
+import {
+  useMemoryBookControllerFeatured,
+  type FeaturedMemoryBooksResponseDto,
+  type PublicMemoryBookDto,
+} from '@app/sdk';
 
 export default function FeaturedPage() {
   const { data, isLoading, isError } = useMemoryBookControllerFeatured({ limit: '20' });
 
-  const books = ((data as unknown as { books?: readonly PublicBook[] })?.books ??
-    []) as readonly PublicBook[];
+  // Runtime body shape matches FeaturedMemoryBooksResponseDto exactly
+  // (apiFetch returns the parsed JSON, not orval's {data,status,headers}
+  // envelope). Cast through unknown is the documented bridge until the
+  // mutator's return type is realigned with the orval envelope.
+  const body = data as unknown as FeaturedMemoryBooksResponseDto | undefined;
+  const books: readonly PublicMemoryBookDto[] = body?.books ?? [];
 
   return (
     <main className="space-y-6">
@@ -70,7 +71,7 @@ export default function FeaturedPage() {
   );
 }
 
-function BookCard({ book }: { book: PublicBook }) {
+function BookCard({ book }: { book: PublicMemoryBookDto }) {
   return (
     <li className="rounded-lg border border-muted/20 bg-surface p-4 shadow-sm transition hover:shadow">
       <h2 className="text-lg font-semibold tracking-tight">{book.title}</h2>

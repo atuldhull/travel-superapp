@@ -62,6 +62,7 @@ import {
   type OAuthSignInBody,
   type RegisterBody,
 } from './dto/auth.dto';
+import { AuthSuccessResponseDto, RefreshSuccessResponseDto } from './dto/auth-response.dto';
 
 const REFRESH_COOKIE_NAME = 'refresh_token';
 const REFRESH_COOKIE_PATH = '/api/v1/auth';
@@ -105,7 +106,11 @@ export class AuthController {
     summary:
       'Create a new account. Email + password + displayName. Sets the refresh-cookie + returns access token.',
   })
-  @ApiResponse({ status: 201, description: 'AuthSuccessBody { userId, accessToken, expiresAt }.' })
+  @ApiResponse({
+    status: 201,
+    description: 'Account created; refresh-cookie set; access token returned.',
+    type: AuthSuccessResponseDto,
+  })
   @ApiResponse({ status: 409, description: 'EMAIL_TAKEN.' })
   @Public()
   @Post('register')
@@ -149,7 +154,11 @@ export class AuthController {
     summary:
       'OAuth sign-in. Verifies a provider id token (Google / Apple / mock); auto-links by email or creates a passwordless account.',
   })
-  @ApiResponse({ status: 200, description: 'AuthSuccessBody.' })
+  @ApiResponse({
+    status: 200,
+    description: 'OAuth sign-in succeeded; refresh-cookie set; access token returned.',
+    type: AuthSuccessResponseDto,
+  })
   @ApiResponse({
     status: 401,
     description: 'OAUTH_PROVIDER_UNKNOWN / OAUTH_INVALID_TOKEN / OAUTH_EMAIL_UNVERIFIED.',
@@ -179,7 +188,11 @@ export class AuthController {
   @ApiOperation({
     summary: 'Email + password login. With MFA enabled, mfaCode is required on the second call.',
   })
-  @ApiResponse({ status: 200, description: 'AuthSuccessBody.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Login succeeded; refresh-cookie set; access token returned.',
+    type: AuthSuccessResponseDto,
+  })
   @ApiResponse({ status: 401, description: 'INVALID_CREDENTIALS / MFA_REQUIRED / MFA_INVALID.' })
   @Public()
   @Post('login')
@@ -211,7 +224,8 @@ export class AuthController {
   })
   @ApiResponse({
     status: 200,
-    description: 'New { accessToken, expiresAt }. New refresh cookie set.',
+    description: 'New access token issued; new refresh cookie set.',
+    type: RefreshSuccessResponseDto,
   })
   @ApiResponse({ status: 401, description: 'REFRESH_MISSING / REFRESH_INVALID / REFRESH_REUSED.' })
   @Public()

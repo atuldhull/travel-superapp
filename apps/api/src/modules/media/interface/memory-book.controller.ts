@@ -30,7 +30,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { type AuthenticatedUser, CurrentUser, Public } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { CreateMemoryBookUseCase } from '../application/create-memory-book.use-case';
@@ -50,6 +50,10 @@ import {
   type CreateMemoryBookBody,
   type UpdateMemoryBookBody,
 } from './dto/media.dto';
+import {
+  FeaturedMemoryBooksResponseDto,
+  PublicMemoryBookWithAssetsResponseDto,
+} from './dto/memory-book-response.dto';
 
 interface MemoryBookDto {
   readonly id: string;
@@ -130,6 +134,11 @@ export class MemoryBookController {
     summary:
       'Public discovery — currently-published memory books across all users, ordered by publishedAt DESC.',
   })
+  @ApiResponse({
+    status: 200,
+    description: 'Currently-published memory books, newest-first.',
+    type: FeaturedMemoryBooksResponseDto,
+  })
   @Public()
   @Get('featured')
   @HttpCode(HttpStatus.OK)
@@ -142,6 +151,12 @@ export class MemoryBookController {
   @ApiOperation({
     summary: 'Public read of a published memory book by id. The cuid is the unguessable token.',
   })
+  @ApiResponse({
+    status: 200,
+    description: 'Published book metadata + ids of attached assets.',
+    type: PublicMemoryBookWithAssetsResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'BOOK_NOT_PUBLISHED.' })
   @Public()
   @Get('public/:id')
   @HttpCode(HttpStatus.OK)
