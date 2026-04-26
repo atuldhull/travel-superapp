@@ -10,18 +10,67 @@
 
 ## Summary
 
-| Counter             | Value                                                                      |
-| ------------------- | -------------------------------------------------------------------------- |
-| Prompts completed   | 166 (164 prior + bundled day-item editor + media subsection)               |
-| Prompts in progress | 0                                                                          |
-| Prompts blocked     | 0                                                                          |
-| Last prompt         | `[IV.18.19.40]` — Trip media subsection (bundled with `[IV.18.19.39]`)     |
-| Last commit date    | 2026-04-26                                                                 |
-| Phase               | Phase 1 — full per-day item editing + media thumbnails grid on /trips/[id] |
+| Counter             | Value                                                                |
+| ------------------- | -------------------------------------------------------------------- |
+| Prompts completed   | 168 (166 prior + bundled share-code mint UI + Google Sign-In)        |
+| Prompts in progress | 0                                                                    |
+| Prompts blocked     | 0                                                                    |
+| Last prompt         | `[IV.18.19.42]` — real Google Sign-In (bundled with `[IV.18.19.41]`) |
+| Last commit date    | 2026-04-26                                                           |
+| Phase               | Phase 1 — share-code minting + Google Identity Services on /login    |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.19.42] — real Google Sign-In button (GIS + typed oauth mutation) (bundled with `[IV.18.19.41]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 5 (Frontend stack) + §13.2 (Identity)
+
+**What was done**
+
+Production-grade OAuth path. Replaces the dev-only mock-provider button with a real Google Identity Services flow when the env is configured.
+
+- New `apps/web/src/components/google-sign-in-button.tsx`: loads GIS lazily via `next/script` (afterInteractive strategy), initializes with `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, renders Google's stock button. Callback receives `{credential: <id_token>}` which the component feeds to the typed `useAuthControllerOauth` mutation with provider='google'. On success, drops the access token into the in-memory auth-store + invokes parent's `onSignedIn`.
+- Auto-hides when `NEXT_PUBLIC_GOOGLE_CLIENT_ID` is unset (dev environments). Mock-provider button stays as the dev fallback.
+- /login renders both buttons in the credentials form's "or" section.
+- TS-side: typed `window.google.accounts.id` ambient via global augmentation (no @types/gsi-client published).
+
+**Verification**
+
+- All typechecks + builds clean. /login bundle: 2.19KB → 4.05KB.
+- 93 / 578 api tests still pass.
+
+**Commit**
+
+`073cd0a feat(IV.18.19.42): real Google Sign-In button (GIS + typed oauth mutation)`
+
+---
+
+### [IV.18.19.41] — Trip share-code mint UI on /trips/[id] (bundled with `[IV.18.19.42]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 5 (Frontend stack) + §6 (SDK / API contract)
+
+**What was done**
+
+Lets the trip owner mint a public-read share code without curl. Last big collaboration affordance was the only thing missing from /trips/[id].
+
+- New api request/response DTOs in `trip-response.dto.ts`: `CreateTripShareRequestDto` (optional expiresAt) + `TripShareResponseDto` (id + tripId + shareCode + nullable expiresAt + createdAt).
+- Wire `@ApiBody({type: CreateTripShareRequestDto})` + `@ApiResponse({type: TripShareResponseDto})` + 404 + 422 on `POST /trips/:id/share`. Orval emits a typed `{id, data}` mutation body.
+- New ShareSection on /trips/[id] (sits below MediaSection):
+  - Mint code button → typed mutation → renders code, full /trips/shared/:code URL, and a Copy URL button via `navigator.clipboard.writeText` (falls back to inline error if blocked).
+  - "New code" CTA mints a fresh code without losing the prior visibility.
+  - Expiry surfaced when present.
+
+**Verification**
+
+- All typechecks clean.
+
+**Commit**
+
+`992f5bb feat(IV.18.19.41): Trip share-code mint UI on /trips/[id]`
 
 ---
 
