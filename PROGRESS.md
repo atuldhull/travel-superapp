@@ -25,6 +25,38 @@
 
 ---
 
+### [IV.18.19.67-70] — per-module Swagger sweep-up — social / admin / safety subs / admin-safety (final SDK contract closure)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 6 (SDK / API contract)
+
+**What was done**
+
+Final swagger sweep — every controller in the api now emits typed envelopes (the only remaining `data: void` emissions are 204 / no-content responses, which correctly have no body). One combined orval regen at the end per the established workflow.
+
+| Slice | Commit    | Module surface                                                                       | Controllers                                                                                              |
+| ----- | --------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
+| .67   | `3b70bfd` | social (8 controllers)                                                               | reviews, votes (top-level), social (trip-scoped votes), expenses, place/stay/eatery/agent review-summary |
+| .68   | `60c9e3c` | admin (4 controllers)                                                                | admin/places (curation), admin/account-purge, admin/users, admin/media                                   |
+| .69   | `f038158` | safety sub-controllers (3 controllers)                                               | sos, crime-layer, safety-score composite                                                                 |
+| .70   | `260fac1` | admin-scam-moderation + admin-sos (2 controllers) + combined SDK regen for [.67-.70] |
+
+38 new component schemas re-exported from `@app/sdk` covering reviews, votes, expenses, balances, the 4 review-bundle composites, admin-side place / user / media moderation, the SOS / crime / score primitives, and admin-side scam / SOS triage.
+
+**Verification**
+
+- api typecheck + sdk typecheck + web typecheck clean.
+- 93 / 578 api tests pass.
+
+**Why this closes the SDK contract:**
+
+Before this batch, ~17 controllers in the api still emitted `data: void` for at least one bodied response. After this batch, every bodied response in the api is typed end-to-end: a downstream consumer can `import { FooDto } from '@app/sdk'` for any non-204 surface in the v1 api. §6 SDK / API contract reaches 100%.
+
+**Commits**
+
+`3b70bfd → 60c9e3c → f038158 → 260fac1` (4 sequential `feat()` commits + the combined regen on `.70`).
+
+---
+
 ### [IV.18.19.59-66] — per-module Swagger rollout — safety / food / weather / stays / places / events / transport / feed (4-bundle / 8-slice mega-batch)
 
 **Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 6 (SDK / API contract)
