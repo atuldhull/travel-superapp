@@ -17,6 +17,9 @@ import type {
 import type {
   AuthSuccessResponseDto,
   LoginRequestDto,
+  MagicLinkConsumeRequestDto,
+  MagicLinkRequestRequestDto,
+  MagicLinkRequestResponseDto,
   OAuthSignInRequestDto,
   RefreshSuccessResponseDto,
   RegisterRequestDto,
@@ -228,6 +231,204 @@ export const useAuthControllerOauth = <TError = void, TContext = unknown>(option
   TContext
 > => {
   const mutationOptions = getAuthControllerOauthMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Passwordless sign-in step 1: email a magic link. Always returns 'ok' — doesn't reveal whether the email is registered.
+ */
+export type authControllerMagicLinkRequestResponse200 = {
+  data: MagicLinkRequestResponseDto;
+  status: 200;
+};
+
+export type authControllerMagicLinkRequestResponseSuccess =
+  authControllerMagicLinkRequestResponse200 & {
+    headers: Headers;
+  };
+export type authControllerMagicLinkRequestResponse = authControllerMagicLinkRequestResponseSuccess;
+
+export const getAuthControllerMagicLinkRequestUrl = () => {
+  return `/api/v1/auth/magic-link/request`;
+};
+
+export const authControllerMagicLinkRequest = async (
+  magicLinkRequestRequestDto: MagicLinkRequestRequestDto,
+  options?: RequestInit,
+): Promise<authControllerMagicLinkRequestResponse> => {
+  return apiFetch<authControllerMagicLinkRequestResponse>(getAuthControllerMagicLinkRequestUrl(), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(magicLinkRequestRequestDto),
+  });
+};
+
+export const getAuthControllerMagicLinkRequestMutationOptions = <
+  TError = unknown,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof authControllerMagicLinkRequest>>,
+    TError,
+    { data: MagicLinkRequestRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof authControllerMagicLinkRequest>>,
+  TError,
+  { data: MagicLinkRequestRequestDto },
+  TContext
+> => {
+  const mutationKey = ['authControllerMagicLinkRequest'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof authControllerMagicLinkRequest>>,
+    { data: MagicLinkRequestRequestDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return authControllerMagicLinkRequest(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AuthControllerMagicLinkRequestMutationResult = NonNullable<
+  Awaited<ReturnType<typeof authControllerMagicLinkRequest>>
+>;
+export type AuthControllerMagicLinkRequestMutationBody = MagicLinkRequestRequestDto;
+export type AuthControllerMagicLinkRequestMutationError = unknown;
+
+/**
+ * @summary Passwordless sign-in step 1: email a magic link. Always returns 'ok' — doesn't reveal whether the email is registered.
+ */
+export const useAuthControllerMagicLinkRequest = <TError = unknown, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof authControllerMagicLinkRequest>>,
+    TError,
+    { data: MagicLinkRequestRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof authControllerMagicLinkRequest>>,
+  TError,
+  { data: MagicLinkRequestRequestDto },
+  TContext
+> => {
+  const mutationOptions = getAuthControllerMagicLinkRequestMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Passwordless sign-in step 2: consume the magic-link token + issue a session. Single-use, 15-min TTL.
+ */
+export type authControllerMagicLinkConsumeResponse200 = {
+  data: AuthSuccessResponseDto;
+  status: 200;
+};
+
+export type authControllerMagicLinkConsumeResponse401 = {
+  data: void;
+  status: 401;
+};
+
+export type authControllerMagicLinkConsumeResponseSuccess =
+  authControllerMagicLinkConsumeResponse200 & {
+    headers: Headers;
+  };
+export type authControllerMagicLinkConsumeResponseError =
+  authControllerMagicLinkConsumeResponse401 & {
+    headers: Headers;
+  };
+
+export type authControllerMagicLinkConsumeResponse =
+  | authControllerMagicLinkConsumeResponseSuccess
+  | authControllerMagicLinkConsumeResponseError;
+
+export const getAuthControllerMagicLinkConsumeUrl = () => {
+  return `/api/v1/auth/magic-link/consume`;
+};
+
+export const authControllerMagicLinkConsume = async (
+  magicLinkConsumeRequestDto: MagicLinkConsumeRequestDto,
+  options?: RequestInit,
+): Promise<authControllerMagicLinkConsumeResponse> => {
+  return apiFetch<authControllerMagicLinkConsumeResponse>(getAuthControllerMagicLinkConsumeUrl(), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(magicLinkConsumeRequestDto),
+  });
+};
+
+export const getAuthControllerMagicLinkConsumeMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof authControllerMagicLinkConsume>>,
+    TError,
+    { data: MagicLinkConsumeRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof authControllerMagicLinkConsume>>,
+  TError,
+  { data: MagicLinkConsumeRequestDto },
+  TContext
+> => {
+  const mutationKey = ['authControllerMagicLinkConsume'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof authControllerMagicLinkConsume>>,
+    { data: MagicLinkConsumeRequestDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return authControllerMagicLinkConsume(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AuthControllerMagicLinkConsumeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof authControllerMagicLinkConsume>>
+>;
+export type AuthControllerMagicLinkConsumeMutationBody = MagicLinkConsumeRequestDto;
+export type AuthControllerMagicLinkConsumeMutationError = void;
+
+/**
+ * @summary Passwordless sign-in step 2: consume the magic-link token + issue a session. Single-use, 15-min TTL.
+ */
+export const useAuthControllerMagicLinkConsume = <TError = void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof authControllerMagicLinkConsume>>,
+    TError,
+    { data: MagicLinkConsumeRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof authControllerMagicLinkConsume>>,
+  TError,
+  { data: MagicLinkConsumeRequestDto },
+  TContext
+> => {
+  const mutationOptions = getAuthControllerMagicLinkConsumeMutationOptions(options);
 
   return useMutation(mutationOptions);
 };

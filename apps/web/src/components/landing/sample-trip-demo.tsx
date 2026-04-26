@@ -14,7 +14,7 @@
 'use client';
 
 import Link from 'next/link';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   useTripControllerSamplePlan,
   type GenerateSamplePlanRequestDto,
@@ -23,6 +23,7 @@ import {
 import { Button } from '../ui/button';
 import { Card, CardHeader, CardSubtitle, CardTitle } from '../ui/card';
 import { Skeleton } from '../ui/skeleton';
+import { getRecalledSamplePlan, rememberSamplePlan } from '../../lib/visit-recall';
 
 interface ApiError extends Error {
   readonly code?: string;
@@ -49,12 +50,37 @@ export function SampleTripDemo() {
   const [radiusKm, setRadiusKm] = useState(25);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [planResult, setPlanResult] = useState<GenerateSamplePlanResponseDto | null>(null);
+  /** True when the visible plan was hydrated from localStorage rather than freshly generated. */
+  const [fromCache, setFromCache] = useState(false);
+
+  // Hydrate from localStorage on mount — returning visitors see their
+  // last plan instantly without re-generation. The matching city is
+  // pre-selected so a "Regenerate" click reproduces the same shape.
+  useEffect(() => {
+    const cached = getRecalledSamplePlan();
+    if (!cached) return;
+    setPlanResult({ plan: cached.plan, model: cached.model });
+    setFromCache(true);
+    const idx = CITY_PRESETS.findIndex((c) => c.title === cached.title);
+    if (idx >= 0) setSelectedIdx(idx);
+  }, []);
 
   const mutation = useTripControllerSamplePlan({
     mutation: {
       onSuccess: (response: { data?: unknown }) => {
-        setPlanResult(response.data as GenerateSamplePlanResponseDto);
+        const result = response.data as GenerateSamplePlanResponseDto;
+        setPlanResult(result);
+        setFromCache(false);
         setErrorMsg(null);
+        // Persist for the next visit (24h TTL via getRecalledSamplePlan).
+        const preset = CITY_PRESETS[selectedIdx]!;
+        rememberSamplePlan({
+          title: preset.title,
+          emoji: preset.emoji,
+          plan: result.plan,
+          model: result.model,
+          cachedAt: Date.now(),
+        });
       },
       onError: (err: unknown) => {
         const e = err as ApiError;
@@ -170,8 +196,12 @@ export function SampleTripDemo() {
                   Your sample {selected.title} plan
                 </CardTitle>
                 <CardSubtitle>
-                  Powered by <code className="font-mono text-[11px]">{planResult.model}</code> · No
-                  account needed
+                  Powered by <code className="font-mono text-[11px]">{planResult.model}</code> ·{' '}
+                  {fromCache ? (
+                    <span className="text-brand">From your last visit</span>
+                  ) : (
+                    <span>No account needed</span>
+                  )}
                 </CardSubtitle>
               </CardHeader>
               <pre className="mt-2 max-h-96 overflow-auto whitespace-pre-wrap rounded-md bg-muted/5 p-4 text-sm leading-relaxed">
@@ -180,9 +210,9 @@ export function SampleTripDemo() {
               <div className="mt-4 flex flex-wrap items-center gap-3">
                 <Link
                   href="/register"
-                  className="inline-flex items-center gap-1 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-brand-foreground transition hover:opacity-90"
+                  className="inline-flex items-center gap-1 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-brand-foreground shadow-sm transition hover:opacity-90"
                 >
-                  Sign up to save this trip →
+                  Save this trip — sign up free →
                 </Link>
                 <button
                   type="button"

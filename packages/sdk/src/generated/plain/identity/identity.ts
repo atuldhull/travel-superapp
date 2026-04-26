@@ -4,6 +4,9 @@
 import type {
   AuthSuccessResponseDto,
   LoginRequestDto,
+  MagicLinkConsumeRequestDto,
+  MagicLinkRequestRequestDto,
+  MagicLinkRequestResponseDto,
   OAuthSignInRequestDto,
   RefreshSuccessResponseDto,
   RegisterRequestDto,
@@ -90,6 +93,78 @@ export const authControllerOauth = async (
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(oAuthSignInRequestDto),
+  });
+};
+
+/**
+ * @summary Passwordless sign-in step 1: email a magic link. Always returns 'ok' — doesn't reveal whether the email is registered.
+ */
+export type authControllerMagicLinkRequestResponse200 = {
+  data: MagicLinkRequestResponseDto;
+  status: 200;
+};
+
+export type authControllerMagicLinkRequestResponseSuccess =
+  authControllerMagicLinkRequestResponse200 & {
+    headers: Headers;
+  };
+export type authControllerMagicLinkRequestResponse = authControllerMagicLinkRequestResponseSuccess;
+
+export const getAuthControllerMagicLinkRequestUrl = () => {
+  return `/api/v1/auth/magic-link/request`;
+};
+
+export const authControllerMagicLinkRequest = async (
+  magicLinkRequestRequestDto: MagicLinkRequestRequestDto,
+  options?: RequestInit,
+): Promise<authControllerMagicLinkRequestResponse> => {
+  return apiFetch<authControllerMagicLinkRequestResponse>(getAuthControllerMagicLinkRequestUrl(), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(magicLinkRequestRequestDto),
+  });
+};
+
+/**
+ * @summary Passwordless sign-in step 2: consume the magic-link token + issue a session. Single-use, 15-min TTL.
+ */
+export type authControllerMagicLinkConsumeResponse200 = {
+  data: AuthSuccessResponseDto;
+  status: 200;
+};
+
+export type authControllerMagicLinkConsumeResponse401 = {
+  data: void;
+  status: 401;
+};
+
+export type authControllerMagicLinkConsumeResponseSuccess =
+  authControllerMagicLinkConsumeResponse200 & {
+    headers: Headers;
+  };
+export type authControllerMagicLinkConsumeResponseError =
+  authControllerMagicLinkConsumeResponse401 & {
+    headers: Headers;
+  };
+
+export type authControllerMagicLinkConsumeResponse =
+  | authControllerMagicLinkConsumeResponseSuccess
+  | authControllerMagicLinkConsumeResponseError;
+
+export const getAuthControllerMagicLinkConsumeUrl = () => {
+  return `/api/v1/auth/magic-link/consume`;
+};
+
+export const authControllerMagicLinkConsume = async (
+  magicLinkConsumeRequestDto: MagicLinkConsumeRequestDto,
+  options?: RequestInit,
+): Promise<authControllerMagicLinkConsumeResponse> => {
+  return apiFetch<authControllerMagicLinkConsumeResponse>(getAuthControllerMagicLinkConsumeUrl(), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(magicLinkConsumeRequestDto),
   });
 };
 

@@ -49,3 +49,18 @@ export class OAuthSignInRequestDto {
   })
   declare idToken: string;
 }
+
+export class MagicLinkRequestRequestDto {
+  @ApiProperty({ format: 'email', maxLength: 254 })
+  declare email: string;
+}
+
+export class MagicLinkConsumeRequestDto {
+  @ApiProperty({
+    description: '64 lower-case hex characters (32 random bytes) from the email link URL.',
+    pattern: '^[0-9a-f]{64}$',
+    minLength: 64,
+    maxLength: 64,
+  })
+  declare token: string;
+}

@@ -51,23 +51,36 @@ import {
 import { RefreshSessionUseCase } from '../../identity/application/refresh-session.use-case';
 import { RegisterUseCase } from '../../identity/application/register.use-case';
 import { RevokeSessionUseCase } from '../../identity/application/revoke-session.use-case';
+import { ConsumeMagicLinkUseCase } from '../../identity/application/consume-magic-link.use-case';
+import { RequestMagicLinkUseCase } from '../../identity/application/request-magic-link.use-case';
 import { SignInWithOAuthUseCase } from '../../identity/application/sign-in-with-oauth.use-case';
 import {
   LoginBodySchema,
+  MagicLinkConsumeBodySchema,
+  MagicLinkRequestBodySchema,
   MfaCodeBodySchema,
   OAuthSignInBodySchema,
   RegisterBodySchema,
   type LoginBody,
+  type MagicLinkConsumeBody,
+  type MagicLinkRequestBody,
   type MfaCodeBody,
   type OAuthSignInBody,
   type RegisterBody,
 } from './dto/auth.dto';
 import {
   AuthSuccessResponseDto,
+  MagicLinkRequestResponseDto,
   RefreshSuccessResponseDto,
   WhoAmIResponseDto,
 } from './dto/auth-response.dto';
-import { LoginRequestDto, OAuthSignInRequestDto, RegisterRequestDto } from './dto/auth-request.dto';
+import {
+  LoginRequestDto,
+  MagicLinkConsumeRequestDto,
+  MagicLinkRequestRequestDto,
+  OAuthSignInRequestDto,
+  RegisterRequestDto,
+} from './dto/auth-request.dto';
 
 const REFRESH_COOKIE_NAME = 'refresh_token';
 const REFRESH_COOKIE_PATH = '/api/v1/auth';
@@ -100,8 +113,11 @@ export class AuthController {
     private readonly disableMfaUc: DisableMfaUseCase,
     private readonly regenBackupUc: RegenerateBackupCodesUseCase,
     private readonly oauthUc: SignInWithOAuthUseCase,
-    // Kept for future direct session-issuance flows (magic-link)
-    // even though not called directly in this file today.
+    private readonly magicLinkRequestUc: RequestMagicLinkUseCase,
+    private readonly magicLinkConsumeUc: ConsumeMagicLinkUseCase,
+    // Kept for future direct session-issuance flows even though not
+    // called directly in this file today (magic-link uses ConsumeMagicLinkUseCase
+    // which already wraps IssueSessionUseCase).
     @Inject(IssueSessionUseCase) private readonly _issue: IssueSessionUseCase,
   ) {
     void this._issue;
@@ -182,6 +198,79 @@ export class AuthController {
     const issued = await this.oauthUc.execute({
       provider,
       idToken: body.idToken,
+      deviceContext: this.deviceContext(req),
+    });
+    this.setRefreshCookie(reply, issued.refreshToken, issued.refreshTokenExpiresAt);
+    return {
+      userId: issued.userId,
+      accessToken: issued.accessToken,
+      expiresAt: issued.accessTokenExpiresAt.toISOString(),
+    };
+  }
+
+  /**
+   * Passwordless sign-in — step 1. Email-only. Always returns 200
+   * regardless of whether the email is registered (privacy +
+   * enumeration defence). The use-case soft-rate-limits per email
+   * (max 5 mints per 15 minutes) and silently no-ops over-quota.
+   *
+   * Real users get a deliverable email; non-users get nothing.
+   *
+   * Installed by prompt [V.UX.2].
+   */
+  @ApiOperation({
+    summary:
+      "Passwordless sign-in step 1: email a magic link. Always returns 'ok' — doesn't reveal whether the email is registered.",
+  })
+  @ApiBody({ type: MagicLinkRequestRequestDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Always ok. Email may or may not have been sent.',
+    type: MagicLinkRequestResponseDto,
+  })
+  @Public()
+  @Post('magic-link/request')
+  @HttpCode(HttpStatus.OK)
+  async magicLinkRequest(
+    @Body(new ZodValidationPipe(MagicLinkRequestBodySchema)) body: MagicLinkRequestBody,
+  ): Promise<{ status: 'ok' }> {
+    await this.magicLinkRequestUc.execute({ email: body.email });
+    return { status: 'ok' };
+  }
+
+  /**
+   * Passwordless sign-in — step 2. Consumes the email link's token.
+   * Single-use, 15-minute TTL, race-safe via DB-level updateMany +
+   * count. Issues a session identical to /login and /register: the
+   * refresh cookie is set + the access token is returned in the JSON
+   * body.
+   *
+   * Failures collapse to 401 `MAGIC_LINK_INVALID` (no info leak on
+   * whether the token was wrong vs. expired vs. already consumed).
+   *
+   * Installed by prompt [V.UX.2].
+   */
+  @ApiOperation({
+    summary:
+      'Passwordless sign-in step 2: consume the magic-link token + issue a session. Single-use, 15-min TTL.',
+  })
+  @ApiBody({ type: MagicLinkConsumeRequestDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Sign-in succeeded; refresh-cookie set; access token returned.',
+    type: AuthSuccessResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'MAGIC_LINK_INVALID.' })
+  @Public()
+  @Post('magic-link/consume')
+  @HttpCode(HttpStatus.OK)
+  async magicLinkConsume(
+    @Body(new ZodValidationPipe(MagicLinkConsumeBodySchema)) body: MagicLinkConsumeBody,
+    @Req() req: FastifyRequest,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ): Promise<AuthSuccessBody> {
+    const issued = await this.magicLinkConsumeUc.execute({
+      token: body.token,
       deviceContext: this.deviceContext(req),
     });
     this.setRefreshCookie(reply, issued.refreshToken, issued.refreshTokenExpiresAt);
