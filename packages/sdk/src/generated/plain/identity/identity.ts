@@ -6,6 +6,7 @@ import type {
   LoginRequestDto,
   RefreshSuccessResponseDto,
   RegisterRequestDto,
+  WhoAmIResponseDto,
 } from '../../schemas';
 
 import { apiFetch } from '../../../runtime/fetcher';
@@ -169,14 +170,25 @@ export const authControllerRefresh = async (
  * @summary Whoami probe — returns the authed user's JWT claims. The reference auth-gated endpoint pattern.
  */
 export type authControllerMeResponse200 = {
-  data: void;
+  data: WhoAmIResponseDto;
   status: 200;
+};
+
+export type authControllerMeResponse401 = {
+  data: void;
+  status: 401;
 };
 
 export type authControllerMeResponseSuccess = authControllerMeResponse200 & {
   headers: Headers;
 };
-export type authControllerMeResponse = authControllerMeResponseSuccess;
+export type authControllerMeResponseError = authControllerMeResponse401 & {
+  headers: Headers;
+};
+
+export type authControllerMeResponse =
+  | authControllerMeResponseSuccess
+  | authControllerMeResponseError;
 
 export const getAuthControllerMeUrl = () => {
   return `/api/v1/auth/me`;

@@ -22,6 +22,7 @@ import type {
   TripControllerListParams,
   TripControllerStaysParams,
   TripDto,
+  UpdateTripRequestDto,
 } from '../../schemas';
 
 import { apiFetch } from '../../../runtime/fetcher';
@@ -471,11 +472,14 @@ export const getTripControllerUpdateUrl = (id: string) => {
 
 export const tripControllerUpdate = async (
   id: string,
+  updateTripRequestDto: UpdateTripRequestDto,
   options?: RequestInit,
 ): Promise<tripControllerUpdateResponse> => {
   return apiFetch<tripControllerUpdateResponse>(getTripControllerUpdateUrl(id), {
     ...options,
     method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateTripRequestDto),
   });
 };
 
@@ -486,14 +490,14 @@ export const getTripControllerUpdateMutationOptions = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof tripControllerUpdate>>,
     TError,
-    { id: string },
+    { id: string; data: UpdateTripRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof tripControllerUpdate>>,
   TError,
-  { id: string },
+  { id: string; data: UpdateTripRequestDto },
   TContext
 > => {
   const mutationKey = ['tripControllerUpdate'];
@@ -505,11 +509,11 @@ export const getTripControllerUpdateMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof tripControllerUpdate>>,
-    { id: string }
+    { id: string; data: UpdateTripRequestDto }
   > = (props) => {
-    const { id } = props ?? {};
+    const { id, data } = props ?? {};
 
-    return tripControllerUpdate(id, requestOptions);
+    return tripControllerUpdate(id, data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -518,7 +522,7 @@ export const getTripControllerUpdateMutationOptions = <
 export type TripControllerUpdateMutationResult = NonNullable<
   Awaited<ReturnType<typeof tripControllerUpdate>>
 >;
-
+export type TripControllerUpdateMutationBody = UpdateTripRequestDto;
 export type TripControllerUpdateMutationError = void;
 
 /**
@@ -528,14 +532,14 @@ export const useTripControllerUpdate = <TError = void, TContext = unknown>(optio
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof tripControllerUpdate>>,
     TError,
-    { id: string },
+    { id: string; data: UpdateTripRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationResult<
   Awaited<ReturnType<typeof tripControllerUpdate>>,
   TError,
-  { id: string },
+  { id: string; data: UpdateTripRequestDto },
   TContext
 > => {
   const mutationOptions = getTripControllerUpdateMutationOptions(options);

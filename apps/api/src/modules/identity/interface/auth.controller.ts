@@ -62,7 +62,11 @@ import {
   type OAuthSignInBody,
   type RegisterBody,
 } from './dto/auth.dto';
-import { AuthSuccessResponseDto, RefreshSuccessResponseDto } from './dto/auth-response.dto';
+import {
+  AuthSuccessResponseDto,
+  RefreshSuccessResponseDto,
+  WhoAmIResponseDto,
+} from './dto/auth-response.dto';
 import { LoginRequestDto, RegisterRequestDto } from './dto/auth-request.dto';
 
 const REFRESH_COOKIE_NAME = 'refresh_token';
@@ -270,6 +274,12 @@ export class AuthController {
       "Whoami probe — returns the authed user's JWT claims. The reference auth-gated endpoint pattern.",
   })
   @ApiBearerAuth()
+  @ApiResponse({
+    status: 200,
+    description: 'Caller JWT claims (sub / sid / role).',
+    type: WhoAmIResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'UNAUTHENTICATED — missing or invalid bearer.' })
   @Get('me')
   @HttpCode(HttpStatus.OK)
   me(@CurrentUser() user: AuthenticatedUser): AuthenticatedUser {

@@ -37,3 +37,5 @@ export type { PublicMemoryBookWithAssetsResponseDto } from './generated/schemas/
 export type { TripDto } from './generated/schemas/tripDto';
 export type { ListTripsResponseDto } from './generated/schemas/listTripsResponseDto';
 export type { CreateTripRequestDto } from './generated/schemas/createTripRequestDto';
+export type { UpdateTripRequestDto } from './generated/schemas/updateTripRequestDto';
+export type { WhoAmIResponseDto } from './generated/schemas/whoAmIResponseDto';

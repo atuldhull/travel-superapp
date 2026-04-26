@@ -41,3 +41,22 @@ export class RefreshSuccessResponseDto {
   })
   declare expiresAt: string;
 }
+
+/**
+ * Response of `GET /auth/me`. Mirrors `AuthenticatedUser` —
+ * deliberately minimal: just the stable JWT claims. Hydrating
+ * displayName / email / flags is a follow-up use-case.
+ */
+export class WhoAmIResponseDto {
+  @ApiProperty({ format: 'cuid', description: 'User id (`sub` claim).' })
+  declare sub: string;
+
+  @ApiProperty({ format: 'cuid', description: 'Session id (`sid` claim).' })
+  declare sid: string;
+
+  @ApiProperty({
+    enum: ['user', 'premium', 'agent', 'admin'],
+    description: 'Role assigned to the session.',
+  })
+  declare role: 'user' | 'premium' | 'agent' | 'admin';
+}
