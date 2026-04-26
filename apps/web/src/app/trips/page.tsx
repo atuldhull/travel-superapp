@@ -16,6 +16,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useTripControllerList, type ListTripsResponseDto, type TripDto } from '@app/sdk';
+import { Button } from '../../components/ui/button';
 import { clearAccessToken } from '../../lib/auth-store';
 import { useAuthToken } from '../../lib/use-auth-token';
 
@@ -52,13 +53,9 @@ export default function TripsPage() {
     <main className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Your trips</h1>
-        <button
-          type="button"
-          onClick={onLogout}
-          className="rounded-md border border-muted/30 px-3 py-1.5 text-sm font-medium text-muted hover:bg-muted/10"
-        >
+        <Button variant="ghost" size="sm" onClick={onLogout}>
           Sign out
-        </button>
+        </Button>
       </div>
       {isLoading ? (
         <p className="text-muted">Loading…</p>
