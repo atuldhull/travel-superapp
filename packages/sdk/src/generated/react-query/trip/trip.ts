@@ -15,10 +15,13 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  CreateTripRequestDto,
+  ListTripsResponseDto,
   TripControllerEateriesParams,
   TripControllerEventsParams,
   TripControllerListParams,
   TripControllerStaysParams,
+  TripDto,
 } from '../../schemas';
 
 import { apiFetch } from '../../../runtime/fetcher';
@@ -29,7 +32,7 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
  * @summary Create a trip draft from { title, center, radiusKm, startsOn?, endsOn? }
  */
 export type tripControllerCreateResponse201 = {
-  data: void;
+  data: TripDto;
   status: 201;
 };
 
@@ -43,11 +46,14 @@ export const getTripControllerCreateUrl = () => {
 };
 
 export const tripControllerCreate = async (
+  createTripRequestDto: CreateTripRequestDto,
   options?: RequestInit,
 ): Promise<tripControllerCreateResponse> => {
   return apiFetch<tripControllerCreateResponse>(getTripControllerCreateUrl(), {
     ...options,
     method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createTripRequestDto),
   });
 };
 
@@ -58,14 +64,14 @@ export const getTripControllerCreateMutationOptions = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof tripControllerCreate>>,
     TError,
-    void,
+    { data: CreateTripRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof tripControllerCreate>>,
   TError,
-  void,
+  { data: CreateTripRequestDto },
   TContext
 > => {
   const mutationKey = ['tripControllerCreate'];
@@ -77,9 +83,11 @@ export const getTripControllerCreateMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof tripControllerCreate>>,
-    void
-  > = () => {
-    return tripControllerCreate(requestOptions);
+    { data: CreateTripRequestDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return tripControllerCreate(data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -88,7 +96,7 @@ export const getTripControllerCreateMutationOptions = <
 export type TripControllerCreateMutationResult = NonNullable<
   Awaited<ReturnType<typeof tripControllerCreate>>
 >;
-
+export type TripControllerCreateMutationBody = CreateTripRequestDto;
 export type TripControllerCreateMutationError = unknown;
 
 /**
@@ -98,11 +106,16 @@ export const useTripControllerCreate = <TError = unknown, TContext = unknown>(op
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof tripControllerCreate>>,
     TError,
-    void,
+    { data: CreateTripRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
-}): UseMutationResult<Awaited<ReturnType<typeof tripControllerCreate>>, TError, void, TContext> => {
+}): UseMutationResult<
+  Awaited<ReturnType<typeof tripControllerCreate>>,
+  TError,
+  { data: CreateTripRequestDto },
+  TContext
+> => {
   const mutationOptions = getTripControllerCreateMutationOptions(options);
 
   return useMutation(mutationOptions);
@@ -111,7 +124,7 @@ export const useTripControllerCreate = <TError = unknown, TContext = unknown>(op
  * @summary List the caller's trips, most-recent-first
  */
 export type tripControllerListResponse200 = {
-  data: void;
+  data: ListTripsResponseDto;
   status: 200;
 };
 
@@ -268,7 +281,7 @@ export function useTripControllerList<
  * @summary Fetch a single trip the caller owns. 404 if missing or not theirs (IDOR-safe).
  */
 export type tripControllerGetOneResponse200 = {
-  data: void;
+  data: TripDto;
   status: 200;
 };
 
@@ -432,7 +445,7 @@ export function useTripControllerGetOne<
  * @summary Update a trip the caller owns. Partial body; only provided fields change.
  */
 export type tripControllerUpdateResponse200 = {
-  data: void;
+  data: TripDto;
   status: 200;
 };
 

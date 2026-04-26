@@ -28,7 +28,14 @@ import {
   Query,
   UsePipes,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { NotFoundError } from '@app/errors';
 import { type AuthenticatedUser, CurrentUser, Public } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
@@ -73,6 +80,11 @@ import {
   type UpdateDayItemsBody,
   type UpdateTripBody,
 } from './dto/trip.dto';
+import {
+  CreateTripRequestDto,
+  ListTripsResponseDto,
+  TripDto as TripResponseDto,
+} from './dto/trip-response.dto';
 
 interface TripDto {
   readonly id: string;
@@ -131,7 +143,8 @@ export class TripController {
   @ApiOperation({
     summary: 'Create a trip draft from { title, center, radiusKm, startsOn?, endsOn? }',
   })
-  @ApiResponse({ status: 201, description: 'Trip created.' })
+  @ApiBody({ type: CreateTripRequestDto })
+  @ApiResponse({ status: 201, description: 'Trip created.', type: TripResponseDto })
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @UsePipes(new ZodValidationPipe(CreateTripBodySchema))
@@ -151,7 +164,11 @@ export class TripController {
   }
 
   @ApiOperation({ summary: "List the caller's trips, most-recent-first" })
-  @ApiResponse({ status: 200, description: 'List of trips.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Caller-owned trips, most-recent-first. ?limit=N (1..100, default 20).',
+    type: ListTripsResponseDto,
+  })
   @Get()
   @HttpCode(HttpStatus.OK)
   async list(
@@ -166,7 +183,7 @@ export class TripController {
   @ApiOperation({
     summary: 'Fetch a single trip the caller owns. 404 if missing or not theirs (IDOR-safe).',
   })
-  @ApiResponse({ status: 200, description: 'The trip.' })
+  @ApiResponse({ status: 200, description: 'The trip.', type: TripResponseDto })
   @ApiResponse({ status: 404, description: 'TRIP_NOT_FOUND.' })
   @Get(':id')
   @HttpCode(HttpStatus.OK)
@@ -181,7 +198,7 @@ export class TripController {
   @ApiOperation({
     summary: 'Update a trip the caller owns. Partial body; only provided fields change.',
   })
-  @ApiResponse({ status: 200, description: 'Updated trip.' })
+  @ApiResponse({ status: 200, description: 'Updated trip.', type: TripResponseDto })
   @ApiResponse({ status: 404, description: 'TRIP_NOT_FOUND.' })
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
