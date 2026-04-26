@@ -12,9 +12,9 @@ const path = require('node:path');
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  experimental: {
-    typedRoutes: true,
-  },
+  // Moved out of `experimental` in Next 15.5+; previous shape printed a
+  // deprecation warning. Same behavior: typed `<Link href>` checking.
+  typedRoutes: true,
   // `standalone` produces a self-contained .next/standalone/server.js
   // that bundles only the runtime files actually used. Required for
   // the apps/web/Dockerfile runner stage (no pnpm install at runtime).
