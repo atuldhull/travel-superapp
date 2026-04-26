@@ -1140,7 +1140,13 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: Short-lived presigned GET URL + ISO expiry.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicDownloadUrlResponseDto'
+        '404':
+          description: BOOK_NOT_PUBLISHED, MEDIA_NOT_FOUND, or NOT_ATTACHED.
       security: *a18
       summary: 'Public presigned download URL for a memory-book asset. Three-clause
         gate: book published + asset attached + asset ready.'
@@ -2860,3 +2866,17 @@ components:
       required:
         - book
         - assetIds
+    PublicDownloadUrlResponseDto:
+      type: object
+      properties:
+        url:
+          type: string
+          description: Short-lived presigned GET URL for the asset bytes. Tagged with the
+            bucket + a TTL ~5 min.
+        expiresAt:
+          type: string
+          format: date-time
+          description: ISO-8601 timestamp at which the presigned URL expires.
+      required:
+        - url
+        - expiresAt

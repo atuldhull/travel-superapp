@@ -79,6 +79,7 @@ export * from './overviewTripMetaDtoStartsOn';
 export * from './overviewWeatherDataDto';
 export * from './overviewWeatherDataDtoForecast';
 export * from './overviewWeatherSuccessDto';
+export * from './publicDownloadUrlResponseDto';
 export * from './publicMemoryBookDto';
 export * from './publicMemoryBookDtoCoverS3Key';
 export * from './publicMemoryBookWithAssetsResponseDto';

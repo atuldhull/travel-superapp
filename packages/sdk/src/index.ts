@@ -35,6 +35,7 @@ export type { OAuthSignInRequestDto } from './generated/schemas/oAuthSignInReque
 export type { FeaturedMemoryBooksResponseDto } from './generated/schemas/featuredMemoryBooksResponseDto';
 export type { PublicMemoryBookDto } from './generated/schemas/publicMemoryBookDto';
 export type { PublicMemoryBookWithAssetsResponseDto } from './generated/schemas/publicMemoryBookWithAssetsResponseDto';
+export type { PublicDownloadUrlResponseDto } from './generated/schemas/publicDownloadUrlResponseDto';
 export type { TripDto } from './generated/schemas/tripDto';
 export type { ListTripsResponseDto } from './generated/schemas/listTripsResponseDto';
 export type { CreateTripRequestDto } from './generated/schemas/createTripRequestDto';

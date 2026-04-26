@@ -24,6 +24,7 @@ import type {
   MediaControllerListByTripParams,
   MemoryBookControllerFeaturedParams,
   MemoryBookControllerListParams,
+  PublicDownloadUrlResponseDto,
   PublicMemoryBookWithAssetsResponseDto,
 } from '../../schemas';
 
@@ -1140,16 +1141,27 @@ export function useMemoryBookControllerGetPublic<
  * @summary Public presigned download URL for a memory-book asset. Three-clause gate: book published + asset attached + asset ready.
  */
 export type memoryBookControllerGetPublicAssetDownloadUrlResponse200 = {
-  data: void;
+  data: PublicDownloadUrlResponseDto;
   status: 200;
+};
+
+export type memoryBookControllerGetPublicAssetDownloadUrlResponse404 = {
+  data: void;
+  status: 404;
 };
 
 export type memoryBookControllerGetPublicAssetDownloadUrlResponseSuccess =
   memoryBookControllerGetPublicAssetDownloadUrlResponse200 & {
     headers: Headers;
   };
+export type memoryBookControllerGetPublicAssetDownloadUrlResponseError =
+  memoryBookControllerGetPublicAssetDownloadUrlResponse404 & {
+    headers: Headers;
+  };
+
 export type memoryBookControllerGetPublicAssetDownloadUrlResponse =
-  memoryBookControllerGetPublicAssetDownloadUrlResponseSuccess;
+  | memoryBookControllerGetPublicAssetDownloadUrlResponseSuccess
+  | memoryBookControllerGetPublicAssetDownloadUrlResponseError;
 
 export const getMemoryBookControllerGetPublicAssetDownloadUrlUrl = (
   id: string,
@@ -1188,7 +1200,7 @@ export const getMemoryBookControllerGetPublicAssetDownloadUrlQueryKey = (
 
 export const getMemoryBookControllerGetPublicAssetDownloadUrlInfiniteQueryOptions = <
   TData = Awaited<ReturnType<typeof memoryBookControllerGetPublicAssetDownloadUrl>>,
-  TError = unknown,
+  TError = void,
 >(
   id: string,
   assetId: string,
@@ -1228,7 +1240,7 @@ export const getMemoryBookControllerGetPublicAssetDownloadUrlInfiniteQueryOption
 export type MemoryBookControllerGetPublicAssetDownloadUrlInfiniteQueryResult = NonNullable<
   Awaited<ReturnType<typeof memoryBookControllerGetPublicAssetDownloadUrl>>
 >;
-export type MemoryBookControllerGetPublicAssetDownloadUrlInfiniteQueryError = unknown;
+export type MemoryBookControllerGetPublicAssetDownloadUrlInfiniteQueryError = void;
 
 /**
  * @summary Public presigned download URL for a memory-book asset. Three-clause gate: book published + asset attached + asset ready.
@@ -1236,7 +1248,7 @@ export type MemoryBookControllerGetPublicAssetDownloadUrlInfiniteQueryError = un
 
 export function useMemoryBookControllerGetPublicAssetDownloadUrlInfinite<
   TData = Awaited<ReturnType<typeof memoryBookControllerGetPublicAssetDownloadUrl>>,
-  TError = unknown,
+  TError = void,
 >(
   id: string,
   assetId: string,
@@ -1266,7 +1278,7 @@ export function useMemoryBookControllerGetPublicAssetDownloadUrlInfinite<
 
 export const getMemoryBookControllerGetPublicAssetDownloadUrlQueryOptions = <
   TData = Awaited<ReturnType<typeof memoryBookControllerGetPublicAssetDownloadUrl>>,
-  TError = unknown,
+  TError = void,
 >(
   id: string,
   assetId: string,
@@ -1305,7 +1317,7 @@ export const getMemoryBookControllerGetPublicAssetDownloadUrlQueryOptions = <
 export type MemoryBookControllerGetPublicAssetDownloadUrlQueryResult = NonNullable<
   Awaited<ReturnType<typeof memoryBookControllerGetPublicAssetDownloadUrl>>
 >;
-export type MemoryBookControllerGetPublicAssetDownloadUrlQueryError = unknown;
+export type MemoryBookControllerGetPublicAssetDownloadUrlQueryError = void;
 
 /**
  * @summary Public presigned download URL for a memory-book asset. Three-clause gate: book published + asset attached + asset ready.
@@ -1313,7 +1325,7 @@ export type MemoryBookControllerGetPublicAssetDownloadUrlQueryError = unknown;
 
 export function useMemoryBookControllerGetPublicAssetDownloadUrl<
   TData = Awaited<ReturnType<typeof memoryBookControllerGetPublicAssetDownloadUrl>>,
-  TError = unknown,
+  TError = void,
 >(
   id: string,
   assetId: string,
