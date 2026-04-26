@@ -8,6 +8,7 @@
  */
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import './globals.css';
 import { Providers } from './providers';
 
 export const metadata: Metadata = {
@@ -18,16 +19,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body
-        style={{
-          fontFamily: 'system-ui, -apple-system, sans-serif',
-          margin: 0,
-          padding: '2rem',
-          maxWidth: '960px',
-          marginInline: 'auto',
-        }}
-      >
-        <Providers>{children}</Providers>
+      <body className="bg-surface text-surface-foreground font-sans antialiased">
+        <div className="mx-auto max-w-3xl px-6 py-10">
+          <Providers>{children}</Providers>
+        </div>
       </body>
     </html>
   );
