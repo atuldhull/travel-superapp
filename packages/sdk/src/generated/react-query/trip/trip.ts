@@ -16,6 +16,7 @@ import type {
 
 import type {
   CreateTripRequestDto,
+  CreateTripShareRequestDto,
   ItineraryListResponseDto,
   ListTripsResponseDto,
   TripControllerEateriesParams,
@@ -24,6 +25,7 @@ import type {
   TripControllerStaysParams,
   TripDto,
   TripOverviewResponseDto,
+  TripShareResponseDto,
   UpdateDayItemsRequestDto,
   UpdateDayItemsResponseDto,
   UpdateTripRequestDto,
@@ -925,14 +927,33 @@ export function useTripControllerGetItinerary<
  * @summary Mint a share code so collaborators can view (or co-edit, if publicRead=false) the trip.
  */
 export type tripControllerShareResponse201 = {
-  data: void;
+  data: TripShareResponseDto;
   status: 201;
+};
+
+export type tripControllerShareResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type tripControllerShareResponse422 = {
+  data: void;
+  status: 422;
 };
 
 export type tripControllerShareResponseSuccess = tripControllerShareResponse201 & {
   headers: Headers;
 };
-export type tripControllerShareResponse = tripControllerShareResponseSuccess;
+export type tripControllerShareResponseError = (
+  | tripControllerShareResponse404
+  | tripControllerShareResponse422
+) & {
+  headers: Headers;
+};
+
+export type tripControllerShareResponse =
+  | tripControllerShareResponseSuccess
+  | tripControllerShareResponseError;
 
 export const getTripControllerShareUrl = (id: string) => {
   return `/api/v1/trips/${id}/share`;
@@ -940,29 +961,29 @@ export const getTripControllerShareUrl = (id: string) => {
 
 export const tripControllerShare = async (
   id: string,
+  createTripShareRequestDto: CreateTripShareRequestDto,
   options?: RequestInit,
 ): Promise<tripControllerShareResponse> => {
   return apiFetch<tripControllerShareResponse>(getTripControllerShareUrl(id), {
     ...options,
     method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createTripShareRequestDto),
   });
 };
 
-export const getTripControllerShareMutationOptions = <
-  TError = unknown,
-  TContext = unknown,
->(options?: {
+export const getTripControllerShareMutationOptions = <TError = void, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof tripControllerShare>>,
     TError,
-    { id: string },
+    { id: string; data: CreateTripShareRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof tripControllerShare>>,
   TError,
-  { id: string },
+  { id: string; data: CreateTripShareRequestDto },
   TContext
 > => {
   const mutationKey = ['tripControllerShare'];
@@ -974,11 +995,11 @@ export const getTripControllerShareMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof tripControllerShare>>,
-    { id: string }
+    { id: string; data: CreateTripShareRequestDto }
   > = (props) => {
-    const { id } = props ?? {};
+    const { id, data } = props ?? {};
 
-    return tripControllerShare(id, requestOptions);
+    return tripControllerShare(id, data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -987,24 +1008,24 @@ export const getTripControllerShareMutationOptions = <
 export type TripControllerShareMutationResult = NonNullable<
   Awaited<ReturnType<typeof tripControllerShare>>
 >;
-
-export type TripControllerShareMutationError = unknown;
+export type TripControllerShareMutationBody = CreateTripShareRequestDto;
+export type TripControllerShareMutationError = void;
 
 /**
  * @summary Mint a share code so collaborators can view (or co-edit, if publicRead=false) the trip.
  */
-export const useTripControllerShare = <TError = unknown, TContext = unknown>(options?: {
+export const useTripControllerShare = <TError = void, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof tripControllerShare>>,
     TError,
-    { id: string },
+    { id: string; data: CreateTripShareRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationResult<
   Awaited<ReturnType<typeof tripControllerShare>>,
   TError,
-  { id: string },
+  { id: string; data: CreateTripShareRequestDto },
   TContext
 > => {
   const mutationOptions = getTripControllerShareMutationOptions(options);

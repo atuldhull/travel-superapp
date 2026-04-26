@@ -147,6 +147,38 @@ export class UpdateDayItemsResponseDto {
 }
 
 /**
+ * Body for `POST /trips/:id/share`. Documentation-only — runtime
+ * validation stays on `CreateTripShareBodySchema` in `trip.dto.ts`.
+ */
+export class CreateTripShareRequestDto {
+  @ApiProperty({
+    required: false,
+    format: 'date-time',
+    description: 'Optional expiry. Omit for a non-expiring share code.',
+  })
+  declare expiresAt?: string;
+}
+
+export class TripShareResponseDto {
+  @ApiProperty({ format: 'cuid' })
+  declare id: string;
+
+  @ApiProperty({ format: 'cuid' })
+  declare tripId: string;
+
+  @ApiProperty({
+    description: 'Opaque token; recipients hit `GET /trips/shared/:code` to view the trip.',
+  })
+  declare shareCode: string;
+
+  @ApiProperty({ nullable: true, format: 'date-time' })
+  declare expiresAt: string | null;
+
+  @ApiProperty({ format: 'date-time' })
+  declare createdAt: string;
+}
+
+/**
  * Body class for PATCH /trips/:id. Documentation-only — runtime
  * validation stays on `UpdateTripBodySchema` in `trip.dto.ts`. All
  * fields optional; only provided fields change. Date fields accept

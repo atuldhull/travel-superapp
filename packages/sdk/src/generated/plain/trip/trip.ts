@@ -3,6 +3,7 @@
 // Regenerate via: pnpm --filter=@app/sdk sdk:gen
 import type {
   CreateTripRequestDto,
+  CreateTripShareRequestDto,
   ItineraryListResponseDto,
   ListTripsResponseDto,
   TripControllerEateriesParams,
@@ -11,6 +12,7 @@ import type {
   TripControllerStaysParams,
   TripDto,
   TripOverviewResponseDto,
+  TripShareResponseDto,
   UpdateDayItemsRequestDto,
   UpdateDayItemsResponseDto,
   UpdateTripRequestDto,
@@ -282,14 +284,33 @@ export const tripControllerGetItinerary = async (
  * @summary Mint a share code so collaborators can view (or co-edit, if publicRead=false) the trip.
  */
 export type tripControllerShareResponse201 = {
-  data: void;
+  data: TripShareResponseDto;
   status: 201;
+};
+
+export type tripControllerShareResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type tripControllerShareResponse422 = {
+  data: void;
+  status: 422;
 };
 
 export type tripControllerShareResponseSuccess = tripControllerShareResponse201 & {
   headers: Headers;
 };
-export type tripControllerShareResponse = tripControllerShareResponseSuccess;
+export type tripControllerShareResponseError = (
+  | tripControllerShareResponse404
+  | tripControllerShareResponse422
+) & {
+  headers: Headers;
+};
+
+export type tripControllerShareResponse =
+  | tripControllerShareResponseSuccess
+  | tripControllerShareResponseError;
 
 export const getTripControllerShareUrl = (id: string) => {
   return `/api/v1/trips/${id}/share`;
@@ -297,11 +318,14 @@ export const getTripControllerShareUrl = (id: string) => {
 
 export const tripControllerShare = async (
   id: string,
+  createTripShareRequestDto: CreateTripShareRequestDto,
   options?: RequestInit,
 ): Promise<tripControllerShareResponse> => {
   return apiFetch<tripControllerShareResponse>(getTripControllerShareUrl(id), {
     ...options,
     method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createTripShareRequestDto),
   });
 };
 
