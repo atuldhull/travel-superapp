@@ -25,6 +25,56 @@
 
 ---
 
+### [IV.18.19.52] — /memory-books owner index page on web (bundled with `[IV.18.19.51]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 5 (Frontend stack)
+
+**What was done**
+
+Adds the protected owner-side index for memory books, mirroring `/trips`.
+
+- New web route `apps/web/src/app/memory-books/page.tsx`. Same auth/bounce pattern as `/trips`: bootComplete + token-gate + bounce to `/login` on null. Reads `useMemoryBookControllerList({ limit: '50' })` against the typed envelope landed in slice .19.51.
+- Each `BookCard` shows title + draft/published Badge + theme; published rows link to the existing public viewer at `/memory-books/[id]`, drafts render as plain text (the public route 404s for drafts by contract — no point linking).
+- Empty state explains the workflow: books are spawned from a trip's media subsection (no "New book" CTA on this page yet — the trip media subsection is the entry point).
+- Casts `coverS3Key` + `publishedAt` through `as unknown as string | null` per the autopilot gotcha for orval's nullable-string emit shape.
+
+**Verification**
+
+- web typecheck clean. Web build clean — `/memory-books` now 2.04 kB. Web routes: 11 → 12.
+
+**Commit**
+
+`76143e5 feat(IV.18.19.52): /memory-books owner index page on web`
+
+---
+
+### [IV.18.19.51] — typed Swagger schemas on owner-side memory-book routes (bundled with `[IV.18.19.52]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 6 (SDK / API contract)
+
+**What was done**
+
+Closes the schema gap on the 7 owner-scoped MemoryBookController routes. Before this slice every owner-side route emitted `data: void` in the SDK; now every one is typed end-to-end.
+
+- Five new DTO classes in `apps/api/src/modules/media/interface/dto/memory-book-response.dto.ts`:
+  - `MemoryBookDto` (full row incl. `ownerId` + `updatedAt`, nullable `publishedAt` + `coverS3Key`).
+  - `ListMemoryBooksResponseDto` (`{ books: MemoryBookDto[] }`).
+  - `MemoryBookWithAssetsResponseDto` (`{ book, assetIds: string[] }`).
+  - `CreateMemoryBookRequestDto` (`title` + optional `theme` + optional nullable `coverS3Key`).
+  - `UpdateMemoryBookRequestDto` (all-optional partial).
+- Decorated `POST /memory-books`, `GET /memory-books`, `GET /memory-books/:id`, `PATCH /memory-books/:id`, `DELETE /memory-books/:id`, `POST /memory-books/:id/publish`, `POST /memory-books/:id/unpublish` with `@ApiResponse` + `@ApiBody`. Documented `BOOK_NOT_FOUND` 404s and the 204 on DELETE.
+- Regenerated `docs/api/openapi.yaml` + the orval client. Re-exported `MemoryBookDto`, `ListMemoryBooksResponseDto`, `MemoryBookWithAssetsResponseDto`, `CreateMemoryBookRequestDto`, `UpdateMemoryBookRequestDto` from `@app/sdk`.
+
+**Verification**
+
+- api typecheck + sdk typecheck clean. 93 / 578 api tests pass.
+
+**Commit**
+
+`96810f1 feat(IV.18.19.51): typed Swagger schemas on owner-side memory-book routes`
+
+---
+
 ### [IV.18.19.50] — real thumbnail rendering on /memory-books/[id] (bundled with `[IV.18.19.49]`)
 
 **Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 5 (Frontend stack)
