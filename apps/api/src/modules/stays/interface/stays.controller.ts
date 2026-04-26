@@ -13,15 +13,32 @@
  * Installed by prompt [IV.18.6.1].
  */
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { SearchStaysUseCase } from '../application/search-stays.use-case';
 import type { StayListing } from '../domain/stay-listing.entity';
 import { SearchStaysBodySchema, type SearchStaysBody } from './dto/stays.dto';
+import { SearchStaysRequestDto, SearchStaysResponseDto } from './dto/stays-response.dto';
 
+@ApiTags('stays')
+@ApiBearerAuth()
 @Controller('stays')
 export class StaysController {
   constructor(private readonly searchStays: SearchStaysUseCase) {}
 
+  @ApiOperation({
+    summary: 'Search stays within a radius for the given check-in/out window.',
+  })
+  @ApiBody({ type: SearchStaysRequestDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Matching stays, nearest-first.',
+    type: SearchStaysResponseDto,
+  })
+  @ApiResponse({
+    status: 422,
+    description: 'INVALID_COORDINATES | INVALID_RADIUS | INVALID_DATE_RANGE.',
+  })
   @Post('search')
   @HttpCode(HttpStatus.OK)
   async search(
