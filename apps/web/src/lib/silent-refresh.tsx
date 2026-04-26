@@ -36,8 +36,9 @@ export function SilentRefreshOnMount(): null {
 
     async function attempt(isBoot: boolean): Promise<void> {
       try {
-        const res = (await authControllerRefresh()) as unknown as RefreshSuccessResponseDto;
+        const envelope = await authControllerRefresh();
         if (cancelled) return;
+        const res = envelope.data as unknown as RefreshSuccessResponseDto | undefined;
         if (res?.accessToken) setAccessToken(res.accessToken);
       } catch {
         // Quietly ignore — the most common failure is "no refresh

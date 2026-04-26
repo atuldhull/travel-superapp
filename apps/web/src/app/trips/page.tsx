@@ -61,7 +61,7 @@ export default function TripsPage() {
     );
   }
 
-  const body = data as unknown as ListTripsResponseDto | undefined;
+  const body = data?.data as unknown as ListTripsResponseDto | undefined;
   const trips: readonly TripDto[] = body?.trips ?? [];
 
   return (
