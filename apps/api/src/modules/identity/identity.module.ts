@@ -12,13 +12,15 @@
  *
  * Installed by prompt [III.13.2] part 2.
  */
-import { Module, type Provider } from '@nestjs/common';
+import { forwardRef, Module, type Provider } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Env } from '@app/config';
+import { TripModule } from '../trip/trip.module';
 import { ConsumeMagicLinkUseCase } from './application/consume-magic-link.use-case';
 import { IssueSessionUseCase } from './application/issue-session.use-case';
 import { JWT_KEYRING_STORE } from './application/ports/jwt-keyring.store';
 import { LoginUseCase } from './application/login.use-case';
+import { MarkOnboardingCompleteUseCase } from './application/mark-onboarding-complete.use-case';
 import { MAGIC_LINK_TOKEN_REPOSITORY } from './application/ports/magic-link-token.repository';
 import { MAILER_PORT } from './application/ports/mailer.port';
 import { RequestMagicLinkUseCase } from './application/request-magic-link.use-case';
@@ -93,6 +95,12 @@ const oauthProvidersFactory = {
 } satisfies Provider;
 
 @Module({
+  // Trip module exports `SeedSampleTripUseCase` so the auth controller
+  // can offer a "Skip + seed sample" terminal in the onboarding flow
+  // (V.UX.3). `forwardRef` because Trip already depends transitively
+  // on Identity via the global JwtAuthGuard's User lookup — keeps the
+  // dep cycle DI-resolvable.
+  imports: [forwardRef(() => TripModule)],
   controllers: [AuthController, JwksAdminController],
   providers: [
     // Ports → adapters.
@@ -131,6 +139,7 @@ const oauthProvidersFactory = {
     SignInWithOAuthUseCase,
     RequestMagicLinkUseCase,
     ConsumeMagicLinkUseCase,
+    MarkOnboardingCompleteUseCase,
     RotateJwksUseCase,
   ],
   exports: [

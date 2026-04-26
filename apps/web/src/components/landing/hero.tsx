@@ -11,7 +11,7 @@ import Link from 'next/link';
 
 export function LandingHero() {
   return (
-    <section className="relative overflow-hidden rounded-2xl border border-muted/15 bg-gradient-to-br from-brand/10 via-transparent to-brand/5 px-6 py-12 sm:px-10 sm:py-16">
+    <section className="relative overflow-hidden rounded-2xl border border-muted/15 bg-linear-to-br from-brand/10 via-transparent to-brand/5 px-6 py-12 sm:px-10 sm:py-16">
       <div className="relative z-10 grid gap-8 sm:grid-cols-2 sm:items-center">
         <div className="space-y-5">
           <p className="inline-flex items-center gap-2 rounded-full border border-brand/30 bg-brand/10 px-3 py-1 text-xs font-medium text-brand">
@@ -61,7 +61,7 @@ export function LandingHero() {
  */
 function HeroIllustration() {
   return (
-    <div className="relative mx-auto flex aspect-[4/3] w-full max-w-md items-center justify-center">
+    <div className="relative mx-auto flex aspect-4/3 w-full max-w-md items-center justify-center">
       {/* Skyline layer */}
       <svg
         viewBox="0 0 320 240"

@@ -10,4 +10,6 @@ export interface WhoAmIResponseDto {
   sid: string;
   /** Role assigned to the session. */
   role: WhoAmIResponseDtoRole;
+  /** True iff the user has completed (or skipped) the 3-step onboarding wizard. Web client uses this to decide whether to bounce post-login → /onboarding or → /trips. Installed by [V.UX.3]. */
+  hasSeenOnboarding: boolean;
 }

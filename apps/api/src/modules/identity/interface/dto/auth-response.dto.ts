@@ -59,9 +59,13 @@ export class MagicLinkRequestResponseDto {
 }
 
 /**
- * Response of `GET /auth/me`. Mirrors `AuthenticatedUser` —
- * deliberately minimal: just the stable JWT claims. Hydrating
- * displayName / email / flags is a follow-up use-case.
+ * Response of `GET /auth/me`. Returns the stable JWT claims plus a
+ * couple of hydrated User-row fields the web client needs to make
+ * routing decisions WITHOUT a separate round-trip:
+ *   - `hasSeenOnboarding` controls the post-login bounce (V.UX.3).
+ *
+ * Hydrating displayName / email / verified flags is queued for a
+ * follow-up.
  */
 export class WhoAmIResponseDto {
   @ApiProperty({ format: 'cuid', description: 'User id (`sub` claim).' })
@@ -75,4 +79,21 @@ export class WhoAmIResponseDto {
     description: 'Role assigned to the session.',
   })
   declare role: 'user' | 'premium' | 'agent' | 'admin';
+
+  @ApiProperty({
+    description:
+      'True iff the user has completed (or skipped) the 3-step onboarding wizard. Web client uses this to decide whether to bounce post-login → /onboarding or → /trips. Installed by [V.UX.3].',
+  })
+  declare hasSeenOnboarding: boolean;
+}
+
+/**
+ * Response of `POST /auth/onboarding/complete`. Always returns
+ * `{status:'ok'}` — the meaningful side-effect is the User-row flip.
+ *
+ * Installed by prompt [V.UX.3].
+ */
+export class OnboardingCompleteResponseDto {
+  @ApiProperty({ enum: ['ok'] })
+  declare status: string;
 }

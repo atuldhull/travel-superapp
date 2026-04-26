@@ -21,6 +21,8 @@ import type {
   MagicLinkRequestRequestDto,
   MagicLinkRequestResponseDto,
   OAuthSignInRequestDto,
+  OnboardingCompleteRequestDto,
+  OnboardingCompleteResponseDto,
   RefreshSuccessResponseDto,
   RegisterRequestDto,
   WhoAmIResponseDto,
@@ -631,7 +633,7 @@ export const useAuthControllerRefresh = <TError = void, TContext = unknown>(opti
   return useMutation(mutationOptions);
 };
 /**
- * @summary Whoami probe — returns the authed user's JWT claims. The reference auth-gated endpoint pattern.
+ * @summary Whoami probe — returns the authed user's JWT claims + lightweight User-row state (hasSeenOnboarding).
  */
 export type authControllerMeResponse200 = {
   data: WhoAmIResponseDto;
@@ -702,7 +704,7 @@ export type AuthControllerMeInfiniteQueryResult = NonNullable<
 export type AuthControllerMeInfiniteQueryError = void;
 
 /**
- * @summary Whoami probe — returns the authed user's JWT claims. The reference auth-gated endpoint pattern.
+ * @summary Whoami probe — returns the authed user's JWT claims + lightweight User-row state (hasSeenOnboarding).
  */
 
 export function useAuthControllerMeInfinite<
@@ -748,7 +750,7 @@ export type AuthControllerMeQueryResult = NonNullable<Awaited<ReturnType<typeof 
 export type AuthControllerMeQueryError = void;
 
 /**
- * @summary Whoami probe — returns the authed user's JWT claims. The reference auth-gated endpoint pattern.
+ * @summary Whoami probe — returns the authed user's JWT claims + lightweight User-row state (hasSeenOnboarding).
  */
 
 export function useAuthControllerMe<
@@ -767,6 +769,114 @@ export function useAuthControllerMe<
   return query;
 }
 
+/**
+ * @summary Mark the caller as having completed the onboarding wizard; optionally seed a Sample trip. Idempotent.
+ */
+export type authControllerOnboardingCompleteResponse200 = {
+  data: OnboardingCompleteResponseDto;
+  status: 200;
+};
+
+export type authControllerOnboardingCompleteResponse401 = {
+  data: void;
+  status: 401;
+};
+
+export type authControllerOnboardingCompleteResponseSuccess =
+  authControllerOnboardingCompleteResponse200 & {
+    headers: Headers;
+  };
+export type authControllerOnboardingCompleteResponseError =
+  authControllerOnboardingCompleteResponse401 & {
+    headers: Headers;
+  };
+
+export type authControllerOnboardingCompleteResponse =
+  | authControllerOnboardingCompleteResponseSuccess
+  | authControllerOnboardingCompleteResponseError;
+
+export const getAuthControllerOnboardingCompleteUrl = () => {
+  return `/api/v1/auth/onboarding/complete`;
+};
+
+export const authControllerOnboardingComplete = async (
+  onboardingCompleteRequestDto: OnboardingCompleteRequestDto,
+  options?: RequestInit,
+): Promise<authControllerOnboardingCompleteResponse> => {
+  return apiFetch<authControllerOnboardingCompleteResponse>(
+    getAuthControllerOnboardingCompleteUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(onboardingCompleteRequestDto),
+    },
+  );
+};
+
+export const getAuthControllerOnboardingCompleteMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof authControllerOnboardingComplete>>,
+    TError,
+    { data: OnboardingCompleteRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof authControllerOnboardingComplete>>,
+  TError,
+  { data: OnboardingCompleteRequestDto },
+  TContext
+> => {
+  const mutationKey = ['authControllerOnboardingComplete'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof authControllerOnboardingComplete>>,
+    { data: OnboardingCompleteRequestDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return authControllerOnboardingComplete(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AuthControllerOnboardingCompleteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof authControllerOnboardingComplete>>
+>;
+export type AuthControllerOnboardingCompleteMutationBody = OnboardingCompleteRequestDto;
+export type AuthControllerOnboardingCompleteMutationError = void;
+
+/**
+ * @summary Mark the caller as having completed the onboarding wizard; optionally seed a Sample trip. Idempotent.
+ */
+export const useAuthControllerOnboardingComplete = <TError = void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof authControllerOnboardingComplete>>,
+    TError,
+    { data: OnboardingCompleteRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof authControllerOnboardingComplete>>,
+  TError,
+  { data: OnboardingCompleteRequestDto },
+  TContext
+> => {
+  const mutationOptions = getAuthControllerOnboardingCompleteMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
 /**
  * @summary Begin MFA enrollment — returns base32 secret + otpauth:// URI for QR rendering. Pending until /mfa/verify confirms.
  */

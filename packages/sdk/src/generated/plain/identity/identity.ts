@@ -8,6 +8,8 @@ import type {
   MagicLinkRequestRequestDto,
   MagicLinkRequestResponseDto,
   OAuthSignInRequestDto,
+  OnboardingCompleteRequestDto,
+  OnboardingCompleteResponseDto,
   RefreshSuccessResponseDto,
   RegisterRequestDto,
   WhoAmIResponseDto,
@@ -246,7 +248,7 @@ export const authControllerRefresh = async (
 };
 
 /**
- * @summary Whoami probe — returns the authed user's JWT claims. The reference auth-gated endpoint pattern.
+ * @summary Whoami probe — returns the authed user's JWT claims + lightweight User-row state (hasSeenOnboarding).
  */
 export type authControllerMeResponse200 = {
   data: WhoAmIResponseDto;
@@ -280,6 +282,51 @@ export const authControllerMe = async (
     ...options,
     method: 'GET',
   });
+};
+
+/**
+ * @summary Mark the caller as having completed the onboarding wizard; optionally seed a Sample trip. Idempotent.
+ */
+export type authControllerOnboardingCompleteResponse200 = {
+  data: OnboardingCompleteResponseDto;
+  status: 200;
+};
+
+export type authControllerOnboardingCompleteResponse401 = {
+  data: void;
+  status: 401;
+};
+
+export type authControllerOnboardingCompleteResponseSuccess =
+  authControllerOnboardingCompleteResponse200 & {
+    headers: Headers;
+  };
+export type authControllerOnboardingCompleteResponseError =
+  authControllerOnboardingCompleteResponse401 & {
+    headers: Headers;
+  };
+
+export type authControllerOnboardingCompleteResponse =
+  | authControllerOnboardingCompleteResponseSuccess
+  | authControllerOnboardingCompleteResponseError;
+
+export const getAuthControllerOnboardingCompleteUrl = () => {
+  return `/api/v1/auth/onboarding/complete`;
+};
+
+export const authControllerOnboardingComplete = async (
+  onboardingCompleteRequestDto: OnboardingCompleteRequestDto,
+  options?: RequestInit,
+): Promise<authControllerOnboardingCompleteResponse> => {
+  return apiFetch<authControllerOnboardingCompleteResponse>(
+    getAuthControllerOnboardingCompleteUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(onboardingCompleteRequestDto),
+    },
+  );
 };
 
 /**

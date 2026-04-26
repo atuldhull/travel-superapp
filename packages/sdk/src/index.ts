@@ -35,6 +35,8 @@ export type { OAuthSignInRequestDto } from './generated/schemas/oAuthSignInReque
 export type { MagicLinkRequestRequestDto } from './generated/schemas/magicLinkRequestRequestDto';
 export type { MagicLinkConsumeRequestDto } from './generated/schemas/magicLinkConsumeRequestDto';
 export type { MagicLinkRequestResponseDto } from './generated/schemas/magicLinkRequestResponseDto';
+export type { OnboardingCompleteRequestDto } from './generated/schemas/onboardingCompleteRequestDto';
+export type { OnboardingCompleteResponseDto } from './generated/schemas/onboardingCompleteResponseDto';
 export type { FeaturedMemoryBooksResponseDto } from './generated/schemas/featuredMemoryBooksResponseDto';
 export type { PublicMemoryBookDto } from './generated/schemas/publicMemoryBookDto';
 export type { PublicMemoryBookWithAssetsResponseDto } from './generated/schemas/publicMemoryBookWithAssetsResponseDto';

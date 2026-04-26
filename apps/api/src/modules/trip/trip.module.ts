@@ -30,6 +30,7 @@ import { CreateTripShareUseCase } from './application/create-trip-share.use-case
 import { ListTripSharesUseCase } from './application/list-trip-shares.use-case';
 import { DeleteTripUseCase } from './application/delete-trip.use-case';
 import { GenerateItineraryStubUseCase } from './application/generate-itinerary-stub.use-case';
+import { SeedSampleTripUseCase } from './application/seed-sample-trip.use-case';
 import { GeneratePlanWithAiUseCase } from './application/generate-plan-with-ai.use-case';
 import { GenerateSamplePlanUseCase } from './application/generate-sample-plan.use-case';
 import { GetTripUseCase } from './application/get-trip.use-case';
@@ -92,6 +93,7 @@ import { TripController } from './interface/trip.controller';
     GenerateItineraryStubUseCase,
     GeneratePlanWithAiUseCase,
     GenerateSamplePlanUseCase,
+    SeedSampleTripUseCase,
     {
       // Conditional adapter pick: real Claude when CLAUDE_API_KEY is
       // set, otherwise the deterministic stub. Either way, callers
@@ -122,6 +124,6 @@ import { TripController } from './interface/trip.controller';
     AdminArchiveTripUseCase,
     AdminDeleteTripUseCase,
   ],
-  exports: [TRIP_REPOSITORY, ITINERARY_REPOSITORY, TRIP_SHARE_REPOSITORY],
+  exports: [TRIP_REPOSITORY, ITINERARY_REPOSITORY, TRIP_SHARE_REPOSITORY, SeedSampleTripUseCase],
 })
 export class TripModule {}

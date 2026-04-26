@@ -41,6 +41,19 @@ export const MagicLinkConsumeBodySchema = z.object({
 });
 export type MagicLinkConsumeBody = z.infer<typeof MagicLinkConsumeBodySchema>;
 
+/**
+ * Body for `POST /auth/onboarding/complete`. Empty `{}` works for the
+ * "Generate" terminal (the user already has a trip). The Skip terminal
+ * sends `{seedSample: true}` so the api seeds the read-only Goa weekend
+ * before flipping the flag.
+ *
+ * Installed by prompt [V.UX.3].
+ */
+export const OnboardingCompleteBodySchema = z.object({
+  seedSample: z.boolean().optional(),
+});
+export type OnboardingCompleteBody = z.infer<typeof OnboardingCompleteBodySchema>;
+
 export const LoginBodySchema = z.object({
   email: z.string().trim().toLowerCase().email().max(254),
   password: z.string().min(1).max(128),

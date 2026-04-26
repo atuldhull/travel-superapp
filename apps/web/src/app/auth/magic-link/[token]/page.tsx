@@ -24,6 +24,7 @@ import {
   type MagicLinkConsumeRequestDto,
 } from '@app/sdk';
 import { setAccessToken } from '../../../../lib/auth-store';
+import { decidePostAuthDestination } from '../../../../lib/post-auth-redirect';
 
 interface ApiError extends Error {
   readonly code?: string;
@@ -43,12 +44,16 @@ export default function MagicLinkConsumePage() {
 
   const mutation = useAuthControllerMagicLinkConsume({
     mutation: {
-      onSuccess: (response: { data?: unknown }) => {
+      onSuccess: async (response: { data?: unknown }) => {
         const body = response.data as AuthSuccessResponseDto;
         setAccessToken(body.accessToken);
-        // Redirect after a tiny delay so the user sees the "Signing
-        // you in…" state confirm before the page swap.
-        setTimeout(() => router.push('/trips'), 300);
+        // First-time magic-link sign-ins create a new password-less
+        // user → hasSeenOnboarding=false → /onboarding. Existing users
+        // may have already onboarded → /trips.
+        const { destination } = await decidePostAuthDestination(body.accessToken);
+        // Tiny delay so the user sees the "Signing you in…" state
+        // confirm before the page swap.
+        setTimeout(() => router.push(destination as never), 300);
       },
       onError: (err: unknown) => {
         const e = err as ApiError;
