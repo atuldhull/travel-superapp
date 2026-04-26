@@ -1,0 +1,67 @@
+/**
+ * orval config for generating typed clients from
+ * docs/api/openapi.yaml. Two outputs:
+ *
+ *   - `react-query`  — typed @tanstack/react-query hooks for the
+ *                      Next.js web app + future React-based admin
+ *   - `plain`        — plain fetch wrappers for non-React consumers
+ *                      (RN mobile bindings via Tamagui SwR / Tanstack
+ *                      Query for RN; out-of-tree consumers like
+ *                      third-party integrators)
+ *
+ * Both share the same generated types (Schemas) so DTO shapes stay
+ * consistent. Re-run on every PR that touches a controller or DTO:
+ *
+ *   pnpm --filter=@app/sdk sdk:gen
+ *
+ * The OpenAPI spec is sourced from the repo-root docs/api/openapi.yaml
+ * which is itself regenerated via `pnpm --filter=api api:openapi`.
+ *
+ * Installed by prompt [IV.18.19.16].
+ */
+import { defineConfig } from 'orval';
+
+export default defineConfig({
+  // React Query hooks for the web app.
+  travelApiReactQuery: {
+    input: '../../docs/api/openapi.yaml',
+    output: {
+      mode: 'tags-split',
+      target: './src/generated/react-query',
+      schemas: './src/generated/schemas',
+      client: 'react-query',
+      httpClient: 'fetch',
+      override: {
+        mutator: {
+          path: './src/runtime/fetcher.ts',
+          name: 'apiFetch',
+        },
+        query: {
+          useQuery: true,
+          useInfinite: true,
+          useInfiniteQueryParam: 'limit',
+          options: {
+            staleTime: 30_000,
+          },
+        },
+      },
+    },
+  },
+
+  // Plain fetch wrappers for non-React consumers.
+  travelApiPlain: {
+    input: '../../docs/api/openapi.yaml',
+    output: {
+      mode: 'tags-split',
+      target: './src/generated/plain',
+      schemas: './src/generated/schemas',
+      client: 'fetch',
+      override: {
+        mutator: {
+          path: './src/runtime/fetcher.ts',
+          name: 'apiFetch',
+        },
+      },
+    },
+  },
+});
