@@ -10,18 +10,100 @@
 
 ## Summary
 
-| Counter             | Value                                                                         |
-| ------------------- | ----------------------------------------------------------------------------- |
-| Prompts completed   | 140 (139 full + 1 foundation-only; bundled Identity Swagger + Next.js shell)  |
-| Prompts in progress | 0                                                                             |
-| Prompts blocked     | 0                                                                             |
-| Last prompt         | `[IV.18.19.14]` — Next.js 15 App Router shell (bundled with `[IV.18.19.13]`)  |
-| Last commit date    | 2026-04-26                                                                    |
-| Phase               | Phase 1 — first user-facing frontend live + Identity surface fully documented |
+| Counter             | Value                                                                           |
+| ------------------- | ------------------------------------------------------------------------------- |
+| Prompts completed   | 142 (141 full + 1 foundation-only; bundled batch Swagger + orval SDK gen)       |
+| Prompts in progress | 0                                                                               |
+| Prompts blocked     | 0                                                                               |
+| Last prompt         | `[IV.18.19.16]` — orval SDK gen scaffold (bundled with `[IV.18.19.15]`)         |
+| Last commit date    | 2026-04-26                                                                      |
+| Phase               | Phase 1 — typed SDK pipeline live + Media/Social/Notifications fully documented |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.19.16] — orval SDK gen scaffold (bundled with `[IV.18.19.15]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 6 (SDK gen) + 13 (Documentation)
+
+**What was done**
+
+Replaces the placeholder `@app/sdk` stub (existed since `[II.10.0]`) with a working orval generation pipeline. Two outputs from the same `docs/api/openapi.yaml`:
+
+- **`src/generated/react-query/`** — typed `@tanstack/react-query` hooks for the Next.js web app + future React-based admin
+- **`src/generated/plain/`** — plain fetch wrappers for non-React consumers (RN mobile, third-party integrators)
+
+Both share generated `Schemas/` so DTO shapes stay consistent across consumers.
+
+**`src/runtime/fetcher.ts`** is the shared mutator orval points every generated call at:
+
+- Configurable `baseUrl` + bearer-token getter via `configureSdk()`
+- Memory-only token storage per CLAUDE rule 12 (no localStorage)
+- Domain-error parsing — extracts `{ code, status, traceId }` from `DomainExceptionFilter` envelopes
+- 204 handling (returns undefined cast to TResponse)
+
+**`src/generated/`** stays empty until the first `pnpm --filter=@app/sdk sdk:gen` run (intentional — orval clobbers + repopulates; no point checking in stale generated output). README documents the regenerate cadence + when to re-run.
+
+**Deps added** (devDependencies on `@app/sdk` only): orval@^7.3, jest@^29.7, rimraf@^6.0, typescript@^5.7. Real consumer-app installs (`@tanstack/react-query` on the web side) land when the first generated hook gets wired through `apps/web/src/app/featured/page.tsx`.
+
+**Files**
+
+- `packages/sdk/package.json` — replaces stub with real scripts + deps
+- `packages/sdk/orval.config.ts` (new) — two-output config
+- `packages/sdk/src/runtime/fetcher.ts` (new) — shared mutator
+- `packages/sdk/src/index.ts` — replaces stub with re-exports
+- `packages/sdk/src/generated/.gitkeep` — placeholder until first gen
+- `packages/sdk/tsconfig.json`, `tsconfig.build.json` (new) — strict TS config; generated/ excluded from typecheck
+- `packages/sdk/README.md` (new) — usage, regenerate workflow, roadmap
+
+**Combined verification (both bundled slices)**
+
+`pnpm --filter=api typecheck` green. `pnpm --filter=@app/sdk typecheck` green. Full integration suite: **93 passed, 578 passed** — Swagger decorators are runtime no-ops; SDK package has no test surface yet.
+
+**Commits**
+
+- `1eb8a99` — feat(IV.18.19.16) orval SDK gen scaffold
+
+---
+
+### [IV.18.19.15] — Batch Swagger decorators — Media + Social + Notifications (bundled with `[IV.18.19.16]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 13 (Documentation) + §6 (SDK gen)
+
+**What was done**
+
+Continues the per-module rollout from `[IV.18.19.13]`. **12 controllers across 3 modules**; `openapi.yaml` summary count jumps **39 → 73** (+34 new operation summaries).
+
+**Modules covered:**
+
+| Module          | Controllers                                                                                                                                                                                      | Notes                                                                                                          |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| `media`         | MediaController, MemoryBookController, AdminMediaController                                                                                                                                      | Upload flow + memory book CRUD + featured discovery + admin moderation                                         |
+| `social`        | SocialController, VotesController, ReviewsController, ExpensesController, PlaceReviewSummaryController, StayReviewSummaryController, EateryReviewSummaryController, AgentReviewSummaryController | Votes (trip-scoped + public summary) + Reviews (auth + public summary) + Expenses + 4 review-bundle composites |
+| `notifications` | NotificationsController                                                                                                                                                                          | All 6 verbs (unread-count, list with channel filter, read-all, :id/read, :id/unread, :id delete)               |
+
+**Decorator pattern templated:** class-level `@ApiTags` + `@ApiBearerAuth` (where authed); per-route `@ApiOperation` summaries. `@Public` routes get `@ApiTags` only (no bearer).
+
+**Notable callouts:**
+
+- Review-summary controllers (places/stays/eateries/agents) all tagged `'social'` even though their URL prefix is the review-target's resource — locality of bounded context wins over URL grouping (per ADR-014).
+- VotesController and Place/Stay/Eatery/AgentReviewSummary controllers stay `@Public` (crowd-signal aggregation, no PII).
+
+Per-route `@ApiBody` schemas + remaining 11 modules (safety, weather, food, stays, places, events, transport, account, admin sub-modules) queued for future rollouts.
+
+**Files**
+
+- `apps/api/src/modules/media/interface/{media,memory-book,admin-media}.controller.ts`
+- `apps/api/src/modules/social/interface/{social,votes,reviews,expenses,place-review-summary,stay-review-summary,eatery-review-summary,agent-review-summary}.controller.ts`
+- `apps/api/src/modules/notifications/interface/notifications.controller.ts`
+- `docs/api/openapi.yaml` (regenerated)
+
+**Commits**
+
+- `9b5f6a4` — feat(IV.18.19.15) batch Swagger decorators
 
 ---
 
