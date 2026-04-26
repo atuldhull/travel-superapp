@@ -10,18 +10,86 @@
 
 ## Summary
 
-| Counter             | Value                                                                            |
-| ------------------- | -------------------------------------------------------------------------------- |
-| Prompts completed   | 138 (137 full + 1 foundation-only; bundled fly.toml/runbook + Trip Swagger decs) |
-| Prompts in progress | 0                                                                                |
-| Prompts blocked     | 0                                                                                |
-| Last prompt         | `[IV.18.19.12]` — Trip Swagger decorators (bundled with `[IV.18.19.11]`)         |
-| Last commit date    | 2026-04-26                                                                       |
-| Phase               | Phase 1 — deployment-readiness wave: Fly config + first per-module API spec roll |
+| Counter             | Value                                                                         |
+| ------------------- | ----------------------------------------------------------------------------- |
+| Prompts completed   | 140 (139 full + 1 foundation-only; bundled Identity Swagger + Next.js shell)  |
+| Prompts in progress | 0                                                                             |
+| Prompts blocked     | 0                                                                             |
+| Last prompt         | `[IV.18.19.14]` — Next.js 15 App Router shell (bundled with `[IV.18.19.13]`)  |
+| Last commit date    | 2026-04-26                                                                    |
+| Phase               | Phase 1 — first user-facing frontend live + Identity surface fully documented |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.19.14] — Next.js 15 App Router shell scaffold (bundled with `[IV.18.19.13]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 5 (Frontend stack)
+
+**What was done**
+
+`apps/web/` had existed as a stub since `[II.10.0]` — placeholder package.json + empty `src/index.ts`. This slice replaces the stub with a working Next.js 15 (App Router, RSC, React 19) scaffold that proves the api ↔ web chain works end-to-end.
+
+**Files (new):**
+
+- `apps/web/package.json` — Next 15, React 19, TS 5.7. `dev` on `:3001` to avoid the api's `:3000`.
+- `apps/web/tsconfig.json` — strict, App Router, `@/*` path alias.
+- `apps/web/next.config.js` — `reactStrictMode`, `typedRoutes` (catches broken `<Link href>` on rename), `outputFileTracingRoot=__dirname` so the bundle doesn't pull from sibling apps.
+- `apps/web/next-env.d.ts` — Next type augmentations.
+- `apps/web/src/app/layout.tsx` — RootLayout with system-ui body. No design system yet (Tailwind / shadcn lands in `[IV.18.20.x]`).
+- `apps/web/src/app/page.tsx` — landing with link to `/featured`.
+- `apps/web/src/app/featured/page.tsx` — Server Component; SSR-fetches the api's `GET /api/v1/memory-books/featured` (the public discovery surface from `[IV.18.13.1]`). `API_URL` env defaults to `http://localhost:3000`. Errors render a degraded state (never a 500), so the page works even when the api is down.
+- `apps/web/README.md` — what's here, what's NOT (auth UI / design system / SDK consumption from `packages/sdk`), how to run.
+
+**Why this scaffold matters:** proves the full chain works end-to-end — Next SSR fetch from the api's CORS-allowed public surface → render. Once an engineer can curl `localhost:3001/featured` and see populated rows from `db:seed:demo`, the deploy story has a visible client.
+
+**No new monorepo deps** outside `apps/web` — Next + React are local. Future SDK gen via orval will live in `packages/sdk` and get consumed here.
+
+**Files**
+
+- `apps/web/package.json`, `tsconfig.json`, `next.config.js`, `next-env.d.ts`, `README.md`
+- `apps/web/src/app/{layout.tsx, page.tsx, featured/page.tsx}` (new)
+- `apps/web/src/index.ts` (deleted; was a stub)
+
+**Commits**
+
+- `5c06129` — feat(IV.18.19.14) Next.js 15 App Router shell
+
+---
+
+### [IV.18.19.13] — Identity module Swagger decorators (bundled with `[IV.18.19.14]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 13 (Documentation) + §6 (SDK gen)
+
+**What was done**
+
+Continues the per-module rollout from `[IV.18.19.12]`. Touches both `AuthController` (~10 routes including register, oauth, login, refresh, me, logout + 4 MFA verbs) and `JwksAdminController` (rotate + kids).
+
+**Decorators added:**
+
+- `@ApiTags('identity')` / `@ApiTags('admin')` at class level
+- `@ApiBearerAuth()` on routes that require an access token (`me`, `mfa/*` verbs, JWKS admin) — clarifies which routes are auth-gated vs `@Public()`
+- `@ApiOperation({ summary })` on every route
+- `@ApiResponse` with the canonical error codes per route: `EMAIL_TAKEN` (409), `INVALID_CREDENTIALS` / `MFA_REQUIRED` / `MFA_INVALID` (401), `OAUTH_PROVIDER_UNKNOWN` / `OAUTH_INVALID_TOKEN` / `OAUTH_EMAIL_UNVERIFIED` (401), `REFRESH_MISSING` / `REFRESH_INVALID` / `REFRESH_REUSED` (401), 403 on admin JWKS routes called by non-admins.
+
+Regenerated `docs/api/openapi.yaml` jumps from 27 → 39 summary entries.
+
+**Files**
+
+- `apps/api/src/modules/identity/interface/auth.controller.ts`
+- `apps/api/src/modules/identity/interface/jwks-admin.controller.ts`
+- `docs/api/openapi.yaml` (regenerated)
+
+**Combined verification (both bundled slices)**
+
+`pnpm --filter=api typecheck` green. Full integration suite: **93 passed, 578 passed** — Swagger decorators are runtime no-ops outside the export script; web scaffold doesn't touch the api.
+
+**Commits**
+
+- `db0cf24` — feat(IV.18.19.13) Identity module Swagger decorators
 
 ---
 
