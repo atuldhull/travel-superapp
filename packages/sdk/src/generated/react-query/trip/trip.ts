@@ -20,6 +20,7 @@ import type {
   GeneratePlanWithAiResponseDto,
   ItineraryListResponseDto,
   ListTripsResponseDto,
+  SharedTripDto,
   TripControllerEateriesParams,
   TripControllerEventsParams,
   TripControllerListParams,
@@ -1138,14 +1139,25 @@ export const useTripControllerShare = <TError = void, TContext = unknown>(option
  * @summary Public read of a shared trip by code. No auth required.
  */
 export type tripControllerGetSharedTripResponse200 = {
-  data: void;
+  data: SharedTripDto;
   status: 200;
+};
+
+export type tripControllerGetSharedTripResponse404 = {
+  data: void;
+  status: 404;
 };
 
 export type tripControllerGetSharedTripResponseSuccess = tripControllerGetSharedTripResponse200 & {
   headers: Headers;
 };
-export type tripControllerGetSharedTripResponse = tripControllerGetSharedTripResponseSuccess;
+export type tripControllerGetSharedTripResponseError = tripControllerGetSharedTripResponse404 & {
+  headers: Headers;
+};
+
+export type tripControllerGetSharedTripResponse =
+  | tripControllerGetSharedTripResponseSuccess
+  | tripControllerGetSharedTripResponseError;
 
 export const getTripControllerGetSharedTripUrl = (code: string) => {
   return `/api/v1/trips/shared/${code}`;
@@ -1171,7 +1183,7 @@ export const getTripControllerGetSharedTripQueryKey = (code?: string) => {
 
 export const getTripControllerGetSharedTripInfiniteQueryOptions = <
   TData = Awaited<ReturnType<typeof tripControllerGetSharedTrip>>,
-  TError = unknown,
+  TError = void,
 >(
   code: string,
   options?: {
@@ -1207,7 +1219,7 @@ export const getTripControllerGetSharedTripInfiniteQueryOptions = <
 export type TripControllerGetSharedTripInfiniteQueryResult = NonNullable<
   Awaited<ReturnType<typeof tripControllerGetSharedTrip>>
 >;
-export type TripControllerGetSharedTripInfiniteQueryError = unknown;
+export type TripControllerGetSharedTripInfiniteQueryError = void;
 
 /**
  * @summary Public read of a shared trip by code. No auth required.
@@ -1215,7 +1227,7 @@ export type TripControllerGetSharedTripInfiniteQueryError = unknown;
 
 export function useTripControllerGetSharedTripInfinite<
   TData = Awaited<ReturnType<typeof tripControllerGetSharedTrip>>,
-  TError = unknown,
+  TError = void,
 >(
   code: string,
   options?: {
@@ -1240,7 +1252,7 @@ export function useTripControllerGetSharedTripInfinite<
 
 export const getTripControllerGetSharedTripQueryOptions = <
   TData = Awaited<ReturnType<typeof tripControllerGetSharedTrip>>,
-  TError = unknown,
+  TError = void,
 >(
   code: string,
   options?: {
@@ -1270,7 +1282,7 @@ export const getTripControllerGetSharedTripQueryOptions = <
 export type TripControllerGetSharedTripQueryResult = NonNullable<
   Awaited<ReturnType<typeof tripControllerGetSharedTrip>>
 >;
-export type TripControllerGetSharedTripQueryError = unknown;
+export type TripControllerGetSharedTripQueryError = void;
 
 /**
  * @summary Public read of a shared trip by code. No auth required.
@@ -1278,7 +1290,7 @@ export type TripControllerGetSharedTripQueryError = unknown;
 
 export function useTripControllerGetSharedTrip<
   TData = Awaited<ReturnType<typeof tripControllerGetSharedTrip>>,
-  TError = unknown,
+  TError = void,
 >(
   code: string,
   options?: {

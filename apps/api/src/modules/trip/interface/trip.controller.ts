@@ -87,6 +87,7 @@ import {
   GeneratePlanWithAiResponseDto,
   ItineraryListResponseDto,
   ListTripsResponseDto,
+  SharedTripDto as SharedTripResponseDto,
   TripDto as TripResponseDto,
   TripShareResponseDto,
   UpdateDayItemsRequestDto,
@@ -370,6 +371,12 @@ export class TripController {
    */
   @Public()
   @ApiOperation({ summary: 'Public read of a shared trip by code. No auth required.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Public-safe trip view + itinerary. Owner userId is never exposed.',
+    type: SharedTripResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'Share code not found, revoked, or expired.' })
   @Get('shared/:code')
   @HttpCode(HttpStatus.OK)
   async getSharedTrip(@Param('code') code: string): Promise<SharedTripDto> {

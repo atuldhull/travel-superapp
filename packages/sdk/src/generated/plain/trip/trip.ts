@@ -7,6 +7,7 @@ import type {
   GeneratePlanWithAiResponseDto,
   ItineraryListResponseDto,
   ListTripsResponseDto,
+  SharedTripDto,
   TripControllerEateriesParams,
   TripControllerEventsParams,
   TripControllerListParams,
@@ -372,14 +373,25 @@ export const tripControllerShare = async (
  * @summary Public read of a shared trip by code. No auth required.
  */
 export type tripControllerGetSharedTripResponse200 = {
-  data: void;
+  data: SharedTripDto;
   status: 200;
+};
+
+export type tripControllerGetSharedTripResponse404 = {
+  data: void;
+  status: 404;
 };
 
 export type tripControllerGetSharedTripResponseSuccess = tripControllerGetSharedTripResponse200 & {
   headers: Headers;
 };
-export type tripControllerGetSharedTripResponse = tripControllerGetSharedTripResponseSuccess;
+export type tripControllerGetSharedTripResponseError = tripControllerGetSharedTripResponse404 & {
+  headers: Headers;
+};
+
+export type tripControllerGetSharedTripResponse =
+  | tripControllerGetSharedTripResponseSuccess
+  | tripControllerGetSharedTripResponseError;
 
 export const getTripControllerGetSharedTripUrl = (code: string) => {
   return `/api/v1/trips/shared/${code}`;

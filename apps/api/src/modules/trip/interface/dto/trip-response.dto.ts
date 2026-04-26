@@ -170,6 +170,49 @@ export class GeneratePlanWithAiResponseDto {
   declare model: string;
 }
 
+/**
+ * Public-safe view returned by `GET /trips/shared/:code`. Notably omits
+ * the owner's `userId` (only `ownerDisplayName` is exposed) and the
+ * trip's center coordinates — the recipient gets the title, dates, and
+ * itinerary needed to read the plan, nothing more. Days carry the same
+ * `ItineraryDayDto` shape as the owner-only itinerary route.
+ */
+export class SharedTripDto {
+  @ApiProperty({ format: 'cuid' })
+  declare id: string;
+
+  @ApiProperty({ description: 'Owner-chosen title.' })
+  declare title: string;
+
+  @ApiProperty({ description: 'Trip planning radius in km.' })
+  declare radiusKm: number;
+
+  @ApiProperty({ nullable: true, format: 'date-time' })
+  declare startsOn: string | null;
+
+  @ApiProperty({ nullable: true, format: 'date-time' })
+  declare endsOn: string | null;
+
+  @ApiProperty({ description: 'Display name of the owner who shared this trip.' })
+  declare ownerDisplayName: string;
+
+  @ApiProperty({
+    nullable: true,
+    format: 'date-time',
+    description: 'ISO-8601 expiry for the share code itself, not the trip.',
+  })
+  declare expiresAt: string | null;
+
+  @ApiProperty({ format: 'date-time' })
+  declare createdAt: string;
+
+  @ApiProperty({
+    type: [ItineraryDayDto],
+    description: 'Itinerary days + items, ordered by dayIndex ascending.',
+  })
+  declare days: ItineraryDayDto[];
+}
+
 export class TripShareResponseDto {
   @ApiProperty({ format: 'cuid' })
   declare id: string;
