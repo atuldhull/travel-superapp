@@ -230,7 +230,11 @@ paths:
       parameters: []
       responses:
         '201':
-          description: AuthSuccessBody { userId, accessToken, expiresAt }.
+          description: Account created; refresh-cookie set; access token returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSuccessResponseDto'
         '409':
           description: EMAIL_TAKEN.
       summary: Create a new account. Email + password + displayName. Sets the
@@ -248,7 +252,11 @@ paths:
             type: string
       responses:
         '200':
-          description: AuthSuccessBody.
+          description: OAuth sign-in succeeded; refresh-cookie set; access token returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSuccessResponseDto'
         '401':
           description: OAUTH_PROVIDER_UNKNOWN / OAUTH_INVALID_TOKEN /
             OAUTH_EMAIL_UNVERIFIED.
@@ -261,7 +269,11 @@ paths:
       parameters: []
       responses:
         '200':
-          description: AuthSuccessBody.
+          description: Login succeeded; refresh-cookie set; access token returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSuccessResponseDto'
         '401':
           description: INVALID_CREDENTIALS / MFA_REQUIRED / MFA_INVALID.
       summary: Email + password login. With MFA enabled, mfaCode is required on the
@@ -273,7 +285,11 @@ paths:
       parameters: []
       responses:
         '200':
-          description: New { accessToken, expiresAt }. New refresh cookie set.
+          description: New access token issued; new refresh cookie set.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshSuccessResponseDto'
         '401':
           description: REFRESH_MISSING / REFRESH_INVALID / REFRESH_REUSED.
       summary: Rotate the access + refresh tokens. Reads the httpOnly refresh cookie;
@@ -920,7 +936,11 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: Currently-published memory books, newest-first.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeaturedMemoryBooksResponseDto'
       security: &a18
         - bearer: []
       summary: Public discovery — currently-published memory books across all users,
@@ -938,7 +958,13 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: Published book metadata + ids of attached assets.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicMemoryBookWithAssetsResponseDto'
+        '404':
+          description: BOOK_NOT_PUBLISHED.
       security: *a18
       summary: Public read of a published memory book by id. The cuid is the
         unguessable token.
@@ -1829,4 +1855,90 @@ components:
       description: 'Access token issued by POST /auth/login or rotated via POST
         /auth/refresh. Lifetime: 15 minutes (configurable via
         JWT_ACCESS_EXPIRY).'
-  schemas: {}
+  schemas:
+    AuthSuccessResponseDto:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: cuid
+          description: Authenticated user id.
+        accessToken:
+          type: string
+          description: Bearer access token (JWT). Memory-only — never localStorage.
+        expiresAt:
+          type: string
+          format: date-time
+          description: ISO-8601 timestamp at which the access token expires.
+      required:
+        - userId
+        - accessToken
+        - expiresAt
+    RefreshSuccessResponseDto:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          description: New bearer access token (JWT). Refresh cookie is rotated server-side.
+        expiresAt:
+          type: string
+          format: date-time
+          description: ISO-8601 timestamp at which the new access token expires.
+      required:
+        - accessToken
+        - expiresAt
+    PublicMemoryBookDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        title:
+          type: string
+          description: Public title chosen by the owner.
+        theme:
+          type: string
+          description: Theme slug (e.g. "minimal", "vintage").
+        coverS3Key:
+          type: object
+          nullable: true
+          description: S3 key of the cover image, or null if none was set.
+        publishedAt:
+          type: string
+          format: date-time
+          description: ISO-8601 timestamp at which the book was published.
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - theme
+        - coverS3Key
+        - publishedAt
+        - createdAt
+    FeaturedMemoryBooksResponseDto:
+      type: object
+      properties:
+        books:
+          description: Currently-published memory books, ordered by publishedAt DESC.
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicMemoryBookDto'
+      required:
+        - books
+    PublicMemoryBookWithAssetsResponseDto:
+      type: object
+      properties:
+        book:
+          $ref: '#/components/schemas/PublicMemoryBookDto'
+        assetIds:
+          description: Asset ids attached to this published book. Use GET
+            /memory-books/public/:id/assets/:assetId/download-url to mint a
+            presigned URL per asset.
+          type: array
+          items:
+            type: string
+      required:
+        - book
+        - assetIds

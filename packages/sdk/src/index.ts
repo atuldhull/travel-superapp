@@ -21,3 +21,13 @@ export { apiFetch, configureSdk, type ApiError } from './runtime/fetcher';
 // surface starts consuming them — this keeps the public API explicit
 // rather than star-exporting every generated symbol at once.
 export * from './generated/react-query/media/media';
+export * from './generated/react-query/identity/identity';
+
+// Schema types from openapi.yaml's components/schemas. Re-exported so
+// consumers don't have to reach into deep generated paths. Add the
+// schemas as the surface starts using them.
+export type { AuthSuccessResponseDto } from './generated/schemas/authSuccessResponseDto';
+export type { RefreshSuccessResponseDto } from './generated/schemas/refreshSuccessResponseDto';
+export type { FeaturedMemoryBooksResponseDto } from './generated/schemas/featuredMemoryBooksResponseDto';
+export type { PublicMemoryBookDto } from './generated/schemas/publicMemoryBookDto';
+export type { PublicMemoryBookWithAssetsResponseDto } from './generated/schemas/publicMemoryBookWithAssetsResponseDto';
