@@ -25,6 +25,51 @@
 
 ---
 
+### [IV.18.19.50] — real thumbnail rendering on /memory-books/[id] (bundled with `[IV.18.19.49]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 5 (Frontend stack)
+
+**What was done**
+
+Replaces the placeholder grid on the public memory-book viewer with real `<img>` thumbnails backed by the typed download-URL DTO landed in slice .19.49.
+
+- New inline `AssetThumb` component on `apps/web/src/app/memory-books/[id]/page.tsx`. Each tile owns its own `useMemoryBookControllerGetPublicAssetDownloadUrl` query (60s `staleTime`, `retry: false`) and renders an `<img>` with `loading="lazy"` + `object-cover` once the URL lands.
+- Loading and error states are scoped per-tile — a single failing asset shows ⚠️ in its own tile while the rest of the grid renders normally. Spinner glyph (…) shows while in flight.
+- Dropped the "thumbnails arrive in a follow-up" subtitle now that the follow-up is here.
+
+**Verification**
+
+- web typecheck clean. Web build clean — `/memory-books/[id]` route now 1.87 kB (was 1.76 kB).
+
+**Commit**
+
+`094dd90 feat(IV.18.19.50): real thumbnail rendering on /memory-books/[id]`
+
+---
+
+### [IV.18.19.49] — typed PublicDownloadUrlResponseDto on public download-URL route (bundled with `[IV.18.19.50]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 6 (SDK / API contract)
+
+**What was done**
+
+Closes the schema gap that was blocking real thumbnails on the public memory-book viewer.
+
+- New `PublicDownloadUrlResponseDto` class (`url: string`, `expiresAt: string` with `format: 'date-time'`) in `apps/api/src/modules/media/interface/dto/memory-book-response.dto.ts`.
+- Decorated `MemoryBookController.getPublicAssetDownloadUrl` with `@ApiResponse({ status: 200, type: PublicDownloadUrlResponseDto })` plus the 404 catalogue (BOOK_NOT_PUBLISHED, MEDIA_NOT_FOUND, NOT_ATTACHED).
+- Regenerated `docs/api/openapi.yaml` + the orval client. The generated `memoryBookControllerGetPublicAssetDownloadUrlResponse200` is now `{ data: PublicDownloadUrlResponseDto, status: 200 }` (was `{ data: void }`).
+- Re-exported `PublicDownloadUrlResponseDto` from `@app/sdk` so web consumers can read `result.data.data.url` through the typed envelope.
+
+**Verification**
+
+- api typecheck + sdk typecheck clean. 93 / 578 api tests pass — same baseline as post-.48.
+
+**Commit**
+
+`d3a00ea feat(IV.18.19.49): typed PublicDownloadUrlResponseDto on public download-URL route`
+
+---
+
 ### [IV.18.19.48] — public /memory-books/[id] viewer (bundled with `[IV.18.19.47]`)
 
 **Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 5 (Frontend stack)
