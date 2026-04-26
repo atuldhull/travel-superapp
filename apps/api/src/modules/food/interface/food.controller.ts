@@ -11,15 +11,28 @@
  * Installed by prompt [IV.18.7.1].
  */
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { SearchEateriesUseCase } from '../application/search-eateries.use-case';
 import type { EateryListing } from '../domain/eatery-listing.entity';
 import { SearchEateriesBodySchema, type SearchEateriesBody } from './dto/food.dto';
+import { SearchEateriesRequestDto, SearchEateriesResponseDto } from './dto/food-response.dto';
 
+@ApiTags('food')
+@ApiBearerAuth()
 @Controller('eateries')
 export class FoodController {
   constructor(private readonly searchEateries: SearchEateriesUseCase) {}
 
+  @ApiOperation({
+    summary: 'Search eateries within a radius. Optional cuisine + price-tier filters.',
+  })
+  @ApiBody({ type: SearchEateriesRequestDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Matching eateries, nearest-first.',
+    type: SearchEateriesResponseDto,
+  })
   @Post('search')
   @HttpCode(HttpStatus.OK)
   async search(
