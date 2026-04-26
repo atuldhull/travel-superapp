@@ -16,16 +16,21 @@ import type {
 
 import type {
   AttachMediaToTripRequestDto,
+  CreateMemoryBookRequestDto,
   CreateUploadUrlRequestDto,
   CreateUploadUrlResponseDto,
   FeaturedMemoryBooksResponseDto,
+  ListMemoryBooksResponseDto,
   ListTripMediaResponseDto,
   MediaAssetDto,
   MediaControllerListByTripParams,
   MemoryBookControllerFeaturedParams,
   MemoryBookControllerListParams,
+  MemoryBookDto,
+  MemoryBookWithAssetsResponseDto,
   PublicDownloadUrlResponseDto,
   PublicMemoryBookWithAssetsResponseDto,
+  UpdateMemoryBookRequestDto,
 } from '../../schemas';
 
 import { apiFetch } from '../../../runtime/fetcher';
@@ -1351,8 +1356,11 @@ export function useMemoryBookControllerGetPublicAssetDownloadUrl<
   return query;
 }
 
+/**
+ * @summary Create a memory book (draft). Owner = caller.
+ */
 export type memoryBookControllerCreateResponse201 = {
-  data: void;
+  data: MemoryBookDto;
   status: 201;
 };
 
@@ -1366,11 +1374,14 @@ export const getMemoryBookControllerCreateUrl = () => {
 };
 
 export const memoryBookControllerCreate = async (
+  createMemoryBookRequestDto: CreateMemoryBookRequestDto,
   options?: RequestInit,
 ): Promise<memoryBookControllerCreateResponse> => {
   return apiFetch<memoryBookControllerCreateResponse>(getMemoryBookControllerCreateUrl(), {
     ...options,
     method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createMemoryBookRequestDto),
   });
 };
 
@@ -1381,14 +1392,14 @@ export const getMemoryBookControllerCreateMutationOptions = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof memoryBookControllerCreate>>,
     TError,
-    void,
+    { data: CreateMemoryBookRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof memoryBookControllerCreate>>,
   TError,
-  void,
+  { data: CreateMemoryBookRequestDto },
   TContext
 > => {
   const mutationKey = ['memoryBookControllerCreate'];
@@ -1400,9 +1411,11 @@ export const getMemoryBookControllerCreateMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof memoryBookControllerCreate>>,
-    void
-  > = () => {
-    return memoryBookControllerCreate(requestOptions);
+    { data: CreateMemoryBookRequestDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return memoryBookControllerCreate(data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -1411,29 +1424,35 @@ export const getMemoryBookControllerCreateMutationOptions = <
 export type MemoryBookControllerCreateMutationResult = NonNullable<
   Awaited<ReturnType<typeof memoryBookControllerCreate>>
 >;
-
+export type MemoryBookControllerCreateMutationBody = CreateMemoryBookRequestDto;
 export type MemoryBookControllerCreateMutationError = unknown;
 
+/**
+ * @summary Create a memory book (draft). Owner = caller.
+ */
 export const useMemoryBookControllerCreate = <TError = unknown, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof memoryBookControllerCreate>>,
     TError,
-    void,
+    { data: CreateMemoryBookRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationResult<
   Awaited<ReturnType<typeof memoryBookControllerCreate>>,
   TError,
-  void,
+  { data: CreateMemoryBookRequestDto },
   TContext
 > => {
   const mutationOptions = getMemoryBookControllerCreateMutationOptions(options);
 
   return useMutation(mutationOptions);
 };
+/**
+ * @summary List the caller's memory books, newest first. ?limit=N (1..200, default 50). Owner-scoped.
+ */
 export type memoryBookControllerListResponse200 = {
-  data: void;
+  data: ListMemoryBooksResponseDto;
   status: 200;
 };
 
@@ -1517,6 +1536,10 @@ export type MemoryBookControllerListInfiniteQueryResult = NonNullable<
 >;
 export type MemoryBookControllerListInfiniteQueryError = unknown;
 
+/**
+ * @summary List the caller's memory books, newest first. ?limit=N (1..200, default 50). Owner-scoped.
+ */
+
 export function useMemoryBookControllerListInfinite<
   TData = Awaited<ReturnType<typeof memoryBookControllerList>>,
   TError = unknown,
@@ -1572,6 +1595,10 @@ export type MemoryBookControllerListQueryResult = NonNullable<
 >;
 export type MemoryBookControllerListQueryError = unknown;
 
+/**
+ * @summary List the caller's memory books, newest first. ?limit=N (1..200, default 50). Owner-scoped.
+ */
+
 export function useMemoryBookControllerList<
   TData = Awaited<ReturnType<typeof memoryBookControllerList>>,
   TError = unknown,
@@ -1591,15 +1618,29 @@ export function useMemoryBookControllerList<
   return query;
 }
 
+/**
+ * @summary Get one of the caller-owned books + the attached asset ids.
+ */
 export type memoryBookControllerGetOneResponse200 = {
-  data: void;
+  data: MemoryBookWithAssetsResponseDto;
   status: 200;
+};
+
+export type memoryBookControllerGetOneResponse404 = {
+  data: void;
+  status: 404;
 };
 
 export type memoryBookControllerGetOneResponseSuccess = memoryBookControllerGetOneResponse200 & {
   headers: Headers;
 };
-export type memoryBookControllerGetOneResponse = memoryBookControllerGetOneResponseSuccess;
+export type memoryBookControllerGetOneResponseError = memoryBookControllerGetOneResponse404 & {
+  headers: Headers;
+};
+
+export type memoryBookControllerGetOneResponse =
+  | memoryBookControllerGetOneResponseSuccess
+  | memoryBookControllerGetOneResponseError;
 
 export const getMemoryBookControllerGetOneUrl = (id: string) => {
   return `/api/v1/memory-books/${id}`;
@@ -1625,7 +1666,7 @@ export const getMemoryBookControllerGetOneQueryKey = (id?: string) => {
 
 export const getMemoryBookControllerGetOneInfiniteQueryOptions = <
   TData = Awaited<ReturnType<typeof memoryBookControllerGetOne>>,
-  TError = unknown,
+  TError = void,
 >(
   id: string,
   options?: {
@@ -1661,11 +1702,15 @@ export const getMemoryBookControllerGetOneInfiniteQueryOptions = <
 export type MemoryBookControllerGetOneInfiniteQueryResult = NonNullable<
   Awaited<ReturnType<typeof memoryBookControllerGetOne>>
 >;
-export type MemoryBookControllerGetOneInfiniteQueryError = unknown;
+export type MemoryBookControllerGetOneInfiniteQueryError = void;
+
+/**
+ * @summary Get one of the caller-owned books + the attached asset ids.
+ */
 
 export function useMemoryBookControllerGetOneInfinite<
   TData = Awaited<ReturnType<typeof memoryBookControllerGetOne>>,
-  TError = unknown,
+  TError = void,
 >(
   id: string,
   options?: {
@@ -1690,7 +1735,7 @@ export function useMemoryBookControllerGetOneInfinite<
 
 export const getMemoryBookControllerGetOneQueryOptions = <
   TData = Awaited<ReturnType<typeof memoryBookControllerGetOne>>,
-  TError = unknown,
+  TError = void,
 >(
   id: string,
   options?: {
@@ -1716,11 +1761,15 @@ export const getMemoryBookControllerGetOneQueryOptions = <
 export type MemoryBookControllerGetOneQueryResult = NonNullable<
   Awaited<ReturnType<typeof memoryBookControllerGetOne>>
 >;
-export type MemoryBookControllerGetOneQueryError = unknown;
+export type MemoryBookControllerGetOneQueryError = void;
+
+/**
+ * @summary Get one of the caller-owned books + the attached asset ids.
+ */
 
 export function useMemoryBookControllerGetOne<
   TData = Awaited<ReturnType<typeof memoryBookControllerGetOne>>,
-  TError = unknown,
+  TError = void,
 >(
   id: string,
   options?: {
@@ -1737,15 +1786,29 @@ export function useMemoryBookControllerGetOne<
   return query;
 }
 
+/**
+ * @summary Update one of the caller-owned books. Partial update.
+ */
 export type memoryBookControllerUpdateResponse200 = {
-  data: void;
+  data: MemoryBookDto;
   status: 200;
+};
+
+export type memoryBookControllerUpdateResponse404 = {
+  data: void;
+  status: 404;
 };
 
 export type memoryBookControllerUpdateResponseSuccess = memoryBookControllerUpdateResponse200 & {
   headers: Headers;
 };
-export type memoryBookControllerUpdateResponse = memoryBookControllerUpdateResponseSuccess;
+export type memoryBookControllerUpdateResponseError = memoryBookControllerUpdateResponse404 & {
+  headers: Headers;
+};
+
+export type memoryBookControllerUpdateResponse =
+  | memoryBookControllerUpdateResponseSuccess
+  | memoryBookControllerUpdateResponseError;
 
 export const getMemoryBookControllerUpdateUrl = (id: string) => {
   return `/api/v1/memory-books/${id}`;
@@ -1753,29 +1816,32 @@ export const getMemoryBookControllerUpdateUrl = (id: string) => {
 
 export const memoryBookControllerUpdate = async (
   id: string,
+  updateMemoryBookRequestDto: UpdateMemoryBookRequestDto,
   options?: RequestInit,
 ): Promise<memoryBookControllerUpdateResponse> => {
   return apiFetch<memoryBookControllerUpdateResponse>(getMemoryBookControllerUpdateUrl(id), {
     ...options,
     method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateMemoryBookRequestDto),
   });
 };
 
 export const getMemoryBookControllerUpdateMutationOptions = <
-  TError = unknown,
+  TError = void,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof memoryBookControllerUpdate>>,
     TError,
-    { id: string },
+    { id: string; data: UpdateMemoryBookRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof memoryBookControllerUpdate>>,
   TError,
-  { id: string },
+  { id: string; data: UpdateMemoryBookRequestDto },
   TContext
 > => {
   const mutationKey = ['memoryBookControllerUpdate'];
@@ -1787,11 +1853,11 @@ export const getMemoryBookControllerUpdateMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof memoryBookControllerUpdate>>,
-    { id: string }
+    { id: string; data: UpdateMemoryBookRequestDto }
   > = (props) => {
-    const { id } = props ?? {};
+    const { id, data } = props ?? {};
 
-    return memoryBookControllerUpdate(id, requestOptions);
+    return memoryBookControllerUpdate(id, data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -1800,36 +1866,53 @@ export const getMemoryBookControllerUpdateMutationOptions = <
 export type MemoryBookControllerUpdateMutationResult = NonNullable<
   Awaited<ReturnType<typeof memoryBookControllerUpdate>>
 >;
+export type MemoryBookControllerUpdateMutationBody = UpdateMemoryBookRequestDto;
+export type MemoryBookControllerUpdateMutationError = void;
 
-export type MemoryBookControllerUpdateMutationError = unknown;
-
-export const useMemoryBookControllerUpdate = <TError = unknown, TContext = unknown>(options?: {
+/**
+ * @summary Update one of the caller-owned books. Partial update.
+ */
+export const useMemoryBookControllerUpdate = <TError = void, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof memoryBookControllerUpdate>>,
     TError,
-    { id: string },
+    { id: string; data: UpdateMemoryBookRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationResult<
   Awaited<ReturnType<typeof memoryBookControllerUpdate>>,
   TError,
-  { id: string },
+  { id: string; data: UpdateMemoryBookRequestDto },
   TContext
 > => {
   const mutationOptions = getMemoryBookControllerUpdateMutationOptions(options);
 
   return useMutation(mutationOptions);
 };
+/**
+ * @summary Delete one of the caller-owned books. SetNull on MediaAsset.memoryBookId.
+ */
 export type memoryBookControllerRemoveResponse204 = {
   data: void;
   status: 204;
 };
 
+export type memoryBookControllerRemoveResponse404 = {
+  data: void;
+  status: 404;
+};
+
 export type memoryBookControllerRemoveResponseSuccess = memoryBookControllerRemoveResponse204 & {
   headers: Headers;
 };
-export type memoryBookControllerRemoveResponse = memoryBookControllerRemoveResponseSuccess;
+export type memoryBookControllerRemoveResponseError = memoryBookControllerRemoveResponse404 & {
+  headers: Headers;
+};
+
+export type memoryBookControllerRemoveResponse =
+  | memoryBookControllerRemoveResponseSuccess
+  | memoryBookControllerRemoveResponseError;
 
 export const getMemoryBookControllerRemoveUrl = (id: string) => {
   return `/api/v1/memory-books/${id}`;
@@ -1846,7 +1929,7 @@ export const memoryBookControllerRemove = async (
 };
 
 export const getMemoryBookControllerRemoveMutationOptions = <
-  TError = unknown,
+  TError = void,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -1885,9 +1968,12 @@ export type MemoryBookControllerRemoveMutationResult = NonNullable<
   Awaited<ReturnType<typeof memoryBookControllerRemove>>
 >;
 
-export type MemoryBookControllerRemoveMutationError = unknown;
+export type MemoryBookControllerRemoveMutationError = void;
 
-export const useMemoryBookControllerRemove = <TError = unknown, TContext = unknown>(options?: {
+/**
+ * @summary Delete one of the caller-owned books. SetNull on MediaAsset.memoryBookId.
+ */
+export const useMemoryBookControllerRemove = <TError = void, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof memoryBookControllerRemove>>,
     TError,
@@ -1905,15 +1991,29 @@ export const useMemoryBookControllerRemove = <TError = unknown, TContext = unkno
 
   return useMutation(mutationOptions);
 };
+/**
+ * @summary Publish a book — flips publishedAt to now (idempotent).
+ */
 export type memoryBookControllerPublishResponse200 = {
-  data: void;
+  data: MemoryBookDto;
   status: 200;
+};
+
+export type memoryBookControllerPublishResponse404 = {
+  data: void;
+  status: 404;
 };
 
 export type memoryBookControllerPublishResponseSuccess = memoryBookControllerPublishResponse200 & {
   headers: Headers;
 };
-export type memoryBookControllerPublishResponse = memoryBookControllerPublishResponseSuccess;
+export type memoryBookControllerPublishResponseError = memoryBookControllerPublishResponse404 & {
+  headers: Headers;
+};
+
+export type memoryBookControllerPublishResponse =
+  | memoryBookControllerPublishResponseSuccess
+  | memoryBookControllerPublishResponseError;
 
 export const getMemoryBookControllerPublishUrl = (id: string) => {
   return `/api/v1/memory-books/${id}/publish`;
@@ -1930,7 +2030,7 @@ export const memoryBookControllerPublish = async (
 };
 
 export const getMemoryBookControllerPublishMutationOptions = <
-  TError = unknown,
+  TError = void,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -1969,9 +2069,12 @@ export type MemoryBookControllerPublishMutationResult = NonNullable<
   Awaited<ReturnType<typeof memoryBookControllerPublish>>
 >;
 
-export type MemoryBookControllerPublishMutationError = unknown;
+export type MemoryBookControllerPublishMutationError = void;
 
-export const useMemoryBookControllerPublish = <TError = unknown, TContext = unknown>(options?: {
+/**
+ * @summary Publish a book — flips publishedAt to now (idempotent).
+ */
+export const useMemoryBookControllerPublish = <TError = void, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof memoryBookControllerPublish>>,
     TError,
@@ -1989,16 +2092,31 @@ export const useMemoryBookControllerPublish = <TError = unknown, TContext = unkn
 
   return useMutation(mutationOptions);
 };
+/**
+ * @summary Unpublish a book — clears publishedAt (idempotent).
+ */
 export type memoryBookControllerUnpublishResponse200 = {
-  data: void;
+  data: MemoryBookDto;
   status: 200;
+};
+
+export type memoryBookControllerUnpublishResponse404 = {
+  data: void;
+  status: 404;
 };
 
 export type memoryBookControllerUnpublishResponseSuccess =
   memoryBookControllerUnpublishResponse200 & {
     headers: Headers;
   };
-export type memoryBookControllerUnpublishResponse = memoryBookControllerUnpublishResponseSuccess;
+export type memoryBookControllerUnpublishResponseError =
+  memoryBookControllerUnpublishResponse404 & {
+    headers: Headers;
+  };
+
+export type memoryBookControllerUnpublishResponse =
+  | memoryBookControllerUnpublishResponseSuccess
+  | memoryBookControllerUnpublishResponseError;
 
 export const getMemoryBookControllerUnpublishUrl = (id: string) => {
   return `/api/v1/memory-books/${id}/unpublish`;
@@ -2015,7 +2133,7 @@ export const memoryBookControllerUnpublish = async (
 };
 
 export const getMemoryBookControllerUnpublishMutationOptions = <
-  TError = unknown,
+  TError = void,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -2054,9 +2172,12 @@ export type MemoryBookControllerUnpublishMutationResult = NonNullable<
   Awaited<ReturnType<typeof memoryBookControllerUnpublish>>
 >;
 
-export type MemoryBookControllerUnpublishMutationError = unknown;
+export type MemoryBookControllerUnpublishMutationError = void;
 
-export const useMemoryBookControllerUnpublish = <TError = unknown, TContext = unknown>(options?: {
+/**
+ * @summary Unpublish a book — clears publishedAt (idempotent).
+ */
+export const useMemoryBookControllerUnpublish = <TError = void, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof memoryBookControllerUnpublish>>,
     TError,

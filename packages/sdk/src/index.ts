@@ -36,6 +36,11 @@ export type { FeaturedMemoryBooksResponseDto } from './generated/schemas/feature
 export type { PublicMemoryBookDto } from './generated/schemas/publicMemoryBookDto';
 export type { PublicMemoryBookWithAssetsResponseDto } from './generated/schemas/publicMemoryBookWithAssetsResponseDto';
 export type { PublicDownloadUrlResponseDto } from './generated/schemas/publicDownloadUrlResponseDto';
+export type { MemoryBookDto } from './generated/schemas/memoryBookDto';
+export type { ListMemoryBooksResponseDto } from './generated/schemas/listMemoryBooksResponseDto';
+export type { MemoryBookWithAssetsResponseDto } from './generated/schemas/memoryBookWithAssetsResponseDto';
+export type { CreateMemoryBookRequestDto } from './generated/schemas/createMemoryBookRequestDto';
+export type { UpdateMemoryBookRequestDto } from './generated/schemas/updateMemoryBookRequestDto';
 export type { TripDto } from './generated/schemas/tripDto';
 export type { ListTripsResponseDto } from './generated/schemas/listTripsResponseDto';
 export type { CreateTripRequestDto } from './generated/schemas/createTripRequestDto';

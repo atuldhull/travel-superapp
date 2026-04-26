@@ -1155,10 +1155,21 @@ paths:
     post:
       operationId: MemoryBookController_create
       parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMemoryBookRequestDto'
       responses:
         '201':
-          description: ''
+          description: Newly-created book row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoryBookDto'
       security: *a18
+      summary: Create a memory book (draft). Owner = caller.
       tags: *a19
     get:
       operationId: MemoryBookController_list
@@ -1170,8 +1181,14 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: Caller-owned memory books, newest first.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListMemoryBooksResponseDto'
       security: *a18
+      summary: List the caller's memory books, newest first. ?limit=N (1..200, default
+        50). Owner-scoped.
       tags: *a19
   /api/v1/memory-books/{id}:
     get:
@@ -1184,8 +1201,15 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: Book row + ids of attached assets (any status).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoryBookWithAssetsResponseDto'
+        '404':
+          description: BOOK_NOT_FOUND.
       security: *a18
+      summary: Get one of the caller-owned books + the attached asset ids.
       tags: *a19
     patch:
       operationId: MemoryBookController_update
@@ -1195,10 +1219,23 @@ paths:
           in: path
           schema:
             type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMemoryBookRequestDto'
       responses:
         '200':
-          description: ''
+          description: Updated book row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoryBookDto'
+        '404':
+          description: BOOK_NOT_FOUND.
       security: *a18
+      summary: Update one of the caller-owned books. Partial update.
       tags: *a19
     delete:
       operationId: MemoryBookController_remove
@@ -1210,8 +1247,11 @@ paths:
             type: string
       responses:
         '204':
-          description: ''
+          description: Deleted.
+        '404':
+          description: BOOK_NOT_FOUND.
       security: *a18
+      summary: Delete one of the caller-owned books. SetNull on MediaAsset.memoryBookId.
       tags: *a19
   /api/v1/memory-books/{id}/publish:
     post:
@@ -1224,8 +1264,15 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: Published book row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoryBookDto'
+        '404':
+          description: BOOK_NOT_FOUND.
       security: *a18
+      summary: Publish a book — flips publishedAt to now (idempotent).
       tags: *a19
   /api/v1/memory-books/{id}/unpublish:
     post:
@@ -1238,8 +1285,15 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: Updated book row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoryBookDto'
+        '404':
+          description: BOOK_NOT_FOUND.
       security: *a18
+      summary: Unpublish a book — clears publishedAt (idempotent).
       tags: *a19
   /api/v1/admin/media:
     get:
@@ -2880,3 +2934,95 @@ components:
       required:
         - url
         - expiresAt
+    CreateMemoryBookRequestDto:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        theme:
+          type: string
+          maxLength: 32
+        coverS3Key:
+          type: object
+          nullable: true
+          maxLength: 512
+      required:
+        - title
+    MemoryBookDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        ownerId:
+          type: string
+          format: cuid
+          description: Owner of the book — caller-only on owner routes.
+        title:
+          type: string
+        theme:
+          type: string
+          description: Theme slug (e.g. "minimal", "vintage").
+        coverS3Key:
+          type: object
+          nullable: true
+        publishedAt:
+          type: object
+          nullable: true
+          format: date-time
+          description: ISO-8601 publish timestamp; null while the book is a draft.
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - ownerId
+        - title
+        - theme
+        - coverS3Key
+        - publishedAt
+        - createdAt
+        - updatedAt
+    ListMemoryBooksResponseDto:
+      type: object
+      properties:
+        books:
+          description: Caller-owned memory books, newest first. Default 50 / cap 200.
+          type: array
+          items:
+            $ref: '#/components/schemas/MemoryBookDto'
+      required:
+        - books
+    MemoryBookWithAssetsResponseDto:
+      type: object
+      properties:
+        book:
+          $ref: '#/components/schemas/MemoryBookDto'
+        assetIds:
+          description: Asset ids attached to this book (any status).
+          type: array
+          items:
+            type: string
+      required:
+        - book
+        - assetIds
+    UpdateMemoryBookRequestDto:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        theme:
+          type: string
+          minLength: 1
+          maxLength: 32
+        coverS3Key:
+          type: object
+          nullable: true
+          maxLength: 512
