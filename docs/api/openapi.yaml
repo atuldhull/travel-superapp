@@ -570,9 +570,24 @@ paths:
           in: path
           schema:
             type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTripShareRequestDto'
       responses:
         '201':
-          description: ''
+          description: Newly-minted share. Use `shareCode` in the public
+            /trips/shared/:code path.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripShareResponseDto'
+        '404':
+          description: TRIP_NOT_FOUND.
+        '422':
+          description: INVALID_EXPIRY (past timestamp).
       security: *a11
       summary: Mint a share code so collaborators can view (or co-edit, if
         publicRead=false) the trip.
@@ -2233,6 +2248,39 @@ components:
             $ref: '#/components/schemas/ItineraryDayDto'
       required:
         - days
+    CreateTripShareRequestDto:
+      type: object
+      properties:
+        expiresAt:
+          type: string
+          format: date-time
+          description: Optional expiry. Omit for a non-expiring share code.
+    TripShareResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        tripId:
+          type: string
+          format: cuid
+        shareCode:
+          type: string
+          description: Opaque token; recipients hit `GET /trips/shared/:code` to view the
+            trip.
+        expiresAt:
+          type: object
+          nullable: true
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - tripId
+        - shareCode
+        - expiresAt
+        - createdAt
     OverviewSectionFailureDto:
       type: object
       properties:

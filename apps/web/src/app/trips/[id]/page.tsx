@@ -26,13 +26,16 @@ import {
   useTripControllerGetItinerary,
   useTripControllerGetOne,
   useTripControllerRemove,
+  useTripControllerShare,
   useTripControllerUpdate,
   useTripControllerUpdateDay,
+  type CreateTripShareRequestDto,
   type ItineraryDayDto,
   type ItineraryListResponseDto,
   type ListTripMediaResponseDto,
   type MediaAssetDto,
   type TripDto,
+  type TripShareResponseDto,
   type UpdateDayItemDto,
   type UpdateDayItemsRequestDto,
   type UpdateTripRequestDto,
@@ -175,6 +178,7 @@ export default function TripDetailPage() {
       )}
       <ItinerarySection tripId={id} enabled={token !== null && !editing} />
       <MediaSection tripId={id} enabled={token !== null && !editing} />
+      <ShareSection tripId={id} enabled={token !== null && !editing} />
       {confirmDelete ? (
         <Card>
           <CardHeader>
@@ -704,5 +708,109 @@ function MediaTile({ asset }: { asset: MediaAssetDto }) {
       <p className="mt-1 truncate font-mono text-[10px] text-muted">{asset.id.slice(0, 8)}…</p>
       <p className="text-[10px] text-muted">{dateStr}</p>
     </li>
+  );
+}
+
+interface ShareSectionProps {
+  readonly tripId: string;
+  readonly enabled: boolean;
+}
+
+function ShareSection({ tripId, enabled }: ShareSectionProps) {
+  const [share, setShare] = useState<TripShareResponseDto | null>(null);
+  const [errMsg, setErrMsg] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const mintMutation = useTripControllerShare({
+    mutation: {
+      onSuccess: (response: { data?: unknown }) => {
+        const body = response.data as TripShareResponseDto;
+        setShare(body);
+        setErrMsg(null);
+        setCopied(false);
+      },
+      onError: (err: unknown) => {
+        const e = err as { code?: string; message?: string; status?: number };
+        setErrMsg(`${e.code ?? `HTTP_${e.status ?? '???'}`} — ${e.message ?? 'Mint failed.'}`);
+      },
+    },
+  });
+
+  if (!enabled) return null;
+
+  function shareUrl(code: string) {
+    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
+    return `${apiBase}/api/v1/trips/shared/${code}`;
+  }
+
+  async function copyToClipboard(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setErrMsg('Clipboard write blocked by the browser.');
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-start justify-between gap-2">
+          <CardTitle>Share</CardTitle>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={mintMutation.isPending}
+            onClick={() => {
+              const data: CreateTripShareRequestDto = {};
+              mintMutation.mutate({ id: tripId, data });
+            }}
+          >
+            {mintMutation.isPending ? 'Minting…' : share ? 'New code' : 'Mint code'}
+          </Button>
+        </div>
+        <CardSubtitle>
+          A share code grants public read of this trip via <code>GET /trips/shared/:code</code>.
+        </CardSubtitle>
+      </CardHeader>
+      {errMsg ? (
+        <p className="mb-2 rounded-md border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">
+          {errMsg}
+        </p>
+      ) : null}
+      {share ? (
+        <div className="space-y-2 text-sm">
+          <div className="flex items-center gap-2">
+            <code className="rounded bg-muted/10 px-2 py-1 font-mono text-xs">
+              {share.shareCode}
+            </code>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => copyToClipboard(shareUrl(share.shareCode))}
+            >
+              {copied ? 'Copied!' : 'Copy URL'}
+            </Button>
+          </div>
+          <p className="text-xs text-muted">
+            URL:{' '}
+            <code className="break-all font-mono text-[10px]">{shareUrl(share.shareCode)}</code>
+          </p>
+          {share.expiresAt ? (
+            <p className="text-xs text-muted">
+              Expires: {new Date(share.expiresAt as unknown as string).toLocaleString()}
+            </p>
+          ) : (
+            <p className="text-xs text-muted">No expiry.</p>
+          )}
+        </div>
+      ) : (
+        <p className="text-sm text-muted">
+          Click <strong>Mint code</strong> to create a public read link.
+        </p>
+      )}
+    </Card>
   );
 }

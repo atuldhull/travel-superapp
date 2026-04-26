@@ -55,3 +55,5 @@ export type { UpdateDayItemsRequestDto } from './generated/schemas/updateDayItem
 export type { UpdateDayItemsResponseDto } from './generated/schemas/updateDayItemsResponseDto';
 export type { MediaAssetDto } from './generated/schemas/mediaAssetDto';
 export type { ListTripMediaResponseDto } from './generated/schemas/listTripMediaResponseDto';
+export type { CreateTripShareRequestDto } from './generated/schemas/createTripShareRequestDto';
+export type { TripShareResponseDto } from './generated/schemas/tripShareResponseDto';

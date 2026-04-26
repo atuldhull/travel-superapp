@@ -82,9 +82,11 @@ import {
 } from './dto/trip.dto';
 import {
   CreateTripRequestDto,
+  CreateTripShareRequestDto,
   ItineraryListResponseDto,
   ListTripsResponseDto,
   TripDto as TripResponseDto,
+  TripShareResponseDto,
   UpdateDayItemsRequestDto,
   UpdateDayItemsResponseDto,
   UpdateTripRequestDto,
@@ -301,6 +303,14 @@ export class TripController {
     summary:
       'Mint a share code so collaborators can view (or co-edit, if publicRead=false) the trip.',
   })
+  @ApiBody({ type: CreateTripShareRequestDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Newly-minted share. Use `shareCode` in the public /trips/shared/:code path.',
+    type: TripShareResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'TRIP_NOT_FOUND.' })
+  @ApiResponse({ status: 422, description: 'INVALID_EXPIRY (past timestamp).' })
   @Post(':id/share')
   @HttpCode(HttpStatus.CREATED)
   async share(
