@@ -26,14 +26,27 @@
  * Installed by prompt [IV.18.18.2].
  */
 import { Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../../../common/auth';
+import { AdminPurgeForceResponseDto } from '../../admin/interface/dto/admin-response.dto';
 import { AccountPurgeScheduler } from './account-purge.scheduler';
 
+@ApiTags('admin')
+@ApiBearerAuth()
 @Controller('admin/account-purge')
 @Roles('admin')
 export class AdminPurgeController {
   constructor(private readonly scheduler: AccountPurgeScheduler) {}
 
+  @ApiOperation({
+    summary:
+      'Force the account-purge scheduler tick. Idempotent — re-entrant guard skips overlapping calls.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Tick fired (or skipped if already running).',
+    type: AdminPurgeForceResponseDto,
+  })
   @Post()
   @HttpCode(HttpStatus.OK)
   async forcePurge(): Promise<{ ok: true }> {

@@ -26,11 +26,12 @@ import {
   Param,
   Query,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../../../common/auth';
 import { AdminDeleteMediaUseCase } from '../application/admin-delete-media.use-case';
 import { AdminListMediaUseCase } from '../application/admin-list-media.use-case';
 import type { MediaAsset, MediaKind, MediaStatus } from '../domain/media-asset.entity';
+import { AdminListMediaResponseDto } from '../../admin/interface/dto/admin-response.dto';
 
 const VALID_KINDS: readonly MediaKind[] = ['image', 'video'];
 const VALID_STATUSES: readonly MediaStatus[] = ['processing', 'ready', 'failed'];
@@ -70,6 +71,12 @@ export class AdminMediaController {
   @ApiOperation({
     summary: 'Cross-user list of media with optional ?ownerId, ?kind, ?status filters. Admin-only.',
   })
+  @ApiResponse({
+    status: 200,
+    description: 'Matching media + total.',
+    type: AdminListMediaResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'VALIDATION_FAILED — kind / status invalid.' })
   @Get()
   @HttpCode(HttpStatus.OK)
   async list(
@@ -116,6 +123,8 @@ export class AdminMediaController {
   @ApiOperation({
     summary: 'Hard-delete media (takedown). Trip + memory book references SetNull-cascade.',
   })
+  @ApiResponse({ status: 204, description: 'Deleted.' })
+  @ApiResponse({ status: 404, description: 'MEDIA_NOT_FOUND.' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id') id: string): Promise<void> {
