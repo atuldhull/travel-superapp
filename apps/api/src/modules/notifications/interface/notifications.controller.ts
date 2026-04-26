@@ -44,8 +44,14 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { type AuthenticatedUser, CurrentUser } from '../../../common/auth';
+import {
+  ListMyNotificationsResponseDto,
+  MarkAllReadResponseDto,
+  NotificationLogDto as NotificationLogResponseDto,
+  UnreadCountResponseDto,
+} from './dto/notifications-response.dto';
 import { DeleteNotificationUseCase } from '../application/delete-notification.use-case';
 import { GetUnreadCountUseCase } from '../application/get-unread-count.use-case';
 import { ListMyNotificationsUseCase } from '../application/list-my-notifications.use-case';
@@ -102,6 +108,7 @@ export class NotificationsController {
   @ApiOperation({
     summary: 'Returns { unread: N } for the home-screen badge. Single indexed COUNT — cheap.',
   })
+  @ApiResponse({ status: 200, description: 'Unread count.', type: UnreadCountResponseDto })
   @Get('me/unread-count')
   @HttpCode(HttpStatus.OK)
   async unreadCount(@CurrentUser() user: AuthenticatedUser): Promise<{ unread: number }> {
@@ -111,6 +118,15 @@ export class NotificationsController {
   @ApiOperation({
     summary:
       "List the caller's recent notifications. Optional ?channel=push|email|sms narrows to one delivery channel.",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Caller's recent deliveries, newest-first.",
+    type: ListMyNotificationsResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'VALIDATION_FAILED — channel is not one of push|email|sms.',
   })
   @Get('me')
   @HttpCode(HttpStatus.OK)
@@ -145,6 +161,11 @@ export class NotificationsController {
     summary:
       'Mark every unread row as read. Returns { marked: N }. Idempotent (second call returns 0).',
   })
+  @ApiResponse({
+    status: 200,
+    description: 'Number of rows actually flipped.',
+    type: MarkAllReadResponseDto,
+  })
   @Post('read-all')
   @HttpCode(HttpStatus.OK)
   async markAllRead(@CurrentUser() user: AuthenticatedUser): Promise<{ marked: number }> {
@@ -154,6 +175,12 @@ export class NotificationsController {
   @ApiOperation({
     summary: 'Mark one notification as read. Owner-gated; 404 on cross-user / missing.',
   })
+  @ApiResponse({
+    status: 200,
+    description: 'Updated notification row.',
+    type: NotificationLogResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'NOTIFICATION_NOT_FOUND.' })
   @Post(':id/read')
   @HttpCode(HttpStatus.OK)
   async markRead(
@@ -165,6 +192,12 @@ export class NotificationsController {
   }
 
   @ApiOperation({ summary: 'Mark one notification as UNread (symmetric to /read). Owner-gated.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Updated notification row.',
+    type: NotificationLogResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'NOTIFICATION_NOT_FOUND.' })
   @Post(':id/unread')
   @HttpCode(HttpStatus.OK)
   async markUnread(
@@ -184,6 +217,8 @@ export class NotificationsController {
   @ApiOperation({
     summary: 'Hard-delete a notification (inbox prune). Owner-gated; 404 on cross-user / missing.',
   })
+  @ApiResponse({ status: 204, description: 'Deleted.' })
+  @ApiResponse({ status: 404, description: 'NOTIFICATION_NOT_FOUND.' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string): Promise<void> {
