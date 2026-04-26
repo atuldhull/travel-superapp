@@ -1,0 +1,215 @@
+/**
+ * Live demo widget on `/`. First-time visitor picks one of the
+ * preset cities (or types a custom title), drags the radius slider,
+ * and clicks "Generate". The typed `useTripControllerSamplePlan`
+ * hook hits the public `/trips/sample-plan` endpoint and renders the
+ * prose plan inline. NO signup wall.
+ *
+ * Cities are baked in client-side so we don't need geocoding for the
+ * demo — the user can refine destination later when they sign up
+ * and create a real trip.
+ *
+ * Installed by prompt [V.UX.1].
+ */
+'use client';
+
+import Link from 'next/link';
+import React, { useState } from 'react';
+import {
+  useTripControllerSamplePlan,
+  type GenerateSamplePlanRequestDto,
+  type GenerateSamplePlanResponseDto,
+} from '@app/sdk';
+import { Button } from '../ui/button';
+import { Card, CardHeader, CardSubtitle, CardTitle } from '../ui/card';
+import { Skeleton } from '../ui/skeleton';
+
+interface ApiError extends Error {
+  readonly code?: string;
+  readonly status?: number;
+}
+
+interface CityPreset {
+  readonly title: string;
+  readonly emoji: string;
+  readonly center: { readonly lat: number; readonly lng: number };
+}
+
+const CITY_PRESETS: readonly CityPreset[] = [
+  { title: 'Goa', emoji: '🏖', center: { lat: 15.2993, lng: 74.124 } },
+  { title: 'Rishikesh', emoji: '🧘', center: { lat: 30.0869, lng: 78.2676 } },
+  { title: 'Tokyo', emoji: '🗼', center: { lat: 35.6762, lng: 139.6503 } },
+  { title: 'Bali', emoji: '🌴', center: { lat: -8.3405, lng: 115.092 } },
+  { title: 'Lisbon', emoji: '🚋', center: { lat: 38.7223, lng: -9.1393 } },
+  { title: 'Mexico City', emoji: '🌮', center: { lat: 19.4326, lng: -99.1332 } },
+];
+
+export function SampleTripDemo() {
+  const [selectedIdx, setSelectedIdx] = useState(0);
+  const [radiusKm, setRadiusKm] = useState(25);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [planResult, setPlanResult] = useState<GenerateSamplePlanResponseDto | null>(null);
+
+  const mutation = useTripControllerSamplePlan({
+    mutation: {
+      onSuccess: (response: { data?: unknown }) => {
+        setPlanResult(response.data as GenerateSamplePlanResponseDto);
+        setErrorMsg(null);
+      },
+      onError: (err: unknown) => {
+        const e = err as ApiError;
+        setErrorMsg(
+          `${e.code ?? `HTTP_${e.status ?? '???'}`} — ${e.message ?? 'Generation failed.'}`,
+        );
+      },
+    },
+  });
+
+  function generate() {
+    setPlanResult(null);
+    setErrorMsg(null);
+    const preset = CITY_PRESETS[selectedIdx]!;
+    const data: GenerateSamplePlanRequestDto = {
+      title: preset.title,
+      center: preset.center,
+      radiusKm,
+    };
+    mutation.mutate({ data });
+  }
+
+  const selected = CITY_PRESETS[selectedIdx]!;
+
+  return (
+    <section
+      id="sample-trip"
+      className="rounded-2xl border border-muted/15 bg-background px-6 py-8 sm:px-10 sm:py-12"
+    >
+      <header className="mb-6 max-w-2xl">
+        <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Try it without signing up</h2>
+        <p className="mt-1 text-sm text-muted sm:text-base">
+          Pick a city, set your radius, get a 3-day AI itinerary in seconds. No account needed.
+        </p>
+      </header>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="space-y-5">
+          <div>
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-muted">
+              Where to?
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {CITY_PRESETS.map((c, i) => {
+                const active = i === selectedIdx;
+                return (
+                  <button
+                    key={c.title}
+                    type="button"
+                    onClick={() => setSelectedIdx(i)}
+                    aria-pressed={active}
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition ${
+                      active
+                        ? 'border-brand bg-brand text-brand-foreground'
+                        : 'border-muted/30 text-muted hover:bg-muted/10'
+                    }`}
+                  >
+                    <span aria-hidden>{c.emoji}</span> {c.title}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div>
+            <label
+              htmlFor="sample-radius"
+              className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-muted"
+            >
+              <span>Radius</span>
+              <span className="font-mono text-brand">{radiusKm} km</span>
+            </label>
+            <input
+              id="sample-radius"
+              type="range"
+              min={5}
+              max={100}
+              step={5}
+              value={radiusKm}
+              onChange={(e) => setRadiusKm(Number(e.target.value))}
+              className="w-full accent-brand"
+            />
+          </div>
+          <Button
+            type="button"
+            variant="primary"
+            onClick={generate}
+            disabled={mutation.isPending}
+            className="w-full sm:w-auto"
+          >
+            {mutation.isPending ? 'Generating…' : `✨ Plan ${selected.title} for me`}
+          </Button>
+          {errorMsg ? (
+            <p className="rounded-md border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">
+              {errorMsg}
+            </p>
+          ) : null}
+        </div>
+        <div>
+          {mutation.isPending ? (
+            <Card>
+              <Skeleton className="h-5 w-2/3" />
+              <Skeleton className="mt-2 h-3 w-full" />
+              <Skeleton className="mt-1 h-3 w-5/6" />
+              <Skeleton className="mt-1 h-3 w-4/6" />
+              <Skeleton className="mt-1 h-3 w-3/6" />
+            </Card>
+          ) : planResult ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>
+                  <span aria-hidden className="mr-1.5">
+                    {selected.emoji}
+                  </span>
+                  Your sample {selected.title} plan
+                </CardTitle>
+                <CardSubtitle>
+                  Powered by <code className="font-mono text-[11px]">{planResult.model}</code> · No
+                  account needed
+                </CardSubtitle>
+              </CardHeader>
+              <pre className="mt-2 max-h-96 overflow-auto whitespace-pre-wrap rounded-md bg-muted/5 p-4 text-sm leading-relaxed">
+                {planResult.plan}
+              </pre>
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <Link
+                  href="/register"
+                  className="inline-flex items-center gap-1 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-brand-foreground transition hover:opacity-90"
+                >
+                  Sign up to save this trip →
+                </Link>
+                <button
+                  type="button"
+                  onClick={generate}
+                  className="text-sm text-muted hover:underline"
+                  disabled={mutation.isPending}
+                >
+                  Regenerate
+                </button>
+              </div>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Your plan will appear here</CardTitle>
+                <CardSubtitle>
+                  Pick a city and click <strong>Plan for me</strong> — we'll do the rest.
+                </CardSubtitle>
+              </CardHeader>
+              <p className="text-sm leading-relaxed text-muted">
+                The AI considers your destination + radius and drafts a 3-day itinerary with must-do
+                places, food spots, and pacing notes. Try a different city to compare.
+              </p>
+            </Card>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}

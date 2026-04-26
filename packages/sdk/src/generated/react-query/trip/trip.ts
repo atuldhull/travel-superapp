@@ -18,6 +18,8 @@ import type {
   CreateTripRequestDto,
   CreateTripShareRequestDto,
   GeneratePlanWithAiResponseDto,
+  GenerateSamplePlanRequestDto,
+  GenerateSamplePlanResponseDto,
   ItineraryListResponseDto,
   ListTripsResponseDto,
   SharedTripDto,
@@ -925,6 +927,98 @@ export function useTripControllerGetItinerary<
   return query;
 }
 
+/**
+ * @summary Public sample-plan demo for the landing page. NO auth, NO trip persisted — feeds the AI port directly.
+ */
+export type tripControllerSamplePlanResponse200 = {
+  data: GenerateSamplePlanResponseDto;
+  status: 200;
+};
+
+export type tripControllerSamplePlanResponseSuccess = tripControllerSamplePlanResponse200 & {
+  headers: Headers;
+};
+export type tripControllerSamplePlanResponse = tripControllerSamplePlanResponseSuccess;
+
+export const getTripControllerSamplePlanUrl = () => {
+  return `/api/v1/trips/sample-plan`;
+};
+
+export const tripControllerSamplePlan = async (
+  generateSamplePlanRequestDto: GenerateSamplePlanRequestDto,
+  options?: RequestInit,
+): Promise<tripControllerSamplePlanResponse> => {
+  return apiFetch<tripControllerSamplePlanResponse>(getTripControllerSamplePlanUrl(), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(generateSamplePlanRequestDto),
+  });
+};
+
+export const getTripControllerSamplePlanMutationOptions = <
+  TError = unknown,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof tripControllerSamplePlan>>,
+    TError,
+    { data: GenerateSamplePlanRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof tripControllerSamplePlan>>,
+  TError,
+  { data: GenerateSamplePlanRequestDto },
+  TContext
+> => {
+  const mutationKey = ['tripControllerSamplePlan'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof tripControllerSamplePlan>>,
+    { data: GenerateSamplePlanRequestDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return tripControllerSamplePlan(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type TripControllerSamplePlanMutationResult = NonNullable<
+  Awaited<ReturnType<typeof tripControllerSamplePlan>>
+>;
+export type TripControllerSamplePlanMutationBody = GenerateSamplePlanRequestDto;
+export type TripControllerSamplePlanMutationError = unknown;
+
+/**
+ * @summary Public sample-plan demo for the landing page. NO auth, NO trip persisted — feeds the AI port directly.
+ */
+export const useTripControllerSamplePlan = <TError = unknown, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof tripControllerSamplePlan>>,
+    TError,
+    { data: GenerateSamplePlanRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof tripControllerSamplePlan>>,
+  TError,
+  { data: GenerateSamplePlanRequestDto },
+  TContext
+> => {
+  const mutationOptions = getTripControllerSamplePlanMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
 /**
  * @summary Generate a free-form trip plan via the configured AI adapter (Claude / stub). Owner-only.
  */

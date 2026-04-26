@@ -142,4 +142,7 @@ export type { AdminListScamReportsResponseDto } from './generated/schemas/adminL
 export type { AdminListSosEventsResponseDto } from './generated/schemas/adminListSosEventsResponseDto';
 export type { AdminResolveSosRequestDto } from './generated/schemas/adminResolveSosRequestDto';
 export type { GeneratePlanWithAiResponseDto } from './generated/schemas/generatePlanWithAiResponseDto';
+export type { GenerateSamplePlanRequestDto } from './generated/schemas/generateSamplePlanRequestDto';
+export type { GenerateSamplePlanResponseDto } from './generated/schemas/generateSamplePlanResponseDto';
+export type { SamplePlanCenterDto } from './generated/schemas/samplePlanCenterDto';
 export type { SharedTripDto } from './generated/schemas/sharedTripDto';

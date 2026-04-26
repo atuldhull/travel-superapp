@@ -561,6 +561,27 @@ paths:
       security: *a11
       summary: List itinerary days + items for the trip the caller owns.
       tags: *a12
+  /api/v1/trips/sample-plan:
+    post:
+      operationId: TripController_samplePlan
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateSamplePlanRequestDto'
+      responses:
+        '200':
+          description: Free-form prose plan + provider model identifier.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateSamplePlanResponseDto'
+      security: *a11
+      summary: Public sample-plan demo for the landing page. NO auth, NO trip
+        persisted — feeds the AI port directly.
+      tags: *a12
   /api/v1/trips/{id}/plan-with-ai:
     post:
       operationId: TripController_planWithAi
@@ -2816,6 +2837,50 @@ components:
             $ref: '#/components/schemas/ItineraryDayDto'
       required:
         - days
+    SamplePlanCenterDto:
+      type: object
+      properties:
+        lat:
+          type: number
+          description: Latitude in decimal degrees, -90..90.
+        lng:
+          type: number
+          description: Longitude in decimal degrees, -180..180.
+      required:
+        - lat
+        - lng
+    GenerateSamplePlanRequestDto:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+          description: Sample destination title (e.g. "Goa", "Tokyo").
+        center:
+          $ref: '#/components/schemas/SamplePlanCenterDto'
+        radiusKm:
+          type: number
+          minimum: 1
+          maximum: 200
+          description: Search radius in km.
+      required:
+        - title
+        - center
+        - radiusKm
+    GenerateSamplePlanResponseDto:
+      type: object
+      properties:
+        plan:
+          type: string
+          description: Free-form prose plan from the AI provider.
+        model:
+          type: string
+          description: Model identifier (e.g. "claude-sonnet-4-6" or "stub-trip-planner"
+            when CLAUDE_API_KEY is unset).
+      required:
+        - plan
+        - model
     GeneratePlanWithAiResponseDto:
       type: object
       properties:
