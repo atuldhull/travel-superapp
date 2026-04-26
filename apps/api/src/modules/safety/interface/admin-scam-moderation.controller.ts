@@ -20,11 +20,14 @@
  * Installed by prompt [IV.18.11.5].
  */
 import { Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Query } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../../../common/auth';
 import { DismissScamReportUseCase } from '../application/dismiss-scam-report.use-case';
 import { ListScamReportsForModerationUseCase } from '../application/list-scam-reports-for-moderation.use-case';
 import { VerifyScamReportUseCase } from '../application/verify-scam-report.use-case';
 import type { ScamReport } from '../domain/scam-report.entity';
+import { ScamReportDto as ScamReportResponseDto } from './dto/safety-response.dto';
+import { AdminListScamReportsResponseDto } from './dto/admin-safety-response.dto';
 
 interface ScamReportDto {
   readonly id: string;
@@ -52,6 +55,8 @@ function toDto(r: ScamReport): ScamReportDto {
   };
 }
 
+@ApiTags('admin')
+@ApiBearerAuth()
 @Controller('admin/safety/scam-reports')
 @Roles('admin')
 export class AdminScamModerationController {
@@ -61,6 +66,11 @@ export class AdminScamModerationController {
     private readonly dismissUc: DismissScamReportUseCase,
   ) {}
 
+  @ApiOperation({
+    summary:
+      'List scam reports for moderation. Default = pending; ?verified=true for the verified pile.',
+  })
+  @ApiResponse({ status: 200, description: 'Scam reports.', type: AdminListScamReportsResponseDto })
   @Get()
   @HttpCode(HttpStatus.OK)
   async list(
@@ -78,6 +88,9 @@ export class AdminScamModerationController {
     return { reports: rows.map(toDto) };
   }
 
+  @ApiOperation({ summary: 'Mark a scam report verified.' })
+  @ApiResponse({ status: 200, description: 'Verified report row.', type: ScamReportResponseDto })
+  @ApiResponse({ status: 404, description: 'SCAM_REPORT_NOT_FOUND.' })
   @Post(':id/verify')
   @HttpCode(HttpStatus.OK)
   async verify(@Param('id') id: string): Promise<ScamReportDto> {
@@ -85,6 +98,9 @@ export class AdminScamModerationController {
     return toDto(row);
   }
 
+  @ApiOperation({ summary: 'Flip a verified report back to pending.' })
+  @ApiResponse({ status: 200, description: 'Updated report row.', type: ScamReportResponseDto })
+  @ApiResponse({ status: 404, description: 'SCAM_REPORT_NOT_FOUND.' })
   @Post(':id/unverify')
   @HttpCode(HttpStatus.OK)
   async unverify(@Param('id') id: string): Promise<ScamReportDto> {
@@ -92,6 +108,9 @@ export class AdminScamModerationController {
     return toDto(row);
   }
 
+  @ApiOperation({ summary: 'Dismiss a scam report (hard-delete).' })
+  @ApiResponse({ status: 204, description: 'Dismissed.' })
+  @ApiResponse({ status: 404, description: 'SCAM_REPORT_NOT_FOUND.' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async dismiss(@Param('id') id: string): Promise<void> {

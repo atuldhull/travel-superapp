@@ -15,10 +15,27 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AgentReviewSummaryResponseDto,
+  CastVoteRequestDto,
+  CreateExpenseRequestDto,
+  CreateReviewRequestDto,
+  EateryReviewSummaryResponseDto,
+  ExpenseDto,
   ExpensesControllerListParams,
+  ListBalancesResponseDto,
+  ListExpensesResponseDto,
+  ListReviewsResponseDto,
+  ListTripVotesResponseDto,
+  PlaceReviewSummaryResponseDto,
+  ReviewDto,
+  ReviewSummaryDto,
   ReviewsControllerListForTargetParams,
   ReviewsControllerListMineParams,
   ReviewsControllerSummaryParams,
+  RevokeVoteRequestDto,
+  StayReviewSummaryResponseDto,
+  VoteDto,
+  VoteSummaryDto,
   VotesControllerSummaryParams,
 } from '../../schemas';
 
@@ -30,7 +47,7 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
  * @summary Cast or update a vote on a trip target. Body: { targetType, targetId, value }. Auth gate: owner OR active TripShare.
  */
 export type socialControllerCastResponse200 = {
-  data: void;
+  data: VoteDto;
   status: 200;
 };
 
@@ -45,11 +62,14 @@ export const getSocialControllerCastUrl = (tripId: string) => {
 
 export const socialControllerCast = async (
   tripId: string,
+  castVoteRequestDto: CastVoteRequestDto,
   options?: RequestInit,
 ): Promise<socialControllerCastResponse> => {
   return apiFetch<socialControllerCastResponse>(getSocialControllerCastUrl(tripId), {
     ...options,
     method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(castVoteRequestDto),
   });
 };
 
@@ -60,14 +80,14 @@ export const getSocialControllerCastMutationOptions = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof socialControllerCast>>,
     TError,
-    { tripId: string },
+    { tripId: string; data: CastVoteRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof socialControllerCast>>,
   TError,
-  { tripId: string },
+  { tripId: string; data: CastVoteRequestDto },
   TContext
 > => {
   const mutationKey = ['socialControllerCast'];
@@ -79,11 +99,11 @@ export const getSocialControllerCastMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof socialControllerCast>>,
-    { tripId: string }
+    { tripId: string; data: CastVoteRequestDto }
   > = (props) => {
-    const { tripId } = props ?? {};
+    const { tripId, data } = props ?? {};
 
-    return socialControllerCast(tripId, requestOptions);
+    return socialControllerCast(tripId, data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -92,7 +112,7 @@ export const getSocialControllerCastMutationOptions = <
 export type SocialControllerCastMutationResult = NonNullable<
   Awaited<ReturnType<typeof socialControllerCast>>
 >;
-
+export type SocialControllerCastMutationBody = CastVoteRequestDto;
 export type SocialControllerCastMutationError = unknown;
 
 /**
@@ -102,14 +122,14 @@ export const useSocialControllerCast = <TError = unknown, TContext = unknown>(op
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof socialControllerCast>>,
     TError,
-    { tripId: string },
+    { tripId: string; data: CastVoteRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationResult<
   Awaited<ReturnType<typeof socialControllerCast>>,
   TError,
-  { tripId: string },
+  { tripId: string; data: CastVoteRequestDto },
   TContext
 > => {
   const mutationOptions = getSocialControllerCastMutationOptions(options);
@@ -135,11 +155,14 @@ export const getSocialControllerRevokeUrl = (tripId: string) => {
 
 export const socialControllerRevoke = async (
   tripId: string,
+  revokeVoteRequestDto: RevokeVoteRequestDto,
   options?: RequestInit,
 ): Promise<socialControllerRevokeResponse> => {
   return apiFetch<socialControllerRevokeResponse>(getSocialControllerRevokeUrl(tripId), {
     ...options,
     method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(revokeVoteRequestDto),
   });
 };
 
@@ -150,14 +173,14 @@ export const getSocialControllerRevokeMutationOptions = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof socialControllerRevoke>>,
     TError,
-    { tripId: string },
+    { tripId: string; data: RevokeVoteRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof socialControllerRevoke>>,
   TError,
-  { tripId: string },
+  { tripId: string; data: RevokeVoteRequestDto },
   TContext
 > => {
   const mutationKey = ['socialControllerRevoke'];
@@ -169,11 +192,11 @@ export const getSocialControllerRevokeMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof socialControllerRevoke>>,
-    { tripId: string }
+    { tripId: string; data: RevokeVoteRequestDto }
   > = (props) => {
-    const { tripId } = props ?? {};
+    const { tripId, data } = props ?? {};
 
-    return socialControllerRevoke(tripId, requestOptions);
+    return socialControllerRevoke(tripId, data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -182,7 +205,7 @@ export const getSocialControllerRevokeMutationOptions = <
 export type SocialControllerRevokeMutationResult = NonNullable<
   Awaited<ReturnType<typeof socialControllerRevoke>>
 >;
-
+export type SocialControllerRevokeMutationBody = RevokeVoteRequestDto;
 export type SocialControllerRevokeMutationError = unknown;
 
 /**
@@ -192,14 +215,14 @@ export const useSocialControllerRevoke = <TError = unknown, TContext = unknown>(
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof socialControllerRevoke>>,
     TError,
-    { tripId: string },
+    { tripId: string; data: RevokeVoteRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationResult<
   Awaited<ReturnType<typeof socialControllerRevoke>>,
   TError,
-  { tripId: string },
+  { tripId: string; data: RevokeVoteRequestDto },
   TContext
 > => {
   const mutationOptions = getSocialControllerRevokeMutationOptions(options);
@@ -210,7 +233,7 @@ export const useSocialControllerRevoke = <TError = unknown, TContext = unknown>(
  * @summary Aggregated tallies for a trip's votes + the caller's own vote per target.
  */
 export type socialControllerListResponse200 = {
-  data: void;
+  data: ListTripVotesResponseDto;
   status: 200;
 };
 
@@ -367,7 +390,7 @@ export function useSocialControllerList<
  * @summary Record a shared expense on a trip. Auth gate: owner OR active TripShare. Splits sum-checked.
  */
 export type expensesControllerCreateResponse201 = {
-  data: void;
+  data: ExpenseDto;
   status: 201;
 };
 
@@ -382,11 +405,14 @@ export const getExpensesControllerCreateUrl = (tripId: string) => {
 
 export const expensesControllerCreate = async (
   tripId: string,
+  createExpenseRequestDto: CreateExpenseRequestDto,
   options?: RequestInit,
 ): Promise<expensesControllerCreateResponse> => {
   return apiFetch<expensesControllerCreateResponse>(getExpensesControllerCreateUrl(tripId), {
     ...options,
     method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createExpenseRequestDto),
   });
 };
 
@@ -397,14 +423,14 @@ export const getExpensesControllerCreateMutationOptions = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof expensesControllerCreate>>,
     TError,
-    { tripId: string },
+    { tripId: string; data: CreateExpenseRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof expensesControllerCreate>>,
   TError,
-  { tripId: string },
+  { tripId: string; data: CreateExpenseRequestDto },
   TContext
 > => {
   const mutationKey = ['expensesControllerCreate'];
@@ -416,11 +442,11 @@ export const getExpensesControllerCreateMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof expensesControllerCreate>>,
-    { tripId: string }
+    { tripId: string; data: CreateExpenseRequestDto }
   > = (props) => {
-    const { tripId } = props ?? {};
+    const { tripId, data } = props ?? {};
 
-    return expensesControllerCreate(tripId, requestOptions);
+    return expensesControllerCreate(tripId, data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -429,7 +455,7 @@ export const getExpensesControllerCreateMutationOptions = <
 export type ExpensesControllerCreateMutationResult = NonNullable<
   Awaited<ReturnType<typeof expensesControllerCreate>>
 >;
-
+export type ExpensesControllerCreateMutationBody = CreateExpenseRequestDto;
 export type ExpensesControllerCreateMutationError = unknown;
 
 /**
@@ -439,14 +465,14 @@ export const useExpensesControllerCreate = <TError = unknown, TContext = unknown
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof expensesControllerCreate>>,
     TError,
-    { tripId: string },
+    { tripId: string; data: CreateExpenseRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationResult<
   Awaited<ReturnType<typeof expensesControllerCreate>>,
   TError,
-  { tripId: string },
+  { tripId: string; data: CreateExpenseRequestDto },
   TContext
 > => {
   const mutationOptions = getExpensesControllerCreateMutationOptions(options);
@@ -457,7 +483,7 @@ export const useExpensesControllerCreate = <TError = unknown, TContext = unknown
  * @summary List trip expenses, most-recent-first. ?limit=N (1..500, default 50).
  */
 export type expensesControllerListResponse200 = {
-  data: void;
+  data: ListExpensesResponseDto;
   status: 200;
 };
 
@@ -650,7 +676,7 @@ export function useExpensesControllerList<
  * @summary Net per-user "who owes whom" ledger. Sum is zero (modulo 2dp). 60s cache; write-invalidated on expense create/delete.
  */
 export type expensesControllerBalancesResponse200 = {
-  data: void;
+  data: ListBalancesResponseDto;
   status: 200;
 };
 
@@ -815,10 +841,21 @@ export type expensesControllerRemoveResponse204 = {
   status: 204;
 };
 
+export type expensesControllerRemoveResponse404 = {
+  data: void;
+  status: 404;
+};
+
 export type expensesControllerRemoveResponseSuccess = expensesControllerRemoveResponse204 & {
   headers: Headers;
 };
-export type expensesControllerRemoveResponse = expensesControllerRemoveResponseSuccess;
+export type expensesControllerRemoveResponseError = expensesControllerRemoveResponse404 & {
+  headers: Headers;
+};
+
+export type expensesControllerRemoveResponse =
+  | expensesControllerRemoveResponseSuccess
+  | expensesControllerRemoveResponseError;
 
 export const getExpensesControllerRemoveUrl = (tripId: unknown, id: string) => {
   return `/api/v1/trips/${tripId}/expenses/${id}`;
@@ -836,7 +873,7 @@ export const expensesControllerRemove = async (
 };
 
 export const getExpensesControllerRemoveMutationOptions = <
-  TError = unknown,
+  TError = void,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -875,12 +912,12 @@ export type ExpensesControllerRemoveMutationResult = NonNullable<
   Awaited<ReturnType<typeof expensesControllerRemove>>
 >;
 
-export type ExpensesControllerRemoveMutationError = unknown;
+export type ExpensesControllerRemoveMutationError = void;
 
 /**
  * @summary Delete an expense. Payer-only — only the user who recorded it can remove it.
  */
-export const useExpensesControllerRemove = <TError = unknown, TContext = unknown>(options?: {
+export const useExpensesControllerRemove = <TError = void, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof expensesControllerRemove>>,
     TError,
@@ -902,7 +939,7 @@ export const useExpensesControllerRemove = <TError = unknown, TContext = unknown
  * @summary Create a review for any review-target (place/stay/eatery/agent). Owner-stamped to the caller.
  */
 export type reviewsControllerCreateResponse201 = {
-  data: void;
+  data: ReviewDto;
   status: 201;
 };
 
@@ -916,11 +953,14 @@ export const getReviewsControllerCreateUrl = () => {
 };
 
 export const reviewsControllerCreate = async (
+  createReviewRequestDto: CreateReviewRequestDto,
   options?: RequestInit,
 ): Promise<reviewsControllerCreateResponse> => {
   return apiFetch<reviewsControllerCreateResponse>(getReviewsControllerCreateUrl(), {
     ...options,
     method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createReviewRequestDto),
   });
 };
 
@@ -931,14 +971,14 @@ export const getReviewsControllerCreateMutationOptions = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof reviewsControllerCreate>>,
     TError,
-    void,
+    { data: CreateReviewRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof reviewsControllerCreate>>,
   TError,
-  void,
+  { data: CreateReviewRequestDto },
   TContext
 > => {
   const mutationKey = ['reviewsControllerCreate'];
@@ -950,9 +990,11 @@ export const getReviewsControllerCreateMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof reviewsControllerCreate>>,
-    void
-  > = () => {
-    return reviewsControllerCreate(requestOptions);
+    { data: CreateReviewRequestDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return reviewsControllerCreate(data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -961,7 +1003,7 @@ export const getReviewsControllerCreateMutationOptions = <
 export type ReviewsControllerCreateMutationResult = NonNullable<
   Awaited<ReturnType<typeof reviewsControllerCreate>>
 >;
-
+export type ReviewsControllerCreateMutationBody = CreateReviewRequestDto;
 export type ReviewsControllerCreateMutationError = unknown;
 
 /**
@@ -971,14 +1013,14 @@ export const useReviewsControllerCreate = <TError = unknown, TContext = unknown>
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof reviewsControllerCreate>>,
     TError,
-    void,
+    { data: CreateReviewRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationResult<
   Awaited<ReturnType<typeof reviewsControllerCreate>>,
   TError,
-  void,
+  { data: CreateReviewRequestDto },
   TContext
 > => {
   const mutationOptions = getReviewsControllerCreateMutationOptions(options);
@@ -989,15 +1031,27 @@ export const useReviewsControllerCreate = <TError = unknown, TContext = unknown>
  * @summary Target-scoped review listing. ?targetType + ?targetId required. Most-recent-first.
  */
 export type reviewsControllerListForTargetResponse200 = {
-  data: void;
+  data: ListReviewsResponseDto;
   status: 200;
+};
+
+export type reviewsControllerListForTargetResponse400 = {
+  data: void;
+  status: 400;
 };
 
 export type reviewsControllerListForTargetResponseSuccess =
   reviewsControllerListForTargetResponse200 & {
     headers: Headers;
   };
-export type reviewsControllerListForTargetResponse = reviewsControllerListForTargetResponseSuccess;
+export type reviewsControllerListForTargetResponseError =
+  reviewsControllerListForTargetResponse400 & {
+    headers: Headers;
+  };
+
+export type reviewsControllerListForTargetResponse =
+  | reviewsControllerListForTargetResponseSuccess
+  | reviewsControllerListForTargetResponseError;
 
 export const getReviewsControllerListForTargetUrl = (
   params: ReviewsControllerListForTargetParams,
@@ -1042,7 +1096,7 @@ export const getReviewsControllerListForTargetQueryKey = (
 
 export const getReviewsControllerListForTargetInfiniteQueryOptions = <
   TData = Awaited<ReturnType<typeof reviewsControllerListForTarget>>,
-  TError = unknown,
+  TError = void,
 >(
   params: ReviewsControllerListForTargetParams,
   options?: {
@@ -1078,7 +1132,7 @@ export const getReviewsControllerListForTargetInfiniteQueryOptions = <
 export type ReviewsControllerListForTargetInfiniteQueryResult = NonNullable<
   Awaited<ReturnType<typeof reviewsControllerListForTarget>>
 >;
-export type ReviewsControllerListForTargetInfiniteQueryError = unknown;
+export type ReviewsControllerListForTargetInfiniteQueryError = void;
 
 /**
  * @summary Target-scoped review listing. ?targetType + ?targetId required. Most-recent-first.
@@ -1086,7 +1140,7 @@ export type ReviewsControllerListForTargetInfiniteQueryError = unknown;
 
 export function useReviewsControllerListForTargetInfinite<
   TData = Awaited<ReturnType<typeof reviewsControllerListForTarget>>,
-  TError = unknown,
+  TError = void,
 >(
   params: ReviewsControllerListForTargetParams,
   options?: {
@@ -1111,7 +1165,7 @@ export function useReviewsControllerListForTargetInfinite<
 
 export const getReviewsControllerListForTargetQueryOptions = <
   TData = Awaited<ReturnType<typeof reviewsControllerListForTarget>>,
-  TError = unknown,
+  TError = void,
 >(
   params: ReviewsControllerListForTargetParams,
   options?: {
@@ -1141,7 +1195,7 @@ export const getReviewsControllerListForTargetQueryOptions = <
 export type ReviewsControllerListForTargetQueryResult = NonNullable<
   Awaited<ReturnType<typeof reviewsControllerListForTarget>>
 >;
-export type ReviewsControllerListForTargetQueryError = unknown;
+export type ReviewsControllerListForTargetQueryError = void;
 
 /**
  * @summary Target-scoped review listing. ?targetType + ?targetId required. Most-recent-first.
@@ -1149,7 +1203,7 @@ export type ReviewsControllerListForTargetQueryError = unknown;
 
 export function useReviewsControllerListForTarget<
   TData = Awaited<ReturnType<typeof reviewsControllerListForTarget>>,
-  TError = unknown,
+  TError = void,
 >(
   params: ReviewsControllerListForTargetParams,
   options?: {
@@ -1174,14 +1228,25 @@ export function useReviewsControllerListForTarget<
  * @summary Aggregated review summary { count, average, histogram } for a target. @Public.
  */
 export type reviewsControllerSummaryResponse200 = {
-  data: void;
+  data: ReviewSummaryDto;
   status: 200;
+};
+
+export type reviewsControllerSummaryResponse400 = {
+  data: void;
+  status: 400;
 };
 
 export type reviewsControllerSummaryResponseSuccess = reviewsControllerSummaryResponse200 & {
   headers: Headers;
 };
-export type reviewsControllerSummaryResponse = reviewsControllerSummaryResponseSuccess;
+export type reviewsControllerSummaryResponseError = reviewsControllerSummaryResponse400 & {
+  headers: Headers;
+};
+
+export type reviewsControllerSummaryResponse =
+  | reviewsControllerSummaryResponseSuccess
+  | reviewsControllerSummaryResponseError;
 
 export const getReviewsControllerSummaryUrl = (params: ReviewsControllerSummaryParams) => {
   const normalizedParams = new URLSearchParams();
@@ -1221,7 +1286,7 @@ export const getReviewsControllerSummaryQueryKey = (params?: ReviewsControllerSu
 
 export const getReviewsControllerSummaryInfiniteQueryOptions = <
   TData = Awaited<ReturnType<typeof reviewsControllerSummary>>,
-  TError = unknown,
+  TError = void,
 >(
   params: ReviewsControllerSummaryParams,
   options?: {
@@ -1256,7 +1321,7 @@ export const getReviewsControllerSummaryInfiniteQueryOptions = <
 export type ReviewsControllerSummaryInfiniteQueryResult = NonNullable<
   Awaited<ReturnType<typeof reviewsControllerSummary>>
 >;
-export type ReviewsControllerSummaryInfiniteQueryError = unknown;
+export type ReviewsControllerSummaryInfiniteQueryError = void;
 
 /**
  * @summary Aggregated review summary { count, average, histogram } for a target. @Public.
@@ -1264,7 +1329,7 @@ export type ReviewsControllerSummaryInfiniteQueryError = unknown;
 
 export function useReviewsControllerSummaryInfinite<
   TData = Awaited<ReturnType<typeof reviewsControllerSummary>>,
-  TError = unknown,
+  TError = void,
 >(
   params: ReviewsControllerSummaryParams,
   options?: {
@@ -1289,7 +1354,7 @@ export function useReviewsControllerSummaryInfinite<
 
 export const getReviewsControllerSummaryQueryOptions = <
   TData = Awaited<ReturnType<typeof reviewsControllerSummary>>,
-  TError = unknown,
+  TError = void,
 >(
   params: ReviewsControllerSummaryParams,
   options?: {
@@ -1315,7 +1380,7 @@ export const getReviewsControllerSummaryQueryOptions = <
 export type ReviewsControllerSummaryQueryResult = NonNullable<
   Awaited<ReturnType<typeof reviewsControllerSummary>>
 >;
-export type ReviewsControllerSummaryQueryError = unknown;
+export type ReviewsControllerSummaryQueryError = void;
 
 /**
  * @summary Aggregated review summary { count, average, histogram } for a target. @Public.
@@ -1323,7 +1388,7 @@ export type ReviewsControllerSummaryQueryError = unknown;
 
 export function useReviewsControllerSummary<
   TData = Awaited<ReturnType<typeof reviewsControllerSummary>>,
-  TError = unknown,
+  TError = void,
 >(
   params: ReviewsControllerSummaryParams,
   options?: {
@@ -1344,7 +1409,7 @@ export function useReviewsControllerSummary<
  * @summary List the caller's authored reviews, most-recent-first. ?limit=N (1..200, default 50).
  */
 export type reviewsControllerListMineResponse200 = {
-  data: void;
+  data: ListReviewsResponseDto;
   status: 200;
 };
 
@@ -1518,10 +1583,21 @@ export type reviewsControllerRemoveResponse204 = {
   status: 204;
 };
 
+export type reviewsControllerRemoveResponse404 = {
+  data: void;
+  status: 404;
+};
+
 export type reviewsControllerRemoveResponseSuccess = reviewsControllerRemoveResponse204 & {
   headers: Headers;
 };
-export type reviewsControllerRemoveResponse = reviewsControllerRemoveResponseSuccess;
+export type reviewsControllerRemoveResponseError = reviewsControllerRemoveResponse404 & {
+  headers: Headers;
+};
+
+export type reviewsControllerRemoveResponse =
+  | reviewsControllerRemoveResponseSuccess
+  | reviewsControllerRemoveResponseError;
 
 export const getReviewsControllerRemoveUrl = (id: string) => {
   return `/api/v1/reviews/${id}`;
@@ -1538,7 +1614,7 @@ export const reviewsControllerRemove = async (
 };
 
 export const getReviewsControllerRemoveMutationOptions = <
-  TError = unknown,
+  TError = void,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -1577,12 +1653,12 @@ export type ReviewsControllerRemoveMutationResult = NonNullable<
   Awaited<ReturnType<typeof reviewsControllerRemove>>
 >;
 
-export type ReviewsControllerRemoveMutationError = unknown;
+export type ReviewsControllerRemoveMutationError = void;
 
 /**
  * @summary Delete one of the caller's reviews. Author-gated; 404 on cross-user / missing.
  */
-export const useReviewsControllerRemove = <TError = unknown, TContext = unknown>(options?: {
+export const useReviewsControllerRemove = <TError = void, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof reviewsControllerRemove>>,
     TError,
@@ -1604,14 +1680,25 @@ export const useReviewsControllerRemove = <TError = unknown, TContext = unknown>
  * @summary Cross-trip vote tally for { targetType, targetId }. @Public — crowd-signal aggregation.
  */
 export type votesControllerSummaryResponse200 = {
-  data: void;
+  data: VoteSummaryDto;
   status: 200;
+};
+
+export type votesControllerSummaryResponse400 = {
+  data: void;
+  status: 400;
 };
 
 export type votesControllerSummaryResponseSuccess = votesControllerSummaryResponse200 & {
   headers: Headers;
 };
-export type votesControllerSummaryResponse = votesControllerSummaryResponseSuccess;
+export type votesControllerSummaryResponseError = votesControllerSummaryResponse400 & {
+  headers: Headers;
+};
+
+export type votesControllerSummaryResponse =
+  | votesControllerSummaryResponseSuccess
+  | votesControllerSummaryResponseError;
 
 export const getVotesControllerSummaryUrl = (params: VotesControllerSummaryParams) => {
   const normalizedParams = new URLSearchParams();
@@ -1651,7 +1738,7 @@ export const getVotesControllerSummaryQueryKey = (params?: VotesControllerSummar
 
 export const getVotesControllerSummaryInfiniteQueryOptions = <
   TData = Awaited<ReturnType<typeof votesControllerSummary>>,
-  TError = unknown,
+  TError = void,
 >(
   params: VotesControllerSummaryParams,
   options?: {
@@ -1686,7 +1773,7 @@ export const getVotesControllerSummaryInfiniteQueryOptions = <
 export type VotesControllerSummaryInfiniteQueryResult = NonNullable<
   Awaited<ReturnType<typeof votesControllerSummary>>
 >;
-export type VotesControllerSummaryInfiniteQueryError = unknown;
+export type VotesControllerSummaryInfiniteQueryError = void;
 
 /**
  * @summary Cross-trip vote tally for { targetType, targetId }. @Public — crowd-signal aggregation.
@@ -1694,7 +1781,7 @@ export type VotesControllerSummaryInfiniteQueryError = unknown;
 
 export function useVotesControllerSummaryInfinite<
   TData = Awaited<ReturnType<typeof votesControllerSummary>>,
-  TError = unknown,
+  TError = void,
 >(
   params: VotesControllerSummaryParams,
   options?: {
@@ -1719,7 +1806,7 @@ export function useVotesControllerSummaryInfinite<
 
 export const getVotesControllerSummaryQueryOptions = <
   TData = Awaited<ReturnType<typeof votesControllerSummary>>,
-  TError = unknown,
+  TError = void,
 >(
   params: VotesControllerSummaryParams,
   options?: {
@@ -1744,7 +1831,7 @@ export const getVotesControllerSummaryQueryOptions = <
 export type VotesControllerSummaryQueryResult = NonNullable<
   Awaited<ReturnType<typeof votesControllerSummary>>
 >;
-export type VotesControllerSummaryQueryError = unknown;
+export type VotesControllerSummaryQueryError = void;
 
 /**
  * @summary Cross-trip vote tally for { targetType, targetId }. @Public — crowd-signal aggregation.
@@ -1752,7 +1839,7 @@ export type VotesControllerSummaryQueryError = unknown;
 
 export function useVotesControllerSummary<
   TData = Awaited<ReturnType<typeof votesControllerSummary>>,
-  TError = unknown,
+  TError = void,
 >(
   params: VotesControllerSummaryParams,
   options?: {
@@ -1773,7 +1860,7 @@ export function useVotesControllerSummary<
  * @summary Place detail-page composite — bundles review summary + vote tally + recent reviews. @Public.
  */
 export type placeReviewSummaryControllerSummaryResponse200 = {
-  data: void;
+  data: PlaceReviewSummaryResponseDto;
   status: 200;
 };
 
@@ -1944,7 +2031,7 @@ export function usePlaceReviewSummaryControllerSummary<
  * @summary Stay detail-page composite. Same shape as place; votes always zero (no vote target for stays).
  */
 export type stayReviewSummaryControllerSummaryResponse200 = {
-  data: void;
+  data: StayReviewSummaryResponseDto;
   status: 200;
 };
 
@@ -2115,7 +2202,7 @@ export function useStayReviewSummaryControllerSummary<
  * @summary Eatery detail-page composite. Same shape as place; votes always zero.
  */
 export type eateryReviewSummaryControllerSummaryResponse200 = {
-  data: void;
+  data: EateryReviewSummaryResponseDto;
   status: 200;
 };
 
@@ -2286,7 +2373,7 @@ export function useEateryReviewSummaryControllerSummary<
  * @summary Agent detail-page composite. Closes the 4-of-4 review-target arc; votes always zero.
  */
 export type agentReviewSummaryControllerSummaryResponse200 = {
-  data: void;
+  data: AgentReviewSummaryResponseDto;
   status: 200;
 };
 

@@ -1442,7 +1442,13 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: Matching media + total.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminListMediaResponseDto'
+        '400':
+          description: VALIDATION_FAILED — kind / status invalid.
       security: &a21
         - bearer: []
       summary: Cross-user list of media with optional ?ownerId, ?kind, ?status
@@ -1460,7 +1466,9 @@ paths:
             type: string
       responses:
         '204':
-          description: ''
+          description: Deleted.
+        '404':
+          description: MEDIA_NOT_FOUND.
       security: *a21
       summary: Hard-delete media (takedown). Trip + memory book references
         SetNull-cascade.
@@ -1588,11 +1596,24 @@ paths:
     post:
       operationId: AdminController_create
       parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminCreatePlaceRequestDto'
       responses:
         '201':
-          description: ''
-      tags: &a25
-        - Admin
+          description: Created place row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminPlaceDto'
+      security: &a25
+        - bearer: []
+      summary: Curate a new Place into the canonical catalog. Admin-only.
+      tags: &a26
+        - admin
   /api/v1/admin/places/{id}:
     delete:
       operationId: AdminController_remove
@@ -1604,8 +1625,12 @@ paths:
             type: string
       responses:
         '204':
-          description: ''
-      tags: *a25
+          description: Deleted.
+        '404':
+          description: PLACE_NOT_FOUND.
+      security: *a25
+      summary: Remove a Place from the canonical catalog. Admin-only.
+      tags: *a26
   /api/v1/safety/scam-reports:
     post:
       operationId: SafetyController_report
@@ -1623,10 +1648,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ScamReportDto'
-      security: &a26
+      security: &a27
         - bearer: []
       summary: File a crowd-sourced scam report at the given coordinates.
-      tags: &a27
+      tags: &a28
         - safety
   /api/v1/safety/scam-reports/search:
     post:
@@ -1645,19 +1670,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FindNearbyScamsResponseDto'
-      security: *a26
+      security: *a27
       summary: Find scam reports within a radius. Optional filters by category /
         minSeverity / verifiedOnly.
-      tags: *a27
+      tags: *a28
   /api/v1/safety/sos:
     post:
       operationId: SosController_trigger
       parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TriggerSosRequestDto'
       responses:
         '201':
-          description: ''
-      tags: &a28
-        - Sos
+          description: New SOS event row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SosEventDto'
+      security: &a29
+        - bearer: []
+      summary: Trigger an SOS event at the given coordinates.
+      tags: &a30
+        - safety
     get:
       operationId: SosController_listMine
       parameters:
@@ -1668,8 +1706,15 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
-      tags: *a28
+          description: Caller's events.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListSosEventsResponseDto'
+      security: *a29
+      summary: List the caller's SOS events, most-recent-first. ?limit (1..200,
+        default 50).
+      tags: *a30
   /api/v1/safety/sos/{id}/resolve:
     post:
       operationId: SosController_resolve
@@ -1679,28 +1724,70 @@ paths:
           in: path
           schema:
             type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolveSosRequestDto'
       responses:
         '200':
-          description: ''
-      tags: *a28
+          description: Resolved event row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SosEventDto'
+        '404':
+          description: SOS_NOT_FOUND.
+      security: *a29
+      summary: Mark an SOS event resolved (owner-only).
+      tags: *a30
   /api/v1/safety/crimes/search:
     post:
       operationId: CrimeLayerController_search
       parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FindNearbyCrimesRequestDto'
       responses:
         '200':
-          description: ''
+          description: Matching incidents, nearest-first.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FindNearbyCrimesResponseDto'
+      security:
+        - bearer: []
+      summary: Find crime incidents within a radius. Optional category / minSeverity /
+        sinceDays filters.
       tags:
-        - CrimeLayer
+        - safety
   /api/v1/safety/score:
     post:
       operationId: SafetyScoreController_score
       parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SafetyScoreRequestDto'
       responses:
         '200':
-          description: ''
+          description: Composite score + breakdown.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SafetyScoreResponseDto'
+      security:
+        - bearer: []
+      summary: Composite safety score for a coord (crime + scam density). Returns
+        letter grade + breakdown.
       tags:
-        - SafetyScore
+        - safety
   /api/v1/admin/safety/scam-reports:
     get:
       operationId: AdminScamModerationController_list
@@ -1717,9 +1804,17 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
-      tags: &a29
-        - AdminScamModeration
+          description: Scam reports.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminListScamReportsResponseDto'
+      security: &a31
+        - bearer: []
+      summary: List scam reports for moderation. Default = pending; ?verified=true for
+        the verified pile.
+      tags: &a32
+        - admin
   /api/v1/admin/safety/scam-reports/{id}/verify:
     post:
       operationId: AdminScamModerationController_verify
@@ -1731,8 +1826,16 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
-      tags: *a29
+          description: Verified report row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScamReportDto'
+        '404':
+          description: SCAM_REPORT_NOT_FOUND.
+      security: *a31
+      summary: Mark a scam report verified.
+      tags: *a32
   /api/v1/admin/safety/scam-reports/{id}/unverify:
     post:
       operationId: AdminScamModerationController_unverify
@@ -1744,8 +1847,16 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
-      tags: *a29
+          description: Updated report row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScamReportDto'
+        '404':
+          description: SCAM_REPORT_NOT_FOUND.
+      security: *a31
+      summary: Flip a verified report back to pending.
+      tags: *a32
   /api/v1/admin/safety/scam-reports/{id}:
     delete:
       operationId: AdminScamModerationController_dismiss
@@ -1757,8 +1868,12 @@ paths:
             type: string
       responses:
         '204':
-          description: ''
-      tags: *a29
+          description: Dismissed.
+        '404':
+          description: SCAM_REPORT_NOT_FOUND.
+      security: *a31
+      summary: Dismiss a scam report (hard-delete).
+      tags: *a32
   /api/v1/admin/safety/sos-events:
     get:
       operationId: AdminSosController_list
@@ -1780,9 +1895,19 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
-      tags: &a30
-        - AdminSos
+          description: Events + total.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminListSosEventsResponseDto'
+        '400':
+          description: VALIDATION_FAILED — status not in active|resolved.
+      security: &a33
+        - bearer: []
+      summary: 'Triage list of SOS events. ?status=active|resolved (default: both).
+        Offset pagination.'
+      tags: &a34
+        - admin
   /api/v1/admin/safety/sos-events/{id}/resolve:
     post:
       operationId: AdminSosController_resolve
@@ -1792,10 +1917,24 @@ paths:
           in: path
           schema:
             type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminResolveSosRequestDto'
       responses:
         '200':
-          description: ''
-      tags: *a30
+          description: Resolved event row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SosEventDto'
+        '404':
+          description: SOS_NOT_FOUND.
+      security: *a33
+      summary: Admin-resolve an SOS event with an optional resolution note.
+      tags: *a34
   /api/v1/trips/{tripId}/votes:
     post:
       operationId: SocialController_cast
@@ -1805,14 +1944,24 @@ paths:
           in: path
           schema:
             type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CastVoteRequestDto'
       responses:
         '200':
-          description: ''
-      security: &a31
+          description: Cast or updated vote row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VoteDto'
+      security: &a35
         - bearer: []
       summary: 'Cast or update a vote on a trip target. Body: { targetType, targetId,
         value }. Auth gate: owner OR active TripShare.'
-      tags: &a32
+      tags: &a36
         - social
     delete:
       operationId: SocialController_revoke
@@ -1822,13 +1971,19 @@ paths:
           in: path
           schema:
             type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RevokeVoteRequestDto'
       responses:
         '204':
-          description: ''
-      security: *a31
+          description: Revoked (or no-op if no prior vote).
+      security: *a35
       summary: 'Revoke a previously-cast vote. Body: { targetType, targetId }.
         Idempotent.'
-      tags: *a32
+      tags: *a36
     get:
       operationId: SocialController_list
       parameters:
@@ -1839,10 +1994,14 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
-      security: *a31
+          description: Tallies + caller-own vote per target.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListTripVotesResponseDto'
+      security: *a35
       summary: Aggregated tallies for a trip's votes + the caller's own vote per target.
-      tags: *a32
+      tags: *a36
   /api/v1/trips/{tripId}/expenses:
     post:
       operationId: ExpensesController_create
@@ -1853,14 +2012,24 @@ paths:
           description: Trip id (auth-gated to owner OR active TripShare).
           schema:
             type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateExpenseRequestDto'
       responses:
         '201':
-          description: ''
-      security: &a33
+          description: Newly-created expense row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpenseDto'
+      security: &a37
         - bearer: []
       summary: 'Record a shared expense on a trip. Auth gate: owner OR active
         TripShare. Splits sum-checked.'
-      tags: &a34
+      tags: &a38
         - social
     get:
       operationId: ExpensesController_list
@@ -1878,10 +2047,14 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
-      security: *a33
+          description: Trip expenses.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListExpensesResponseDto'
+      security: *a37
       summary: List trip expenses, most-recent-first. ?limit=N (1..500, default 50).
-      tags: *a34
+      tags: *a38
   /api/v1/trips/{tripId}/expenses/balances:
     get:
       operationId: ExpensesController_balances
@@ -1894,11 +2067,15 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
-      security: *a33
+          description: Per-user net ledger, sorted largest-creditor-first.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListBalancesResponseDto'
+      security: *a37
       summary: Net per-user "who owes whom" ledger. Sum is zero (modulo 2dp). 60s
         cache; write-invalidated on expense create/delete.
-      tags: *a34
+      tags: *a38
   /api/v1/trips/{tripId}/expenses/{id}:
     delete:
       operationId: ExpensesController_remove
@@ -1915,23 +2092,35 @@ paths:
           schema: {}
       responses:
         '204':
-          description: ''
-      security: *a33
+          description: Deleted.
+        '404':
+          description: EXPENSE_NOT_FOUND.
+      security: *a37
       summary: Delete an expense. Payer-only — only the user who recorded it can
         remove it.
-      tags: *a34
+      tags: *a38
   /api/v1/reviews:
     post:
       operationId: ReviewsController_create
       parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReviewRequestDto'
       responses:
         '201':
-          description: ''
-      security: &a35
+          description: Newly-created review row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewDto'
+      security: &a39
         - bearer: []
       summary: Create a review for any review-target (place/stay/eatery/agent).
         Owner-stamped to the caller.
-      tags: &a36
+      tags: &a40
         - social
     get:
       operationId: ReviewsController_listForTarget
@@ -1953,11 +2142,17 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
-      security: *a35
+          description: Reviews on the target.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListReviewsResponseDto'
+        '400':
+          description: VALIDATION_FAILED — targetType / targetId missing or invalid.
+      security: *a39
       summary: Target-scoped review listing. ?targetType + ?targetId required.
         Most-recent-first.
-      tags: *a36
+      tags: *a40
   /api/v1/reviews/summary:
     get:
       operationId: ReviewsController_summary
@@ -1974,11 +2169,17 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
-      security: *a35
+          description: Summary; zero-filled for empty targets.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewSummaryDto'
+        '400':
+          description: VALIDATION_FAILED — targetType / targetId missing or invalid.
+      security: *a39
       summary: Aggregated review summary { count, average, histogram } for a target.
         @Public.
-      tags: *a36
+      tags: *a40
   /api/v1/reviews/mine:
     get:
       operationId: ReviewsController_listMine
@@ -1990,11 +2191,15 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
-      security: *a35
+          description: Caller's reviews.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListReviewsResponseDto'
+      security: *a39
       summary: List the caller's authored reviews, most-recent-first. ?limit=N
         (1..200, default 50).
-      tags: *a36
+      tags: *a40
   /api/v1/reviews/{id}:
     delete:
       operationId: ReviewsController_remove
@@ -2006,11 +2211,13 @@ paths:
             type: string
       responses:
         '204':
-          description: ''
-      security: *a35
+          description: Deleted.
+        '404':
+          description: REVIEW_NOT_FOUND.
+      security: *a39
       summary: Delete one of the caller's reviews. Author-gated; 404 on cross-user /
         missing.
-      tags: *a36
+      tags: *a40
   /api/v1/votes/summary:
     get:
       operationId: VotesController_summary
@@ -2027,7 +2234,13 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: Vote tally; zero-filled for empty targets.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VoteSummaryDto'
+        '400':
+          description: VALIDATION_FAILED — targetType / targetId missing or invalid.
       summary: Cross-trip vote tally for { targetType, targetId }. @Public —
         crowd-signal aggregation.
       tags:
@@ -2043,7 +2256,11 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: Place review bundle.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceReviewSummaryResponseDto'
       summary: Place detail-page composite — bundles review summary + vote tally +
         recent reviews. @Public.
       tags:
@@ -2059,7 +2276,11 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: Stay review bundle.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StayReviewSummaryResponseDto'
       summary: Stay detail-page composite. Same shape as place; votes always zero (no
         vote target for stays).
       tags:
@@ -2075,7 +2296,11 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: Eatery review bundle.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EateryReviewSummaryResponseDto'
       summary: Eatery detail-page composite. Same shape as place; votes always zero.
       tags:
         - social
@@ -2090,7 +2315,11 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: Agent review bundle.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentReviewSummaryResponseDto'
       summary: Agent detail-page composite. Closes the 4-of-4 review-target arc; votes
         always zero.
       tags:
@@ -2107,11 +2336,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserDataExportResponseDto'
-      security: &a37
+      security: &a41
         - bearer: []
       summary: Full GDPR/DPDP/COPPA self-export bundle as a single JSON object. ~30
         sections; sensitive fields stripped.
-      tags: &a38
+      tags: &a42
         - account
   /api/v1/account/export.ndjson:
     get:
@@ -2121,10 +2350,10 @@ paths:
         '200':
           description: Streaming NDJSON. Each line is a `{type,data}` envelope; downstream
             tooling (jq -c, ndjson-cli) parses incrementally.
-      security: *a37
+      security: *a41
       summary: 'NDJSON variant of the export bundle — one `{type,data}` envelope per
         line. Content-Type: application/x-ndjson.'
-      tags: *a38
+      tags: *a42
   /api/v1/account:
     delete:
       operationId: AccountController_deleteMyAccount
@@ -2132,10 +2361,10 @@ paths:
       responses:
         '204':
           description: Account marked soft-deleted; sessions revoked.
-      security: *a37
+      security: *a41
       summary: Soft-delete the caller's account + revoke all live sessions. GDPR Art.
         17 / DPDP §12 right-to-erasure.
-      tags: *a38
+      tags: *a42
   /api/v1/admin/users:
     get:
       operationId: AdminUsersController_list
@@ -2167,9 +2396,19 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
-      tags: &a39
-        - AdminUsers
+          description: Matching users + total.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminListUsersResponseDto'
+        '400':
+          description: VALIDATION_FAILED — role not in user|premium|agent|admin.
+      security: &a43
+        - bearer: []
+      summary: List users with optional ?role / ?deleted / ?q filters. Offset
+        pagination via ?limit + ?offset. Admin-only.
+      tags: &a44
+        - admin
   /api/v1/admin/users/{id}/ban:
     post:
       operationId: AdminUsersController_ban
@@ -2181,8 +2420,12 @@ paths:
             type: string
       responses:
         '204':
-          description: ''
-      tags: *a39
+          description: Banned.
+        '404':
+          description: USER_NOT_FOUND.
+      security: *a43
+      summary: Ban a user (soft-delete + revoke sessions). Admin-only.
+      tags: *a44
   /api/v1/admin/users/{id}/unban:
     post:
       operationId: AdminUsersController_unban
@@ -2194,17 +2437,29 @@ paths:
             type: string
       responses:
         '204':
-          description: ''
-      tags: *a39
+          description: Unbanned.
+        '404':
+          description: USER_NOT_FOUND.
+      security: *a43
+      summary: Unban a user (clear deletedAt). Admin-only.
+      tags: *a44
   /api/v1/admin/account-purge:
     post:
       operationId: AdminPurgeController_forcePurge
       parameters: []
       responses:
         '200':
-          description: ''
+          description: Tick fired (or skipped if already running).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminPurgeForceResponseDto'
+      security:
+        - bearer: []
+      summary: Force the account-purge scheduler tick. Idempotent — re-entrant guard
+        skips overlapping calls.
       tags:
-        - AdminPurge
+        - admin
   /api/v1/feed/me:
     get:
       operationId: FeedController_me
@@ -3431,7 +3686,7 @@ components:
           description: Filter to a subset of modes; empty/omitted means all available.
           items:
             type: string
-            enum: &a40
+            enum: &a45
               - walk
               - public_transit
               - bicycle
@@ -3447,7 +3702,7 @@ components:
       properties:
         mode:
           type: string
-          enum: *a40
+          enum: *a45
         distanceMeters:
           type: number
         durationSeconds:
@@ -3774,6 +4029,55 @@ components:
           type: object
           nullable: true
           maxLength: 512
+    AdminMediaDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        ownerId:
+          type: string
+          format: cuid
+        tripId:
+          type: object
+          nullable: true
+          format: cuid
+        kind:
+          type: string
+          enum:
+            - image
+            - video
+        status:
+          type: string
+          enum:
+            - processing
+            - ready
+            - failed
+        s3KeyRaw:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - ownerId
+        - tripId
+        - kind
+        - status
+        - s3KeyRaw
+        - createdAt
+    AdminListMediaResponseDto:
+      type: object
+      properties:
+        media:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminMediaDto'
+        total:
+          type: number
+      required:
+        - media
+        - total
     UnreadCountResponseDto:
       type: object
       properties:
@@ -3849,6 +4153,77 @@ components:
           description: Count of rows actually flipped on this call. 0 on idempotent re-call.
       required:
         - marked
+    AdminCreatePlaceRequestDto:
+      type: object
+      properties:
+        sourceKey:
+          type: string
+          description: Stable provider key (e.g. "internal:rishikesh-001").
+        name:
+          type: string
+        category:
+          type: string
+        lat:
+          type: number
+        lng:
+          type: number
+        address:
+          type: object
+          nullable: true
+        countryCode:
+          type: object
+          nullable: true
+          description: ISO 3166-1 alpha-2.
+        relaxationScore:
+          type: number
+          description: Curated relaxation score 0..100.
+        metadata:
+          type: object
+          nullable: true
+          description: Free-form JSON metadata blob.
+          additionalProperties: true
+      required:
+        - sourceKey
+        - name
+        - category
+        - lat
+        - lng
+    AdminPlaceDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        sourceKey:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+        address:
+          type: object
+          nullable: true
+        countryCode:
+          type: object
+          nullable: true
+        relaxationScore:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - sourceKey
+        - name
+        - category
+        - address
+        - countryCode
+        - relaxationScore
+        - createdAt
+        - updatedAt
     CoordinatesDto:
       type: object
       properties:
@@ -3904,7 +4279,7 @@ components:
           type: string
         severity:
           type: string
-          enum: &a41
+          enum: &a46
             - low
             - medium
             - high
@@ -3973,7 +4348,7 @@ components:
           type: string
         severity:
           type: string
-          enum: *a41
+          enum: *a46
         description:
           type: string
         evidenceUrls:
@@ -4012,6 +4387,696 @@ components:
             $ref: '#/components/schemas/ScamReportWithDistanceDto'
       required:
         - reports
+    TriggerSosRequestDto:
+      type: object
+      properties:
+        trigger:
+          type: string
+          enum:
+            - panic
+            - medical
+            - theft
+            - lost
+            - other
+        center:
+          $ref: '#/components/schemas/CoordinatesDto'
+      required:
+        - trigger
+        - center
+    SosEventDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        userId:
+          type: string
+          format: cuid
+        trigger:
+          type: string
+          enum:
+            - panic
+            - medical
+            - theft
+            - lost
+            - other
+        resolvedAt:
+          type: object
+          nullable: true
+          format: date-time
+        resolutionNote:
+          type: object
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - userId
+        - trigger
+        - resolvedAt
+        - resolutionNote
+        - createdAt
+    ListSosEventsResponseDto:
+      type: object
+      properties:
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/SosEventDto'
+      required:
+        - events
+    ResolveSosRequestDto:
+      type: object
+      properties:
+        note:
+          type: object
+          nullable: true
+          description: Free-form note (max 500 chars).
+    FindNearbyCrimesRequestDto:
+      type: object
+      properties:
+        center:
+          $ref: '#/components/schemas/CoordinatesDto'
+        radiusKm:
+          type: number
+        category:
+          type: string
+        minSeverity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+            - critical
+        sinceDays:
+          type: number
+          description: Restrict to incidents reported in the last N days.
+        limit:
+          type: number
+      required:
+        - center
+        - radiusKm
+    CrimeIncidentDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        source:
+          type: string
+          description: Source feed key.
+        category:
+          type: string
+        severity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+            - critical
+        reportedAt:
+          type: string
+          format: date-time
+        distanceMeters:
+          type: number
+      required:
+        - id
+        - source
+        - category
+        - severity
+        - reportedAt
+        - distanceMeters
+    FindNearbyCrimesResponseDto:
+      type: object
+      properties:
+        incidents:
+          type: array
+          items:
+            $ref: '#/components/schemas/CrimeIncidentDto'
+      required:
+        - incidents
+    SafetyScoreRequestDto:
+      type: object
+      properties:
+        center:
+          $ref: '#/components/schemas/CoordinatesDto'
+        radiusKm:
+          type: number
+          description: Search radius in km (default depends on use-case).
+      required:
+        - center
+    SafetyScoreBreakdownDto:
+      type: object
+      properties:
+        crimes:
+          type: number
+        scams:
+          type: number
+        byCrimeSeverity:
+          type: object
+          additionalProperties:
+            type: number
+          description: Crime counts bucketed by severity.
+        byScamSeverity:
+          type: object
+          additionalProperties:
+            type: number
+          description: Scam counts bucketed by severity.
+      required:
+        - crimes
+        - scams
+        - byCrimeSeverity
+        - byScamSeverity
+    SafetyScoreResponseDto:
+      type: object
+      properties:
+        lat:
+          type: number
+        lng:
+          type: number
+        radiusKm:
+          type: number
+        score:
+          type: number
+          description: Composite score 0..100 (higher = safer).
+        grade:
+          type: string
+          enum:
+            - A
+            - B
+            - C
+            - D
+            - F
+          description: Letter grade derived from score.
+        breakdown:
+          $ref: '#/components/schemas/SafetyScoreBreakdownDto'
+        computedAt:
+          type: string
+          format: date-time
+      required:
+        - lat
+        - lng
+        - radiusKm
+        - score
+        - grade
+        - breakdown
+        - computedAt
+    AdminListScamReportsResponseDto:
+      type: object
+      properties:
+        reports:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScamReportDto'
+      required:
+        - reports
+    AdminListSosEventsResponseDto:
+      type: object
+      properties:
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/SosEventDto'
+        total:
+          type: number
+      required:
+        - events
+        - total
+    AdminResolveSosRequestDto:
+      type: object
+      properties:
+        note:
+          type: object
+          nullable: true
+          description: Optional admin resolution note.
+    CastVoteRequestDto:
+      type: object
+      properties:
+        targetType:
+          type: string
+          enum:
+            - itinerary_item
+            - place
+            - restaurant
+        targetId:
+          type: string
+        value:
+          type: number
+          description: 'Vote value: -1 (down), 0 (meh), +1 (up).'
+      required:
+        - targetType
+        - targetId
+        - value
+    VoteDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        tripId:
+          type: string
+          format: cuid
+        targetType:
+          type: string
+          enum:
+            - itinerary_item
+            - place
+            - restaurant
+        targetId:
+          type: string
+        value:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - tripId
+        - targetType
+        - targetId
+        - value
+        - createdAt
+    RevokeVoteRequestDto:
+      type: object
+      properties:
+        targetType:
+          type: string
+          enum:
+            - itinerary_item
+            - place
+            - restaurant
+        targetId:
+          type: string
+      required:
+        - targetType
+        - targetId
+    VoteTallyDto:
+      type: object
+      properties:
+        targetType:
+          type: string
+          enum:
+            - itinerary_item
+            - place
+            - restaurant
+        targetId:
+          type: string
+        up:
+          type: number
+        meh:
+          type: number
+        down:
+          type: number
+        score:
+          type: number
+          description: Composite score (up - down).
+        ownVote:
+          type: object
+          nullable: true
+          description: Caller's own vote value on this target, or null if none.
+      required:
+        - targetType
+        - targetId
+        - up
+        - meh
+        - down
+        - score
+        - ownVote
+    ListTripVotesResponseDto:
+      type: object
+      properties:
+        tallies:
+          type: array
+          items:
+            $ref: '#/components/schemas/VoteTallyDto'
+      required:
+        - tallies
+    CreateExpenseRequestDto:
+      type: object
+      properties:
+        amountUsd:
+          type: string
+          description: Decimal string in USD (e.g. "12.50").
+        currency:
+          type: string
+          description: ISO-4217 currency code of the original charge.
+        note:
+          type: object
+          nullable: true
+        splitShare:
+          type: object
+          additionalProperties:
+            type: number
+          description: Map of userId → split share. Sum must be ~1.0.
+      required:
+        - amountUsd
+        - currency
+        - splitShare
+    ExpenseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        tripId:
+          type: string
+          format: cuid
+        paidById:
+          type: string
+          format: cuid
+        amountUsd:
+          type: string
+          description: Decimal string USD.
+        currency:
+          type: string
+        note:
+          type: object
+          nullable: true
+        splitShare:
+          type: object
+          additionalProperties:
+            type: number
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - tripId
+        - paidById
+        - amountUsd
+        - currency
+        - note
+        - splitShare
+        - createdAt
+        - updatedAt
+    ListExpensesResponseDto:
+      type: object
+      properties:
+        expenses:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExpenseDto'
+      required:
+        - expenses
+    UserBalanceDto:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: cuid
+        netUsd:
+          type: string
+          description: Net USD as a decimal string. Positive = owed; negative = owes. Sum
+            across the array is zero modulo 2dp rounding.
+      required:
+        - userId
+        - netUsd
+    ListBalancesResponseDto:
+      type: object
+      properties:
+        balances:
+          description: Sorted largest-creditor-first.
+          type: array
+          items:
+            $ref: '#/components/schemas/UserBalanceDto'
+      required:
+        - balances
+    CreateReviewRequestDto:
+      type: object
+      properties:
+        tripId:
+          type: object
+          format: cuid
+          nullable: true
+        targetType:
+          type: string
+          enum:
+            - place
+            - stay
+            - eatery
+            - agent
+        targetId:
+          type: string
+          description: Id of the review target.
+        rating:
+          type: number
+          description: 1..5 rating.
+        body:
+          type: string
+          description: Free-form review body.
+        language:
+          type: string
+          description: BCP-47 language tag (default "en").
+      required:
+        - targetType
+        - targetId
+        - rating
+        - body
+    ReviewDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        authorId:
+          type: string
+          format: cuid
+        tripId:
+          type: object
+          nullable: true
+          format: cuid
+        targetType:
+          type: string
+          enum:
+            - place
+            - stay
+            - eatery
+            - agent
+        targetId:
+          type: string
+        rating:
+          type: number
+        body:
+          type: string
+        language:
+          type: string
+        verifiedBooking:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - authorId
+        - tripId
+        - targetType
+        - targetId
+        - rating
+        - body
+        - language
+        - verifiedBooking
+        - createdAt
+        - updatedAt
+    ReviewSummaryDto:
+      type: object
+      properties:
+        targetType:
+          type: string
+          enum:
+            - place
+            - stay
+            - eatery
+            - agent
+        targetId:
+          type: string
+        count:
+          type: number
+          description: Number of reviews on the target.
+        average:
+          type: number
+          description: Mean rating, two-decimal-rounded.
+        histogram:
+          type: object
+          additionalProperties:
+            type: number
+          description: Histogram keyed by rating bucket ("1".."5") → count.
+      required:
+        - targetType
+        - targetId
+        - count
+        - average
+        - histogram
+    ListReviewsResponseDto:
+      type: object
+      properties:
+        reviews:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReviewDto'
+      required:
+        - reviews
+    VoteSummaryDto:
+      type: object
+      properties:
+        targetType:
+          type: string
+        targetId:
+          type: string
+        up:
+          type: number
+        meh:
+          type: number
+        down:
+          type: number
+        score:
+          type: number
+      required:
+        - targetType
+        - targetId
+        - up
+        - meh
+        - down
+        - score
+    ReviewBundleReviewsDto:
+      type: object
+      properties:
+        count:
+          type: number
+        average:
+          type: number
+        histogram:
+          type: object
+          additionalProperties:
+            type: number
+      required:
+        - count
+        - average
+        - histogram
+    ReviewBundleVotesDto:
+      type: object
+      properties:
+        up:
+          type: number
+        meh:
+          type: number
+        down:
+          type: number
+        score:
+          type: number
+      required:
+        - up
+        - meh
+        - down
+        - score
+    RecentReviewDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        authorId:
+          type: string
+          format: cuid
+        rating:
+          type: number
+        body:
+          type: string
+        language:
+          type: string
+        verifiedBooking:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - authorId
+        - rating
+        - body
+        - language
+        - verifiedBooking
+        - createdAt
+    PlaceReviewSummaryResponseDto:
+      type: object
+      properties:
+        placeId:
+          type: string
+          format: cuid
+        reviews:
+          $ref: '#/components/schemas/ReviewBundleReviewsDto'
+        votes:
+          $ref: '#/components/schemas/ReviewBundleVotesDto'
+        recentReviews:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecentReviewDto'
+      required:
+        - placeId
+        - reviews
+        - votes
+        - recentReviews
+    StayReviewSummaryResponseDto:
+      type: object
+      properties:
+        stayId:
+          type: string
+        reviews:
+          $ref: '#/components/schemas/ReviewBundleReviewsDto'
+        votes:
+          $ref: '#/components/schemas/ReviewBundleVotesDto'
+        recentReviews:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecentReviewDto'
+      required:
+        - stayId
+        - reviews
+        - votes
+        - recentReviews
+    EateryReviewSummaryResponseDto:
+      type: object
+      properties:
+        eateryId:
+          type: string
+        reviews:
+          $ref: '#/components/schemas/ReviewBundleReviewsDto'
+        votes:
+          $ref: '#/components/schemas/ReviewBundleVotesDto'
+        recentReviews:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecentReviewDto'
+      required:
+        - eateryId
+        - reviews
+        - votes
+        - recentReviews
+    AgentReviewSummaryResponseDto:
+      type: object
+      properties:
+        agentId:
+          type: string
+          format: cuid
+        reviews:
+          $ref: '#/components/schemas/ReviewBundleReviewsDto'
+        votes:
+          $ref: '#/components/schemas/ReviewBundleVotesDto'
+        recentReviews:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecentReviewDto'
+      required:
+        - agentId
+        - reviews
+        - votes
+        - recentReviews
     UserDataExportMetadataDto:
       type: object
       properties:
@@ -4137,6 +5202,67 @@ components:
         - commissions
         - agentProfile
         - liveEvents
+    AdminUserDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        emailHash:
+          type: string
+          description: sha256(email) — opaque email surrogate.
+        displayName:
+          type: string
+        role:
+          type: string
+          enum:
+            - user
+            - premium
+            - agent
+            - admin
+        mfaEnabled:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        deletedAt:
+          type: object
+          nullable: true
+          format: date-time
+          description: Soft-delete timestamp; null if active.
+      required:
+        - id
+        - emailHash
+        - displayName
+        - role
+        - mfaEnabled
+        - createdAt
+        - updatedAt
+        - deletedAt
+    AdminListUsersResponseDto:
+      type: object
+      properties:
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminUserDto'
+        total:
+          type: number
+          description: Total matching rows across all pages.
+      required:
+        - users
+        - total
+    AdminPurgeForceResponseDto:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          description: Always true on success — the scheduler tick was kicked off.
+      required:
+        - ok
     FeedItemDto:
       type: object
       properties:
