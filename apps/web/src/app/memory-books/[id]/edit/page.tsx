@@ -26,11 +26,15 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
   getMemoryBookControllerGetOneQueryKey,
   getMemoryBookControllerListQueryKey,
+  useMediaControllerAttachToBook,
+  useMediaControllerDownloadUrl,
   useMemoryBookControllerGetOne,
   useMemoryBookControllerPublish,
   useMemoryBookControllerRemove,
   useMemoryBookControllerUnpublish,
   useMemoryBookControllerUpdate,
+  type AttachMediaToBookRequestDto,
+  type MediaDownloadUrlResponseDto,
   type MemoryBookDto,
   type MemoryBookWithAssetsResponseDto,
   type UpdateMemoryBookRequestDto,
@@ -204,6 +208,7 @@ export default function MemoryBookEditPage() {
           errorMsg={errorMsg}
         />
       )}
+      <AssetsSection bookId={id} assetIds={assetIds} />
       {confirmDelete ? (
         <Card>
           <CardHeader>
@@ -410,5 +415,148 @@ function EditForm({ book, isPending, errorMsg, onCancel, onSubmit }: EditFormPro
         </div>
       </form>
     </Card>
+  );
+}
+
+interface AssetsSectionProps {
+  readonly bookId: string;
+  readonly assetIds: readonly string[];
+}
+
+function AssetsSection({ bookId, assetIds }: AssetsSectionProps) {
+  const queryClient = useQueryClient();
+  const [pendingId, setPendingId] = useState('');
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  async function invalidateBook() {
+    await queryClient.invalidateQueries({
+      queryKey: getMemoryBookControllerGetOneQueryKey(bookId),
+    });
+  }
+
+  const attachMutation = useMediaControllerAttachToBook({
+    mutation: {
+      onSuccess: async () => {
+        await invalidateBook();
+        setPendingId('');
+        setErrorMsg(null);
+      },
+      onError: (err: unknown) => {
+        const e = err as ApiError;
+        setErrorMsg(`${e.code ?? `HTTP_${e.status ?? '???'}`} — ${e.message ?? 'Attach failed.'}`);
+      },
+    },
+  });
+
+  function attach(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setErrorMsg(null);
+    const trimmed = pendingId.trim();
+    if (trimmed.length === 0) {
+      setErrorMsg('Paste a media-asset id to attach.');
+      return;
+    }
+    const data: AttachMediaToBookRequestDto = {
+      memoryBookId: bookId as unknown as AttachMediaToBookRequestDto['memoryBookId'],
+    };
+    attachMutation.mutate({ id: trimmed, data });
+  }
+
+  function detach(assetId: string) {
+    setErrorMsg(null);
+    const data: AttachMediaToBookRequestDto = {
+      memoryBookId: null as unknown as AttachMediaToBookRequestDto['memoryBookId'],
+    };
+    attachMutation.mutate({ id: assetId, data });
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-start justify-between gap-2">
+          <CardTitle>Assets</CardTitle>
+          <Badge variant="neutral">{assetIds.length}</Badge>
+        </div>
+        <CardSubtitle>
+          Attach media you've already uploaded to a trip — paste its id below. Use the trip media
+          subsection to upload new files.
+        </CardSubtitle>
+      </CardHeader>
+      <form onSubmit={attach} className="mb-4 flex gap-2">
+        <input
+          type="text"
+          value={pendingId}
+          onChange={(e) => setPendingId(e.target.value)}
+          placeholder="media asset id (cuid)"
+          className="flex-1 rounded-md border border-muted/30 bg-transparent px-3 py-2 text-sm font-mono"
+        />
+        <Button type="submit" variant="outline" size="sm" disabled={attachMutation.isPending}>
+          {attachMutation.isPending ? 'Attaching…' : 'Attach'}
+        </Button>
+      </form>
+      {errorMsg ? (
+        <p className="mb-3 rounded-md border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">
+          {errorMsg}
+        </p>
+      ) : null}
+      {assetIds.length === 0 ? (
+        <p className="text-sm text-muted">No assets attached yet.</p>
+      ) : (
+        <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {assetIds.map((aid) => (
+            <OwnerAssetThumb
+              key={aid}
+              assetId={aid}
+              onDetach={() => detach(aid)}
+              detaching={attachMutation.isPending}
+            />
+          ))}
+        </ul>
+      )}
+    </Card>
+  );
+}
+
+interface OwnerAssetThumbProps {
+  readonly assetId: string;
+  readonly onDetach: () => void;
+  readonly detaching: boolean;
+}
+
+function OwnerAssetThumb({ assetId, onDetach, detaching }: OwnerAssetThumbProps) {
+  const { data, isLoading, isError } = useMediaControllerDownloadUrl(assetId, {
+    query: { retry: false, staleTime: 60_000 },
+  });
+  const url = (data?.data as unknown as MediaDownloadUrlResponseDto | undefined)?.url ?? null;
+
+  return (
+    <li className="flex flex-col rounded border border-muted/15 bg-muted/5 p-2 text-xs">
+      <div className="relative flex aspect-square items-center justify-center overflow-hidden rounded bg-muted/20">
+        {url ? (
+          <img
+            src={url}
+            alt={`Asset ${assetId.slice(0, 8)}`}
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
+        ) : (
+          <span className="text-2xl" aria-label={isError ? 'failed to load' : 'loading'}>
+            {isLoading ? '…' : isError ? '⚠️' : '🖼️'}
+          </span>
+        )}
+      </div>
+      <div className="mt-1 flex items-center justify-between gap-1">
+        <span className="truncate font-mono text-[10px] text-muted">{assetId.slice(0, 8)}…</span>
+        <button
+          type="button"
+          onClick={onDetach}
+          disabled={detaching}
+          className="text-[10px] text-danger hover:underline disabled:opacity-50"
+          aria-label={`Detach asset ${assetId.slice(0, 8)}`}
+        >
+          detach
+        </button>
+      </div>
+    </li>
   );
 }
