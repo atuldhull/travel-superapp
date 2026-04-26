@@ -10,18 +10,67 @@
 
 ## Summary
 
-| Counter             | Value                                                                |
-| ------------------- | -------------------------------------------------------------------- |
-| Prompts completed   | 168 (166 prior + bundled share-code mint UI + Google Sign-In)        |
-| Prompts in progress | 0                                                                    |
-| Prompts blocked     | 0                                                                    |
-| Last prompt         | `[IV.18.19.42]` — real Google Sign-In (bundled with `[IV.18.19.41]`) |
-| Last commit date    | 2026-04-26                                                           |
-| Phase               | Phase 1 — share-code minting + Google Identity Services on /login    |
+| Counter             | Value                                                             |
+| ------------------- | ----------------------------------------------------------------- |
+| Prompts completed   | 170 (168 prior + bundled web media uploader + AI plan generation) |
+| Prompts in progress | 0                                                                 |
+| Prompts blocked     | 0                                                                 |
+| Last prompt         | `[IV.18.19.44]` — Trip planner AI (bundled with `[IV.18.19.43]`)  |
+| Last commit date    | 2026-04-26                                                        |
+| Phase               | Phase 1 — direct-S3 uploads + Claude-backed plan generation live  |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.19.44] — Trip planner AI generation (Claude Sonnet via @anthropic-ai/sdk) (bundled with `[IV.18.19.43]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 1 (AI sidecar) + §6 (SDK / API contract)
+
+**What was done**
+
+First real LLM integration. Adds a port + two adapters (Claude + stub) so the trip page can fetch a free-form prose plan, with the stub keeping dev / CI off paid LLM calls.
+
+- New port `TRIP_PLANNER_PORT` with `generatePlan(request) → {plan, model}`.
+- `ClaudeTripPlannerAdapter` (infrastructure/) — calls @anthropic-ai/sdk against `claude-sonnet-4-6`. 800-token cap. On failure, returns a graceful fallback message instead of throwing so the trip page never 500s on a flaky LLM.
+- `StubTripPlannerAdapter` — deterministic 3-day prose plan; documents the "set CLAUDE_API_KEY to enable real plans" path.
+- Module wiring: `useFactory` provider for TRIP_PLANNER_PORT picks Claude when `CLAUDE_API_KEY` is set, falls back to stub otherwise. Env schema already had `CLAUDE_API_KEY` as optional.
+- New `GeneratePlanWithAiUseCase` — owner-gated trip lookup (uniform 404 TRIP_NOT_FOUND), reads center via GeoQueries, calls the port.
+- New endpoint `POST /trips/:id/plan-with-ai` with typed `GeneratePlanWithAiResponseDto` ({plan, model}) + 404. Regenerated openapi.yaml + SDK; re-exported from @app/sdk.
+- Add `@anthropic-ai/sdk@^0.91.1` to apps/api.
+
+**Verification**
+
+- All typechecks + builds clean.
+- 93 / 578 api tests still pass (e2e for the live Claude path needs CI secrets — stub path is exercised via container boot).
+
+**Commit**
+
+`67ecfcf feat(IV.18.19.44): Trip planner AI generation (Claude Sonnet via @anthropic-ai/sdk)`
+
+---
+
+### [IV.18.19.43] — web media uploader (upload-url → PUT → confirm) (bundled with `[IV.18.19.44]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 5 (Frontend stack) + §6 (SDK / API contract)
+
+**What was done**
+
+Closes the last write hole on /trips/[id]: users can now upload media directly from the web (no curl).
+
+- New api request/response DTOs in `media-response.dto.ts`: `CreateUploadUrlRequestDto`, `CreateUploadUrlResponseDto`, `AttachMediaToTripRequestDto`. Wire `@ApiBody` + `@ApiResponse({type})` on POST /media/upload-url, POST /media/:id/confirm, PATCH /media/:id/trip.
+- New `apps/web/src/components/media-uploader.tsx`: three-step direct-to-S3 flow via @app/sdk hooks (createUploadUrl mutation → raw PUT to S3 → confirm mutation → invalidate the trip's media list). The api creates the row pre-attached when tripId is passed in step 1, so no separate /trip PATCH for the happy path.
+- Wire the uploader into MediaSection on /trips/[id].
+
+**Verification**
+
+- All typechecks + builds clean. /trips/[id] bundle: 5.55KB → 6.10KB.
+
+**Commit**
+
+`9500e6f feat(IV.18.19.43): web media uploader (upload-url → PUT → confirm)`
 
 ---
 
