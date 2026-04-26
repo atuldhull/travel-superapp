@@ -10,18 +10,70 @@
 
 ## Summary
 
-| Counter             | Value                                                                         |
-| ------------------- | ----------------------------------------------------------------------------- |
-| Prompts completed   | 164 (162 prior + bundled generate-itinerary button + map-picker)              |
-| Prompts in progress | 0                                                                             |
-| Prompts blocked     | 0                                                                             |
-| Last prompt         | `[IV.18.19.38]` — map-picker for /trips/new (bundled with `[IV.18.19.37]`)    |
-| Last commit date    | 2026-04-26                                                                    |
-| Phase               | Phase 1 — interactive itinerary generation + click-to-pick trip center on web |
+| Counter             | Value                                                                      |
+| ------------------- | -------------------------------------------------------------------------- |
+| Prompts completed   | 166 (164 prior + bundled day-item editor + media subsection)               |
+| Prompts in progress | 0                                                                          |
+| Prompts blocked     | 0                                                                          |
+| Last prompt         | `[IV.18.19.40]` — Trip media subsection (bundled with `[IV.18.19.39]`)     |
+| Last commit date    | 2026-04-26                                                                 |
+| Phase               | Phase 1 — full per-day item editing + media thumbnails grid on /trips/[id] |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.19.40] — Trip detail media subsection (typed thumbnails grid) (bundled with `[IV.18.19.39]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 5 (Frontend stack) + §6 (SDK / API contract)
+
+**What was done**
+
+Surfaces a trip's attached media on the detail page. Last big read-side hole on /trips/[id] is now closed.
+
+- New api response DTOs in `media-response.dto.ts`: `MediaAssetDto` + `ListTripMediaResponseDto`.
+- Wire `@ApiResponse({type: ListTripMediaResponseDto})` on `GET /media/trip/:tripId`. Regenerated openapi.yaml + SDK; re-exported the types from @app/sdk.
+- New `MediaSection` component on /trips/[id] (sits below ItinerarySection): Card with a Badge ("N assets") + responsive grid (`grid-cols-2 sm:grid-cols-3`) of MediaTile cells.
+- Each tile shows kind icon (🖼️ / 🎬), truncated 8-char asset id, and the createdAt date. Real thumbnail rendering needs N+1 presigned download-URL fetches (a follow-up); the asset id is enough to wire click-throughs in the meantime.
+- Filters out non-`ready` assets (defensive narrow keeps the count badge truthful).
+
+**Verification**
+
+- `pnpm --filter=web typecheck` + `pnpm --filter=web build` clean. /trips/[id] bundle: 3.94KB → 5.04KB (+1.10KB for both day-item editor and media subsection added in this bundle).
+- 93 / 578 api tests still pass.
+
+**Commit**
+
+`1791797 feat(IV.18.19.40): Trip detail media subsection (typed thumbnails grid)`
+
+---
+
+### [IV.18.19.39] — Day-item editor on /trips/[id] (add/remove/reorder via PATCH) (bundled with `[IV.18.19.40]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 5 (Frontend stack) + §6 (SDK / API contract)
+
+**What was done**
+
+First inline write surface for itinerary contents. Users can now add / remove / reorder per-day items directly on the trip detail page.
+
+- New api request DTOs in `trip-response.dto.ts`: `UpdateDayItemDto` (position + nullable placeId/notes), `UpdateDayItemsRequestDto` ({items}), `UpdateDayItemsResponseDto` ({day}).
+- Wire `@ApiBody({type: UpdateDayItemsRequestDto})` + `@ApiResponse({type: UpdateDayItemsResponseDto})` + 404 on `PATCH /trips/:tripId/itinerary/:dayId`. Orval emits a typed `{tripId, dayId, data}` mutation body.
+- Drive-by: also wires `@ApiResponse({type: ListTripMediaResponseDto})` on `GET /media/trip/:tripId` for slice 40 (single openapi regen).
+- Regenerated openapi.yaml (+8 schemas) + SDK.
+- DayRow on /trips/[id] toggles to an inline `DayItemsEditor`:
+  - Per-item rows with notes + placeId text inputs, ▲▼ reorder, ✕ remove.
+  - "Add item" button appends a blank draft.
+  - Save calls `useTripControllerUpdateDay({tripId, dayId, data})`, invalidates the itinerary query on success, surfaces api error code inline on failure.
+
+**Verification**
+
+- All typechecks clean.
+
+**Commit**
+
+`ebad5e4 feat(IV.18.19.39): day-item editor on /trips/[id] (add/remove/reorder via PATCH)`
 
 ---
 
