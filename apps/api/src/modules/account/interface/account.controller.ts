@@ -21,6 +21,7 @@
  * NDJSON streaming added in [IV.18.16.4].
  */
 import { Controller, Delete, Get, HttpCode, HttpStatus, Res } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { FastifyReply } from 'fastify';
 import { Readable } from 'node:stream';
 import { type AuthenticatedUser, CurrentUser } from '../../../common/auth';
@@ -28,7 +29,10 @@ import { DeleteAccountUseCase } from '../application/delete-account.use-case';
 import { ExportUserDataUseCase } from '../application/export-user-data.use-case';
 import { StreamAccountExportUseCase } from '../application/stream-account-export.use-case';
 import type { UserDataExport } from '../domain/user-data-export.entity';
+import { UserDataExportResponseDto } from './dto/account-response.dto';
 
+@ApiTags('account')
+@ApiBearerAuth()
 @Controller('account')
 export class AccountController {
   constructor(
@@ -37,6 +41,16 @@ export class AccountController {
     private readonly deleteUc: DeleteAccountUseCase,
   ) {}
 
+  @ApiOperation({
+    summary:
+      'Full GDPR/DPDP/COPPA self-export bundle as a single JSON object. ~30 sections; sensitive fields stripped.',
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Full export bundle. Per-section row shapes documented in user-data-export.entity.ts.',
+    type: UserDataExportResponseDto,
+  })
   @Get('export')
   @HttpCode(HttpStatus.OK)
   async exportMyData(@CurrentUser() user: AuthenticatedUser): Promise<UserDataExport> {
@@ -61,6 +75,15 @@ export class AccountController {
    * iterator step propagates them and Nest's exception filter
    * renders the standard error response.
    */
+  @ApiOperation({
+    summary:
+      'NDJSON variant of the export bundle — one `{type,data}` envelope per line. Content-Type: application/x-ndjson.',
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Streaming NDJSON. Each line is a `{type,data}` envelope; downstream tooling (jq -c, ndjson-cli) parses incrementally.',
+  })
   @Get('export.ndjson')
   async exportMyDataNdjson(
     @CurrentUser() user: AuthenticatedUser,
@@ -88,6 +111,11 @@ export class AccountController {
       .send(stream);
   }
 
+  @ApiOperation({
+    summary:
+      "Soft-delete the caller's account + revoke all live sessions. GDPR Art. 17 / DPDP §12 right-to-erasure.",
+  })
+  @ApiResponse({ status: 204, description: 'Account marked soft-deleted; sessions revoked.' })
   @Delete()
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteMyAccount(@CurrentUser() user: AuthenticatedUser): Promise<void> {
