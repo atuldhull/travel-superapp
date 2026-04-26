@@ -22,6 +22,7 @@ import type {
   TripControllerListParams,
   TripControllerStaysParams,
   TripDto,
+  TripOverviewResponseDto,
   UpdateTripRequestDto,
 } from '../../schemas';
 
@@ -1150,7 +1151,7 @@ export function useTripControllerGetSharedTrip<
  * @summary Trip overview composite — 7 sections (itinerary, weather, stays, eateries, events, transport, media). Per-section graceful degradation. 60s TTL cache.
  */
 export type tripControllerOverviewResponse200 = {
-  data: void;
+  data: TripOverviewResponseDto;
   status: 200;
 };
 
