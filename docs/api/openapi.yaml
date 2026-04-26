@@ -635,8 +635,14 @@ paths:
         - name: code
           required: true
           in: path
+          description: Share code to revoke.
           schema:
             type: string
+        - name: id
+          required: true
+          in: path
+          description: Trip id (validated implicitly via owner-scoped share lookup).
+          schema: {}
       responses:
         '204':
           description: ''
@@ -1433,6 +1439,7 @@ paths:
         - name: tripId
           required: true
           in: path
+          description: Trip id (auth-gated to owner OR active TripShare).
           schema:
             type: string
       responses:
@@ -1450,6 +1457,7 @@ paths:
         - name: tripId
           required: true
           in: path
+          description: Trip id (auth-gated to owner OR active TripShare).
           schema:
             type: string
         - name: limit
@@ -1470,6 +1478,7 @@ paths:
         - name: tripId
           required: true
           in: path
+          description: Trip id (auth-gated to owner OR active TripShare).
           schema:
             type: string
       responses:
@@ -1488,6 +1497,11 @@ paths:
           in: path
           schema:
             type: string
+        - name: tripId
+          required: true
+          in: path
+          description: Trip id (auth-gated to owner OR active TripShare).
+          schema: {}
       responses:
         '204':
           description: ''

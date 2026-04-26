@@ -28,7 +28,7 @@ import {
   Query,
   UsePipes,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { NotFoundError } from '@app/errors';
 import { type AuthenticatedUser, CurrentUser, Public } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
@@ -512,6 +512,11 @@ export class TripController {
    * "not found" the unknown-code path returns.
    */
   @ApiOperation({ summary: 'Revoke a share code. Owner-scoped.' })
+  @ApiParam({
+    name: 'id',
+    description: 'Trip id (validated implicitly via owner-scoped share lookup).',
+  })
+  @ApiParam({ name: 'code', description: 'Share code to revoke.' })
   @Delete(':id/share/:code')
   @HttpCode(HttpStatus.NO_CONTENT)
   async revokeShare(
