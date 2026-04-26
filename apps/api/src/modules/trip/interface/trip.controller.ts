@@ -28,6 +28,7 @@ import {
   Query,
   UsePipes,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { NotFoundError } from '@app/errors';
 import { type AuthenticatedUser, CurrentUser, Public } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
@@ -101,6 +102,8 @@ function toDto(t: Trip): TripDto {
   };
 }
 
+@ApiTags('trip')
+@ApiBearerAuth()
 @Controller('trips')
 export class TripController {
   constructor(
@@ -125,6 +128,10 @@ export class TripController {
     private readonly tripOverviewCache: TripOverviewCache,
   ) {}
 
+  @ApiOperation({
+    summary: 'Create a trip draft from { title, center, radiusKm, startsOn?, endsOn? }',
+  })
+  @ApiResponse({ status: 201, description: 'Trip created.' })
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @UsePipes(new ZodValidationPipe(CreateTripBodySchema))
@@ -143,6 +150,8 @@ export class TripController {
     return toDto(trip);
   }
 
+  @ApiOperation({ summary: "List the caller's trips, most-recent-first" })
+  @ApiResponse({ status: 200, description: 'List of trips.' })
   @Get()
   @HttpCode(HttpStatus.OK)
   async list(
@@ -154,6 +163,11 @@ export class TripController {
     return { trips: trips.map(toDto) };
   }
 
+  @ApiOperation({
+    summary: 'Fetch a single trip the caller owns. 404 if missing or not theirs (IDOR-safe).',
+  })
+  @ApiResponse({ status: 200, description: 'The trip.' })
+  @ApiResponse({ status: 404, description: 'TRIP_NOT_FOUND.' })
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   async getOne(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string): Promise<TripDto> {
@@ -164,6 +178,11 @@ export class TripController {
     return toDto(trip);
   }
 
+  @ApiOperation({
+    summary: 'Update a trip the caller owns. Partial body; only provided fields change.',
+  })
+  @ApiResponse({ status: 200, description: 'Updated trip.' })
+  @ApiResponse({ status: 404, description: 'TRIP_NOT_FOUND.' })
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
   async update(
@@ -190,6 +209,11 @@ export class TripController {
     return toDto(trip);
   }
 
+  @ApiOperation({
+    summary: 'Delete a trip the caller owns. Cascades to itinerary days, items, shares.',
+  })
+  @ApiResponse({ status: 204, description: 'Trip deleted.' })
+  @ApiResponse({ status: 404, description: 'TRIP_NOT_FOUND.' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string): Promise<void> {
@@ -202,6 +226,9 @@ export class TripController {
    * version lands when the ai-service is real. Returns the fresh
    * list of days — empty `items`, non-null `summary`.
    */
+  @ApiOperation({
+    summary: 'Generate itinerary stub for the trip (one ItineraryDay per date in the range).',
+  })
   @Post(':id/itinerary')
   @HttpCode(HttpStatus.OK)
   async buildItinerary(
@@ -212,6 +239,7 @@ export class TripController {
     return { days: days.map(toDayDto) };
   }
 
+  @ApiOperation({ summary: 'List itinerary days + items for the trip the caller owns.' })
   @Get(':id/itinerary')
   @HttpCode(HttpStatus.OK)
   async getItinerary(
@@ -234,6 +262,10 @@ export class TripController {
    * authenticating. Owner-only — a non-owner hitting this path gets
    * 404 `TRIP_NOT_FOUND` (existence probe defence).
    */
+  @ApiOperation({
+    summary:
+      'Mint a share code so collaborators can view (or co-edit, if publicRead=false) the trip.',
+  })
   @Post(':id/share')
   @HttpCode(HttpStatus.CREATED)
   async share(
@@ -264,6 +296,7 @@ export class TripController {
    * plan, not just metadata.
    */
   @Public()
+  @ApiOperation({ summary: 'Public read of a shared trip by code. No auth required.' })
   @Get('shared/:code')
   @HttpCode(HttpStatus.OK)
   async getSharedTrip(@Param('code') code: string): Promise<SharedTripDto> {
@@ -291,6 +324,15 @@ export class TripController {
    * Owner gate runs once at the top; provider sub-calls never run
    * for non-owners / missing trips.
    */
+  @ApiOperation({
+    summary:
+      'Trip overview composite — 7 sections (itinerary, weather, stays, eateries, events, transport, media). Per-section graceful degradation. 60s TTL cache.',
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Per-user-cached composite. Empty/dateless sections surface as { ok:false, code }.',
+  })
   @Get(':id/overview')
   @HttpCode(HttpStatus.OK)
   async overview(
@@ -339,6 +381,9 @@ export class TripController {
    *
    * Optional query params: `cuisineTag` (string), `maxPriceTier` (1..5).
    */
+  @ApiOperation({
+    summary: 'Eateries near the trip center. Optional cuisineTag + maxPriceTier filters.',
+  })
   @Get(':id/eateries')
   @HttpCode(HttpStatus.OK)
   async eateries(
@@ -368,6 +413,10 @@ export class TripController {
    * trip" is the canonical question. Radius capped at 30km (Events'
    * domain cap). Optional `?category=` filter.
    */
+  @ApiOperation({
+    summary: 'Events near the trip center during the trip date range. Requires startsOn + endsOn.',
+  })
+  @ApiResponse({ status: 422, description: 'TRIP_DATES_REQUIRED.' })
   @Get(':id/events')
   @HttpCode(HttpStatus.OK)
   async events(
@@ -393,6 +442,9 @@ export class TripController {
    *
    * Optional `?guests=N` query param (default 1, max 20).
    */
+  @ApiOperation({
+    summary: 'Stays near the trip center for the trip date range. Requires startsOn + endsOn.',
+  })
   @Get(':id/stays')
   @HttpCode(HttpStatus.OK)
   async stays(
@@ -417,6 +469,7 @@ export class TripController {
    * Open-Meteo's forecast is "from today" — the UI aligns returned
    * ISO dates with the trip's date range.
    */
+  @ApiOperation({ summary: 'Weather forecast for the trip center. Up to 16 days. TTL-cached.' })
   @Get(':id/weather')
   @HttpCode(HttpStatus.OK)
   async weather(
@@ -433,6 +486,7 @@ export class TripController {
    * `TRIP_NOT_FOUND`, matching the existence-probe defence on every
    * other Trip endpoint.
    */
+  @ApiOperation({ summary: 'List active share codes for the trip the caller owns.' })
   @Get(':id/shares')
   @HttpCode(HttpStatus.OK)
   async listShares(
@@ -457,6 +511,7 @@ export class TripController {
    * `publicRead = false` in the DB), so recipient sees the same
    * "not found" the unknown-code path returns.
    */
+  @ApiOperation({ summary: 'Revoke a share code. Owner-scoped.' })
   @Delete(':id/share/:code')
   @HttpCode(HttpStatus.NO_CONTENT)
   async revokeShare(
@@ -475,6 +530,7 @@ export class TripController {
    * UI to render as a gap. Empty `legs: []` is the right answer
    * for a trip with no itinerary or only single-item days.
    */
+  @ApiOperation({ summary: 'Compute transport legs between consecutive itinerary items.' })
   @Get(':id/transport-legs')
   @HttpCode(HttpStatus.OK)
   async transportLegs(
@@ -485,6 +541,9 @@ export class TripController {
     return { legs };
   }
 
+  @ApiOperation({
+    summary: 'Replace items in an itinerary day. Owner OR active TripShare may write.',
+  })
   @Patch(':tripId/itinerary/:dayId')
   @HttpCode(HttpStatus.OK)
   async updateDay(

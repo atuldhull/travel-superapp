@@ -28,6 +28,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../../../common/auth';
 import { AdminArchiveTripUseCase } from '../application/admin-archive-trip.use-case';
 import { AdminDeleteTripUseCase } from '../application/admin-delete-trip.use-case';
@@ -64,6 +65,8 @@ function toDto(t: Trip): AdminTripDto {
   };
 }
 
+@ApiTags('admin')
+@ApiBearerAuth()
 @Controller('admin/trips')
 @Roles('admin')
 export class AdminTripsController {
@@ -73,6 +76,11 @@ export class AdminTripsController {
     private readonly deleteUc: AdminDeleteTripUseCase,
   ) {}
 
+  @ApiOperation({
+    summary: 'List trips across all users with optional q + status filters. Admin-only.',
+  })
+  @ApiResponse({ status: 200, description: 'Paginated trip rows.' })
+  @ApiResponse({ status: 403, description: 'Caller is not admin.' })
   @Get()
   @HttpCode(HttpStatus.OK)
   async list(
@@ -103,12 +111,21 @@ export class AdminTripsController {
     return { trips: result.rows.map(toDto), total: result.total };
   }
 
+  @ApiOperation({
+    summary:
+      'Soft-archive a trip (status = archived). Reversible by the owner via the standard CRUD path.',
+  })
+  @ApiResponse({ status: 204, description: 'Trip archived.' })
   @Post(':id/archive')
   @HttpCode(HttpStatus.NO_CONTENT)
   async archive(@Param('id') id: string): Promise<void> {
     await this.archiveUc.execute(id);
   }
 
+  @ApiOperation({
+    summary: 'Hard-delete a trip + cascade itinerary. For takedowns of clearly-abusive content.',
+  })
+  @ApiResponse({ status: 204, description: 'Trip deleted.' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id') id: string): Promise<void> {
