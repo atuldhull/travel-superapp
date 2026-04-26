@@ -7,7 +7,7 @@
  * injects auth tokens from memory only (CLAUDE rule 12).
  *
  * Marked `'use client'` because TanStack Query hooks need the
- * client runtime. Tailwind 4 themed cards land via `[IV.18.19.18]`.
+ * client runtime.
  *
  * Casting the body shape: openapi.yaml currently lacks a response
  * schema for this endpoint, so orval generates `data: void`. Real
@@ -15,7 +15,7 @@
  * pass on the api will tighten this in a follow-up slice.
  *
  * Installed by [IV.18.19.14]; SDK wire-through [IV.18.19.17];
- * Tailwind theming [IV.18.19.18].
+ * Tailwind theming [IV.18.19.18]; Card/Skeleton refactor [IV.18.19.27].
  */
 'use client';
 
@@ -25,14 +25,12 @@ import {
   type FeaturedMemoryBooksResponseDto,
   type PublicMemoryBookDto,
 } from '@app/sdk';
+import { Card, CardHeader, CardSubtitle, CardTitle } from '../../components/ui/card';
+import { Skeleton } from '../../components/ui/skeleton';
 
 export default function FeaturedPage() {
   const { data, isLoading, isError } = useMemoryBookControllerFeatured({ limit: '20' });
 
-  // Runtime body shape matches FeaturedMemoryBooksResponseDto exactly
-  // (apiFetch returns the parsed JSON, not orval's {data,status,headers}
-  // envelope). Cast through unknown is the documented bridge until the
-  // mutator's return type is realigned with the orval envelope.
   const body = data as unknown as FeaturedMemoryBooksResponseDto | undefined;
   const books: readonly PublicMemoryBookDto[] = body?.books ?? [];
 
@@ -45,7 +43,15 @@ export default function FeaturedPage() {
       </p>
       <h1 className="text-3xl font-bold tracking-tight">Featured memory books</h1>
       {isLoading ? (
-        <p className="text-muted">Loading…</p>
+        <ul className="grid gap-4 sm:grid-cols-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card as="li" key={i}>
+              <Skeleton className="h-5 w-3/4" />
+              <Skeleton className="mt-2 h-3 w-2/3" />
+              <Skeleton className="mt-1 h-3 w-1/2" />
+            </Card>
+          ))}
+        </ul>
       ) : isError ? (
         <p className="rounded-md border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
           Couldn't reach the API. Is it running on{' '}
@@ -63,24 +69,18 @@ export default function FeaturedPage() {
       ) : (
         <ul className="grid gap-4 sm:grid-cols-2">
           {books.map((b) => (
-            <BookCard key={b.id} book={b} />
+            <Card as="li" key={b.id}>
+              <CardHeader>
+                <CardTitle>{b.title}</CardTitle>
+                <CardSubtitle>
+                  Theme: <span className="font-medium">{b.theme}</span> · Published{' '}
+                  {new Date(b.publishedAt).toLocaleDateString()}
+                </CardSubtitle>
+              </CardHeader>
+            </Card>
           ))}
         </ul>
       )}
     </main>
-  );
-}
-
-function BookCard({ book }: { book: PublicMemoryBookDto }) {
-  return (
-    <li className="rounded-lg border border-muted/20 bg-surface p-4 shadow-sm transition hover:shadow">
-      <h2 className="text-lg font-semibold tracking-tight">{book.title}</h2>
-      <p className="mt-1 text-sm text-muted">
-        Theme: <span className="font-medium">{book.theme}</span>
-      </p>
-      <p className="text-sm text-muted">
-        Published: {new Date(book.publishedAt).toLocaleDateString()}
-      </p>
-    </li>
   );
 }
