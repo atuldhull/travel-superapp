@@ -16,6 +16,7 @@ import type {
 
 import type {
   CreateTripRequestDto,
+  ItineraryListResponseDto,
   ListTripsResponseDto,
   TripControllerEateriesParams,
   TripControllerEventsParams,
@@ -743,14 +744,25 @@ export const useTripControllerBuildItinerary = <TError = unknown, TContext = unk
  * @summary List itinerary days + items for the trip the caller owns.
  */
 export type tripControllerGetItineraryResponse200 = {
-  data: void;
+  data: ItineraryListResponseDto;
   status: 200;
+};
+
+export type tripControllerGetItineraryResponse404 = {
+  data: void;
+  status: 404;
 };
 
 export type tripControllerGetItineraryResponseSuccess = tripControllerGetItineraryResponse200 & {
   headers: Headers;
 };
-export type tripControllerGetItineraryResponse = tripControllerGetItineraryResponseSuccess;
+export type tripControllerGetItineraryResponseError = tripControllerGetItineraryResponse404 & {
+  headers: Headers;
+};
+
+export type tripControllerGetItineraryResponse =
+  | tripControllerGetItineraryResponseSuccess
+  | tripControllerGetItineraryResponseError;
 
 export const getTripControllerGetItineraryUrl = (id: string) => {
   return `/api/v1/trips/${id}/itinerary`;
@@ -776,7 +788,7 @@ export const getTripControllerGetItineraryQueryKey = (id?: string) => {
 
 export const getTripControllerGetItineraryInfiniteQueryOptions = <
   TData = Awaited<ReturnType<typeof tripControllerGetItinerary>>,
-  TError = unknown,
+  TError = void,
 >(
   id: string,
   options?: {
@@ -812,7 +824,7 @@ export const getTripControllerGetItineraryInfiniteQueryOptions = <
 export type TripControllerGetItineraryInfiniteQueryResult = NonNullable<
   Awaited<ReturnType<typeof tripControllerGetItinerary>>
 >;
-export type TripControllerGetItineraryInfiniteQueryError = unknown;
+export type TripControllerGetItineraryInfiniteQueryError = void;
 
 /**
  * @summary List itinerary days + items for the trip the caller owns.
@@ -820,7 +832,7 @@ export type TripControllerGetItineraryInfiniteQueryError = unknown;
 
 export function useTripControllerGetItineraryInfinite<
   TData = Awaited<ReturnType<typeof tripControllerGetItinerary>>,
-  TError = unknown,
+  TError = void,
 >(
   id: string,
   options?: {
@@ -845,7 +857,7 @@ export function useTripControllerGetItineraryInfinite<
 
 export const getTripControllerGetItineraryQueryOptions = <
   TData = Awaited<ReturnType<typeof tripControllerGetItinerary>>,
-  TError = unknown,
+  TError = void,
 >(
   id: string,
   options?: {
@@ -871,7 +883,7 @@ export const getTripControllerGetItineraryQueryOptions = <
 export type TripControllerGetItineraryQueryResult = NonNullable<
   Awaited<ReturnType<typeof tripControllerGetItinerary>>
 >;
-export type TripControllerGetItineraryQueryError = unknown;
+export type TripControllerGetItineraryQueryError = void;
 
 /**
  * @summary List itinerary days + items for the trip the caller owns.
@@ -879,7 +891,7 @@ export type TripControllerGetItineraryQueryError = unknown;
 
 export function useTripControllerGetItinerary<
   TData = Awaited<ReturnType<typeof tripControllerGetItinerary>>,
-  TError = unknown,
+  TError = void,
 >(
   id: string,
   options?: {

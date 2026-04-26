@@ -82,6 +82,7 @@ import {
 } from './dto/trip.dto';
 import {
   CreateTripRequestDto,
+  ItineraryListResponseDto,
   ListTripsResponseDto,
   TripDto as TripResponseDto,
   UpdateTripRequestDto,
@@ -260,6 +261,12 @@ export class TripController {
   }
 
   @ApiOperation({ summary: 'List itinerary days + items for the trip the caller owns.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Itinerary days, ordered by dayIndex.',
+    type: ItineraryListResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'TRIP_NOT_FOUND.' })
   @Get(':id/itinerary')
   @HttpCode(HttpStatus.OK)
   async getItinerary(

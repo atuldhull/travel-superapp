@@ -3,6 +3,7 @@
 // Regenerate via: pnpm --filter=@app/sdk sdk:gen
 import type {
   CreateTripRequestDto,
+  ItineraryListResponseDto,
   ListTripsResponseDto,
   TripControllerEateriesParams,
   TripControllerEventsParams,
@@ -230,14 +231,25 @@ export const tripControllerBuildItinerary = async (
  * @summary List itinerary days + items for the trip the caller owns.
  */
 export type tripControllerGetItineraryResponse200 = {
-  data: void;
+  data: ItineraryListResponseDto;
   status: 200;
+};
+
+export type tripControllerGetItineraryResponse404 = {
+  data: void;
+  status: 404;
 };
 
 export type tripControllerGetItineraryResponseSuccess = tripControllerGetItineraryResponse200 & {
   headers: Headers;
 };
-export type tripControllerGetItineraryResponse = tripControllerGetItineraryResponseSuccess;
+export type tripControllerGetItineraryResponseError = tripControllerGetItineraryResponse404 & {
+  headers: Headers;
+};
+
+export type tripControllerGetItineraryResponse =
+  | tripControllerGetItineraryResponseSuccess
+  | tripControllerGetItineraryResponseError;
 
 export const getTripControllerGetItineraryUrl = (id: string) => {
   return `/api/v1/trips/${id}/itinerary`;

@@ -47,3 +47,6 @@ export type { OverviewWeatherSuccessDto } from './generated/schemas/overviewWeat
 export type { OverviewListSuccessDto } from './generated/schemas/overviewListSuccessDto';
 export type { OverviewLegsSuccessDto } from './generated/schemas/overviewLegsSuccessDto';
 export type { OverviewMediaSuccessDto } from './generated/schemas/overviewMediaSuccessDto';
+export type { ItineraryListResponseDto } from './generated/schemas/itineraryListResponseDto';
+export type { ItineraryDayDto } from './generated/schemas/itineraryDayDto';
+export type { ItineraryItemDto } from './generated/schemas/itineraryItemDto';

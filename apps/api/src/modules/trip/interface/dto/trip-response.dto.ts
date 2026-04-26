@@ -64,6 +64,54 @@ export class ListTripsResponseDto {
   declare trips: TripDto[];
 }
 
+export class ItineraryItemDto {
+  @ApiProperty({ format: 'cuid' })
+  declare id: string;
+
+  @ApiProperty({ description: 'Stable position within the day (used for ordering).' })
+  declare position: number;
+
+  @ApiProperty({ nullable: true, format: 'cuid' })
+  declare placeId: string | null;
+
+  @ApiProperty({ nullable: true, format: 'date-time' })
+  declare startTime: string | null;
+
+  @ApiProperty({ nullable: true, format: 'date-time' })
+  declare endTime: string | null;
+
+  @ApiProperty({ nullable: true })
+  declare notes: string | null;
+}
+
+export class ItineraryDayDto {
+  @ApiProperty({ format: 'cuid' })
+  declare id: string;
+
+  @ApiProperty({ format: 'cuid' })
+  declare tripId: string;
+
+  @ApiProperty({ description: 'Zero-based index from the trip start date.' })
+  declare dayIndex: number;
+
+  @ApiProperty({ format: 'date-time' })
+  declare date: string;
+
+  @ApiProperty({ nullable: true })
+  declare summary: string | null;
+
+  @ApiProperty({ type: [ItineraryItemDto] })
+  declare items: ItineraryItemDto[];
+}
+
+export class ItineraryListResponseDto {
+  @ApiProperty({
+    type: [ItineraryDayDto],
+    description: 'Itinerary days, ordered by dayIndex ascending.',
+  })
+  declare days: ItineraryDayDto[];
+}
+
 /**
  * Body class for PATCH /trips/:id. Documentation-only — runtime
  * validation stays on `UpdateTripBodySchema` in `trip.dto.ts`. All
