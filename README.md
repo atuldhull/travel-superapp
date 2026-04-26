@@ -18,12 +18,22 @@ Mobile-first, AI-powered travel super-app. A user enters a place + radius; the a
 # One-time
 corepack enable   # on Windows may need admin; otherwise use: npx pnpm <cmd>
 
-# Install + run
-pnpm install
-pnpm dev
+# Bootstrap (docker stack + .env.local generation + migrate + seed)
+pnpm dev:up
+
+# Two terminals — api + web
+pnpm --filter=api dev    # http://localhost:3000
+pnpm --filter=web dev    # http://localhost:3001
+
+# Tear down the stack
+pnpm dev:down
 ```
 
-Requirements: Node **22+** (`.nvmrc`), pnpm **9+** (`package.json#packageManager`), Git.
+`pnpm dev:up` is idempotent. It generates `apps/api/.env.local` +
+`apps/web/.env.local` with random dev peppers on first run and never
+overwrites them on subsequent runs.
+
+Requirements: Docker, Node **22+** (`.nvmrc`), pnpm **9+** (`package.json#packageManager`), Git.
 
 ## Structure
 
