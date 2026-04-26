@@ -10,18 +10,68 @@
 
 ## Summary
 
-| Counter             | Value                                                                  |
-| ------------------- | ---------------------------------------------------------------------- |
-| Prompts completed   | 156 (154 prior + bundled Trip detail page + whoami badge)              |
-| Prompts in progress | 0                                                                      |
-| Prompts blocked     | 0                                                                      |
-| Last prompt         | `[IV.18.19.30]` — /auth/me whoami badge (bundled with `[IV.18.19.29]`) |
-| Last commit date    | 2026-04-26                                                             |
-| Phase               | Phase 1 — full Trip CRUD on web + signed-in identity surface in header |
+| Counter             | Value                                                                      |
+| ------------------- | -------------------------------------------------------------------------- |
+| Prompts completed   | 158 (156 prior + bundled register page + Trip overview page)               |
+| Prompts in progress | 0                                                                          |
+| Prompts blocked     | 0                                                                          |
+| Last prompt         | `[IV.18.19.32]` — Trip overview page on web (bundled with `[IV.18.19.31]`) |
+| Last commit date    | 2026-04-26                                                                 |
+| Phase               | Phase 1 — register-to-overview demo loop closed; 9 web routes live         |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.19.32] — Trip overview page on web — 7-section composite render (bundled with `[IV.18.19.31]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 5 (Frontend stack)
+
+**What was done**
+
+First UI for the trip-home composite. Demonstrates ADR-013's per-section graceful degradation visually.
+
+- New `apps/web/src/app/trips/[id]/overview/page.tsx`: themed grid rendering all 7 sections from the api's `useTripControllerOverview` composite (itinerary / weather / stays / eateries / events / transport / media).
+  - Each section is a `<Card>` with a `<Badge>` showing "ok" (brand) OR the graceful-skip code (neutral), per ADR-013's `Section<T>` discriminated union.
+  - The api's openapi.yaml lacks a strict schema for this composite (Section<T> needs `oneOf` typing — flagged for a follow-up). For now we declare a local matching type and cast through unknown.
+  - Loading state renders 7 skeleton cards; auth-gated identically to the other protected routes.
+- Trip detail page (`/trips/:id`) header now has an "Overview" CTA pointing at the new route.
+
+**Verification**
+
+- `pnpm --filter=web typecheck` + `pnpm --filter=web build` clean. 9 routes total (7 static + 2 dynamic /trips/[id] + /trips/[id]/overview). Bundle size: /trips/[id]/overview 2.05KB.
+- 93 / 578 api tests still pass.
+
+**Commit**
+
+`484d002 feat(IV.18.19.32): Trip overview page on web — 7-section composite render`
+
+---
+
+### [IV.18.19.31] — Web /register page + auto-sign-in (bundled with `[IV.18.19.32]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 5 (Frontend stack) + §13.2 (Identity)
+
+**What was done**
+
+Closes the "no UI for register" gap. New users can now create an account from the web shell without curl.
+
+- New `apps/web/src/app/register/page.tsx`: themed three-field form (display name + email + password) wired to `useAuthControllerRegister` from @app/sdk. On success, drops the access token into the in-memory auth-store and redirects to /trips, mirroring login's auto-sign-in.
+- Inline `minLength=12` + `maxLength=128` on the password field matches the api Zod schema in `auth.dto.ts` (surface guard before the round-trip).
+- `EMAIL_TAKEN` from the api surfaces as a friendly inline message pointing the user at /login.
+- /login adds a "Create an account →" link below the credentials form.
+- Landing page (`/`) adds a "Create account" CTA next to "Sign in".
+
+**Verification**
+
+- `pnpm --filter=web typecheck` clean.
+- No api change → tests unchanged.
+
+**Commit**
+
+`f693633 feat(IV.18.19.31): web /register page + auto-sign-in`
 
 ---
 
