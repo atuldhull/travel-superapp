@@ -12,10 +12,25 @@
 'use client';
 
 import { useSyncExternalStore } from 'react';
-import { getAccessToken, subscribeToAuthToken } from './auth-store';
+import { getAccessToken, getBootComplete, subscribeToAuthToken } from './auth-store';
 
-const noopSnapshot = (): null => null;
+const nullSnapshot = (): null => null;
+const trueSnapshot = (): boolean => true;
 
 export function useAuthToken(): string | null {
-  return useSyncExternalStore(subscribeToAuthToken, getAccessToken, noopSnapshot);
+  return useSyncExternalStore(subscribeToAuthToken, getAccessToken, nullSnapshot);
+}
+
+/**
+ * `true` once `SilentRefreshOnMount` has completed its first attempt
+ * (success OR failure). Protected pages should hold their "no token →
+ * /login" redirect until this flips, otherwise a hard reload bounces
+ * before silent-refresh has a chance to resurrect the session.
+ *
+ * SSR: server returns `true` so prerendered output doesn't show a
+ * loading spinner; hydration on the client overrides with the real
+ * boot state on the first commit.
+ */
+export function useAuthBootComplete(): boolean {
+  return useSyncExternalStore(subscribeToAuthToken, getBootComplete, trueSnapshot);
 }

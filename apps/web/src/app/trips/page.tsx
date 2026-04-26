@@ -18,15 +18,19 @@ import { useEffect } from 'react';
 import { useTripControllerList, type ListTripsResponseDto, type TripDto } from '@app/sdk';
 import { Button } from '../../components/ui/button';
 import { clearAccessToken } from '../../lib/auth-store';
-import { useAuthToken } from '../../lib/use-auth-token';
+import { useAuthBootComplete, useAuthToken } from '../../lib/use-auth-token';
 
 export default function TripsPage() {
   const router = useRouter();
   const token = useAuthToken();
+  const bootComplete = useAuthBootComplete();
 
   useEffect(() => {
-    if (token === null) router.replace('/login');
-  }, [token, router]);
+    // Hold the redirect until silent-refresh has had its chance —
+    // otherwise a hard reload always bounces before the httpOnly
+    // cookie can resurrect the session.
+    if (bootComplete && token === null) router.replace('/login');
+  }, [bootComplete, token, router]);
 
   const { data, isLoading, isError, error } = useTripControllerList(
     { limit: '20' },
@@ -36,6 +40,14 @@ export default function TripsPage() {
   function onLogout() {
     clearAccessToken();
     router.replace('/login');
+  }
+
+  if (!bootComplete) {
+    return (
+      <main>
+        <p className="text-muted">Restoring your session…</p>
+      </main>
+    );
   }
 
   if (token === null) {

@@ -63,7 +63,13 @@ export async function apiFetch<TResponse>(url: string, init: RequestInit = {}): 
     headers.set('authorization', `Bearer ${token}`);
   }
 
-  const res = await fetch(joinUrl(url), { ...init, headers });
+  // `credentials: 'include'` so the browser sends the httpOnly refresh
+  // cookie set on /api/v1/auth — required for /auth/refresh to work
+  // cross-origin (web on :3001 hitting api on :3000). The api's CORS
+  // config (`security.register.ts`) sets `credentials: true` on
+  // matching origins, so this is symmetric. No-op on server-side
+  // fetches (Node fetch ignores credentials).
+  const res = await fetch(joinUrl(url), { credentials: 'include', ...init, headers });
 
   if (res.status === 204) {
     return undefined as TResponse;
