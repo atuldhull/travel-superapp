@@ -39,3 +39,10 @@ export type { ListTripsResponseDto } from './generated/schemas/listTripsResponse
 export type { CreateTripRequestDto } from './generated/schemas/createTripRequestDto';
 export type { UpdateTripRequestDto } from './generated/schemas/updateTripRequestDto';
 export type { WhoAmIResponseDto } from './generated/schemas/whoAmIResponseDto';
+export type { TripOverviewResponseDto } from './generated/schemas/tripOverviewResponseDto';
+export type { OverviewSectionFailureDto } from './generated/schemas/overviewSectionFailureDto';
+export type { OverviewItinerarySuccessDto } from './generated/schemas/overviewItinerarySuccessDto';
+export type { OverviewWeatherSuccessDto } from './generated/schemas/overviewWeatherSuccessDto';
+export type { OverviewListSuccessDto } from './generated/schemas/overviewListSuccessDto';
+export type { OverviewLegsSuccessDto } from './generated/schemas/overviewLegsSuccessDto';
+export type { OverviewMediaSuccessDto } from './generated/schemas/overviewMediaSuccessDto';

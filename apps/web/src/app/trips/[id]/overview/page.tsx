@@ -5,57 +5,44 @@
  * with a Badge for ok / graceful-skip status.
  *
  * The api uses per-section graceful degradation (`Section<T>` =
- * `{ok:true, data} | {ok:false, code}` — see ADR-013): a sub-fetch
+ * `{ok: true, data} | {ok: false, code}` — see ADR-013): a sub-fetch
  * failure (dead provider, missing trip dates for stays, etc.)
  * surfaces as a greyed-out widget instead of 500-ing the whole page.
  *
- * The api's openapi.yaml lacks a strict schema for this composite
- * (the discriminated `Section<T>` shape needs `oneOf` typing — coming
- * in a follow-up slice). For now we declare a local matching type and
- * cast through unknown.
+ * The composite is fully typed via `TripOverviewResponseDto` from
+ * @app/sdk (added in [IV.18.19.33] — Section<T> oneOf).
  *
- * Installed by prompt [IV.18.19.32].
+ * Installed by prompt [IV.18.19.32]; rewired to typed schema in
+ * [IV.18.19.33].
  */
 'use client';
 
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { useTripControllerOverview, type TripDto } from '@app/sdk';
+import {
+  useTripControllerOverview,
+  type OverviewSectionFailureDto,
+  type TripOverviewResponseDto,
+} from '@app/sdk';
 import { Badge } from '../../../../components/ui/badge';
 import { Card, CardHeader, CardSubtitle, CardTitle } from '../../../../components/ui/card';
 import { Skeleton } from '../../../../components/ui/skeleton';
 import { useAuthBootComplete, useAuthToken } from '../../../../lib/use-auth-token';
 
-type Section<T> =
-  | { readonly ok: true; readonly data: T }
-  | { readonly ok: false; readonly code: string };
-
-interface ItineraryDayLike {
-  readonly id: string;
-  readonly date: string;
-  readonly summary: string | null;
-  readonly items: readonly { readonly id: string }[];
-}
-interface ListLike<T = unknown> {
-  readonly length: number;
-  readonly slice: (start: number, end?: number) => readonly T[];
-}
-
-interface OverviewBody {
-  readonly trip: TripDto;
-  readonly itinerary: Section<readonly ItineraryDayLike[]>;
-  readonly weather: Section<{ readonly daily?: unknown }>;
-  readonly stays: Section<{ readonly list?: ListLike }>;
-  readonly eateries: Section<{ readonly list?: ListLike }>;
-  readonly events: Section<{ readonly list?: ListLike }>;
-  readonly transport: Section<{ readonly legs?: ListLike }>;
-  readonly media: Section<{ readonly count: number; readonly recent: readonly unknown[] }>;
-}
-
 interface ApiError extends Error {
   readonly code?: string;
   readonly status?: number;
+}
+
+/**
+ * Discriminator. Orval emits `ok: boolean` (not `true|false` literal),
+ * so TS can't narrow on `section.ok` alone — but the failure variant
+ * has `code: string` and no `data`, so checking for `data` works as
+ * a structural narrow.
+ */
+function isOk<T extends { data: unknown }>(section: T | OverviewSectionFailureDto): section is T {
+  return 'data' in section && (section as { data?: unknown }).data !== undefined;
 }
 
 export default function TripOverviewPage() {
@@ -118,7 +105,7 @@ export default function TripOverviewPage() {
     );
   }
 
-  const body = data as unknown as OverviewBody;
+  const body = data as unknown as TripOverviewResponseDto;
 
   return (
     <main className="space-y-6">
@@ -134,76 +121,68 @@ export default function TripOverviewPage() {
         </p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <SectionCard
-          title="Itinerary"
-          section={body.itinerary}
-          render={(days) => (
+        <SectionCard title="Itinerary" section={body.itinerary}>
+          {(s) => (
             <p className="text-sm text-muted">
-              {days.length} {days.length === 1 ? 'day' : 'days'} ·{' '}
-              {days.reduce((sum, d) => sum + d.items.length, 0)} items
+              {s.data.days.length} {s.data.days.length === 1 ? 'day' : 'days'} ·{' '}
+              {s.data.days.reduce((sum, d) => sum + d.items.length, 0)} items
             </p>
           )}
-        />
-        <SectionCard
-          title="Weather"
-          section={body.weather}
-          render={() => <p className="text-sm text-muted">Forecast loaded</p>}
-        />
-        <SectionCard
-          title="Stays"
-          section={body.stays}
-          render={(d) => <p className="text-sm text-muted">{d.list?.length ?? 0} listings</p>}
-        />
-        <SectionCard
-          title="Eateries"
-          section={body.eateries}
-          render={(d) => <p className="text-sm text-muted">{d.list?.length ?? 0} eateries</p>}
-        />
-        <SectionCard
-          title="Events"
-          section={body.events}
-          render={(d) => <p className="text-sm text-muted">{d.list?.length ?? 0} events</p>}
-        />
-        <SectionCard
-          title="Transport"
-          section={body.transport}
-          render={(d) => <p className="text-sm text-muted">{d.legs?.length ?? 0} legs</p>}
-        />
-        <SectionCard
-          title="Media"
-          section={body.media}
-          render={(d) => (
+        </SectionCard>
+        <SectionCard title="Weather" section={body.weather}>
+          {() => <p className="text-sm text-muted">Forecast loaded</p>}
+        </SectionCard>
+        <SectionCard title="Stays" section={body.stays}>
+          {(s) => <p className="text-sm text-muted">{s.data.list.length} listings</p>}
+        </SectionCard>
+        <SectionCard title="Eateries" section={body.eateries}>
+          {(s) => <p className="text-sm text-muted">{s.data.list.length} eateries</p>}
+        </SectionCard>
+        <SectionCard title="Events" section={body.events}>
+          {(s) => <p className="text-sm text-muted">{s.data.list.length} events</p>}
+        </SectionCard>
+        <SectionCard title="Transport" section={body.transport}>
+          {(s) => <p className="text-sm text-muted">{s.data.legs.length} legs</p>}
+        </SectionCard>
+        <SectionCard title="Media" section={body.media}>
+          {(s) => (
             <p className="text-sm text-muted">
-              {d.count} {d.count === 1 ? 'asset' : 'assets'} · {d.recent.length} recent
+              {s.data.count} {s.data.count === 1 ? 'asset' : 'assets'} · {s.data.recent.length}{' '}
+              recent
             </p>
           )}
-        />
+        </SectionCard>
       </div>
     </main>
   );
 }
 
-interface SectionCardProps<T> {
+interface SectionCardProps<T extends { data: unknown }> {
   readonly title: string;
-  readonly section: Section<T>;
-  readonly render: (data: T) => React.ReactNode;
+  readonly section: T | OverviewSectionFailureDto;
+  readonly children: (success: T) => React.ReactNode;
 }
 
-function SectionCard<T>({ title, section, render }: SectionCardProps<T>) {
+function SectionCard<T extends { data: unknown }>({
+  title,
+  section,
+  children,
+}: SectionCardProps<T>) {
+  const ok = isOk<T>(section);
   return (
     <Card>
       <CardHeader>
         <div className="flex items-start justify-between gap-2">
           <CardTitle>{title}</CardTitle>
-          {section.ok ? (
+          {ok ? (
             <Badge variant="brand">ok</Badge>
           ) : (
-            <Badge variant="neutral">{section.code}</Badge>
+            <Badge variant="neutral">{(section as OverviewSectionFailureDto).code}</Badge>
           )}
         </div>
-        {!section.ok ? <CardSubtitle>Skipped — see code badge for the reason.</CardSubtitle> : null}
+        {!ok ? <CardSubtitle>Skipped — see code badge for the reason.</CardSubtitle> : null}
       </CardHeader>
-      {section.ok ? render(section.data) : null}
+      {ok ? children(section) : null}
     </Card>
   );
 }

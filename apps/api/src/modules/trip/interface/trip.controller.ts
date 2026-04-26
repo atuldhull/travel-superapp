@@ -86,6 +86,7 @@ import {
   TripDto as TripResponseDto,
   UpdateTripRequestDto,
 } from './dto/trip-response.dto';
+import { TripOverviewResponseDto } from './dto/overview-response.dto';
 
 interface TripDto {
   readonly id: string;
@@ -351,6 +352,7 @@ export class TripController {
     status: 200,
     description:
       'Per-user-cached composite. Empty/dateless sections surface as { ok:false, code }.',
+    type: TripOverviewResponseDto,
   })
   @Get(':id/overview')
   @HttpCode(HttpStatus.OK)
