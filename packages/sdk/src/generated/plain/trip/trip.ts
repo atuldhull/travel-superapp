@@ -4,6 +4,7 @@
 import type {
   CreateTripRequestDto,
   CreateTripShareRequestDto,
+  GeneratePlanWithAiResponseDto,
   ItineraryListResponseDto,
   ListTripsResponseDto,
   TripControllerEateriesParams,
@@ -277,6 +278,44 @@ export const tripControllerGetItinerary = async (
   return apiFetch<tripControllerGetItineraryResponse>(getTripControllerGetItineraryUrl(id), {
     ...options,
     method: 'GET',
+  });
+};
+
+/**
+ * @summary Generate a free-form trip plan via the configured AI adapter (Claude / stub). Owner-only.
+ */
+export type tripControllerPlanWithAiResponse200 = {
+  data: GeneratePlanWithAiResponseDto;
+  status: 200;
+};
+
+export type tripControllerPlanWithAiResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type tripControllerPlanWithAiResponseSuccess = tripControllerPlanWithAiResponse200 & {
+  headers: Headers;
+};
+export type tripControllerPlanWithAiResponseError = tripControllerPlanWithAiResponse404 & {
+  headers: Headers;
+};
+
+export type tripControllerPlanWithAiResponse =
+  | tripControllerPlanWithAiResponseSuccess
+  | tripControllerPlanWithAiResponseError;
+
+export const getTripControllerPlanWithAiUrl = (id: string) => {
+  return `/api/v1/trips/${id}/plan-with-ai`;
+};
+
+export const tripControllerPlanWithAi = async (
+  id: string,
+  options?: RequestInit,
+): Promise<tripControllerPlanWithAiResponse> => {
+  return apiFetch<tripControllerPlanWithAiResponse>(getTripControllerPlanWithAiUrl(id), {
+    ...options,
+    method: 'POST',
   });
 };
 

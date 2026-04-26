@@ -17,6 +17,7 @@ import type {
 import type {
   CreateTripRequestDto,
   CreateTripShareRequestDto,
+  GeneratePlanWithAiResponseDto,
   ItineraryListResponseDto,
   ListTripsResponseDto,
   TripControllerEateriesParams,
@@ -923,6 +924,107 @@ export function useTripControllerGetItinerary<
   return query;
 }
 
+/**
+ * @summary Generate a free-form trip plan via the configured AI adapter (Claude / stub). Owner-only.
+ */
+export type tripControllerPlanWithAiResponse200 = {
+  data: GeneratePlanWithAiResponseDto;
+  status: 200;
+};
+
+export type tripControllerPlanWithAiResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type tripControllerPlanWithAiResponseSuccess = tripControllerPlanWithAiResponse200 & {
+  headers: Headers;
+};
+export type tripControllerPlanWithAiResponseError = tripControllerPlanWithAiResponse404 & {
+  headers: Headers;
+};
+
+export type tripControllerPlanWithAiResponse =
+  | tripControllerPlanWithAiResponseSuccess
+  | tripControllerPlanWithAiResponseError;
+
+export const getTripControllerPlanWithAiUrl = (id: string) => {
+  return `/api/v1/trips/${id}/plan-with-ai`;
+};
+
+export const tripControllerPlanWithAi = async (
+  id: string,
+  options?: RequestInit,
+): Promise<tripControllerPlanWithAiResponse> => {
+  return apiFetch<tripControllerPlanWithAiResponse>(getTripControllerPlanWithAiUrl(id), {
+    ...options,
+    method: 'POST',
+  });
+};
+
+export const getTripControllerPlanWithAiMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof tripControllerPlanWithAi>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof tripControllerPlanWithAi>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ['tripControllerPlanWithAi'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof tripControllerPlanWithAi>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return tripControllerPlanWithAi(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type TripControllerPlanWithAiMutationResult = NonNullable<
+  Awaited<ReturnType<typeof tripControllerPlanWithAi>>
+>;
+
+export type TripControllerPlanWithAiMutationError = void;
+
+/**
+ * @summary Generate a free-form trip plan via the configured AI adapter (Claude / stub). Owner-only.
+ */
+export const useTripControllerPlanWithAi = <TError = void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof tripControllerPlanWithAi>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof tripControllerPlanWithAi>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationOptions = getTripControllerPlanWithAiMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
 /**
  * @summary Mint a share code so collaborators can view (or co-edit, if publicRead=false) the trip.
  */

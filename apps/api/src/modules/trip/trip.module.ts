@@ -13,6 +13,8 @@
  * Installed by prompt [IV.18.2.3].
  */
 import { forwardRef, Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import type { Env } from '@app/config';
 import { EventsModule } from '../events/events.module';
 import { FoodModule } from '../food/food.module';
 import { MediaModule } from '../media/media.module';
@@ -28,6 +30,7 @@ import { CreateTripShareUseCase } from './application/create-trip-share.use-case
 import { ListTripSharesUseCase } from './application/list-trip-shares.use-case';
 import { DeleteTripUseCase } from './application/delete-trip.use-case';
 import { GenerateItineraryStubUseCase } from './application/generate-itinerary-stub.use-case';
+import { GeneratePlanWithAiUseCase } from './application/generate-plan-with-ai.use-case';
 import { GetTripUseCase } from './application/get-trip.use-case';
 import { GetTripEateriesUseCase } from './application/get-trip-eateries.use-case';
 import { GetTripEventsUseCase } from './application/get-trip-events.use-case';
@@ -38,15 +41,18 @@ import { GetTripWeatherUseCase } from './application/get-trip-weather.use-case';
 import { ListItineraryUseCase } from './application/list-itinerary.use-case';
 import { ListTripsUseCase } from './application/list-trips.use-case';
 import { ITINERARY_REPOSITORY } from './application/ports/itinerary.repository';
+import { TRIP_PLANNER_PORT } from './application/ports/trip-planner.port';
 import { TRIP_REPOSITORY } from './application/ports/trip.repository';
 import { TRIP_SHARE_REPOSITORY } from './application/ports/trip-share.repository';
 import { ResolveTripShareUseCase } from './application/resolve-trip-share.use-case';
 import { RevokeTripShareUseCase } from './application/revoke-trip-share.use-case';
 import { UpdateDayItemsUseCase } from './application/update-day-items.use-case';
 import { UpdateTripUseCase } from './application/update-trip.use-case';
+import { ClaudeTripPlannerAdapter } from './infrastructure/claude-trip-planner.adapter';
 import { PrismaItineraryRepository } from './infrastructure/prisma-itinerary.repository';
 import { PrismaTripRepository } from './infrastructure/prisma-trip.repository';
 import { PrismaTripShareRepository } from './infrastructure/prisma-trip-share.repository';
+import { StubTripPlannerAdapter } from './infrastructure/stub-trip-planner.adapter';
 import { TripOverviewCache } from './infrastructure/trip-overview-cache';
 import { AdminTripsController } from './interface/admin-trips.controller';
 import { TripController } from './interface/trip.controller';
@@ -83,6 +89,20 @@ import { TripController } from './interface/trip.controller';
     UpdateTripUseCase,
     DeleteTripUseCase,
     GenerateItineraryStubUseCase,
+    GeneratePlanWithAiUseCase,
+    {
+      // Conditional adapter pick: real Claude when CLAUDE_API_KEY is
+      // set, otherwise the deterministic stub. Either way, callers
+      // depend only on the TRIP_PLANNER_PORT symbol — see ADR (port +
+      // adapter pattern) — so adding more providers later is a one-
+      // file change here.
+      provide: TRIP_PLANNER_PORT,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService<Env, true>) => {
+        const apiKey = config.get('CLAUDE_API_KEY', { infer: true }) as string | undefined;
+        return apiKey ? new ClaudeTripPlannerAdapter(apiKey) : new StubTripPlannerAdapter();
+      },
+    },
     ListItineraryUseCase,
     UpdateDayItemsUseCase,
     CreateTripShareUseCase,
