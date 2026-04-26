@@ -15,7 +15,8 @@
  * pass on the api will tighten this in a follow-up slice.
  *
  * Installed by [IV.18.19.14]; SDK wire-through [IV.18.19.17];
- * Tailwind theming [IV.18.19.18]; Card/Skeleton refactor [IV.18.19.27].
+ * Tailwind theming [IV.18.19.18]; Card/Skeleton refactor [IV.18.19.27];
+ * link-to-viewer + theme badge [IV.18.19.47].
  */
 'use client';
 
@@ -25,6 +26,7 @@ import {
   type FeaturedMemoryBooksResponseDto,
   type PublicMemoryBookDto,
 } from '@app/sdk';
+import { Badge } from '../../components/ui/badge';
 import { Card, CardHeader, CardSubtitle, CardTitle } from '../../components/ui/card';
 import { Skeleton } from '../../components/ui/skeleton';
 
@@ -43,7 +45,12 @@ export default function FeaturedPage() {
           ← Back
         </Link>
       </p>
-      <h1 className="text-3xl font-bold tracking-tight">Featured memory books</h1>
+      <header className="space-y-1">
+        <h1 className="text-3xl font-bold tracking-tight">Featured memory books</h1>
+        <p className="text-sm text-muted">
+          Public books published by other travelers. Tap a card to open the public read view.
+        </p>
+      </header>
       {isLoading ? (
         <ul className="grid gap-4 sm:grid-cols-2">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -71,15 +78,24 @@ export default function FeaturedPage() {
       ) : (
         <ul className="grid gap-4 sm:grid-cols-2">
           {books.map((b) => (
-            <Card as="li" key={b.id}>
-              <CardHeader>
-                <CardTitle>{b.title}</CardTitle>
-                <CardSubtitle>
-                  Theme: <span className="font-medium">{b.theme}</span> · Published{' '}
-                  {new Date(b.publishedAt).toLocaleDateString()}
-                </CardSubtitle>
-              </CardHeader>
-            </Card>
+            <li key={b.id}>
+              <Link
+                href={`/memory-books/${b.id}` as never}
+                className="block rounded-md transition hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+              >
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-start justify-between gap-2">
+                      <CardTitle>{b.title}</CardTitle>
+                      <Badge variant="brand">{b.theme}</Badge>
+                    </div>
+                    <CardSubtitle>
+                      Published {new Date(b.publishedAt).toLocaleDateString()}
+                    </CardSubtitle>
+                  </CardHeader>
+                </Card>
+              </Link>
+            </li>
           ))}
         </ul>
       )}
