@@ -19,10 +19,11 @@
  * generalized use-case in [IV.18.6.5].
  */
 import { Controller, Get, HttpCode, HttpStatus, Param } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Public } from '../../../common/auth';
 import { GetReviewBundleForTargetUseCase } from '../application/get-review-bundle-for-target.use-case';
 import { reviewBundleToDto, type ReviewBundleResponseDto } from './dto/review-bundle.dto';
+import { PlaceReviewSummaryResponseDto } from './dto/social-response.dto';
 
 interface PlaceReviewSummaryDto extends ReviewBundleResponseDto {
   readonly placeId: string;
@@ -36,6 +37,11 @@ export class PlaceReviewSummaryController {
   @ApiOperation({
     summary:
       'Place detail-page composite — bundles review summary + vote tally + recent reviews. @Public.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Place review bundle.',
+    type: PlaceReviewSummaryResponseDto,
   })
   @Get(':id/review-summary')
   @Public()

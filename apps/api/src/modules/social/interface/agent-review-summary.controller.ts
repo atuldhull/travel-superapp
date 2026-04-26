@@ -23,10 +23,11 @@
  * Installed by prompt [IV.18.12.12].
  */
 import { Controller, Get, HttpCode, HttpStatus, Param } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Public } from '../../../common/auth';
 import { GetReviewBundleForTargetUseCase } from '../application/get-review-bundle-for-target.use-case';
 import { reviewBundleToDto, type ReviewBundleResponseDto } from './dto/review-bundle.dto';
+import { AgentReviewSummaryResponseDto } from './dto/social-response.dto';
 
 interface AgentReviewSummaryDto extends ReviewBundleResponseDto {
   readonly agentId: string;
@@ -39,6 +40,11 @@ export class AgentReviewSummaryController {
 
   @ApiOperation({
     summary: 'Agent detail-page composite. Closes the 4-of-4 review-target arc; votes always zero.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Agent review bundle.',
+    type: AgentReviewSummaryResponseDto,
   })
   @Get(':id/review-summary')
   @Public()

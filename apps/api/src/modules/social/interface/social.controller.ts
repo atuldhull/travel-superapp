@@ -20,7 +20,13 @@
  * Installed by prompt [IV.18.12.3].
  */
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  CastVoteRequestDto,
+  ListTripVotesResponseDto,
+  RevokeVoteRequestDto,
+  VoteDto as VoteResponseDto,
+} from './dto/social-response.dto';
 import { type AuthenticatedUser, CurrentUser } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { CastVoteUseCase } from '../application/cast-vote.use-case';
@@ -68,6 +74,8 @@ export class SocialController {
     summary:
       'Cast or update a vote on a trip target. Body: { targetType, targetId, value }. Auth gate: owner OR active TripShare.',
   })
+  @ApiBody({ type: CastVoteRequestDto })
+  @ApiResponse({ status: 200, description: 'Cast or updated vote row.', type: VoteResponseDto })
   @Post()
   @HttpCode(HttpStatus.OK)
   async cast(
@@ -88,6 +96,8 @@ export class SocialController {
   @ApiOperation({
     summary: 'Revoke a previously-cast vote. Body: { targetType, targetId }. Idempotent.',
   })
+  @ApiBody({ type: RevokeVoteRequestDto })
+  @ApiResponse({ status: 204, description: 'Revoked (or no-op if no prior vote).' })
   @Delete()
   @HttpCode(HttpStatus.NO_CONTENT)
   async revoke(
@@ -105,6 +115,11 @@ export class SocialController {
 
   @ApiOperation({
     summary: "Aggregated tallies for a trip's votes + the caller's own vote per target.",
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Tallies + caller-own vote per target.',
+    type: ListTripVotesResponseDto,
   })
   @Get()
   @HttpCode(HttpStatus.OK)

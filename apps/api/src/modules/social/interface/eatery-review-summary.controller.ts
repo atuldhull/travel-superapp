@@ -21,10 +21,11 @@
  * Installed by prompt [IV.18.7.7].
  */
 import { Controller, Get, HttpCode, HttpStatus, Param } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Public } from '../../../common/auth';
 import { GetReviewBundleForTargetUseCase } from '../application/get-review-bundle-for-target.use-case';
 import { reviewBundleToDto, type ReviewBundleResponseDto } from './dto/review-bundle.dto';
+import { EateryReviewSummaryResponseDto } from './dto/social-response.dto';
 
 interface EateryReviewSummaryDto extends ReviewBundleResponseDto {
   readonly eateryId: string;
@@ -37,6 +38,11 @@ export class EateryReviewSummaryController {
 
   @ApiOperation({
     summary: 'Eatery detail-page composite. Same shape as place; votes always zero.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Eatery review bundle.',
+    type: EateryReviewSummaryResponseDto,
   })
   @Get(':id/review-summary')
   @Public()

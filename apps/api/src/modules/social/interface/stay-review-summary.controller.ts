@@ -21,10 +21,11 @@
  * Installed by prompt [IV.18.6.5].
  */
 import { Controller, Get, HttpCode, HttpStatus, Param } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Public } from '../../../common/auth';
 import { GetReviewBundleForTargetUseCase } from '../application/get-review-bundle-for-target.use-case';
 import { reviewBundleToDto, type ReviewBundleResponseDto } from './dto/review-bundle.dto';
+import { StayReviewSummaryResponseDto } from './dto/social-response.dto';
 
 interface StayReviewSummaryDto extends ReviewBundleResponseDto {
   readonly stayId: string;
@@ -38,6 +39,11 @@ export class StayReviewSummaryController {
   @ApiOperation({
     summary:
       'Stay detail-page composite. Same shape as place; votes always zero (no vote target for stays).',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Stay review bundle.',
+    type: StayReviewSummaryResponseDto,
   })
   @Get(':id/review-summary')
   @Public()

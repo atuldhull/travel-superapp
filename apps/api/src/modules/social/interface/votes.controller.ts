@@ -14,7 +14,8 @@
  * Installed by prompt [IV.18.12.9].
  */
 import { BadRequestException, Controller, Get, HttpCode, HttpStatus, Query } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { VoteSummaryDto as VoteSummaryResponseDto } from './dto/social-response.dto';
 import { Public } from '../../../common/auth';
 import { GetVoteSummaryUseCase } from '../application/get-vote-summary.use-case';
 import type { VoteSummary } from '../application/ports/vote.repository';
@@ -49,6 +50,15 @@ export class VotesController {
   @ApiOperation({
     summary:
       'Cross-trip vote tally for { targetType, targetId }. @Public — crowd-signal aggregation.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Vote tally; zero-filled for empty targets.',
+    type: VoteSummaryResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'VALIDATION_FAILED — targetType / targetId missing or invalid.',
   })
   @Get('summary')
   @Public()
