@@ -8,48 +8,67 @@ import type {
   UseMutationResult,
 } from '@tanstack/react-query';
 
+import type { GetRoutesRequestDto, GetRoutesResponseDto } from '../../schemas';
+
 import { apiFetch } from '../../../runtime/fetcher';
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
+/**
+ * @summary Compute one route leg per available transport mode for the given origin → destination.
+ */
 export type transportControllerRoutesResponse200 = {
-  data: void;
+  data: GetRoutesResponseDto;
   status: 200;
+};
+
+export type transportControllerRoutesResponse422 = {
+  data: void;
+  status: 422;
 };
 
 export type transportControllerRoutesResponseSuccess = transportControllerRoutesResponse200 & {
   headers: Headers;
 };
-export type transportControllerRoutesResponse = transportControllerRoutesResponseSuccess;
+export type transportControllerRoutesResponseError = transportControllerRoutesResponse422 & {
+  headers: Headers;
+};
+
+export type transportControllerRoutesResponse =
+  | transportControllerRoutesResponseSuccess
+  | transportControllerRoutesResponseError;
 
 export const getTransportControllerRoutesUrl = () => {
   return `/api/v1/transport/routes`;
 };
 
 export const transportControllerRoutes = async (
+  getRoutesRequestDto: GetRoutesRequestDto,
   options?: RequestInit,
 ): Promise<transportControllerRoutesResponse> => {
   return apiFetch<transportControllerRoutesResponse>(getTransportControllerRoutesUrl(), {
     ...options,
     method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(getRoutesRequestDto),
   });
 };
 
 export const getTransportControllerRoutesMutationOptions = <
-  TError = unknown,
+  TError = void,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof transportControllerRoutes>>,
     TError,
-    void,
+    { data: GetRoutesRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof transportControllerRoutes>>,
   TError,
-  void,
+  { data: GetRoutesRequestDto },
   TContext
 > => {
   const mutationKey = ['transportControllerRoutes'];
@@ -61,9 +80,11 @@ export const getTransportControllerRoutesMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof transportControllerRoutes>>,
-    void
-  > = () => {
-    return transportControllerRoutes(requestOptions);
+    { data: GetRoutesRequestDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return transportControllerRoutes(data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -72,21 +93,24 @@ export const getTransportControllerRoutesMutationOptions = <
 export type TransportControllerRoutesMutationResult = NonNullable<
   Awaited<ReturnType<typeof transportControllerRoutes>>
 >;
+export type TransportControllerRoutesMutationBody = GetRoutesRequestDto;
+export type TransportControllerRoutesMutationError = void;
 
-export type TransportControllerRoutesMutationError = unknown;
-
-export const useTransportControllerRoutes = <TError = unknown, TContext = unknown>(options?: {
+/**
+ * @summary Compute one route leg per available transport mode for the given origin → destination.
+ */
+export const useTransportControllerRoutes = <TError = void, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof transportControllerRoutes>>,
     TError,
-    void,
+    { data: GetRoutesRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationResult<
   Awaited<ReturnType<typeof transportControllerRoutes>>,
   TError,
-  void,
+  { data: GetRoutesRequestDto },
   TContext
 > => {
   const mutationOptions = getTransportControllerRoutesMutationOptions(options);

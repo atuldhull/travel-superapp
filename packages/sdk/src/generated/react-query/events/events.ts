@@ -8,48 +8,67 @@ import type {
   UseMutationResult,
 } from '@tanstack/react-query';
 
+import type { SearchEventsRequestDto, SearchEventsResponseDto } from '../../schemas';
+
 import { apiFetch } from '../../../runtime/fetcher';
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
+/**
+ * @summary Search events within a radius and date window.
+ */
 export type eventsControllerSearchResponse200 = {
-  data: void;
+  data: SearchEventsResponseDto;
   status: 200;
+};
+
+export type eventsControllerSearchResponse422 = {
+  data: void;
+  status: 422;
 };
 
 export type eventsControllerSearchResponseSuccess = eventsControllerSearchResponse200 & {
   headers: Headers;
 };
-export type eventsControllerSearchResponse = eventsControllerSearchResponseSuccess;
+export type eventsControllerSearchResponseError = eventsControllerSearchResponse422 & {
+  headers: Headers;
+};
+
+export type eventsControllerSearchResponse =
+  | eventsControllerSearchResponseSuccess
+  | eventsControllerSearchResponseError;
 
 export const getEventsControllerSearchUrl = () => {
   return `/api/v1/events/search`;
 };
 
 export const eventsControllerSearch = async (
+  searchEventsRequestDto: SearchEventsRequestDto,
   options?: RequestInit,
 ): Promise<eventsControllerSearchResponse> => {
   return apiFetch<eventsControllerSearchResponse>(getEventsControllerSearchUrl(), {
     ...options,
     method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(searchEventsRequestDto),
   });
 };
 
 export const getEventsControllerSearchMutationOptions = <
-  TError = unknown,
+  TError = void,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof eventsControllerSearch>>,
     TError,
-    void,
+    { data: SearchEventsRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof eventsControllerSearch>>,
   TError,
-  void,
+  { data: SearchEventsRequestDto },
   TContext
 > => {
   const mutationKey = ['eventsControllerSearch'];
@@ -61,9 +80,11 @@ export const getEventsControllerSearchMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof eventsControllerSearch>>,
-    void
-  > = () => {
-    return eventsControllerSearch(requestOptions);
+    { data: SearchEventsRequestDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return eventsControllerSearch(data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -72,21 +93,24 @@ export const getEventsControllerSearchMutationOptions = <
 export type EventsControllerSearchMutationResult = NonNullable<
   Awaited<ReturnType<typeof eventsControllerSearch>>
 >;
+export type EventsControllerSearchMutationBody = SearchEventsRequestDto;
+export type EventsControllerSearchMutationError = void;
 
-export type EventsControllerSearchMutationError = unknown;
-
-export const useEventsControllerSearch = <TError = unknown, TContext = unknown>(options?: {
+/**
+ * @summary Search events within a radius and date window.
+ */
+export const useEventsControllerSearch = <TError = void, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof eventsControllerSearch>>,
     TError,
-    void,
+    { data: SearchEventsRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationResult<
   Awaited<ReturnType<typeof eventsControllerSearch>>,
   TError,
-  void,
+  { data: SearchEventsRequestDto },
   TContext
 > => {
   const mutationOptions = getEventsControllerSearchMutationOptions(options);

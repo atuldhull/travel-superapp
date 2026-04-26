@@ -8,48 +8,67 @@ import type {
   UseMutationResult,
 } from '@tanstack/react-query';
 
+import type { SearchStaysRequestDto, SearchStaysResponseDto } from '../../schemas';
+
 import { apiFetch } from '../../../runtime/fetcher';
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
+/**
+ * @summary Search stays within a radius for the given check-in/out window.
+ */
 export type staysControllerSearchResponse200 = {
-  data: void;
+  data: SearchStaysResponseDto;
   status: 200;
+};
+
+export type staysControllerSearchResponse422 = {
+  data: void;
+  status: 422;
 };
 
 export type staysControllerSearchResponseSuccess = staysControllerSearchResponse200 & {
   headers: Headers;
 };
-export type staysControllerSearchResponse = staysControllerSearchResponseSuccess;
+export type staysControllerSearchResponseError = staysControllerSearchResponse422 & {
+  headers: Headers;
+};
+
+export type staysControllerSearchResponse =
+  | staysControllerSearchResponseSuccess
+  | staysControllerSearchResponseError;
 
 export const getStaysControllerSearchUrl = () => {
   return `/api/v1/stays/search`;
 };
 
 export const staysControllerSearch = async (
+  searchStaysRequestDto: SearchStaysRequestDto,
   options?: RequestInit,
 ): Promise<staysControllerSearchResponse> => {
   return apiFetch<staysControllerSearchResponse>(getStaysControllerSearchUrl(), {
     ...options,
     method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(searchStaysRequestDto),
   });
 };
 
 export const getStaysControllerSearchMutationOptions = <
-  TError = unknown,
+  TError = void,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof staysControllerSearch>>,
     TError,
-    void,
+    { data: SearchStaysRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof staysControllerSearch>>,
   TError,
-  void,
+  { data: SearchStaysRequestDto },
   TContext
 > => {
   const mutationKey = ['staysControllerSearch'];
@@ -61,9 +80,11 @@ export const getStaysControllerSearchMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof staysControllerSearch>>,
-    void
-  > = () => {
-    return staysControllerSearch(requestOptions);
+    { data: SearchStaysRequestDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return staysControllerSearch(data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -72,21 +93,24 @@ export const getStaysControllerSearchMutationOptions = <
 export type StaysControllerSearchMutationResult = NonNullable<
   Awaited<ReturnType<typeof staysControllerSearch>>
 >;
+export type StaysControllerSearchMutationBody = SearchStaysRequestDto;
+export type StaysControllerSearchMutationError = void;
 
-export type StaysControllerSearchMutationError = unknown;
-
-export const useStaysControllerSearch = <TError = unknown, TContext = unknown>(options?: {
+/**
+ * @summary Search stays within a radius for the given check-in/out window.
+ */
+export const useStaysControllerSearch = <TError = void, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof staysControllerSearch>>,
     TError,
-    void,
+    { data: SearchStaysRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationResult<
   Awaited<ReturnType<typeof staysControllerSearch>>,
   TError,
-  void,
+  { data: SearchStaysRequestDto },
   TContext
 > => {
   const mutationOptions = getStaysControllerSearchMutationOptions(options);

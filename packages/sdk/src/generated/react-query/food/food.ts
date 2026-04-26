@@ -8,12 +8,17 @@ import type {
   UseMutationResult,
 } from '@tanstack/react-query';
 
+import type { SearchEateriesRequestDto, SearchEateriesResponseDto } from '../../schemas';
+
 import { apiFetch } from '../../../runtime/fetcher';
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
+/**
+ * @summary Search eateries within a radius. Optional cuisine + price-tier filters.
+ */
 export type foodControllerSearchResponse200 = {
-  data: void;
+  data: SearchEateriesResponseDto;
   status: 200;
 };
 
@@ -27,11 +32,14 @@ export const getFoodControllerSearchUrl = () => {
 };
 
 export const foodControllerSearch = async (
+  searchEateriesRequestDto: SearchEateriesRequestDto,
   options?: RequestInit,
 ): Promise<foodControllerSearchResponse> => {
   return apiFetch<foodControllerSearchResponse>(getFoodControllerSearchUrl(), {
     ...options,
     method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(searchEateriesRequestDto),
   });
 };
 
@@ -42,14 +50,14 @@ export const getFoodControllerSearchMutationOptions = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof foodControllerSearch>>,
     TError,
-    void,
+    { data: SearchEateriesRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof foodControllerSearch>>,
   TError,
-  void,
+  { data: SearchEateriesRequestDto },
   TContext
 > => {
   const mutationKey = ['foodControllerSearch'];
@@ -61,9 +69,11 @@ export const getFoodControllerSearchMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof foodControllerSearch>>,
-    void
-  > = () => {
-    return foodControllerSearch(requestOptions);
+    { data: SearchEateriesRequestDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return foodControllerSearch(data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -72,18 +82,26 @@ export const getFoodControllerSearchMutationOptions = <
 export type FoodControllerSearchMutationResult = NonNullable<
   Awaited<ReturnType<typeof foodControllerSearch>>
 >;
-
+export type FoodControllerSearchMutationBody = SearchEateriesRequestDto;
 export type FoodControllerSearchMutationError = unknown;
 
+/**
+ * @summary Search eateries within a radius. Optional cuisine + price-tier filters.
+ */
 export const useFoodControllerSearch = <TError = unknown, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof foodControllerSearch>>,
     TError,
-    void,
+    { data: SearchEateriesRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
-}): UseMutationResult<Awaited<ReturnType<typeof foodControllerSearch>>, TError, void, TContext> => {
+}): UseMutationResult<
+  Awaited<ReturnType<typeof foodControllerSearch>>,
+  TError,
+  { data: SearchEateriesRequestDto },
+  TContext
+> => {
   const mutationOptions = getFoodControllerSearchMutationOptions(options);
 
   return useMutation(mutationOptions);

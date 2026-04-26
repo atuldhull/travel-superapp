@@ -14,9 +14,11 @@
  * Installed by prompt [IV.18.17.1].
  */
 import { BadRequestException, Controller, Get, HttpCode, HttpStatus, Query } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { type AuthenticatedUser, CurrentUser } from '../../../common/auth';
 import { GetMyFeedUseCase, type GetMyFeedResult } from '../application/get-my-feed.use-case';
 import type { FeedItem } from '../domain/feed-item.entity';
+import { FeedResponseDto as FeedResponseDtoSwagger } from './dto/feed-response.dto';
 
 interface FeedItemDto {
   readonly kind: string;
@@ -37,10 +39,25 @@ function toDto(item: FeedItem): FeedItemDto {
   };
 }
 
+@ApiTags('feed')
+@ApiBearerAuth()
 @Controller('feed')
 export class FeedController {
   constructor(private readonly getMyFeed: GetMyFeedUseCase) {}
 
+  @ApiOperation({
+    summary:
+      "List the caller's recent activity (cursor pagination via ?before=). Optional ?limit caps the page size.",
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Activity items + nextBefore cursor.',
+    type: FeedResponseDtoSwagger,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'VALIDATION_FAILED — before is not an ISO timestamp, or limit is non-positive.',
+  })
   @Get('me')
   @HttpCode(HttpStatus.OK)
   async me(
