@@ -25,6 +25,53 @@
 
 ---
 
+### [IV.18.19.56] — asset attach/detach + thumbnail tiles on /memory-books/[id]/edit (bundled with `[IV.18.19.55]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 5 (Frontend stack)
+
+**What was done**
+
+Closes the owner-side media-attachment loop on web. Owners can now spawn a draft book, attach uploaded media by id, see thumbnails, detach, and publish — all from the edit page.
+
+- New `AssetsSection` component on `/memory-books/[id]/edit/page.tsx`:
+  - Attach: paste a media-asset id → typed `useMediaControllerAttachToBook` mutation with the new `AttachMediaToBookRequestDto` body landed in slice .19.55. 404 errors render as `<code> — <message>`.
+  - Detach: each tile has a `detach` button calling the same mutation with `memoryBookId: null`.
+  - `OwnerAssetThumb` re-uses the `AssetThumb` pattern from the public viewer (.19.50) but hits the typed owner-side `useMediaControllerDownloadUrl` so drafts work too (the public download-URL gate would 404 on drafts).
+  - Successful attach/detach invalidates the book's `getOne` query so the `assetIds` list refreshes immediately.
+
+**Verification**
+
+- web typecheck clean. Web build clean — `/memory-books/[id]/edit` 3.5 → 4.3 kB.
+
+**Commit**
+
+`2d61145 feat(IV.18.19.56): asset attach/detach + thumbnail tiles on /memory-books/[id]/edit`
+
+---
+
+### [IV.18.19.55] — typed AttachMediaToBookRequestDto + MediaDownloadUrlResponseDto on media routes (bundled with `[IV.18.19.56]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 6 (SDK / API contract)
+
+**What was done**
+
+Closes the schema gap on the two remaining `data: void` owner-side media endpoints used by the memory-book owner UI. Sets up the attach/detach + thumbnail UI in slice .19.56.
+
+- `PATCH /media/:id/memory-book` — body now typed as `AttachMediaToBookRequestDto` (`{ memoryBookId: string | null }`), response typed as `MediaAssetDto`, 404 documented.
+- `GET /media/:id/download-url` — response typed as `MediaDownloadUrlResponseDto` (`{ url, expiresAt }`).
+- Two new DTO classes in `apps/api/src/modules/media/interface/dto/media-response.dto.ts`: `AttachMediaToBookRequestDto` (symmetric with `AttachMediaToTripRequestDto`) and `MediaDownloadUrlResponseDto` (owner-scoped twin of `PublicDownloadUrlResponseDto`). Re-exported both from `@app/sdk`.
+- Regenerated `docs/api/openapi.yaml` + the orval client.
+
+**Verification**
+
+- api typecheck + sdk typecheck clean. 93 / 578 api tests pass.
+
+**Commit**
+
+`3f485a6 feat(IV.18.19.55): typed AttachMediaToBookRequestDto + MediaDownloadUrlResponseDto on media routes`
+
+---
+
 ### [IV.18.19.54] — /memory-books/new + New book CTA on owner index (bundled with `[IV.18.19.53]`)
 
 **Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 5 (Frontend stack)
