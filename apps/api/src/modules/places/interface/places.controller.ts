@@ -14,6 +14,7 @@
  * Installed by prompt [IV.18.2.9].
  */
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { FederatedSearchPlacesUseCase } from '../application/federated-search-places.use-case';
 import { IngestFederatedResultsUseCase } from '../application/ingest-federated-results.use-case';
@@ -26,6 +27,12 @@ import {
   type FederatedSearchPlacesBody,
   type SearchPlacesBody,
 } from './dto/places.dto';
+import {
+  FederatedSearchPlacesRequestDto,
+  FederatedSearchPlacesResponseDto,
+  SearchPlacesRequestDto,
+  SearchPlacesResponseDto,
+} from './dto/places-response.dto';
 
 interface PlaceDto {
   readonly id: string;
@@ -67,6 +74,8 @@ interface FederatedResultDto extends FederatedPlaceResult {
   readonly created?: boolean;
 }
 
+@ApiTags('places')
+@ApiBearerAuth()
 @Controller('places')
 export class PlacesController {
   constructor(
@@ -75,6 +84,12 @@ export class PlacesController {
     private readonly ingest: IngestFederatedResultsUseCase,
   ) {}
 
+  @ApiOperation({
+    summary:
+      'Search the canonical Place catalog within a radius. Optional category filter + limit.',
+  })
+  @ApiBody({ type: SearchPlacesRequestDto })
+  @ApiResponse({ status: 200, description: 'Matching places.', type: SearchPlacesResponseDto })
   @Post('search')
   @HttpCode(HttpStatus.OK)
   async search(
@@ -107,6 +122,17 @@ export class PlacesController {
    * carries the canonical `placeId`. Without `ingest`, the call is
    * a pure read — no DB writes, no canonical id lookup.
    */
+  @ApiOperation({
+    summary:
+      'Federated search across external providers (Google/FSQ/OSM). Optional ingest=true write-through to the canonical catalog.',
+  })
+  @ApiBody({ type: FederatedSearchPlacesRequestDto })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Provider results, optionally enriched with canonical placeId/created flags when ingest=true.',
+    type: FederatedSearchPlacesResponseDto,
+  })
   @Post('federated-search')
   @HttpCode(HttpStatus.OK)
   async federated(
