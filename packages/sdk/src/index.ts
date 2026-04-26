@@ -31,6 +31,7 @@ export type { AuthSuccessResponseDto } from './generated/schemas/authSuccessResp
 export type { RefreshSuccessResponseDto } from './generated/schemas/refreshSuccessResponseDto';
 export type { LoginRequestDto } from './generated/schemas/loginRequestDto';
 export type { RegisterRequestDto } from './generated/schemas/registerRequestDto';
+export type { OAuthSignInRequestDto } from './generated/schemas/oAuthSignInRequestDto';
 export type { FeaturedMemoryBooksResponseDto } from './generated/schemas/featuredMemoryBooksResponseDto';
 export type { PublicMemoryBookDto } from './generated/schemas/publicMemoryBookDto';
 export type { PublicMemoryBookWithAssetsResponseDto } from './generated/schemas/publicMemoryBookWithAssetsResponseDto';

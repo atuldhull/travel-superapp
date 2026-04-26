@@ -256,6 +256,12 @@ paths:
           in: path
           schema:
             type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OAuthSignInRequestDto'
       responses:
         '200':
           description: OAuth sign-in succeeded; refresh-cookie set; access token returned.
@@ -1944,6 +1950,17 @@ components:
         - userId
         - accessToken
         - expiresAt
+    OAuthSignInRequestDto:
+      type: object
+      properties:
+        idToken:
+          type: string
+          description: Provider-issued ID token (e.g. Google id_token, Apple
+            identityToken). Real Google tokens are ~1.2KB; max enforced at 8192.
+          minLength: 1
+          maxLength: 8192
+      required:
+        - idToken
     LoginRequestDto:
       type: object
       properties:

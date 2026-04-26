@@ -35,6 +35,7 @@ export * from './mediaControllerListByTripParams';
 export * from './memoryBookControllerFeaturedParams';
 export * from './memoryBookControllerListParams';
 export * from './notificationsControllerListMineParams';
+export * from './oAuthSignInRequestDto';
 export * from './overviewItineraryDataDto';
 export * from './overviewItineraryDayDto';
 export * from './overviewItineraryDayDtoItemsItem';

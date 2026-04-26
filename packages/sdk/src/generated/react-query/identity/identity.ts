@@ -17,6 +17,7 @@ import type {
 import type {
   AuthSuccessResponseDto,
   LoginRequestDto,
+  OAuthSignInRequestDto,
   RefreshSuccessResponseDto,
   RegisterRequestDto,
   WhoAmIResponseDto,
@@ -159,11 +160,14 @@ export const getAuthControllerOauthUrl = (provider: string) => {
 
 export const authControllerOauth = async (
   provider: string,
+  oAuthSignInRequestDto: OAuthSignInRequestDto,
   options?: RequestInit,
 ): Promise<authControllerOauthResponse> => {
   return apiFetch<authControllerOauthResponse>(getAuthControllerOauthUrl(provider), {
     ...options,
     method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(oAuthSignInRequestDto),
   });
 };
 
@@ -171,14 +175,14 @@ export const getAuthControllerOauthMutationOptions = <TError = void, TContext = 
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof authControllerOauth>>,
     TError,
-    { provider: string },
+    { provider: string; data: OAuthSignInRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof authControllerOauth>>,
   TError,
-  { provider: string },
+  { provider: string; data: OAuthSignInRequestDto },
   TContext
 > => {
   const mutationKey = ['authControllerOauth'];
@@ -190,11 +194,11 @@ export const getAuthControllerOauthMutationOptions = <TError = void, TContext = 
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof authControllerOauth>>,
-    { provider: string }
+    { provider: string; data: OAuthSignInRequestDto }
   > = (props) => {
-    const { provider } = props ?? {};
+    const { provider, data } = props ?? {};
 
-    return authControllerOauth(provider, requestOptions);
+    return authControllerOauth(provider, data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -203,7 +207,7 @@ export const getAuthControllerOauthMutationOptions = <TError = void, TContext = 
 export type AuthControllerOauthMutationResult = NonNullable<
   Awaited<ReturnType<typeof authControllerOauth>>
 >;
-
+export type AuthControllerOauthMutationBody = OAuthSignInRequestDto;
 export type AuthControllerOauthMutationError = void;
 
 /**
@@ -213,14 +217,14 @@ export const useAuthControllerOauth = <TError = void, TContext = unknown>(option
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof authControllerOauth>>,
     TError,
-    { provider: string },
+    { provider: string; data: OAuthSignInRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationResult<
   Awaited<ReturnType<typeof authControllerOauth>>,
   TError,
-  { provider: string },
+  { provider: string; data: OAuthSignInRequestDto },
   TContext
 > => {
   const mutationOptions = getAuthControllerOauthMutationOptions(options);
