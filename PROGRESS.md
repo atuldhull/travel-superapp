@@ -10,18 +10,89 @@
 
 ## Summary
 
-| Counter             | Value                                                                       |
-| ------------------- | --------------------------------------------------------------------------- |
-| Prompts completed   | 136 (135 full + 1 foundation-only; bundled onboarding doc + OpenAPI export) |
-| Prompts in progress | 0                                                                           |
-| Prompts blocked     | 0                                                                           |
-| Last prompt         | `[IV.18.19.10]` — OpenAPI export pipeline (bundled with `[IV.18.19.9]`)     |
-| Last commit date    | 2026-04-26                                                                  |
-| Phase               | Phase 1 — deployment-readiness wave: onboarding + machine-readable API spec |
+| Counter             | Value                                                                            |
+| ------------------- | -------------------------------------------------------------------------------- |
+| Prompts completed   | 138 (137 full + 1 foundation-only; bundled fly.toml/runbook + Trip Swagger decs) |
+| Prompts in progress | 0                                                                                |
+| Prompts blocked     | 0                                                                                |
+| Last prompt         | `[IV.18.19.12]` — Trip Swagger decorators (bundled with `[IV.18.19.11]`)         |
+| Last commit date    | 2026-04-26                                                                       |
+| Phase               | Phase 1 — deployment-readiness wave: Fly config + first per-module API spec roll |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.19.12] — Trip module Swagger decorators (bundled with `[IV.18.19.11]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 13 (Documentation) + §6 (SDK gen)
+
+**What was done**
+
+First module-by-module rollout of `@nestjs/swagger` decorators on top of the `[IV.18.19.10]` export pipeline. Touches both `TripController` (~15 user-facing routes) and `AdminTripsController` (3 admin moderation routes).
+
+**Decorators added:**
+
+- `@ApiTags('trip')` / `@ApiTags('admin')` at class level — groups routes in the OpenAPI doc + future Stoplight/Redoc viewer.
+- `@ApiBearerAuth()` at class level — declares JWT requirement so consumers know which routes need a token.
+- `@ApiOperation({ summary })` on every route — one-liner describing the endpoint's intent.
+- `@ApiResponse({ status, description })` on the routes whose failure modes matter most for clients (404 on owner-gated reads, 422 `TRIP_DATES_REQUIRED` on event search, 403 on admin routes called by non-admins).
+
+**TODO for next per-module rollout slices** (documented in `docs/api/README.md`):
+
+- Per-route `@ApiBody()` with the Zod-derived request shape.
+- Per-route `@ApiResponse()` with full body schemas, not just descriptions.
+- Tag the other 13 modules (media, social, notifications, safety, identity, weather, food, stays, places, events, transport, account, admin sub-modules).
+
+**Regenerated `docs/api/openapi.yaml`** jumps from 0 to 27 `summary:` entries, all on `/trips/*` + `/admin/trips/*` paths. Visible diff in PRs makes the rollout cadence trackable.
+
+**Files**
+
+- `apps/api/src/modules/trip/interface/trip.controller.ts` — class + per-route decorators
+- `apps/api/src/modules/trip/interface/admin-trips.controller.ts` — same
+- `docs/api/openapi.yaml` (regenerated)
+
+**Commits**
+
+- `f75e9a0` — feat(IV.18.19.12) Trip module Swagger decorators
+
+---
+
+### [IV.18.19.11] — Fly.io deploy config + runbook (bundled with `[IV.18.19.12]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 12.2 (Deployment) + 12.3 (CI/CD)
+
+**What was done**
+
+`fly.toml` drives `fly deploy` from the repo root. Staging-shape defaults: `travel-api-staging`, `iad` region, `shared-cpu-1x@1024`, `auto_stop_machines` with `min_machines_running=1` (always-warm). Healthcheck on `/health/ready` (30s grace for boot + Prisma client init); liveness on `/health/live`. `[metrics]` block points at `/metrics` so Fly's built-in Prometheus scraper ingests the prom-client surface from `[IV.18.10.6]`. `SIGTERM` + `kill_timeout=30s` matches Nest's `enableShutdownHooks` for graceful drain.
+
+**App naming:** `travel-api-staging` vs `travel-api-prod`. Avoided env-templating the app name — explicit `fly deploy --app <name>` invocations are mistake-resistant.
+
+**`docs/runbooks/fly-deploy.md`** walks the operational story:
+
+- First-time setup (auth, app create, Fly Postgres/Redis vs external Supabase/Upstash/R2)
+- Doppler-to-Fly secrets injection (`doppler secrets download | fly secrets import`)
+- Migrate-deploy gating BEFORE app rollout (image doesn't auto-migrate; runbook documents the distroless-friendly `prisma/build/index.js` invocation from `dockerfile.md`)
+- Day-2 ops (logs via `fly logs | jq`, metrics, rollback by image tag)
+- Production cut-over (`fly.prod.toml` override + first deploy)
+- Common failure modes table (env-validation boot loop, 502 from `127.0.0.1` bind, Prisma client missing, cold-start latency, migrate-deploy "no migrations")
+
+Cross-references the dockerfile + secrets + env-reference runbooks so the deploy story is one navigable graph.
+
+**Files**
+
+- `fly.toml` (new)
+- `docs/runbooks/fly-deploy.md` (new)
+
+**Combined verification (both bundled slices)**
+
+`pnpm --filter=api typecheck` green. Full integration suite: **93 passed, 578 passed** — Swagger decorators are runtime no-ops outside the export script, baseline unchanged. OpenAPI regenerated end-to-end → 27 summary entries on Trip + admin/trips paths.
+
+**Commits**
+
+- `a637fe7` — feat(IV.18.19.11) Fly.io deploy config + first-deploy runbook
 
 ---
 
