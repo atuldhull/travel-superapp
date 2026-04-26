@@ -7,15 +7,22 @@
  *   - JSON content-type defaults
  *   - Domain-error parsing (extracts `code` + `traceId` from the
  *     error envelope returned by `DomainExceptionFilter`)
+ *   - Cookie credentials so the httpOnly refresh cookie crosses origins
  *
- * Signature matches orval's `httpClient: 'fetch'` mutator contract:
+ * **Return shape: orval's `{data, status, headers}` envelope.** This
+ * matches the type orval generates for the `httpClient: 'fetch'`
+ * mutator contract:
  *
- *   apiFetch<T>(url, init): Promise<T>
+ *   apiFetch<T>(url, init): Promise<{data: T['data'], status, headers}>
  *
- * Generated code calls it as:
- *   apiFetch<TReply>(getEndpointUrl(...), { method: 'GET', ...userOpts });
+ * Generated code uses `apiFetch<XxxResponseSuccess>(...)` where
+ * `XxxResponseSuccess = (Response200) & {headers: Headers}` and
+ * `Response200 = {data: <BodyDto>, status: 200}`. Returning the
+ * envelope means React-Query consumers see `result.data.data.field`
+ * instead of casting through `unknown`.
  *
- * Installed by prompt [IV.18.19.16]; signature reshape [IV.18.19.17].
+ * Installed by [IV.18.19.16]; signature reshape [IV.18.19.17];
+ * envelope rework [IV.18.19.35].
  */
 
 export interface ApiError extends Error {
@@ -52,7 +59,15 @@ function joinUrl(path: string): string {
   return `${base}/${path.replace(/^\//, '')}`;
 }
 
-export async function apiFetch<TResponse>(url: string, init: RequestInit = {}): Promise<TResponse> {
+/**
+ * The orval envelope shape. Generic on the body type. We accept any
+ * envelope-shaped TResponse (orval emits `{data, status, headers}` as
+ * the success type) and return that exact shape so generic consumers
+ * get a proper structural assignment.
+ */
+export async function apiFetch<
+  TResponse extends { data: unknown; status: number; headers: Headers },
+>(url: string, init: RequestInit = {}): Promise<TResponse> {
   const headers = new Headers(init.headers);
   if (!headers.has('accept')) headers.set('accept', 'application/json');
   if (init.body !== undefined && init.body !== null && !headers.has('content-type')) {
@@ -65,19 +80,14 @@ export async function apiFetch<TResponse>(url: string, init: RequestInit = {}): 
 
   // `credentials: 'include'` so the browser sends the httpOnly refresh
   // cookie set on /api/v1/auth — required for /auth/refresh to work
-  // cross-origin (web on :3001 hitting api on :3000). The api's CORS
-  // config (`security.register.ts`) sets `credentials: true` on
-  // matching origins, so this is symmetric. No-op on server-side
-  // fetches (Node fetch ignores credentials).
+  // cross-origin. The api's CORS (`security.register.ts`) sets
+  // `credentials: true` on matching origins.
   const res = await fetch(joinUrl(url), { credentials: 'include', ...init, headers });
-
-  if (res.status === 204) {
-    return undefined as TResponse;
-  }
 
   const ct = res.headers.get('content-type') ?? '';
   const isJson = ct.includes('application/json');
-  const body: unknown = isJson ? await res.json() : await res.text();
+  const body: unknown =
+    res.status === 204 ? undefined : isJson ? await res.json() : await res.text();
 
   if (!res.ok) {
     const envelope = (isJson ? body : { code: 'INTERNAL_ERROR', message: String(body) }) as {
@@ -96,5 +106,9 @@ export async function apiFetch<TResponse>(url: string, init: RequestInit = {}): 
     throw err;
   }
 
-  return body as TResponse;
+  return {
+    data: body,
+    status: res.status,
+    headers: res.headers,
+  } as unknown as TResponse;
 }

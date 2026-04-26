@@ -29,7 +29,7 @@ export function WhoAmIBadge() {
       </span>
     );
   }
-  const me = data as unknown as WhoAmIResponseDto | undefined;
+  const me = data?.data as unknown as WhoAmIResponseDto | undefined;
   if (!me) return null;
 
   return (

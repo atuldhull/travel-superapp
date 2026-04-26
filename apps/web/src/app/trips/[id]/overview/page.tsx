@@ -105,7 +105,8 @@ export default function TripOverviewPage() {
     );
   }
 
-  const body = data as unknown as TripOverviewResponseDto;
+  const body = data?.data as unknown as TripOverviewResponseDto | undefined;
+  if (!body) return null;
 
   return (
     <main className="space-y-6">

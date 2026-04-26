@@ -129,7 +129,7 @@ export default function TripDetailPage() {
     );
   }
 
-  const trip = data as unknown as TripDto;
+  const trip = data?.data as unknown as TripDto;
 
   return (
     <main className="space-y-6">

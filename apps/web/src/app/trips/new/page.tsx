@@ -55,8 +55,8 @@ export default function NewTripPage() {
 
   const createMutation = useTripControllerCreate({
     mutation: {
-      onSuccess: async (response: unknown) => {
-        const trip = response as TripDto;
+      onSuccess: async (response: { data?: unknown }) => {
+        const trip = response.data as TripDto;
         // Invalidate the trips list so /trips re-fetches on arrival.
         await queryClient.invalidateQueries({
           queryKey: getTripControllerListQueryKey({ limit: '20' }),

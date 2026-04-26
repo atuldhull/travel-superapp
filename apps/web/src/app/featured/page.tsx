@@ -31,7 +31,9 @@ import { Skeleton } from '../../components/ui/skeleton';
 export default function FeaturedPage() {
   const { data, isLoading, isError } = useMemoryBookControllerFeatured({ limit: '20' });
 
-  const body = data as unknown as FeaturedMemoryBooksResponseDto | undefined;
+  // apiFetch returns orval's `{data, status, headers}` envelope, so
+  // React Query's `data.data` is the typed body.
+  const body = data?.data as unknown as FeaturedMemoryBooksResponseDto | undefined;
   const books: readonly PublicMemoryBookDto[] = body?.books ?? [];
 
   return (

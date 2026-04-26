@@ -42,8 +42,8 @@ export default function RegisterPage() {
 
   const registerMutation = useAuthControllerRegister({
     mutation: {
-      onSuccess: (response: unknown) => {
-        const body = response as AuthSuccessResponseDto;
+      onSuccess: (response: { data?: unknown }) => {
+        const body = response.data as AuthSuccessResponseDto;
         setAccessToken(body.accessToken);
         router.push('/trips');
       },
