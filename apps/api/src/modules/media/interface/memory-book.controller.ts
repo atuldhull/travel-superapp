@@ -30,6 +30,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { type AuthenticatedUser, CurrentUser, Public } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { CreateMemoryBookUseCase } from '../application/create-memory-book.use-case';
@@ -96,6 +97,8 @@ function toPublicDto(b: MemoryBook): PublicBookDto {
   };
 }
 
+@ApiTags('media')
+@ApiBearerAuth()
 @Controller('memory-books')
 export class MemoryBookController {
   constructor(
@@ -123,6 +126,10 @@ export class MemoryBookController {
    * marketing / explore surface. Default limit 20, cap 100.
    * Added by `[IV.18.13.1]`.
    */
+  @ApiOperation({
+    summary:
+      'Public discovery — currently-published memory books across all users, ordered by publishedAt DESC.',
+  })
   @Public()
   @Get('featured')
   @HttpCode(HttpStatus.OK)
@@ -132,6 +139,9 @@ export class MemoryBookController {
     return { books: books.map(toPublicDto) };
   }
 
+  @ApiOperation({
+    summary: 'Public read of a published memory book by id. The cuid is the unguessable token.',
+  })
   @Public()
   @Get('public/:id')
   @HttpCode(HttpStatus.OK)
@@ -142,6 +152,10 @@ export class MemoryBookController {
     return { book: toPublicDto(book), assetIds };
   }
 
+  @ApiOperation({
+    summary:
+      'Public presigned download URL for a memory-book asset. Three-clause gate: book published + asset attached + asset ready.',
+  })
   @Public()
   @Get('public/:id/assets/:assetId/download-url')
   @HttpCode(HttpStatus.OK)

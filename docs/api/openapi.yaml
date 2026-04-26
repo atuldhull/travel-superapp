@@ -813,8 +813,12 @@ paths:
       responses:
         '201':
           description: ''
-      tags: &a16
-        - Media
+      security: &a16
+        - bearer: []
+      summary: Issue a presigned PUT URL for direct-to-S3 upload. Creates the
+        MediaAsset row in `processing` status.
+      tags: &a17
+        - media
   /api/v1/media/{id}/confirm:
     post:
       operationId: MediaController_confirm
@@ -827,7 +831,10 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a16
+      security: *a16
+      summary: Confirm upload landed (HEAD verifies bytes). Flips status to `ready`.
+        Image kind also flips exifStripped.
+      tags: *a17
   /api/v1/media/{id}/download-url:
     get:
       operationId: MediaController_downloadUrl
@@ -840,7 +847,9 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a16
+      security: *a16
+      summary: Short-lived presigned GET URL for the asset. Owner-gated.
+      tags: *a17
   /api/v1/media/{id}/trip:
     patch:
       operationId: MediaController_attachToTrip
@@ -853,7 +862,10 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a16
+      security: *a16
+      summary: Attach (`{tripId}`) or detach (`{tripId:null}`) the media to a trip.
+        Double owner-gated.
+      tags: *a17
   /api/v1/media/trip/{tripId}:
     get:
       operationId: MediaController_listByTrip
@@ -871,7 +883,10 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a16
+      security: *a16
+      summary: List the caller's `ready` media attached to a trip. ?limit=N (1..200,
+        default 50).
+      tags: *a17
   /api/v1/media/{id}/memory-book:
     patch:
       operationId: MediaController_attachToBook
@@ -884,7 +899,10 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a16
+      security: *a16
+      summary: Attach (`{memoryBookId}`) or detach (`{memoryBookId:null}`) the media
+        to a memory book. Double owner-gated.
+      tags: *a17
   /api/v1/memory-books/featured:
     get:
       operationId: MemoryBookController_featured
@@ -897,8 +915,12 @@ paths:
       responses:
         '200':
           description: ''
-      tags: &a17
-        - MemoryBook
+      security: &a18
+        - bearer: []
+      summary: Public discovery — currently-published memory books across all users,
+        ordered by publishedAt DESC.
+      tags: &a19
+        - media
   /api/v1/memory-books/public/{id}:
     get:
       operationId: MemoryBookController_getPublic
@@ -911,7 +933,10 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a17
+      security: *a18
+      summary: Public read of a published memory book by id. The cuid is the
+        unguessable token.
+      tags: *a19
   /api/v1/memory-books/public/{id}/assets/{assetId}/download-url:
     get:
       operationId: MemoryBookController_getPublicAssetDownloadUrl
@@ -929,7 +954,10 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a17
+      security: *a18
+      summary: 'Public presigned download URL for a memory-book asset. Three-clause
+        gate: book published + asset attached + asset ready.'
+      tags: *a19
   /api/v1/memory-books:
     post:
       operationId: MemoryBookController_create
@@ -937,7 +965,8 @@ paths:
       responses:
         '201':
           description: ''
-      tags: *a17
+      security: *a18
+      tags: *a19
     get:
       operationId: MemoryBookController_list
       parameters:
@@ -949,7 +978,8 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a17
+      security: *a18
+      tags: *a19
   /api/v1/memory-books/{id}:
     get:
       operationId: MemoryBookController_getOne
@@ -962,7 +992,8 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a17
+      security: *a18
+      tags: *a19
     patch:
       operationId: MemoryBookController_update
       parameters:
@@ -974,7 +1005,8 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a17
+      security: *a18
+      tags: *a19
     delete:
       operationId: MemoryBookController_remove
       parameters:
@@ -986,7 +1018,8 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *a17
+      security: *a18
+      tags: *a19
   /api/v1/memory-books/{id}/publish:
     post:
       operationId: MemoryBookController_publish
@@ -999,7 +1032,8 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a17
+      security: *a18
+      tags: *a19
   /api/v1/memory-books/{id}/unpublish:
     post:
       operationId: MemoryBookController_unpublish
@@ -1012,7 +1046,8 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a17
+      security: *a18
+      tags: *a19
   /api/v1/admin/media:
     get:
       operationId: AdminMediaController_list
@@ -1045,8 +1080,12 @@ paths:
       responses:
         '200':
           description: ''
-      tags: &a18
-        - AdminMedia
+      security: &a20
+        - bearer: []
+      summary: Cross-user list of media with optional ?ownerId, ?kind, ?status
+        filters. Admin-only.
+      tags: &a21
+        - admin
   /api/v1/admin/media/{id}:
     delete:
       operationId: AdminMediaController_remove
@@ -1059,7 +1098,10 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *a18
+      security: *a20
+      summary: Hard-delete media (takedown). Trip + memory book references
+        SetNull-cascade.
+      tags: *a21
   /api/v1/notifications/me/unread-count:
     get:
       operationId: NotificationsController_unreadCount
@@ -1067,8 +1109,12 @@ paths:
       responses:
         '200':
           description: ''
-      tags: &a19
-        - Notifications
+      security: &a22
+        - bearer: []
+      summary: 'Returns { unread: N } for the home-screen badge. Single indexed COUNT
+        — cheap.'
+      tags: &a23
+        - notifications
   /api/v1/notifications/me:
     get:
       operationId: NotificationsController_listMine
@@ -1086,7 +1132,10 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a19
+      security: *a22
+      summary: List the caller's recent notifications. Optional
+        ?channel=push|email|sms narrows to one delivery channel.
+      tags: *a23
   /api/v1/notifications/read-all:
     post:
       operationId: NotificationsController_markAllRead
@@ -1094,7 +1143,10 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a19
+      security: *a22
+      summary: 'Mark every unread row as read. Returns { marked: N }. Idempotent
+        (second call returns 0).'
+      tags: *a23
   /api/v1/notifications/{id}/read:
     post:
       operationId: NotificationsController_markRead
@@ -1107,7 +1159,9 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a19
+      security: *a22
+      summary: Mark one notification as read. Owner-gated; 404 on cross-user / missing.
+      tags: *a23
   /api/v1/notifications/{id}/unread:
     post:
       operationId: NotificationsController_markUnread
@@ -1120,7 +1174,9 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a19
+      security: *a22
+      summary: Mark one notification as UNread (symmetric to /read). Owner-gated.
+      tags: *a23
   /api/v1/notifications/{id}:
     delete:
       operationId: NotificationsController_remove
@@ -1133,7 +1189,10 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *a19
+      security: *a22
+      summary: Hard-delete a notification (inbox prune). Owner-gated; 404 on
+        cross-user / missing.
+      tags: *a23
   /api/v1/admin/places:
     post:
       operationId: AdminController_create
@@ -1141,7 +1200,7 @@ paths:
       responses:
         '201':
           description: ''
-      tags: &a20
+      tags: &a24
         - Admin
   /api/v1/admin/places/{id}:
     delete:
@@ -1155,7 +1214,7 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *a20
+      tags: *a24
   /api/v1/safety/scam-reports:
     post:
       operationId: SafetyController_report
@@ -1163,7 +1222,7 @@ paths:
       responses:
         '201':
           description: ''
-      tags: &a21
+      tags: &a25
         - Safety
   /api/v1/safety/scam-reports/search:
     post:
@@ -1172,7 +1231,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a21
+      tags: *a25
   /api/v1/safety/sos:
     post:
       operationId: SosController_trigger
@@ -1180,7 +1239,7 @@ paths:
       responses:
         '201':
           description: ''
-      tags: &a22
+      tags: &a26
         - Sos
     get:
       operationId: SosController_listMine
@@ -1193,7 +1252,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a22
+      tags: *a26
   /api/v1/safety/sos/{id}/resolve:
     post:
       operationId: SosController_resolve
@@ -1206,7 +1265,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a22
+      tags: *a26
   /api/v1/safety/crimes/search:
     post:
       operationId: CrimeLayerController_search
@@ -1242,7 +1301,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: &a23
+      tags: &a27
         - AdminScamModeration
   /api/v1/admin/safety/scam-reports/{id}/verify:
     post:
@@ -1256,7 +1315,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a23
+      tags: *a27
   /api/v1/admin/safety/scam-reports/{id}/unverify:
     post:
       operationId: AdminScamModerationController_unverify
@@ -1269,7 +1328,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a23
+      tags: *a27
   /api/v1/admin/safety/scam-reports/{id}:
     delete:
       operationId: AdminScamModerationController_dismiss
@@ -1282,7 +1341,7 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *a23
+      tags: *a27
   /api/v1/admin/safety/sos-events:
     get:
       operationId: AdminSosController_list
@@ -1305,7 +1364,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: &a24
+      tags: &a28
         - AdminSos
   /api/v1/admin/safety/sos-events/{id}/resolve:
     post:
@@ -1319,7 +1378,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a24
+      tags: *a28
   /api/v1/trips/{tripId}/votes:
     post:
       operationId: SocialController_cast
@@ -1332,8 +1391,12 @@ paths:
       responses:
         '200':
           description: ''
-      tags: &a25
-        - Social
+      security: &a29
+        - bearer: []
+      summary: 'Cast or update a vote on a trip target. Body: { targetType, targetId,
+        value }. Auth gate: owner OR active TripShare.'
+      tags: &a30
+        - social
     delete:
       operationId: SocialController_revoke
       parameters:
@@ -1345,7 +1408,10 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *a25
+      security: *a29
+      summary: 'Revoke a previously-cast vote. Body: { targetType, targetId }.
+        Idempotent.'
+      tags: *a30
     get:
       operationId: SocialController_list
       parameters:
@@ -1357,7 +1423,9 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a25
+      security: *a29
+      summary: Aggregated tallies for a trip's votes + the caller's own vote per target.
+      tags: *a30
   /api/v1/trips/{tripId}/expenses:
     post:
       operationId: ExpensesController_create
@@ -1370,8 +1438,12 @@ paths:
       responses:
         '201':
           description: ''
-      tags: &a26
-        - Expenses
+      security: &a31
+        - bearer: []
+      summary: 'Record a shared expense on a trip. Auth gate: owner OR active
+        TripShare. Splits sum-checked.'
+      tags: &a32
+        - social
     get:
       operationId: ExpensesController_list
       parameters:
@@ -1388,7 +1460,9 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a26
+      security: *a31
+      summary: List trip expenses, most-recent-first. ?limit=N (1..500, default 50).
+      tags: *a32
   /api/v1/trips/{tripId}/expenses/balances:
     get:
       operationId: ExpensesController_balances
@@ -1401,7 +1475,10 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a26
+      security: *a31
+      summary: Net per-user "who owes whom" ledger. Sum is zero (modulo 2dp). 60s
+        cache; write-invalidated on expense create/delete.
+      tags: *a32
   /api/v1/trips/{tripId}/expenses/{id}:
     delete:
       operationId: ExpensesController_remove
@@ -1414,7 +1491,10 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *a26
+      security: *a31
+      summary: Delete an expense. Payer-only — only the user who recorded it can
+        remove it.
+      tags: *a32
   /api/v1/reviews:
     post:
       operationId: ReviewsController_create
@@ -1422,8 +1502,12 @@ paths:
       responses:
         '201':
           description: ''
-      tags: &a27
-        - Reviews
+      security: &a33
+        - bearer: []
+      summary: Create a review for any review-target (place/stay/eatery/agent).
+        Owner-stamped to the caller.
+      tags: &a34
+        - social
     get:
       operationId: ReviewsController_listForTarget
       parameters:
@@ -1445,7 +1529,10 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a27
+      security: *a33
+      summary: Target-scoped review listing. ?targetType + ?targetId required.
+        Most-recent-first.
+      tags: *a34
   /api/v1/reviews/summary:
     get:
       operationId: ReviewsController_summary
@@ -1463,7 +1550,10 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a27
+      security: *a33
+      summary: Aggregated review summary { count, average, histogram } for a target.
+        @Public.
+      tags: *a34
   /api/v1/reviews/mine:
     get:
       operationId: ReviewsController_listMine
@@ -1476,7 +1566,10 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a27
+      security: *a33
+      summary: List the caller's authored reviews, most-recent-first. ?limit=N
+        (1..200, default 50).
+      tags: *a34
   /api/v1/reviews/{id}:
     delete:
       operationId: ReviewsController_remove
@@ -1489,7 +1582,10 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *a27
+      security: *a33
+      summary: Delete one of the caller's reviews. Author-gated; 404 on cross-user /
+        missing.
+      tags: *a34
   /api/v1/votes/summary:
     get:
       operationId: VotesController_summary
@@ -1507,8 +1603,10 @@ paths:
       responses:
         '200':
           description: ''
+      summary: Cross-trip vote tally for { targetType, targetId }. @Public —
+        crowd-signal aggregation.
       tags:
-        - Votes
+        - social
   /api/v1/places/{id}/review-summary:
     get:
       operationId: PlaceReviewSummaryController_summary
@@ -1521,8 +1619,10 @@ paths:
       responses:
         '200':
           description: ''
+      summary: Place detail-page composite — bundles review summary + vote tally +
+        recent reviews. @Public.
       tags:
-        - PlaceReviewSummary
+        - social
   /api/v1/stays/{id}/review-summary:
     get:
       operationId: StayReviewSummaryController_summary
@@ -1535,8 +1635,10 @@ paths:
       responses:
         '200':
           description: ''
+      summary: Stay detail-page composite. Same shape as place; votes always zero (no
+        vote target for stays).
       tags:
-        - StayReviewSummary
+        - social
   /api/v1/eateries/{id}/review-summary:
     get:
       operationId: EateryReviewSummaryController_summary
@@ -1549,8 +1651,9 @@ paths:
       responses:
         '200':
           description: ''
+      summary: Eatery detail-page composite. Same shape as place; votes always zero.
       tags:
-        - EateryReviewSummary
+        - social
   /api/v1/agents/{id}/review-summary:
     get:
       operationId: AgentReviewSummaryController_summary
@@ -1563,8 +1666,10 @@ paths:
       responses:
         '200':
           description: ''
+      summary: Agent detail-page composite. Closes the 4-of-4 review-target arc; votes
+        always zero.
       tags:
-        - AgentReviewSummary
+        - social
   /api/v1/account/export:
     get:
       operationId: AccountController_exportMyData
@@ -1572,7 +1677,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: &a28
+      tags: &a35
         - Account
   /api/v1/account/export.ndjson:
     get:
@@ -1581,7 +1686,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a28
+      tags: *a35
   /api/v1/account:
     delete:
       operationId: AccountController_deleteMyAccount
@@ -1589,7 +1694,7 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *a28
+      tags: *a35
   /api/v1/admin/users:
     get:
       operationId: AdminUsersController_list
@@ -1622,7 +1727,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: &a29
+      tags: &a36
         - AdminUsers
   /api/v1/admin/users/{id}/ban:
     post:
@@ -1636,7 +1741,7 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *a29
+      tags: *a36
   /api/v1/admin/users/{id}/unban:
     post:
       operationId: AdminUsersController_unban
@@ -1649,7 +1754,7 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *a29
+      tags: *a36
   /api/v1/admin/account-purge:
     post:
       operationId: AdminPurgeController_forcePurge

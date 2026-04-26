@@ -25,6 +25,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { type AuthenticatedUser, CurrentUser } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { CreateExpenseUseCase } from '../application/create-expense.use-case';
@@ -60,6 +61,8 @@ function toDto(e: Expense): ExpenseDto {
   };
 }
 
+@ApiTags('social')
+@ApiBearerAuth()
 @Controller('trips/:tripId/expenses')
 export class ExpensesController {
   constructor(
@@ -69,6 +72,10 @@ export class ExpensesController {
     private readonly deleteUc: DeleteExpenseUseCase,
   ) {}
 
+  @ApiOperation({
+    summary:
+      'Record a shared expense on a trip. Auth gate: owner OR active TripShare. Splits sum-checked.',
+  })
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(
@@ -87,6 +94,9 @@ export class ExpensesController {
     return toDto(expense);
   }
 
+  @ApiOperation({
+    summary: 'List trip expenses, most-recent-first. ?limit=N (1..500, default 50).',
+  })
   @Get()
   @HttpCode(HttpStatus.OK)
   async list(
@@ -110,6 +120,10 @@ export class ExpensesController {
    *
    * Sorted largest-creditor-first for UI rendering.
    */
+  @ApiOperation({
+    summary:
+      'Net per-user "who owes whom" ledger. Sum is zero (modulo 2dp). 60s cache; write-invalidated on expense create/delete.',
+  })
   @Get('balances')
   @HttpCode(HttpStatus.OK)
   async balances(
@@ -120,6 +134,9 @@ export class ExpensesController {
     return { balances };
   }
 
+  @ApiOperation({
+    summary: 'Delete an expense. Payer-only — only the user who recorded it can remove it.',
+  })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string): Promise<void> {

@@ -20,6 +20,7 @@
  * Installed by prompt [IV.18.12.3].
  */
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { type AuthenticatedUser, CurrentUser } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { CastVoteUseCase } from '../application/cast-vote.use-case';
@@ -53,6 +54,8 @@ function toDto(v: Vote): VoteDto {
   };
 }
 
+@ApiTags('social')
+@ApiBearerAuth()
 @Controller('trips/:tripId/votes')
 export class SocialController {
   constructor(
@@ -61,6 +64,10 @@ export class SocialController {
     private readonly listUc: ListTripVotesUseCase,
   ) {}
 
+  @ApiOperation({
+    summary:
+      'Cast or update a vote on a trip target. Body: { targetType, targetId, value }. Auth gate: owner OR active TripShare.',
+  })
   @Post()
   @HttpCode(HttpStatus.OK)
   async cast(
@@ -78,6 +85,9 @@ export class SocialController {
     return toDto(vote);
   }
 
+  @ApiOperation({
+    summary: 'Revoke a previously-cast vote. Body: { targetType, targetId }. Idempotent.',
+  })
   @Delete()
   @HttpCode(HttpStatus.NO_CONTENT)
   async revoke(
@@ -93,6 +103,9 @@ export class SocialController {
     });
   }
 
+  @ApiOperation({
+    summary: "Aggregated tallies for a trip's votes + the caller's own vote per target.",
+  })
   @Get()
   @HttpCode(HttpStatus.OK)
   async list(

@@ -25,6 +25,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { type AuthenticatedUser, CurrentUser } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { AttachMediaToBookUseCase } from '../application/attach-media-to-book.use-case';
@@ -63,6 +64,8 @@ function toDto(a: MediaAsset): MediaAssetDto {
   };
 }
 
+@ApiTags('media')
+@ApiBearerAuth()
 @Controller('media')
 export class MediaController {
   constructor(
@@ -74,6 +77,10 @@ export class MediaController {
     private readonly attachBookUc: AttachMediaToBookUseCase,
   ) {}
 
+  @ApiOperation({
+    summary:
+      'Issue a presigned PUT URL for direct-to-S3 upload. Creates the MediaAsset row in `processing` status.',
+  })
   @Post('upload-url')
   @HttpCode(HttpStatus.CREATED)
   async createUploadUrl(
@@ -103,6 +110,10 @@ export class MediaController {
     };
   }
 
+  @ApiOperation({
+    summary:
+      'Confirm upload landed (HEAD verifies bytes). Flips status to `ready`. Image kind also flips exifStripped.',
+  })
   @Post(':id/confirm')
   @HttpCode(HttpStatus.OK)
   async confirm(
@@ -113,6 +124,7 @@ export class MediaController {
     return toDto(asset);
   }
 
+  @ApiOperation({ summary: 'Short-lived presigned GET URL for the asset. Owner-gated.' })
   @Get(':id/download-url')
   @HttpCode(HttpStatus.OK)
   async downloadUrl(
@@ -129,6 +141,10 @@ export class MediaController {
    * AND the trip (when attaching) must belong to the caller.
    * Wrong-owner on either side → 404 with the corresponding code.
    */
+  @ApiOperation({
+    summary:
+      'Attach (`{tripId}`) or detach (`{tripId:null}`) the media to a trip. Double owner-gated.',
+  })
   @Patch(':id/trip')
   @HttpCode(HttpStatus.OK)
   async attachToTrip(
@@ -149,6 +165,9 @@ export class MediaController {
    * so clients never render a broken thumbnail while a fresh
    * upload is mid-confirm. `?limit=N` (1..200, default 50).
    */
+  @ApiOperation({
+    summary: "List the caller's `ready` media attached to a trip. ?limit=N (1..200, default 50).",
+  })
   @Get('trip/:tripId')
   @HttpCode(HttpStatus.OK)
   async listByTrip(
@@ -172,6 +191,10 @@ export class MediaController {
    * the caller. Wrong-owner on either side → 404 with the
    * corresponding code.
    */
+  @ApiOperation({
+    summary:
+      'Attach (`{memoryBookId}`) or detach (`{memoryBookId:null}`) the media to a memory book. Double owner-gated.',
+  })
   @Patch(':id/memory-book')
   @HttpCode(HttpStatus.OK)
   async attachToBook(

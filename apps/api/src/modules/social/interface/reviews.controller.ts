@@ -23,6 +23,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { type AuthenticatedUser, CurrentUser, Public } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { CreateReviewUseCase } from '../application/create-review.use-case';
@@ -86,6 +87,8 @@ function summaryToDto(s: ReviewSummary): ReviewSummaryDto {
   };
 }
 
+@ApiTags('social')
+@ApiBearerAuth()
 @Controller('reviews')
 export class ReviewsController {
   constructor(
@@ -96,6 +99,10 @@ export class ReviewsController {
     private readonly summaryUc: GetReviewSummaryUseCase,
   ) {}
 
+  @ApiOperation({
+    summary:
+      'Create a review for any review-target (place/stay/eatery/agent). Owner-stamped to the caller.',
+  })
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(
@@ -125,6 +132,9 @@ export class ReviewsController {
    *
    * Installed by [IV.18.12.8].
    */
+  @ApiOperation({
+    summary: 'Aggregated review summary { count, average, histogram } for a target. @Public.',
+  })
   @Get('summary')
   @Public()
   @HttpCode(HttpStatus.OK)
@@ -157,6 +167,10 @@ export class ReviewsController {
    * wins before `/:id/…` because Nest routes are matched in
    * declaration order — kept `mine` first for clarity.
    */
+  @ApiOperation({
+    summary:
+      "List the caller's authored reviews, most-recent-first. ?limit=N (1..200, default 50).",
+  })
   @Get('mine')
   @HttpCode(HttpStatus.OK)
   async listMine(
@@ -174,6 +188,9 @@ export class ReviewsController {
    * route explosion (`/places/:id/reviews`, `/stays/:id/reviews`
    * …). Clients pick the targetType string the API exposes.
    */
+  @ApiOperation({
+    summary: 'Target-scoped review listing. ?targetType + ?targetId required. Most-recent-first.',
+  })
   @Get()
   @HttpCode(HttpStatus.OK)
   async listForTarget(
@@ -203,6 +220,9 @@ export class ReviewsController {
     return { reviews: reviews.map(toDto) };
   }
 
+  @ApiOperation({
+    summary: "Delete one of the caller's reviews. Author-gated; 404 on cross-user / missing.",
+  })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string): Promise<void> {
