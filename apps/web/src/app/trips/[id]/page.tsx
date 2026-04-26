@@ -220,6 +220,12 @@ function ReadView({ trip, onEdit, onAskDelete }: ReadViewProps) {
             </CardSubtitle>
           </div>
           <div className="flex gap-2">
+            <Link
+              href={`/trips/${trip.id}/overview` as never}
+              className="inline-flex items-center gap-1 rounded-md border border-brand/30 px-3 py-1.5 text-sm font-medium text-brand transition hover:bg-brand/5"
+            >
+              Overview
+            </Link>
             <Button variant="outline" size="sm" onClick={onEdit}>
               Edit
             </Button>
