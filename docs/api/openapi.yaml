@@ -230,9 +230,13 @@ paths:
       parameters: []
       responses:
         '201':
-          description: ''
+          description: AuthSuccessBody { userId, accessToken, expiresAt }.
+        '409':
+          description: EMAIL_TAKEN.
+      summary: Create a new account. Email + password + displayName. Sets the
+        refresh-cookie + returns access token.
       tags: &a8
-        - Auth
+        - identity
   /api/v1/auth/oauth/{provider}:
     post:
       operationId: AuthController_oauth
@@ -244,7 +248,12 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: AuthSuccessBody.
+        '401':
+          description: OAUTH_PROVIDER_UNKNOWN / OAUTH_INVALID_TOKEN /
+            OAUTH_EMAIL_UNVERIFIED.
+      summary: OAuth sign-in. Verifies a provider id token (Google / Apple / mock);
+        auto-links by email or creates a passwordless account.
       tags: *a8
   /api/v1/auth/login:
     post:
@@ -252,7 +261,11 @@ paths:
       parameters: []
       responses:
         '200':
-          description: ''
+          description: AuthSuccessBody.
+        '401':
+          description: INVALID_CREDENTIALS / MFA_REQUIRED / MFA_INVALID.
+      summary: Email + password login. With MFA enabled, mfaCode is required on the
+        second call.
       tags: *a8
   /api/v1/auth/refresh:
     post:
@@ -260,7 +273,11 @@ paths:
       parameters: []
       responses:
         '200':
-          description: ''
+          description: New { accessToken, expiresAt }. New refresh cookie set.
+        '401':
+          description: REFRESH_MISSING / REFRESH_INVALID / REFRESH_REUSED.
+      summary: Rotate the access + refresh tokens. Reads the httpOnly refresh cookie;
+        rejects if missing or stolen-detected.
       tags: *a8
   /api/v1/auth/me:
     get:
@@ -269,6 +286,10 @@ paths:
       responses:
         '200':
           description: ''
+      security:
+        - bearer: []
+      summary: Whoami probe — returns the authed user's JWT claims. The reference
+        auth-gated endpoint pattern.
       tags: *a8
   /api/v1/auth/mfa/setup:
     post:
@@ -277,6 +298,10 @@ paths:
       responses:
         '200':
           description: ''
+      security:
+        - bearer: []
+      summary: Begin MFA enrollment — returns base32 secret + otpauth:// URI for QR
+        rendering. Pending until /mfa/verify confirms.
       tags: *a8
   /api/v1/auth/mfa/verify:
     post:
@@ -285,6 +310,10 @@ paths:
       responses:
         '200':
           description: ''
+      security:
+        - bearer: []
+      summary: Confirm MFA enrollment with a TOTP code. First-time enable returns 10
+        plaintext backup codes (shown ONCE).
       tags: *a8
   /api/v1/auth/mfa/backup-codes/regenerate:
     post:
@@ -293,6 +322,10 @@ paths:
       responses:
         '200':
           description: ''
+      security:
+        - bearer: []
+      summary: Regenerate the 10 single-use MFA backup codes. Requires a valid current
+        TOTP. Returns plaintexts shown ONCE.
       tags: *a8
   /api/v1/auth/mfa/disable:
     post:
@@ -301,6 +334,10 @@ paths:
       responses:
         '204':
           description: ''
+      security:
+        - bearer: []
+      summary: Disable MFA. Requires a valid TOTP — a hijacked session alone cannot
+        strip the second factor.
       tags: *a8
   /api/v1/auth/logout:
     post:
@@ -309,6 +346,8 @@ paths:
       responses:
         '204':
           description: ''
+      summary: Logout — revokes the refresh token + clears the cookie. Idempotent if
+        already logged out.
       tags: *a8
   /api/v1/admin/identity/jwks/rotate:
     post:
@@ -316,9 +355,15 @@ paths:
       parameters: []
       responses:
         '200':
-          description: ''
-      tags: &a9
-        - JwksAdmin
+          description: New kid + previous kids.
+        '403':
+          description: Caller is not admin.
+      security: &a9
+        - bearer: []
+      summary: Rotate a JWT signing keyring (access | refresh). Returns new kid +
+        previous-kid retirement list.
+      tags: &a10
+        - admin
   /api/v1/admin/identity/jwks/kids:
     get:
       operationId: JwksAdminController_kids
@@ -326,7 +371,10 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a9
+      security: *a9
+      summary: List active kids across both keyrings (access + refresh). Used to
+        confirm rotations + retirement windows.
+      tags: *a10
   /api/v1/trips:
     post:
       operationId: TripController_create
@@ -334,10 +382,10 @@ paths:
       responses:
         '201':
           description: Trip created.
-      security: &a10
+      security: &a11
         - bearer: []
       summary: Create a trip draft from { title, center, radiusKm, startsOn?, endsOn? }
-      tags: &a11
+      tags: &a12
         - trip
     get:
       operationId: TripController_list
@@ -350,9 +398,9 @@ paths:
       responses:
         '200':
           description: List of trips.
-      security: *a10
+      security: *a11
       summary: List the caller's trips, most-recent-first
-      tags: *a11
+      tags: *a12
   /api/v1/trips/{id}:
     get:
       operationId: TripController_getOne
@@ -367,10 +415,10 @@ paths:
           description: The trip.
         '404':
           description: TRIP_NOT_FOUND.
-      security: *a10
+      security: *a11
       summary: Fetch a single trip the caller owns. 404 if missing or not theirs
         (IDOR-safe).
-      tags: *a11
+      tags: *a12
     patch:
       operationId: TripController_update
       parameters:
@@ -384,9 +432,9 @@ paths:
           description: Updated trip.
         '404':
           description: TRIP_NOT_FOUND.
-      security: *a10
+      security: *a11
       summary: Update a trip the caller owns. Partial body; only provided fields change.
-      tags: *a11
+      tags: *a12
     delete:
       operationId: TripController_remove
       parameters:
@@ -400,9 +448,9 @@ paths:
           description: Trip deleted.
         '404':
           description: TRIP_NOT_FOUND.
-      security: *a10
+      security: *a11
       summary: Delete a trip the caller owns. Cascades to itinerary days, items, shares.
-      tags: *a11
+      tags: *a12
   /api/v1/trips/{id}/itinerary:
     post:
       operationId: TripController_buildItinerary
@@ -415,10 +463,10 @@ paths:
       responses:
         '200':
           description: ''
-      security: *a10
+      security: *a11
       summary: Generate itinerary stub for the trip (one ItineraryDay per date in the
         range).
-      tags: *a11
+      tags: *a12
     get:
       operationId: TripController_getItinerary
       parameters:
@@ -430,9 +478,9 @@ paths:
       responses:
         '200':
           description: ''
-      security: *a10
+      security: *a11
       summary: List itinerary days + items for the trip the caller owns.
-      tags: *a11
+      tags: *a12
   /api/v1/trips/{id}/share:
     post:
       operationId: TripController_share
@@ -445,10 +493,10 @@ paths:
       responses:
         '201':
           description: ''
-      security: *a10
+      security: *a11
       summary: Mint a share code so collaborators can view (or co-edit, if
         publicRead=false) the trip.
-      tags: *a11
+      tags: *a12
   /api/v1/trips/shared/{code}:
     get:
       operationId: TripController_getSharedTrip
@@ -461,9 +509,9 @@ paths:
       responses:
         '200':
           description: ''
-      security: *a10
+      security: *a11
       summary: Public read of a shared trip by code. No auth required.
-      tags: *a11
+      tags: *a12
   /api/v1/trips/{id}/overview:
     get:
       operationId: TripController_overview
@@ -477,11 +525,11 @@ paths:
         '200':
           description: Per-user-cached composite. Empty/dateless sections surface as {
             ok:false, code }.
-      security: *a10
+      security: *a11
       summary: Trip overview composite — 7 sections (itinerary, weather, stays,
         eateries, events, transport, media). Per-section graceful degradation.
         60s TTL cache.
-      tags: *a11
+      tags: *a12
   /api/v1/trips/{id}/eateries:
     get:
       operationId: TripController_eateries
@@ -504,10 +552,10 @@ paths:
       responses:
         '200':
           description: ''
-      security: *a10
+      security: *a11
       summary: Eateries near the trip center. Optional cuisineTag + maxPriceTier
         filters.
-      tags: *a11
+      tags: *a12
   /api/v1/trips/{id}/events:
     get:
       operationId: TripController_events
@@ -525,10 +573,10 @@ paths:
       responses:
         '422':
           description: TRIP_DATES_REQUIRED.
-      security: *a10
+      security: *a11
       summary: Events near the trip center during the trip date range. Requires
         startsOn + endsOn.
-      tags: *a11
+      tags: *a12
   /api/v1/trips/{id}/stays:
     get:
       operationId: TripController_stays
@@ -546,10 +594,10 @@ paths:
       responses:
         '200':
           description: ''
-      security: *a10
+      security: *a11
       summary: Stays near the trip center for the trip date range. Requires startsOn +
         endsOn.
-      tags: *a11
+      tags: *a12
   /api/v1/trips/{id}/weather:
     get:
       operationId: TripController_weather
@@ -562,9 +610,9 @@ paths:
       responses:
         '200':
           description: ''
-      security: *a10
+      security: *a11
       summary: Weather forecast for the trip center. Up to 16 days. TTL-cached.
-      tags: *a11
+      tags: *a12
   /api/v1/trips/{id}/shares:
     get:
       operationId: TripController_listShares
@@ -577,9 +625,9 @@ paths:
       responses:
         '200':
           description: ''
-      security: *a10
+      security: *a11
       summary: List active share codes for the trip the caller owns.
-      tags: *a11
+      tags: *a12
   /api/v1/trips/{id}/share/{code}:
     delete:
       operationId: TripController_revokeShare
@@ -592,9 +640,9 @@ paths:
       responses:
         '204':
           description: ''
-      security: *a10
+      security: *a11
       summary: Revoke a share code. Owner-scoped.
-      tags: *a11
+      tags: *a12
   /api/v1/trips/{id}/transport-legs:
     get:
       operationId: TripController_transportLegs
@@ -607,9 +655,9 @@ paths:
       responses:
         '200':
           description: ''
-      security: *a10
+      security: *a11
       summary: Compute transport legs between consecutive itinerary items.
-      tags: *a11
+      tags: *a12
   /api/v1/trips/{tripId}/itinerary/{dayId}:
     patch:
       operationId: TripController_updateDay
@@ -627,9 +675,9 @@ paths:
       responses:
         '200':
           description: ''
-      security: *a10
+      security: *a11
       summary: Replace items in an itinerary day. Owner OR active TripShare may write.
-      tags: *a11
+      tags: *a12
   /api/v1/admin/trips:
     get:
       operationId: AdminTripsController_list
@@ -659,10 +707,10 @@ paths:
           description: Paginated trip rows.
         '403':
           description: Caller is not admin.
-      security: &a12
+      security: &a13
         - bearer: []
       summary: List trips across all users with optional q + status filters. Admin-only.
-      tags: &a13
+      tags: &a14
         - admin
   /api/v1/admin/trips/{id}/archive:
     post:
@@ -676,10 +724,10 @@ paths:
       responses:
         '204':
           description: Trip archived.
-      security: *a12
+      security: *a13
       summary: Soft-archive a trip (status = archived). Reversible by the owner via
         the standard CRUD path.
-      tags: *a13
+      tags: *a14
   /api/v1/admin/trips/{id}:
     delete:
       operationId: AdminTripsController_remove
@@ -692,10 +740,10 @@ paths:
       responses:
         '204':
           description: Trip deleted.
-      security: *a12
+      security: *a13
       summary: Hard-delete a trip + cascade itinerary. For takedowns of
         clearly-abusive content.
-      tags: *a13
+      tags: *a14
   /api/v1/places/search:
     post:
       operationId: PlacesController_search
@@ -703,7 +751,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: &a14
+      tags: &a15
         - Places
   /api/v1/places/federated-search:
     post:
@@ -712,7 +760,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a14
+      tags: *a15
   /api/v1/weather/forecast:
     get:
       operationId: WeatherController_forecast
@@ -765,7 +813,7 @@ paths:
       responses:
         '201':
           description: ''
-      tags: &a15
+      tags: &a16
         - Media
   /api/v1/media/{id}/confirm:
     post:
@@ -779,7 +827,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a15
+      tags: *a16
   /api/v1/media/{id}/download-url:
     get:
       operationId: MediaController_downloadUrl
@@ -792,7 +840,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a15
+      tags: *a16
   /api/v1/media/{id}/trip:
     patch:
       operationId: MediaController_attachToTrip
@@ -805,7 +853,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a15
+      tags: *a16
   /api/v1/media/trip/{tripId}:
     get:
       operationId: MediaController_listByTrip
@@ -823,7 +871,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a15
+      tags: *a16
   /api/v1/media/{id}/memory-book:
     patch:
       operationId: MediaController_attachToBook
@@ -836,7 +884,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a15
+      tags: *a16
   /api/v1/memory-books/featured:
     get:
       operationId: MemoryBookController_featured
@@ -849,7 +897,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: &a16
+      tags: &a17
         - MemoryBook
   /api/v1/memory-books/public/{id}:
     get:
@@ -863,7 +911,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a16
+      tags: *a17
   /api/v1/memory-books/public/{id}/assets/{assetId}/download-url:
     get:
       operationId: MemoryBookController_getPublicAssetDownloadUrl
@@ -881,7 +929,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a16
+      tags: *a17
   /api/v1/memory-books:
     post:
       operationId: MemoryBookController_create
@@ -889,7 +937,7 @@ paths:
       responses:
         '201':
           description: ''
-      tags: *a16
+      tags: *a17
     get:
       operationId: MemoryBookController_list
       parameters:
@@ -901,7 +949,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a16
+      tags: *a17
   /api/v1/memory-books/{id}:
     get:
       operationId: MemoryBookController_getOne
@@ -914,7 +962,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a16
+      tags: *a17
     patch:
       operationId: MemoryBookController_update
       parameters:
@@ -926,7 +974,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a16
+      tags: *a17
     delete:
       operationId: MemoryBookController_remove
       parameters:
@@ -938,7 +986,7 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *a16
+      tags: *a17
   /api/v1/memory-books/{id}/publish:
     post:
       operationId: MemoryBookController_publish
@@ -951,7 +999,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a16
+      tags: *a17
   /api/v1/memory-books/{id}/unpublish:
     post:
       operationId: MemoryBookController_unpublish
@@ -964,7 +1012,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a16
+      tags: *a17
   /api/v1/admin/media:
     get:
       operationId: AdminMediaController_list
@@ -997,7 +1045,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: &a17
+      tags: &a18
         - AdminMedia
   /api/v1/admin/media/{id}:
     delete:
@@ -1011,7 +1059,7 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *a17
+      tags: *a18
   /api/v1/notifications/me/unread-count:
     get:
       operationId: NotificationsController_unreadCount
@@ -1019,7 +1067,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: &a18
+      tags: &a19
         - Notifications
   /api/v1/notifications/me:
     get:
@@ -1038,7 +1086,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a18
+      tags: *a19
   /api/v1/notifications/read-all:
     post:
       operationId: NotificationsController_markAllRead
@@ -1046,7 +1094,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a18
+      tags: *a19
   /api/v1/notifications/{id}/read:
     post:
       operationId: NotificationsController_markRead
@@ -1059,7 +1107,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a18
+      tags: *a19
   /api/v1/notifications/{id}/unread:
     post:
       operationId: NotificationsController_markUnread
@@ -1072,7 +1120,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a18
+      tags: *a19
   /api/v1/notifications/{id}:
     delete:
       operationId: NotificationsController_remove
@@ -1085,7 +1133,7 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *a18
+      tags: *a19
   /api/v1/admin/places:
     post:
       operationId: AdminController_create
@@ -1093,7 +1141,7 @@ paths:
       responses:
         '201':
           description: ''
-      tags: &a19
+      tags: &a20
         - Admin
   /api/v1/admin/places/{id}:
     delete:
@@ -1107,7 +1155,7 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *a19
+      tags: *a20
   /api/v1/safety/scam-reports:
     post:
       operationId: SafetyController_report
@@ -1115,7 +1163,7 @@ paths:
       responses:
         '201':
           description: ''
-      tags: &a20
+      tags: &a21
         - Safety
   /api/v1/safety/scam-reports/search:
     post:
@@ -1124,7 +1172,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a20
+      tags: *a21
   /api/v1/safety/sos:
     post:
       operationId: SosController_trigger
@@ -1132,7 +1180,7 @@ paths:
       responses:
         '201':
           description: ''
-      tags: &a21
+      tags: &a22
         - Sos
     get:
       operationId: SosController_listMine
@@ -1145,7 +1193,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a21
+      tags: *a22
   /api/v1/safety/sos/{id}/resolve:
     post:
       operationId: SosController_resolve
@@ -1158,7 +1206,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a21
+      tags: *a22
   /api/v1/safety/crimes/search:
     post:
       operationId: CrimeLayerController_search
@@ -1194,7 +1242,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: &a22
+      tags: &a23
         - AdminScamModeration
   /api/v1/admin/safety/scam-reports/{id}/verify:
     post:
@@ -1208,7 +1256,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a22
+      tags: *a23
   /api/v1/admin/safety/scam-reports/{id}/unverify:
     post:
       operationId: AdminScamModerationController_unverify
@@ -1221,7 +1269,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a22
+      tags: *a23
   /api/v1/admin/safety/scam-reports/{id}:
     delete:
       operationId: AdminScamModerationController_dismiss
@@ -1234,7 +1282,7 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *a22
+      tags: *a23
   /api/v1/admin/safety/sos-events:
     get:
       operationId: AdminSosController_list
@@ -1257,7 +1305,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: &a23
+      tags: &a24
         - AdminSos
   /api/v1/admin/safety/sos-events/{id}/resolve:
     post:
@@ -1271,7 +1319,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a23
+      tags: *a24
   /api/v1/trips/{tripId}/votes:
     post:
       operationId: SocialController_cast
@@ -1284,7 +1332,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: &a24
+      tags: &a25
         - Social
     delete:
       operationId: SocialController_revoke
@@ -1297,7 +1345,7 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *a24
+      tags: *a25
     get:
       operationId: SocialController_list
       parameters:
@@ -1309,7 +1357,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a24
+      tags: *a25
   /api/v1/trips/{tripId}/expenses:
     post:
       operationId: ExpensesController_create
@@ -1322,7 +1370,7 @@ paths:
       responses:
         '201':
           description: ''
-      tags: &a25
+      tags: &a26
         - Expenses
     get:
       operationId: ExpensesController_list
@@ -1340,7 +1388,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a25
+      tags: *a26
   /api/v1/trips/{tripId}/expenses/balances:
     get:
       operationId: ExpensesController_balances
@@ -1353,7 +1401,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a25
+      tags: *a26
   /api/v1/trips/{tripId}/expenses/{id}:
     delete:
       operationId: ExpensesController_remove
@@ -1366,7 +1414,7 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *a25
+      tags: *a26
   /api/v1/reviews:
     post:
       operationId: ReviewsController_create
@@ -1374,7 +1422,7 @@ paths:
       responses:
         '201':
           description: ''
-      tags: &a26
+      tags: &a27
         - Reviews
     get:
       operationId: ReviewsController_listForTarget
@@ -1397,7 +1445,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a26
+      tags: *a27
   /api/v1/reviews/summary:
     get:
       operationId: ReviewsController_summary
@@ -1415,7 +1463,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a26
+      tags: *a27
   /api/v1/reviews/mine:
     get:
       operationId: ReviewsController_listMine
@@ -1428,7 +1476,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a26
+      tags: *a27
   /api/v1/reviews/{id}:
     delete:
       operationId: ReviewsController_remove
@@ -1441,7 +1489,7 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *a26
+      tags: *a27
   /api/v1/votes/summary:
     get:
       operationId: VotesController_summary
@@ -1524,7 +1572,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: &a27
+      tags: &a28
         - Account
   /api/v1/account/export.ndjson:
     get:
@@ -1533,7 +1581,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a27
+      tags: *a28
   /api/v1/account:
     delete:
       operationId: AccountController_deleteMyAccount
@@ -1541,7 +1589,7 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *a27
+      tags: *a28
   /api/v1/admin/users:
     get:
       operationId: AdminUsersController_list
@@ -1574,7 +1622,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: &a28
+      tags: &a29
         - AdminUsers
   /api/v1/admin/users/{id}/ban:
     post:
@@ -1588,7 +1636,7 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *a28
+      tags: *a29
   /api/v1/admin/users/{id}/unban:
     post:
       operationId: AdminUsersController_unban
@@ -1601,7 +1649,7 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *a28
+      tags: *a29
   /api/v1/admin/account-purge:
     post:
       operationId: AdminPurgeController_forcePurge

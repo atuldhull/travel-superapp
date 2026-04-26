@@ -17,6 +17,7 @@
  * Installed by prompt [III.13.2.8].
  */
 import { Body, Controller, Get, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { z } from 'zod';
 import { Roles } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
@@ -43,6 +44,8 @@ function toDto(r: RotateJwksResult): RotateResponseDto {
   };
 }
 
+@ApiTags('admin')
+@ApiBearerAuth()
 @Controller('admin/identity/jwks')
 @Roles('admin')
 export class JwksAdminController {
@@ -51,6 +54,12 @@ export class JwksAdminController {
     @Inject(JWT_KEYRING_STORE) private readonly keyrings: JwtKeyringStore,
   ) {}
 
+  @ApiOperation({
+    summary:
+      'Rotate a JWT signing keyring (access | refresh). Returns new kid + previous-kid retirement list.',
+  })
+  @ApiResponse({ status: 200, description: 'New kid + previous kids.' })
+  @ApiResponse({ status: 403, description: 'Caller is not admin.' })
   @Post('rotate')
   @HttpCode(HttpStatus.OK)
   async rotate(
@@ -60,6 +69,10 @@ export class JwksAdminController {
     return toDto(result);
   }
 
+  @ApiOperation({
+    summary:
+      'List active kids across both keyrings (access + refresh). Used to confirm rotations + retirement windows.',
+  })
   @Get('kids')
   @HttpCode(HttpStatus.OK)
   async kids(): Promise<{ access: readonly string[]; refresh: readonly string[] }> {

@@ -34,6 +34,7 @@ import {
   Res,
   UsePipes,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { Env } from '@app/config';
 import { ConfigService } from '@nestjs/config';
@@ -79,6 +80,7 @@ interface AuthSuccessBody {
  * smaller wins. Test mode inflates all buckets 10,000× so the suite
  * doesn't trip 429s on cumulative traffic.
  */
+@ApiTags('identity')
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -99,6 +101,12 @@ export class AuthController {
     void this._issue;
   }
 
+  @ApiOperation({
+    summary:
+      'Create a new account. Email + password + displayName. Sets the refresh-cookie + returns access token.',
+  })
+  @ApiResponse({ status: 201, description: 'AuthSuccessBody { userId, accessToken, expiresAt }.' })
+  @ApiResponse({ status: 409, description: 'EMAIL_TAKEN.' })
   @Public()
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
@@ -137,6 +145,15 @@ export class AuthController {
    * Signature / audience / email-unverified failures from the adapter
    * surface as 401 `OAUTH_INVALID_TOKEN` / `OAUTH_EMAIL_UNVERIFIED`.
    */
+  @ApiOperation({
+    summary:
+      'OAuth sign-in. Verifies a provider id token (Google / Apple / mock); auto-links by email or creates a passwordless account.',
+  })
+  @ApiResponse({ status: 200, description: 'AuthSuccessBody.' })
+  @ApiResponse({
+    status: 401,
+    description: 'OAUTH_PROVIDER_UNKNOWN / OAUTH_INVALID_TOKEN / OAUTH_EMAIL_UNVERIFIED.',
+  })
   @Public()
   @Post('oauth/:provider')
   @HttpCode(HttpStatus.OK)
@@ -159,6 +176,11 @@ export class AuthController {
     };
   }
 
+  @ApiOperation({
+    summary: 'Email + password login. With MFA enabled, mfaCode is required on the second call.',
+  })
+  @ApiResponse({ status: 200, description: 'AuthSuccessBody.' })
+  @ApiResponse({ status: 401, description: 'INVALID_CREDENTIALS / MFA_REQUIRED / MFA_INVALID.' })
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
@@ -183,6 +205,15 @@ export class AuthController {
     };
   }
 
+  @ApiOperation({
+    summary:
+      'Rotate the access + refresh tokens. Reads the httpOnly refresh cookie; rejects if missing or stolen-detected.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'New { accessToken, expiresAt }. New refresh cookie set.',
+  })
+  @ApiResponse({ status: 401, description: 'REFRESH_MISSING / REFRESH_INVALID / REFRESH_REUSED.' })
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
@@ -217,6 +248,11 @@ export class AuthController {
    * token; `@CurrentUser()` returns the claims. First real consumer of
    * the guard stack — any feature module follows the same pattern.
    */
+  @ApiOperation({
+    summary:
+      "Whoami probe — returns the authed user's JWT claims. The reference auth-gated endpoint pattern.",
+  })
+  @ApiBearerAuth()
   @Get('me')
   @HttpCode(HttpStatus.OK)
   me(@CurrentUser() user: AuthenticatedUser): AuthenticatedUser {
@@ -229,6 +265,11 @@ export class AuthController {
    * QR code. The secret is persisted as a staging value; MFA is
    * not yet active until `/mfa/verify` confirms with a code.
    */
+  @ApiOperation({
+    summary:
+      'Begin MFA enrollment — returns base32 secret + otpauth:// URI for QR rendering. Pending until /mfa/verify confirms.',
+  })
+  @ApiBearerAuth()
   @Post('mfa/setup')
   @HttpCode(HttpStatus.OK)
   async mfaSetup(@CurrentUser() user: AuthenticatedUser): Promise<{
@@ -246,6 +287,11 @@ export class AuthController {
    * retrievable again. On re-verify of an already-enabled account
    * (idempotent no-op), `backupCodes` is null.
    */
+  @ApiOperation({
+    summary:
+      'Confirm MFA enrollment with a TOTP code. First-time enable returns 10 plaintext backup codes (shown ONCE).',
+  })
+  @ApiBearerAuth()
   @Post('mfa/verify')
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ZodValidationPipe(MfaCodeBodySchema))
@@ -263,6 +309,11 @@ export class AuthController {
    * (which would lock the legitimate user out of the recovery
    * path). Returns the new plaintexts — shown once, never again.
    */
+  @ApiOperation({
+    summary:
+      'Regenerate the 10 single-use MFA backup codes. Requires a valid current TOTP. Returns plaintexts shown ONCE.',
+  })
+  @ApiBearerAuth()
   @Post('mfa/backup-codes/regenerate')
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ZodValidationPipe(MfaCodeBodySchema))
@@ -278,6 +329,11 @@ export class AuthController {
    * Turn MFA off. Requires a valid current code — a hijacked
    * session alone can't strip the second factor.
    */
+  @ApiOperation({
+    summary:
+      'Disable MFA. Requires a valid TOTP — a hijacked session alone cannot strip the second factor.',
+  })
+  @ApiBearerAuth()
   @Post('mfa/disable')
   @HttpCode(HttpStatus.NO_CONTENT)
   @UsePipes(new ZodValidationPipe(MfaCodeBodySchema))
@@ -288,6 +344,10 @@ export class AuthController {
     await this.disableMfaUc.execute(user.sub, body.code);
   }
 
+  @ApiOperation({
+    summary:
+      'Logout — revokes the refresh token + clears the cookie. Idempotent if already logged out.',
+  })
   @Public()
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
