@@ -1,0 +1,63 @@
+# Fly.io config for `apps/web` (Next.js 15 standalone).
+# Companion to `apps/web/Dockerfile` (the build) +
+# `docs/runbooks/fly-deploy.md` (operational guide; updated for both
+# api + web in [IV.18.19.19]).
+#
+# App naming convention:
+#   travel-web-staging  — pre-prod gate
+#   travel-web-prod     — production
+#
+# This file is the staging-shape (defaults). For prod, copy to
+# `fly.web.prod.toml` and override `app`, `primary_region`, machine
+# `size`, `min_machines_running`. We deliberately avoid env-templating
+# the app name to keep `fly deploy` invocations explicit per env.
+#
+# Installed by prompt [IV.18.19.19].
+
+app = "travel-web-staging"
+primary_region = "iad"  # match the api's region to minimize SSR → api latency
+kill_signal = "SIGTERM"
+kill_timeout = "20s"    # web has no long-running background jobs; faster drain than the api
+
+[build]
+  dockerfile = "apps/web/Dockerfile"
+  # Build context is the repo root so the multi-stage Dockerfile can
+  # reach pnpm-lock.yaml + workspace packages (e.g. @app/sdk).
+
+[env]
+  NODE_ENV = "production"
+  PORT = "3001"
+  HOSTNAME = "0.0.0.0"
+  # NEXT_PUBLIC_API_URL lands via `fly secrets set --app travel-web-staging`
+  # because Next inlines it at build time — see
+  # docs/runbooks/fly-deploy.md.
+
+[http_service]
+  internal_port = 3001
+  force_https = true
+  auto_stop_machines = "stop"      # web traffic is bursty; let Fly hibernate idle machines
+  auto_start_machines = true       # cold-start on the first request
+  min_machines_running = 1         # always-warm; prod overrides to 2+
+
+  # Healthcheck: hit the landing page (`/`). It's a Server Component
+  # with no external deps, so a 200 means the runtime is up. We don't
+  # have a dedicated /health endpoint on web — the app surface is
+  # small enough that the landing route is a sufficient liveness probe.
+  [[http_service.checks]]
+    interval = "10s"
+    timeout = "5s"
+    grace_period = "20s"           # next-server boot
+    method = "GET"
+    path = "/"
+    protocol = "http"
+    tls_skip_verify = false
+
+[[vm]]
+  size = "shared-cpu-1x"           # smallest staging tier
+  memory = "512mb"                 # half of api — Next standalone needs ~200MB resident
+  cpu_kind = "shared"
+  cpus = 1
+
+[restart]
+  policy = "on-failure"
+  retries = 5

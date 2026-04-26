@@ -1,9 +1,14 @@
 # Runbook: Fly.io deploy
 
-> Installed by prompt `[IV.18.19.11]`. Companion to
-> [`fly.toml`](../../fly.toml) +
+> Installed by prompt `[IV.18.19.11]`; web variant added in `[IV.18.19.19]`.
+> Companion to [`fly.toml`](../../fly.toml) (api) +
+> [`fly.web.toml`](../../fly.web.toml) (web) +
 > [`docs/runbooks/dockerfile.md`](./dockerfile.md) +
 > [`docs/runbooks/secrets.md`](./secrets.md).
+>
+> The api and web are deployed as **two independent Fly apps** so they
+> can scale, restart, and roll back independently. Same region (`iad`)
+> to keep SSR → api latency in single-digit milliseconds.
 
 ## TL;DR
 
@@ -206,9 +211,52 @@ on-call rotation defined.
 | Slow first response after `auto_stop_machines` cold start | Fly is spinning up the suspended machine      | Tune `min_machines_running >= 1` in `fly.toml` to keep one warm          |
 | Migrate-deploy fails with "no migrations"                 | Wrong image tag                               | Re-run `fly deploy --build-only` to push the latest, then re-run migrate |
 
+## Web app (apps/web) — same shape, different config
+
+The Next.js 15 web shell deploys via `fly.web.toml` + `apps/web/Dockerfile`.
+Same flow as the api with three meaningful differences:
+
+```sh
+# Once per environment
+fly apps create travel-web-staging --org <your-org-slug>
+
+# NEXT_PUBLIC_API_URL is the only secret the web needs at build time;
+# Next inlines `NEXT_PUBLIC_*` env vars at build, NOT runtime.
+fly secrets set --app travel-web-staging \
+  NEXT_PUBLIC_API_URL=https://travel-api-staging.fly.dev
+
+# Every deploy
+fly deploy --app travel-web-staging --config fly.web.toml
+```
+
+Key contrasts vs. the api app:
+
+| Concern           | api (`fly.toml`)                            | web (`fly.web.toml`)                          |
+| ----------------- | ------------------------------------------- | --------------------------------------------- |
+| Port              | 3000                                        | 3001                                          |
+| Healthcheck       | `/health/ready` (Postgres + Redis ping)     | `/` (Server Component landing page; no deps)  |
+| Memory            | 1024MB (Prisma engines + Redis pool)        | 512MB (Next standalone needs ~200MB resident) |
+| Kill timeout      | 30s (drain in-flight + Nest shutdown hooks) | 20s (no long-running jobs; faster drain)      |
+| Secrets           | 15 vars from Doppler                        | `NEXT_PUBLIC_API_URL` only                    |
+| Migrations        | `prisma migrate deploy` one-shot pre-deploy | none (web has no DB)                          |
+| `[metrics]` block | Yes (`/metrics` for Prom)                   | No (web has no domain metrics yet)            |
+
+**Build context note.** `fly.web.toml` sets `dockerfile = "apps/web/Dockerfile"`
+but the build context stays at the repo root, just like the api. The web
+Dockerfile relies on this so it can `COPY pnpm-lock.yaml`, workspace
+manifests, and the @app/sdk source tree into the builder stage.
+
+**`NEXT_PUBLIC_*` is build-time, not runtime.** Changing
+`NEXT_PUBLIC_API_URL` requires a fresh `fly deploy` because Next.js
+inlines the value into the client bundle during `next build`. Setting
+it via `fly secrets set` after the build is a no-op for client code
+(server-only `process.env.X` reads do still see the new value).
+
 ## Cross-references
 
-- [`fly.toml`](../../fly.toml) — the actual config
+- [`fly.toml`](../../fly.toml) — api config
+- [`fly.web.toml`](../../fly.web.toml) — web config
+- [`apps/api/Dockerfile`](../../apps/api/Dockerfile) + [`apps/web/Dockerfile`](../../apps/web/Dockerfile)
 - [`docs/runbooks/dockerfile.md`](./dockerfile.md) — what the image looks like
 - [`docs/runbooks/secrets.md`](./secrets.md) — Doppler integration
 - [`docs/runbooks/env-reference.md`](./env-reference.md) — every env var
