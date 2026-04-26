@@ -33,6 +33,7 @@ import {
 } from '@app/sdk';
 import { Button } from '../../components/ui/button';
 import { Field } from '../../components/ui/input';
+import { GoogleSignInButton } from '../../components/google-sign-in-button';
 import { setAccessToken } from '../../lib/auth-store';
 
 interface ApiError extends Error {
@@ -167,6 +168,10 @@ export default function LoginPage() {
             <span className="text-xs uppercase tracking-wide text-muted">or</span>
             <hr className="flex-1 border-t border-muted/20" />
           </div>
+          <GoogleSignInButton
+            onSignedIn={() => router.push('/trips')}
+            onError={(msg) => setErrorMsg(msg)}
+          />
           <Button
             type="button"
             variant="outline"
