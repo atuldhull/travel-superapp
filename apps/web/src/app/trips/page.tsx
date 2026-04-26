@@ -16,7 +16,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useTripControllerList, type ListTripsResponseDto, type TripDto } from '@app/sdk';
+import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
+import { Card, CardHeader, CardSubtitle, CardTitle } from '../../components/ui/card';
+import { Skeleton } from '../../components/ui/skeleton';
 import { clearAccessToken } from '../../lib/auth-store';
 import { useAuthBootComplete, useAuthToken } from '../../lib/use-auth-token';
 
@@ -78,12 +81,20 @@ export default function TripsPage() {
         </div>
       </div>
       {isLoading ? (
-        <p className="text-muted">Loading…</p>
+        <ul className="grid gap-4 sm:grid-cols-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card as="li" key={i}>
+              <Skeleton className="h-5 w-3/4" />
+              <Skeleton className="mt-2 h-3 w-2/3" />
+              <Skeleton className="mt-1 h-3 w-1/2" />
+            </Card>
+          ))}
+        </ul>
       ) : isError ? (
         <ErrorState error={error} />
       ) : trips.length === 0 ? (
         <p className="rounded-md border border-muted/20 bg-muted/5 px-4 py-3 text-sm text-muted">
-          No trips yet. Create one in the api today (web composer lands in a follow-up slice).
+          No trips yet — use the <strong>New trip</strong> button to compose one.
         </p>
       ) : (
         <ul className="grid gap-4 sm:grid-cols-2">
@@ -102,12 +113,15 @@ export default function TripsPage() {
 }
 
 function TripCard({ trip }: { trip: TripDto }) {
+  const statusVariant: 'neutral' | 'brand' = trip.status === 'draft' ? 'neutral' : 'brand';
   return (
-    <li className="rounded-lg border border-muted/20 bg-surface p-4 shadow-sm transition hover:shadow">
-      <h2 className="text-lg font-semibold tracking-tight">{trip.title}</h2>
-      <p className="mt-1 text-sm text-muted">
-        Status: <span className="font-medium">{trip.status}</span> · Radius {trip.radiusKm}km
-      </p>
+    <Card as="li">
+      <CardHeader>
+        <CardTitle>{trip.title}</CardTitle>
+        <CardSubtitle>
+          <Badge variant={statusVariant}>{trip.status}</Badge> · Radius {trip.radiusKm}km
+        </CardSubtitle>
+      </CardHeader>
       {trip.startsOn && trip.endsOn ? (
         <p className="text-sm text-muted">
           {new Date(trip.startsOn as unknown as string).toLocaleDateString()} →{' '}
@@ -116,7 +130,7 @@ function TripCard({ trip }: { trip: TripDto }) {
       ) : (
         <p className="text-sm text-muted">No dates yet</p>
       )}
-    </li>
+    </Card>
   );
 }
 
