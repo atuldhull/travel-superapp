@@ -3,6 +3,7 @@
 // Regenerate via: pnpm --filter=@app/sdk sdk:gen
 import type {
   FeaturedMemoryBooksResponseDto,
+  ListTripMediaResponseDto,
   MediaControllerListByTripParams,
   MemoryBookControllerFeaturedParams,
   MemoryBookControllerListParams,
@@ -123,7 +124,7 @@ export const mediaControllerAttachToTrip = async (
  * @summary List the caller's `ready` media attached to a trip. ?limit=N (1..200, default 50).
  */
 export type mediaControllerListByTripResponse200 = {
-  data: void;
+  data: ListTripMediaResponseDto;
   status: 200;
 };
 

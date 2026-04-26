@@ -11,6 +11,8 @@ import type {
   TripControllerStaysParams,
   TripDto,
   TripOverviewResponseDto,
+  UpdateDayItemsRequestDto,
+  UpdateDayItemsResponseDto,
   UpdateTripRequestDto,
 } from '../../schemas';
 
@@ -590,14 +592,25 @@ export const tripControllerTransportLegs = async (
  * @summary Replace items in an itinerary day. Owner OR active TripShare may write.
  */
 export type tripControllerUpdateDayResponse200 = {
-  data: void;
+  data: UpdateDayItemsResponseDto;
   status: 200;
+};
+
+export type tripControllerUpdateDayResponse404 = {
+  data: void;
+  status: 404;
 };
 
 export type tripControllerUpdateDayResponseSuccess = tripControllerUpdateDayResponse200 & {
   headers: Headers;
 };
-export type tripControllerUpdateDayResponse = tripControllerUpdateDayResponseSuccess;
+export type tripControllerUpdateDayResponseError = tripControllerUpdateDayResponse404 & {
+  headers: Headers;
+};
+
+export type tripControllerUpdateDayResponse =
+  | tripControllerUpdateDayResponseSuccess
+  | tripControllerUpdateDayResponseError;
 
 export const getTripControllerUpdateDayUrl = (tripId: string, dayId: string) => {
   return `/api/v1/trips/${tripId}/itinerary/${dayId}`;
@@ -606,10 +619,13 @@ export const getTripControllerUpdateDayUrl = (tripId: string, dayId: string) => 
 export const tripControllerUpdateDay = async (
   tripId: string,
   dayId: string,
+  updateDayItemsRequestDto: UpdateDayItemsRequestDto,
   options?: RequestInit,
 ): Promise<tripControllerUpdateDayResponse> => {
   return apiFetch<tripControllerUpdateDayResponse>(getTripControllerUpdateDayUrl(tripId, dayId), {
     ...options,
     method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateDayItemsRequestDto),
   });
 };
