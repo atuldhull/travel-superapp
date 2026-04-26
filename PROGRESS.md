@@ -12,16 +12,69 @@
 
 | Counter             | Value                                                                                |
 | ------------------- | ------------------------------------------------------------------------------------ |
-| Prompts completed   | 150 (148 prior + bundled UI primitives + silent-refresh)                             |
+| Prompts completed   | 152 (150 prior + bundled Trip composer + MFA UI)                                     |
 | Prompts in progress | 0                                                                                    |
 | Prompts blocked     | 0                                                                                    |
-| Last prompt         | `[IV.18.19.24]` — silent-refresh on mount + boot-gate (bundled with `[IV.18.19.23]`) |
+| Last prompt         | `[IV.18.19.26]` — MFA UI on web (bundled with `[IV.18.19.25]`)                       |
 | Last commit date    | 2026-04-26                                                                           |
-| Phase               | Phase 1 — UI primitives in place; sessions survive hard reload via httpOnly refresh  |
+| Phase               | Phase 1 — full-loop demo: register/login/MFA → composer → /trips, all themed + typed |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.19.26] — MFA UI on web — two-step prompt for MFA_REQUIRED (bundled with `[IV.18.19.25]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 5 (Frontend stack) + §13.2 (Auth)
+
+**What was done**
+
+Closes the second-factor gap on the web. /login now switches to a TOTP/backup-code prompt when the api returns 401 MFA_REQUIRED.
+
+- First call sends `{ email, password }` only.
+- On `MFA_REQUIRED`: swap to the MFA step (no inline error), keep the credentials in state.
+- Second call sends `{ email, password, mfaCode }`. The api's `LoginUseCase` inspects mfaCode shape to pick the verifier (6-digit TOTP vs 8-char backup code).
+- `MFA_INVALID` surfaces inline; the prompt stays open so the user can retype.
+- Pattern-restricted input (`pattern="\d{6}|[A-Za-z0-9]{8}"`) + `inputMode="numeric"` + `autoComplete="one-time-code"` — surface-side guards mirror the api's Zod schema.
+- Back button rewinds to the credentials step (clears the MFA code).
+
+**Verification**
+
+- `pnpm --filter=web typecheck` + `pnpm --filter=web build` clean. /login bundle: 1.94KB (was 1.62KB).
+- `pnpm --filter=api test` → 93 / 578 still pass.
+
+**Commit**
+
+`d2fe47d feat(IV.18.19.26): MFA UI on web — two-step prompt for MFA_REQUIRED`
+
+---
+
+### [IV.18.19.25] — Web Trip composer page (bundled with `[IV.18.19.26]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 5 (Frontend stack)
+
+**What was done**
+
+First write surface on the web. /trips/new lets a signed-in user create a trip end-to-end via the typed `useTripControllerCreate` hook.
+
+- New `apps/web/src/app/trips/new/page.tsx`: themed composer with title + center {lng,lat} + radiusKm + optional startsOn/endsOn date fields.
+- Uses `CreateTripRequestDto` from `@app/sdk` so the body validates against the api's Zod schema end-to-end.
+- On success, invalidates `getTripControllerListQueryKey({limit:'20'})` so /trips re-fetches with the new trip on next mount.
+- Auth-gated identically to /trips: bounce to /login if no token after silent-refresh boot completes; "Restoring your session…" placeholder until then.
+- Cancel button uses the shared `Button variant="ghost"` from `[IV.18.19.23]` — no inline button styles in the composer.
+- /trips header now has a "New trip" CTA pointing at the composer.
+- Real geocoder / map-picker is a follow-up — this is the minimum that lets a demo session create a trip without curl.
+
+**Verification**
+
+- `pnpm --filter=web typecheck` + `pnpm --filter=web build` clean. 6 prerendered routes; /trips/new bundle: 2.24KB.
+- No api change → tests unchanged.
+
+**Commit**
+
+`7189211 feat(IV.18.19.25): web Trip composer page (POST /trips with React Query invalidation)`
 
 ---
 
