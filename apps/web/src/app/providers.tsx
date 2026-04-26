@@ -17,6 +17,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { configureSdk } from '@app/sdk';
 import { useState, type ReactNode } from 'react';
 import { getAccessToken } from '../lib/auth-store';
+import { SilentRefreshOnMount } from '../lib/silent-refresh';
 
 configureSdk({
   baseUrl: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000',
@@ -39,5 +40,10 @@ export function Providers({ children }: { children: ReactNode }) {
       }),
   );
 
-  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  return (
+    <QueryClientProvider client={queryClient}>
+      <SilentRefreshOnMount />
+      {children}
+    </QueryClientProvider>
+  );
 }

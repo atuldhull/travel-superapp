@@ -13,6 +13,7 @@
  */
 
 let token: string | null = null;
+let bootComplete = false;
 const subscribers = new Set<() => void>();
 
 export function getAccessToken(): string | null {
@@ -22,7 +23,7 @@ export function getAccessToken(): string | null {
 export function setAccessToken(next: string | null): void {
   if (token === next) return;
   token = next;
-  for (const sub of subscribers) sub();
+  notify();
 }
 
 export function clearAccessToken(): void {
@@ -30,8 +31,30 @@ export function clearAccessToken(): void {
 }
 
 /**
- * Internal pub/sub used by `useAuthToken`. Stable reference so React's
- * `useSyncExternalStore` doesn't re-subscribe on every render.
+ * `bootComplete` flips to `true` once silent-refresh-on-mount has
+ * finished its first attempt (success OR failure). Protected pages
+ * use this to delay the "no token → redirect" decision until the
+ * httpOnly refresh cookie has had its chance to resurrect the
+ * session — otherwise a hard reload always bounces to /login.
+ */
+export function getBootComplete(): boolean {
+  return bootComplete;
+}
+
+export function markBootComplete(): void {
+  if (bootComplete) return;
+  bootComplete = true;
+  notify();
+}
+
+function notify(): void {
+  for (const sub of subscribers) sub();
+}
+
+/**
+ * Internal pub/sub used by `useAuthToken` + `useAuthBootComplete`.
+ * Stable reference so React's `useSyncExternalStore` doesn't
+ * re-subscribe on every render.
  */
 export function subscribeToAuthToken(listener: () => void): () => void {
   subscribers.add(listener);
