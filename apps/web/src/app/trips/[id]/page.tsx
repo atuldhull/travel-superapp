@@ -26,9 +26,12 @@ import {
   useTripControllerGetOne,
   useTripControllerRemove,
   useTripControllerUpdate,
+  useTripControllerUpdateDay,
   type ItineraryDayDto,
   type ItineraryListResponseDto,
   type TripDto,
+  type UpdateDayItemDto,
+  type UpdateDayItemsRequestDto,
   type UpdateTripRequestDto,
 } from '@app/sdk';
 import { Badge } from '../../../components/ui/badge';
@@ -445,17 +448,29 @@ function ItinerarySection({ tripId, enabled }: ItinerarySectionProps) {
 }
 
 function DayRow({ day }: { day: ItineraryDayDto }) {
+  const [editing, setEditing] = useState(false);
   const dateStr = new Date(day.date as unknown as string).toLocaleDateString();
   return (
     <li className="rounded border border-muted/15 p-3">
-      <div className="mb-1 flex items-baseline justify-between">
+      <div className="mb-1 flex items-baseline justify-between gap-2">
         <strong className="text-sm">Day {day.dayIndex + 1}</strong>
-        <span className="text-xs text-muted">{dateStr}</span>
+        <div className="flex items-baseline gap-2">
+          <span className="text-xs text-muted">{dateStr}</span>
+          <button
+            type="button"
+            onClick={() => setEditing((v) => !v)}
+            className="text-xs text-brand hover:underline"
+          >
+            {editing ? 'Done' : 'Edit'}
+          </button>
+        </div>
       </div>
       {day.summary ? (
         <p className="text-xs text-muted">{day.summary as unknown as string}</p>
       ) : null}
-      {day.items.length === 0 ? (
+      {editing ? (
+        <DayItemsEditor day={day} onClose={() => setEditing(false)} />
+      ) : day.items.length === 0 ? (
         <p className="text-xs text-muted/70">No items.</p>
       ) : (
         <ul className="mt-1 space-y-0.5 text-xs text-muted">
@@ -472,5 +487,156 @@ function DayRow({ day }: { day: ItineraryDayDto }) {
         </ul>
       )}
     </li>
+  );
+}
+
+interface DayItemsEditorProps {
+  readonly day: ItineraryDayDto;
+  readonly onClose: () => void;
+}
+
+interface DraftItem {
+  readonly key: string;
+  notes: string;
+  placeId: string;
+}
+
+function DayItemsEditor({ day, onClose }: DayItemsEditorProps) {
+  const queryClient = useQueryClient();
+  const [items, setItems] = useState<DraftItem[]>(() =>
+    day.items.map((it) => ({
+      key: `existing-${it.id}`,
+      notes: ((it.notes as unknown as string | null) ?? '').trim(),
+      placeId: ((it.placeId as unknown as string | null) ?? '').trim(),
+    })),
+  );
+  const [errMsg, setErrMsg] = useState<string | null>(null);
+
+  const saveMutation = useTripControllerUpdateDay({
+    mutation: {
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({
+          queryKey: getTripControllerGetItineraryQueryKey(day.tripId),
+        });
+        onClose();
+      },
+      onError: (err: unknown) => {
+        const e = err as { code?: string; message?: string; status?: number };
+        setErrMsg(`${e.code ?? `HTTP_${e.status ?? '???'}`} — ${e.message ?? 'Save failed.'}`);
+      },
+    },
+  });
+
+  function addItem() {
+    setItems((prev) => [
+      ...prev,
+      { key: `new-${Date.now()}-${prev.length}`, notes: '', placeId: '' },
+    ]);
+  }
+  function removeItem(idx: number) {
+    setItems((prev) => prev.filter((_, i) => i !== idx));
+  }
+  function move(idx: number, dir: -1 | 1) {
+    setItems((prev) => {
+      const next = [...prev];
+      const swap = idx + dir;
+      if (swap < 0 || swap >= next.length) return prev;
+      [next[idx], next[swap]] = [next[swap]!, next[idx]!];
+      return next;
+    });
+  }
+  function patchItem(idx: number, patch: Partial<Pick<DraftItem, 'notes' | 'placeId'>>) {
+    setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
+  }
+
+  function save() {
+    setErrMsg(null);
+    // Orval emits nullable string fields on the request body as
+    // `{[key: string]: unknown} | null`. Cast through unknown so the
+    // call site stays readable.
+    const payload = items.map((it, i) => ({
+      position: i + 1,
+      ...(it.placeId.trim() ? { placeId: it.placeId.trim() } : {}),
+      ...(it.notes.trim() ? { notes: it.notes.trim() } : {}),
+    })) as unknown as UpdateDayItemDto[];
+    const data: UpdateDayItemsRequestDto = { items: payload };
+    saveMutation.mutate({ tripId: day.tripId, dayId: day.id, data });
+  }
+
+  return (
+    <div className="mt-2 space-y-2">
+      {items.length === 0 ? (
+        <p className="text-xs text-muted/70">No items. Add one with the button below.</p>
+      ) : (
+        <ul className="space-y-1">
+          {items.map((it, idx) => (
+            <li
+              key={it.key}
+              className="grid grid-cols-[auto_1fr_1fr_auto] items-center gap-2 rounded border border-muted/15 p-2 text-xs"
+            >
+              <div className="flex flex-col">
+                <button
+                  type="button"
+                  onClick={() => move(idx, -1)}
+                  disabled={idx === 0}
+                  className="text-muted hover:text-brand disabled:opacity-30"
+                  aria-label="Move up"
+                >
+                  ▲
+                </button>
+                <button
+                  type="button"
+                  onClick={() => move(idx, 1)}
+                  disabled={idx === items.length - 1}
+                  className="text-muted hover:text-brand disabled:opacity-30"
+                  aria-label="Move down"
+                >
+                  ▼
+                </button>
+              </div>
+              <input
+                type="text"
+                value={it.notes}
+                onChange={(e) => patchItem(idx, { notes: e.target.value })}
+                placeholder="Notes (optional)"
+                maxLength={500}
+                className="rounded border border-muted/30 bg-surface px-2 py-1 text-xs"
+              />
+              <input
+                type="text"
+                value={it.placeId}
+                onChange={(e) => patchItem(idx, { placeId: e.target.value })}
+                placeholder="Place id (optional)"
+                className="rounded border border-muted/30 bg-surface px-2 py-1 font-mono text-xs"
+              />
+              <button
+                type="button"
+                onClick={() => removeItem(idx)}
+                className="text-xs text-danger hover:underline"
+                aria-label="Remove item"
+              >
+                ✕
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {errMsg ? (
+        <p className="rounded border border-danger/30 bg-danger/5 px-2 py-1 text-xs text-danger">
+          {errMsg}
+        </p>
+      ) : null}
+      <div className="flex gap-2">
+        <Button type="button" variant="outline" size="sm" onClick={addItem}>
+          + Add item
+        </Button>
+        <Button type="button" size="sm" onClick={save} disabled={saveMutation.isPending}>
+          {saveMutation.isPending ? 'Saving…' : 'Save'}
+        </Button>
+        <Button type="button" variant="ghost" size="sm" onClick={onClose}>
+          Cancel
+        </Button>
+      </div>
+    </div>
   );
 }

@@ -50,3 +50,8 @@ export type { OverviewMediaSuccessDto } from './generated/schemas/overviewMediaS
 export type { ItineraryListResponseDto } from './generated/schemas/itineraryListResponseDto';
 export type { ItineraryDayDto } from './generated/schemas/itineraryDayDto';
 export type { ItineraryItemDto } from './generated/schemas/itineraryItemDto';
+export type { UpdateDayItemDto } from './generated/schemas/updateDayItemDto';
+export type { UpdateDayItemsRequestDto } from './generated/schemas/updateDayItemsRequestDto';
+export type { UpdateDayItemsResponseDto } from './generated/schemas/updateDayItemsResponseDto';
+export type { MediaAssetDto } from './generated/schemas/mediaAssetDto';
+export type { ListTripMediaResponseDto } from './generated/schemas/listTripMediaResponseDto';

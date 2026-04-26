@@ -113,6 +113,40 @@ export class ItineraryListResponseDto {
 }
 
 /**
+ * Body item for `PATCH /trips/:tripId/itinerary/:dayId`. Position is
+ * 1-based int; placeId is optional (null = freeform note); notes are
+ * optional with a 500-char cap. Documentation-only — runtime
+ * validation stays on `UpdateDayItemsBodySchema` in `trip.dto.ts`.
+ */
+export class UpdateDayItemDto {
+  @ApiProperty({ description: '1-based position within the day.', minimum: 1 })
+  declare position: number;
+
+  @ApiProperty({
+    required: false,
+    nullable: true,
+    description: 'Place id (cuid). Null/omit for a freeform note item.',
+  })
+  declare placeId?: string | null;
+
+  @ApiProperty({ required: false, nullable: true, maxLength: 500 })
+  declare notes?: string | null;
+}
+
+export class UpdateDayItemsRequestDto {
+  @ApiProperty({
+    type: [UpdateDayItemDto],
+    description: "Replaces the day's entire items array. Empty `[]` clears the day.",
+  })
+  declare items: UpdateDayItemDto[];
+}
+
+export class UpdateDayItemsResponseDto {
+  @ApiProperty({ type: ItineraryDayDto })
+  declare day: ItineraryDayDto;
+}
+
+/**
  * Body class for PATCH /trips/:id. Documentation-only — runtime
  * validation stays on `UpdateTripBodySchema` in `trip.dto.ts`. All
  * fields optional; only provided fields change. Date fields accept

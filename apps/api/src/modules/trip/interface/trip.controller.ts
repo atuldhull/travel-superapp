@@ -85,6 +85,8 @@ import {
   ItineraryListResponseDto,
   ListTripsResponseDto,
   TripDto as TripResponseDto,
+  UpdateDayItemsRequestDto,
+  UpdateDayItemsResponseDto,
   UpdateTripRequestDto,
 } from './dto/trip-response.dto';
 import { TripOverviewResponseDto } from './dto/overview-response.dto';
@@ -583,6 +585,13 @@ export class TripController {
   @ApiOperation({
     summary: 'Replace items in an itinerary day. Owner OR active TripShare may write.',
   })
+  @ApiBody({ type: UpdateDayItemsRequestDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Updated itinerary day with refreshed items.',
+    type: UpdateDayItemsResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'TRIP_NOT_FOUND or PLACE_NOT_FOUND.' })
   @Patch(':tripId/itinerary/:dayId')
   @HttpCode(HttpStatus.OK)
   async updateDay(

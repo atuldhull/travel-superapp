@@ -16,6 +16,7 @@ import type {
 
 import type {
   FeaturedMemoryBooksResponseDto,
+  ListTripMediaResponseDto,
   MediaControllerListByTripParams,
   MemoryBookControllerFeaturedParams,
   MemoryBookControllerListParams,
@@ -455,7 +456,7 @@ export const useMediaControllerAttachToTrip = <TError = unknown, TContext = unkn
  * @summary List the caller's `ready` media attached to a trip. ?limit=N (1..200, default 50).
  */
 export type mediaControllerListByTripResponse200 = {
-  data: void;
+  data: ListTripMediaResponseDto;
   status: 200;
 };
 

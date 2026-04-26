@@ -762,9 +762,21 @@ paths:
           in: path
           schema:
             type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDayItemsRequestDto'
       responses:
         '200':
-          description: ''
+          description: Updated itinerary day with refreshed items.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateDayItemsResponseDto'
+        '404':
+          description: TRIP_NOT_FOUND or PLACE_NOT_FOUND.
       security: *a11
       summary: Replace items in an itinerary day. Owner OR active TripShare may write.
       tags: *a12
@@ -972,7 +984,11 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: Caller-owned media for the given trip.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListTripMediaResponseDto'
       security: *a16
       summary: List the caller's `ready` media attached to a trip. ?limit=N (1..200,
         default 50).
@@ -2481,6 +2497,89 @@ components:
         - eateries
         - events
         - transport
+        - media
+    UpdateDayItemDto:
+      type: object
+      properties:
+        position:
+          type: number
+          description: 1-based position within the day.
+          minimum: 1
+        placeId:
+          type: object
+          nullable: true
+          description: Place id (cuid). Null/omit for a freeform note item.
+        notes:
+          type: object
+          nullable: true
+          maxLength: 500
+      required:
+        - position
+    UpdateDayItemsRequestDto:
+      type: object
+      properties:
+        items:
+          description: Replaces the day's entire items array. Empty `[]` clears the day.
+          type: array
+          items:
+            $ref: '#/components/schemas/UpdateDayItemDto'
+      required:
+        - items
+    UpdateDayItemsResponseDto:
+      type: object
+      properties:
+        day:
+          $ref: '#/components/schemas/ItineraryDayDto'
+      required:
+        - day
+    MediaAssetDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        ownerId:
+          type: string
+          format: cuid
+          description: Owner's user id.
+        tripId:
+          type: object
+          nullable: true
+          format: cuid
+          description: Trip the asset is attached to, or null if free-floating.
+        kind:
+          type: string
+          enum:
+            - image
+            - video
+          description: Media type discriminator.
+        status:
+          type: string
+          enum:
+            - pending
+            - ready
+            - failed
+          description: Upload lifecycle status.
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - ownerId
+        - tripId
+        - kind
+        - status
+        - createdAt
+    ListTripMediaResponseDto:
+      type: object
+      properties:
+        media:
+          description: Caller-owned media attached to the given trip, most-recent-first.
+            Capped via ?limit (1..200, default 50).
+          type: array
+          items:
+            $ref: '#/components/schemas/MediaAssetDto'
+      required:
         - media
     PublicMemoryBookDto:
       type: object

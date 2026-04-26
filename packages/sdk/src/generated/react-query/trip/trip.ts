@@ -24,6 +24,8 @@ import type {
   TripControllerStaysParams,
   TripDto,
   TripOverviewResponseDto,
+  UpdateDayItemsRequestDto,
+  UpdateDayItemsResponseDto,
   UpdateTripRequestDto,
 } from '../../schemas';
 
@@ -2427,14 +2429,25 @@ export function useTripControllerTransportLegs<
  * @summary Replace items in an itinerary day. Owner OR active TripShare may write.
  */
 export type tripControllerUpdateDayResponse200 = {
-  data: void;
+  data: UpdateDayItemsResponseDto;
   status: 200;
+};
+
+export type tripControllerUpdateDayResponse404 = {
+  data: void;
+  status: 404;
 };
 
 export type tripControllerUpdateDayResponseSuccess = tripControllerUpdateDayResponse200 & {
   headers: Headers;
 };
-export type tripControllerUpdateDayResponse = tripControllerUpdateDayResponseSuccess;
+export type tripControllerUpdateDayResponseError = tripControllerUpdateDayResponse404 & {
+  headers: Headers;
+};
+
+export type tripControllerUpdateDayResponse =
+  | tripControllerUpdateDayResponseSuccess
+  | tripControllerUpdateDayResponseError;
 
 export const getTripControllerUpdateDayUrl = (tripId: string, dayId: string) => {
   return `/api/v1/trips/${tripId}/itinerary/${dayId}`;
@@ -2443,29 +2456,32 @@ export const getTripControllerUpdateDayUrl = (tripId: string, dayId: string) => 
 export const tripControllerUpdateDay = async (
   tripId: string,
   dayId: string,
+  updateDayItemsRequestDto: UpdateDayItemsRequestDto,
   options?: RequestInit,
 ): Promise<tripControllerUpdateDayResponse> => {
   return apiFetch<tripControllerUpdateDayResponse>(getTripControllerUpdateDayUrl(tripId, dayId), {
     ...options,
     method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateDayItemsRequestDto),
   });
 };
 
 export const getTripControllerUpdateDayMutationOptions = <
-  TError = unknown,
+  TError = void,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof tripControllerUpdateDay>>,
     TError,
-    { tripId: string; dayId: string },
+    { tripId: string; dayId: string; data: UpdateDayItemsRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof tripControllerUpdateDay>>,
   TError,
-  { tripId: string; dayId: string },
+  { tripId: string; dayId: string; data: UpdateDayItemsRequestDto },
   TContext
 > => {
   const mutationKey = ['tripControllerUpdateDay'];
@@ -2477,11 +2493,11 @@ export const getTripControllerUpdateDayMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof tripControllerUpdateDay>>,
-    { tripId: string; dayId: string }
+    { tripId: string; dayId: string; data: UpdateDayItemsRequestDto }
   > = (props) => {
-    const { tripId, dayId } = props ?? {};
+    const { tripId, dayId, data } = props ?? {};
 
-    return tripControllerUpdateDay(tripId, dayId, requestOptions);
+    return tripControllerUpdateDay(tripId, dayId, data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -2490,24 +2506,24 @@ export const getTripControllerUpdateDayMutationOptions = <
 export type TripControllerUpdateDayMutationResult = NonNullable<
   Awaited<ReturnType<typeof tripControllerUpdateDay>>
 >;
-
-export type TripControllerUpdateDayMutationError = unknown;
+export type TripControllerUpdateDayMutationBody = UpdateDayItemsRequestDto;
+export type TripControllerUpdateDayMutationError = void;
 
 /**
  * @summary Replace items in an itinerary day. Owner OR active TripShare may write.
  */
-export const useTripControllerUpdateDay = <TError = unknown, TContext = unknown>(options?: {
+export const useTripControllerUpdateDay = <TError = void, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof tripControllerUpdateDay>>,
     TError,
-    { tripId: string; dayId: string },
+    { tripId: string; dayId: string; data: UpdateDayItemsRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationResult<
   Awaited<ReturnType<typeof tripControllerUpdateDay>>,
   TError,
-  { tripId: string; dayId: string },
+  { tripId: string; dayId: string; data: UpdateDayItemsRequestDto },
   TContext
 > => {
   const mutationOptions = getTripControllerUpdateDayMutationOptions(options);

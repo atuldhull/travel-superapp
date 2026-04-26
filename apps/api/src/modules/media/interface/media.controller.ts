@@ -25,7 +25,8 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ListTripMediaResponseDto } from './dto/media-response.dto';
 import { type AuthenticatedUser, CurrentUser } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { AttachMediaToBookUseCase } from '../application/attach-media-to-book.use-case';
@@ -167,6 +168,11 @@ export class MediaController {
    */
   @ApiOperation({
     summary: "List the caller's `ready` media attached to a trip. ?limit=N (1..200, default 50).",
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Caller-owned media for the given trip.',
+    type: ListTripMediaResponseDto,
   })
   @Get('trip/:tripId')
   @HttpCode(HttpStatus.OK)
