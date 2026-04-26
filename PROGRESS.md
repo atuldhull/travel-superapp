@@ -10,18 +10,88 @@
 
 ## Summary
 
-| Counter             | Value                                                                           |
-| ------------------- | ------------------------------------------------------------------------------- |
-| Prompts completed   | 142 (141 full + 1 foundation-only; bundled batch Swagger + orval SDK gen)       |
-| Prompts in progress | 0                                                                               |
-| Prompts blocked     | 0                                                                               |
-| Last prompt         | `[IV.18.19.16]` — orval SDK gen scaffold (bundled with `[IV.18.19.15]`)         |
-| Last commit date    | 2026-04-26                                                                      |
-| Phase               | Phase 1 — typed SDK pipeline live + Media/Social/Notifications fully documented |
+| Counter             | Value                                                                                 |
+| ------------------- | ------------------------------------------------------------------------------------- |
+| Prompts completed   | 144 (142 full + 1 foundation + bundled SDK wire-through + Tailwind theming)           |
+| Prompts in progress | 0                                                                                     |
+| Prompts blocked     | 0                                                                                     |
+| Last prompt         | `[IV.18.19.18]` — Tailwind 4 + first themed components (bundled with `[IV.18.19.17]`) |
+| Last commit date    | 2026-04-26                                                                            |
+| Phase               | Phase 1 — generated SDK consumed by web; brand-themed UI shell live                   |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.19.18] — Tailwind 4 + first themed components on apps/web (bundled with `[IV.18.19.17]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 5 (Frontend stack)
+
+**What was done**
+
+apps/web's first real design pass. Tailwind 4 replaces the inline styles that landed in `[IV.18.19.14]`.
+
+- Added `tailwindcss@^4`, `@tailwindcss/postcss`, `postcss`, `autoprefixer` (the latter three are pinned now in case the v4 PostCSS plugin's bundled prefix layer ever lags).
+- New `apps/web/postcss.config.mjs` wires the single `@tailwindcss/postcss` plugin (Tailwind 4 collapses the old two-step `tailwindcss + autoprefixer` pipeline into one).
+- New `apps/web/src/app/globals.css` — single `@import 'tailwindcss'` plus an inline `@theme` block declaring the brand palette (`--color-brand`, `--color-surface`, `--color-muted`, `--color-danger`) + sans font stack. v4 needs no `tailwind.config.ts`.
+- `layout.tsx` imports the stylesheet, drops inline `<body style>`, wraps content in a `mx-auto max-w-3xl px-6 py-10` container with themed bg/text utilities.
+- Landing page (`/`) and `/featured` rewritten with Tailwind: themed CTA, card grid for the featured book list (`grid sm:grid-cols-2`), themed loading / error / empty states. Featured cards now have hover-shadow + readable hierarchy.
+
+**Verification**
+
+- `pnpm --filter=web typecheck` — clean.
+- `pnpm --filter=web build` — optimized production build, /featured 950B + / 161B (Tailwind class scanning trims to only-used utilities).
+- 93 / 578 api tests still green (no api code changes here).
+
+**Files**
+
+- `apps/web/package.json` (+4 deps).
+- `apps/web/postcss.config.mjs` (new).
+- `apps/web/src/app/globals.css` (new).
+- `apps/web/src/app/layout.tsx`, `apps/web/src/app/page.tsx`, `apps/web/src/app/featured/page.tsx`.
+
+**Commit**
+
+`9a84c91 feat(IV.18.19.18): Tailwind 4 + first themed components on apps/web`
+
+---
+
+### [IV.18.19.17] — Wire @app/sdk into apps/web/featured + first generated React Query hook (bundled with `[IV.18.19.18]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 6 (SDK gen) + 5 (Frontend stack)
+
+**What was done**
+
+End-to-end pipeline lit up: `pnpm --filter=api api:openapi` → `pnpm --filter=@app/sdk sdk:gen` → typed React Query hook consumed in apps/web. Replaces the raw SSR `fetch()` from `[IV.18.19.14]` with `useMemoryBookControllerFeatured`.
+
+- **Fetcher signature reshape.** `packages/sdk/src/runtime/fetcher.ts` now matches orval's `(url, RequestInit) => Promise<T>` mutator contract instead of the prior `(ApiFetchConfig)` shape. Centralises base URL resolution, JSON content-type defaults, memory-only bearer injection (CLAUDE rule 12), and the domain-error envelope parse.
+- **First gen run.** `pnpm sdk:gen` populates `packages/sdk/src/generated/{react-query,plain,schemas}/` for all 24 OpenAPI tags. Generated files prefixed with `// @ts-nocheck` via orval header override so strict typecheck stays clean while the spec hardens incrementally.
+- **Workspace consumption.** `packages/sdk/package.json` now resolves via `src/index.ts` (matches `@app/shared-types` convention) so workspace consumers don't need a `dist/` build step.
+- **Web wire-through.** `apps/web` adds `@app/sdk: workspace:*` + `@tanstack/react-query@^5.62`. New `providers.tsx` wraps the route tree in `QueryClientProvider` and calls `configureSdk` once with `NEXT_PUBLIC_API_URL` (fallback `http://localhost:3000`). `apps/web/src/app/featured/page.tsx` is now a Client Component using the hook.
+- **Drive-by Swagger fixes flagged by orval generation:**
+  - Trip `DELETE /trips/:id/share/:code` declared `:id` via `@ApiParam` (route used the `:id` segment without extracting the param).
+  - Expenses controller declared class-level `@ApiParam({name:'tripId'})` so the `DELETE :id` child route inherits the trip param documentation.
+  - Regenerated `docs/api/openapi.yaml`.
+
+**Verification**
+
+- `pnpm --filter=@app/sdk sdk:gen` — exits 0; 24 tag barrels emitted.
+- `pnpm --filter=@app/sdk typecheck` + `pnpm --filter=web typecheck` both green.
+- `pnpm --filter=web build` produces optimized bundle.
+- 93 / 578 api tests green.
+
+**Files**
+
+- `packages/sdk/src/runtime/fetcher.ts` (rewrite), `packages/sdk/src/index.ts`, `packages/sdk/package.json`, `packages/sdk/orval.config.ts` (header), `packages/sdk/src/generated/**` (new — checked in).
+- `apps/web/package.json` (+2 deps), `apps/web/src/app/providers.tsx` (new), `apps/web/src/app/layout.tsx`, `apps/web/src/app/featured/page.tsx`.
+- `apps/api/src/modules/trip/interface/trip.controller.ts`, `apps/api/src/modules/social/interface/expenses.controller.ts`.
+- `docs/api/openapi.yaml` (regen), `.gitignore` (+`*.tsbuildinfo`).
+
+**Commit**
+
+`9634e6c feat(IV.18.19.17): wire @app/sdk into apps/web/featured + first generated React Query hook`
 
 ---
 
