@@ -40,6 +40,7 @@ import { NotFoundError } from '@app/errors';
 import { type AuthenticatedUser, CurrentUser, Public } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { CreateTripDraftUseCase } from '../application/create-trip-draft.use-case';
+import { GeneratePlanWithAiUseCase } from '../application/generate-plan-with-ai.use-case';
 import { CreateTripShareUseCase } from '../application/create-trip-share.use-case';
 import { ListTripSharesUseCase } from '../application/list-trip-shares.use-case';
 import { RevokeTripShareUseCase } from '../application/revoke-trip-share.use-case';
@@ -83,6 +84,7 @@ import {
 import {
   CreateTripRequestDto,
   CreateTripShareRequestDto,
+  GeneratePlanWithAiResponseDto,
   ItineraryListResponseDto,
   ListTripsResponseDto,
   TripDto as TripResponseDto,
@@ -132,6 +134,7 @@ export class TripController {
     private readonly updateTrip: UpdateTripUseCase,
     private readonly deleteTrip: DeleteTripUseCase,
     private readonly generateItinerary: GenerateItineraryStubUseCase,
+    private readonly generatePlanWithAi: GeneratePlanWithAiUseCase,
     private readonly listItinerary: ListItineraryUseCase,
     private readonly updateDayItems: UpdateDayItemsUseCase,
     private readonly createTripShare: CreateTripShareUseCase,
@@ -285,6 +288,31 @@ export class TripController {
   ): Promise<{ days: ItineraryDayDto[] }> {
     const days = await this.listItinerary.execute(id, user.sub);
     return { days: days.map(toDayDto) };
+  }
+
+  /**
+   * Generate a free-form prose plan via the configured AI adapter.
+   * Returns the deterministic stub when CLAUDE_API_KEY is unset.
+   * The owner-gate runs once at the use-case boundary so non-owners
+   * see uniform 404 `TRIP_NOT_FOUND`.
+   */
+  @ApiOperation({
+    summary:
+      'Generate a free-form trip plan via the configured AI adapter (Claude / stub). Owner-only.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Free-form prose plan + provider model identifier.',
+    type: GeneratePlanWithAiResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'TRIP_NOT_FOUND.' })
+  @Post(':id/plan-with-ai')
+  @HttpCode(HttpStatus.OK)
+  async planWithAi(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ): Promise<{ plan: string; model: string }> {
+    return this.generatePlanWithAi.execute(id, user.sub);
   }
 
   /**

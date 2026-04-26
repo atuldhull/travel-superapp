@@ -15,8 +15,12 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AttachMediaToTripRequestDto,
+  CreateUploadUrlRequestDto,
+  CreateUploadUrlResponseDto,
   FeaturedMemoryBooksResponseDto,
   ListTripMediaResponseDto,
+  MediaAssetDto,
   MediaControllerListByTripParams,
   MemoryBookControllerFeaturedParams,
   MemoryBookControllerListParams,
@@ -31,7 +35,7 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
  * @summary Issue a presigned PUT URL for direct-to-S3 upload. Creates the MediaAsset row in `processing` status.
  */
 export type mediaControllerCreateUploadUrlResponse201 = {
-  data: void;
+  data: CreateUploadUrlResponseDto;
   status: 201;
 };
 
@@ -46,11 +50,14 @@ export const getMediaControllerCreateUploadUrlUrl = () => {
 };
 
 export const mediaControllerCreateUploadUrl = async (
+  createUploadUrlRequestDto: CreateUploadUrlRequestDto,
   options?: RequestInit,
 ): Promise<mediaControllerCreateUploadUrlResponse> => {
   return apiFetch<mediaControllerCreateUploadUrlResponse>(getMediaControllerCreateUploadUrlUrl(), {
     ...options,
     method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createUploadUrlRequestDto),
   });
 };
 
@@ -61,14 +68,14 @@ export const getMediaControllerCreateUploadUrlMutationOptions = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof mediaControllerCreateUploadUrl>>,
     TError,
-    void,
+    { data: CreateUploadUrlRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof mediaControllerCreateUploadUrl>>,
   TError,
-  void,
+  { data: CreateUploadUrlRequestDto },
   TContext
 > => {
   const mutationKey = ['mediaControllerCreateUploadUrl'];
@@ -80,9 +87,11 @@ export const getMediaControllerCreateUploadUrlMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof mediaControllerCreateUploadUrl>>,
-    void
-  > = () => {
-    return mediaControllerCreateUploadUrl(requestOptions);
+    { data: CreateUploadUrlRequestDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return mediaControllerCreateUploadUrl(data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -91,7 +100,7 @@ export const getMediaControllerCreateUploadUrlMutationOptions = <
 export type MediaControllerCreateUploadUrlMutationResult = NonNullable<
   Awaited<ReturnType<typeof mediaControllerCreateUploadUrl>>
 >;
-
+export type MediaControllerCreateUploadUrlMutationBody = CreateUploadUrlRequestDto;
 export type MediaControllerCreateUploadUrlMutationError = unknown;
 
 /**
@@ -101,14 +110,14 @@ export const useMediaControllerCreateUploadUrl = <TError = unknown, TContext = u
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof mediaControllerCreateUploadUrl>>,
     TError,
-    void,
+    { data: CreateUploadUrlRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationResult<
   Awaited<ReturnType<typeof mediaControllerCreateUploadUrl>>,
   TError,
-  void,
+  { data: CreateUploadUrlRequestDto },
   TContext
 > => {
   const mutationOptions = getMediaControllerCreateUploadUrlMutationOptions(options);
@@ -119,14 +128,25 @@ export const useMediaControllerCreateUploadUrl = <TError = unknown, TContext = u
  * @summary Confirm upload landed (HEAD verifies bytes). Flips status to `ready`. Image kind also flips exifStripped.
  */
 export type mediaControllerConfirmResponse200 = {
-  data: void;
+  data: MediaAssetDto;
   status: 200;
+};
+
+export type mediaControllerConfirmResponse404 = {
+  data: void;
+  status: 404;
 };
 
 export type mediaControllerConfirmResponseSuccess = mediaControllerConfirmResponse200 & {
   headers: Headers;
 };
-export type mediaControllerConfirmResponse = mediaControllerConfirmResponseSuccess;
+export type mediaControllerConfirmResponseError = mediaControllerConfirmResponse404 & {
+  headers: Headers;
+};
+
+export type mediaControllerConfirmResponse =
+  | mediaControllerConfirmResponseSuccess
+  | mediaControllerConfirmResponseError;
 
 export const getMediaControllerConfirmUrl = (id: string) => {
   return `/api/v1/media/${id}/confirm`;
@@ -143,7 +163,7 @@ export const mediaControllerConfirm = async (
 };
 
 export const getMediaControllerConfirmMutationOptions = <
-  TError = unknown,
+  TError = void,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -182,12 +202,12 @@ export type MediaControllerConfirmMutationResult = NonNullable<
   Awaited<ReturnType<typeof mediaControllerConfirm>>
 >;
 
-export type MediaControllerConfirmMutationError = unknown;
+export type MediaControllerConfirmMutationError = void;
 
 /**
  * @summary Confirm upload landed (HEAD verifies bytes). Flips status to `ready`. Image kind also flips exifStripped.
  */
-export const useMediaControllerConfirm = <TError = unknown, TContext = unknown>(options?: {
+export const useMediaControllerConfirm = <TError = void, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof mediaControllerConfirm>>,
     TError,
@@ -366,14 +386,25 @@ export function useMediaControllerDownloadUrl<
  * @summary Attach (`{tripId}`) or detach (`{tripId:null}`) the media to a trip. Double owner-gated.
  */
 export type mediaControllerAttachToTripResponse200 = {
-  data: void;
+  data: MediaAssetDto;
   status: 200;
+};
+
+export type mediaControllerAttachToTripResponse404 = {
+  data: void;
+  status: 404;
 };
 
 export type mediaControllerAttachToTripResponseSuccess = mediaControllerAttachToTripResponse200 & {
   headers: Headers;
 };
-export type mediaControllerAttachToTripResponse = mediaControllerAttachToTripResponseSuccess;
+export type mediaControllerAttachToTripResponseError = mediaControllerAttachToTripResponse404 & {
+  headers: Headers;
+};
+
+export type mediaControllerAttachToTripResponse =
+  | mediaControllerAttachToTripResponseSuccess
+  | mediaControllerAttachToTripResponseError;
 
 export const getMediaControllerAttachToTripUrl = (id: string) => {
   return `/api/v1/media/${id}/trip`;
@@ -381,29 +412,32 @@ export const getMediaControllerAttachToTripUrl = (id: string) => {
 
 export const mediaControllerAttachToTrip = async (
   id: string,
+  attachMediaToTripRequestDto: AttachMediaToTripRequestDto,
   options?: RequestInit,
 ): Promise<mediaControllerAttachToTripResponse> => {
   return apiFetch<mediaControllerAttachToTripResponse>(getMediaControllerAttachToTripUrl(id), {
     ...options,
     method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(attachMediaToTripRequestDto),
   });
 };
 
 export const getMediaControllerAttachToTripMutationOptions = <
-  TError = unknown,
+  TError = void,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof mediaControllerAttachToTrip>>,
     TError,
-    { id: string },
+    { id: string; data: AttachMediaToTripRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof mediaControllerAttachToTrip>>,
   TError,
-  { id: string },
+  { id: string; data: AttachMediaToTripRequestDto },
   TContext
 > => {
   const mutationKey = ['mediaControllerAttachToTrip'];
@@ -415,11 +449,11 @@ export const getMediaControllerAttachToTripMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof mediaControllerAttachToTrip>>,
-    { id: string }
+    { id: string; data: AttachMediaToTripRequestDto }
   > = (props) => {
-    const { id } = props ?? {};
+    const { id, data } = props ?? {};
 
-    return mediaControllerAttachToTrip(id, requestOptions);
+    return mediaControllerAttachToTrip(id, data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -428,24 +462,24 @@ export const getMediaControllerAttachToTripMutationOptions = <
 export type MediaControllerAttachToTripMutationResult = NonNullable<
   Awaited<ReturnType<typeof mediaControllerAttachToTrip>>
 >;
-
-export type MediaControllerAttachToTripMutationError = unknown;
+export type MediaControllerAttachToTripMutationBody = AttachMediaToTripRequestDto;
+export type MediaControllerAttachToTripMutationError = void;
 
 /**
  * @summary Attach (`{tripId}`) or detach (`{tripId:null}`) the media to a trip. Double owner-gated.
  */
-export const useMediaControllerAttachToTrip = <TError = unknown, TContext = unknown>(options?: {
+export const useMediaControllerAttachToTrip = <TError = void, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof mediaControllerAttachToTrip>>,
     TError,
-    { id: string },
+    { id: string; data: AttachMediaToTripRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationResult<
   Awaited<ReturnType<typeof mediaControllerAttachToTrip>>,
   TError,
-  { id: string },
+  { id: string; data: AttachMediaToTripRequestDto },
   TContext
 > => {
   const mutationOptions = getMediaControllerAttachToTripMutationOptions(options);

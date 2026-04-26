@@ -30,6 +30,7 @@
     "@app/events": "workspace:*",
     "@app/logger": "workspace:*",
     "@app/observability": "workspace:*",
+    "@anthropic-ai/sdk": "^0.91.1",
     "@aws-sdk/client-s3": "^3.705.0",
     "@aws-sdk/s3-request-presigner": "^3.705.0",
     "@fastify/cookie": "11.0.2",

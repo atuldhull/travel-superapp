@@ -159,6 +159,17 @@ export class CreateTripShareRequestDto {
   declare expiresAt?: string;
 }
 
+export class GeneratePlanWithAiResponseDto {
+  @ApiProperty({ description: 'Free-form prose plan from the AI provider.' })
+  declare plan: string;
+
+  @ApiProperty({
+    description:
+      'Model identifier (e.g. "claude-sonnet-4-6" or "stub-trip-planner" when CLAUDE_API_KEY is unset).',
+  })
+  declare model: string;
+}
+
 export class TripShareResponseDto {
   @ApiProperty({ format: 'cuid' })
   declare id: string;

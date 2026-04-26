@@ -57,3 +57,7 @@ export type { MediaAssetDto } from './generated/schemas/mediaAssetDto';
 export type { ListTripMediaResponseDto } from './generated/schemas/listTripMediaResponseDto';
 export type { CreateTripShareRequestDto } from './generated/schemas/createTripShareRequestDto';
 export type { TripShareResponseDto } from './generated/schemas/tripShareResponseDto';
+export type { CreateUploadUrlRequestDto } from './generated/schemas/createUploadUrlRequestDto';
+export type { CreateUploadUrlResponseDto } from './generated/schemas/createUploadUrlResponseDto';
+export type { AttachMediaToTripRequestDto } from './generated/schemas/attachMediaToTripRequestDto';
+export type { GeneratePlanWithAiResponseDto } from './generated/schemas/generatePlanWithAiResponseDto';

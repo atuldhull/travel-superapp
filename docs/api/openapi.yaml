@@ -561,6 +561,28 @@ paths:
       security: *a11
       summary: List itinerary days + items for the trip the caller owns.
       tags: *a12
+  /api/v1/trips/{id}/plan-with-ai:
+    post:
+      operationId: TripController_planWithAi
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Free-form prose plan + provider model identifier.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneratePlanWithAiResponseDto'
+        '404':
+          description: TRIP_NOT_FOUND.
+      security: *a11
+      summary: Generate a free-form trip plan via the configured AI adapter (Claude /
+        stub). Owner-only.
+      tags: *a12
   /api/v1/trips/{id}/share:
     post:
       operationId: TripController_share
@@ -927,9 +949,19 @@ paths:
     post:
       operationId: MediaController_createUploadUrl
       parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUploadUrlRequestDto'
       responses:
         '201':
-          description: ''
+          description: Presigned upload URL + initial asset row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateUploadUrlResponseDto'
       security: &a16
         - bearer: []
       summary: Issue a presigned PUT URL for direct-to-S3 upload. Creates the
@@ -947,7 +979,13 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: Asset row in `ready` state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaAssetDto'
+        '404':
+          description: MEDIA_NOT_FOUND.
       security: *a16
       summary: Confirm upload landed (HEAD verifies bytes). Flips status to `ready`.
         Image kind also flips exifStripped.
@@ -976,9 +1014,21 @@ paths:
           in: path
           schema:
             type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttachMediaToTripRequestDto'
       responses:
         '200':
-          description: ''
+          description: Updated asset row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaAssetDto'
+        '404':
+          description: MEDIA_NOT_FOUND or TRIP_NOT_FOUND.
       security: *a16
       summary: Attach (`{tripId}`) or detach (`{tripId:null}`) the media to a trip.
         Double owner-gated.
@@ -2248,6 +2298,19 @@ components:
             $ref: '#/components/schemas/ItineraryDayDto'
       required:
         - days
+    GeneratePlanWithAiResponseDto:
+      type: object
+      properties:
+        plan:
+          type: string
+          description: Free-form prose plan from the AI provider.
+        model:
+          type: string
+          description: Model identifier (e.g. "claude-sonnet-4-6" or "stub-trip-planner"
+            when CLAUDE_API_KEY is unset).
+      required:
+        - plan
+        - model
     CreateTripShareRequestDto:
       type: object
       properties:
@@ -2580,6 +2643,26 @@ components:
           $ref: '#/components/schemas/ItineraryDayDto'
       required:
         - day
+    CreateUploadUrlRequestDto:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum:
+            - image
+            - video
+        contentType:
+          type: string
+          description: MIME type (e.g. "image/jpeg").
+          minLength: 1
+          maxLength: 120
+        tripId:
+          type: string
+          format: cuid
+          description: Optional trip to attach to immediately.
+      required:
+        - kind
+        - contentType
     MediaAssetDto:
       type: object
       properties:
@@ -2618,6 +2701,47 @@ components:
         - kind
         - status
         - createdAt
+    CreateUploadUrlResponseDto:
+      type: object
+      properties:
+        mediaAssetId:
+          type: string
+          format: cuid
+        uploadUrl:
+          type: string
+          description: Presigned PUT URL. Body must be the raw file bytes.
+        key:
+          type: string
+          description: S3 object key, useful for diagnostics.
+        method:
+          type: string
+          enum:
+            - PUT
+        expiresAt:
+          type: string
+          format: date-time
+          description: When the presigned URL expires.
+        asset:
+          description: 'Initial asset row (status: pending).'
+          allOf:
+            - $ref: '#/components/schemas/MediaAssetDto'
+      required:
+        - mediaAssetId
+        - uploadUrl
+        - key
+        - method
+        - expiresAt
+        - asset
+    AttachMediaToTripRequestDto:
+      type: object
+      properties:
+        tripId:
+          type: object
+          nullable: true
+          format: cuid
+          description: Trip id to attach the asset to. Pass null to detach.
+      required:
+        - tripId
     ListTripMediaResponseDto:
       type: object
       properties:
