@@ -9,7 +9,8 @@
  * "not yours OR not found" (existence-probe defence) — surface the
  * same diagnostic either way.
  *
- * Installed by prompt [IV.18.19.29].
+ * Installed by prompt [IV.18.19.29]. Plan-with-AI section added by
+ * [IV.18.19.45].
  */
 'use client';
 
@@ -25,11 +26,13 @@ import {
   useTripControllerBuildItinerary,
   useTripControllerGetItinerary,
   useTripControllerGetOne,
+  useTripControllerPlanWithAi,
   useTripControllerRemove,
   useTripControllerShare,
   useTripControllerUpdate,
   useTripControllerUpdateDay,
   type CreateTripShareRequestDto,
+  type GeneratePlanWithAiResponseDto,
   type ItineraryDayDto,
   type ItineraryListResponseDto,
   type ListTripMediaResponseDto,
@@ -178,6 +181,7 @@ export default function TripDetailPage() {
         />
       )}
       <ItinerarySection tripId={id} enabled={token !== null && !editing} />
+      <PlanWithAiSection tripId={id} enabled={token !== null && !editing} />
       <MediaSection tripId={id} enabled={token !== null && !editing} />
       <ShareSection tripId={id} enabled={token !== null && !editing} />
       {confirmDelete ? (
@@ -707,6 +711,79 @@ function MediaTile({ asset }: { asset: MediaAssetDto }) {
       <p className="mt-1 truncate font-mono text-[10px] text-muted">{asset.id.slice(0, 8)}…</p>
       <p className="text-[10px] text-muted">{dateStr}</p>
     </li>
+  );
+}
+
+interface PlanWithAiSectionProps {
+  readonly tripId: string;
+  readonly enabled: boolean;
+}
+
+function PlanWithAiSection({ tripId, enabled }: PlanWithAiSectionProps) {
+  const [plan, setPlan] = useState<GeneratePlanWithAiResponseDto | null>(null);
+  const [errMsg, setErrMsg] = useState<string | null>(null);
+
+  const planMutation = useTripControllerPlanWithAi({
+    mutation: {
+      onSuccess: (response: { data?: unknown }) => {
+        const body = response.data as GeneratePlanWithAiResponseDto;
+        setPlan(body);
+        setErrMsg(null);
+      },
+      onError: (err: unknown) => {
+        const e = err as { code?: string; message?: string; status?: number };
+        setErrMsg(
+          e.code === 'TRIP_NOT_FOUND'
+            ? 'Trip not found, or its center coordinates are missing. Set a center on /trips/new before asking for a plan.'
+            : `${e.code ?? `HTTP_${e.status ?? '???'}`} — ${e.message ?? 'Plan failed.'}`,
+        );
+      },
+    },
+  });
+
+  if (!enabled) return null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-start justify-between gap-2">
+          <CardTitle>AI plan</CardTitle>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={planMutation.isPending}
+            onClick={() => planMutation.mutate({ id: tripId })}
+          >
+            {planMutation.isPending ? 'Thinking…' : plan ? 'Re-plan' : 'Generate plan'}
+          </Button>
+        </div>
+        <CardSubtitle>
+          Free-form prose suggestions. Uses Claude when{' '}
+          <code className="text-[10px]">CLAUDE_API_KEY</code> is set, falls back to a deterministic
+          stub otherwise.
+        </CardSubtitle>
+      </CardHeader>
+      {errMsg ? (
+        <p className="mb-2 rounded-md border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">
+          {errMsg}
+        </p>
+      ) : null}
+      {plan ? (
+        <div className="space-y-2">
+          <div>
+            <Badge variant="brand">{plan.model}</Badge>
+          </div>
+          <pre className="whitespace-pre-wrap rounded border border-muted/15 bg-muted/5 px-3 py-2 font-sans text-sm leading-relaxed">
+            {plan.plan}
+          </pre>
+        </div>
+      ) : (
+        <p className="text-sm text-muted">
+          Click <strong>Generate plan</strong> for a quick prose itinerary based on this trip's
+          title, radius, and dates.
+        </p>
+      )}
+    </Card>
   );
 }
 
