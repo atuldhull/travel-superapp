@@ -9,6 +9,7 @@ import type {
   TripControllerListParams,
   TripControllerStaysParams,
   TripDto,
+  UpdateTripRequestDto,
 } from '../../schemas';
 
 import { apiFetch } from '../../../runtime/fetcher';
@@ -147,11 +148,14 @@ export const getTripControllerUpdateUrl = (id: string) => {
 
 export const tripControllerUpdate = async (
   id: string,
+  updateTripRequestDto: UpdateTripRequestDto,
   options?: RequestInit,
 ): Promise<tripControllerUpdateResponse> => {
   return apiFetch<tripControllerUpdateResponse>(getTripControllerUpdateUrl(id), {
     ...options,
     method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateTripRequestDto),
   });
 };
 

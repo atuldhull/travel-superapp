@@ -117,7 +117,11 @@ function TripCard({ trip }: { trip: TripDto }) {
   return (
     <Card as="li">
       <CardHeader>
-        <CardTitle>{trip.title}</CardTitle>
+        <CardTitle>
+          <Link href={`/trips/${trip.id}` as never} className="hover:underline">
+            {trip.title}
+          </Link>
+        </CardTitle>
         <CardSubtitle>
           <Badge variant={statusVariant}>{trip.status}</Badge> · Radius {trip.radiusKm}km
         </CardSubtitle>

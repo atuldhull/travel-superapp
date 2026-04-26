@@ -84,6 +84,7 @@ import {
   CreateTripRequestDto,
   ListTripsResponseDto,
   TripDto as TripResponseDto,
+  UpdateTripRequestDto,
 } from './dto/trip-response.dto';
 
 interface TripDto {
@@ -198,6 +199,7 @@ export class TripController {
   @ApiOperation({
     summary: 'Update a trip the caller owns. Partial body; only provided fields change.',
   })
+  @ApiBody({ type: UpdateTripRequestDto })
   @ApiResponse({ status: 200, description: 'Updated trip.', type: TripResponseDto })
   @ApiResponse({ status: 404, description: 'TRIP_NOT_FOUND.' })
   @Patch(':id')

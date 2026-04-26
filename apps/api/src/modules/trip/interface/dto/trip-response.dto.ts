@@ -65,6 +65,36 @@ export class ListTripsResponseDto {
 }
 
 /**
+ * Body class for PATCH /trips/:id. Documentation-only — runtime
+ * validation stays on `UpdateTripBodySchema` in `trip.dto.ts`. All
+ * fields optional; only provided fields change. Date fields accept
+ * `null` to clear the value.
+ */
+export class UpdateTripRequestDto {
+  @ApiProperty({ required: false, description: '1..120 chars.' })
+  declare title?: string;
+
+  @ApiProperty({ required: false, minimum: 1, maximum: 500 })
+  declare radiusKm?: number;
+
+  @ApiProperty({
+    required: false,
+    nullable: true,
+    format: 'date-time',
+    description: 'ISO-8601 or null to clear.',
+  })
+  declare startsOn?: string | null;
+
+  @ApiProperty({
+    required: false,
+    nullable: true,
+    format: 'date-time',
+    description: 'ISO-8601 or null to clear. >= startsOn when both set.',
+  })
+  declare endsOn?: string | null;
+}
+
+/**
  * Body class for POST /trips. Documentation-only — runtime validation
  * stays on `CreateTripBodySchema` in `trip.dto.ts`.
  */

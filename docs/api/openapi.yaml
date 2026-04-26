@@ -313,7 +313,13 @@ paths:
       parameters: []
       responses:
         '200':
-          description: ''
+          description: Caller JWT claims (sub / sid / role).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WhoAmIResponseDto'
+        '401':
+          description: UNAUTHENTICATED — missing or invalid bearer.
       security:
         - bearer: []
       summary: Whoami probe — returns the authed user's JWT claims. The reference
@@ -473,6 +479,12 @@ paths:
           in: path
           schema:
             type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTripRequestDto'
       responses:
         '200':
           description: Updated trip.
@@ -1960,6 +1972,29 @@ components:
       required:
         - accessToken
         - expiresAt
+    WhoAmIResponseDto:
+      type: object
+      properties:
+        sub:
+          type: string
+          format: cuid
+          description: User id (`sub` claim).
+        sid:
+          type: string
+          format: cuid
+          description: Session id (`sid` claim).
+        role:
+          type: string
+          enum:
+            - user
+            - premium
+            - agent
+            - admin
+          description: Role assigned to the session.
+      required:
+        - sub
+        - sid
+        - role
     CreateTripRequestDto:
       type: object
       properties:
@@ -2059,6 +2094,26 @@ components:
             $ref: '#/components/schemas/TripDto'
       required:
         - trips
+    UpdateTripRequestDto:
+      type: object
+      properties:
+        title:
+          type: string
+          description: 1..120 chars.
+        radiusKm:
+          type: number
+          minimum: 1
+          maximum: 500
+        startsOn:
+          type: object
+          nullable: true
+          format: date-time
+          description: ISO-8601 or null to clear.
+        endsOn:
+          type: object
+          nullable: true
+          format: date-time
+          description: ISO-8601 or null to clear. >= startsOn when both set.
     PublicMemoryBookDto:
       type: object
       properties:

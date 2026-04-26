@@ -19,6 +19,7 @@ import type {
   LoginRequestDto,
   RefreshSuccessResponseDto,
   RegisterRequestDto,
+  WhoAmIResponseDto,
 } from '../../schemas';
 
 import { apiFetch } from '../../../runtime/fetcher';
@@ -428,14 +429,25 @@ export const useAuthControllerRefresh = <TError = void, TContext = unknown>(opti
  * @summary Whoami probe — returns the authed user's JWT claims. The reference auth-gated endpoint pattern.
  */
 export type authControllerMeResponse200 = {
-  data: void;
+  data: WhoAmIResponseDto;
   status: 200;
+};
+
+export type authControllerMeResponse401 = {
+  data: void;
+  status: 401;
 };
 
 export type authControllerMeResponseSuccess = authControllerMeResponse200 & {
   headers: Headers;
 };
-export type authControllerMeResponse = authControllerMeResponseSuccess;
+export type authControllerMeResponseError = authControllerMeResponse401 & {
+  headers: Headers;
+};
+
+export type authControllerMeResponse =
+  | authControllerMeResponseSuccess
+  | authControllerMeResponseError;
 
 export const getAuthControllerMeUrl = () => {
   return `/api/v1/auth/me`;
@@ -460,7 +472,7 @@ export const getAuthControllerMeQueryKey = () => {
 
 export const getAuthControllerMeInfiniteQueryOptions = <
   TData = Awaited<ReturnType<typeof authControllerMe>>,
-  TError = unknown,
+  TError = void,
 >(options?: {
   query?: UseInfiniteQueryOptions<Awaited<ReturnType<typeof authControllerMe>>, TError, TData>;
   request?: SecondParameter<typeof apiFetch>;
@@ -482,7 +494,7 @@ export const getAuthControllerMeInfiniteQueryOptions = <
 export type AuthControllerMeInfiniteQueryResult = NonNullable<
   Awaited<ReturnType<typeof authControllerMe>>
 >;
-export type AuthControllerMeInfiniteQueryError = unknown;
+export type AuthControllerMeInfiniteQueryError = void;
 
 /**
  * @summary Whoami probe — returns the authed user's JWT claims. The reference auth-gated endpoint pattern.
@@ -490,7 +502,7 @@ export type AuthControllerMeInfiniteQueryError = unknown;
 
 export function useAuthControllerMeInfinite<
   TData = Awaited<ReturnType<typeof authControllerMe>>,
-  TError = unknown,
+  TError = void,
 >(options?: {
   query?: UseInfiniteQueryOptions<Awaited<ReturnType<typeof authControllerMe>>, TError, TData>;
   request?: SecondParameter<typeof apiFetch>;
@@ -508,7 +520,7 @@ export function useAuthControllerMeInfinite<
 
 export const getAuthControllerMeQueryOptions = <
   TData = Awaited<ReturnType<typeof authControllerMe>>,
-  TError = unknown,
+  TError = void,
 >(options?: {
   query?: UseQueryOptions<Awaited<ReturnType<typeof authControllerMe>>, TError, TData>;
   request?: SecondParameter<typeof apiFetch>;
@@ -528,7 +540,7 @@ export const getAuthControllerMeQueryOptions = <
 };
 
 export type AuthControllerMeQueryResult = NonNullable<Awaited<ReturnType<typeof authControllerMe>>>;
-export type AuthControllerMeQueryError = unknown;
+export type AuthControllerMeQueryError = void;
 
 /**
  * @summary Whoami probe — returns the authed user's JWT claims. The reference auth-gated endpoint pattern.
@@ -536,7 +548,7 @@ export type AuthControllerMeQueryError = unknown;
 
 export function useAuthControllerMe<
   TData = Awaited<ReturnType<typeof authControllerMe>>,
-  TError = unknown,
+  TError = void,
 >(options?: {
   query?: UseQueryOptions<Awaited<ReturnType<typeof authControllerMe>>, TError, TData>;
   request?: SecondParameter<typeof apiFetch>;
