@@ -29,6 +29,12 @@ export default function HomePage() {
           Sign in
         </Link>
         <Link
+          href="/register"
+          className="inline-flex items-center gap-1 rounded-md border border-muted/30 px-4 py-2 text-sm font-medium text-muted transition hover:bg-muted/10"
+        >
+          Create account
+        </Link>
+        <Link
           href="/trips"
           className="inline-flex items-center gap-1 rounded-md border border-muted/30 px-4 py-2 text-sm font-medium text-muted transition hover:bg-muted/10"
         >
