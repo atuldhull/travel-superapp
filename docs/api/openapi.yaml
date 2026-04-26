@@ -228,6 +228,12 @@ paths:
     post:
       operationId: AuthController_register
       parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequestDto'
       responses:
         '201':
           description: Account created; refresh-cookie set; access token returned.
@@ -267,6 +273,12 @@ paths:
     post:
       operationId: AuthController_login
       parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequestDto'
       responses:
         '200':
           description: Login succeeded; refresh-cookie set; access token returned.
@@ -395,9 +407,19 @@ paths:
     post:
       operationId: TripController_create
       parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTripRequestDto'
       responses:
         '201':
           description: Trip created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripDto'
       security: &a11
         - bearer: []
       summary: Create a trip draft from { title, center, radiusKm, startsOn?, endsOn? }
@@ -413,7 +435,11 @@ paths:
             type: string
       responses:
         '200':
-          description: List of trips.
+          description: Caller-owned trips, most-recent-first. ?limit=N (1..100, default 20).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListTripsResponseDto'
       security: *a11
       summary: List the caller's trips, most-recent-first
       tags: *a12
@@ -429,6 +455,10 @@ paths:
       responses:
         '200':
           description: The trip.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripDto'
         '404':
           description: TRIP_NOT_FOUND.
       security: *a11
@@ -446,6 +476,10 @@ paths:
       responses:
         '200':
           description: Updated trip.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripDto'
         '404':
           description: TRIP_NOT_FOUND.
       security: *a11
@@ -1856,6 +1890,26 @@ components:
         /auth/refresh. Lifetime: 15 minutes (configurable via
         JWT_ACCESS_EXPIRY).'
   schemas:
+    RegisterRequestDto:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          minLength: 12
+          maxLength: 128
+          description: Min 12 chars, max 128.
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 60
+      required:
+        - email
+        - password
+        - displayName
     AuthSuccessResponseDto:
       type: object
       properties:
@@ -1874,6 +1928,25 @@ components:
         - userId
         - accessToken
         - expiresAt
+    LoginRequestDto:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          minLength: 1
+          maxLength: 128
+        mfaCode:
+          type: string
+          description: 6-digit TOTP or 8-char backup code (only on the second call when
+            MFA is on).
+          pattern: ^(\d{6}|[A-Za-z0-9]{8})$
+      required:
+        - email
+        - password
     RefreshSuccessResponseDto:
       type: object
       properties:
@@ -1887,6 +1960,105 @@ components:
       required:
         - accessToken
         - expiresAt
+    CreateTripRequestDto:
+      type: object
+      properties:
+        title:
+          type: string
+          description: 1..120 chars.
+        center:
+          type: object
+          description: GeoJSON-style { lng, lat } center — same shape the api persists via
+            PostGIS.
+          additionalProperties: false
+          properties:
+            lng:
+              type: number
+              minimum: -180
+              maximum: 180
+            lat:
+              type: number
+              minimum: -90
+              maximum: 90
+          required:
+            - lng
+            - lat
+        radiusKm:
+          type: number
+          minimum: 1
+          maximum: 500
+        startsOn:
+          type: string
+          format: date-time
+        endsOn:
+          type: string
+          format: date-time
+      required:
+        - title
+        - radiusKm
+    TripDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        userId:
+          type: string
+          format: cuid
+          description: Owner's user id.
+        title:
+          type: string
+          description: Owner-chosen title (1..120 chars).
+        status:
+          type: string
+          description: Lifecycle status — currently always "draft" until itinerary AI lands.
+        radiusKm:
+          type: number
+          description: Trip planning radius in km (1..500).
+          minimum: 1
+          maximum: 500
+        startsOn:
+          type: object
+          nullable: true
+          format: date-time
+          description: ISO-8601; null until the owner picks a date range.
+        endsOn:
+          type: object
+          nullable: true
+          format: date-time
+          description: ISO-8601; null until the owner picks a date range. >= startsOn when
+            both set.
+        version:
+          type: number
+          description: Bumped on every accepted update — concurrency control.
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - userId
+        - title
+        - status
+        - radiusKm
+        - startsOn
+        - endsOn
+        - version
+        - createdAt
+        - updatedAt
+    ListTripsResponseDto:
+      type: object
+      properties:
+        trips:
+          description: Caller-owned trips, most-recent-first. Capped via ?limit (1..100,
+            default 20).
+          type: array
+          items:
+            $ref: '#/components/schemas/TripDto'
+      required:
+        - trips
     PublicMemoryBookDto:
       type: object
       properties:

@@ -34,7 +34,7 @@ import {
   Res,
   UsePipes,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { Env } from '@app/config';
 import { ConfigService } from '@nestjs/config';
@@ -63,6 +63,7 @@ import {
   type RegisterBody,
 } from './dto/auth.dto';
 import { AuthSuccessResponseDto, RefreshSuccessResponseDto } from './dto/auth-response.dto';
+import { LoginRequestDto, RegisterRequestDto } from './dto/auth-request.dto';
 
 const REFRESH_COOKIE_NAME = 'refresh_token';
 const REFRESH_COOKIE_PATH = '/api/v1/auth';
@@ -106,6 +107,7 @@ export class AuthController {
     summary:
       'Create a new account. Email + password + displayName. Sets the refresh-cookie + returns access token.',
   })
+  @ApiBody({ type: RegisterRequestDto })
   @ApiResponse({
     status: 201,
     description: 'Account created; refresh-cookie set; access token returned.',
@@ -188,6 +190,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Email + password login. With MFA enabled, mfaCode is required on the second call.',
   })
+  @ApiBody({ type: LoginRequestDto })
   @ApiResponse({
     status: 200,
     description: 'Login succeeded; refresh-cookie set; access token returned.',

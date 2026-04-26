@@ -22,12 +22,18 @@ export { apiFetch, configureSdk, type ApiError } from './runtime/fetcher';
 // rather than star-exporting every generated symbol at once.
 export * from './generated/react-query/media/media';
 export * from './generated/react-query/identity/identity';
+export * from './generated/react-query/trip/trip';
 
 // Schema types from openapi.yaml's components/schemas. Re-exported so
 // consumers don't have to reach into deep generated paths. Add the
 // schemas as the surface starts using them.
 export type { AuthSuccessResponseDto } from './generated/schemas/authSuccessResponseDto';
 export type { RefreshSuccessResponseDto } from './generated/schemas/refreshSuccessResponseDto';
+export type { LoginRequestDto } from './generated/schemas/loginRequestDto';
+export type { RegisterRequestDto } from './generated/schemas/registerRequestDto';
 export type { FeaturedMemoryBooksResponseDto } from './generated/schemas/featuredMemoryBooksResponseDto';
 export type { PublicMemoryBookDto } from './generated/schemas/publicMemoryBookDto';
 export type { PublicMemoryBookWithAssetsResponseDto } from './generated/schemas/publicMemoryBookWithAssetsResponseDto';
+export type { TripDto } from './generated/schemas/tripDto';
+export type { ListTripsResponseDto } from './generated/schemas/listTripsResponseDto';
+export type { CreateTripRequestDto } from './generated/schemas/createTripRequestDto';
