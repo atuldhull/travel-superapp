@@ -14,6 +14,7 @@ import type { ReactNode } from 'react';
 import Script from 'next/script';
 import './globals.css';
 import { ThemeToggle } from '../components/ui/theme-toggle';
+import { WhoAmIBadge } from '../components/whoami-badge';
 import { Providers } from './providers';
 
 export const metadata: Metadata = {
@@ -43,12 +44,15 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         </Script>
       </head>
       <body className="bg-surface text-surface-foreground font-sans antialiased">
-        <div className="mx-auto max-w-3xl px-6 py-10 space-y-6">
-          <header className="flex items-center justify-end">
-            <ThemeToggle />
-          </header>
-          <Providers>{children}</Providers>
-        </div>
+        <Providers>
+          <div className="mx-auto max-w-3xl px-6 py-10 space-y-6">
+            <header className="flex items-center justify-between gap-3">
+              <WhoAmIBadge />
+              <ThemeToggle />
+            </header>
+            {children}
+          </div>
+        </Providers>
       </body>
     </html>
   );
