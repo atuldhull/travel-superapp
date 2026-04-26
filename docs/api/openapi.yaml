@@ -625,7 +625,13 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: Public-safe trip view + itinerary. Owner userId is never exposed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SharedTripDto'
+        '404':
+          description: Share code not found, revoked, or expired.
       security: *a11
       summary: Public read of a shared trip by code. No auth required.
       tags: *a12
@@ -2344,6 +2350,52 @@ components:
         - shareCode
         - expiresAt
         - createdAt
+    SharedTripDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        title:
+          type: string
+          description: Owner-chosen title.
+        radiusKm:
+          type: number
+          description: Trip planning radius in km.
+        startsOn:
+          type: object
+          nullable: true
+          format: date-time
+        endsOn:
+          type: object
+          nullable: true
+          format: date-time
+        ownerDisplayName:
+          type: string
+          description: Display name of the owner who shared this trip.
+        expiresAt:
+          type: object
+          nullable: true
+          format: date-time
+          description: ISO-8601 expiry for the share code itself, not the trip.
+        createdAt:
+          type: string
+          format: date-time
+        days:
+          description: Itinerary days + items, ordered by dayIndex ascending.
+          type: array
+          items:
+            $ref: '#/components/schemas/ItineraryDayDto'
+      required:
+        - id
+        - title
+        - radiusKm
+        - startsOn
+        - endsOn
+        - ownerDisplayName
+        - expiresAt
+        - createdAt
+        - days
     OverviewSectionFailureDto:
       type: object
       properties:

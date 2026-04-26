@@ -61,3 +61,4 @@ export type { CreateUploadUrlRequestDto } from './generated/schemas/createUpload
 export type { CreateUploadUrlResponseDto } from './generated/schemas/createUploadUrlResponseDto';
 export type { AttachMediaToTripRequestDto } from './generated/schemas/attachMediaToTripRequestDto';
 export type { GeneratePlanWithAiResponseDto } from './generated/schemas/generatePlanWithAiResponseDto';
+export type { SharedTripDto } from './generated/schemas/sharedTripDto';
