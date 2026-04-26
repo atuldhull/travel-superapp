@@ -10,18 +10,91 @@
 
 ## Summary
 
-| Counter             | Value                                                                                       |
-| ------------------- | ------------------------------------------------------------------------------------------- |
-| Prompts completed   | 146 (144 full + bundled web Dockerfile + strict response schemas)                           |
-| Prompts in progress | 0                                                                                           |
-| Prompts blocked     | 0                                                                                           |
-| Last prompt         | `[IV.18.19.20]` — strict response schemas on top-3 endpoints (bundled with `[IV.18.19.19]`) |
-| Last commit date    | 2026-04-26                                                                                  |
-| Phase               | Phase 1 — typed end-to-end loop closed for featured + auth; web image deploy-ready          |
+| Counter             | Value                                                                                 |
+| ------------------- | ------------------------------------------------------------------------------------- |
+| Prompts completed   | 148 (146 prior + bundled web auth flow + Trip strict schemas)                         |
+| Prompts in progress | 0                                                                                     |
+| Prompts blocked     | 0                                                                                     |
+| Last prompt         | `[IV.18.19.22]` — Trip strict response schemas (bundled with `[IV.18.19.21]`)         |
+| Last commit date    | 2026-04-26                                                                            |
+| Phase               | Phase 1 — interactive web shell live (login + protected /trips), Trip endpoints typed |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.19.22] — Strict response schemas: Trip list/get/create + auth request bodies (bundled with `[IV.18.19.21]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 6 (SDK / API contract)
+
+**What was done**
+
+Extends the strict-schema rollout from `[IV.18.19.20]` to the Trip surface and adds typed request bodies on the auth endpoints (so generated mutation hooks take typed `body: LoginRequestDto` instead of free-form RequestInit).
+
+- New `apps/api/.../trip/interface/dto/trip-response.dto.ts` with class-based `TripDto`, `ListTripsResponseDto`, `CreateTripRequestDto` decorated with `@ApiProperty`.
+- Wire `@ApiResponse({ type: ... })` onto:
+  - `GET /trips` → ListTripsResponseDto
+  - `GET /trips/:id` → TripDto
+  - `POST /trips` → TripDto + `@ApiBody({ type: CreateTripRequestDto })`
+  - `PATCH /trips/:id` → TripDto
+- New `apps/api/.../identity/interface/dto/auth-request.dto.ts` with `LoginRequestDto` + `RegisterRequestDto`. Documentation-only — runtime validation stays on the Zod schemas in `auth.dto.ts`. Wired via `@ApiBody({ type: ... })` on `POST /auth/login` and `POST /auth/register`.
+- Trip overview endpoint deferred — its 7 discriminated `Section<T>` sub-shapes need a richer schema treatment than this slice.
+- Regenerated `docs/api/openapi.yaml`: 5 new component schemas (TripDto, ListTripsResponseDto, CreateTripRequestDto, LoginRequestDto, RegisterRequestDto) + 2 nullable wrappers.
+- Regenerated `packages/sdk/src/generated/`. Trip + identity barrels + new schema type re-exports in `@app/sdk` so consumers don't deep-import.
+
+**Verification**
+
+- `pnpm --filter=api typecheck` clean.
+- `pnpm --filter=@app/sdk sdk:gen` + `pnpm --filter=@app/sdk typecheck` clean.
+- 93 / 578 api tests still pass.
+
+**Files**
+
+- `apps/api/src/modules/trip/interface/trip.controller.ts`, `apps/api/src/modules/trip/interface/dto/trip-response.dto.ts` (new).
+- `apps/api/src/modules/identity/interface/auth.controller.ts`, `apps/api/src/modules/identity/interface/dto/auth-request.dto.ts` (new).
+- `docs/api/openapi.yaml` (regen).
+- `packages/sdk/src/index.ts` (re-exports), `packages/sdk/src/generated/**` (regen).
+
+**Commit**
+
+`d4c3d60 feat(IV.18.19.22): strict schemas — Trip list/get/create + auth request bodies`
+
+---
+
+### [IV.18.19.21] — Web auth flow: login + memory-token store + protected /trips (bundled with `[IV.18.19.22]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 5 (Frontend stack)
+
+**What was done**
+
+First end-to-end interactive flow on the web shell. User signs in, memory-only access token is stored, navigation to `/trips` calls the auth-gated SDK hook, sign-out clears the store and bounces back to login.
+
+- New `apps/web/src/lib/auth-store.ts` — module-scope token + pub/sub. Tokens NEVER touch localStorage / sessionStorage / cookies (CLAUDE rule 12). Hard reload = "logged out" until silent-refresh wiring lands in a follow-up slice.
+- New `apps/web/src/lib/use-auth-token.ts` — `useSyncExternalStore` bridge so React surfaces re-render on login/logout.
+- `providers.tsx` now wires `getAccessToken` to the in-memory store — the SDK's `apiFetch` reads it on every request and injects the bearer.
+- New `/login` route: themed form using `useAuthControllerLogin` from `@app/sdk`; mutation success stores the token + redirects to `/trips`; surfaces api error code + message inline.
+- New `/trips` route: protected via `useAuthToken()` — redirects to `/login` if no token. Uses `useTripControllerList` + the typed `TripDto` from `@app/sdk` for the card grid. Sign-out button clears the store.
+- Landing page (`/`) now has Sign in + Your trips CTAs alongside the featured-books CTA.
+- `next.config.js`: move `typedRoutes` out of `experimental` (Next 15.5 deprecated the experimental shape).
+
+**Verification**
+
+- `pnpm --filter=@app/sdk typecheck` + `pnpm --filter=web typecheck` clean.
+- `pnpm --filter=web build` produces 5 prerendered routes (/, /featured, /login, /trips, /\_not-found). Bundle sizes: /login 1.19KB, /trips 1.37KB; both under 120KB First Load JS.
+- 93 / 578 api tests still pass.
+
+**Files**
+
+- `apps/web/src/app/login/page.tsx`, `apps/web/src/app/trips/page.tsx` (new routes).
+- `apps/web/src/app/page.tsx` (landing CTAs), `apps/web/src/app/providers.tsx` (wire getAccessToken).
+- `apps/web/src/lib/auth-store.ts`, `apps/web/src/lib/use-auth-token.ts` (new).
+- `apps/web/next.config.js` (typedRoutes flag move).
+
+**Commit**
+
+`9817cf9 feat(IV.18.19.21): web auth flow — login + memory-token store + protected trips`
 
 ---
 
