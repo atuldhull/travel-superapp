@@ -18,8 +18,10 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
+  getTripControllerGetItineraryQueryKey,
   getTripControllerGetOneQueryKey,
   getTripControllerListQueryKey,
+  useTripControllerBuildItinerary,
   useTripControllerGetItinerary,
   useTripControllerGetOne,
   useTripControllerRemove,
@@ -365,8 +367,29 @@ interface ItinerarySectionProps {
 }
 
 function ItinerarySection({ tripId, enabled }: ItinerarySectionProps) {
+  const queryClient = useQueryClient();
+  const [genErr, setGenErr] = useState<string | null>(null);
   const { data, isLoading, isError } = useTripControllerGetItinerary(tripId, {
     query: { enabled },
+  });
+
+  const buildMutation = useTripControllerBuildItinerary({
+    mutation: {
+      onSuccess: async () => {
+        setGenErr(null);
+        await queryClient.invalidateQueries({
+          queryKey: getTripControllerGetItineraryQueryKey(tripId),
+        });
+      },
+      onError: (err: unknown) => {
+        const e = err as { code?: string; message?: string; status?: number };
+        setGenErr(
+          e.code === 'TRIP_DATES_REQUIRED'
+            ? 'Set startsOn + endsOn first (Edit the trip to add dates).'
+            : `${e.code ?? `HTTP_${e.status ?? '???'}`} — ${e.message ?? 'Generate failed.'}`,
+        );
+      },
+    },
   });
 
   if (!enabled) return null;
@@ -379,17 +402,36 @@ function ItinerarySection({ tripId, enabled }: ItinerarySectionProps) {
       <CardHeader>
         <div className="flex items-start justify-between gap-2">
           <CardTitle>Itinerary</CardTitle>
-          <Badge variant="neutral">{days.length} days</Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="neutral">{days.length} days</Badge>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={buildMutation.isPending}
+              onClick={() => buildMutation.mutate({ id: tripId })}
+            >
+              {buildMutation.isPending
+                ? 'Generating…'
+                : days.length === 0
+                  ? 'Generate'
+                  : 'Regenerate'}
+            </Button>
+          </div>
         </div>
       </CardHeader>
+      {genErr ? (
+        <p className="mb-2 rounded-md border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">
+          {genErr}
+        </p>
+      ) : null}
       {isLoading ? (
         <Skeleton className="h-4 w-2/3" count={3} />
       ) : isError ? (
         <p className="text-sm text-danger">Couldn't load itinerary.</p>
       ) : days.length === 0 ? (
         <p className="text-sm text-muted">
-          No itinerary yet. Generate one via <code>POST /trips/:id/itinerary</code> in the api (UI
-          button lands in a follow-up slice).
+          No itinerary yet. Click <strong>Generate</strong> to create one day per date in the trip's
+          range. Requires startsOn + endsOn on the trip.
         </p>
       ) : (
         <ol className="space-y-3">
