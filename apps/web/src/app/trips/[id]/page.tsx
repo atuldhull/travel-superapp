@@ -45,6 +45,7 @@ import { Button } from '../../../components/ui/button';
 import { Card, CardHeader, CardSubtitle, CardTitle } from '../../../components/ui/card';
 import { Field } from '../../../components/ui/input';
 import { Skeleton } from '../../../components/ui/skeleton';
+import { MediaUploader } from '../../../components/media-uploader';
 import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
 
 interface ApiError extends Error {
@@ -682,17 +683,15 @@ function MediaSection({ tripId, enabled }: MediaSectionProps) {
       ) : isError ? (
         <p className="text-sm text-danger">Couldn't load media.</p>
       ) : ready.length === 0 ? (
-        <p className="text-sm text-muted">
-          No media attached yet. Upload via the api's presigned-URL flow (UI uploader is a follow-up
-          slice).
-        </p>
+        <p className="text-sm text-muted">No media attached yet. Use the uploader below.</p>
       ) : (
-        <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <ul className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
           {ready.map((a) => (
             <MediaTile key={a.id} asset={a} />
           ))}
         </ul>
       )}
+      <MediaUploader tripId={tripId} />
     </Card>
   );
 }

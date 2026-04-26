@@ -25,8 +25,14 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ListTripMediaResponseDto } from './dto/media-response.dto';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  AttachMediaToTripRequestDto,
+  CreateUploadUrlRequestDto,
+  CreateUploadUrlResponseDto,
+  ListTripMediaResponseDto,
+  MediaAssetDto as MediaAssetResponseDto,
+} from './dto/media-response.dto';
 import { type AuthenticatedUser, CurrentUser } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { AttachMediaToBookUseCase } from '../application/attach-media-to-book.use-case';
@@ -82,6 +88,12 @@ export class MediaController {
     summary:
       'Issue a presigned PUT URL for direct-to-S3 upload. Creates the MediaAsset row in `processing` status.',
   })
+  @ApiBody({ type: CreateUploadUrlRequestDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Presigned upload URL + initial asset row.',
+    type: CreateUploadUrlResponseDto,
+  })
   @Post('upload-url')
   @HttpCode(HttpStatus.CREATED)
   async createUploadUrl(
@@ -115,6 +127,12 @@ export class MediaController {
     summary:
       'Confirm upload landed (HEAD verifies bytes). Flips status to `ready`. Image kind also flips exifStripped.',
   })
+  @ApiResponse({
+    status: 200,
+    description: 'Asset row in `ready` state.',
+    type: MediaAssetResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'MEDIA_NOT_FOUND.' })
   @Post(':id/confirm')
   @HttpCode(HttpStatus.OK)
   async confirm(
@@ -146,6 +164,9 @@ export class MediaController {
     summary:
       'Attach (`{tripId}`) or detach (`{tripId:null}`) the media to a trip. Double owner-gated.',
   })
+  @ApiBody({ type: AttachMediaToTripRequestDto })
+  @ApiResponse({ status: 200, description: 'Updated asset row.', type: MediaAssetResponseDto })
+  @ApiResponse({ status: 404, description: 'MEDIA_NOT_FOUND or TRIP_NOT_FOUND.' })
   @Patch(':id/trip')
   @HttpCode(HttpStatus.OK)
   async attachToTrip(
