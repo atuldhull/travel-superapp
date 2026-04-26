@@ -70,13 +70,21 @@ export default function MemoryBooksIndexPage() {
     <main className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Your memory books</h1>
-        <Link
-          href="/featured"
-          className="text-sm text-muted hover:underline"
-          aria-label="Browse featured public books"
-        >
-          Browse featured →
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/memory-books/new"
+            className="inline-flex items-center gap-1 rounded-md bg-brand px-3 py-1.5 text-sm font-medium text-brand-foreground transition hover:opacity-90"
+          >
+            New book
+          </Link>
+          <Link
+            href="/featured"
+            className="text-sm text-muted hover:underline"
+            aria-label="Browse featured public books"
+          >
+            Browse featured →
+          </Link>
+        </div>
       </div>
       {isLoading ? (
         <ul className="grid gap-4 sm:grid-cols-2">
@@ -92,8 +100,7 @@ export default function MemoryBooksIndexPage() {
         <ErrorState error={error} />
       ) : books.length === 0 ? (
         <p className="rounded-md border border-muted/20 bg-muted/5 px-4 py-3 text-sm text-muted">
-          No memory books yet. Books are created from a trip — open a trip and attach media, then
-          collect them into a book from the trip media subsection.
+          No memory books yet — use the <strong>New book</strong> button to create one.
         </p>
       ) : (
         <ul className="grid gap-4 sm:grid-cols-2">
@@ -117,12 +124,13 @@ function BookCard({ book }: { book: MemoryBookDto }) {
   const coverS3Key = book.coverS3Key as unknown as string | null;
   const publishedAt = book.publishedAt as unknown as string | null;
   const published = publishedAt !== null;
-  const titleNode = published ? (
-    <Link href={`/memory-books/${book.id}` as never} className="hover:underline">
+  // Title always links to the owner-side edit page (slice .19.53). The
+  // public viewer at /memory-books/[id] gets a separate "Public view"
+  // link below for published books only — drafts have no public route.
+  const titleNode = (
+    <Link href={`/memory-books/${book.id}/edit` as never} className="hover:underline">
       {book.title}
     </Link>
-  ) : (
-    <span>{book.title}</span>
   );
   return (
     <Card as="li">
@@ -137,9 +145,19 @@ function BookCard({ book }: { book: MemoryBookDto }) {
               · Theme {book.theme}
             </CardSubtitle>
           </div>
-          {published && publishedAt ? (
-            <p className="text-xs text-muted">{new Date(publishedAt).toLocaleDateString()}</p>
-          ) : null}
+          <div className="flex flex-col items-end gap-1">
+            {published && publishedAt ? (
+              <p className="text-xs text-muted">{new Date(publishedAt).toLocaleDateString()}</p>
+            ) : null}
+            {published ? (
+              <Link
+                href={`/memory-books/${book.id}` as never}
+                className="text-xs text-brand hover:underline"
+              >
+                Public view →
+              </Link>
+            ) : null}
+          </div>
         </div>
       </CardHeader>
       {coverS3Key ? (
