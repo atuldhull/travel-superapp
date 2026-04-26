@@ -10,18 +10,87 @@
 
 ## Summary
 
-| Counter             | Value                                                                                 |
-| ------------------- | ------------------------------------------------------------------------------------- |
-| Prompts completed   | 144 (142 full + 1 foundation + bundled SDK wire-through + Tailwind theming)           |
-| Prompts in progress | 0                                                                                     |
-| Prompts blocked     | 0                                                                                     |
-| Last prompt         | `[IV.18.19.18]` — Tailwind 4 + first themed components (bundled with `[IV.18.19.17]`) |
-| Last commit date    | 2026-04-26                                                                            |
-| Phase               | Phase 1 — generated SDK consumed by web; brand-themed UI shell live                   |
+| Counter             | Value                                                                                       |
+| ------------------- | ------------------------------------------------------------------------------------------- |
+| Prompts completed   | 146 (144 full + bundled web Dockerfile + strict response schemas)                           |
+| Prompts in progress | 0                                                                                           |
+| Prompts blocked     | 0                                                                                           |
+| Last prompt         | `[IV.18.19.20]` — strict response schemas on top-3 endpoints (bundled with `[IV.18.19.19]`) |
+| Last commit date    | 2026-04-26                                                                                  |
+| Phase               | Phase 1 — typed end-to-end loop closed for featured + auth; web image deploy-ready          |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.19.20] — Strict response schemas on top-3 endpoints (bundled with `[IV.18.19.19]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 6 (SDK / API contract)
+
+**What was done**
+
+Promote 3 of the highest-value routes (memory-books/featured + memory-books/public/:id + the entire auth surface) from "no schema" → fully typed `components/schemas/*` references. Replaces orval's prior `data: void` with concrete generated types.
+
+- New `apps/api/.../identity/interface/dto/auth-response.dto.ts` with class-based `AuthSuccessResponseDto` + `RefreshSuccessResponseDto` decorated with `@ApiProperty`. Class-based shapes are required for `@nestjs/swagger` to emit `components/schemas/*` entries (interfaces don't survive runtime introspection).
+- New `apps/api/.../media/interface/dto/memory-book-response.dto.ts` with `PublicMemoryBookDto` + `FeaturedMemoryBooksResponseDto` + `PublicMemoryBookWithAssetsResponseDto`.
+- Wire `@ApiResponse({ type: ... })` onto featured (200), public/:id (200 + 404), register (201), login (200 + 401), oauth (200 + 401), refresh (200 + 401). 6 routes upgraded.
+- Regenerated `docs/api/openapi.yaml` — 4 new component schemas live in `components/schemas/`; routes reference them via `$ref`.
+- Regenerated `packages/sdk/src/generated/`: orval emits `data: FeaturedMemoryBooksResponseDto` instead of `data: void` for the targeted routes. Identity barrel re-exported from `@app/sdk`.
+- Surface the new schema types from `@app/sdk` (no deep-import paths).
+- `apps/web/src/app/featured/page.tsx` drops the inline `PublicBook` interface in favor of `PublicMemoryBookDto` from `@app/sdk` — closing the type loop end-to-end.
+
+**Verification**
+
+- `pnpm --filter=api typecheck` — clean.
+- `pnpm --filter=@app/sdk sdk:gen` — clean; new schemas appear under `src/generated/schemas/`.
+- `pnpm --filter=@app/sdk typecheck` + `pnpm --filter=web typecheck` + `pnpm --filter=web build` — all green.
+- 93 / 578 api tests still pass.
+
+**Files**
+
+- `apps/api/src/modules/identity/interface/auth.controller.ts`, `apps/api/src/modules/identity/interface/dto/auth-response.dto.ts` (new).
+- `apps/api/src/modules/media/interface/memory-book.controller.ts`, `apps/api/src/modules/media/interface/dto/memory-book-response.dto.ts` (new).
+- `docs/api/openapi.yaml` (regen).
+- `packages/sdk/src/index.ts` (re-exports), `packages/sdk/src/generated/**` (regen).
+- `apps/web/src/app/featured/page.tsx` (uses `@app/sdk` types).
+
+**Commit**
+
+`ad676d1 feat(IV.18.19.20): strict response schemas — featured + public/:id + auth surface`
+
+---
+
+### [IV.18.19.19] — Web Dockerfile + fly.web.toml + runbook parity (bundled with `[IV.18.19.20]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 12.2 (Deployment)
+
+**What was done**
+
+Brings the web app to deployment parity with the api. Two independent Fly apps so they can scale, restart, and roll back independently; same region (iad) to keep SSR → api latency in single digits ms.
+
+- New `apps/web/Dockerfile` — three-stage (deps → builder → distroless runner). `next.config.js` flips to `output: 'standalone'` with `outputFileTracingRoot` extended to the monorepo root so the @app/sdk workspace package is traced into the standalone bundle. Runner stage is gcr.io/distroless/nodejs22-debian12:nonroot, ~150MB.
+- New `apps/web/.dockerignore` matches the api's exclusion shape (no source maps, tests, sibling apps, or docs in the build context).
+- New `fly.web.toml` mirrors the api's staging-shape conventions but with Next-appropriate tuning: 512MB memory (vs api 1024MB), 20s kill_timeout, healthcheck on `/` (no DB ping needed), no `[metrics]` block (web has no domain metrics yet), separate `travel-web-staging` app naming.
+- `docs/runbooks/fly-deploy.md` extended with a Web app section: the three meaningful contrasts (port, healthcheck, secrets), plus the build-time-vs-runtime gotcha for `NEXT_PUBLIC_*` (changing the URL requires `fly deploy`, not `fly secrets set`).
+
+**Verification**
+
+- `pnpm --filter=web build` produces `.next/standalone/apps/web/server.js` cleanly. Same bundle sizes as before (/featured 948B + / 161B).
+- 93 / 578 api tests still green (web is independent).
+
+**Files**
+
+- `apps/web/Dockerfile`, `apps/web/.dockerignore` (new).
+- `apps/web/next.config.js` (output:standalone + outputFileTracingRoot).
+- `apps/web/next-env.d.ts` (auto-regen by next).
+- `fly.web.toml` (new).
+- `docs/runbooks/fly-deploy.md` (extended).
+
+**Commit**
+
+`67bf707 feat(IV.18.19.19): web Dockerfile + fly.web.toml + runbook parity`
 
 ---
 
