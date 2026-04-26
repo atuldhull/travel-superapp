@@ -1373,7 +1373,11 @@ paths:
       parameters: []
       responses:
         '200':
-          description: ''
+          description: Unread count.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnreadCountResponseDto'
       security: &a22
         - bearer: []
       summary: 'Returns { unread: N } for the home-screen badge. Single indexed COUNT
@@ -1396,7 +1400,13 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: Caller's recent deliveries, newest-first.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListMyNotificationsResponseDto'
+        '400':
+          description: VALIDATION_FAILED — channel is not one of push|email|sms.
       security: *a22
       summary: List the caller's recent notifications. Optional
         ?channel=push|email|sms narrows to one delivery channel.
@@ -1407,7 +1417,11 @@ paths:
       parameters: []
       responses:
         '200':
-          description: ''
+          description: Number of rows actually flipped.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarkAllReadResponseDto'
       security: *a22
       summary: 'Mark every unread row as read. Returns { marked: N }. Idempotent
         (second call returns 0).'
@@ -1423,7 +1437,13 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: Updated notification row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationLogDto'
+        '404':
+          description: NOTIFICATION_NOT_FOUND.
       security: *a22
       summary: Mark one notification as read. Owner-gated; 404 on cross-user / missing.
       tags: *a23
@@ -1438,7 +1458,13 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: Updated notification row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationLogDto'
+        '404':
+          description: NOTIFICATION_NOT_FOUND.
       security: *a22
       summary: Mark one notification as UNread (symmetric to /read). Owner-gated.
       tags: *a23
@@ -1453,7 +1479,9 @@ paths:
             type: string
       responses:
         '204':
-          description: ''
+          description: Deleted.
+        '404':
+          description: NOTIFICATION_NOT_FOUND.
       security: *a22
       summary: Hard-delete a notification (inbox prune). Owner-gated; 404 on
         cross-user / missing.
@@ -1949,25 +1977,41 @@ paths:
       parameters: []
       responses:
         '200':
-          description: ''
-      tags: &a35
-        - Account
+          description: Full export bundle. Per-section row shapes documented in
+            user-data-export.entity.ts.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDataExportResponseDto'
+      security: &a35
+        - bearer: []
+      summary: Full GDPR/DPDP/COPPA self-export bundle as a single JSON object. ~30
+        sections; sensitive fields stripped.
+      tags: &a36
+        - account
   /api/v1/account/export.ndjson:
     get:
       operationId: AccountController_exportMyDataNdjson
       parameters: []
       responses:
         '200':
-          description: ''
-      tags: *a35
+          description: Streaming NDJSON. Each line is a `{type,data}` envelope; downstream
+            tooling (jq -c, ndjson-cli) parses incrementally.
+      security: *a35
+      summary: 'NDJSON variant of the export bundle — one `{type,data}` envelope per
+        line. Content-Type: application/x-ndjson.'
+      tags: *a36
   /api/v1/account:
     delete:
       operationId: AccountController_deleteMyAccount
       parameters: []
       responses:
         '204':
-          description: ''
-      tags: *a35
+          description: Account marked soft-deleted; sessions revoked.
+      security: *a35
+      summary: Soft-delete the caller's account + revoke all live sessions. GDPR Art.
+        17 / DPDP §12 right-to-erasure.
+      tags: *a36
   /api/v1/admin/users:
     get:
       operationId: AdminUsersController_list
@@ -2000,7 +2044,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: &a36
+      tags: &a37
         - AdminUsers
   /api/v1/admin/users/{id}/ban:
     post:
@@ -2014,7 +2058,7 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *a36
+      tags: *a37
   /api/v1/admin/users/{id}/unban:
     post:
       operationId: AdminUsersController_unban
@@ -2027,7 +2071,7 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *a36
+      tags: *a37
   /api/v1/admin/account-purge:
     post:
       operationId: AdminPurgeController_forcePurge
@@ -3068,3 +3112,203 @@ components:
           type: object
           nullable: true
           maxLength: 512
+    UnreadCountResponseDto:
+      type: object
+      properties:
+        unread:
+          type: number
+          description: Count of unread rows across all channels.
+      required:
+        - unread
+    NotificationLogDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        channel:
+          type: string
+          enum:
+            - push
+            - email
+            - sms
+        templateId:
+          type: string
+          description: Template id (e.g. "trip.invited", "sos.acknowledged").
+        status:
+          type: string
+          enum:
+            - queued
+            - delivered
+            - failed
+            - skipped
+          description: Lifecycle status of the delivery attempt.
+        payload:
+          type: object
+          additionalProperties: true
+          description: Template payload (JSON). Shape varies per template id.
+        read:
+          type: boolean
+          description: True once the recipient has read the notification.
+        createdAt:
+          type: string
+          format: date-time
+        deliveredAt:
+          type: object
+          nullable: true
+          format: date-time
+          description: When the deliver-side adapter reported success; null while
+            queued/failed.
+      required:
+        - id
+        - channel
+        - templateId
+        - status
+        - payload
+        - read
+        - createdAt
+        - deliveredAt
+    ListMyNotificationsResponseDto:
+      type: object
+      properties:
+        notifications:
+          description: Caller's recent deliveries, newest-first. Capped via ?limit
+            (1..200, default 50).
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationLogDto'
+      required:
+        - notifications
+    MarkAllReadResponseDto:
+      type: object
+      properties:
+        marked:
+          type: number
+          description: Count of rows actually flipped on this call. 0 on idempotent re-call.
+      required:
+        - marked
+    UserDataExportMetadataDto:
+      type: object
+      properties:
+        exportedAt:
+          type: string
+          format: date-time
+          description: ISO-8601 timestamp of when the bundle was generated.
+        formatVersion:
+          type: number
+          enum:
+            - 1
+          description: Bundle format version. Bumps on shape changes.
+        userId:
+          type: string
+          format: cuid
+      required:
+        - exportedAt
+        - formatVersion
+        - userId
+    UserDataExportResponseDto:
+      type: object
+      properties:
+        metadata:
+          $ref: '#/components/schemas/UserDataExportMetadataDto'
+        identity:
+          type: object
+          additionalProperties: true
+          description: Identity bloc — { user, preferences, sessions, devices,
+            oauthIdentities, mfaBackupCodes }. Per-row shapes documented in
+            user-data-export.entity.ts.
+        trips:
+          type: object
+          additionalProperties: true
+          description: 'Trips section — { count, rows[] }. Row shape: ExportedTrip in
+            user-data-export.entity.ts.'
+        itineraryDays:
+          type: object
+          additionalProperties: true
+          description: Itinerary days — { count, rows[] }.
+        itineraryItems:
+          type: object
+          additionalProperties: true
+          description: Itinerary items — { count, rows[] }.
+        tripVersions:
+          type: object
+          additionalProperties: true
+        tripShares:
+          type: object
+          additionalProperties: true
+        scamReports:
+          type: object
+          additionalProperties: true
+        sosEvents:
+          type: object
+          additionalProperties: true
+        notificationPreference:
+          type: object
+          additionalProperties: true
+          nullable: true
+          description: Notification preferences row, or null if never set.
+        notificationLogs:
+          type: object
+          additionalProperties: true
+        mediaAssets:
+          type: object
+          additionalProperties: true
+        memoryBooks:
+          type: object
+          additionalProperties: true
+        votes:
+          type: object
+          additionalProperties: true
+        expenses:
+          type: object
+          additionalProperties: true
+        reviews:
+          type: object
+          additionalProperties: true
+        dishReports:
+          type: object
+          additionalProperties: true
+        stayBookings:
+          type: object
+          additionalProperties: true
+        subscriptions:
+          type: object
+          additionalProperties: true
+        escrowHolds:
+          type: object
+          additionalProperties: true
+        commissions:
+          type: object
+          additionalProperties: true
+        agentProfile:
+          type: object
+          additionalProperties: true
+          nullable: true
+          description: Agent profile row if the user is a verified agent, else null.
+        liveEvents:
+          type: object
+          additionalProperties: true
+      required:
+        - metadata
+        - identity
+        - trips
+        - itineraryDays
+        - itineraryItems
+        - tripVersions
+        - tripShares
+        - scamReports
+        - sosEvents
+        - notificationPreference
+        - notificationLogs
+        - mediaAssets
+        - memoryBooks
+        - votes
+        - expenses
+        - reviews
+        - dishReports
+        - stayBookings
+        - subscriptions
+        - escrowHolds
+        - commissions
+        - agentProfile
+        - liveEvents

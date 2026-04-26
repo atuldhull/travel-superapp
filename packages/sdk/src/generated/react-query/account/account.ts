@@ -14,12 +14,17 @@ import type {
   UseQueryResult,
 } from '@tanstack/react-query';
 
+import type { UserDataExportResponseDto } from '../../schemas';
+
 import { apiFetch } from '../../../runtime/fetcher';
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
+/**
+ * @summary Full GDPR/DPDP/COPPA self-export bundle as a single JSON object. ~30 sections; sensitive fields stripped.
+ */
 export type accountControllerExportMyDataResponse200 = {
-  data: void;
+  data: UserDataExportResponseDto;
   status: 200;
 };
 
@@ -81,6 +86,10 @@ export type AccountControllerExportMyDataInfiniteQueryResult = NonNullable<
 >;
 export type AccountControllerExportMyDataInfiniteQueryError = unknown;
 
+/**
+ * @summary Full GDPR/DPDP/COPPA self-export bundle as a single JSON object. ~30 sections; sensitive fields stripped.
+ */
+
 export function useAccountControllerExportMyDataInfinite<
   TData = Awaited<ReturnType<typeof accountControllerExportMyData>>,
   TError = unknown,
@@ -130,6 +139,10 @@ export type AccountControllerExportMyDataQueryResult = NonNullable<
 >;
 export type AccountControllerExportMyDataQueryError = unknown;
 
+/**
+ * @summary Full GDPR/DPDP/COPPA self-export bundle as a single JSON object. ~30 sections; sensitive fields stripped.
+ */
+
 export function useAccountControllerExportMyData<
   TData = Awaited<ReturnType<typeof accountControllerExportMyData>>,
   TError = unknown,
@@ -146,6 +159,9 @@ export function useAccountControllerExportMyData<
   return query;
 }
 
+/**
+ * @summary NDJSON variant of the export bundle — one `{type,data}` envelope per line. Content-Type: application/x-ndjson.
+ */
 export type accountControllerExportMyDataNdjsonResponse200 = {
   data: void;
   status: 200;
@@ -214,6 +230,10 @@ export type AccountControllerExportMyDataNdjsonInfiniteQueryResult = NonNullable
 >;
 export type AccountControllerExportMyDataNdjsonInfiniteQueryError = unknown;
 
+/**
+ * @summary NDJSON variant of the export bundle — one `{type,data}` envelope per line. Content-Type: application/x-ndjson.
+ */
+
 export function useAccountControllerExportMyDataNdjsonInfinite<
   TData = Awaited<ReturnType<typeof accountControllerExportMyDataNdjson>>,
   TError = unknown,
@@ -267,6 +287,10 @@ export type AccountControllerExportMyDataNdjsonQueryResult = NonNullable<
 >;
 export type AccountControllerExportMyDataNdjsonQueryError = unknown;
 
+/**
+ * @summary NDJSON variant of the export bundle — one `{type,data}` envelope per line. Content-Type: application/x-ndjson.
+ */
+
 export function useAccountControllerExportMyDataNdjson<
   TData = Awaited<ReturnType<typeof accountControllerExportMyDataNdjson>>,
   TError = unknown,
@@ -287,6 +311,9 @@ export function useAccountControllerExportMyDataNdjson<
   return query;
 }
 
+/**
+ * @summary Soft-delete the caller's account + revoke all live sessions. GDPR Art. 17 / DPDP §12 right-to-erasure.
+ */
 export type accountControllerDeleteMyAccountResponse204 = {
   data: void;
   status: 204;
@@ -355,6 +382,9 @@ export type AccountControllerDeleteMyAccountMutationResult = NonNullable<
 
 export type AccountControllerDeleteMyAccountMutationError = unknown;
 
+/**
+ * @summary Soft-delete the caller's account + revoke all live sessions. GDPR Art. 17 / DPDP §12 right-to-erasure.
+ */
 export const useAccountControllerDeleteMyAccount = <
   TError = unknown,
   TContext = unknown,

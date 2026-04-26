@@ -14,7 +14,13 @@ import type {
   UseQueryResult,
 } from '@tanstack/react-query';
 
-import type { NotificationsControllerListMineParams } from '../../schemas';
+import type {
+  ListMyNotificationsResponseDto,
+  MarkAllReadResponseDto,
+  NotificationLogDto,
+  NotificationsControllerListMineParams,
+  UnreadCountResponseDto,
+} from '../../schemas';
 
 import { apiFetch } from '../../../runtime/fetcher';
 
@@ -24,7 +30,7 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
  * @summary Returns { unread: N } for the home-screen badge. Single indexed COUNT — cheap.
  */
 export type notificationsControllerUnreadCountResponse200 = {
-  data: void;
+  data: UnreadCountResponseDto;
   status: 200;
 };
 
@@ -176,16 +182,27 @@ export function useNotificationsControllerUnreadCount<
  * @summary List the caller's recent notifications. Optional ?channel=push|email|sms narrows to one delivery channel.
  */
 export type notificationsControllerListMineResponse200 = {
-  data: void;
+  data: ListMyNotificationsResponseDto;
   status: 200;
+};
+
+export type notificationsControllerListMineResponse400 = {
+  data: void;
+  status: 400;
 };
 
 export type notificationsControllerListMineResponseSuccess =
   notificationsControllerListMineResponse200 & {
     headers: Headers;
   };
+export type notificationsControllerListMineResponseError =
+  notificationsControllerListMineResponse400 & {
+    headers: Headers;
+  };
+
 export type notificationsControllerListMineResponse =
-  notificationsControllerListMineResponseSuccess;
+  | notificationsControllerListMineResponseSuccess
+  | notificationsControllerListMineResponseError;
 
 export const getNotificationsControllerListMineUrl = (
   params: NotificationsControllerListMineParams,
@@ -232,7 +249,7 @@ export const getNotificationsControllerListMineQueryKey = (
 
 export const getNotificationsControllerListMineInfiniteQueryOptions = <
   TData = Awaited<ReturnType<typeof notificationsControllerListMine>>,
-  TError = unknown,
+  TError = void,
 >(
   params: NotificationsControllerListMineParams,
   options?: {
@@ -268,7 +285,7 @@ export const getNotificationsControllerListMineInfiniteQueryOptions = <
 export type NotificationsControllerListMineInfiniteQueryResult = NonNullable<
   Awaited<ReturnType<typeof notificationsControllerListMine>>
 >;
-export type NotificationsControllerListMineInfiniteQueryError = unknown;
+export type NotificationsControllerListMineInfiniteQueryError = void;
 
 /**
  * @summary List the caller's recent notifications. Optional ?channel=push|email|sms narrows to one delivery channel.
@@ -276,7 +293,7 @@ export type NotificationsControllerListMineInfiniteQueryError = unknown;
 
 export function useNotificationsControllerListMineInfinite<
   TData = Awaited<ReturnType<typeof notificationsControllerListMine>>,
-  TError = unknown,
+  TError = void,
 >(
   params: NotificationsControllerListMineParams,
   options?: {
@@ -301,7 +318,7 @@ export function useNotificationsControllerListMineInfinite<
 
 export const getNotificationsControllerListMineQueryOptions = <
   TData = Awaited<ReturnType<typeof notificationsControllerListMine>>,
-  TError = unknown,
+  TError = void,
 >(
   params: NotificationsControllerListMineParams,
   options?: {
@@ -331,7 +348,7 @@ export const getNotificationsControllerListMineQueryOptions = <
 export type NotificationsControllerListMineQueryResult = NonNullable<
   Awaited<ReturnType<typeof notificationsControllerListMine>>
 >;
-export type NotificationsControllerListMineQueryError = unknown;
+export type NotificationsControllerListMineQueryError = void;
 
 /**
  * @summary List the caller's recent notifications. Optional ?channel=push|email|sms narrows to one delivery channel.
@@ -339,7 +356,7 @@ export type NotificationsControllerListMineQueryError = unknown;
 
 export function useNotificationsControllerListMine<
   TData = Awaited<ReturnType<typeof notificationsControllerListMine>>,
-  TError = unknown,
+  TError = void,
 >(
   params: NotificationsControllerListMineParams,
   options?: {
@@ -364,7 +381,7 @@ export function useNotificationsControllerListMine<
  * @summary Mark every unread row as read. Returns { marked: N }. Idempotent (second call returns 0).
  */
 export type notificationsControllerMarkAllReadResponse200 = {
-  data: void;
+  data: MarkAllReadResponseDto;
   status: 200;
 };
 
@@ -459,16 +476,27 @@ export const useNotificationsControllerMarkAllRead = <
  * @summary Mark one notification as read. Owner-gated; 404 on cross-user / missing.
  */
 export type notificationsControllerMarkReadResponse200 = {
-  data: void;
+  data: NotificationLogDto;
   status: 200;
+};
+
+export type notificationsControllerMarkReadResponse404 = {
+  data: void;
+  status: 404;
 };
 
 export type notificationsControllerMarkReadResponseSuccess =
   notificationsControllerMarkReadResponse200 & {
     headers: Headers;
   };
+export type notificationsControllerMarkReadResponseError =
+  notificationsControllerMarkReadResponse404 & {
+    headers: Headers;
+  };
+
 export type notificationsControllerMarkReadResponse =
-  notificationsControllerMarkReadResponseSuccess;
+  | notificationsControllerMarkReadResponseSuccess
+  | notificationsControllerMarkReadResponseError;
 
 export const getNotificationsControllerMarkReadUrl = (id: string) => {
   return `/api/v1/notifications/${id}/read`;
@@ -488,7 +516,7 @@ export const notificationsControllerMarkRead = async (
 };
 
 export const getNotificationsControllerMarkReadMutationOptions = <
-  TError = unknown,
+  TError = void,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -527,12 +555,12 @@ export type NotificationsControllerMarkReadMutationResult = NonNullable<
   Awaited<ReturnType<typeof notificationsControllerMarkRead>>
 >;
 
-export type NotificationsControllerMarkReadMutationError = unknown;
+export type NotificationsControllerMarkReadMutationError = void;
 
 /**
  * @summary Mark one notification as read. Owner-gated; 404 on cross-user / missing.
  */
-export const useNotificationsControllerMarkRead = <TError = unknown, TContext = unknown>(options?: {
+export const useNotificationsControllerMarkRead = <TError = void, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof notificationsControllerMarkRead>>,
     TError,
@@ -554,16 +582,27 @@ export const useNotificationsControllerMarkRead = <TError = unknown, TContext = 
  * @summary Mark one notification as UNread (symmetric to /read). Owner-gated.
  */
 export type notificationsControllerMarkUnreadResponse200 = {
-  data: void;
+  data: NotificationLogDto;
   status: 200;
+};
+
+export type notificationsControllerMarkUnreadResponse404 = {
+  data: void;
+  status: 404;
 };
 
 export type notificationsControllerMarkUnreadResponseSuccess =
   notificationsControllerMarkUnreadResponse200 & {
     headers: Headers;
   };
+export type notificationsControllerMarkUnreadResponseError =
+  notificationsControllerMarkUnreadResponse404 & {
+    headers: Headers;
+  };
+
 export type notificationsControllerMarkUnreadResponse =
-  notificationsControllerMarkUnreadResponseSuccess;
+  | notificationsControllerMarkUnreadResponseSuccess
+  | notificationsControllerMarkUnreadResponseError;
 
 export const getNotificationsControllerMarkUnreadUrl = (id: string) => {
   return `/api/v1/notifications/${id}/unread`;
@@ -583,7 +622,7 @@ export const notificationsControllerMarkUnread = async (
 };
 
 export const getNotificationsControllerMarkUnreadMutationOptions = <
-  TError = unknown,
+  TError = void,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -622,15 +661,12 @@ export type NotificationsControllerMarkUnreadMutationResult = NonNullable<
   Awaited<ReturnType<typeof notificationsControllerMarkUnread>>
 >;
 
-export type NotificationsControllerMarkUnreadMutationError = unknown;
+export type NotificationsControllerMarkUnreadMutationError = void;
 
 /**
  * @summary Mark one notification as UNread (symmetric to /read). Owner-gated.
  */
-export const useNotificationsControllerMarkUnread = <
-  TError = unknown,
-  TContext = unknown,
->(options?: {
+export const useNotificationsControllerMarkUnread = <TError = void, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof notificationsControllerMarkUnread>>,
     TError,
@@ -656,11 +692,23 @@ export type notificationsControllerRemoveResponse204 = {
   status: 204;
 };
 
+export type notificationsControllerRemoveResponse404 = {
+  data: void;
+  status: 404;
+};
+
 export type notificationsControllerRemoveResponseSuccess =
   notificationsControllerRemoveResponse204 & {
     headers: Headers;
   };
-export type notificationsControllerRemoveResponse = notificationsControllerRemoveResponseSuccess;
+export type notificationsControllerRemoveResponseError =
+  notificationsControllerRemoveResponse404 & {
+    headers: Headers;
+  };
+
+export type notificationsControllerRemoveResponse =
+  | notificationsControllerRemoveResponseSuccess
+  | notificationsControllerRemoveResponseError;
 
 export const getNotificationsControllerRemoveUrl = (id: string) => {
   return `/api/v1/notifications/${id}`;
@@ -677,7 +725,7 @@ export const notificationsControllerRemove = async (
 };
 
 export const getNotificationsControllerRemoveMutationOptions = <
-  TError = unknown,
+  TError = void,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -716,12 +764,12 @@ export type NotificationsControllerRemoveMutationResult = NonNullable<
   Awaited<ReturnType<typeof notificationsControllerRemove>>
 >;
 
-export type NotificationsControllerRemoveMutationError = unknown;
+export type NotificationsControllerRemoveMutationError = void;
 
 /**
  * @summary Hard-delete a notification (inbox prune). Owner-gated; 404 on cross-user / missing.
  */
-export const useNotificationsControllerRemove = <TError = unknown, TContext = unknown>(options?: {
+export const useNotificationsControllerRemove = <TError = void, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof notificationsControllerRemove>>,
     TError,

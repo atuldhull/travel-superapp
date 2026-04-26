@@ -68,5 +68,11 @@ export type { CreateUploadUrlResponseDto } from './generated/schemas/createUploa
 export type { AttachMediaToTripRequestDto } from './generated/schemas/attachMediaToTripRequestDto';
 export type { AttachMediaToBookRequestDto } from './generated/schemas/attachMediaToBookRequestDto';
 export type { MediaDownloadUrlResponseDto } from './generated/schemas/mediaDownloadUrlResponseDto';
+export type { UserDataExportResponseDto } from './generated/schemas/userDataExportResponseDto';
+export type { UserDataExportMetadataDto } from './generated/schemas/userDataExportMetadataDto';
+export type { NotificationLogDto } from './generated/schemas/notificationLogDto';
+export type { ListMyNotificationsResponseDto } from './generated/schemas/listMyNotificationsResponseDto';
+export type { UnreadCountResponseDto } from './generated/schemas/unreadCountResponseDto';
+export type { MarkAllReadResponseDto } from './generated/schemas/markAllReadResponseDto';
 export type { GeneratePlanWithAiResponseDto } from './generated/schemas/generatePlanWithAiResponseDto';
 export type { SharedTripDto } from './generated/schemas/sharedTripDto';
