@@ -39,3 +39,13 @@ export class RegisterRequestDto {
   @ApiProperty({ minLength: 1, maxLength: 60 })
   declare displayName: string;
 }
+
+export class OAuthSignInRequestDto {
+  @ApiProperty({
+    description:
+      'Provider-issued ID token (e.g. Google id_token, Apple identityToken). Real Google tokens are ~1.2KB; max enforced at 8192.',
+    minLength: 1,
+    maxLength: 8192,
+  })
+  declare idToken: string;
+}

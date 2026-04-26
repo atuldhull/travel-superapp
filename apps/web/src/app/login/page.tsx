@@ -26,8 +26,10 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import {
   useAuthControllerLogin,
+  useAuthControllerOauth,
   type AuthSuccessResponseDto,
   type LoginRequestDto,
+  type OAuthSignInRequestDto,
 } from '@app/sdk';
 import { Button } from '../../components/ui/button';
 import { Field } from '../../components/ui/input';
@@ -47,6 +49,37 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [mfaCode, setMfaCode] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const oauthMutation = useAuthControllerOauth({
+    mutation: {
+      onSuccess: (response: unknown) => {
+        const body = response as AuthSuccessResponseDto;
+        setAccessToken(body.accessToken);
+        router.push('/trips');
+      },
+      onError: (err: unknown) => {
+        const e = err as ApiError;
+        setErrorMsg(e.message || 'OAuth sign-in failed.');
+      },
+    },
+  });
+
+  function signInWithMockProvider() {
+    setErrorMsg(null);
+    // The api's mock provider parses the idToken as JSON. In real flows
+    // (Google / Apple) the button libraries return an opaque JWT —
+    // this branch only fires in dev where the api registers the mock
+    // provider (NODE_ENV !== production). Demo identity is stable so
+    // re-sign-ins land on the same account.
+    const fakeToken = JSON.stringify({
+      providerUserId: 'demo-mock-user',
+      email: 'demo@travel.local',
+      emailVerified: true,
+      displayName: 'Demo User',
+    });
+    const data: OAuthSignInRequestDto = { idToken: fakeToken };
+    oauthMutation.mutate({ provider: 'mock', data });
+  }
 
   const loginMutation = useAuthControllerLogin({
     mutation: {
@@ -128,6 +161,20 @@ export default function LoginPage() {
           ) : null}
           <Button type="submit" disabled={loginMutation.isPending}>
             {loginMutation.isPending ? 'Signing in…' : 'Sign in'}
+          </Button>
+          <div className="flex items-center gap-3 py-2">
+            <hr className="flex-1 border-t border-muted/20" />
+            <span className="text-xs uppercase tracking-wide text-muted">or</span>
+            <hr className="flex-1 border-t border-muted/20" />
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={oauthMutation.isPending}
+            onClick={signInWithMockProvider}
+            className="w-full justify-center"
+          >
+            {oauthMutation.isPending ? 'Signing in…' : 'Sign in with mock provider (dev only)'}
           </Button>
           <p className="text-sm text-muted">
             New here?{' '}

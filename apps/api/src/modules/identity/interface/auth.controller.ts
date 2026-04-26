@@ -67,7 +67,7 @@ import {
   RefreshSuccessResponseDto,
   WhoAmIResponseDto,
 } from './dto/auth-response.dto';
-import { LoginRequestDto, RegisterRequestDto } from './dto/auth-request.dto';
+import { LoginRequestDto, OAuthSignInRequestDto, RegisterRequestDto } from './dto/auth-request.dto';
 
 const REFRESH_COOKIE_NAME = 'refresh_token';
 const REFRESH_COOKIE_PATH = '/api/v1/auth';
@@ -160,6 +160,7 @@ export class AuthController {
     summary:
       'OAuth sign-in. Verifies a provider id token (Google / Apple / mock); auto-links by email or creates a passwordless account.',
   })
+  @ApiBody({ type: OAuthSignInRequestDto })
   @ApiResponse({
     status: 200,
     description: 'OAuth sign-in succeeded; refresh-cookie set; access token returned.',

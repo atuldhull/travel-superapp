@@ -4,6 +4,7 @@
 import type {
   AuthSuccessResponseDto,
   LoginRequestDto,
+  OAuthSignInRequestDto,
   RefreshSuccessResponseDto,
   RegisterRequestDto,
   WhoAmIResponseDto,
@@ -81,11 +82,14 @@ export const getAuthControllerOauthUrl = (provider: string) => {
 
 export const authControllerOauth = async (
   provider: string,
+  oAuthSignInRequestDto: OAuthSignInRequestDto,
   options?: RequestInit,
 ): Promise<authControllerOauthResponse> => {
   return apiFetch<authControllerOauthResponse>(getAuthControllerOauthUrl(provider), {
     ...options,
     method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(oAuthSignInRequestDto),
   });
 };
 
