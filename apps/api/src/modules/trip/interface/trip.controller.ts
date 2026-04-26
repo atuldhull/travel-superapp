@@ -250,6 +250,12 @@ export class TripController {
   @ApiOperation({
     summary: 'Generate itinerary stub for the trip (one ItineraryDay per date in the range).',
   })
+  @ApiResponse({
+    status: 200,
+    description: 'Newly-generated itinerary days (replaces any prior ones).',
+    type: ItineraryListResponseDto,
+  })
+  @ApiResponse({ status: 422, description: 'TRIP_DATES_REQUIRED.' })
   @Post(':id/itinerary')
   @HttpCode(HttpStatus.OK)
   async buildItinerary(

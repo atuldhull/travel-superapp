@@ -203,15 +203,26 @@ export const tripControllerRemove = async (
  * @summary Generate itinerary stub for the trip (one ItineraryDay per date in the range).
  */
 export type tripControllerBuildItineraryResponse200 = {
-  data: void;
+  data: ItineraryListResponseDto;
   status: 200;
+};
+
+export type tripControllerBuildItineraryResponse422 = {
+  data: void;
+  status: 422;
 };
 
 export type tripControllerBuildItineraryResponseSuccess =
   tripControllerBuildItineraryResponse200 & {
     headers: Headers;
   };
-export type tripControllerBuildItineraryResponse = tripControllerBuildItineraryResponseSuccess;
+export type tripControllerBuildItineraryResponseError = tripControllerBuildItineraryResponse422 & {
+  headers: Headers;
+};
+
+export type tripControllerBuildItineraryResponse =
+  | tripControllerBuildItineraryResponseSuccess
+  | tripControllerBuildItineraryResponseError;
 
 export const getTripControllerBuildItineraryUrl = (id: string) => {
   return `/api/v1/trips/${id}/itinerary`;

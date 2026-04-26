@@ -530,7 +530,13 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: Newly-generated itinerary days (replaces any prior ones).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItineraryListResponseDto'
+        '422':
+          description: TRIP_DATES_REQUIRED.
       security: *a11
       summary: Generate itinerary stub for the trip (one ItineraryDay per date in the
         range).
