@@ -21,6 +21,7 @@ import {
   getTripControllerGetItineraryQueryKey,
   getTripControllerGetOneQueryKey,
   getTripControllerListQueryKey,
+  useMediaControllerListByTrip,
   useTripControllerBuildItinerary,
   useTripControllerGetItinerary,
   useTripControllerGetOne,
@@ -29,6 +30,8 @@ import {
   useTripControllerUpdateDay,
   type ItineraryDayDto,
   type ItineraryListResponseDto,
+  type ListTripMediaResponseDto,
+  type MediaAssetDto,
   type TripDto,
   type UpdateDayItemDto,
   type UpdateDayItemsRequestDto,
@@ -171,6 +174,7 @@ export default function TripDetailPage() {
         />
       )}
       <ItinerarySection tripId={id} enabled={token !== null && !editing} />
+      <MediaSection tripId={id} enabled={token !== null && !editing} />
       {confirmDelete ? (
         <Card>
           <CardHeader>
@@ -638,5 +642,67 @@ function DayItemsEditor({ day, onClose }: DayItemsEditorProps) {
         </Button>
       </div>
     </div>
+  );
+}
+
+interface MediaSectionProps {
+  readonly tripId: string;
+  readonly enabled: boolean;
+}
+
+function MediaSection({ tripId, enabled }: MediaSectionProps) {
+  const { data, isLoading, isError } = useMediaControllerListByTrip(
+    tripId,
+    { limit: '50' },
+    { query: { enabled } },
+  );
+
+  if (!enabled) return null;
+
+  const body = data?.data as unknown as ListTripMediaResponseDto | undefined;
+  const assets: readonly MediaAssetDto[] = body?.media ?? [];
+  const ready = assets.filter((a) => a.status === 'ready');
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-start justify-between gap-2">
+          <CardTitle>Media</CardTitle>
+          <Badge variant="neutral">
+            {ready.length} {ready.length === 1 ? 'asset' : 'assets'}
+          </Badge>
+        </div>
+      </CardHeader>
+      {isLoading ? (
+        <Skeleton className="h-4 w-2/3" count={2} />
+      ) : isError ? (
+        <p className="text-sm text-danger">Couldn't load media.</p>
+      ) : ready.length === 0 ? (
+        <p className="text-sm text-muted">
+          No media attached yet. Upload via the api's presigned-URL flow (UI uploader is a follow-up
+          slice).
+        </p>
+      ) : (
+        <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {ready.map((a) => (
+            <MediaTile key={a.id} asset={a} />
+          ))}
+        </ul>
+      )}
+    </Card>
+  );
+}
+
+function MediaTile({ asset }: { asset: MediaAssetDto }) {
+  const dateStr = new Date(asset.createdAt).toLocaleDateString();
+  const isVideo = asset.kind === 'video';
+  return (
+    <li className="flex flex-col rounded border border-muted/15 bg-muted/5 p-2 text-xs">
+      <div className="flex aspect-square items-center justify-center rounded bg-muted/20 text-2xl">
+        {isVideo ? '🎬' : '🖼️'}
+      </div>
+      <p className="mt-1 truncate font-mono text-[10px] text-muted">{asset.id.slice(0, 8)}…</p>
+      <p className="text-[10px] text-muted">{dateStr}</p>
+    </li>
   );
 }
