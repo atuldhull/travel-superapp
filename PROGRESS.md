@@ -25,6 +25,38 @@
 
 ---
 
+### [IV.18.19.59-66] — per-module Swagger rollout — safety / food / weather / stays / places / events / transport / feed (4-bundle / 8-slice mega-batch)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 6 (SDK / API contract)
+
+**What was done**
+
+Single-turn 8-slice push completing the SDK contract rollout for every primary user-facing controller. One combined orval regen at the end (per the `feedback_combined_sdk_regen.md` workflow) — saves ~7 regen cycles vs. one-per-slice and avoids 8 rounds of churn on the 150+ generated TS files.
+
+| Slice | Commit    | Module    | Routes typed                                                |
+| ----- | --------- | --------- | ----------------------------------------------------------- |
+| .59   | `fc997a0` | safety    | POST /safety/scam-reports, POST /safety/scam-reports/search |
+| .60   | `e76915d` | food      | POST /eateries/search                                       |
+| .61   | `73e607f` | weather   | GET /weather/forecast                                       |
+| .62   | `cd78aca` | stays     | POST /stays/search                                          |
+| .63   | `2b7e0d4` | places    | POST /places/search, POST /places/federated-search          |
+| .64   | `ed21a23` | events    | POST /events/search                                         |
+| .65   | `16942d9` | transport | POST /transport/routes                                      |
+| .66   | `3349604` | feed      | GET /feed/me + combined SDK regen for all 8 slices          |
+
+26 new component schemas re-exported from `@app/sdk` covering every primary user-facing surface: scam reports, eateries, weather forecasts, stays, places (canonical + federated), events, route legs, feed items.
+
+**Verification**
+
+- api typecheck + sdk typecheck + web typecheck clean.
+- 93 / 578 api tests pass — same baseline as the prior bundle.
+
+**Commits**
+
+`fc997a0 → 3349604` (8 sequential `feat()` commits + the combined regen on `.66`).
+
+---
+
 ### [IV.18.19.58] — per-module Swagger rollout — notifications (bundled with `[IV.18.19.57]`)
 
 **Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 6 (SDK / API contract)
