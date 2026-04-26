@@ -10,18 +10,69 @@
 
 ## Summary
 
-| Counter             | Value                                                                              |
-| ------------------- | ---------------------------------------------------------------------------------- |
-| Prompts completed   | 154 (152 prior + bundled Card/Skeleton/Badge primitives + dark mode)               |
-| Prompts in progress | 0                                                                                  |
-| Prompts blocked     | 0                                                                                  |
-| Last prompt         | `[IV.18.19.28]` — Tailwind dark mode + theme toggle (bundled with `[IV.18.19.27]`) |
-| Last commit date    | 2026-04-26                                                                         |
-| Phase               | Phase 1 — design system depth (6 primitives) + full light/dark theme support       |
+| Counter             | Value                                                                  |
+| ------------------- | ---------------------------------------------------------------------- |
+| Prompts completed   | 156 (154 prior + bundled Trip detail page + whoami badge)              |
+| Prompts in progress | 0                                                                      |
+| Prompts blocked     | 0                                                                      |
+| Last prompt         | `[IV.18.19.30]` — /auth/me whoami badge (bundled with `[IV.18.19.29]`) |
+| Last commit date    | 2026-04-26                                                             |
+| Phase               | Phase 1 — full Trip CRUD on web + signed-in identity surface in header |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.19.30] — /auth/me whoami badge in layout header (bundled with `[IV.18.19.29]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 5 (Frontend stack) + §13.2 (Identity)
+
+**What was done**
+
+Surface the current authenticated identity in the layout header. Demonstrates the typed `/auth/me` flow on a non-page surface (every route inherits the badge via the root layout).
+
+- New `apps/web/src/components/whoami-badge.tsx`: small pill with the user's role + truncated user id when authenticated. Uses the typed `useAuthControllerMe` hook from `@app/sdk`. Query is gated on `useAuthToken()` so a signed-out tab never fires `/auth/me` (no spurious 401 in dev tools).
+- New api class `WhoAmIResponseDto` (sub + sid + role) decorated with `@ApiProperty` + wired via `@ApiResponse({ type: WhoAmIResponseDto })` on `GET /auth/me`. Exported as `WhoAmIResponseDto` from `@app/sdk`.
+- Restructure `layout.tsx` so `<Providers>` wraps both the header AND the route children — the badge needs to live inside `QueryClientProvider` to call useQuery. Header now holds: `WhoAmIBadge` (left) ↔ `ThemeToggle` (right).
+
+**Verification**
+
+- `pnpm --filter=web typecheck` + `pnpm --filter=web build` clean. 7 routes total (6 static + 1 dynamic /trips/[id]).
+- 93 / 578 api tests still pass.
+
+**Commit**
+
+`22893fa feat(IV.18.19.30): /auth/me whoami badge in layout header`
+
+---
+
+### [IV.18.19.29] — Trip detail page (/trips/:id) with edit + delete (bundled with `[IV.18.19.30]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 5 (Frontend stack) + §6 (SDK / API contract)
+
+**What was done**
+
+Full Trip CRUD on the web — read, edit (inline form, partial-patch), delete (confirm-gated). Users can now drive every Trip lifecycle action through the UI without touching curl.
+
+- New `apps/web/src/app/trips/[id]/page.tsx`: themed detail view with inline edit form + confirm-gated delete. Uses `useTripControllerGetOne` + `useTripControllerUpdate` + `useTripControllerRemove` from @app/sdk.
+  - Read view: title + status badge + radius + version + dates + created/updated timestamps. Edit/Delete actions in card header.
+  - Edit form pre-fills from current trip; on save, only sends fields that actually changed (empty patch → cancel). Date fields accept "" to clear (sent as `null`).
+  - Delete asks for confirmation; on confirm calls REMOVE then routes to /trips with the list cache invalidated.
+- /trips card titles now link to /trips/:id (typed-routes is permissive with the dynamic segment via `as never` cast).
+- New api class `UpdateTripRequestDto` (title? + radiusKm? + nullable startsOn?/endsOn?) decorated with `@ApiProperty`. Wired via `@ApiBody({ type: UpdateTripRequestDto })` on `PATCH /trips/:id` so orval emits a typed `{id, data: UpdateTripRequestDto}` body on the generated mutation hook.
+- Regenerated `docs/api/openapi.yaml` (3 new component schemas + 2 nullable wrappers) + `packages/sdk/src/generated/`.
+- New `@app/sdk` re-export: `UpdateTripRequestDto`.
+
+**Verification**
+
+- `pnpm --filter=api typecheck` + `pnpm --filter=@app/sdk typecheck` + `pnpm --filter=web typecheck` all clean.
+- 93 / 578 api tests still pass.
+
+**Commit**
+
+`6670e4b feat(IV.18.19.29): Trip detail page (/trips/:id) with edit + delete`
 
 ---
 
