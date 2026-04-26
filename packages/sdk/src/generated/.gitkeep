@@ -1,0 +1,2 @@
+# Generated client lives here after `pnpm --filter=@app/sdk sdk:gen`.
+# Empty until first generation; orval clobbers + repopulates.
