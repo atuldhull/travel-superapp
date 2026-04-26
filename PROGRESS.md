@@ -10,18 +10,70 @@
 
 ## Summary
 
-| Counter             | Value                                                                                 |
-| ------------------- | ------------------------------------------------------------------------------------- |
-| Prompts completed   | 148 (146 prior + bundled web auth flow + Trip strict schemas)                         |
-| Prompts in progress | 0                                                                                     |
-| Prompts blocked     | 0                                                                                     |
-| Last prompt         | `[IV.18.19.22]` — Trip strict response schemas (bundled with `[IV.18.19.21]`)         |
-| Last commit date    | 2026-04-26                                                                            |
-| Phase               | Phase 1 — interactive web shell live (login + protected /trips), Trip endpoints typed |
+| Counter             | Value                                                                                |
+| ------------------- | ------------------------------------------------------------------------------------ |
+| Prompts completed   | 150 (148 prior + bundled UI primitives + silent-refresh)                             |
+| Prompts in progress | 0                                                                                    |
+| Prompts blocked     | 0                                                                                    |
+| Last prompt         | `[IV.18.19.24]` — silent-refresh on mount + boot-gate (bundled with `[IV.18.19.23]`) |
+| Last commit date    | 2026-04-26                                                                           |
+| Phase               | Phase 1 — UI primitives in place; sessions survive hard reload via httpOnly refresh  |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.19.24] — Silent-refresh on mount + boot-gate (bundled with `[IV.18.19.23]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 5 (Frontend stack) + §13.2 (Auth)
+
+**What was done**
+
+Closes the hard-reload-bounces-to-login UX gap. The httpOnly refresh cookie set during login now resurrects the session on every fresh mount.
+
+- New `apps/web/src/lib/silent-refresh.tsx` — `<SilentRefreshOnMount />` calls `POST /auth/refresh` once on mount + every 10 minutes thereafter. Access tokens have a 15m TTL (Playbook §13.2), so re-rolling at 10m leaves a 5m safety buffer. Marks `bootComplete` after the first attempt (success OR failure) so protected pages can stop spinning.
+- `packages/sdk/src/runtime/fetcher.ts`: `apiFetch` now sets `credentials: 'include'` on every request — required for the browser to send the httpOnly refresh cookie cross-origin. The api's `@fastify/cors` config is already `credentials: true`. Set `CORS_ORIGINS` env to include the web origin in dev.
+- `auth-store.ts` adds `bootComplete` + `markBootComplete()` + `getBootComplete()`. `notify()` extracted as a shared helper.
+- `use-auth-token.ts` adds `useAuthBootComplete()` — `useSyncExternalStore` over the boot flag. SSR snapshot returns `true` so prerendered output doesn't ship a loading state; client hydration overrides on first commit.
+- `providers.tsx` mounts `<SilentRefreshOnMount />` inside the QueryClientProvider so the refresh interval runs alongside React Query's caches.
+- `apps/web/src/app/trips/page.tsx` reads `bootComplete` and shows "Restoring your session…" until the first refresh attempt resolves. Without this gate, hard-reload always bounces to /login before the httpOnly cookie has its chance.
+
+**Verification**
+
+- `pnpm --filter=@app/sdk typecheck` + `pnpm --filter=web typecheck` + `pnpm --filter=web build` all green. Bundle sizes: /login 1.62KB, /trips 1.74KB.
+- 93 / 578 api tests still pass.
+
+**Commit**
+
+`a543746 feat(IV.18.19.24): silent-refresh on mount + boot-gate for protected pages`
+
+---
+
+### [IV.18.19.23] — UI primitives: Button, Input, Field, cn() utility (bundled with `[IV.18.19.24]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 5 (Frontend stack)
+
+**What was done**
+
+First reusable UI primitives — sets the v1 design system foundation. Hand-rolled shadcn-style (not the shadcn CLI) because Tailwind 4's config story collides with shadcn's v3 defaults; we only need ~5 primitives for v1 so the CLI overhead isn't worth it.
+
+- Add `clsx@^2.1.1` + `tailwind-merge@^2.5.5` to apps/web (the de-facto class-merger pattern; tailwind-merge resolves utility collisions when consumers override defaults).
+- New `apps/web/src/lib/cn.ts` — `cn(...inputs)` = clsx + twMerge in one call. Every UI primitive consumes it.
+- New `apps/web/src/components/ui/button.tsx` — themed primary / outline / ghost variants × sm / md sizes. Forwards refs.
+- New `apps/web/src/components/ui/input.tsx` — `Input` (themed native input) + `Field` (labeled wrapper with optional error/help text and autogen htmlFor id).
+- Refactor `/login` to use `Field` + `Button` — drops the inline Field component duplicated in the page file.
+- Refactor `/trips` sign-out to use `Button variant="ghost" size="sm"`.
+
+**Verification**
+
+- `pnpm --filter=web typecheck` clean.
+- No api change; tests unchanged.
+
+**Commit**
+
+`1cb2780 feat(IV.18.19.23): UI primitives — Button, Input, Field, cn() utility`
 
 ---
 
