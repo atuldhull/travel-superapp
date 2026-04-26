@@ -25,7 +25,20 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import {
+  CreateExpenseRequestDto,
+  ExpenseDto as ExpenseResponseDto,
+  ListBalancesResponseDto,
+  ListExpensesResponseDto,
+} from './dto/social-response.dto';
 import { type AuthenticatedUser, CurrentUser } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { CreateExpenseUseCase } from '../application/create-expense.use-case';
@@ -77,6 +90,8 @@ export class ExpensesController {
     summary:
       'Record a shared expense on a trip. Auth gate: owner OR active TripShare. Splits sum-checked.',
   })
+  @ApiBody({ type: CreateExpenseRequestDto })
+  @ApiResponse({ status: 201, description: 'Newly-created expense row.', type: ExpenseResponseDto })
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(
@@ -98,6 +113,7 @@ export class ExpensesController {
   @ApiOperation({
     summary: 'List trip expenses, most-recent-first. ?limit=N (1..500, default 50).',
   })
+  @ApiResponse({ status: 200, description: 'Trip expenses.', type: ListExpensesResponseDto })
   @Get()
   @HttpCode(HttpStatus.OK)
   async list(
@@ -125,6 +141,11 @@ export class ExpensesController {
     summary:
       'Net per-user "who owes whom" ledger. Sum is zero (modulo 2dp). 60s cache; write-invalidated on expense create/delete.',
   })
+  @ApiResponse({
+    status: 200,
+    description: 'Per-user net ledger, sorted largest-creditor-first.',
+    type: ListBalancesResponseDto,
+  })
   @Get('balances')
   @HttpCode(HttpStatus.OK)
   async balances(
@@ -138,6 +159,8 @@ export class ExpensesController {
   @ApiOperation({
     summary: 'Delete an expense. Payer-only — only the user who recorded it can remove it.',
   })
+  @ApiResponse({ status: 204, description: 'Deleted.' })
+  @ApiResponse({ status: 404, description: 'EXPENSE_NOT_FOUND.' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string): Promise<void> {

@@ -23,7 +23,13 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  CreateReviewRequestDto,
+  ListReviewsResponseDto,
+  ReviewDto as ReviewResponseDto,
+  ReviewSummaryDto as ReviewSummaryResponseDto,
+} from './dto/social-response.dto';
 import { type AuthenticatedUser, CurrentUser, Public } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { CreateReviewUseCase } from '../application/create-review.use-case';
@@ -103,6 +109,8 @@ export class ReviewsController {
     summary:
       'Create a review for any review-target (place/stay/eatery/agent). Owner-stamped to the caller.',
   })
+  @ApiBody({ type: CreateReviewRequestDto })
+  @ApiResponse({ status: 201, description: 'Newly-created review row.', type: ReviewResponseDto })
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(
@@ -134,6 +142,15 @@ export class ReviewsController {
    */
   @ApiOperation({
     summary: 'Aggregated review summary { count, average, histogram } for a target. @Public.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Summary; zero-filled for empty targets.',
+    type: ReviewSummaryResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'VALIDATION_FAILED — targetType / targetId missing or invalid.',
   })
   @Get('summary')
   @Public()
@@ -171,6 +188,7 @@ export class ReviewsController {
     summary:
       "List the caller's authored reviews, most-recent-first. ?limit=N (1..200, default 50).",
   })
+  @ApiResponse({ status: 200, description: "Caller's reviews.", type: ListReviewsResponseDto })
   @Get('mine')
   @HttpCode(HttpStatus.OK)
   async listMine(
@@ -190,6 +208,11 @@ export class ReviewsController {
    */
   @ApiOperation({
     summary: 'Target-scoped review listing. ?targetType + ?targetId required. Most-recent-first.',
+  })
+  @ApiResponse({ status: 200, description: 'Reviews on the target.', type: ListReviewsResponseDto })
+  @ApiResponse({
+    status: 400,
+    description: 'VALIDATION_FAILED — targetType / targetId missing or invalid.',
   })
   @Get()
   @HttpCode(HttpStatus.OK)
@@ -223,6 +246,8 @@ export class ReviewsController {
   @ApiOperation({
     summary: "Delete one of the caller's reviews. Author-gated; 404 on cross-user / missing.",
   })
+  @ApiResponse({ status: 204, description: 'Deleted.' })
+  @ApiResponse({ status: 404, description: 'REVIEW_NOT_FOUND.' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string): Promise<void> {
