@@ -1,0 +1,84 @@
+# Fly.io config for `apps/api`. Drives `fly deploy` from the repo
+# root. Companion to `apps/api/Dockerfile` (the build) +
+# `docs/runbooks/fly-deploy.md` (the operational story).
+#
+# App naming convention:
+#   travel-api-staging   — pre-prod gate, full traffic mirror, real Doppler `staging` config
+#   travel-api-prod      — production
+#
+# This file is the staging-shape (defaults). For prod, copy to
+# `fly.prod.toml` and override `app`, `primary_region`, machine
+# `size`, `min_machines_running`. We deliberately avoid env-templating
+# the app name to keep `fly deploy` invocations explicit per env.
+#
+# Installed by prompt [IV.18.19.11].
+
+app = "travel-api-staging"
+primary_region = "iad"  # us-east; closest to most beta users
+kill_signal = "SIGTERM" # match Nest's enableShutdownHooks → graceful drain
+kill_timeout = "30s"    # allow in-flight requests to finish
+
+[build]
+  dockerfile = "apps/api/Dockerfile"
+  # Build context is the repo root so the multi-stage Dockerfile can
+  # reach pnpm-lock.yaml + workspace packages.
+
+[env]
+  NODE_ENV = "production"
+  PORT = "3000"
+  LOG_LEVEL = "info"
+  # Real secrets land via `fly secrets import` from Doppler — see
+  # docs/runbooks/secrets.md.
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "stop"      # save spend in idle hours
+  auto_start_machines = true       # cold-start on the first request
+  min_machines_running = 1         # always-warm; prod overrides to 2+
+
+  # Health check: Fly considers the machine ready when /health/ready
+  # returns 200. This includes a Redis ping + a Postgres ping in the
+  # implementation, so a healthy machine actually has both data
+  # dependencies reachable.
+  [[http_service.checks]]
+    interval = "10s"
+    timeout = "5s"
+    grace_period = "30s"           # allow boot + Prisma client init
+    method = "GET"
+    path = "/health/ready"
+    protocol = "http"
+    tls_skip_verify = false
+
+  # Liveness: lighter check that just verifies the event loop is
+  # responsive. Used for "should this machine be killed?" decisions.
+  [[http_service.checks]]
+    interval = "15s"
+    timeout = "3s"
+    grace_period = "30s"
+    method = "GET"
+    path = "/health/live"
+    protocol = "http"
+
+[[vm]]
+  size = "shared-cpu-1x"           # smallest staging tier; bump to
+                                   # `shared-cpu-2x` for prod
+  memory = "1024mb"                # 1GB; matches the playbook §11
+                                   # baseline for Node + Prisma engines
+  cpu_kind = "shared"
+  cpus = 1
+
+# Metrics scraping — Fly's built-in scraper ingests prom-format from
+# /metrics. Combined with the dashboards in
+# infra/grafana/provisioning/dashboards/json/, ops gets cache + RED +
+# event metrics in Fly's native panel without extra wiring.
+[metrics]
+  port = 3000
+  path = "/metrics"
+
+# Restart policy — exit with non-zero is a real crash; let Fly retry
+# with exponential backoff rather than silently restarting on every
+# transient.
+[restart]
+  policy = "on-failure"
+  retries = 5
