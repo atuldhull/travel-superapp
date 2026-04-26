@@ -9,15 +9,30 @@
  * Installed by prompt [IV.18.9.1].
  */
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { SearchEventsUseCase } from '../application/search-events.use-case';
 import type { EventListing } from '../domain/event-listing.entity';
 import { SearchEventsBodySchema, type SearchEventsBody } from './dto/events.dto';
+import { SearchEventsRequestDto, SearchEventsResponseDto } from './dto/events-response.dto';
 
+@ApiTags('events')
+@ApiBearerAuth()
 @Controller('events')
 export class EventsController {
   constructor(private readonly searchEvents: SearchEventsUseCase) {}
 
+  @ApiOperation({ summary: 'Search events within a radius and date window.' })
+  @ApiBody({ type: SearchEventsRequestDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Matching events, soonest-first.',
+    type: SearchEventsResponseDto,
+  })
+  @ApiResponse({
+    status: 422,
+    description: 'INVALID_COORDINATES | INVALID_RADIUS | INVALID_DATE_RANGE.',
+  })
   @Post('search')
   @HttpCode(HttpStatus.OK)
   async search(
