@@ -10,18 +10,72 @@
 
 ## Summary
 
-| Counter             | Value                                                                           |
-| ------------------- | ------------------------------------------------------------------------------- |
-| Prompts completed   | 160 (158 prior + bundled Trip overview strict schema + OAuth button)            |
-| Prompts in progress | 0                                                                               |
-| Prompts blocked     | 0                                                                               |
-| Last prompt         | `[IV.18.19.34]` — OAuth sign-in button on /login (bundled with `[IV.18.19.33]`) |
-| Last commit date    | 2026-04-26                                                                      |
-| Phase               | Phase 1 — Section<T> typed end-to-end + OAuth flow live (mock provider)         |
+| Counter             | Value                                                                          |
+| ------------------- | ------------------------------------------------------------------------------ |
+| Prompts completed   | 162 (160 prior + bundled apiFetch envelope rework + Trip itinerary subsection) |
+| Prompts in progress | 0                                                                              |
+| Prompts blocked     | 0                                                                              |
+| Last prompt         | `[IV.18.19.36]` — Trip itinerary subsection (bundled with `[IV.18.19.35]`)     |
+| Last commit date    | 2026-04-26                                                                     |
+| Phase               | Phase 1 — typed envelope across the SDK + itinerary CRUD on /trips/[id]        |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.19.36] — Trip detail itinerary subsection (typed days+items render) (bundled with `[IV.18.19.35]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 5 (Frontend stack) + §6 (SDK / API contract)
+
+**What was done**
+
+Last big read-side hole on /trips/[id] closed. The detail page now renders the trip's itinerary days + items inline below the trip card, using fully typed schemas.
+
+- New api response DTOs in `trip-response.dto.ts`: `ItineraryItemDto`, `ItineraryDayDto`, `ItineraryListResponseDto`. All fully decorated with `@ApiProperty` (nullable handling for placeId/startTime/endTime/notes/summary).
+- Wire `@ApiResponse({ type: ItineraryListResponseDto })` on `GET /trips/:id/itinerary` (+ 404 TRIP_NOT_FOUND). Regenerated openapi.yaml + SDK; re-exported the 3 schemas from @app/sdk.
+- New `ItinerarySection` component on the detail page:
+  - Calls `useTripControllerGetItinerary(tripId)` (gated on auth + not-currently-editing so the cache doesn't churn during edits).
+  - Renders a Card with a Badge ("N days"), then per-day rows with dayIndex + date + summary + items.
+  - Empty state points at the api's POST /trips/:id/itinerary stub.
+  - Skeleton loading state matches the rest of the surface.
+
+**Verification**
+
+- All typechecks + builds clean. /trips/[id] bundle: 3.28KB → 3.79KB (+0.51KB for the itinerary subsection).
+- 93 / 578 api tests still pass.
+
+**Commit**
+
+`0a54018 feat(IV.18.19.36): Trip detail itinerary subsection (typed days+items render)`
+
+---
+
+### [IV.18.19.35] — apiFetch returns orval's `{data, status, headers}` envelope (bundled with `[IV.18.19.36]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Refactor · **Playbook §** 6 (SDK / API contract)
+
+**What was done**
+
+Aligns `apiFetch` with orval's expected mutator contract — generated SDK code now talks to the runtime in its native shape. Kills the `data as unknown as <Dto>` pattern at the call sites in favor of `result.data.data.<field>`.
+
+- Reshape `packages/sdk/src/runtime/fetcher.ts` to return the full orval envelope (`{ data, status, headers }`) instead of just the body. The signature now matches what the generated SDK code expects out of the box: orval's `XxxResponseSuccess` type IS the envelope, and React Query consumers see `result.data.data.<field>` with no cast through nothing.
+- 204 No-Content responses still return an envelope with `data: undefined` so consumers don't have to special-case the status code.
+- Updated every web consumer to read via `.data.data.<field>` (or `.data?.data` for nullable):
+  - `/featured`, `/trips`, `/trips/[id]`, `/trips/[id]/overview` — queries.
+  - `/login`, `/register`, `/trips/new` — mutations: `onSuccess` receives the envelope; explicit `(response: { data?: unknown })` annotation since the generated `// @ts-nocheck` files pass through `any`.
+  - `whoami-badge.tsx` — same envelope unwrap.
+  - `silent-refresh.tsx` — `authControllerRefresh()` envelope.
+- The cast through `unknown` is still in place at the unwrap site — generated DTOs are `// @ts-nocheck` so TS sees `data` as `unknown`. Eliminating that last cast needs orval to emit strict types (today's tradeoff is documented in the file headers).
+
+**Verification**
+
+- All typechecks + builds clean. 9 routes still rendered. Bundle sizes within 1B of before.
+
+**Commit**
+
+`d95d548 feat(IV.18.19.35): apiFetch returns orval's {data,status,headers} envelope`
 
 ---
 
