@@ -12,6 +12,7 @@
  * Installed by prompt [IV.18.11.1].
  */
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { type AuthenticatedUser, CurrentUser } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { FindNearbyScamsUseCase } from '../application/find-nearby-scams.use-case';
@@ -23,6 +24,12 @@ import {
   type FindNearbyScamsBody,
   type ReportScamBody,
 } from './dto/safety.dto';
+import {
+  FindNearbyScamsRequestDto,
+  FindNearbyScamsResponseDto,
+  ReportScamRequestDto,
+  ScamReportDto as ScamReportResponseDto,
+} from './dto/safety-response.dto';
 
 interface ScamReportDto {
   readonly id: string;
@@ -58,6 +65,8 @@ function toDistanceDto(r: ScamReportWithDistance): ScamReportWithDistanceDto {
   return { ...toDto(r), distanceMeters: r.distanceMeters };
 }
 
+@ApiTags('safety')
+@ApiBearerAuth()
 @Controller('safety/scam-reports')
 export class SafetyController {
   constructor(
@@ -65,6 +74,13 @@ export class SafetyController {
     private readonly findUc: FindNearbyScamsUseCase,
   ) {}
 
+  @ApiOperation({ summary: 'File a crowd-sourced scam report at the given coordinates.' })
+  @ApiBody({ type: ReportScamRequestDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Newly-created report row.',
+    type: ScamReportResponseDto,
+  })
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async report(
@@ -83,6 +99,16 @@ export class SafetyController {
     return toDto(report);
   }
 
+  @ApiOperation({
+    summary:
+      'Find scam reports within a radius. Optional filters by category / minSeverity / verifiedOnly.',
+  })
+  @ApiBody({ type: FindNearbyScamsRequestDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Matching reports, nearest-first.',
+    type: FindNearbyScamsResponseDto,
+  })
   @Post('search')
   @HttpCode(HttpStatus.OK)
   async search(
