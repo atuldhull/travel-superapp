@@ -16,10 +16,14 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { configureSdk } from '@app/sdk';
 import { useState, type ReactNode } from 'react';
+import { getAccessToken } from '../lib/auth-store';
 
 configureSdk({
   baseUrl: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000',
-  getAccessToken: () => null,
+  // Reads the in-memory token store on every request — keeps us
+  // off localStorage (CLAUDE rule 12) while still surviving
+  // navigation between client routes.
+  getAccessToken,
 });
 
 export function Providers({ children }: { children: ReactNode }) {

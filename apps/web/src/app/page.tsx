@@ -15,18 +15,30 @@ export default function HomePage() {
         events, transport, weather, crowd, safety, prices, translation, 3D previews) and stays with
         them through the trip.
       </p>
-      <p>
+      <div className="flex flex-wrap gap-3">
         <Link
           href="/featured"
           className="inline-flex items-center gap-1 rounded-md bg-brand px-4 py-2 text-sm font-medium text-brand-foreground transition hover:opacity-90"
         >
           Browse featured memory books →
         </Link>
-      </p>
+        <Link
+          href="/login"
+          className="inline-flex items-center gap-1 rounded-md border border-brand/30 px-4 py-2 text-sm font-medium text-brand transition hover:bg-brand/5"
+        >
+          Sign in
+        </Link>
+        <Link
+          href="/trips"
+          className="inline-flex items-center gap-1 rounded-md border border-muted/30 px-4 py-2 text-sm font-medium text-muted transition hover:bg-muted/10"
+        >
+          Your trips
+        </Link>
+      </div>
       <hr className="border-t border-muted/20" />
       <p className="text-sm text-muted">
         Scaffold installed by <code className="rounded bg-muted/10 px-1 py-0.5">[IV.18.19.14]</code>
-        . Real design system + auth flow + trip planner land in follow-up slices.
+        . Real design system + trip planner land in follow-up slices.
       </p>
     </main>
   );
