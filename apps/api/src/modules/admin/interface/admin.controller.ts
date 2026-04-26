@@ -18,12 +18,14 @@
  * Installed by prompt [IV.18.3.1].
  */
 import { Body, Controller, Delete, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import type { Place } from '../../places/domain/place.entity';
 import { AdminCreatePlaceUseCase } from '../application/admin-create-place.use-case';
 import { AdminDeletePlaceUseCase } from '../application/admin-delete-place.use-case';
 import { AdminCreatePlaceBodySchema, type AdminCreatePlaceBody } from './dto/admin.dto';
+import { AdminCreatePlaceRequestDto, AdminPlaceDto } from './dto/admin-response.dto';
 
 interface PlaceDto {
   readonly id: string;
@@ -51,6 +53,8 @@ function toDto(p: Place): PlaceDto {
   };
 }
 
+@ApiTags('admin')
+@ApiBearerAuth()
 @Controller('admin/places')
 @Roles('admin')
 export class AdminController {
@@ -59,6 +63,9 @@ export class AdminController {
     private readonly deletePlace: AdminDeletePlaceUseCase,
   ) {}
 
+  @ApiOperation({ summary: 'Curate a new Place into the canonical catalog. Admin-only.' })
+  @ApiBody({ type: AdminCreatePlaceRequestDto })
+  @ApiResponse({ status: 201, description: 'Created place row.', type: AdminPlaceDto })
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(
@@ -83,6 +90,9 @@ export class AdminController {
     return toDto(place);
   }
 
+  @ApiOperation({ summary: 'Remove a Place from the canonical catalog. Admin-only.' })
+  @ApiResponse({ status: 204, description: 'Deleted.' })
+  @ApiResponse({ status: 404, description: 'PLACE_NOT_FOUND.' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id') id: string): Promise<void> {

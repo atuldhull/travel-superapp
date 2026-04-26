@@ -27,11 +27,16 @@ import {
   Query,
 } from '@nestjs/common';
 import type { UserRole } from '@prisma/client';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../../../common/auth';
 import { AdminBanUserUseCase } from '../application/admin-ban-user.use-case';
 import { AdminListUsersUseCase } from '../application/admin-list-users.use-case';
 import { AdminUnbanUserUseCase } from '../application/admin-unban-user.use-case';
 import type { AdminUserRow } from '../application/ports/admin-user-query';
+import {
+  AdminListUsersResponseDto,
+  AdminUserDto as AdminUserResponseDto,
+} from '../../admin/interface/dto/admin-response.dto';
 
 const VALID_ROLES: readonly UserRole[] = ['user', 'premium', 'agent', 'admin'];
 
@@ -59,6 +64,8 @@ function toDto(u: AdminUserRow): AdminUserDto {
   };
 }
 
+@ApiTags('admin')
+@ApiBearerAuth()
 @Controller('admin/users')
 @Roles('admin')
 export class AdminUsersController {
@@ -68,6 +75,19 @@ export class AdminUsersController {
     private readonly unbanUc: AdminUnbanUserUseCase,
   ) {}
 
+  @ApiOperation({
+    summary:
+      'List users with optional ?role / ?deleted / ?q filters. Offset pagination via ?limit + ?offset. Admin-only.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Matching users + total.',
+    type: AdminListUsersResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'VALIDATION_FAILED — role not in user|premium|agent|admin.',
+  })
   @Get()
   @HttpCode(HttpStatus.OK)
   async list(
@@ -102,12 +122,18 @@ export class AdminUsersController {
     return { users: result.rows.map(toDto), total: result.total };
   }
 
+  @ApiOperation({ summary: 'Ban a user (soft-delete + revoke sessions). Admin-only.' })
+  @ApiResponse({ status: 204, description: 'Banned.' })
+  @ApiResponse({ status: 404, description: 'USER_NOT_FOUND.' })
   @Post(':id/ban')
   @HttpCode(HttpStatus.NO_CONTENT)
   async ban(@Param('id') id: string): Promise<void> {
     await this.banUc.execute(id);
   }
 
+  @ApiOperation({ summary: 'Unban a user (clear deletedAt). Admin-only.' })
+  @ApiResponse({ status: 204, description: 'Unbanned.' })
+  @ApiResponse({ status: 404, description: 'USER_NOT_FOUND.' })
   @Post(':id/unban')
   @HttpCode(HttpStatus.NO_CONTENT)
   async unban(@Param('id') id: string): Promise<void> {
