@@ -66,5 +66,7 @@ export type { TripShareResponseDto } from './generated/schemas/tripShareResponse
 export type { CreateUploadUrlRequestDto } from './generated/schemas/createUploadUrlRequestDto';
 export type { CreateUploadUrlResponseDto } from './generated/schemas/createUploadUrlResponseDto';
 export type { AttachMediaToTripRequestDto } from './generated/schemas/attachMediaToTripRequestDto';
+export type { AttachMediaToBookRequestDto } from './generated/schemas/attachMediaToBookRequestDto';
+export type { MediaDownloadUrlResponseDto } from './generated/schemas/mediaDownloadUrlResponseDto';
 export type { GeneratePlanWithAiResponseDto } from './generated/schemas/generatePlanWithAiResponseDto';
 export type { SharedTripDto } from './generated/schemas/sharedTripDto';
