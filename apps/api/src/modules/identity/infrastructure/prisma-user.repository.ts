@@ -66,6 +66,13 @@ export class PrismaUserRepository implements UserRepository {
       data: { mfaEnabled: false, mfaSecret: null },
     });
   }
+
+  async markOnboardingComplete(userId: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { hasSeenOnboarding: true },
+    });
+  }
 }
 
 function toDomain(row: PrismaUser): UserRecord {
@@ -77,5 +84,6 @@ function toDomain(row: PrismaUser): UserRecord {
     displayName: row.displayName,
     mfaEnabled: row.mfaEnabled,
     mfaSecret: row.mfaSecret,
+    hasSeenOnboarding: row.hasSeenOnboarding,
   };
 }

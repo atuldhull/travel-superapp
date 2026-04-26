@@ -134,6 +134,11 @@ model User {
   timezone        String    @default("UTC")
   mfaEnabled      Boolean   @default(false)
   mfaSecret       String? // TOTP secret; null when mfaEnabled=false
+  // Flips to true the first time the user completes (or skips) the
+  // 3-step onboarding wizard. Used by the web client to decide whether
+  // to bounce post-login → /onboarding or → /trips.
+  // Installed by prompt [V.UX.3].
+  hasSeenOnboarding Boolean @default(false)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   // Soft-delete: GDPR erasure marks this, purger sweeps later.

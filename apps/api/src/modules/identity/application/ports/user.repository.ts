@@ -21,6 +21,14 @@ export interface UserRecord {
    * `mfaEnabled` is what LoginUseCase actually gates on.
    */
   readonly mfaSecret: string | null;
+  /**
+   * Flips to true the first time the user completes (or skips) the
+   * 3-step onboarding wizard. Surfaced to the web client via
+   * `GET /auth/me` so it can decide whether to bounce post-login →
+   * /onboarding or → /trips.
+   * Installed by prompt [V.UX.3].
+   */
+  readonly hasSeenOnboarding: boolean;
 }
 
 export interface CreateUserInput {
@@ -59,6 +67,13 @@ export interface UserRepository {
    * use-case layer (defence against session-hijack account takeover).
    */
   disableMfa(userId: string): Promise<void>;
+
+  /**
+   * Idempotent: flip `hasSeenOnboarding` to true. Called when the user
+   * completes (or skips) the onboarding wizard.
+   * Installed by prompt [V.UX.3].
+   */
+  markOnboardingComplete(userId: string): Promise<void>;
 }
 
 export const USER_REPOSITORY = Symbol('UserRepository');

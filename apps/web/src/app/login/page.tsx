@@ -35,6 +35,7 @@ import { Button } from '../../components/ui/button';
 import { Field } from '../../components/ui/input';
 import { GoogleSignInButton } from '../../components/google-sign-in-button';
 import { setAccessToken } from '../../lib/auth-store';
+import { decidePostAuthDestination } from '../../lib/post-auth-redirect';
 
 interface ApiError extends Error {
   readonly code?: string;
@@ -53,10 +54,11 @@ export default function LoginPage() {
 
   const oauthMutation = useAuthControllerOauth({
     mutation: {
-      onSuccess: (response: { data?: unknown }) => {
+      onSuccess: async (response: { data?: unknown }) => {
         const body = response.data as AuthSuccessResponseDto;
         setAccessToken(body.accessToken);
-        router.push('/trips');
+        const { destination } = await decidePostAuthDestination(body.accessToken);
+        router.push(destination as never);
       },
       onError: (err: unknown) => {
         const e = err as ApiError;
@@ -84,10 +86,11 @@ export default function LoginPage() {
 
   const loginMutation = useAuthControllerLogin({
     mutation: {
-      onSuccess: (response: { data?: unknown }) => {
+      onSuccess: async (response: { data?: unknown }) => {
         const body = response.data as AuthSuccessResponseDto;
         setAccessToken(body.accessToken);
-        router.push('/trips');
+        const { destination } = await decidePostAuthDestination(body.accessToken);
+        router.push(destination as never);
       },
       onError: (err: unknown) => {
         const e = err as ApiError;
@@ -169,7 +172,15 @@ export default function LoginPage() {
             <hr className="flex-1 border-t border-muted/20" />
           </div>
           <GoogleSignInButton
-            onSignedIn={() => router.push('/trips')}
+            onSignedIn={async () => {
+              // The button has already populated auth-store. Use the
+              // store's value to make the post-auth routing decision.
+              const { getAccessToken } = await import('../../lib/auth-store');
+              const token = getAccessToken();
+              if (!token) return;
+              const { destination } = await decidePostAuthDestination(token);
+              router.push(destination as never);
+            }}
             onError={(msg) => setErrorMsg(msg)}
           />
           <Button

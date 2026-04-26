@@ -36,6 +36,7 @@ import {
 import { Button } from '../../components/ui/button';
 import { Field } from '../../components/ui/input';
 import { setAccessToken } from '../../lib/auth-store';
+import { decidePostAuthDestination } from '../../lib/post-auth-redirect';
 
 interface ApiError extends Error {
   readonly code?: string;
@@ -73,10 +74,12 @@ export default function RegisterPage() {
 
   const registerMutation = useAuthControllerRegister({
     mutation: {
-      onSuccess: (response: { data?: unknown }) => {
+      onSuccess: async (response: { data?: unknown }) => {
         const body = response.data as AuthSuccessResponseDto;
         setAccessToken(body.accessToken);
-        router.push('/trips');
+        // Brand-new account → hasSeenOnboarding=false → /onboarding.
+        const { destination } = await decidePostAuthDestination(body.accessToken);
+        router.push(destination as never);
       },
       onError: (err: unknown) => {
         const e = err as ApiError;

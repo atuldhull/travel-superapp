@@ -3,12 +3,14 @@
  * is bounced to `/login`. Otherwise calls the auth-gated `GET /trips`
  * via the generated `useTripControllerList` hook.
  *
+ * Empty-state CTA + Sample-trip badge + tour-restart link added in
+ * [V.UX.3].
+ *
  * The bounce happens client-side because tokens live in memory only
  * (CLAUDE rule 12) — server components can't see the token, so the
- * server can't redirect on the basis of it. A future slice will add
- * silent-refresh on mount so a hard reload doesn't always bounce.
+ * server can't redirect on the basis of it.
  *
- * Installed by prompt [IV.18.19.21].
+ * Installed by prompt [IV.18.19.21]; V.UX.3 polish [V.UX.3].
  */
 'use client';
 
@@ -93,9 +95,7 @@ export default function TripsPage() {
       ) : isError ? (
         <ErrorState error={error} />
       ) : trips.length === 0 ? (
-        <p className="rounded-md border border-muted/20 bg-muted/5 px-4 py-3 text-sm text-muted">
-          No trips yet — use the <strong>New trip</strong> button to compose one.
-        </p>
+        <EmptyState />
       ) : (
         <ul className="grid gap-4 sm:grid-cols-2">
           {trips.map((t) => (
@@ -103,16 +103,32 @@ export default function TripsPage() {
           ))}
         </ul>
       )}
-      <p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <Link href="/" className="text-sm text-muted hover:underline">
           ← Back home
         </Link>
-      </p>
+        {trips.length > 0 ? (
+          <Link href="/onboarding?tour=true" className="text-sm text-muted hover:underline">
+            ↻ Replay onboarding tour
+          </Link>
+        ) : null}
+      </div>
     </main>
   );
 }
 
+/** Title prefix that flags a trip as the read-only sample seeded by
+ *  the V.UX.3 onboarding Skip flow. Mirrors
+ *  `SAMPLE_TRIP_TITLE_PREFIX` on the api side — kept in sync by hand
+ *  since they're a stable contract. */
+const SAMPLE_TRIP_PREFIX = 'Sample trip — ';
+
+function isSampleTrip(trip: TripDto): boolean {
+  return trip.title.startsWith(SAMPLE_TRIP_PREFIX);
+}
+
 function TripCard({ trip }: { trip: TripDto }) {
+  const sample = isSampleTrip(trip);
   const statusVariant: 'neutral' | 'brand' = trip.status === 'draft' ? 'neutral' : 'brand';
   return (
     <Card as="li">
@@ -123,7 +139,14 @@ function TripCard({ trip }: { trip: TripDto }) {
           </Link>
         </CardTitle>
         <CardSubtitle>
-          <Badge variant={statusVariant}>{trip.status}</Badge> · Radius {trip.radiusKm}km
+          <Badge variant={statusVariant}>{trip.status}</Badge>
+          {sample ? (
+            <>
+              {' '}
+              · <Badge variant="neutral">Sample</Badge>
+            </>
+          ) : null}{' '}
+          · Radius {trip.radiusKm}km
         </CardSubtitle>
       </CardHeader>
       {trip.startsOn && trip.endsOn ? (
@@ -135,6 +158,44 @@ function TripCard({ trip }: { trip: TripDto }) {
         <p className="text-sm text-muted">No dates yet</p>
       )}
     </Card>
+  );
+}
+
+/**
+ * Illustrated empty-state for first-time users (and anyone who's
+ * deleted all their trips). Big CTA, friendly copy, two paths in.
+ *
+ * Installed by prompt [V.UX.3].
+ */
+function EmptyState() {
+  return (
+    <section className="rounded-2xl border border-muted/15 bg-linear-to-br from-brand/5 via-transparent to-brand/5 px-6 py-12 text-center">
+      <div
+        aria-hidden
+        className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-brand/10 text-4xl"
+      >
+        ✈️
+      </div>
+      <h2 className="text-2xl font-bold tracking-tight">Plan your first trip — takes 30 seconds</h2>
+      <p className="mx-auto mt-2 max-w-md text-sm text-muted">
+        Pick a destination, set the dates, let our AI draft a paced day-by-day itinerary you can
+        edit, vote on, and share.
+      </p>
+      <div className="mt-5 flex flex-wrap justify-center gap-3">
+        <Link
+          href="/onboarding"
+          className="inline-flex items-center gap-2 rounded-md bg-brand px-5 py-2.5 text-sm font-semibold text-brand-foreground shadow-sm transition hover:opacity-90"
+        >
+          ✨ Start the 3-step wizard
+        </Link>
+        <Link
+          href="/trips/new"
+          className="inline-flex items-center gap-2 rounded-md border border-muted/30 px-5 py-2.5 text-sm font-semibold text-muted transition hover:bg-muted/10"
+        >
+          Or create a blank trip →
+        </Link>
+      </div>
+    </section>
   );
 }
 

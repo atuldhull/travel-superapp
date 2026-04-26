@@ -52,7 +52,13 @@ import { RefreshSessionUseCase } from '../../identity/application/refresh-sessio
 import { RegisterUseCase } from '../../identity/application/register.use-case';
 import { RevokeSessionUseCase } from '../../identity/application/revoke-session.use-case';
 import { ConsumeMagicLinkUseCase } from '../../identity/application/consume-magic-link.use-case';
+import { MarkOnboardingCompleteUseCase } from '../../identity/application/mark-onboarding-complete.use-case';
+import {
+  USER_REPOSITORY,
+  type UserRepository,
+} from '../../identity/application/ports/user.repository';
 import { RequestMagicLinkUseCase } from '../../identity/application/request-magic-link.use-case';
+import { SeedSampleTripUseCase } from '../../trip/application/seed-sample-trip.use-case';
 import { SignInWithOAuthUseCase } from '../../identity/application/sign-in-with-oauth.use-case';
 import {
   LoginBodySchema,
@@ -60,17 +66,20 @@ import {
   MagicLinkRequestBodySchema,
   MfaCodeBodySchema,
   OAuthSignInBodySchema,
+  OnboardingCompleteBodySchema,
   RegisterBodySchema,
   type LoginBody,
   type MagicLinkConsumeBody,
   type MagicLinkRequestBody,
   type MfaCodeBody,
   type OAuthSignInBody,
+  type OnboardingCompleteBody,
   type RegisterBody,
 } from './dto/auth.dto';
 import {
   AuthSuccessResponseDto,
   MagicLinkRequestResponseDto,
+  OnboardingCompleteResponseDto,
   RefreshSuccessResponseDto,
   WhoAmIResponseDto,
 } from './dto/auth-response.dto';
@@ -79,6 +88,7 @@ import {
   MagicLinkConsumeRequestDto,
   MagicLinkRequestRequestDto,
   OAuthSignInRequestDto,
+  OnboardingCompleteRequestDto,
   RegisterRequestDto,
 } from './dto/auth-request.dto';
 
@@ -115,6 +125,9 @@ export class AuthController {
     private readonly oauthUc: SignInWithOAuthUseCase,
     private readonly magicLinkRequestUc: RequestMagicLinkUseCase,
     private readonly magicLinkConsumeUc: ConsumeMagicLinkUseCase,
+    private readonly markOnboardingCompleteUc: MarkOnboardingCompleteUseCase,
+    private readonly seedSampleTripUc: SeedSampleTripUseCase,
+    @Inject(USER_REPOSITORY) private readonly users: UserRepository,
     // Kept for future direct session-issuance flows even though not
     // called directly in this file today (magic-link uses ConsumeMagicLinkUseCase
     // which already wraps IssueSessionUseCase).
@@ -356,24 +369,84 @@ export class AuthController {
 
   /**
    * Protected probe endpoint. The `JwtAuthGuard` validates the access
-   * token; `@CurrentUser()` returns the claims. First real consumer of
-   * the guard stack — any feature module follows the same pattern.
+   * token; `@CurrentUser()` returns the claims. Hydrates a small slice
+   * of User-row state the web client needs for routing decisions
+   * (currently `hasSeenOnboarding`; more fields land in follow-ups).
+   * Single indexed lookup per call — cost is negligible and saves an
+   * extra round-trip on every page load.
    */
   @ApiOperation({
     summary:
-      "Whoami probe — returns the authed user's JWT claims. The reference auth-gated endpoint pattern.",
+      "Whoami probe — returns the authed user's JWT claims + lightweight User-row state (hasSeenOnboarding).",
   })
   @ApiBearerAuth()
   @ApiResponse({
     status: 200,
-    description: 'Caller JWT claims (sub / sid / role).',
+    description: 'Caller JWT claims (sub / sid / role) + hasSeenOnboarding.',
     type: WhoAmIResponseDto,
   })
   @ApiResponse({ status: 401, description: 'UNAUTHENTICATED — missing or invalid bearer.' })
   @Get('me')
   @HttpCode(HttpStatus.OK)
-  me(@CurrentUser() user: AuthenticatedUser): AuthenticatedUser {
-    return user;
+  async me(@CurrentUser() user: AuthenticatedUser): Promise<{
+    sub: string;
+    sid: string;
+    role: 'user' | 'premium' | 'agent' | 'admin';
+    hasSeenOnboarding: boolean;
+  }> {
+    // Soft-deleted users would already have been rejected by the
+    // JwtAuthGuard's session lookup, so a missing row here is a
+    // genuine race (e.g. user was just hard-deleted between guard
+    // check and this DB read). Fall back to `hasSeenOnboarding=true`
+    // so the web client doesn't loop them through /onboarding before
+    // their session naturally invalidates.
+    const row = await this.users.findById(user.sub);
+    return {
+      sub: user.sub,
+      sid: user.sid,
+      role: user.role,
+      hasSeenOnboarding: row?.hasSeenOnboarding ?? true,
+    };
+  }
+
+  /**
+   * Mark the caller's `User.hasSeenOnboarding` flag as true. The web
+   * client calls this from /onboarding's terminal steps; a subsequent
+   * /auth/me sees the new value and stops bouncing to /onboarding.
+   *
+   * Optional body field `seedSample`: when true, ALSO seeds a single
+   * read-only "Sample trip — Goa weekend" if the user has zero trips.
+   * The web Skip terminal sends `seedSample: true`; the Generate
+   * terminal omits it (the user already has a real trip).
+   *
+   * Idempotent on both axes — re-calling never re-seeds and never
+   * re-flips.
+   *
+   * Installed by prompt [V.UX.3].
+   */
+  @ApiOperation({
+    summary:
+      'Mark the caller as having completed the onboarding wizard; optionally seed a Sample trip. Idempotent.',
+  })
+  @ApiBearerAuth()
+  @ApiBody({ type: OnboardingCompleteRequestDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Onboarding flag flipped (and Sample trip seeded if requested + applicable).',
+    type: OnboardingCompleteResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'UNAUTHENTICATED.' })
+  @Post('onboarding/complete')
+  @HttpCode(HttpStatus.OK)
+  async onboardingComplete(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body(new ZodValidationPipe(OnboardingCompleteBodySchema)) body: OnboardingCompleteBody,
+  ): Promise<{ status: 'ok' }> {
+    if (body.seedSample === true) {
+      await this.seedSampleTripUc.execute(user.sub);
+    }
+    await this.markOnboardingCompleteUc.execute(user.sub);
+    return { status: 'ok' };
   }
 
   /**

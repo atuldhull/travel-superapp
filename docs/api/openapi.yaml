@@ -361,7 +361,7 @@ paths:
       parameters: []
       responses:
         '200':
-          description: Caller JWT claims (sub / sid / role).
+          description: Caller JWT claims (sub / sid / role) + hasSeenOnboarding.
           content:
             application/json:
               schema:
@@ -370,8 +370,33 @@ paths:
           description: UNAUTHENTICATED — missing or invalid bearer.
       security:
         - bearer: []
-      summary: Whoami probe — returns the authed user's JWT claims. The reference
-        auth-gated endpoint pattern.
+      summary: Whoami probe — returns the authed user's JWT claims + lightweight
+        User-row state (hasSeenOnboarding).
+      tags: *a8
+  /api/v1/auth/onboarding/complete:
+    post:
+      operationId: AuthController_onboardingComplete
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OnboardingCompleteRequestDto'
+      responses:
+        '200':
+          description: Onboarding flag flipped (and Sample trip seeded if requested +
+            applicable).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OnboardingCompleteResponseDto'
+        '401':
+          description: UNAUTHENTICATED.
+      security:
+        - bearer: []
+      summary: Mark the caller as having completed the onboarding wizard; optionally
+        seed a Sample trip. Idempotent.
       tags: *a8
   /api/v1/auth/mfa/setup:
     post:
@@ -2717,10 +2742,33 @@ components:
             - agent
             - admin
           description: Role assigned to the session.
+        hasSeenOnboarding:
+          type: boolean
+          description: True iff the user has completed (or skipped) the 3-step onboarding
+            wizard. Web client uses this to decide whether to bounce post-login
+            → /onboarding or → /trips. Installed by [V.UX.3].
       required:
         - sub
         - sid
         - role
+        - hasSeenOnboarding
+    OnboardingCompleteRequestDto:
+      type: object
+      properties:
+        seedSample:
+          type: boolean
+          description: When true, also seed a read-only "Sample trip — Goa weekend" if the
+            user has zero trips. Sent from the Skip terminal of the onboarding
+            wizard. Idempotent.
+    OnboardingCompleteResponseDto:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+      required:
+        - status
     CreateTripRequestDto:
       type: object
       properties:

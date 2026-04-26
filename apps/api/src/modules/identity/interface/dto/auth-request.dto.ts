@@ -64,3 +64,12 @@ export class MagicLinkConsumeRequestDto {
   })
   declare token: string;
 }
+
+export class OnboardingCompleteRequestDto {
+  @ApiProperty({
+    required: false,
+    description:
+      'When true, also seed a read-only "Sample trip — Goa weekend" if the user has zero trips. Sent from the Skip terminal of the onboarding wizard. Idempotent.',
+  })
+  declare seedSample?: boolean;
+}
