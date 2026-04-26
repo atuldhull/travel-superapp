@@ -10,18 +10,62 @@
 
 ## Summary
 
-| Counter             | Value                                                                          |
-| ------------------- | ------------------------------------------------------------------------------ |
-| Prompts completed   | 172 (170 prior + bundled Plan-with-AI section + public shared-trip viewer)     |
-| Prompts in progress | 0                                                                              |
-| Prompts blocked     | 0                                                                              |
-| Last prompt         | `[IV.18.19.46]` — public shared-trip viewer (bundled with `[IV.18.19.45]`)     |
-| Last commit date    | 2026-04-26                                                                     |
-| Phase               | Phase 1 — share-link consumer + AI plan render close out the demo trip surface |
+| Counter             | Value                                                                      |
+| ------------------- | -------------------------------------------------------------------------- |
+| Prompts completed   | 174 (172 prior + bundled Featured polish + public memory-book viewer)      |
+| Prompts in progress | 0                                                                          |
+| Prompts blocked     | 0                                                                          |
+| Last prompt         | `[IV.18.19.48]` — public memory-book viewer (bundled with `[IV.18.19.47]`) |
+| Last commit date    | 2026-04-26                                                                 |
+| Phase               | Phase 1 — Featured-to-detail flow live for the public memory-book surface  |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.19.48] — public /memory-books/[id] viewer (bundled with `[IV.18.19.47]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 5 (Frontend stack)
+
+**What was done**
+
+Closes the loop from the Featured surface (slice .19.47): clicking a card now lands on a public, auth-less viewer that consumes `useMemoryBookControllerGetPublic`.
+
+- New web route `apps/web/src/app/memory-books/[id]/page.tsx`. Renders book metadata (title + theme badge + publishedAt + cover S3 key) and an Assets card with the attached asset count plus a placeholder grid (one tile per asset id).
+- Real per-asset thumbnails are deferred — `GET /memory-books/public/:id/assets/:assetId/download-url` still types its body as `void` in openapi.yaml, so a schema pass on the api needs to land first.
+- 404 collapses into a friendly "this memory book was unpublished or never existed" message rather than leaking the api error code.
+
+**Verification**
+
+- web typecheck clean. Web build clean — 10 routes total now, including this one (`ƒ /memory-books/[id]` 1.76 kB).
+
+**Commit**
+
+`5217719 feat(IV.18.19.48): public /memory-books/[id] viewer`
+
+---
+
+### [IV.18.19.47] — Featured memory books page polish (bundled with `[IV.18.19.48]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 5 (Frontend stack)
+
+**What was done**
+
+Promotes the Featured page from a static list to an actual entry point for the public memory-book surface.
+
+- Each card is wrapped in a `Link` to `/memory-books/[id]` (the viewer landing in slice .19.48).
+- Theme is now surfaced as a `Badge variant="brand"` next to the title instead of an inline subtitle string.
+- One-line header subtitle clarifies that these are public books from other travelers — important context before the tap-to-view affordance.
+
+**Verification**
+
+- web typecheck clean.
+
+**Commit**
+
+`d223d1d feat(IV.18.19.47): Featured memory books page polish`
 
 ---
 
