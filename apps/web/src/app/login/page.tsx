@@ -129,6 +129,12 @@ export default function LoginPage() {
           <Button type="submit" disabled={loginMutation.isPending}>
             {loginMutation.isPending ? 'Signing in…' : 'Sign in'}
           </Button>
+          <p className="text-sm text-muted">
+            New here?{' '}
+            <Link href="/register" className="text-brand hover:underline">
+              Create an account →
+            </Link>
+          </p>
         </form>
       ) : (
         <form onSubmit={submitMfa} className="space-y-4">
