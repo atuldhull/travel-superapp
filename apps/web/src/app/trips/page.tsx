@@ -65,9 +65,17 @@ export default function TripsPage() {
     <main className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Your trips</h1>
-        <Button variant="ghost" size="sm" onClick={onLogout}>
-          Sign out
-        </Button>
+        <div className="flex gap-2">
+          <Link
+            href="/trips/new"
+            className="inline-flex items-center gap-1 rounded-md bg-brand px-3 py-1.5 text-sm font-medium text-brand-foreground transition hover:opacity-90"
+          >
+            New trip
+          </Link>
+          <Button variant="ghost" size="sm" onClick={onLogout}>
+            Sign out
+          </Button>
+        </div>
       </div>
       {isLoading ? (
         <p className="text-muted">Loading…</p>
