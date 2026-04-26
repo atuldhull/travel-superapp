@@ -10,18 +10,64 @@
 
 ## Summary
 
-| Counter             | Value                                                             |
-| ------------------- | ----------------------------------------------------------------- |
-| Prompts completed   | 170 (168 prior + bundled web media uploader + AI plan generation) |
-| Prompts in progress | 0                                                                 |
-| Prompts blocked     | 0                                                                 |
-| Last prompt         | `[IV.18.19.44]` — Trip planner AI (bundled with `[IV.18.19.43]`)  |
-| Last commit date    | 2026-04-26                                                        |
-| Phase               | Phase 1 — direct-S3 uploads + Claude-backed plan generation live  |
+| Counter             | Value                                                                          |
+| ------------------- | ------------------------------------------------------------------------------ |
+| Prompts completed   | 172 (170 prior + bundled Plan-with-AI section + public shared-trip viewer)     |
+| Prompts in progress | 0                                                                              |
+| Prompts blocked     | 0                                                                              |
+| Last prompt         | `[IV.18.19.46]` — public shared-trip viewer (bundled with `[IV.18.19.45]`)     |
+| Last commit date    | 2026-04-26                                                                     |
+| Phase               | Phase 1 — share-link consumer + AI plan render close out the demo trip surface |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.19.46] — public shared-trip viewer + typed Swagger schema (bundled with `[IV.18.19.45]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 5 (Frontend stack) + §6 (SDK / API contract)
+
+**What was done**
+
+Closes the trip share-code loop on web. Recipients open the share link and see a public-safe view of the trip + itinerary, no auth required.
+
+- New `SharedTripDto` swagger class in `dto/trip-response.dto.ts` (id, title, radiusKm, startsOn/endsOn, ownerDisplayName, expiresAt, createdAt, days[]). userId is intentionally absent — recipients only see the display name; center coordinates are not exposed so the page has no map.
+- `@ApiResponse({ status: 200, type: SharedTripDto })` + 404 on `GET /trips/shared/:code`. Before this slice orval was emitting `data: void`; now the typed `useTripControllerGetSharedTrip` hook delivers the real shape.
+- Re-exported `SharedTripDto` from `@app/sdk`. Regenerated `docs/api/openapi.yaml` + the orval client.
+- New web route `apps/web/src/app/shared/[code]/page.tsx` consuming the typed hook, gracefully handling `TRIP_SHARE_EXPIRED` / `TRIP_SHARE_NOT_FOUND` and rendering all itinerary days + items inline.
+
+**Verification**
+
+- web typecheck clean.
+- api typecheck clean. 93 / 578 api tests pass (single flaky `events-search.e2e-spec` cache-stub assertion on the full-suite run — passed in isolation; pre-existing flake).
+
+**Commit**
+
+`80697d7 feat(IV.18.19.46): public shared-trip viewer + typed Swagger schema`
+
+---
+
+### [IV.18.19.45] — Plan-with-AI section on /trips/[id] (bundled with `[IV.18.19.46]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 5 (Frontend stack)
+
+**What was done**
+
+Wires the typed `useTripControllerPlanWithAi` mutation into the trip detail page, surfacing the Claude-or-stub plan from .19.44 to the user.
+
+- New `PlanWithAiSection` component on `/trips/[id]/page.tsx` between Itinerary and Media. Generate / Re-plan button issues the typed mutation, renders the returned `{plan, model}` with the model id as a Badge and the prose in a preformatted block (whitespace preserved).
+- Friendly error mapping for `TRIP_NOT_FOUND` ("set a center on /trips/new before asking for a plan"); generic codes fall through to the canonical `<code> — <message>` shape used by the other sections.
+- `enabled` gate matches the other subsections (token present + not editing).
+
+**Verification**
+
+- web typecheck clean.
+
+**Commit**
+
+`14688ee feat(IV.18.19.45): Plan-with-AI section on /trips/[id]`
 
 ---
 
