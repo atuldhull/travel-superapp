@@ -10,18 +10,74 @@
 
 ## Summary
 
-| Counter             | Value                                                                      |
-| ------------------- | -------------------------------------------------------------------------- |
-| Prompts completed   | 158 (156 prior + bundled register page + Trip overview page)               |
-| Prompts in progress | 0                                                                          |
-| Prompts blocked     | 0                                                                          |
-| Last prompt         | `[IV.18.19.32]` — Trip overview page on web (bundled with `[IV.18.19.31]`) |
-| Last commit date    | 2026-04-26                                                                 |
-| Phase               | Phase 1 — register-to-overview demo loop closed; 9 web routes live         |
+| Counter             | Value                                                                           |
+| ------------------- | ------------------------------------------------------------------------------- |
+| Prompts completed   | 160 (158 prior + bundled Trip overview strict schema + OAuth button)            |
+| Prompts in progress | 0                                                                               |
+| Prompts blocked     | 0                                                                               |
+| Last prompt         | `[IV.18.19.34]` — OAuth sign-in button on /login (bundled with `[IV.18.19.33]`) |
+| Last commit date    | 2026-04-26                                                                      |
+| Phase               | Phase 1 — Section<T> typed end-to-end + OAuth flow live (mock provider)         |
 
 ---
 
 ## Log (newest first)
+
+---
+
+### [IV.18.19.34] — OAuth sign-in button on /login (bundled with `[IV.18.19.33]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 5 (Frontend stack) + §13.2 (Identity)
+
+**What was done**
+
+First non-credentials sign-in path on the web. Validates the typed OAuth surface end-to-end against the api's mock provider.
+
+- New api class `OAuthSignInRequestDto` (idToken: 1..8192 chars) decorated with `@ApiProperty`. Wired via `@ApiBody({ type: ... })` on `POST /auth/oauth/:provider`. Orval now emits a typed `{provider: string, data: OAuthSignInRequestDto}` mutation body (was free-form RequestInit).
+- Re-exported `OAuthSignInRequestDto` from `@app/sdk`.
+- /login adds an "or" divider + a "Sign in with mock provider (dev only)" button:
+  - Calls `useAuthControllerOauth` with provider='mock' and a JSON-encoded fake token matching the `MockOAuthProvider`'s expected shape.
+  - The mock provider is registered by the api outside `NODE_ENV=production`. In prod the route returns 401 `OAUTH_PROVIDER_UNKNOWN` which surfaces inline as the error message.
+  - Real Google / Apple sign-in lands as a follow-up slice (needs google-id-services-web + Apple's JS SDK).
+- Regenerated `docs/api/openapi.yaml` (+1 component schema: OAuthSignInRequestDto) + `packages/sdk/src/generated/`.
+
+**Verification**
+
+- All typechecks + builds clean. /login bundle bumps to 2.19KB with the OAuth flow.
+- 93 / 578 api tests still pass.
+
+**Commit**
+
+`f1380bb feat(IV.18.19.34): OAuth sign-in button on /login (mock provider in dev)`
+
+---
+
+### [IV.18.19.33] — Trip overview strict schema — Section<T> oneOf (bundled with `[IV.18.19.34]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 6 (SDK / API contract)
+
+**What was done**
+
+Closes the last big "data: void" hole. The trip-overview composite is now fully typed end-to-end.
+
+- New `apps/api/.../trip/interface/dto/overview-response.dto.ts`:
+  - `OverviewSectionFailureDto` — declared once, reused across all 7 sections.
+  - 5 success-data shapes (OverviewItineraryDataDto, OverviewWeatherDataDto, OverviewListDataDto, OverviewLegsDataDto, OverviewMediaDataDto) — pragmatic counts + `recent` thumb strip, not full inner provider DTOs (full reads live on dedicated /trips/:id/<section> routes).
+  - 5 success wrappers + 1 OverviewTripMetaDto + 1 composite `TripOverviewResponseDto` with `@ApiProperty({oneOf: [...]})` per section field. `@ApiExtraModels` registers the success types so `getSchemaPath` can resolve $refs.
+- Wire `@ApiResponse({type: TripOverviewResponseDto})` on `GET /trips/:id/overview`. Regenerated openapi.yaml — overview now has 18 new component schemas + per-field `oneOf` references.
+- Regenerated `packages/sdk/src/generated/`. Re-exported `TripOverviewResponseDto` + 6 Overview\* types from `@app/sdk`.
+- Refactor `apps/web/src/app/trips/[id]/overview/page.tsx` to use the typed schema:
+  - Drops the local `OverviewBody` mirror declaration.
+  - Adds `isOk<T>()` runtime guard — orval emits `ok: boolean` (not `true|false` literal), so structural narrow on `'data' in section` is the discriminator.
+  - SectionCard takes a render-prop child, picks the typed success shape via the new isOk guard.
+
+**Verification**
+
+- All typechecks clean.
+
+**Commit**
+
+`af13c9f feat(IV.18.19.33): Trip overview strict schema — Section<T> oneOf`
 
 ---
 
