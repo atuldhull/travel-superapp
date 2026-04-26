@@ -60,3 +60,17 @@ export class PublicMemoryBookWithAssetsResponseDto {
   })
   declare assetIds: string[];
 }
+
+export class PublicDownloadUrlResponseDto {
+  @ApiProperty({
+    description:
+      'Short-lived presigned GET URL for the asset bytes. Tagged with the bucket + a TTL ~5 min.',
+  })
+  declare url: string;
+
+  @ApiProperty({
+    format: 'date-time',
+    description: 'ISO-8601 timestamp at which the presigned URL expires.',
+  })
+  declare expiresAt: string;
+}

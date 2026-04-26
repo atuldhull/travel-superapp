@@ -11,6 +11,7 @@ import type {
   MediaControllerListByTripParams,
   MemoryBookControllerFeaturedParams,
   MemoryBookControllerListParams,
+  PublicDownloadUrlResponseDto,
   PublicMemoryBookWithAssetsResponseDto,
 } from '../../schemas';
 
@@ -312,16 +313,27 @@ export const memoryBookControllerGetPublic = async (
  * @summary Public presigned download URL for a memory-book asset. Three-clause gate: book published + asset attached + asset ready.
  */
 export type memoryBookControllerGetPublicAssetDownloadUrlResponse200 = {
-  data: void;
+  data: PublicDownloadUrlResponseDto;
   status: 200;
+};
+
+export type memoryBookControllerGetPublicAssetDownloadUrlResponse404 = {
+  data: void;
+  status: 404;
 };
 
 export type memoryBookControllerGetPublicAssetDownloadUrlResponseSuccess =
   memoryBookControllerGetPublicAssetDownloadUrlResponse200 & {
     headers: Headers;
   };
+export type memoryBookControllerGetPublicAssetDownloadUrlResponseError =
+  memoryBookControllerGetPublicAssetDownloadUrlResponse404 & {
+    headers: Headers;
+  };
+
 export type memoryBookControllerGetPublicAssetDownloadUrlResponse =
-  memoryBookControllerGetPublicAssetDownloadUrlResponseSuccess;
+  | memoryBookControllerGetPublicAssetDownloadUrlResponseSuccess
+  | memoryBookControllerGetPublicAssetDownloadUrlResponseError;
 
 export const getMemoryBookControllerGetPublicAssetDownloadUrlUrl = (
   id: string,

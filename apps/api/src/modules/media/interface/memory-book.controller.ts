@@ -52,6 +52,7 @@ import {
 } from './dto/media.dto';
 import {
   FeaturedMemoryBooksResponseDto,
+  PublicDownloadUrlResponseDto,
   PublicMemoryBookWithAssetsResponseDto,
 } from './dto/memory-book-response.dto';
 
@@ -170,6 +171,15 @@ export class MemoryBookController {
   @ApiOperation({
     summary:
       'Public presigned download URL for a memory-book asset. Three-clause gate: book published + asset attached + asset ready.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Short-lived presigned GET URL + ISO expiry.',
+    type: PublicDownloadUrlResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'BOOK_NOT_PUBLISHED, MEDIA_NOT_FOUND, or NOT_ATTACHED.',
   })
   @Public()
   @Get('public/:id/assets/:assetId/download-url')
