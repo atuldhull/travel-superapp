@@ -25,6 +25,52 @@
 
 ---
 
+### [IV.18.19.54] — /memory-books/new + New book CTA on owner index (bundled with `[IV.18.19.53]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 5 (Frontend stack)
+
+**What was done**
+
+Closes the owner-side memory-book loop on web — the surface is now end-to-end usable: list → create → edit → publish → public viewer.
+
+- New `apps/web/src/app/memory-books/new/page.tsx`. Protected form posting via `useMemoryBookControllerCreate`. Title required (max 120), theme defaults to "minimal" (max 32), coverS3Key optional (max 512). On success invalidates the list cache and pushes `/memory-books/[id]/edit` so the user lands on the edit page for the fresh draft.
+- `New book` button on the `/memory-books` header.
+- Owner index card titles now link to `/memory-books/[id]/edit` (the owner page from .19.53). A separate `Public view →` link is surfaced on published rows only — drafts have no public route.
+- Empty state copy points users at the new CTA.
+
+**Verification**
+
+- web typecheck clean. Web build clean — `/memory-books/new` 2.25 kB. Web routes: 13 → 14.
+
+**Commit**
+
+`c128f5b feat(IV.18.19.54): /memory-books/new + New book CTA on owner index`
+
+---
+
+### [IV.18.19.53] — /memory-books/[id]/edit owner detail+edit page (bundled with `[IV.18.19.54]`)
+
+**Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 5 (Frontend stack)
+
+**What was done**
+
+Adds the protected owner-side detail+edit page mirroring the trip detail edit pattern. Consumes the typed hooks landed in slice .19.51.
+
+- New `apps/web/src/app/memory-books/[id]/edit/page.tsx`. Read view: title + draft/published Badge + theme + asset count + timestamps. Action bar has Edit + Publish/Unpublish (idempotent flips) + Delete + Public-view link when published.
+- Inline edit form: title, theme, optional coverS3Key (clears on blank). Skips the mutation if no fields actually changed.
+- Delete confirmation gate clarifies that media stay (SetNull on `memoryBookId`).
+- Cache invalidation: every successful mutation invalidates BOTH the detail key and the list key (`limit:'50'`) so `/memory-books` reflects the change on next visit.
+
+**Verification**
+
+- web typecheck clean. Web build clean — `/memory-books/[id]/edit` 3.5 kB. Web routes: 12 → 13.
+
+**Commit**
+
+`6ad1f13 feat(IV.18.19.53): /memory-books/[id]/edit owner detail+edit page`
+
+---
+
 ### [IV.18.19.52] — /memory-books owner index page on web (bundled with `[IV.18.19.51]`)
 
 **Date:** 2026-04-26 · **Status:** DONE · **Kind:** Build · **Playbook §** 5 (Frontend stack)
