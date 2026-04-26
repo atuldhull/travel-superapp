@@ -41,6 +41,7 @@ import { type AuthenticatedUser, CurrentUser, Public } from '../../../common/aut
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { CreateTripDraftUseCase } from '../application/create-trip-draft.use-case';
 import { GeneratePlanWithAiUseCase } from '../application/generate-plan-with-ai.use-case';
+import { GenerateSamplePlanUseCase } from '../application/generate-sample-plan.use-case';
 import { CreateTripShareUseCase } from '../application/create-trip-share.use-case';
 import { ListTripSharesUseCase } from '../application/list-trip-shares.use-case';
 import { RevokeTripShareUseCase } from '../application/revoke-trip-share.use-case';
@@ -74,10 +75,12 @@ import {
 import {
   CreateTripBodySchema,
   CreateTripShareBodySchema,
+  GenerateSamplePlanBodySchema,
   UpdateDayItemsBodySchema,
   UpdateTripBodySchema,
   type CreateTripBody,
   type CreateTripShareBody,
+  type GenerateSamplePlanBody,
   type UpdateDayItemsBody,
   type UpdateTripBody,
 } from './dto/trip.dto';
@@ -85,6 +88,8 @@ import {
   CreateTripRequestDto,
   CreateTripShareRequestDto,
   GeneratePlanWithAiResponseDto,
+  GenerateSamplePlanRequestDto,
+  GenerateSamplePlanResponseDto,
   ItineraryListResponseDto,
   ListTripsResponseDto,
   SharedTripDto as SharedTripResponseDto,
@@ -136,6 +141,7 @@ export class TripController {
     private readonly deleteTrip: DeleteTripUseCase,
     private readonly generateItinerary: GenerateItineraryStubUseCase,
     private readonly generatePlanWithAi: GeneratePlanWithAiUseCase,
+    private readonly generateSamplePlan: GenerateSamplePlanUseCase,
     private readonly listItinerary: ListItineraryUseCase,
     private readonly updateDayItems: UpdateDayItemsUseCase,
     private readonly createTripShare: CreateTripShareUseCase,
@@ -297,6 +303,37 @@ export class TripController {
    * The owner-gate runs once at the use-case boundary so non-owners
    * see uniform 404 `TRIP_NOT_FOUND`.
    */
+  /**
+   * Public landing-page demo endpoint. NO auth, NO DB write — synthesizes
+   * a planner request from { title, center, radiusKm } and returns the
+   * AI prose plan. Same global rate-limiter that protects every public
+   * surface keeps this from being abused.
+   *
+   * Installed by prompt [V.UX.1].
+   */
+  @ApiOperation({
+    summary:
+      'Public sample-plan demo for the landing page. NO auth, NO trip persisted — feeds the AI port directly.',
+  })
+  @ApiBody({ type: GenerateSamplePlanRequestDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Free-form prose plan + provider model identifier.',
+    type: GenerateSamplePlanResponseDto,
+  })
+  @Public()
+  @Post('sample-plan')
+  @HttpCode(HttpStatus.OK)
+  async samplePlan(
+    @Body(new ZodValidationPipe(GenerateSamplePlanBodySchema)) body: GenerateSamplePlanBody,
+  ): Promise<{ plan: string; model: string }> {
+    return this.generateSamplePlan.execute({
+      title: body.title,
+      center: body.center,
+      radiusKm: body.radiusKm,
+    });
+  }
+
   @ApiOperation({
     summary:
       'Generate a free-form trip plan via the configured AI adapter (Claude / stub). Owner-only.',

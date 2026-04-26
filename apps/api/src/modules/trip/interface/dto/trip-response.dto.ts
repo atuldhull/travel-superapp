@@ -170,6 +170,40 @@ export class GeneratePlanWithAiResponseDto {
   declare model: string;
 }
 
+export class SamplePlanCenterDto {
+  @ApiProperty({ description: 'Latitude in decimal degrees, -90..90.' })
+  declare lat: number;
+
+  @ApiProperty({ description: 'Longitude in decimal degrees, -180..180.' })
+  declare lng: number;
+}
+
+export class GenerateSamplePlanRequestDto {
+  @ApiProperty({
+    minLength: 1,
+    maxLength: 120,
+    description: 'Sample destination title (e.g. "Goa", "Tokyo").',
+  })
+  declare title: string;
+
+  @ApiProperty({ type: SamplePlanCenterDto })
+  declare center: SamplePlanCenterDto;
+
+  @ApiProperty({ minimum: 1, maximum: 200, description: 'Search radius in km.' })
+  declare radiusKm: number;
+}
+
+export class GenerateSamplePlanResponseDto {
+  @ApiProperty({ description: 'Free-form prose plan from the AI provider.' })
+  declare plan: string;
+
+  @ApiProperty({
+    description:
+      'Model identifier (e.g. "claude-sonnet-4-6" or "stub-trip-planner" when CLAUDE_API_KEY is unset).',
+  })
+  declare model: string;
+}
+
 /**
  * Public-safe view returned by `GET /trips/shared/:code`. Notably omits
  * the owner's `userId` (only `ownerDisplayName` is exposed) and the

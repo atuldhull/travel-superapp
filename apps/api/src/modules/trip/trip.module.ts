@@ -31,6 +31,7 @@ import { ListTripSharesUseCase } from './application/list-trip-shares.use-case';
 import { DeleteTripUseCase } from './application/delete-trip.use-case';
 import { GenerateItineraryStubUseCase } from './application/generate-itinerary-stub.use-case';
 import { GeneratePlanWithAiUseCase } from './application/generate-plan-with-ai.use-case';
+import { GenerateSamplePlanUseCase } from './application/generate-sample-plan.use-case';
 import { GetTripUseCase } from './application/get-trip.use-case';
 import { GetTripEateriesUseCase } from './application/get-trip-eateries.use-case';
 import { GetTripEventsUseCase } from './application/get-trip-events.use-case';
@@ -90,6 +91,7 @@ import { TripController } from './interface/trip.controller';
     DeleteTripUseCase,
     GenerateItineraryStubUseCase,
     GeneratePlanWithAiUseCase,
+    GenerateSamplePlanUseCase,
     {
       // Conditional adapter pick: real Claude when CLAUDE_API_KEY is
       // set, otherwise the deterministic stub. Either way, callers

@@ -5,6 +5,8 @@ import type {
   CreateTripRequestDto,
   CreateTripShareRequestDto,
   GeneratePlanWithAiResponseDto,
+  GenerateSamplePlanRequestDto,
+  GenerateSamplePlanResponseDto,
   ItineraryListResponseDto,
   ListTripsResponseDto,
   SharedTripDto,
@@ -279,6 +281,35 @@ export const tripControllerGetItinerary = async (
   return apiFetch<tripControllerGetItineraryResponse>(getTripControllerGetItineraryUrl(id), {
     ...options,
     method: 'GET',
+  });
+};
+
+/**
+ * @summary Public sample-plan demo for the landing page. NO auth, NO trip persisted — feeds the AI port directly.
+ */
+export type tripControllerSamplePlanResponse200 = {
+  data: GenerateSamplePlanResponseDto;
+  status: 200;
+};
+
+export type tripControllerSamplePlanResponseSuccess = tripControllerSamplePlanResponse200 & {
+  headers: Headers;
+};
+export type tripControllerSamplePlanResponse = tripControllerSamplePlanResponseSuccess;
+
+export const getTripControllerSamplePlanUrl = () => {
+  return `/api/v1/trips/sample-plan`;
+};
+
+export const tripControllerSamplePlan = async (
+  generateSamplePlanRequestDto: GenerateSamplePlanRequestDto,
+  options?: RequestInit,
+): Promise<tripControllerSamplePlanResponse> => {
+  return apiFetch<tripControllerSamplePlanResponse>(getTripControllerSamplePlanUrl(), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(generateSamplePlanRequestDto),
   });
 };
 

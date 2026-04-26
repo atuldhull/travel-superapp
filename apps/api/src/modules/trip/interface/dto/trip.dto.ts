@@ -29,6 +29,18 @@ export const CreateTripBodySchema = z.object({
 export type CreateTripBody = z.infer<typeof CreateTripBodySchema>;
 
 /**
+ * Body for `POST /trips/sample-plan`. Public-facing landing-page
+ * demo; tighter caps than CreateTripBodySchema since this never
+ * persists a row.
+ */
+export const GenerateSamplePlanBodySchema = z.object({
+  title: z.string().trim().min(1).max(120),
+  center: Coord,
+  radiusKm: z.number().positive().max(200),
+});
+export type GenerateSamplePlanBody = z.infer<typeof GenerateSamplePlanBodySchema>;
+
+/**
  * PATCH /trips/:id body. Every field optional. `startsOn` / `endsOn`
  * also accept `null` so the client can clear a previously-set date.
  * No `center` — trip location changes are delete + re-create.
