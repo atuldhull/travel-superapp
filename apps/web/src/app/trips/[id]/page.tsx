@@ -20,9 +20,12 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
   getTripControllerGetOneQueryKey,
   getTripControllerListQueryKey,
+  useTripControllerGetItinerary,
   useTripControllerGetOne,
   useTripControllerRemove,
   useTripControllerUpdate,
+  type ItineraryDayDto,
+  type ItineraryListResponseDto,
   type TripDto,
   type UpdateTripRequestDto,
 } from '@app/sdk';
@@ -162,6 +165,7 @@ export default function TripDetailPage() {
           }}
         />
       )}
+      <ItinerarySection tripId={id} enabled={token !== null && !editing} />
       {confirmDelete ? (
         <Card>
           <CardHeader>
@@ -352,5 +356,79 @@ function EditForm({ trip, onSubmit, onCancel, isPending, errorMsg }: EditFormPro
         </div>
       </form>
     </Card>
+  );
+}
+
+interface ItinerarySectionProps {
+  readonly tripId: string;
+  readonly enabled: boolean;
+}
+
+function ItinerarySection({ tripId, enabled }: ItinerarySectionProps) {
+  const { data, isLoading, isError } = useTripControllerGetItinerary(tripId, {
+    query: { enabled },
+  });
+
+  if (!enabled) return null;
+
+  const body = data?.data as unknown as ItineraryListResponseDto | undefined;
+  const days: readonly ItineraryDayDto[] = body?.days ?? [];
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-start justify-between gap-2">
+          <CardTitle>Itinerary</CardTitle>
+          <Badge variant="neutral">{days.length} days</Badge>
+        </div>
+      </CardHeader>
+      {isLoading ? (
+        <Skeleton className="h-4 w-2/3" count={3} />
+      ) : isError ? (
+        <p className="text-sm text-danger">Couldn't load itinerary.</p>
+      ) : days.length === 0 ? (
+        <p className="text-sm text-muted">
+          No itinerary yet. Generate one via <code>POST /trips/:id/itinerary</code> in the api (UI
+          button lands in a follow-up slice).
+        </p>
+      ) : (
+        <ol className="space-y-3">
+          {days.map((d) => (
+            <DayRow key={d.id} day={d} />
+          ))}
+        </ol>
+      )}
+    </Card>
+  );
+}
+
+function DayRow({ day }: { day: ItineraryDayDto }) {
+  const dateStr = new Date(day.date as unknown as string).toLocaleDateString();
+  return (
+    <li className="rounded border border-muted/15 p-3">
+      <div className="mb-1 flex items-baseline justify-between">
+        <strong className="text-sm">Day {day.dayIndex + 1}</strong>
+        <span className="text-xs text-muted">{dateStr}</span>
+      </div>
+      {day.summary ? (
+        <p className="text-xs text-muted">{day.summary as unknown as string}</p>
+      ) : null}
+      {day.items.length === 0 ? (
+        <p className="text-xs text-muted/70">No items.</p>
+      ) : (
+        <ul className="mt-1 space-y-0.5 text-xs text-muted">
+          {day.items.map((it) => {
+            const notes = it.notes as unknown as string | null;
+            const placeId = it.placeId as unknown as string | null;
+            return (
+              <li key={it.id}>
+                · {notes ?? <em>(no notes)</em>}
+                {placeId ? <span className="ml-1 opacity-70">({placeId.slice(0, 8)}…)</span> : null}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </li>
   );
 }

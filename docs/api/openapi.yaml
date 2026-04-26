@@ -545,7 +545,13 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: Itinerary days, ordered by dayIndex.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItineraryListResponseDto'
+        '404':
+          description: TRIP_NOT_FOUND.
       security: *a11
       summary: List itinerary days + items for the trip the caller owns.
       tags: *a12
@@ -2135,6 +2141,76 @@ components:
           nullable: true
           format: date-time
           description: ISO-8601 or null to clear. >= startsOn when both set.
+    ItineraryItemDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        position:
+          type: number
+          description: Stable position within the day (used for ordering).
+        placeId:
+          type: object
+          nullable: true
+          format: cuid
+        startTime:
+          type: object
+          nullable: true
+          format: date-time
+        endTime:
+          type: object
+          nullable: true
+          format: date-time
+        notes:
+          type: object
+          nullable: true
+      required:
+        - id
+        - position
+        - placeId
+        - startTime
+        - endTime
+        - notes
+    ItineraryDayDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        tripId:
+          type: string
+          format: cuid
+        dayIndex:
+          type: number
+          description: Zero-based index from the trip start date.
+        date:
+          type: string
+          format: date-time
+        summary:
+          type: object
+          nullable: true
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItineraryItemDto'
+      required:
+        - id
+        - tripId
+        - dayIndex
+        - date
+        - summary
+        - items
+    ItineraryListResponseDto:
+      type: object
+      properties:
+        days:
+          description: Itinerary days, ordered by dayIndex ascending.
+          type: array
+          items:
+            $ref: '#/components/schemas/ItineraryDayDto'
+      required:
+        - days
     OverviewSectionFailureDto:
       type: object
       properties:
