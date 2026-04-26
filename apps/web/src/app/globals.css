@@ -1,0 +1,21 @@
+/*
+ * Tailwind 4 entry — the single import wires the preflight reset,
+ * utility classes, and the engine that scans `.tsx` for class
+ * usage. No tailwind.config.ts in v4: theming + content scanning
+ * live inline via `@theme` / `@source` directives below.
+ *
+ * Installed by [IV.18.19.18].
+ */
+
+@import 'tailwindcss';
+
+@theme {
+  --color-brand: #2563eb;
+  --color-brand-foreground: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-foreground: #0f172a;
+  --color-muted: #64748b;
+  --color-danger: #b91c1c;
+  --font-sans:
+    system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
