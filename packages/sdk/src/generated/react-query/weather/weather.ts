@@ -11,19 +11,43 @@ import type {
   UseQueryResult,
 } from '@tanstack/react-query';
 
+import type { WeatherForecastResponseDto } from '../../schemas';
+
 import { apiFetch } from '../../../runtime/fetcher';
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
+/**
+ * @summary Daily forecast for the given coordinates. Powered by Open-Meteo.
+ */
 export type weatherControllerForecastResponse200 = {
-  data: void;
+  data: WeatherForecastResponseDto;
   status: 200;
+};
+
+export type weatherControllerForecastResponse422 = {
+  data: void;
+  status: 422;
+};
+
+export type weatherControllerForecastResponse502 = {
+  data: void;
+  status: 502;
 };
 
 export type weatherControllerForecastResponseSuccess = weatherControllerForecastResponse200 & {
   headers: Headers;
 };
-export type weatherControllerForecastResponse = weatherControllerForecastResponseSuccess;
+export type weatherControllerForecastResponseError = (
+  | weatherControllerForecastResponse422
+  | weatherControllerForecastResponse502
+) & {
+  headers: Headers;
+};
+
+export type weatherControllerForecastResponse =
+  | weatherControllerForecastResponseSuccess
+  | weatherControllerForecastResponseError;
 
 export const getWeatherControllerForecastUrl = () => {
   return `/api/v1/weather/forecast`;
@@ -48,7 +72,7 @@ export const getWeatherControllerForecastQueryKey = () => {
 
 export const getWeatherControllerForecastInfiniteQueryOptions = <
   TData = Awaited<ReturnType<typeof weatherControllerForecast>>,
-  TError = unknown,
+  TError = void,
 >(options?: {
   query?: UseInfiniteQueryOptions<
     Awaited<ReturnType<typeof weatherControllerForecast>>,
@@ -75,11 +99,15 @@ export const getWeatherControllerForecastInfiniteQueryOptions = <
 export type WeatherControllerForecastInfiniteQueryResult = NonNullable<
   Awaited<ReturnType<typeof weatherControllerForecast>>
 >;
-export type WeatherControllerForecastInfiniteQueryError = unknown;
+export type WeatherControllerForecastInfiniteQueryError = void;
+
+/**
+ * @summary Daily forecast for the given coordinates. Powered by Open-Meteo.
+ */
 
 export function useWeatherControllerForecastInfinite<
   TData = Awaited<ReturnType<typeof weatherControllerForecast>>,
-  TError = unknown,
+  TError = void,
 >(options?: {
   query?: UseInfiniteQueryOptions<
     Awaited<ReturnType<typeof weatherControllerForecast>>,
@@ -101,7 +129,7 @@ export function useWeatherControllerForecastInfinite<
 
 export const getWeatherControllerForecastQueryOptions = <
   TData = Awaited<ReturnType<typeof weatherControllerForecast>>,
-  TError = unknown,
+  TError = void,
 >(options?: {
   query?: UseQueryOptions<Awaited<ReturnType<typeof weatherControllerForecast>>, TError, TData>;
   request?: SecondParameter<typeof apiFetch>;
@@ -124,11 +152,15 @@ export const getWeatherControllerForecastQueryOptions = <
 export type WeatherControllerForecastQueryResult = NonNullable<
   Awaited<ReturnType<typeof weatherControllerForecast>>
 >;
-export type WeatherControllerForecastQueryError = unknown;
+export type WeatherControllerForecastQueryError = void;
+
+/**
+ * @summary Daily forecast for the given coordinates. Powered by Open-Meteo.
+ */
 
 export function useWeatherControllerForecast<
   TData = Awaited<ReturnType<typeof weatherControllerForecast>>,
-  TError = unknown,
+  TError = void,
 >(options?: {
   query?: UseQueryOptions<Awaited<ReturnType<typeof weatherControllerForecast>>, TError, TData>;
   request?: SecondParameter<typeof apiFetch>;

@@ -893,64 +893,162 @@ paths:
     post:
       operationId: PlacesController_search
       parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchPlacesRequestDto'
       responses:
         '200':
-          description: ''
-      tags: &a15
-        - Places
+          description: Matching places.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchPlacesResponseDto'
+      security: &a15
+        - bearer: []
+      summary: Search the canonical Place catalog within a radius. Optional category
+        filter + limit.
+      tags: &a16
+        - places
   /api/v1/places/federated-search:
     post:
       operationId: PlacesController_federated
       parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FederatedSearchPlacesRequestDto'
       responses:
         '200':
-          description: ''
-      tags: *a15
+          description: Provider results, optionally enriched with canonical
+            placeId/created flags when ingest=true.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FederatedSearchPlacesResponseDto'
+      security: *a15
+      summary: Federated search across external providers (Google/FSQ/OSM). Optional
+        ingest=true write-through to the canonical catalog.
+      tags: *a16
   /api/v1/weather/forecast:
     get:
       operationId: WeatherController_forecast
       parameters: []
       responses:
         '200':
-          description: ''
+          description: Forecast bundle.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeatherForecastResponseDto'
+        '422':
+          description: INVALID_COORDINATES — lat/lng out of range.
+        '502':
+          description: WEATHER_PROVIDER_UNAVAILABLE — upstream fetch failed.
+      security:
+        - bearer: []
+      summary: Daily forecast for the given coordinates. Powered by Open-Meteo.
       tags:
-        - Weather
+        - weather
   /api/v1/stays/search:
     post:
       operationId: StaysController_search
       parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchStaysRequestDto'
       responses:
         '200':
-          description: ''
+          description: Matching stays, nearest-first.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchStaysResponseDto'
+        '422':
+          description: INVALID_COORDINATES | INVALID_RADIUS | INVALID_DATE_RANGE.
+      security:
+        - bearer: []
+      summary: Search stays within a radius for the given check-in/out window.
       tags:
-        - Stays
+        - stays
   /api/v1/eateries/search:
     post:
       operationId: FoodController_search
       parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchEateriesRequestDto'
       responses:
         '200':
-          description: ''
+          description: Matching eateries, nearest-first.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchEateriesResponseDto'
+      security:
+        - bearer: []
+      summary: Search eateries within a radius. Optional cuisine + price-tier filters.
       tags:
-        - Food
+        - food
   /api/v1/events/search:
     post:
       operationId: EventsController_search
       parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchEventsRequestDto'
       responses:
         '200':
-          description: ''
+          description: Matching events, soonest-first.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchEventsResponseDto'
+        '422':
+          description: INVALID_COORDINATES | INVALID_RADIUS | INVALID_DATE_RANGE.
+      security:
+        - bearer: []
+      summary: Search events within a radius and date window.
       tags:
-        - Events
+        - events
   /api/v1/transport/routes:
     post:
       operationId: TransportController_routes
       parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetRoutesRequestDto'
       responses:
         '200':
-          description: ''
+          description: One leg per mode.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetRoutesResponseDto'
+        '422':
+          description: INVALID_COORDINATES | SAME_ORIGIN_DESTINATION | ROUTE_TOO_LONG.
+      security:
+        - bearer: []
+      summary: Compute one route leg per available transport mode for the given origin
+        → destination.
       tags:
-        - Transport
+        - transport
   /api/v1/media/upload-url:
     post:
       operationId: MediaController_createUploadUrl
@@ -968,11 +1066,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CreateUploadUrlResponseDto'
-      security: &a16
+      security: &a17
         - bearer: []
       summary: Issue a presigned PUT URL for direct-to-S3 upload. Creates the
         MediaAsset row in `processing` status.
-      tags: &a17
+      tags: &a18
         - media
   /api/v1/media/{id}/confirm:
     post:
@@ -992,10 +1090,10 @@ paths:
                 $ref: '#/components/schemas/MediaAssetDto'
         '404':
           description: MEDIA_NOT_FOUND.
-      security: *a16
+      security: *a17
       summary: Confirm upload landed (HEAD verifies bytes). Flips status to `ready`.
         Image kind also flips exifStripped.
-      tags: *a17
+      tags: *a18
   /api/v1/media/{id}/download-url:
     get:
       operationId: MediaController_downloadUrl
@@ -1014,9 +1112,9 @@ paths:
                 $ref: '#/components/schemas/MediaDownloadUrlResponseDto'
         '404':
           description: MEDIA_NOT_FOUND.
-      security: *a16
+      security: *a17
       summary: Short-lived presigned GET URL for the asset. Owner-gated.
-      tags: *a17
+      tags: *a18
   /api/v1/media/{id}/trip:
     patch:
       operationId: MediaController_attachToTrip
@@ -1041,10 +1139,10 @@ paths:
                 $ref: '#/components/schemas/MediaAssetDto'
         '404':
           description: MEDIA_NOT_FOUND or TRIP_NOT_FOUND.
-      security: *a16
+      security: *a17
       summary: Attach (`{tripId}`) or detach (`{tripId:null}`) the media to a trip.
         Double owner-gated.
-      tags: *a17
+      tags: *a18
   /api/v1/media/trip/{tripId}:
     get:
       operationId: MediaController_listByTrip
@@ -1066,10 +1164,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListTripMediaResponseDto'
-      security: *a16
+      security: *a17
       summary: List the caller's `ready` media attached to a trip. ?limit=N (1..200,
         default 50).
-      tags: *a17
+      tags: *a18
   /api/v1/media/{id}/memory-book:
     patch:
       operationId: MediaController_attachToBook
@@ -1094,10 +1192,10 @@ paths:
                 $ref: '#/components/schemas/MediaAssetDto'
         '404':
           description: MEDIA_NOT_FOUND or BOOK_NOT_FOUND.
-      security: *a16
+      security: *a17
       summary: Attach (`{memoryBookId}`) or detach (`{memoryBookId:null}`) the media
         to a memory book. Double owner-gated.
-      tags: *a17
+      tags: *a18
   /api/v1/memory-books/featured:
     get:
       operationId: MemoryBookController_featured
@@ -1114,11 +1212,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FeaturedMemoryBooksResponseDto'
-      security: &a18
+      security: &a19
         - bearer: []
       summary: Public discovery — currently-published memory books across all users,
         ordered by publishedAt DESC.
-      tags: &a19
+      tags: &a20
         - media
   /api/v1/memory-books/public/{id}:
     get:
@@ -1138,10 +1236,10 @@ paths:
                 $ref: '#/components/schemas/PublicMemoryBookWithAssetsResponseDto'
         '404':
           description: BOOK_NOT_PUBLISHED.
-      security: *a18
+      security: *a19
       summary: Public read of a published memory book by id. The cuid is the
         unguessable token.
-      tags: *a19
+      tags: *a20
   /api/v1/memory-books/public/{id}/assets/{assetId}/download-url:
     get:
       operationId: MemoryBookController_getPublicAssetDownloadUrl
@@ -1165,10 +1263,10 @@ paths:
                 $ref: '#/components/schemas/PublicDownloadUrlResponseDto'
         '404':
           description: BOOK_NOT_PUBLISHED, MEDIA_NOT_FOUND, or NOT_ATTACHED.
-      security: *a18
+      security: *a19
       summary: 'Public presigned download URL for a memory-book asset. Three-clause
         gate: book published + asset attached + asset ready.'
-      tags: *a19
+      tags: *a20
   /api/v1/memory-books:
     post:
       operationId: MemoryBookController_create
@@ -1186,9 +1284,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MemoryBookDto'
-      security: *a18
+      security: *a19
       summary: Create a memory book (draft). Owner = caller.
-      tags: *a19
+      tags: *a20
     get:
       operationId: MemoryBookController_list
       parameters:
@@ -1204,10 +1302,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListMemoryBooksResponseDto'
-      security: *a18
+      security: *a19
       summary: List the caller's memory books, newest first. ?limit=N (1..200, default
         50). Owner-scoped.
-      tags: *a19
+      tags: *a20
   /api/v1/memory-books/{id}:
     get:
       operationId: MemoryBookController_getOne
@@ -1226,9 +1324,9 @@ paths:
                 $ref: '#/components/schemas/MemoryBookWithAssetsResponseDto'
         '404':
           description: BOOK_NOT_FOUND.
-      security: *a18
+      security: *a19
       summary: Get one of the caller-owned books + the attached asset ids.
-      tags: *a19
+      tags: *a20
     patch:
       operationId: MemoryBookController_update
       parameters:
@@ -1252,9 +1350,9 @@ paths:
                 $ref: '#/components/schemas/MemoryBookDto'
         '404':
           description: BOOK_NOT_FOUND.
-      security: *a18
+      security: *a19
       summary: Update one of the caller-owned books. Partial update.
-      tags: *a19
+      tags: *a20
     delete:
       operationId: MemoryBookController_remove
       parameters:
@@ -1268,9 +1366,9 @@ paths:
           description: Deleted.
         '404':
           description: BOOK_NOT_FOUND.
-      security: *a18
+      security: *a19
       summary: Delete one of the caller-owned books. SetNull on MediaAsset.memoryBookId.
-      tags: *a19
+      tags: *a20
   /api/v1/memory-books/{id}/publish:
     post:
       operationId: MemoryBookController_publish
@@ -1289,9 +1387,9 @@ paths:
                 $ref: '#/components/schemas/MemoryBookDto'
         '404':
           description: BOOK_NOT_FOUND.
-      security: *a18
+      security: *a19
       summary: Publish a book — flips publishedAt to now (idempotent).
-      tags: *a19
+      tags: *a20
   /api/v1/memory-books/{id}/unpublish:
     post:
       operationId: MemoryBookController_unpublish
@@ -1310,9 +1408,9 @@ paths:
                 $ref: '#/components/schemas/MemoryBookDto'
         '404':
           description: BOOK_NOT_FOUND.
-      security: *a18
+      security: *a19
       summary: Unpublish a book — clears publishedAt (idempotent).
-      tags: *a19
+      tags: *a20
   /api/v1/admin/media:
     get:
       operationId: AdminMediaController_list
@@ -1345,11 +1443,11 @@ paths:
       responses:
         '200':
           description: ''
-      security: &a20
+      security: &a21
         - bearer: []
       summary: Cross-user list of media with optional ?ownerId, ?kind, ?status
         filters. Admin-only.
-      tags: &a21
+      tags: &a22
         - admin
   /api/v1/admin/media/{id}:
     delete:
@@ -1363,10 +1461,10 @@ paths:
       responses:
         '204':
           description: ''
-      security: *a20
+      security: *a21
       summary: Hard-delete media (takedown). Trip + memory book references
         SetNull-cascade.
-      tags: *a21
+      tags: *a22
   /api/v1/notifications/me/unread-count:
     get:
       operationId: NotificationsController_unreadCount
@@ -1378,11 +1476,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UnreadCountResponseDto'
-      security: &a22
+      security: &a23
         - bearer: []
       summary: 'Returns { unread: N } for the home-screen badge. Single indexed COUNT
         — cheap.'
-      tags: &a23
+      tags: &a24
         - notifications
   /api/v1/notifications/me:
     get:
@@ -1407,10 +1505,10 @@ paths:
                 $ref: '#/components/schemas/ListMyNotificationsResponseDto'
         '400':
           description: VALIDATION_FAILED — channel is not one of push|email|sms.
-      security: *a22
+      security: *a23
       summary: List the caller's recent notifications. Optional
         ?channel=push|email|sms narrows to one delivery channel.
-      tags: *a23
+      tags: *a24
   /api/v1/notifications/read-all:
     post:
       operationId: NotificationsController_markAllRead
@@ -1422,10 +1520,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MarkAllReadResponseDto'
-      security: *a22
+      security: *a23
       summary: 'Mark every unread row as read. Returns { marked: N }. Idempotent
         (second call returns 0).'
-      tags: *a23
+      tags: *a24
   /api/v1/notifications/{id}/read:
     post:
       operationId: NotificationsController_markRead
@@ -1444,9 +1542,9 @@ paths:
                 $ref: '#/components/schemas/NotificationLogDto'
         '404':
           description: NOTIFICATION_NOT_FOUND.
-      security: *a22
+      security: *a23
       summary: Mark one notification as read. Owner-gated; 404 on cross-user / missing.
-      tags: *a23
+      tags: *a24
   /api/v1/notifications/{id}/unread:
     post:
       operationId: NotificationsController_markUnread
@@ -1465,9 +1563,9 @@ paths:
                 $ref: '#/components/schemas/NotificationLogDto'
         '404':
           description: NOTIFICATION_NOT_FOUND.
-      security: *a22
+      security: *a23
       summary: Mark one notification as UNread (symmetric to /read). Owner-gated.
-      tags: *a23
+      tags: *a24
   /api/v1/notifications/{id}:
     delete:
       operationId: NotificationsController_remove
@@ -1482,10 +1580,10 @@ paths:
           description: Deleted.
         '404':
           description: NOTIFICATION_NOT_FOUND.
-      security: *a22
+      security: *a23
       summary: Hard-delete a notification (inbox prune). Owner-gated; 404 on
         cross-user / missing.
-      tags: *a23
+      tags: *a24
   /api/v1/admin/places:
     post:
       operationId: AdminController_create
@@ -1493,7 +1591,7 @@ paths:
       responses:
         '201':
           description: ''
-      tags: &a24
+      tags: &a25
         - Admin
   /api/v1/admin/places/{id}:
     delete:
@@ -1507,24 +1605,50 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *a24
+      tags: *a25
   /api/v1/safety/scam-reports:
     post:
       operationId: SafetyController_report
       parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportScamRequestDto'
       responses:
         '201':
-          description: ''
-      tags: &a25
-        - Safety
+          description: Newly-created report row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScamReportDto'
+      security: &a26
+        - bearer: []
+      summary: File a crowd-sourced scam report at the given coordinates.
+      tags: &a27
+        - safety
   /api/v1/safety/scam-reports/search:
     post:
       operationId: SafetyController_search
       parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FindNearbyScamsRequestDto'
       responses:
         '200':
-          description: ''
-      tags: *a25
+          description: Matching reports, nearest-first.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FindNearbyScamsResponseDto'
+      security: *a26
+      summary: Find scam reports within a radius. Optional filters by category /
+        minSeverity / verifiedOnly.
+      tags: *a27
   /api/v1/safety/sos:
     post:
       operationId: SosController_trigger
@@ -1532,7 +1656,7 @@ paths:
       responses:
         '201':
           description: ''
-      tags: &a26
+      tags: &a28
         - Sos
     get:
       operationId: SosController_listMine
@@ -1545,7 +1669,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a26
+      tags: *a28
   /api/v1/safety/sos/{id}/resolve:
     post:
       operationId: SosController_resolve
@@ -1558,7 +1682,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a26
+      tags: *a28
   /api/v1/safety/crimes/search:
     post:
       operationId: CrimeLayerController_search
@@ -1594,7 +1718,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: &a27
+      tags: &a29
         - AdminScamModeration
   /api/v1/admin/safety/scam-reports/{id}/verify:
     post:
@@ -1608,7 +1732,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a27
+      tags: *a29
   /api/v1/admin/safety/scam-reports/{id}/unverify:
     post:
       operationId: AdminScamModerationController_unverify
@@ -1621,7 +1745,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a27
+      tags: *a29
   /api/v1/admin/safety/scam-reports/{id}:
     delete:
       operationId: AdminScamModerationController_dismiss
@@ -1634,7 +1758,7 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *a27
+      tags: *a29
   /api/v1/admin/safety/sos-events:
     get:
       operationId: AdminSosController_list
@@ -1657,7 +1781,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: &a28
+      tags: &a30
         - AdminSos
   /api/v1/admin/safety/sos-events/{id}/resolve:
     post:
@@ -1671,7 +1795,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a28
+      tags: *a30
   /api/v1/trips/{tripId}/votes:
     post:
       operationId: SocialController_cast
@@ -1684,11 +1808,11 @@ paths:
       responses:
         '200':
           description: ''
-      security: &a29
+      security: &a31
         - bearer: []
       summary: 'Cast or update a vote on a trip target. Body: { targetType, targetId,
         value }. Auth gate: owner OR active TripShare.'
-      tags: &a30
+      tags: &a32
         - social
     delete:
       operationId: SocialController_revoke
@@ -1701,10 +1825,10 @@ paths:
       responses:
         '204':
           description: ''
-      security: *a29
+      security: *a31
       summary: 'Revoke a previously-cast vote. Body: { targetType, targetId }.
         Idempotent.'
-      tags: *a30
+      tags: *a32
     get:
       operationId: SocialController_list
       parameters:
@@ -1716,9 +1840,9 @@ paths:
       responses:
         '200':
           description: ''
-      security: *a29
+      security: *a31
       summary: Aggregated tallies for a trip's votes + the caller's own vote per target.
-      tags: *a30
+      tags: *a32
   /api/v1/trips/{tripId}/expenses:
     post:
       operationId: ExpensesController_create
@@ -1732,11 +1856,11 @@ paths:
       responses:
         '201':
           description: ''
-      security: &a31
+      security: &a33
         - bearer: []
       summary: 'Record a shared expense on a trip. Auth gate: owner OR active
         TripShare. Splits sum-checked.'
-      tags: &a32
+      tags: &a34
         - social
     get:
       operationId: ExpensesController_list
@@ -1755,9 +1879,9 @@ paths:
       responses:
         '200':
           description: ''
-      security: *a31
+      security: *a33
       summary: List trip expenses, most-recent-first. ?limit=N (1..500, default 50).
-      tags: *a32
+      tags: *a34
   /api/v1/trips/{tripId}/expenses/balances:
     get:
       operationId: ExpensesController_balances
@@ -1771,10 +1895,10 @@ paths:
       responses:
         '200':
           description: ''
-      security: *a31
+      security: *a33
       summary: Net per-user "who owes whom" ledger. Sum is zero (modulo 2dp). 60s
         cache; write-invalidated on expense create/delete.
-      tags: *a32
+      tags: *a34
   /api/v1/trips/{tripId}/expenses/{id}:
     delete:
       operationId: ExpensesController_remove
@@ -1792,10 +1916,10 @@ paths:
       responses:
         '204':
           description: ''
-      security: *a31
+      security: *a33
       summary: Delete an expense. Payer-only — only the user who recorded it can
         remove it.
-      tags: *a32
+      tags: *a34
   /api/v1/reviews:
     post:
       operationId: ReviewsController_create
@@ -1803,11 +1927,11 @@ paths:
       responses:
         '201':
           description: ''
-      security: &a33
+      security: &a35
         - bearer: []
       summary: Create a review for any review-target (place/stay/eatery/agent).
         Owner-stamped to the caller.
-      tags: &a34
+      tags: &a36
         - social
     get:
       operationId: ReviewsController_listForTarget
@@ -1830,10 +1954,10 @@ paths:
       responses:
         '200':
           description: ''
-      security: *a33
+      security: *a35
       summary: Target-scoped review listing. ?targetType + ?targetId required.
         Most-recent-first.
-      tags: *a34
+      tags: *a36
   /api/v1/reviews/summary:
     get:
       operationId: ReviewsController_summary
@@ -1851,10 +1975,10 @@ paths:
       responses:
         '200':
           description: ''
-      security: *a33
+      security: *a35
       summary: Aggregated review summary { count, average, histogram } for a target.
         @Public.
-      tags: *a34
+      tags: *a36
   /api/v1/reviews/mine:
     get:
       operationId: ReviewsController_listMine
@@ -1867,10 +1991,10 @@ paths:
       responses:
         '200':
           description: ''
-      security: *a33
+      security: *a35
       summary: List the caller's authored reviews, most-recent-first. ?limit=N
         (1..200, default 50).
-      tags: *a34
+      tags: *a36
   /api/v1/reviews/{id}:
     delete:
       operationId: ReviewsController_remove
@@ -1883,10 +2007,10 @@ paths:
       responses:
         '204':
           description: ''
-      security: *a33
+      security: *a35
       summary: Delete one of the caller's reviews. Author-gated; 404 on cross-user /
         missing.
-      tags: *a34
+      tags: *a36
   /api/v1/votes/summary:
     get:
       operationId: VotesController_summary
@@ -1983,11 +2107,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserDataExportResponseDto'
-      security: &a35
+      security: &a37
         - bearer: []
       summary: Full GDPR/DPDP/COPPA self-export bundle as a single JSON object. ~30
         sections; sensitive fields stripped.
-      tags: &a36
+      tags: &a38
         - account
   /api/v1/account/export.ndjson:
     get:
@@ -1997,10 +2121,10 @@ paths:
         '200':
           description: Streaming NDJSON. Each line is a `{type,data}` envelope; downstream
             tooling (jq -c, ndjson-cli) parses incrementally.
-      security: *a35
+      security: *a37
       summary: 'NDJSON variant of the export bundle — one `{type,data}` envelope per
         line. Content-Type: application/x-ndjson.'
-      tags: *a36
+      tags: *a38
   /api/v1/account:
     delete:
       operationId: AccountController_deleteMyAccount
@@ -2008,10 +2132,10 @@ paths:
       responses:
         '204':
           description: Account marked soft-deleted; sessions revoked.
-      security: *a35
+      security: *a37
       summary: Soft-delete the caller's account + revoke all live sessions. GDPR Art.
         17 / DPDP §12 right-to-erasure.
-      tags: *a36
+      tags: *a38
   /api/v1/admin/users:
     get:
       operationId: AdminUsersController_list
@@ -2044,7 +2168,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: &a37
+      tags: &a39
         - AdminUsers
   /api/v1/admin/users/{id}/ban:
     post:
@@ -2058,7 +2182,7 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *a37
+      tags: *a39
   /api/v1/admin/users/{id}/unban:
     post:
       operationId: AdminUsersController_unban
@@ -2071,7 +2195,7 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *a37
+      tags: *a39
   /api/v1/admin/account-purge:
     post:
       operationId: AdminPurgeController_forcePurge
@@ -2097,9 +2221,20 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: Activity items + nextBefore cursor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeedResponseDto'
+        '400':
+          description: VALIDATION_FAILED — before is not an ISO timestamp, or limit is
+            non-positive.
+      security:
+        - bearer: []
+      summary: List the caller's recent activity (cursor pagination via ?before=).
+        Optional ?limit caps the page size.
       tags:
-        - Feed
+        - feed
 info:
   title: TravelSuperApp API
   description: OpenAPI export from the running NestJS app. Per-route schemas land
@@ -2817,6 +2952,533 @@ components:
           $ref: '#/components/schemas/ItineraryDayDto'
       required:
         - day
+    PlacesCoordinatesDto:
+      type: object
+      properties:
+        lat:
+          type: number
+        lng:
+          type: number
+      required:
+        - lat
+        - lng
+    SearchPlacesRequestDto:
+      type: object
+      properties:
+        center:
+          $ref: '#/components/schemas/PlacesCoordinatesDto'
+        radiusKm:
+          type: number
+        category:
+          type: string
+          description: Filter by category slug.
+        limit:
+          type: number
+          description: Cap on result count.
+      required:
+        - center
+        - radiusKm
+    PlaceDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        sourceKey:
+          type: string
+          description: Stable provider key (e.g. "google:place_id").
+        name:
+          type: string
+        category:
+          type: string
+        address:
+          type: object
+          nullable: true
+        countryCode:
+          type: object
+          nullable: true
+          description: ISO 3166-1 alpha-2.
+        relaxationScore:
+          type: number
+          description: Curated local relaxation score 0..100.
+        distanceMeters:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - sourceKey
+        - name
+        - category
+        - address
+        - countryCode
+        - relaxationScore
+        - distanceMeters
+        - createdAt
+        - updatedAt
+    SearchPlacesResponseDto:
+      type: object
+      properties:
+        places:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlaceDto'
+      required:
+        - places
+    FederatedSearchPlacesRequestDto:
+      type: object
+      properties:
+        center:
+          $ref: '#/components/schemas/PlacesCoordinatesDto'
+        radiusKm:
+          type: number
+        category:
+          type: string
+        ingest:
+          type: boolean
+          description: When true, results are written through to the canonical Place
+            catalog (idempotent dedup) and each row carries the canonical
+            placeId.
+      required:
+        - center
+        - radiusKm
+    FederatedPlaceResultDto:
+      type: object
+      properties:
+        externalId:
+          type: string
+          description: Provider-side stable id.
+        provider:
+          type: string
+          description: Source provider key.
+        name:
+          type: string
+        category:
+          type: string
+        address:
+          type: object
+          nullable: true
+        countryCode:
+          type: object
+          nullable: true
+          description: ISO 3166-1 alpha-2.
+        lat:
+          type: number
+        lng:
+          type: number
+        distanceMeters:
+          type: number
+        placeId:
+          type: string
+          format: cuid
+          description: Canonical Place id (only set when ingest=true on the request).
+        created:
+          type: boolean
+          description: True iff this call inserted the row; false if already cached. Only
+            set when ingest=true.
+      required:
+        - externalId
+        - provider
+        - name
+        - category
+        - address
+        - countryCode
+        - lat
+        - lng
+        - distanceMeters
+    FederatedSearchPlacesResponseDto:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/FederatedPlaceResultDto'
+      required:
+        - results
+    DailyForecastDto:
+      type: object
+      properties:
+        date:
+          type: string
+          description: ISO date in the forecast timezone, e.g. 2026-08-02.
+        maxTempC:
+          type: number
+          description: High temperature in °C.
+        minTempC:
+          type: number
+          description: Low temperature in °C.
+        weatherCode:
+          type: number
+          description: WMO weather code (0=clear, 1-3=mainly clear, 45/48=fog,
+            51/53/55=drizzle, 61/63/65=rain, 71/73/75=snow, 95=thunder).
+        precipitationProbabilityPercent:
+          type: object
+          nullable: true
+          description: Provider precipitation confidence 0..100, or null if not reported.
+      required:
+        - date
+        - maxTempC
+        - minTempC
+        - weatherCode
+        - precipitationProbabilityPercent
+    WeatherForecastResponseDto:
+      type: object
+      properties:
+        lat:
+          type: number
+        lng:
+          type: number
+        timezone:
+          type: string
+          description: IANA timezone string Open-Meteo resolved the coords to.
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/DailyForecastDto'
+      required:
+        - lat
+        - lng
+        - timezone
+        - days
+    StaysCoordinatesDto:
+      type: object
+      properties:
+        lat:
+          type: number
+        lng:
+          type: number
+      required:
+        - lat
+        - lng
+    SearchStaysRequestDto:
+      type: object
+      properties:
+        center:
+          $ref: '#/components/schemas/StaysCoordinatesDto'
+        radiusKm:
+          type: number
+        checkIn:
+          type: string
+          format: date
+          description: ISO date YYYY-MM-DD.
+        checkOut:
+          type: string
+          format: date
+          description: ISO date YYYY-MM-DD; must be after checkIn.
+        guests:
+          type: number
+          description: Guest count (default 2).
+      required:
+        - center
+        - radiusKm
+        - checkIn
+        - checkOut
+    StayListingDto:
+      type: object
+      properties:
+        externalId:
+          type: string
+          description: Provider-side id, e.g. "booking:1234567".
+        provider:
+          type: string
+          description: Source provider key (booking, hotels, mock, etc.).
+        name:
+          type: string
+        starRating:
+          type: object
+          nullable: true
+          description: Star rating 1..5, or null if not rated.
+        amenities:
+          type: array
+          items:
+            type: string
+        lat:
+          type: number
+        lng:
+          type: number
+        distanceMeters:
+          type: number
+        priceUsdPerNight:
+          type: object
+          nullable: true
+          description: Per-night price USD, or null if no live quote.
+        currency:
+          type: object
+          nullable: true
+          description: ISO 4217 code of the original quote currency (price is normalized
+            to USD).
+      required:
+        - externalId
+        - provider
+        - name
+        - starRating
+        - amenities
+        - lat
+        - lng
+        - distanceMeters
+        - priceUsdPerNight
+        - currency
+    SearchStaysResponseDto:
+      type: object
+      properties:
+        stays:
+          type: array
+          items:
+            $ref: '#/components/schemas/StayListingDto'
+      required:
+        - stays
+    FoodCoordinatesDto:
+      type: object
+      properties:
+        lat:
+          type: number
+        lng:
+          type: number
+      required:
+        - lat
+        - lng
+    SearchEateriesRequestDto:
+      type: object
+      properties:
+        center:
+          $ref: '#/components/schemas/FoodCoordinatesDto'
+        radiusKm:
+          type: number
+          description: Search radius in km.
+        cuisineTag:
+          type: string
+          description: Filter by cuisine tag (e.g. "vegan", "pizza").
+        maxPriceTier:
+          type: number
+          description: Cap on price tier 1–5 ($ through $$$$$). Excludes pricier results.
+      required:
+        - center
+        - radiusKm
+    EateryListingDto:
+      type: object
+      properties:
+        externalId:
+          type: string
+          description: Provider-side id (Google place_id, FSQ fsq_id, OSM way/node id,
+            etc.).
+        provider:
+          type: string
+          enum:
+            - google
+            - fsq
+            - osm
+            - mock
+          description: Source provider key.
+        name:
+          type: string
+        cuisineTags:
+          type: array
+          items:
+            type: string
+        priceTier:
+          type: number
+          description: Price tier 1–5 ($ through $$$$$).
+        lat:
+          type: number
+        lng:
+          type: number
+        distanceMeters:
+          type: number
+          description: Distance from search center, meters.
+      required:
+        - externalId
+        - provider
+        - name
+        - cuisineTags
+        - priceTier
+        - lat
+        - lng
+        - distanceMeters
+    SearchEateriesResponseDto:
+      type: object
+      properties:
+        eateries:
+          description: Matching eateries, nearest-first.
+          type: array
+          items:
+            $ref: '#/components/schemas/EateryListingDto'
+      required:
+        - eateries
+    EventsCoordinatesDto:
+      type: object
+      properties:
+        lat:
+          type: number
+        lng:
+          type: number
+      required:
+        - lat
+        - lng
+    SearchEventsRequestDto:
+      type: object
+      properties:
+        center:
+          $ref: '#/components/schemas/EventsCoordinatesDto'
+        radiusKm:
+          type: number
+        from:
+          type: string
+          format: date-time
+          description: ISO-8601 inclusive lower bound.
+        to:
+          type: string
+          format: date-time
+          description: ISO-8601 inclusive upper bound.
+        category:
+          type: string
+          description: Filter by category slug.
+      required:
+        - center
+        - radiusKm
+        - from
+        - to
+    EventListingDto:
+      type: object
+      properties:
+        externalId:
+          type: string
+        provider:
+          type: string
+        title:
+          type: string
+        description:
+          type: object
+          nullable: true
+        category:
+          type: string
+        venueName:
+          type: object
+          nullable: true
+        lat:
+          type: number
+        lng:
+          type: number
+        distanceMeters:
+          type: number
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        currency:
+          type: object
+          nullable: true
+          description: ISO-4217 code; null for free events.
+        priceMin:
+          type: object
+          nullable: true
+          description: Decimal string; null for free events.
+        priceMax:
+          type: object
+          nullable: true
+        sourceUrl:
+          type: object
+          nullable: true
+      required:
+        - externalId
+        - provider
+        - title
+        - description
+        - category
+        - venueName
+        - lat
+        - lng
+        - distanceMeters
+        - startsAt
+        - endsAt
+        - currency
+        - priceMin
+        - priceMax
+        - sourceUrl
+    SearchEventsResponseDto:
+      type: object
+      properties:
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventListingDto'
+      required:
+        - events
+    TransportCoordinatesDto:
+      type: object
+      properties:
+        lat:
+          type: number
+        lng:
+          type: number
+      required:
+        - lat
+        - lng
+    GetRoutesRequestDto:
+      type: object
+      properties:
+        origin:
+          $ref: '#/components/schemas/TransportCoordinatesDto'
+        destination:
+          $ref: '#/components/schemas/TransportCoordinatesDto'
+        modes:
+          type: array
+          description: Filter to a subset of modes; empty/omitted means all available.
+          items:
+            type: string
+            enum: &a40
+              - walk
+              - public_transit
+              - bicycle
+              - two_wheeler
+              - car
+              - taxi
+              - rideshare
+      required:
+        - origin
+        - destination
+    RouteLegDto:
+      type: object
+      properties:
+        mode:
+          type: string
+          enum: *a40
+        distanceMeters:
+          type: number
+        durationSeconds:
+          type: number
+        estimatedCostUsd:
+          type: object
+          nullable: true
+          description: Flat USD estimate (null for walk; transit/car/etc populated by
+            provider).
+        confidence:
+          type: string
+          enum:
+            - high
+            - medium
+            - low
+      required:
+        - mode
+        - distanceMeters
+        - durationSeconds
+        - estimatedCostUsd
+        - confidence
+    GetRoutesResponseDto:
+      type: object
+      properties:
+        routes:
+          description: One leg per available mode.
+          type: array
+          items:
+            $ref: '#/components/schemas/RouteLegDto'
+      required:
+        - routes
     CreateUploadUrlRequestDto:
       type: object
       properties:
@@ -3187,6 +3849,169 @@ components:
           description: Count of rows actually flipped on this call. 0 on idempotent re-call.
       required:
         - marked
+    CoordinatesDto:
+      type: object
+      properties:
+        lat:
+          type: number
+          description: Latitude in decimal degrees, -90..90.
+        lng:
+          type: number
+          description: Longitude in decimal degrees, -180..180.
+      required:
+        - lat
+        - lng
+    ReportScamRequestDto:
+      type: object
+      properties:
+        category:
+          type: string
+          description: Scam category slug (e.g. "taxi-overcharge", "fake-temple").
+        severity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+            - critical
+        center:
+          description: Where the scam was witnessed.
+          allOf:
+            - $ref: '#/components/schemas/CoordinatesDto'
+        description:
+          type: string
+          description: Free-form prose description of the scam.
+        evidenceUrls:
+          description: Optional URLs of evidence (photos uploaded to media bucket).
+          type: array
+          items:
+            type: string
+      required:
+        - category
+        - severity
+        - center
+        - description
+    ScamReportDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        reporterId:
+          type: string
+          format: cuid
+        category:
+          type: string
+        severity:
+          type: string
+          enum: &a41
+            - low
+            - medium
+            - high
+            - critical
+        description:
+          type: string
+        evidenceUrls:
+          type: array
+          items:
+            type: string
+        verified:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - reporterId
+        - category
+        - severity
+        - description
+        - evidenceUrls
+        - verified
+        - createdAt
+        - updatedAt
+    FindNearbyScamsRequestDto:
+      type: object
+      properties:
+        center:
+          $ref: '#/components/schemas/CoordinatesDto'
+        radiusKm:
+          type: number
+          description: Search radius in kilometers.
+        category:
+          type: string
+          description: Filter by category slug.
+        minSeverity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+            - critical
+        verifiedOnly:
+          type: boolean
+          description: Only return verified reports.
+        limit:
+          type: number
+          description: Cap on result count (default 50).
+      required:
+        - center
+        - radiusKm
+    ScamReportWithDistanceDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        reporterId:
+          type: string
+          format: cuid
+        category:
+          type: string
+        severity:
+          type: string
+          enum: *a41
+        description:
+          type: string
+        evidenceUrls:
+          type: array
+          items:
+            type: string
+        verified:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        distanceMeters:
+          type: number
+          description: Distance in meters from the search center.
+      required:
+        - id
+        - reporterId
+        - category
+        - severity
+        - description
+        - evidenceUrls
+        - verified
+        - createdAt
+        - updatedAt
+        - distanceMeters
+    FindNearbyScamsResponseDto:
+      type: object
+      properties:
+        reports:
+          description: Matching reports, nearest-first.
+          type: array
+          items:
+            $ref: '#/components/schemas/ScamReportWithDistanceDto'
+      required:
+        - reports
     UserDataExportMetadataDto:
       type: object
       properties:
@@ -3312,3 +4137,39 @@ components:
         - commissions
         - agentProfile
         - liveEvents
+    FeedItemDto:
+      type: object
+      properties:
+        kind:
+          type: string
+          description: 'Activity discriminator: trip.created | trip.updated |
+            review.authored | memory_book.published | scam.reported | etc.'
+        occurredAt:
+          type: string
+          format: date-time
+          description: ISO-8601 timestamp of the activity.
+        payload:
+          type: object
+          additionalProperties: true
+          description: Activity-specific payload. Shape varies per `kind`.
+      required:
+        - kind
+        - occurredAt
+        - payload
+    FeedResponseDto:
+      type: object
+      properties:
+        items:
+          description: Caller's recent activity, newest-first.
+          type: array
+          items:
+            $ref: '#/components/schemas/FeedItemDto'
+        nextBefore:
+          type: object
+          nullable: true
+          format: date-time
+          description: Pagination cursor (exclusive ISO timestamp); null when stream is
+            exhausted.
+      required:
+        - items
+        - nextBefore

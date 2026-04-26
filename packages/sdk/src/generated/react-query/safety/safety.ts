@@ -8,12 +8,22 @@ import type {
   UseMutationResult,
 } from '@tanstack/react-query';
 
+import type {
+  FindNearbyScamsRequestDto,
+  FindNearbyScamsResponseDto,
+  ReportScamRequestDto,
+  ScamReportDto,
+} from '../../schemas';
+
 import { apiFetch } from '../../../runtime/fetcher';
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
+/**
+ * @summary File a crowd-sourced scam report at the given coordinates.
+ */
 export type safetyControllerReportResponse201 = {
-  data: void;
+  data: ScamReportDto;
   status: 201;
 };
 
@@ -27,11 +37,14 @@ export const getSafetyControllerReportUrl = () => {
 };
 
 export const safetyControllerReport = async (
+  reportScamRequestDto: ReportScamRequestDto,
   options?: RequestInit,
 ): Promise<safetyControllerReportResponse> => {
   return apiFetch<safetyControllerReportResponse>(getSafetyControllerReportUrl(), {
     ...options,
     method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(reportScamRequestDto),
   });
 };
 
@@ -42,14 +55,14 @@ export const getSafetyControllerReportMutationOptions = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof safetyControllerReport>>,
     TError,
-    void,
+    { data: ReportScamRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof safetyControllerReport>>,
   TError,
-  void,
+  { data: ReportScamRequestDto },
   TContext
 > => {
   const mutationKey = ['safetyControllerReport'];
@@ -61,9 +74,11 @@ export const getSafetyControllerReportMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof safetyControllerReport>>,
-    void
-  > = () => {
-    return safetyControllerReport(requestOptions);
+    { data: ReportScamRequestDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return safetyControllerReport(data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -72,29 +87,35 @@ export const getSafetyControllerReportMutationOptions = <
 export type SafetyControllerReportMutationResult = NonNullable<
   Awaited<ReturnType<typeof safetyControllerReport>>
 >;
-
+export type SafetyControllerReportMutationBody = ReportScamRequestDto;
 export type SafetyControllerReportMutationError = unknown;
 
+/**
+ * @summary File a crowd-sourced scam report at the given coordinates.
+ */
 export const useSafetyControllerReport = <TError = unknown, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof safetyControllerReport>>,
     TError,
-    void,
+    { data: ReportScamRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationResult<
   Awaited<ReturnType<typeof safetyControllerReport>>,
   TError,
-  void,
+  { data: ReportScamRequestDto },
   TContext
 > => {
   const mutationOptions = getSafetyControllerReportMutationOptions(options);
 
   return useMutation(mutationOptions);
 };
+/**
+ * @summary Find scam reports within a radius. Optional filters by category / minSeverity / verifiedOnly.
+ */
 export type safetyControllerSearchResponse200 = {
-  data: void;
+  data: FindNearbyScamsResponseDto;
   status: 200;
 };
 
@@ -108,11 +129,14 @@ export const getSafetyControllerSearchUrl = () => {
 };
 
 export const safetyControllerSearch = async (
+  findNearbyScamsRequestDto: FindNearbyScamsRequestDto,
   options?: RequestInit,
 ): Promise<safetyControllerSearchResponse> => {
   return apiFetch<safetyControllerSearchResponse>(getSafetyControllerSearchUrl(), {
     ...options,
     method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(findNearbyScamsRequestDto),
   });
 };
 
@@ -123,14 +147,14 @@ export const getSafetyControllerSearchMutationOptions = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof safetyControllerSearch>>,
     TError,
-    void,
+    { data: FindNearbyScamsRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof safetyControllerSearch>>,
   TError,
-  void,
+  { data: FindNearbyScamsRequestDto },
   TContext
 > => {
   const mutationKey = ['safetyControllerSearch'];
@@ -142,9 +166,11 @@ export const getSafetyControllerSearchMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof safetyControllerSearch>>,
-    void
-  > = () => {
-    return safetyControllerSearch(requestOptions);
+    { data: FindNearbyScamsRequestDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return safetyControllerSearch(data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -153,21 +179,24 @@ export const getSafetyControllerSearchMutationOptions = <
 export type SafetyControllerSearchMutationResult = NonNullable<
   Awaited<ReturnType<typeof safetyControllerSearch>>
 >;
-
+export type SafetyControllerSearchMutationBody = FindNearbyScamsRequestDto;
 export type SafetyControllerSearchMutationError = unknown;
 
+/**
+ * @summary Find scam reports within a radius. Optional filters by category / minSeverity / verifiedOnly.
+ */
 export const useSafetyControllerSearch = <TError = unknown, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof safetyControllerSearch>>,
     TError,
-    void,
+    { data: FindNearbyScamsRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationResult<
   Awaited<ReturnType<typeof safetyControllerSearch>>,
   TError,
-  void,
+  { data: FindNearbyScamsRequestDto },
   TContext
 > => {
   const mutationOptions = getSafetyControllerSearchMutationOptions(options);

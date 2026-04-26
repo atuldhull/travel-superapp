@@ -8,12 +8,22 @@ import type {
   UseMutationResult,
 } from '@tanstack/react-query';
 
+import type {
+  FederatedSearchPlacesRequestDto,
+  FederatedSearchPlacesResponseDto,
+  SearchPlacesRequestDto,
+  SearchPlacesResponseDto,
+} from '../../schemas';
+
 import { apiFetch } from '../../../runtime/fetcher';
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
+/**
+ * @summary Search the canonical Place catalog within a radius. Optional category filter + limit.
+ */
 export type placesControllerSearchResponse200 = {
-  data: void;
+  data: SearchPlacesResponseDto;
   status: 200;
 };
 
@@ -27,11 +37,14 @@ export const getPlacesControllerSearchUrl = () => {
 };
 
 export const placesControllerSearch = async (
+  searchPlacesRequestDto: SearchPlacesRequestDto,
   options?: RequestInit,
 ): Promise<placesControllerSearchResponse> => {
   return apiFetch<placesControllerSearchResponse>(getPlacesControllerSearchUrl(), {
     ...options,
     method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(searchPlacesRequestDto),
   });
 };
 
@@ -42,14 +55,14 @@ export const getPlacesControllerSearchMutationOptions = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof placesControllerSearch>>,
     TError,
-    void,
+    { data: SearchPlacesRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof placesControllerSearch>>,
   TError,
-  void,
+  { data: SearchPlacesRequestDto },
   TContext
 > => {
   const mutationKey = ['placesControllerSearch'];
@@ -61,9 +74,11 @@ export const getPlacesControllerSearchMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof placesControllerSearch>>,
-    void
-  > = () => {
-    return placesControllerSearch(requestOptions);
+    { data: SearchPlacesRequestDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return placesControllerSearch(data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -72,29 +87,35 @@ export const getPlacesControllerSearchMutationOptions = <
 export type PlacesControllerSearchMutationResult = NonNullable<
   Awaited<ReturnType<typeof placesControllerSearch>>
 >;
-
+export type PlacesControllerSearchMutationBody = SearchPlacesRequestDto;
 export type PlacesControllerSearchMutationError = unknown;
 
+/**
+ * @summary Search the canonical Place catalog within a radius. Optional category filter + limit.
+ */
 export const usePlacesControllerSearch = <TError = unknown, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof placesControllerSearch>>,
     TError,
-    void,
+    { data: SearchPlacesRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationResult<
   Awaited<ReturnType<typeof placesControllerSearch>>,
   TError,
-  void,
+  { data: SearchPlacesRequestDto },
   TContext
 > => {
   const mutationOptions = getPlacesControllerSearchMutationOptions(options);
 
   return useMutation(mutationOptions);
 };
+/**
+ * @summary Federated search across external providers (Google/FSQ/OSM). Optional ingest=true write-through to the canonical catalog.
+ */
 export type placesControllerFederatedResponse200 = {
-  data: void;
+  data: FederatedSearchPlacesResponseDto;
   status: 200;
 };
 
@@ -108,11 +129,14 @@ export const getPlacesControllerFederatedUrl = () => {
 };
 
 export const placesControllerFederated = async (
+  federatedSearchPlacesRequestDto: FederatedSearchPlacesRequestDto,
   options?: RequestInit,
 ): Promise<placesControllerFederatedResponse> => {
   return apiFetch<placesControllerFederatedResponse>(getPlacesControllerFederatedUrl(), {
     ...options,
     method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(federatedSearchPlacesRequestDto),
   });
 };
 
@@ -123,14 +147,14 @@ export const getPlacesControllerFederatedMutationOptions = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof placesControllerFederated>>,
     TError,
-    void,
+    { data: FederatedSearchPlacesRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof placesControllerFederated>>,
   TError,
-  void,
+  { data: FederatedSearchPlacesRequestDto },
   TContext
 > => {
   const mutationKey = ['placesControllerFederated'];
@@ -142,9 +166,11 @@ export const getPlacesControllerFederatedMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof placesControllerFederated>>,
-    void
-  > = () => {
-    return placesControllerFederated(requestOptions);
+    { data: FederatedSearchPlacesRequestDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return placesControllerFederated(data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -153,21 +179,24 @@ export const getPlacesControllerFederatedMutationOptions = <
 export type PlacesControllerFederatedMutationResult = NonNullable<
   Awaited<ReturnType<typeof placesControllerFederated>>
 >;
-
+export type PlacesControllerFederatedMutationBody = FederatedSearchPlacesRequestDto;
 export type PlacesControllerFederatedMutationError = unknown;
 
+/**
+ * @summary Federated search across external providers (Google/FSQ/OSM). Optional ingest=true write-through to the canonical catalog.
+ */
 export const usePlacesControllerFederated = <TError = unknown, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof placesControllerFederated>>,
     TError,
-    void,
+    { data: FederatedSearchPlacesRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationResult<
   Awaited<ReturnType<typeof placesControllerFederated>>,
   TError,
-  void,
+  { data: FederatedSearchPlacesRequestDto },
   TContext
 > => {
   const mutationOptions = getPlacesControllerFederatedMutationOptions(options);

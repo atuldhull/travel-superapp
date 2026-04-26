@@ -11,21 +11,35 @@ import type {
   UseQueryResult,
 } from '@tanstack/react-query';
 
-import type { FeedControllerMeParams } from '../../schemas';
+import type { FeedControllerMeParams, FeedResponseDto } from '../../schemas';
 
 import { apiFetch } from '../../../runtime/fetcher';
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
+/**
+ * @summary List the caller's recent activity (cursor pagination via ?before=). Optional ?limit caps the page size.
+ */
 export type feedControllerMeResponse200 = {
-  data: void;
+  data: FeedResponseDto;
   status: 200;
+};
+
+export type feedControllerMeResponse400 = {
+  data: void;
+  status: 400;
 };
 
 export type feedControllerMeResponseSuccess = feedControllerMeResponse200 & {
   headers: Headers;
 };
-export type feedControllerMeResponse = feedControllerMeResponseSuccess;
+export type feedControllerMeResponseError = feedControllerMeResponse400 & {
+  headers: Headers;
+};
+
+export type feedControllerMeResponse =
+  | feedControllerMeResponseSuccess
+  | feedControllerMeResponseError;
 
 export const getFeedControllerMeUrl = (params: FeedControllerMeParams) => {
   const normalizedParams = new URLSearchParams();
@@ -61,7 +75,7 @@ export const getFeedControllerMeQueryKey = (params?: FeedControllerMeParams) => 
 
 export const getFeedControllerMeInfiniteQueryOptions = <
   TData = Awaited<ReturnType<typeof feedControllerMe>>,
-  TError = unknown,
+  TError = void,
 >(
   params: FeedControllerMeParams,
   options?: {
@@ -92,11 +106,15 @@ export const getFeedControllerMeInfiniteQueryOptions = <
 export type FeedControllerMeInfiniteQueryResult = NonNullable<
   Awaited<ReturnType<typeof feedControllerMe>>
 >;
-export type FeedControllerMeInfiniteQueryError = unknown;
+export type FeedControllerMeInfiniteQueryError = void;
+
+/**
+ * @summary List the caller's recent activity (cursor pagination via ?before=). Optional ?limit caps the page size.
+ */
 
 export function useFeedControllerMeInfinite<
   TData = Awaited<ReturnType<typeof feedControllerMe>>,
-  TError = unknown,
+  TError = void,
 >(
   params: FeedControllerMeParams,
   options?: {
@@ -117,7 +135,7 @@ export function useFeedControllerMeInfinite<
 
 export const getFeedControllerMeQueryOptions = <
   TData = Awaited<ReturnType<typeof feedControllerMe>>,
-  TError = unknown,
+  TError = void,
 >(
   params: FeedControllerMeParams,
   options?: {
@@ -140,11 +158,15 @@ export const getFeedControllerMeQueryOptions = <
 };
 
 export type FeedControllerMeQueryResult = NonNullable<Awaited<ReturnType<typeof feedControllerMe>>>;
-export type FeedControllerMeQueryError = unknown;
+export type FeedControllerMeQueryError = void;
+
+/**
+ * @summary List the caller's recent activity (cursor pagination via ?before=). Optional ?limit caps the page size.
+ */
 
 export function useFeedControllerMe<
   TData = Awaited<ReturnType<typeof feedControllerMe>>,
-  TError = unknown,
+  TError = void,
 >(
   params: FeedControllerMeParams,
   options?: {
