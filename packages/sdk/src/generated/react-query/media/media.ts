@@ -15,6 +15,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AttachMediaToBookRequestDto,
   AttachMediaToTripRequestDto,
   CreateMemoryBookRequestDto,
   CreateUploadUrlRequestDto,
@@ -24,6 +25,7 @@ import type {
   ListTripMediaResponseDto,
   MediaAssetDto,
   MediaControllerListByTripParams,
+  MediaDownloadUrlResponseDto,
   MemoryBookControllerFeaturedParams,
   MemoryBookControllerListParams,
   MemoryBookDto,
@@ -235,14 +237,25 @@ export const useMediaControllerConfirm = <TError = void, TContext = unknown>(opt
  * @summary Short-lived presigned GET URL for the asset. Owner-gated.
  */
 export type mediaControllerDownloadUrlResponse200 = {
-  data: void;
+  data: MediaDownloadUrlResponseDto;
   status: 200;
+};
+
+export type mediaControllerDownloadUrlResponse404 = {
+  data: void;
+  status: 404;
 };
 
 export type mediaControllerDownloadUrlResponseSuccess = mediaControllerDownloadUrlResponse200 & {
   headers: Headers;
 };
-export type mediaControllerDownloadUrlResponse = mediaControllerDownloadUrlResponseSuccess;
+export type mediaControllerDownloadUrlResponseError = mediaControllerDownloadUrlResponse404 & {
+  headers: Headers;
+};
+
+export type mediaControllerDownloadUrlResponse =
+  | mediaControllerDownloadUrlResponseSuccess
+  | mediaControllerDownloadUrlResponseError;
 
 export const getMediaControllerDownloadUrlUrl = (id: string) => {
   return `/api/v1/media/${id}/download-url`;
@@ -268,7 +281,7 @@ export const getMediaControllerDownloadUrlQueryKey = (id?: string) => {
 
 export const getMediaControllerDownloadUrlInfiniteQueryOptions = <
   TData = Awaited<ReturnType<typeof mediaControllerDownloadUrl>>,
-  TError = unknown,
+  TError = void,
 >(
   id: string,
   options?: {
@@ -304,7 +317,7 @@ export const getMediaControllerDownloadUrlInfiniteQueryOptions = <
 export type MediaControllerDownloadUrlInfiniteQueryResult = NonNullable<
   Awaited<ReturnType<typeof mediaControllerDownloadUrl>>
 >;
-export type MediaControllerDownloadUrlInfiniteQueryError = unknown;
+export type MediaControllerDownloadUrlInfiniteQueryError = void;
 
 /**
  * @summary Short-lived presigned GET URL for the asset. Owner-gated.
@@ -312,7 +325,7 @@ export type MediaControllerDownloadUrlInfiniteQueryError = unknown;
 
 export function useMediaControllerDownloadUrlInfinite<
   TData = Awaited<ReturnType<typeof mediaControllerDownloadUrl>>,
-  TError = unknown,
+  TError = void,
 >(
   id: string,
   options?: {
@@ -337,7 +350,7 @@ export function useMediaControllerDownloadUrlInfinite<
 
 export const getMediaControllerDownloadUrlQueryOptions = <
   TData = Awaited<ReturnType<typeof mediaControllerDownloadUrl>>,
-  TError = unknown,
+  TError = void,
 >(
   id: string,
   options?: {
@@ -363,7 +376,7 @@ export const getMediaControllerDownloadUrlQueryOptions = <
 export type MediaControllerDownloadUrlQueryResult = NonNullable<
   Awaited<ReturnType<typeof mediaControllerDownloadUrl>>
 >;
-export type MediaControllerDownloadUrlQueryError = unknown;
+export type MediaControllerDownloadUrlQueryError = void;
 
 /**
  * @summary Short-lived presigned GET URL for the asset. Owner-gated.
@@ -371,7 +384,7 @@ export type MediaControllerDownloadUrlQueryError = unknown;
 
 export function useMediaControllerDownloadUrl<
   TData = Awaited<ReturnType<typeof mediaControllerDownloadUrl>>,
-  TError = unknown,
+  TError = void,
 >(
   id: string,
   options?: {
@@ -693,14 +706,25 @@ export function useMediaControllerListByTrip<
  * @summary Attach (`{memoryBookId}`) or detach (`{memoryBookId:null}`) the media to a memory book. Double owner-gated.
  */
 export type mediaControllerAttachToBookResponse200 = {
-  data: void;
+  data: MediaAssetDto;
   status: 200;
+};
+
+export type mediaControllerAttachToBookResponse404 = {
+  data: void;
+  status: 404;
 };
 
 export type mediaControllerAttachToBookResponseSuccess = mediaControllerAttachToBookResponse200 & {
   headers: Headers;
 };
-export type mediaControllerAttachToBookResponse = mediaControllerAttachToBookResponseSuccess;
+export type mediaControllerAttachToBookResponseError = mediaControllerAttachToBookResponse404 & {
+  headers: Headers;
+};
+
+export type mediaControllerAttachToBookResponse =
+  | mediaControllerAttachToBookResponseSuccess
+  | mediaControllerAttachToBookResponseError;
 
 export const getMediaControllerAttachToBookUrl = (id: string) => {
   return `/api/v1/media/${id}/memory-book`;
@@ -708,29 +732,32 @@ export const getMediaControllerAttachToBookUrl = (id: string) => {
 
 export const mediaControllerAttachToBook = async (
   id: string,
+  attachMediaToBookRequestDto: AttachMediaToBookRequestDto,
   options?: RequestInit,
 ): Promise<mediaControllerAttachToBookResponse> => {
   return apiFetch<mediaControllerAttachToBookResponse>(getMediaControllerAttachToBookUrl(id), {
     ...options,
     method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(attachMediaToBookRequestDto),
   });
 };
 
 export const getMediaControllerAttachToBookMutationOptions = <
-  TError = unknown,
+  TError = void,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof mediaControllerAttachToBook>>,
     TError,
-    { id: string },
+    { id: string; data: AttachMediaToBookRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof mediaControllerAttachToBook>>,
   TError,
-  { id: string },
+  { id: string; data: AttachMediaToBookRequestDto },
   TContext
 > => {
   const mutationKey = ['mediaControllerAttachToBook'];
@@ -742,11 +769,11 @@ export const getMediaControllerAttachToBookMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof mediaControllerAttachToBook>>,
-    { id: string }
+    { id: string; data: AttachMediaToBookRequestDto }
   > = (props) => {
-    const { id } = props ?? {};
+    const { id, data } = props ?? {};
 
-    return mediaControllerAttachToBook(id, requestOptions);
+    return mediaControllerAttachToBook(id, data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -755,24 +782,24 @@ export const getMediaControllerAttachToBookMutationOptions = <
 export type MediaControllerAttachToBookMutationResult = NonNullable<
   Awaited<ReturnType<typeof mediaControllerAttachToBook>>
 >;
-
-export type MediaControllerAttachToBookMutationError = unknown;
+export type MediaControllerAttachToBookMutationBody = AttachMediaToBookRequestDto;
+export type MediaControllerAttachToBookMutationError = void;
 
 /**
  * @summary Attach (`{memoryBookId}`) or detach (`{memoryBookId:null}`) the media to a memory book. Double owner-gated.
  */
-export const useMediaControllerAttachToBook = <TError = unknown, TContext = unknown>(options?: {
+export const useMediaControllerAttachToBook = <TError = void, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof mediaControllerAttachToBook>>,
     TError,
-    { id: string },
+    { id: string; data: AttachMediaToBookRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationResult<
   Awaited<ReturnType<typeof mediaControllerAttachToBook>>,
   TError,
-  { id: string },
+  { id: string; data: AttachMediaToBookRequestDto },
   TContext
 > => {
   const mutationOptions = getMediaControllerAttachToBookMutationOptions(options);

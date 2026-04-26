@@ -1007,7 +1007,13 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: Presigned GET URL + ISO expiry.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaDownloadUrlResponseDto'
+        '404':
+          description: MEDIA_NOT_FOUND.
       security: *a16
       summary: Short-lived presigned GET URL for the asset. Owner-gated.
       tags: *a17
@@ -1073,9 +1079,21 @@ paths:
           in: path
           schema:
             type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttachMediaToBookRequestDto'
       responses:
         '200':
-          description: ''
+          description: Updated asset row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaAssetDto'
+        '404':
+          description: MEDIA_NOT_FOUND or BOOK_NOT_FOUND.
       security: *a16
       summary: Attach (`{memoryBookId}`) or detach (`{memoryBookId:null}`) the media
         to a memory book. Double owner-gated.
@@ -2844,6 +2862,20 @@ components:
         - method
         - expiresAt
         - asset
+    MediaDownloadUrlResponseDto:
+      type: object
+      properties:
+        url:
+          type: string
+          description: Short-lived presigned GET URL for the asset bytes. Owner-gated. TTL
+            ~5 min.
+        expiresAt:
+          type: string
+          format: date-time
+          description: ISO-8601 timestamp at which the presigned URL expires.
+      required:
+        - url
+        - expiresAt
     AttachMediaToTripRequestDto:
       type: object
       properties:
@@ -2865,6 +2897,16 @@ components:
             $ref: '#/components/schemas/MediaAssetDto'
       required:
         - media
+    AttachMediaToBookRequestDto:
+      type: object
+      properties:
+        memoryBookId:
+          type: object
+          nullable: true
+          format: cuid
+          description: Memory-book id to attach the asset to. Pass null to detach.
+      required:
+        - memoryBookId
     PublicMemoryBookDto:
       type: object
       properties:

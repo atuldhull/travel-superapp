@@ -27,11 +27,13 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
+  AttachMediaToBookRequestDto,
   AttachMediaToTripRequestDto,
   CreateUploadUrlRequestDto,
   CreateUploadUrlResponseDto,
   ListTripMediaResponseDto,
   MediaAssetDto as MediaAssetResponseDto,
+  MediaDownloadUrlResponseDto,
 } from './dto/media-response.dto';
 import { type AuthenticatedUser, CurrentUser } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
@@ -144,6 +146,12 @@ export class MediaController {
   }
 
   @ApiOperation({ summary: 'Short-lived presigned GET URL for the asset. Owner-gated.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Presigned GET URL + ISO expiry.',
+    type: MediaDownloadUrlResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'MEDIA_NOT_FOUND.' })
   @Get(':id/download-url')
   @HttpCode(HttpStatus.OK)
   async downloadUrl(
@@ -222,6 +230,9 @@ export class MediaController {
     summary:
       'Attach (`{memoryBookId}`) or detach (`{memoryBookId:null}`) the media to a memory book. Double owner-gated.',
   })
+  @ApiBody({ type: AttachMediaToBookRequestDto })
+  @ApiResponse({ status: 200, description: 'Updated asset row.', type: MediaAssetResponseDto })
+  @ApiResponse({ status: 404, description: 'MEDIA_NOT_FOUND or BOOK_NOT_FOUND.' })
   @Patch(':id/memory-book')
   @HttpCode(HttpStatus.OK)
   async attachToBook(

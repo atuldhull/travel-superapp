@@ -87,3 +87,27 @@ export class AttachMediaToTripRequestDto {
   })
   declare tripId: string | null;
 }
+
+/** Body for `PATCH /media/:id/memory-book`. Pass null to detach. */
+export class AttachMediaToBookRequestDto {
+  @ApiProperty({
+    nullable: true,
+    format: 'cuid',
+    description: 'Memory-book id to attach the asset to. Pass null to detach.',
+  })
+  declare memoryBookId: string | null;
+}
+
+/** Response for `GET /media/:id/download-url`. Owner-scoped twin of `PublicDownloadUrlResponseDto`. */
+export class MediaDownloadUrlResponseDto {
+  @ApiProperty({
+    description: 'Short-lived presigned GET URL for the asset bytes. Owner-gated. TTL ~5 min.',
+  })
+  declare url: string;
+
+  @ApiProperty({
+    format: 'date-time',
+    description: 'ISO-8601 timestamp at which the presigned URL expires.',
+  })
+  declare expiresAt: string;
+}
