@@ -7,10 +7,11 @@
  *   - Access token goes into the in-memory `auth-store` only.
  *   - Refresh cookie is set by the api on `/api/v1/auth` — httpOnly
  *     so client JS can never read it.
- *   - On hard reload the user is "logged out" until silent-refresh
- *     wiring lands in a follow-up slice.
+ *   - On hard reload silent-refresh runs (see providers.tsx) so a
+ *     valid refresh cookie auto-restores the session.
  *
- * Installed by prompt [IV.18.19.21].
+ * Installed by prompt [IV.18.19.21]; refactored to UI primitives in
+ * [IV.18.19.23].
  */
 'use client';
 
@@ -22,6 +23,8 @@ import {
   type AuthSuccessResponseDto,
   type LoginRequestDto,
 } from '@app/sdk';
+import { Button } from '../../components/ui/button';
+import { Field } from '../../components/ui/input';
 import { setAccessToken } from '../../lib/auth-store';
 
 interface ApiError extends Error {
@@ -38,9 +41,6 @@ export default function LoginPage() {
   const loginMutation = useAuthControllerLogin({
     mutation: {
       onSuccess: (response: unknown) => {
-        // apiFetch returns the parsed body directly; orval's envelope
-        // type wraps it in `{ data, status, headers }` but the runtime
-        // shape is the body. Cast through unknown documents the gap.
         const body = response as AuthSuccessResponseDto;
         setAccessToken(body.accessToken);
         router.push('/trips');
@@ -77,7 +77,7 @@ export default function LoginPage() {
           type="email"
           autoComplete="email"
           value={email}
-          onChange={setEmail}
+          onChange={(e) => setEmail(e.target.value)}
           required
         />
         <Field
@@ -85,7 +85,7 @@ export default function LoginPage() {
           type="password"
           autoComplete="current-password"
           value={password}
-          onChange={setPassword}
+          onChange={(e) => setPassword(e.target.value)}
           required
         />
         {errorMsg ? (
@@ -93,39 +93,10 @@ export default function LoginPage() {
             {errorMsg}
           </p>
         ) : null}
-        <button
-          type="submit"
-          disabled={loginMutation.isPending}
-          className="inline-flex items-center gap-1 rounded-md bg-brand px-4 py-2 text-sm font-medium text-brand-foreground transition hover:opacity-90 disabled:opacity-50"
-        >
+        <Button type="submit" disabled={loginMutation.isPending}>
           {loginMutation.isPending ? 'Signing in…' : 'Sign in'}
-        </button>
+        </Button>
       </form>
     </main>
-  );
-}
-
-interface FieldProps {
-  readonly label: string;
-  readonly type: 'email' | 'password';
-  readonly autoComplete: string;
-  readonly value: string;
-  readonly required?: boolean;
-  readonly onChange: (next: string) => void;
-}
-
-function Field({ label, type, autoComplete, value, required, onChange }: FieldProps) {
-  return (
-    <label className="block space-y-1">
-      <span className="block text-sm font-medium">{label}</span>
-      <input
-        type={type}
-        autoComplete={autoComplete}
-        required={required}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="block w-full rounded-md border border-muted/30 bg-surface px-3 py-2 text-sm text-surface-foreground focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
-      />
-    </label>
   );
 }
