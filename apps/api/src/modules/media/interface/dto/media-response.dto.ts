@@ -41,3 +41,49 @@ export class ListTripMediaResponseDto {
   })
   declare media: MediaAssetDto[];
 }
+
+/** Body for `POST /media/upload-url`. Documentation-only. */
+export class CreateUploadUrlRequestDto {
+  @ApiProperty({ enum: ['image', 'video'] })
+  declare kind: string;
+
+  @ApiProperty({ description: 'MIME type (e.g. "image/jpeg").', minLength: 1, maxLength: 120 })
+  declare contentType: string;
+
+  @ApiProperty({
+    required: false,
+    format: 'cuid',
+    description: 'Optional trip to attach to immediately.',
+  })
+  declare tripId?: string;
+}
+
+export class CreateUploadUrlResponseDto {
+  @ApiProperty({ format: 'cuid' })
+  declare mediaAssetId: string;
+
+  @ApiProperty({ description: 'Presigned PUT URL. Body must be the raw file bytes.' })
+  declare uploadUrl: string;
+
+  @ApiProperty({ description: 'S3 object key, useful for diagnostics.' })
+  declare key: string;
+
+  @ApiProperty({ enum: ['PUT'] })
+  declare method: string;
+
+  @ApiProperty({ format: 'date-time', description: 'When the presigned URL expires.' })
+  declare expiresAt: string;
+
+  @ApiProperty({ type: MediaAssetDto, description: 'Initial asset row (status: pending).' })
+  declare asset: MediaAssetDto;
+}
+
+/** Body for `PATCH /media/:id/trip`. Pass null to detach. */
+export class AttachMediaToTripRequestDto {
+  @ApiProperty({
+    nullable: true,
+    format: 'cuid',
+    description: 'Trip id to attach the asset to. Pass null to detach.',
+  })
+  declare tripId: string | null;
+}
