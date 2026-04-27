@@ -38,6 +38,7 @@ import { MEMORY_BOOK_REPOSITORY } from './application/ports/memory-book.reposito
 import { STORAGE_PROVIDER } from './application/ports/storage-provider';
 import { PublishMemoryBookUseCase } from './application/publish-memory-book.use-case';
 import { UnpublishMemoryBookUseCase } from './application/unpublish-memory-book.use-case';
+import { UpdateAssetCaptionUseCase } from './application/update-asset-caption.use-case';
 import { UpdateMemoryBookUseCase } from './application/update-memory-book.use-case';
 import { PrismaMediaAssetRepository } from './infrastructure/prisma-media-asset.repository';
 import { PrismaMemoryBookRepository } from './infrastructure/prisma-memory-book.repository';
@@ -71,6 +72,7 @@ import { OrphanS3SweepScheduler } from './interface/orphan-s3-sweep.scheduler';
     UpdateMemoryBookUseCase,
     DeleteMemoryBookUseCase,
     AttachMediaToBookUseCase,
+    UpdateAssetCaptionUseCase,
     PublishMemoryBookUseCase,
     UnpublishMemoryBookUseCase,
     GetPublishedMemoryBookUseCase,

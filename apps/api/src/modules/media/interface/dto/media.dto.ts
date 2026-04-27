@@ -66,3 +66,13 @@ export const AttachMediaToBookBodySchema = z.object({
   memoryBookId: MemoryBookIdSchema.nullable(),
 });
 export type AttachMediaToBookBody = z.infer<typeof AttachMediaToBookBodySchema>;
+
+/**
+ * Body for `PATCH /memory-books/:id/assets/:assetId/caption`. V.UX.11
+ * lets owners write per-asset narrative for story-mode viewing.
+ * Empty / blank caption = clear (server stores `null`).
+ */
+export const UpdateAssetCaptionBodySchema = z.object({
+  caption: z.string().trim().max(280).nullable(),
+});
+export type UpdateAssetCaptionBody = z.infer<typeof UpdateAssetCaptionBodySchema>;

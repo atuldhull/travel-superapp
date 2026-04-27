@@ -1998,6 +1998,38 @@ paths:
       security: *a27
       summary: Unpublish a book — clears publishedAt (idempotent).
       tags: *a28
+  /api/v1/memory-books/{id}/assets/{assetId}/caption:
+    patch:
+      operationId: MemoryBookController_updateAssetCaption
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: assetId
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAssetCaptionRequestDto'
+      responses:
+        '200':
+          description: Updated asset row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaAssetDto'
+        '404':
+          description: MEDIA_NOT_FOUND.
+      security: *a27
+      summary: Set or clear an asset's caption (story-mode narrative). Owner-only.
+      tags: *a28
   /api/v1/admin/media:
     get:
       operationId: AdminMediaController_list
@@ -4945,6 +4977,11 @@ components:
           nullable: true
           format: cuid
           description: Trip the asset is attached to, or null if free-floating.
+        memoryBookId:
+          type: object
+          nullable: true
+          format: cuid
+          description: Memory book the asset is attached to, or null if free-floating.
         kind:
           type: string
           enum:
@@ -4958,6 +4995,14 @@ components:
             - ready
             - failed
           description: Upload lifecycle status.
+        caption:
+          type: object
+          nullable: true
+          maxLength: 280
+          description: V.UX.11 — owner-authored caption shown in story mode. Null = blank.
+        position:
+          type: number
+          description: V.UX.11 — sort order within the memory book (0-based).
         createdAt:
           type: string
           format: date-time
@@ -4965,8 +5010,11 @@ components:
         - id
         - ownerId
         - tripId
+        - memoryBookId
         - kind
         - status
+        - caption
+        - position
         - createdAt
     CreateUploadUrlResponseDto:
       type: object
@@ -5084,6 +5132,29 @@ components:
             $ref: '#/components/schemas/PublicMemoryBookDto'
       required:
         - books
+    MemoryBookAssetSummaryDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        kind:
+          type: string
+          enum:
+            - image
+            - video
+        caption:
+          type: object
+          nullable: true
+          maxLength: 280
+        position:
+          type: number
+          description: 0-based ordering within the book.
+      required:
+        - id
+        - kind
+        - caption
+        - position
     PublicMemoryBookWithAssetsResponseDto:
       type: object
       properties:
@@ -5096,9 +5167,16 @@ components:
           type: array
           items:
             type: string
+        assets:
+          description: V.UX.11 — same assets enriched with caption + position for story
+            mode.
+          type: array
+          items:
+            $ref: '#/components/schemas/MemoryBookAssetSummaryDto'
       required:
         - book
         - assetIds
+        - assets
     PublicDownloadUrlResponseDto:
       type: object
       properties:
@@ -5187,9 +5265,15 @@ components:
           type: array
           items:
             type: string
+        assets:
+          description: V.UX.11 — same assets enriched with caption + position.
+          type: array
+          items:
+            $ref: '#/components/schemas/MemoryBookAssetSummaryDto'
       required:
         - book
         - assetIds
+        - assets
     UpdateMemoryBookRequestDto:
       type: object
       properties:
@@ -5205,6 +5289,16 @@ components:
           type: object
           nullable: true
           maxLength: 512
+    UpdateAssetCaptionRequestDto:
+      type: object
+      properties:
+        caption:
+          type: object
+          nullable: true
+          maxLength: 280
+          description: New caption. Null or blank clears the field.
+      required:
+        - caption
     AdminMediaDto:
       type: object
       properties:

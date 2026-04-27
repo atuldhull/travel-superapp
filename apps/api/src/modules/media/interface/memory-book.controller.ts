@@ -42,14 +42,21 @@ import { ListMemoryBooksUseCase } from '../application/list-memory-books.use-cas
 import { ListPublishedMemoryBooksUseCase } from '../application/list-published-memory-books.use-case';
 import { PublishMemoryBookUseCase } from '../application/publish-memory-book.use-case';
 import { UnpublishMemoryBookUseCase } from '../application/unpublish-memory-book.use-case';
+import { UpdateAssetCaptionUseCase } from '../application/update-asset-caption.use-case';
 import { UpdateMemoryBookUseCase } from '../application/update-memory-book.use-case';
 import type { MemoryBook } from '../domain/memory-book.entity';
 import {
   CreateMemoryBookBodySchema,
+  UpdateAssetCaptionBodySchema,
   UpdateMemoryBookBodySchema,
   type CreateMemoryBookBody,
+  type UpdateAssetCaptionBody,
   type UpdateMemoryBookBody,
 } from './dto/media.dto';
+import {
+  MediaAssetDto as MediaAssetResponseDto,
+  UpdateAssetCaptionRequestDto,
+} from './dto/media-response.dto';
 import {
   CreateMemoryBookRequestDto,
   FeaturedMemoryBooksResponseDto,
@@ -122,6 +129,7 @@ export class MemoryBookController {
     private readonly getPublishedUc: GetPublishedMemoryBookUseCase,
     private readonly publishedAssetDlUc: GetPublishedAssetDownloadUrlUseCase,
     private readonly listPublishedUc: ListPublishedMemoryBooksUseCase,
+    private readonly updateAssetCaptionUc: UpdateAssetCaptionUseCase,
   ) {}
 
   // ─── Public-read routes — declared first so Nest's order-of-
@@ -166,11 +174,18 @@ export class MemoryBookController {
   @Public()
   @Get('public/:id')
   @HttpCode(HttpStatus.OK)
-  async getPublic(
-    @Param('id') id: string,
-  ): Promise<{ book: PublicBookDto; assetIds: readonly string[] }> {
-    const { book, assetIds } = await this.getPublishedUc.execute(id);
-    return { book: toPublicDto(book), assetIds };
+  async getPublic(@Param('id') id: string): Promise<{
+    book: PublicBookDto;
+    assetIds: readonly string[];
+    assets: ReadonlyArray<{
+      id: string;
+      kind: string;
+      caption: string | null;
+      position: number;
+    }>;
+  }> {
+    const { book, assetIds, assets } = await this.getPublishedUc.execute(id);
+    return { book: toPublicDto(book), assetIds, assets };
   }
 
   @ApiOperation({
@@ -247,9 +262,18 @@ export class MemoryBookController {
   async getOne(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-  ): Promise<{ book: MemoryBookDto; assetIds: readonly string[] }> {
-    const { book, assetIds } = await this.getUc.execute({ id, ownerId: user.sub });
-    return { book: toDto(book), assetIds };
+  ): Promise<{
+    book: MemoryBookDto;
+    assetIds: readonly string[];
+    assets: ReadonlyArray<{
+      id: string;
+      kind: string;
+      caption: string | null;
+      position: number;
+    }>;
+  }> {
+    const { book, assetIds, assets } = await this.getUc.execute({ id, ownerId: user.sub });
+    return { book: toDto(book), assetIds, assets };
   }
 
   @ApiOperation({ summary: 'Update one of the caller-owned books. Partial update.' })
@@ -308,5 +332,53 @@ export class MemoryBookController {
   ): Promise<MemoryBookDto> {
     const book = await this.unpublishUc.execute({ id, ownerId: user.sub });
     return toDto(book);
+  }
+
+  /**
+   * V.UX.11 — set or clear an asset's caption. Owner-only;
+   * `assetId` must already be attached to `:id`. Empty/blank caption
+   * stores `null`.
+   */
+  @ApiOperation({
+    summary: "Set or clear an asset's caption (story-mode narrative). Owner-only.",
+  })
+  @ApiBody({ type: UpdateAssetCaptionRequestDto })
+  @ApiResponse({ status: 200, description: 'Updated asset row.', type: MediaAssetResponseDto })
+  @ApiResponse({ status: 404, description: 'MEDIA_NOT_FOUND.' })
+  @Patch(':id/assets/:assetId/caption')
+  @HttpCode(HttpStatus.OK)
+  async updateAssetCaption(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Param('assetId') assetId: string,
+    @Body(new ZodValidationPipe(UpdateAssetCaptionBodySchema)) body: UpdateAssetCaptionBody,
+  ): Promise<{
+    id: string;
+    ownerId: string;
+    tripId: string | null;
+    memoryBookId: string | null;
+    kind: string;
+    status: string;
+    caption: string | null;
+    position: number;
+    createdAt: string;
+  }> {
+    const asset = await this.updateAssetCaptionUc.execute({
+      memoryBookId: id,
+      assetId,
+      ownerId: user.sub,
+      caption: body.caption,
+    });
+    return {
+      id: asset.id,
+      ownerId: asset.ownerId,
+      tripId: asset.tripId,
+      memoryBookId: asset.memoryBookId,
+      kind: asset.kind,
+      status: asset.status,
+      caption: asset.caption,
+      position: asset.position,
+      createdAt: asset.createdAt.toISOString(),
+    };
   }
 }

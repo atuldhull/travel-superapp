@@ -48,6 +48,25 @@ export interface MemoryBookRepository {
   listAssetIdsForOwner(bookId: string, ownerId: string): Promise<readonly string[]>;
 
   /**
+   * V.UX.11 — owner-scoped asset summaries (id + caption + position
+   * + kind). Same `ready`-only filter as `listAssetIdsForOwner`.
+   * Ordered by `position` ascending, `createdAt` ascending as a
+   * tiebreaker, so the story-mode order is deterministic before
+   * the owner does any explicit reordering.
+   */
+  listAssetSummariesForOwner(
+    bookId: string,
+    ownerId: string,
+  ): Promise<readonly MemoryBookAssetSummary[]>;
+
+  /**
+   * V.UX.11 — public twin of the above. No owner filter (the book
+   * is already gated as published in the use-case). Same shape and
+   * ordering.
+   */
+  listPublishedAssetSummariesForBook(bookId: string): Promise<readonly MemoryBookAssetSummary[]>;
+
+  /**
    * Owner-scoped publish toggle. Pass a `Date` to publish (or
    * republish — refresh the `publishedAt` timestamp), `null` to
    * unpublish. Returns the updated row, or `null` on miss /
@@ -92,6 +111,18 @@ export interface MemoryBookRepository {
    * Added by `[IV.18.13.1]`.
    */
   listPublished(limit: number): Promise<readonly MemoryBook[]>;
+}
+
+/**
+ * V.UX.11 — slim per-asset summary surfaced on the memory-book
+ * read paths. Lets the public viewer + owner editor render rich
+ * thumbnail rows without round-tripping per-asset.
+ */
+export interface MemoryBookAssetSummary {
+  readonly id: string;
+  readonly kind: 'image' | 'video';
+  readonly caption: string | null;
+  readonly position: number;
 }
 
 export const MEMORY_BOOK_REPOSITORY = Symbol('MemoryBookRepository');

@@ -13,6 +13,7 @@ import { PrismaService } from '../../../common/db/prisma.service';
 import type { MemoryBook } from '../domain/memory-book.entity';
 import type {
   CreateMemoryBookInput,
+  MemoryBookAssetSummary,
   MemoryBookRepository,
   UpdateMemoryBookInput,
 } from '../application/ports/memory-book.repository';
@@ -86,6 +87,39 @@ export class PrismaMemoryBookRepository implements MemoryBookRepository {
       select: { id: true },
     });
     return rows.map((r) => r.id);
+  }
+
+  async listAssetSummariesForOwner(
+    bookId: string,
+    ownerId: string,
+  ): Promise<readonly MemoryBookAssetSummary[]> {
+    const rows = await this.prisma.mediaAsset.findMany({
+      where: { memoryBookId: bookId, ownerId, status: 'ready' },
+      orderBy: [{ position: 'asc' }, { createdAt: 'asc' }],
+      select: { id: true, kind: true, caption: true, position: true },
+    });
+    return rows.map((r) => ({
+      id: r.id,
+      kind: r.kind as 'image' | 'video',
+      caption: r.caption,
+      position: r.position,
+    }));
+  }
+
+  async listPublishedAssetSummariesForBook(
+    bookId: string,
+  ): Promise<readonly MemoryBookAssetSummary[]> {
+    const rows = await this.prisma.mediaAsset.findMany({
+      where: { memoryBookId: bookId, status: 'ready' },
+      orderBy: [{ position: 'asc' }, { createdAt: 'asc' }],
+      select: { id: true, kind: true, caption: true, position: true },
+    });
+    return rows.map((r) => ({
+      id: r.id,
+      kind: r.kind as 'image' | 'video',
+      caption: r.caption,
+      position: r.position,
+    }));
   }
 
   async setPublishedAtForOwner(

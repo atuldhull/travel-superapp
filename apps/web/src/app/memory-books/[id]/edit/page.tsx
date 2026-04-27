@@ -33,10 +33,12 @@ import {
   useMemoryBookControllerRemove,
   useMemoryBookControllerUnpublish,
   useMemoryBookControllerUpdate,
+  useMemoryBookControllerUpdateAssetCaption,
   type AttachMediaToBookRequestDto,
   type MediaDownloadUrlResponseDto,
   type MemoryBookDto,
   type MemoryBookWithAssetsResponseDto,
+  type UpdateAssetCaptionRequestDto,
   type UpdateMemoryBookRequestDto,
 } from '@app/sdk';
 import { Badge } from '../../../../components/ui/badge';
@@ -170,6 +172,7 @@ export default function MemoryBookEditPage() {
   const body = data?.data as unknown as MemoryBookWithAssetsResponseDto | undefined;
   const book = body?.book as MemoryBookDto;
   const assetIds = body?.assetIds ?? [];
+  const assetSummaries = body?.assets ?? [];
 
   return (
     <main className="space-y-6">
@@ -208,7 +211,16 @@ export default function MemoryBookEditPage() {
           errorMsg={errorMsg}
         />
       )}
-      <AssetsSection bookId={id} assetIds={assetIds} />
+      <AssetsSection
+        bookId={id}
+        assetIds={assetIds}
+        assetSummaries={assetSummaries.map((a) => ({
+          id: a.id,
+          kind: a.kind,
+          caption: (a.caption as unknown as string | null) ?? null,
+          position: a.position,
+        }))}
+      />
       {confirmDelete ? (
         <Card>
           <CardHeader>
@@ -418,12 +430,20 @@ function EditForm({ book, isPending, errorMsg, onCancel, onSubmit }: EditFormPro
   );
 }
 
+interface AssetSummary {
+  readonly id: string;
+  readonly kind: string;
+  readonly caption: string | null;
+  readonly position: number;
+}
+
 interface AssetsSectionProps {
   readonly bookId: string;
   readonly assetIds: readonly string[];
+  readonly assetSummaries: readonly AssetSummary[];
 }
 
-function AssetsSection({ bookId, assetIds }: AssetsSectionProps) {
+function AssetsSection({ bookId, assetIds, assetSummaries }: AssetsSectionProps) {
   const queryClient = useQueryClient();
   const [pendingId, setPendingId] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -502,15 +522,20 @@ function AssetsSection({ bookId, assetIds }: AssetsSectionProps) {
       {assetIds.length === 0 ? (
         <p className="text-sm text-muted">No assets attached yet.</p>
       ) : (
-        <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {assetIds.map((aid) => (
-            <OwnerAssetThumb
-              key={aid}
-              assetId={aid}
-              onDetach={() => detach(aid)}
-              detaching={attachMutation.isPending}
-            />
-          ))}
+        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {assetIds.map((aid) => {
+            const summary = assetSummaries.find((s) => s.id === aid);
+            return (
+              <OwnerAssetThumb
+                key={aid}
+                bookId={bookId}
+                assetId={aid}
+                caption={summary?.caption ?? null}
+                onDetach={() => detach(aid)}
+                detaching={attachMutation.isPending}
+              />
+            );
+          })}
         </ul>
       )}
     </Card>
@@ -518,16 +543,54 @@ function AssetsSection({ bookId, assetIds }: AssetsSectionProps) {
 }
 
 interface OwnerAssetThumbProps {
+  readonly bookId: string;
   readonly assetId: string;
+  readonly caption: string | null;
   readonly onDetach: () => void;
   readonly detaching: boolean;
 }
 
-function OwnerAssetThumb({ assetId, onDetach, detaching }: OwnerAssetThumbProps) {
+function OwnerAssetThumb({ bookId, assetId, caption, onDetach, detaching }: OwnerAssetThumbProps) {
+  const queryClient = useQueryClient();
   const { data, isLoading, isError } = useMediaControllerDownloadUrl(assetId, {
     query: { retry: false, staleTime: 60_000 },
   });
   const url = (data?.data as unknown as MediaDownloadUrlResponseDto | undefined)?.url ?? null;
+
+  const [draft, setDraft] = useState(caption ?? '');
+  const [saveErr, setSaveErr] = useState<string | null>(null);
+
+  // Reset the local draft whenever the upstream caption changes
+  // (e.g. after a successful save the parent invalidates + re-renders).
+  useEffect(() => {
+    setDraft(caption ?? '');
+  }, [caption]);
+
+  const captionMutation = useMemoryBookControllerUpdateAssetCaption({
+    mutation: {
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({
+          queryKey: getMemoryBookControllerGetOneQueryKey(bookId),
+        });
+        setSaveErr(null);
+      },
+      onError: (err: unknown) => {
+        const e = err as ApiError;
+        setSaveErr(`${e.code ?? `HTTP_${e.status ?? '???'}`} — ${e.message ?? 'Save failed.'}`);
+      },
+    },
+  });
+
+  function saveCaption() {
+    const trimmed = draft.trim();
+    if (trimmed === (caption ?? '').trim()) return;
+    const data: UpdateAssetCaptionRequestDto = {
+      caption: (trimmed.length === 0
+        ? null
+        : trimmed) as unknown as UpdateAssetCaptionRequestDto['caption'],
+    };
+    captionMutation.mutate({ id: bookId, assetId, data });
+  }
 
   return (
     <li className="flex flex-col rounded border border-muted/15 bg-muted/5 p-2 text-xs">
@@ -535,7 +598,7 @@ function OwnerAssetThumb({ assetId, onDetach, detaching }: OwnerAssetThumbProps)
         {url ? (
           <img
             src={url}
-            alt={`Asset ${assetId.slice(0, 8)}`}
+            alt={caption ?? `Asset ${assetId.slice(0, 8)}`}
             className="h-full w-full object-cover"
             loading="lazy"
           />
@@ -545,6 +608,16 @@ function OwnerAssetThumb({ assetId, onDetach, detaching }: OwnerAssetThumbProps)
           </span>
         )}
       </div>
+      <textarea
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={saveCaption}
+        rows={2}
+        maxLength={280}
+        placeholder="Caption (optional, max 280 chars)…"
+        className="mt-2 w-full rounded border border-muted/20 bg-background px-2 py-1 text-xs"
+      />
+      {saveErr ? <p className="mt-1 text-[10px] text-danger">{saveErr}</p> : null}
       <div className="mt-1 flex items-center justify-between gap-1">
         <span className="truncate font-mono text-[10px] text-muted">{assetId.slice(0, 8)}…</span>
         <button

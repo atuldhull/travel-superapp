@@ -57,8 +57,11 @@ interface MediaAssetDto {
   readonly id: string;
   readonly ownerId: string;
   readonly tripId: string | null;
+  readonly memoryBookId: string | null;
   readonly kind: string;
   readonly status: string;
+  readonly caption: string | null;
+  readonly position: number;
   readonly createdAt: string;
 }
 
@@ -67,8 +70,11 @@ function toDto(a: MediaAsset): MediaAssetDto {
     id: a.id,
     ownerId: a.ownerId,
     tripId: a.tripId,
+    memoryBookId: a.memoryBookId,
     kind: a.kind,
     status: a.status,
+    caption: a.caption,
+    position: a.position,
     createdAt: a.createdAt.toISOString(),
   };
 }
