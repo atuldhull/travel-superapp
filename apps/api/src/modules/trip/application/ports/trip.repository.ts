@@ -43,6 +43,17 @@ export interface TripRepository {
    *  `createdAt`, capped by the caller. */
   listByUser(userId: string, limit: number): Promise<readonly Trip[]>;
 
+  /**
+   * V.UX.9 collaborator listing. Returns trips the caller does NOT
+   * own but has actively participated in via at least one Vote or
+   * Expense. Newest first, capped at `limit`. The caller is
+   * responsible for de-duping against `listByUser` if they show
+   * both lists in one UI.
+   *
+   * Added by `[V.UX.9]`.
+   */
+  listCollaboratedByUser(userId: string, limit: number): Promise<readonly Trip[]>;
+
   /** Used by tests + a future admin flow. No production endpoint calls
    *  this yet. */
   updateStatus(id: string, status: TripStatus): Promise<void>;

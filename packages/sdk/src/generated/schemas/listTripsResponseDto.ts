@@ -6,4 +6,6 @@ import type { TripDto } from './tripDto';
 export interface ListTripsResponseDto {
   /** Caller-owned trips, most-recent-first. Capped via ?limit (1..100, default 20). */
   trips: TripDto[];
+  /** V.UX.9 — trips someone else owns but the caller participates in via a vote or expense. */
+  collaborated: TripDto[];
 }

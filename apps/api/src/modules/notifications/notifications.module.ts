@@ -24,6 +24,7 @@
 import { Module } from '@nestjs/common';
 import { DeleteNotificationUseCase } from './application/delete-notification.use-case';
 import { ItineraryReadyHandler } from './application/handlers/itinerary-ready.handler';
+import { TripLockedHandler } from './application/handlers/trip-locked.handler';
 import { SessionIssuedHandler } from './application/handlers/session-issued.handler';
 import { SosTriggeredHandler } from './application/handlers/sos-triggered.handler';
 import { GetUnreadCountUseCase } from './application/get-unread-count.use-case';
@@ -47,6 +48,7 @@ import { NotificationsController } from './interface/notifications.controller';
     { provide: NOTIFICATION_SENDER, useExisting: LoggingNotificationSender },
     SessionIssuedHandler,
     ItineraryReadyHandler,
+    TripLockedHandler,
     SosTriggeredHandler,
     ListMyNotificationsUseCase,
     MarkNotificationReadUseCase,

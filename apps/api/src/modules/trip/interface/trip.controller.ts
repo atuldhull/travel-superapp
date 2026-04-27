@@ -50,6 +50,7 @@ import { DuplicateTripUseCase } from '../application/duplicate-trip.use-case';
 import { OptimizeDayRouteUseCase } from '../application/optimize-day-route.use-case';
 import { GetDayRouteCoordsUseCase } from '../application/get-day-route-coords.use-case';
 import { LockTripUseCase, UnlockTripUseCase } from '../application/lock-trip.use-case';
+import { GetTripWithRoleUseCase } from '../application/get-trip-with-role.use-case';
 import { GetTripEateriesUseCase } from '../application/get-trip-eateries.use-case';
 import { GetTripEventsUseCase } from '../application/get-trip-events.use-case';
 import { GetTripOverviewUseCase, type Section } from '../application/get-trip-overview.use-case';
@@ -107,6 +108,7 @@ import {
   SuggestPlacesForTripResponseDto,
   TripDto as TripResponseDto,
   TripShareResponseDto,
+  TripWithRoleResponseDto,
   UpdateDayItemsRequestDto,
   UpdateDayItemsResponseDto,
   UpdateTripRequestDto,
@@ -156,6 +158,7 @@ export class TripController {
     private readonly getDayRouteCoords: GetDayRouteCoordsUseCase,
     private readonly lockTrip: LockTripUseCase,
     private readonly unlockTrip: UnlockTripUseCase,
+    private readonly getTripWithRole: GetTripWithRoleUseCase,
     private readonly generateItinerary: GenerateItineraryStubUseCase,
     private readonly generatePlanWithAi: GeneratePlanWithAiUseCase,
     private readonly generateSamplePlan: GenerateSamplePlanUseCase,
@@ -209,25 +212,43 @@ export class TripController {
   async list(
     @CurrentUser() user: AuthenticatedUser,
     @Query('limit') limit?: string,
-  ): Promise<{ trips: TripDto[] }> {
+  ): Promise<{ trips: TripDto[]; collaborated: TripDto[] }> {
     const parsed = limit ? Math.max(1, Math.min(100, Number(limit) || 20)) : 20;
-    const trips = await this.listTrips.execute(user.sub, parsed);
-    return { trips: trips.map(toDto) };
+    const { owned, collaborated } = await this.listTrips.execute(user.sub, parsed);
+    return {
+      trips: owned.map(toDto),
+      collaborated: collaborated.map(toDto),
+    };
   }
 
   @ApiOperation({
-    summary: 'Fetch a single trip the caller owns. 404 if missing or not theirs (IDOR-safe).',
+    summary:
+      'Fetch a single trip. Owner OR active collaborator (vote/expense). 404 otherwise (IDOR-safe).',
   })
-  @ApiResponse({ status: 200, description: 'The trip.', type: TripResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'The trip + caller role.',
+    type: TripWithRoleResponseDto,
+  })
   @ApiResponse({ status: 404, description: 'TRIP_NOT_FOUND.' })
   @Get(':id')
   @HttpCode(HttpStatus.OK)
-  async getOne(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string): Promise<TripDto> {
-    const trip = await this.getTrip.execute(id, user.sub);
-    if (!trip) {
+  async getOne(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ): Promise<TripDto & { role: 'owner' | 'collaborator'; ownerDisplayName: string | null }> {
+    const result = await this.getTripWithRole.execute(id, user.sub);
+    if (!result) {
       throw new NotFoundError(`Trip not found: ${id}`, { tripId: id }, 'TRIP_NOT_FOUND');
     }
-    return toDto(trip);
+    // Embed role + ownerDisplayName as extra fields on the trip DTO
+    // (web reads `result.data.role` directly). The response shape is
+    // backward-compatible: every prior `TripDto` field is still here.
+    return {
+      ...toDto(result.trip),
+      role: result.role,
+      ownerDisplayName: result.ownerDisplayName,
+    };
   }
 
   @ApiOperation({

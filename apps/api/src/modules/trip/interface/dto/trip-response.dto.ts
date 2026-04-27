@@ -62,6 +62,35 @@ export class ListTripsResponseDto {
     description: 'Caller-owned trips, most-recent-first. Capped via ?limit (1..100, default 20).',
   })
   declare trips: TripDto[];
+
+  @ApiProperty({
+    type: [TripDto],
+    description:
+      'V.UX.9 — trips someone else owns but the caller participates in via a vote or expense.',
+  })
+  declare collaborated: TripDto[];
+}
+
+/**
+ * V.UX.9 — `GET /trips/:id` now returns the trip plus the caller's
+ * role. Owner = creator; collaborator = non-owner with active
+ * trip-share access (caller has voted / expensed, or the trip has a
+ * publicly-active share).
+ *
+ * Installed by prompt [V.UX.9].
+ */
+export class TripWithRoleResponseDto {
+  @ApiProperty({ type: TripDto })
+  declare trip: TripDto;
+
+  @ApiProperty({ description: '"owner" or "collaborator".' })
+  declare role: string;
+
+  @ApiProperty({
+    nullable: true,
+    description: "Display name of the trip's owner — surfaced for collaborator banners.",
+  })
+  declare ownerDisplayName: string | null;
 }
 
 export class ItineraryItemDto {
