@@ -4,11 +4,13 @@
 import type {
   CreateTripRequestDto,
   CreateTripShareRequestDto,
+  DayRouteCoordsResponseDto,
   GeneratePlanWithAiResponseDto,
   GenerateSamplePlanRequestDto,
   GenerateSamplePlanResponseDto,
   ItineraryListResponseDto,
   ListTripsResponseDto,
+  OptimizeDayRouteResponseDto,
   SharedTripDto,
   SuggestPlacesForTripRequestDto,
   SuggestPlacesForTripResponseDto,
@@ -820,4 +822,89 @@ export const tripControllerUpdateDay = async (
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(updateDayItemsRequestDto),
   });
+};
+
+/**
+ * @summary Reorder a day's items to minimise travel time (greedy NN over the routing provider). Owner OR active share.
+ */
+export type tripControllerOptimizeDayResponse200 = {
+  data: OptimizeDayRouteResponseDto;
+  status: 200;
+};
+
+export type tripControllerOptimizeDayResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type tripControllerOptimizeDayResponseSuccess = tripControllerOptimizeDayResponse200 & {
+  headers: Headers;
+};
+export type tripControllerOptimizeDayResponseError = tripControllerOptimizeDayResponse404 & {
+  headers: Headers;
+};
+
+export type tripControllerOptimizeDayResponse =
+  | tripControllerOptimizeDayResponseSuccess
+  | tripControllerOptimizeDayResponseError;
+
+export const getTripControllerOptimizeDayUrl = (tripId: string, dayId: string) => {
+  return `/api/v1/trips/${tripId}/days/${dayId}/optimize`;
+};
+
+export const tripControllerOptimizeDay = async (
+  tripId: string,
+  dayId: string,
+  options?: RequestInit,
+): Promise<tripControllerOptimizeDayResponse> => {
+  return apiFetch<tripControllerOptimizeDayResponse>(
+    getTripControllerOptimizeDayUrl(tripId, dayId),
+    {
+      ...options,
+      method: 'POST',
+    },
+  );
+};
+
+/**
+ * @summary Coords for a day's routable items, in current order. Powers the V.UX.6 RouteMap.
+ */
+export type tripControllerDayRouteCoordsResponse200 = {
+  data: DayRouteCoordsResponseDto;
+  status: 200;
+};
+
+export type tripControllerDayRouteCoordsResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type tripControllerDayRouteCoordsResponseSuccess =
+  tripControllerDayRouteCoordsResponse200 & {
+    headers: Headers;
+  };
+export type tripControllerDayRouteCoordsResponseError = tripControllerDayRouteCoordsResponse404 & {
+  headers: Headers;
+};
+
+export type tripControllerDayRouteCoordsResponse =
+  | tripControllerDayRouteCoordsResponseSuccess
+  | tripControllerDayRouteCoordsResponseError;
+
+export const getTripControllerDayRouteCoordsUrl = (tripId: string, dayId: string) => {
+  return `/api/v1/trips/${tripId}/days/${dayId}/route-coords`;
+};
+
+export const tripControllerDayRouteCoords = async (
+  tripId: string,
+  dayId: string,
+  options?: RequestInit,
+): Promise<tripControllerDayRouteCoordsResponse> => {
+  return apiFetch<tripControllerDayRouteCoordsResponse>(
+    getTripControllerDayRouteCoordsUrl(tripId, dayId),
+    {
+      ...options,
+      method: 'GET',
+    },
+  );
 };

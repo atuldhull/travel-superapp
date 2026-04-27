@@ -241,6 +241,66 @@ export class SuggestPlacesForTripResponseDto {
 }
 
 /**
+ * Body for `POST /trips/:tripId/days/:dayId/optimize`. Empty for v1
+ * — the use-case only needs the path params. Documentation-only;
+ * runtime validation lives in the controller (no body).
+ *
+ * Installed by prompt [V.UX.6].
+ */
+export class OptimizeDayRouteResponseDto {
+  @ApiProperty({
+    type: ItineraryDayDto,
+    description: 'Reordered itinerary day with refreshed items.',
+  })
+  declare day: ItineraryDayDto;
+
+  @ApiProperty({
+    description:
+      'Total travel seconds across all consecutive routable stops, in the original order.',
+  })
+  declare beforeSeconds: number;
+
+  @ApiProperty({
+    description: 'Total travel seconds in the optimized order. Compare to `beforeSeconds`.',
+  })
+  declare afterSeconds: number;
+
+  @ApiProperty({
+    description:
+      'Items dropped from the route (placeId no longer in the catalog). Trailing in the new order; never lost.',
+  })
+  declare skippedCount: number;
+}
+
+/**
+ * One coordinate pair per routable itinerary item on a day. Used by
+ * the V.UX.6 power-planner RouteMap so the polyline can recompute
+ * locally on every drag.
+ */
+export class DayRouteCoordDto {
+  @ApiProperty({ format: 'cuid' })
+  declare itemId: string;
+
+  @ApiProperty({ format: 'cuid' })
+  declare placeId: string;
+
+  @ApiProperty({ description: 'Latitude in decimal degrees.' })
+  declare lat: number;
+
+  @ApiProperty({ description: 'Longitude in decimal degrees.' })
+  declare lng: number;
+}
+
+export class DayRouteCoordsResponseDto {
+  @ApiProperty({
+    type: [DayRouteCoordDto],
+    description:
+      "Routable items' coords in the day's current order. Items without a placeId are skipped.",
+  })
+  declare coords: DayRouteCoordDto[];
+}
+
+/**
  * Public-safe view returned by `GET /trips/shared/:code`. Notably omits
  * the owner's `userId` (only `ownerDisplayName` is exposed) and the
  * trip's center coordinates — the recipient gets the title, dates, and
