@@ -9,6 +9,7 @@ import type {
   EateryReviewSummaryResponseDto,
   ExpenseDto,
   ExpensesControllerListParams,
+  HeartSharedTripResponseDto,
   ListBalancesResponseDto,
   ListExpensesResponseDto,
   ListReviewsResponseDto,
@@ -21,6 +22,7 @@ import type {
   ReviewsControllerSummaryParams,
   RevokeVoteRequestDto,
   SettleUpResponseDto,
+  SharedTripHeartCountResponseDto,
   StayReviewSummaryResponseDto,
   VoteDto,
   VoteSummaryDto,
@@ -664,6 +666,99 @@ export const agentReviewSummaryControllerSummary = async (
 ): Promise<agentReviewSummaryControllerSummaryResponse> => {
   return apiFetch<agentReviewSummaryControllerSummaryResponse>(
     getAgentReviewSummaryControllerSummaryUrl(id),
+    {
+      ...options,
+      method: 'GET',
+    },
+  );
+};
+
+/**
+ * @summary ❤️ a publicly-shared trip. No auth. Per-IP rate-limited at 1/min so anonymous fans can react but scripts can't farm hearts.
+ */
+export type sharedTripReactControllerHeartTripResponse200 = {
+  data: HeartSharedTripResponseDto;
+  status: 200;
+};
+
+export type sharedTripReactControllerHeartTripResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type sharedTripReactControllerHeartTripResponse429 = {
+  data: void;
+  status: 429;
+};
+
+export type sharedTripReactControllerHeartTripResponseSuccess =
+  sharedTripReactControllerHeartTripResponse200 & {
+    headers: Headers;
+  };
+export type sharedTripReactControllerHeartTripResponseError = (
+  | sharedTripReactControllerHeartTripResponse404
+  | sharedTripReactControllerHeartTripResponse429
+) & {
+  headers: Headers;
+};
+
+export type sharedTripReactControllerHeartTripResponse =
+  | sharedTripReactControllerHeartTripResponseSuccess
+  | sharedTripReactControllerHeartTripResponseError;
+
+export const getSharedTripReactControllerHeartTripUrl = (code: string) => {
+  return `/api/v1/trips/shared/${code}/heart`;
+};
+
+export const sharedTripReactControllerHeartTrip = async (
+  code: string,
+  options?: RequestInit,
+): Promise<sharedTripReactControllerHeartTripResponse> => {
+  return apiFetch<sharedTripReactControllerHeartTripResponse>(
+    getSharedTripReactControllerHeartTripUrl(code),
+    {
+      ...options,
+      method: 'POST',
+    },
+  );
+};
+
+/**
+ * @summary Current ❤️ count for a shared trip. Public, no auth.
+ */
+export type sharedTripReactControllerGetHeartsResponse200 = {
+  data: SharedTripHeartCountResponseDto;
+  status: 200;
+};
+
+export type sharedTripReactControllerGetHeartsResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type sharedTripReactControllerGetHeartsResponseSuccess =
+  sharedTripReactControllerGetHeartsResponse200 & {
+    headers: Headers;
+  };
+export type sharedTripReactControllerGetHeartsResponseError =
+  sharedTripReactControllerGetHeartsResponse404 & {
+    headers: Headers;
+  };
+
+export type sharedTripReactControllerGetHeartsResponse =
+  | sharedTripReactControllerGetHeartsResponseSuccess
+  | sharedTripReactControllerGetHeartsResponseError;
+
+export const getSharedTripReactControllerGetHeartsUrl = (code: string) => {
+  return `/api/v1/trips/shared/${code}/hearts`;
+};
+
+export const sharedTripReactControllerGetHearts = async (
+  code: string,
+  options?: RequestInit,
+): Promise<sharedTripReactControllerGetHeartsResponse> => {
+  return apiFetch<sharedTripReactControllerGetHeartsResponse>(
+    getSharedTripReactControllerGetHeartsUrl(code),
     {
       ...options,
       method: 'GET',

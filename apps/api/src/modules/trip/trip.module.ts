@@ -36,6 +36,7 @@ import { GetDayRouteCoordsUseCase } from './application/get-day-route-coords.use
 import { NearMeNowUseCase } from './application/near-me-now.use-case';
 import { LockTripUseCase, UnlockTripUseCase } from './application/lock-trip.use-case';
 import { GetTripWithRoleUseCase } from './application/get-trip-with-role.use-case';
+import { CloneSharedTripUseCase } from './application/clone-shared-trip.use-case';
 import { GenerateItineraryStubUseCase } from './application/generate-itinerary-stub.use-case';
 import { SeedSampleTripUseCase } from './application/seed-sample-trip.use-case';
 import { GeneratePlanWithAiUseCase } from './application/generate-plan-with-ai.use-case';
@@ -137,6 +138,7 @@ import { TripController } from './interface/trip.controller';
     LockTripUseCase,
     UnlockTripUseCase,
     GetTripWithRoleUseCase,
+    CloneSharedTripUseCase,
     TripOverviewCache,
     AdminListTripsUseCase,
     AdminArchiveTripUseCase,

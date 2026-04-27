@@ -51,6 +51,7 @@ import { OptimizeDayRouteUseCase } from '../application/optimize-day-route.use-c
 import { GetDayRouteCoordsUseCase } from '../application/get-day-route-coords.use-case';
 import { LockTripUseCase, UnlockTripUseCase } from '../application/lock-trip.use-case';
 import { GetTripWithRoleUseCase } from '../application/get-trip-with-role.use-case';
+import { CloneSharedTripUseCase } from '../application/clone-shared-trip.use-case';
 import { GetTripEateriesUseCase } from '../application/get-trip-eateries.use-case';
 import { GetTripEventsUseCase } from '../application/get-trip-events.use-case';
 import { GetTripOverviewUseCase, type Section } from '../application/get-trip-overview.use-case';
@@ -159,6 +160,7 @@ export class TripController {
     private readonly lockTrip: LockTripUseCase,
     private readonly unlockTrip: UnlockTripUseCase,
     private readonly getTripWithRole: GetTripWithRoleUseCase,
+    private readonly cloneSharedTrip: CloneSharedTripUseCase,
     private readonly generateItinerary: GenerateItineraryStubUseCase,
     private readonly generatePlanWithAi: GeneratePlanWithAiUseCase,
     private readonly generateSamplePlan: GenerateSamplePlanUseCase,
@@ -527,6 +529,31 @@ export class TripController {
       createdAt: trip.createdAt.toISOString(),
       days: days.map(toDayDto),
     };
+  }
+
+  /**
+   * V.UX.10 — clone a shared trip into the caller's own account.
+   * Auth required (clone-result is owned by caller). Resolves the
+   * code first (404 SHARE_NOT_FOUND / SHARE_EXPIRED), then deep-copies
+   * dates + itinerary days + items into a fresh draft trip.
+   */
+  @ApiOperation({
+    summary: "Clone a publicly-shared trip into the caller's account. Auth required.",
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'New draft trip cloned from the source share-code.',
+    type: TripResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'SHARE_NOT_FOUND or SHARE_EXPIRED.' })
+  @Post('shared/:code/clone')
+  @HttpCode(HttpStatus.CREATED)
+  async cloneShared(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('code') code: string,
+  ): Promise<TripDto> {
+    const trip = await this.cloneSharedTrip.execute(code, user.sub);
+    return toDto(trip);
   }
 
   /**

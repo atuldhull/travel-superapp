@@ -279,6 +279,26 @@ export class SettleUpResponseDto {
   declare transfers: SettleTransferDto[];
 }
 
+/**
+ * V.UX.10 anonymous reactions on shared trips. Counts are durable
+ * (no TTL). Per-IP rate-limited at the route level.
+ */
+export class HeartSharedTripResponseDto {
+  @ApiProperty({ format: 'cuid', description: 'The trip the heart was applied to.' })
+  declare tripId: string;
+
+  @ApiProperty({ description: 'Heart count after this increment.' })
+  declare hearts: number;
+}
+
+export class SharedTripHeartCountResponseDto {
+  @ApiProperty({ format: 'cuid' })
+  declare tripId: string;
+
+  @ApiProperty({ description: 'Current heart count.' })
+  declare hearts: number;
+}
+
 // ─── Review bundle composite ─────────────────────────────────────
 
 export class RecentReviewDto {
