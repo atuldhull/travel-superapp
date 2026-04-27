@@ -189,161 +189,6 @@ export const adminTripsControllerRemove = async (
 };
 
 /**
- * @summary Cross-user list of media with optional ?ownerId, ?kind, ?status filters. Admin-only.
- */
-export type adminMediaControllerListResponse200 = {
-  data: AdminListMediaResponseDto;
-  status: 200;
-};
-
-export type adminMediaControllerListResponse400 = {
-  data: void;
-  status: 400;
-};
-
-export type adminMediaControllerListResponseSuccess = adminMediaControllerListResponse200 & {
-  headers: Headers;
-};
-export type adminMediaControllerListResponseError = adminMediaControllerListResponse400 & {
-  headers: Headers;
-};
-
-export type adminMediaControllerListResponse =
-  | adminMediaControllerListResponseSuccess
-  | adminMediaControllerListResponseError;
-
-export const getAdminMediaControllerListUrl = (params: AdminMediaControllerListParams) => {
-  const normalizedParams = new URLSearchParams();
-
-  Object.entries(params || {}).forEach(([key, value]) => {
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString());
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0
-    ? `/api/v1/admin/media?${stringifiedParams}`
-    : `/api/v1/admin/media`;
-};
-
-export const adminMediaControllerList = async (
-  params: AdminMediaControllerListParams,
-  options?: RequestInit,
-): Promise<adminMediaControllerListResponse> => {
-  return apiFetch<adminMediaControllerListResponse>(getAdminMediaControllerListUrl(params), {
-    ...options,
-    method: 'GET',
-  });
-};
-
-/**
- * @summary Hard-delete media (takedown). Trip + memory book references SetNull-cascade.
- */
-export type adminMediaControllerRemoveResponse204 = {
-  data: void;
-  status: 204;
-};
-
-export type adminMediaControllerRemoveResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type adminMediaControllerRemoveResponseSuccess = adminMediaControllerRemoveResponse204 & {
-  headers: Headers;
-};
-export type adminMediaControllerRemoveResponseError = adminMediaControllerRemoveResponse404 & {
-  headers: Headers;
-};
-
-export type adminMediaControllerRemoveResponse =
-  | adminMediaControllerRemoveResponseSuccess
-  | adminMediaControllerRemoveResponseError;
-
-export const getAdminMediaControllerRemoveUrl = (id: string) => {
-  return `/api/v1/admin/media/${id}`;
-};
-
-export const adminMediaControllerRemove = async (
-  id: string,
-  options?: RequestInit,
-): Promise<adminMediaControllerRemoveResponse> => {
-  return apiFetch<adminMediaControllerRemoveResponse>(getAdminMediaControllerRemoveUrl(id), {
-    ...options,
-    method: 'DELETE',
-  });
-};
-
-/**
- * @summary Curate a new Place into the canonical catalog. Admin-only.
- */
-export type adminControllerCreateResponse201 = {
-  data: AdminPlaceDto;
-  status: 201;
-};
-
-export type adminControllerCreateResponseSuccess = adminControllerCreateResponse201 & {
-  headers: Headers;
-};
-export type adminControllerCreateResponse = adminControllerCreateResponseSuccess;
-
-export const getAdminControllerCreateUrl = () => {
-  return `/api/v1/admin/places`;
-};
-
-export const adminControllerCreate = async (
-  adminCreatePlaceRequestDto: AdminCreatePlaceRequestDto,
-  options?: RequestInit,
-): Promise<adminControllerCreateResponse> => {
-  return apiFetch<adminControllerCreateResponse>(getAdminControllerCreateUrl(), {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(adminCreatePlaceRequestDto),
-  });
-};
-
-/**
- * @summary Remove a Place from the canonical catalog. Admin-only.
- */
-export type adminControllerRemoveResponse204 = {
-  data: void;
-  status: 204;
-};
-
-export type adminControllerRemoveResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type adminControllerRemoveResponseSuccess = adminControllerRemoveResponse204 & {
-  headers: Headers;
-};
-export type adminControllerRemoveResponseError = adminControllerRemoveResponse404 & {
-  headers: Headers;
-};
-
-export type adminControllerRemoveResponse =
-  | adminControllerRemoveResponseSuccess
-  | adminControllerRemoveResponseError;
-
-export const getAdminControllerRemoveUrl = (id: string) => {
-  return `/api/v1/admin/places/${id}`;
-};
-
-export const adminControllerRemove = async (
-  id: string,
-  options?: RequestInit,
-): Promise<adminControllerRemoveResponse> => {
-  return apiFetch<adminControllerRemoveResponse>(getAdminControllerRemoveUrl(id), {
-    ...options,
-    method: 'DELETE',
-  });
-};
-
-/**
  * @summary List scam reports for moderation. Default = pending; ?verified=true for the verified pile.
  */
 export type adminScamModerationControllerListResponse200 = {
@@ -606,6 +451,161 @@ export const adminSosControllerResolve = async (
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(adminResolveSosRequestDto),
+  });
+};
+
+/**
+ * @summary Cross-user list of media with optional ?ownerId, ?kind, ?status filters. Admin-only.
+ */
+export type adminMediaControllerListResponse200 = {
+  data: AdminListMediaResponseDto;
+  status: 200;
+};
+
+export type adminMediaControllerListResponse400 = {
+  data: void;
+  status: 400;
+};
+
+export type adminMediaControllerListResponseSuccess = adminMediaControllerListResponse200 & {
+  headers: Headers;
+};
+export type adminMediaControllerListResponseError = adminMediaControllerListResponse400 & {
+  headers: Headers;
+};
+
+export type adminMediaControllerListResponse =
+  | adminMediaControllerListResponseSuccess
+  | adminMediaControllerListResponseError;
+
+export const getAdminMediaControllerListUrl = (params: AdminMediaControllerListParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/admin/media?${stringifiedParams}`
+    : `/api/v1/admin/media`;
+};
+
+export const adminMediaControllerList = async (
+  params: AdminMediaControllerListParams,
+  options?: RequestInit,
+): Promise<adminMediaControllerListResponse> => {
+  return apiFetch<adminMediaControllerListResponse>(getAdminMediaControllerListUrl(params), {
+    ...options,
+    method: 'GET',
+  });
+};
+
+/**
+ * @summary Hard-delete media (takedown). Trip + memory book references SetNull-cascade.
+ */
+export type adminMediaControllerRemoveResponse204 = {
+  data: void;
+  status: 204;
+};
+
+export type adminMediaControllerRemoveResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type adminMediaControllerRemoveResponseSuccess = adminMediaControllerRemoveResponse204 & {
+  headers: Headers;
+};
+export type adminMediaControllerRemoveResponseError = adminMediaControllerRemoveResponse404 & {
+  headers: Headers;
+};
+
+export type adminMediaControllerRemoveResponse =
+  | adminMediaControllerRemoveResponseSuccess
+  | adminMediaControllerRemoveResponseError;
+
+export const getAdminMediaControllerRemoveUrl = (id: string) => {
+  return `/api/v1/admin/media/${id}`;
+};
+
+export const adminMediaControllerRemove = async (
+  id: string,
+  options?: RequestInit,
+): Promise<adminMediaControllerRemoveResponse> => {
+  return apiFetch<adminMediaControllerRemoveResponse>(getAdminMediaControllerRemoveUrl(id), {
+    ...options,
+    method: 'DELETE',
+  });
+};
+
+/**
+ * @summary Curate a new Place into the canonical catalog. Admin-only.
+ */
+export type adminControllerCreateResponse201 = {
+  data: AdminPlaceDto;
+  status: 201;
+};
+
+export type adminControllerCreateResponseSuccess = adminControllerCreateResponse201 & {
+  headers: Headers;
+};
+export type adminControllerCreateResponse = adminControllerCreateResponseSuccess;
+
+export const getAdminControllerCreateUrl = () => {
+  return `/api/v1/admin/places`;
+};
+
+export const adminControllerCreate = async (
+  adminCreatePlaceRequestDto: AdminCreatePlaceRequestDto,
+  options?: RequestInit,
+): Promise<adminControllerCreateResponse> => {
+  return apiFetch<adminControllerCreateResponse>(getAdminControllerCreateUrl(), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(adminCreatePlaceRequestDto),
+  });
+};
+
+/**
+ * @summary Remove a Place from the canonical catalog. Admin-only.
+ */
+export type adminControllerRemoveResponse204 = {
+  data: void;
+  status: 204;
+};
+
+export type adminControllerRemoveResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type adminControllerRemoveResponseSuccess = adminControllerRemoveResponse204 & {
+  headers: Headers;
+};
+export type adminControllerRemoveResponseError = adminControllerRemoveResponse404 & {
+  headers: Headers;
+};
+
+export type adminControllerRemoveResponse =
+  | adminControllerRemoveResponseSuccess
+  | adminControllerRemoveResponseError;
+
+export const getAdminControllerRemoveUrl = (id: string) => {
+  return `/api/v1/admin/places/${id}`;
+};
+
+export const adminControllerRemove = async (
+  id: string,
+  options?: RequestInit,
+): Promise<adminControllerRemoveResponse> => {
+  return apiFetch<adminControllerRemoveResponse>(getAdminControllerRemoveUrl(id), {
+    ...options,
+    method: 'DELETE',
   });
 };
 

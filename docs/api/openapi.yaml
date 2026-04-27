@@ -1081,6 +1081,29 @@ paths:
       summary: Hard-delete a trip + cascade itinerary. For takedowns of
         clearly-abusive content.
       tags: *a14
+  /api/v1/near-me:
+    post:
+      operationId: NearMeController_nearMe
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NearMeNowRequestDto'
+      responses:
+        '200':
+          description: Composite response with places + weather + safety.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NearMeNowResponseDto'
+        '422':
+          description: INVALID_COORDINATES.
+      summary: Spontaneous-improviser composite — 5 nearest places + walking routes +
+        1-day weather + safety score. Public, no auth.
+      tags:
+        - near-me
   /api/v1/places/search:
     post:
       operationId: PlacesController_search
@@ -1241,588 +1264,6 @@ paths:
         → destination.
       tags:
         - transport
-  /api/v1/media/upload-url:
-    post:
-      operationId: MediaController_createUploadUrl
-      parameters: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateUploadUrlRequestDto'
-      responses:
-        '201':
-          description: Presigned upload URL + initial asset row.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CreateUploadUrlResponseDto'
-      security: &a17
-        - bearer: []
-      summary: Issue a presigned PUT URL for direct-to-S3 upload. Creates the
-        MediaAsset row in `processing` status.
-      tags: &a18
-        - media
-  /api/v1/media/{id}/confirm:
-    post:
-      operationId: MediaController_confirm
-      parameters:
-        - name: id
-          required: true
-          in: path
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Asset row in `ready` state.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MediaAssetDto'
-        '404':
-          description: MEDIA_NOT_FOUND.
-      security: *a17
-      summary: Confirm upload landed (HEAD verifies bytes). Flips status to `ready`.
-        Image kind also flips exifStripped.
-      tags: *a18
-  /api/v1/media/{id}/download-url:
-    get:
-      operationId: MediaController_downloadUrl
-      parameters:
-        - name: id
-          required: true
-          in: path
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Presigned GET URL + ISO expiry.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MediaDownloadUrlResponseDto'
-        '404':
-          description: MEDIA_NOT_FOUND.
-      security: *a17
-      summary: Short-lived presigned GET URL for the asset. Owner-gated.
-      tags: *a18
-  /api/v1/media/{id}/trip:
-    patch:
-      operationId: MediaController_attachToTrip
-      parameters:
-        - name: id
-          required: true
-          in: path
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AttachMediaToTripRequestDto'
-      responses:
-        '200':
-          description: Updated asset row.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MediaAssetDto'
-        '404':
-          description: MEDIA_NOT_FOUND or TRIP_NOT_FOUND.
-      security: *a17
-      summary: Attach (`{tripId}`) or detach (`{tripId:null}`) the media to a trip.
-        Double owner-gated.
-      tags: *a18
-  /api/v1/media/trip/{tripId}:
-    get:
-      operationId: MediaController_listByTrip
-      parameters:
-        - name: tripId
-          required: true
-          in: path
-          schema:
-            type: string
-        - name: limit
-          required: true
-          in: query
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Caller-owned media for the given trip.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ListTripMediaResponseDto'
-      security: *a17
-      summary: List the caller's `ready` media attached to a trip. ?limit=N (1..200,
-        default 50).
-      tags: *a18
-  /api/v1/media/{id}/memory-book:
-    patch:
-      operationId: MediaController_attachToBook
-      parameters:
-        - name: id
-          required: true
-          in: path
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AttachMediaToBookRequestDto'
-      responses:
-        '200':
-          description: Updated asset row.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MediaAssetDto'
-        '404':
-          description: MEDIA_NOT_FOUND or BOOK_NOT_FOUND.
-      security: *a17
-      summary: Attach (`{memoryBookId}`) or detach (`{memoryBookId:null}`) the media
-        to a memory book. Double owner-gated.
-      tags: *a18
-  /api/v1/memory-books/featured:
-    get:
-      operationId: MemoryBookController_featured
-      parameters:
-        - name: limit
-          required: true
-          in: query
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Currently-published memory books, newest-first.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FeaturedMemoryBooksResponseDto'
-      security: &a19
-        - bearer: []
-      summary: Public discovery — currently-published memory books across all users,
-        ordered by publishedAt DESC.
-      tags: &a20
-        - media
-  /api/v1/memory-books/public/{id}:
-    get:
-      operationId: MemoryBookController_getPublic
-      parameters:
-        - name: id
-          required: true
-          in: path
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Published book metadata + ids of attached assets.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PublicMemoryBookWithAssetsResponseDto'
-        '404':
-          description: BOOK_NOT_PUBLISHED.
-      security: *a19
-      summary: Public read of a published memory book by id. The cuid is the
-        unguessable token.
-      tags: *a20
-  /api/v1/memory-books/public/{id}/assets/{assetId}/download-url:
-    get:
-      operationId: MemoryBookController_getPublicAssetDownloadUrl
-      parameters:
-        - name: id
-          required: true
-          in: path
-          schema:
-            type: string
-        - name: assetId
-          required: true
-          in: path
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Short-lived presigned GET URL + ISO expiry.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PublicDownloadUrlResponseDto'
-        '404':
-          description: BOOK_NOT_PUBLISHED, MEDIA_NOT_FOUND, or NOT_ATTACHED.
-      security: *a19
-      summary: 'Public presigned download URL for a memory-book asset. Three-clause
-        gate: book published + asset attached + asset ready.'
-      tags: *a20
-  /api/v1/memory-books:
-    post:
-      operationId: MemoryBookController_create
-      parameters: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateMemoryBookRequestDto'
-      responses:
-        '201':
-          description: Newly-created book row.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MemoryBookDto'
-      security: *a19
-      summary: Create a memory book (draft). Owner = caller.
-      tags: *a20
-    get:
-      operationId: MemoryBookController_list
-      parameters:
-        - name: limit
-          required: true
-          in: query
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Caller-owned memory books, newest first.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ListMemoryBooksResponseDto'
-      security: *a19
-      summary: List the caller's memory books, newest first. ?limit=N (1..200, default
-        50). Owner-scoped.
-      tags: *a20
-  /api/v1/memory-books/{id}:
-    get:
-      operationId: MemoryBookController_getOne
-      parameters:
-        - name: id
-          required: true
-          in: path
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Book row + ids of attached assets (any status).
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MemoryBookWithAssetsResponseDto'
-        '404':
-          description: BOOK_NOT_FOUND.
-      security: *a19
-      summary: Get one of the caller-owned books + the attached asset ids.
-      tags: *a20
-    patch:
-      operationId: MemoryBookController_update
-      parameters:
-        - name: id
-          required: true
-          in: path
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateMemoryBookRequestDto'
-      responses:
-        '200':
-          description: Updated book row.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MemoryBookDto'
-        '404':
-          description: BOOK_NOT_FOUND.
-      security: *a19
-      summary: Update one of the caller-owned books. Partial update.
-      tags: *a20
-    delete:
-      operationId: MemoryBookController_remove
-      parameters:
-        - name: id
-          required: true
-          in: path
-          schema:
-            type: string
-      responses:
-        '204':
-          description: Deleted.
-        '404':
-          description: BOOK_NOT_FOUND.
-      security: *a19
-      summary: Delete one of the caller-owned books. SetNull on MediaAsset.memoryBookId.
-      tags: *a20
-  /api/v1/memory-books/{id}/publish:
-    post:
-      operationId: MemoryBookController_publish
-      parameters:
-        - name: id
-          required: true
-          in: path
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Published book row.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MemoryBookDto'
-        '404':
-          description: BOOK_NOT_FOUND.
-      security: *a19
-      summary: Publish a book — flips publishedAt to now (idempotent).
-      tags: *a20
-  /api/v1/memory-books/{id}/unpublish:
-    post:
-      operationId: MemoryBookController_unpublish
-      parameters:
-        - name: id
-          required: true
-          in: path
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Updated book row.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MemoryBookDto'
-        '404':
-          description: BOOK_NOT_FOUND.
-      security: *a19
-      summary: Unpublish a book — clears publishedAt (idempotent).
-      tags: *a20
-  /api/v1/admin/media:
-    get:
-      operationId: AdminMediaController_list
-      parameters:
-        - name: ownerId
-          required: true
-          in: query
-          schema:
-            type: string
-        - name: kind
-          required: true
-          in: query
-          schema:
-            type: string
-        - name: status
-          required: true
-          in: query
-          schema:
-            type: string
-        - name: limit
-          required: true
-          in: query
-          schema:
-            type: string
-        - name: offset
-          required: true
-          in: query
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Matching media + total.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AdminListMediaResponseDto'
-        '400':
-          description: VALIDATION_FAILED — kind / status invalid.
-      security: &a21
-        - bearer: []
-      summary: Cross-user list of media with optional ?ownerId, ?kind, ?status
-        filters. Admin-only.
-      tags: &a22
-        - admin
-  /api/v1/admin/media/{id}:
-    delete:
-      operationId: AdminMediaController_remove
-      parameters:
-        - name: id
-          required: true
-          in: path
-          schema:
-            type: string
-      responses:
-        '204':
-          description: Deleted.
-        '404':
-          description: MEDIA_NOT_FOUND.
-      security: *a21
-      summary: Hard-delete media (takedown). Trip + memory book references
-        SetNull-cascade.
-      tags: *a22
-  /api/v1/notifications/me/unread-count:
-    get:
-      operationId: NotificationsController_unreadCount
-      parameters: []
-      responses:
-        '200':
-          description: Unread count.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UnreadCountResponseDto'
-      security: &a23
-        - bearer: []
-      summary: 'Returns { unread: N } for the home-screen badge. Single indexed COUNT
-        — cheap.'
-      tags: &a24
-        - notifications
-  /api/v1/notifications/me:
-    get:
-      operationId: NotificationsController_listMine
-      parameters:
-        - name: limit
-          required: true
-          in: query
-          schema:
-            type: string
-        - name: channel
-          required: true
-          in: query
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Caller's recent deliveries, newest-first.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ListMyNotificationsResponseDto'
-        '400':
-          description: VALIDATION_FAILED — channel is not one of push|email|sms.
-      security: *a23
-      summary: List the caller's recent notifications. Optional
-        ?channel=push|email|sms narrows to one delivery channel.
-      tags: *a24
-  /api/v1/notifications/read-all:
-    post:
-      operationId: NotificationsController_markAllRead
-      parameters: []
-      responses:
-        '200':
-          description: Number of rows actually flipped.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MarkAllReadResponseDto'
-      security: *a23
-      summary: 'Mark every unread row as read. Returns { marked: N }. Idempotent
-        (second call returns 0).'
-      tags: *a24
-  /api/v1/notifications/{id}/read:
-    post:
-      operationId: NotificationsController_markRead
-      parameters:
-        - name: id
-          required: true
-          in: path
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Updated notification row.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NotificationLogDto'
-        '404':
-          description: NOTIFICATION_NOT_FOUND.
-      security: *a23
-      summary: Mark one notification as read. Owner-gated; 404 on cross-user / missing.
-      tags: *a24
-  /api/v1/notifications/{id}/unread:
-    post:
-      operationId: NotificationsController_markUnread
-      parameters:
-        - name: id
-          required: true
-          in: path
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Updated notification row.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NotificationLogDto'
-        '404':
-          description: NOTIFICATION_NOT_FOUND.
-      security: *a23
-      summary: Mark one notification as UNread (symmetric to /read). Owner-gated.
-      tags: *a24
-  /api/v1/notifications/{id}:
-    delete:
-      operationId: NotificationsController_remove
-      parameters:
-        - name: id
-          required: true
-          in: path
-          schema:
-            type: string
-      responses:
-        '204':
-          description: Deleted.
-        '404':
-          description: NOTIFICATION_NOT_FOUND.
-      security: *a23
-      summary: Hard-delete a notification (inbox prune). Owner-gated; 404 on
-        cross-user / missing.
-      tags: *a24
-  /api/v1/admin/places:
-    post:
-      operationId: AdminController_create
-      parameters: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AdminCreatePlaceRequestDto'
-      responses:
-        '201':
-          description: Created place row.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AdminPlaceDto'
-      security: &a25
-        - bearer: []
-      summary: Curate a new Place into the canonical catalog. Admin-only.
-      tags: &a26
-        - admin
-  /api/v1/admin/places/{id}:
-    delete:
-      operationId: AdminController_remove
-      parameters:
-        - name: id
-          required: true
-          in: path
-          schema:
-            type: string
-      responses:
-        '204':
-          description: Deleted.
-        '404':
-          description: PLACE_NOT_FOUND.
-      security: *a25
-      summary: Remove a Place from the canonical catalog. Admin-only.
-      tags: *a26
   /api/v1/safety/scam-reports:
     post:
       operationId: SafetyController_report
@@ -1840,10 +1281,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ScamReportDto'
-      security: &a27
+      security: &a17
         - bearer: []
       summary: File a crowd-sourced scam report at the given coordinates.
-      tags: &a28
+      tags: &a18
         - safety
   /api/v1/safety/scam-reports/search:
     post:
@@ -1862,10 +1303,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FindNearbyScamsResponseDto'
-      security: *a27
+      security: *a17
       summary: Find scam reports within a radius. Optional filters by category /
         minSeverity / verifiedOnly.
-      tags: *a28
+      tags: *a18
   /api/v1/safety/sos:
     post:
       operationId: SosController_trigger
@@ -1883,10 +1324,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SosEventDto'
-      security: &a29
+      security: &a19
         - bearer: []
       summary: Trigger an SOS event at the given coordinates.
-      tags: &a30
+      tags: &a20
         - safety
     get:
       operationId: SosController_listMine
@@ -1903,10 +1344,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListSosEventsResponseDto'
-      security: *a29
+      security: *a19
       summary: List the caller's SOS events, most-recent-first. ?limit (1..200,
         default 50).
-      tags: *a30
+      tags: *a20
   /api/v1/safety/sos/{id}/resolve:
     post:
       operationId: SosController_resolve
@@ -1931,9 +1372,9 @@ paths:
                 $ref: '#/components/schemas/SosEventDto'
         '404':
           description: SOS_NOT_FOUND.
-      security: *a29
+      security: *a19
       summary: Mark an SOS event resolved (owner-only).
-      tags: *a30
+      tags: *a20
   /api/v1/safety/crimes/search:
     post:
       operationId: CrimeLayerController_search
@@ -2001,11 +1442,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AdminListScamReportsResponseDto'
-      security: &a31
+      security: &a21
         - bearer: []
       summary: List scam reports for moderation. Default = pending; ?verified=true for
         the verified pile.
-      tags: &a32
+      tags: &a22
         - admin
   /api/v1/admin/safety/scam-reports/{id}/verify:
     post:
@@ -2025,9 +1466,9 @@ paths:
                 $ref: '#/components/schemas/ScamReportDto'
         '404':
           description: SCAM_REPORT_NOT_FOUND.
-      security: *a31
+      security: *a21
       summary: Mark a scam report verified.
-      tags: *a32
+      tags: *a22
   /api/v1/admin/safety/scam-reports/{id}/unverify:
     post:
       operationId: AdminScamModerationController_unverify
@@ -2046,9 +1487,9 @@ paths:
                 $ref: '#/components/schemas/ScamReportDto'
         '404':
           description: SCAM_REPORT_NOT_FOUND.
-      security: *a31
+      security: *a21
       summary: Flip a verified report back to pending.
-      tags: *a32
+      tags: *a22
   /api/v1/admin/safety/scam-reports/{id}:
     delete:
       operationId: AdminScamModerationController_dismiss
@@ -2063,9 +1504,9 @@ paths:
           description: Dismissed.
         '404':
           description: SCAM_REPORT_NOT_FOUND.
-      security: *a31
+      security: *a21
       summary: Dismiss a scam report (hard-delete).
-      tags: *a32
+      tags: *a22
   /api/v1/admin/safety/sos-events:
     get:
       operationId: AdminSosController_list
@@ -2094,11 +1535,11 @@ paths:
                 $ref: '#/components/schemas/AdminListSosEventsResponseDto'
         '400':
           description: VALIDATION_FAILED — status not in active|resolved.
-      security: &a33
+      security: &a23
         - bearer: []
       summary: 'Triage list of SOS events. ?status=active|resolved (default: both).
         Offset pagination.'
-      tags: &a34
+      tags: &a24
         - admin
   /api/v1/admin/safety/sos-events/{id}/resolve:
     post:
@@ -2124,8 +1565,590 @@ paths:
                 $ref: '#/components/schemas/SosEventDto'
         '404':
           description: SOS_NOT_FOUND.
-      security: *a33
+      security: *a23
       summary: Admin-resolve an SOS event with an optional resolution note.
+      tags: *a24
+  /api/v1/media/upload-url:
+    post:
+      operationId: MediaController_createUploadUrl
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUploadUrlRequestDto'
+      responses:
+        '201':
+          description: Presigned upload URL + initial asset row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateUploadUrlResponseDto'
+      security: &a25
+        - bearer: []
+      summary: Issue a presigned PUT URL for direct-to-S3 upload. Creates the
+        MediaAsset row in `processing` status.
+      tags: &a26
+        - media
+  /api/v1/media/{id}/confirm:
+    post:
+      operationId: MediaController_confirm
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Asset row in `ready` state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaAssetDto'
+        '404':
+          description: MEDIA_NOT_FOUND.
+      security: *a25
+      summary: Confirm upload landed (HEAD verifies bytes). Flips status to `ready`.
+        Image kind also flips exifStripped.
+      tags: *a26
+  /api/v1/media/{id}/download-url:
+    get:
+      operationId: MediaController_downloadUrl
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Presigned GET URL + ISO expiry.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaDownloadUrlResponseDto'
+        '404':
+          description: MEDIA_NOT_FOUND.
+      security: *a25
+      summary: Short-lived presigned GET URL for the asset. Owner-gated.
+      tags: *a26
+  /api/v1/media/{id}/trip:
+    patch:
+      operationId: MediaController_attachToTrip
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttachMediaToTripRequestDto'
+      responses:
+        '200':
+          description: Updated asset row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaAssetDto'
+        '404':
+          description: MEDIA_NOT_FOUND or TRIP_NOT_FOUND.
+      security: *a25
+      summary: Attach (`{tripId}`) or detach (`{tripId:null}`) the media to a trip.
+        Double owner-gated.
+      tags: *a26
+  /api/v1/media/trip/{tripId}:
+    get:
+      operationId: MediaController_listByTrip
+      parameters:
+        - name: tripId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Caller-owned media for the given trip.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListTripMediaResponseDto'
+      security: *a25
+      summary: List the caller's `ready` media attached to a trip. ?limit=N (1..200,
+        default 50).
+      tags: *a26
+  /api/v1/media/{id}/memory-book:
+    patch:
+      operationId: MediaController_attachToBook
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttachMediaToBookRequestDto'
+      responses:
+        '200':
+          description: Updated asset row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaAssetDto'
+        '404':
+          description: MEDIA_NOT_FOUND or BOOK_NOT_FOUND.
+      security: *a25
+      summary: Attach (`{memoryBookId}`) or detach (`{memoryBookId:null}`) the media
+        to a memory book. Double owner-gated.
+      tags: *a26
+  /api/v1/memory-books/featured:
+    get:
+      operationId: MemoryBookController_featured
+      parameters:
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Currently-published memory books, newest-first.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeaturedMemoryBooksResponseDto'
+      security: &a27
+        - bearer: []
+      summary: Public discovery — currently-published memory books across all users,
+        ordered by publishedAt DESC.
+      tags: &a28
+        - media
+  /api/v1/memory-books/public/{id}:
+    get:
+      operationId: MemoryBookController_getPublic
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Published book metadata + ids of attached assets.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicMemoryBookWithAssetsResponseDto'
+        '404':
+          description: BOOK_NOT_PUBLISHED.
+      security: *a27
+      summary: Public read of a published memory book by id. The cuid is the
+        unguessable token.
+      tags: *a28
+  /api/v1/memory-books/public/{id}/assets/{assetId}/download-url:
+    get:
+      operationId: MemoryBookController_getPublicAssetDownloadUrl
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: assetId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Short-lived presigned GET URL + ISO expiry.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicDownloadUrlResponseDto'
+        '404':
+          description: BOOK_NOT_PUBLISHED, MEDIA_NOT_FOUND, or NOT_ATTACHED.
+      security: *a27
+      summary: 'Public presigned download URL for a memory-book asset. Three-clause
+        gate: book published + asset attached + asset ready.'
+      tags: *a28
+  /api/v1/memory-books:
+    post:
+      operationId: MemoryBookController_create
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMemoryBookRequestDto'
+      responses:
+        '201':
+          description: Newly-created book row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoryBookDto'
+      security: *a27
+      summary: Create a memory book (draft). Owner = caller.
+      tags: *a28
+    get:
+      operationId: MemoryBookController_list
+      parameters:
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Caller-owned memory books, newest first.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListMemoryBooksResponseDto'
+      security: *a27
+      summary: List the caller's memory books, newest first. ?limit=N (1..200, default
+        50). Owner-scoped.
+      tags: *a28
+  /api/v1/memory-books/{id}:
+    get:
+      operationId: MemoryBookController_getOne
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Book row + ids of attached assets (any status).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoryBookWithAssetsResponseDto'
+        '404':
+          description: BOOK_NOT_FOUND.
+      security: *a27
+      summary: Get one of the caller-owned books + the attached asset ids.
+      tags: *a28
+    patch:
+      operationId: MemoryBookController_update
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMemoryBookRequestDto'
+      responses:
+        '200':
+          description: Updated book row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoryBookDto'
+        '404':
+          description: BOOK_NOT_FOUND.
+      security: *a27
+      summary: Update one of the caller-owned books. Partial update.
+      tags: *a28
+    delete:
+      operationId: MemoryBookController_remove
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Deleted.
+        '404':
+          description: BOOK_NOT_FOUND.
+      security: *a27
+      summary: Delete one of the caller-owned books. SetNull on MediaAsset.memoryBookId.
+      tags: *a28
+  /api/v1/memory-books/{id}/publish:
+    post:
+      operationId: MemoryBookController_publish
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Published book row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoryBookDto'
+        '404':
+          description: BOOK_NOT_FOUND.
+      security: *a27
+      summary: Publish a book — flips publishedAt to now (idempotent).
+      tags: *a28
+  /api/v1/memory-books/{id}/unpublish:
+    post:
+      operationId: MemoryBookController_unpublish
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Updated book row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoryBookDto'
+        '404':
+          description: BOOK_NOT_FOUND.
+      security: *a27
+      summary: Unpublish a book — clears publishedAt (idempotent).
+      tags: *a28
+  /api/v1/admin/media:
+    get:
+      operationId: AdminMediaController_list
+      parameters:
+        - name: ownerId
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: kind
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: status
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: offset
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Matching media + total.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminListMediaResponseDto'
+        '400':
+          description: VALIDATION_FAILED — kind / status invalid.
+      security: &a29
+        - bearer: []
+      summary: Cross-user list of media with optional ?ownerId, ?kind, ?status
+        filters. Admin-only.
+      tags: &a30
+        - admin
+  /api/v1/admin/media/{id}:
+    delete:
+      operationId: AdminMediaController_remove
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Deleted.
+        '404':
+          description: MEDIA_NOT_FOUND.
+      security: *a29
+      summary: Hard-delete media (takedown). Trip + memory book references
+        SetNull-cascade.
+      tags: *a30
+  /api/v1/notifications/me/unread-count:
+    get:
+      operationId: NotificationsController_unreadCount
+      parameters: []
+      responses:
+        '200':
+          description: Unread count.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnreadCountResponseDto'
+      security: &a31
+        - bearer: []
+      summary: 'Returns { unread: N } for the home-screen badge. Single indexed COUNT
+        — cheap.'
+      tags: &a32
+        - notifications
+  /api/v1/notifications/me:
+    get:
+      operationId: NotificationsController_listMine
+      parameters:
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: channel
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Caller's recent deliveries, newest-first.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListMyNotificationsResponseDto'
+        '400':
+          description: VALIDATION_FAILED — channel is not one of push|email|sms.
+      security: *a31
+      summary: List the caller's recent notifications. Optional
+        ?channel=push|email|sms narrows to one delivery channel.
+      tags: *a32
+  /api/v1/notifications/read-all:
+    post:
+      operationId: NotificationsController_markAllRead
+      parameters: []
+      responses:
+        '200':
+          description: Number of rows actually flipped.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarkAllReadResponseDto'
+      security: *a31
+      summary: 'Mark every unread row as read. Returns { marked: N }. Idempotent
+        (second call returns 0).'
+      tags: *a32
+  /api/v1/notifications/{id}/read:
+    post:
+      operationId: NotificationsController_markRead
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Updated notification row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationLogDto'
+        '404':
+          description: NOTIFICATION_NOT_FOUND.
+      security: *a31
+      summary: Mark one notification as read. Owner-gated; 404 on cross-user / missing.
+      tags: *a32
+  /api/v1/notifications/{id}/unread:
+    post:
+      operationId: NotificationsController_markUnread
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Updated notification row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationLogDto'
+        '404':
+          description: NOTIFICATION_NOT_FOUND.
+      security: *a31
+      summary: Mark one notification as UNread (symmetric to /read). Owner-gated.
+      tags: *a32
+  /api/v1/notifications/{id}:
+    delete:
+      operationId: NotificationsController_remove
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Deleted.
+        '404':
+          description: NOTIFICATION_NOT_FOUND.
+      security: *a31
+      summary: Hard-delete a notification (inbox prune). Owner-gated; 404 on
+        cross-user / missing.
+      tags: *a32
+  /api/v1/admin/places:
+    post:
+      operationId: AdminController_create
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminCreatePlaceRequestDto'
+      responses:
+        '201':
+          description: Created place row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminPlaceDto'
+      security: &a33
+        - bearer: []
+      summary: Curate a new Place into the canonical catalog. Admin-only.
+      tags: &a34
+        - admin
+  /api/v1/admin/places/{id}:
+    delete:
+      operationId: AdminController_remove
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Deleted.
+        '404':
+          description: PLACE_NOT_FOUND.
+      security: *a33
+      summary: Remove a Place from the canonical catalog. Admin-only.
       tags: *a34
   /api/v1/trips/{tripId}/votes:
     post:
@@ -3589,6 +3612,201 @@ components:
             $ref: '#/components/schemas/DayRouteCoordDto'
       required:
         - coords
+    NearMeNowCenterDto:
+      type: object
+      properties:
+        lat:
+          type: number
+          description: Caller latitude.
+          minimum: -90
+          maximum: 90
+        lng:
+          type: number
+          description: Caller longitude.
+          minimum: -180
+          maximum: 180
+      required:
+        - lat
+        - lng
+    NearMeNowRequestDto:
+      type: object
+      properties:
+        center:
+          $ref: '#/components/schemas/NearMeNowCenterDto'
+        radiusKm:
+          type: number
+          minimum: 0.5
+          maximum: 10
+          description: Walking radius in km. Defaults to 3, caps at 10.
+      required:
+        - center
+    NearMeRouteLegDto:
+      type: object
+      properties:
+        mode:
+          type: string
+          description: Transport mode (walk / public_transit / taxi / ...).
+        distanceMeters:
+          type: number
+          description: Straight-line travel distance, metres.
+        durationSeconds:
+          type: number
+          description: Estimated travel duration, seconds.
+        estimatedCostUsd:
+          type: object
+          nullable: true
+          description: Provider-derived USD estimate (null when free).
+        confidence:
+          type: string
+          description: 'Provider confidence: high / medium / low.'
+      required:
+        - mode
+        - distanceMeters
+        - durationSeconds
+        - estimatedCostUsd
+        - confidence
+    NearMePlaceDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        name:
+          type: string
+          description: Place name.
+        category:
+          type: string
+          description: Category ("cafe", "park", ...).
+        lat:
+          type: number
+          description: Latitude.
+        lng:
+          type: number
+          description: Longitude.
+        distanceMeters:
+          type: number
+          description: Straight-line distance from caller, metres.
+        routes:
+          description: Walking-preferred routes from caller to this place. Empty array
+            when routing fails.
+          type: array
+          items:
+            $ref: '#/components/schemas/NearMeRouteLegDto'
+      required:
+        - id
+        - name
+        - category
+        - lat
+        - lng
+        - distanceMeters
+        - routes
+    NearMeWeatherDayDto:
+      type: object
+      properties:
+        date:
+          type: string
+          description: ISO date (forecast timezone).
+          format: date
+        maxTempC:
+          type: number
+          description: Forecast high in °C.
+        minTempC:
+          type: number
+          description: Forecast low in °C.
+        weatherCode:
+          type: number
+          description: WMO weather code (Open-Meteo).
+        precipitationProbabilityPercent:
+          type: object
+          nullable: true
+          description: 0–100 probability of precipitation, or null when unavailable.
+      required:
+        - date
+        - maxTempC
+        - minTempC
+        - weatherCode
+        - precipitationProbabilityPercent
+    NearMeWeatherDto:
+      type: object
+      properties:
+        lat:
+          type: number
+          description: Latitude (caller).
+        lng:
+          type: number
+          description: Longitude (caller).
+        timezone:
+          type: string
+          description: IANA timezone resolved by the weather provider.
+        days:
+          description: Daily forecast (1 day for near-me).
+          type: array
+          items:
+            $ref: '#/components/schemas/NearMeWeatherDayDto'
+      required:
+        - lat
+        - lng
+        - timezone
+        - days
+    NearMeSafetyBreakdownDto:
+      type: object
+      properties:
+        crimes:
+          type: number
+          description: Total crime incidents in the radius/time window.
+        scams:
+          type: number
+          description: Total scam reports in the radius.
+      required:
+        - crimes
+        - scams
+    NearMeSafetyDto:
+      type: object
+      properties:
+        score:
+          type: number
+          minimum: 0
+          maximum: 100
+        grade:
+          type: string
+          description: A/B/C/D/F letter grade.
+        breakdown:
+          $ref: '#/components/schemas/NearMeSafetyBreakdownDto'
+        radiusKm:
+          type: number
+          description: Radius the score covers, km.
+      required:
+        - score
+        - grade
+        - breakdown
+        - radiusKm
+    NearMeNowResponseDto:
+      type: object
+      properties:
+        center:
+          $ref: '#/components/schemas/NearMeNowCenterDto'
+        radiusKm:
+          type: number
+          description: Search radius (after clamp), km.
+        places:
+          description: Up to 5 nearest places.
+          type: array
+          items:
+            $ref: '#/components/schemas/NearMePlaceDto'
+        weather:
+          $ref: '#/components/schemas/NearMeWeatherDto'
+        safety:
+          $ref: '#/components/schemas/NearMeSafetyDto'
+        fetchedAt:
+          type: string
+          format: date-time
+      required:
+        - center
+        - radiusKm
+        - places
+        - weather
+        - safety
+        - fetchedAt
     PlacesCoordinatesDto:
       type: object
       properties:
@@ -4116,6 +4334,392 @@ components:
             $ref: '#/components/schemas/RouteLegDto'
       required:
         - routes
+    CoordinatesDto:
+      type: object
+      properties:
+        lat:
+          type: number
+          description: Latitude in decimal degrees, -90..90.
+        lng:
+          type: number
+          description: Longitude in decimal degrees, -180..180.
+      required:
+        - lat
+        - lng
+    ReportScamRequestDto:
+      type: object
+      properties:
+        category:
+          type: string
+          description: Scam category slug (e.g. "taxi-overcharge", "fake-temple").
+        severity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+            - critical
+        center:
+          description: Where the scam was witnessed.
+          allOf:
+            - $ref: '#/components/schemas/CoordinatesDto'
+        description:
+          type: string
+          description: Free-form prose description of the scam.
+        evidenceUrls:
+          description: Optional URLs of evidence (photos uploaded to media bucket).
+          type: array
+          items:
+            type: string
+      required:
+        - category
+        - severity
+        - center
+        - description
+    ScamReportDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        reporterId:
+          type: string
+          format: cuid
+        category:
+          type: string
+        severity:
+          type: string
+          enum: &a46
+            - low
+            - medium
+            - high
+            - critical
+        description:
+          type: string
+        evidenceUrls:
+          type: array
+          items:
+            type: string
+        verified:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - reporterId
+        - category
+        - severity
+        - description
+        - evidenceUrls
+        - verified
+        - createdAt
+        - updatedAt
+    FindNearbyScamsRequestDto:
+      type: object
+      properties:
+        center:
+          $ref: '#/components/schemas/CoordinatesDto'
+        radiusKm:
+          type: number
+          description: Search radius in kilometers.
+        category:
+          type: string
+          description: Filter by category slug.
+        minSeverity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+            - critical
+        verifiedOnly:
+          type: boolean
+          description: Only return verified reports.
+        limit:
+          type: number
+          description: Cap on result count (default 50).
+      required:
+        - center
+        - radiusKm
+    ScamReportWithDistanceDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        reporterId:
+          type: string
+          format: cuid
+        category:
+          type: string
+        severity:
+          type: string
+          enum: *a46
+        description:
+          type: string
+        evidenceUrls:
+          type: array
+          items:
+            type: string
+        verified:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        distanceMeters:
+          type: number
+          description: Distance in meters from the search center.
+      required:
+        - id
+        - reporterId
+        - category
+        - severity
+        - description
+        - evidenceUrls
+        - verified
+        - createdAt
+        - updatedAt
+        - distanceMeters
+    FindNearbyScamsResponseDto:
+      type: object
+      properties:
+        reports:
+          description: Matching reports, nearest-first.
+          type: array
+          items:
+            $ref: '#/components/schemas/ScamReportWithDistanceDto'
+      required:
+        - reports
+    TriggerSosRequestDto:
+      type: object
+      properties:
+        trigger:
+          type: string
+          enum:
+            - panic
+            - medical
+            - theft
+            - lost
+            - other
+        center:
+          $ref: '#/components/schemas/CoordinatesDto'
+      required:
+        - trigger
+        - center
+    SosEventDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        userId:
+          type: string
+          format: cuid
+        trigger:
+          type: string
+          enum:
+            - panic
+            - medical
+            - theft
+            - lost
+            - other
+        resolvedAt:
+          type: object
+          nullable: true
+          format: date-time
+        resolutionNote:
+          type: object
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - userId
+        - trigger
+        - resolvedAt
+        - resolutionNote
+        - createdAt
+    ListSosEventsResponseDto:
+      type: object
+      properties:
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/SosEventDto'
+      required:
+        - events
+    ResolveSosRequestDto:
+      type: object
+      properties:
+        note:
+          type: object
+          nullable: true
+          description: Free-form note (max 500 chars).
+    FindNearbyCrimesRequestDto:
+      type: object
+      properties:
+        center:
+          $ref: '#/components/schemas/CoordinatesDto'
+        radiusKm:
+          type: number
+        category:
+          type: string
+        minSeverity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+            - critical
+        sinceDays:
+          type: number
+          description: Restrict to incidents reported in the last N days.
+        limit:
+          type: number
+      required:
+        - center
+        - radiusKm
+    CrimeIncidentDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        source:
+          type: string
+          description: Source feed key.
+        category:
+          type: string
+        severity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+            - critical
+        reportedAt:
+          type: string
+          format: date-time
+        distanceMeters:
+          type: number
+      required:
+        - id
+        - source
+        - category
+        - severity
+        - reportedAt
+        - distanceMeters
+    FindNearbyCrimesResponseDto:
+      type: object
+      properties:
+        incidents:
+          type: array
+          items:
+            $ref: '#/components/schemas/CrimeIncidentDto'
+      required:
+        - incidents
+    SafetyScoreRequestDto:
+      type: object
+      properties:
+        center:
+          $ref: '#/components/schemas/CoordinatesDto'
+        radiusKm:
+          type: number
+          description: Search radius in km (default depends on use-case).
+      required:
+        - center
+    SafetyScoreBreakdownDto:
+      type: object
+      properties:
+        crimes:
+          type: number
+        scams:
+          type: number
+        byCrimeSeverity:
+          type: object
+          additionalProperties:
+            type: number
+          description: Crime counts bucketed by severity.
+        byScamSeverity:
+          type: object
+          additionalProperties:
+            type: number
+          description: Scam counts bucketed by severity.
+      required:
+        - crimes
+        - scams
+        - byCrimeSeverity
+        - byScamSeverity
+    SafetyScoreResponseDto:
+      type: object
+      properties:
+        lat:
+          type: number
+        lng:
+          type: number
+        radiusKm:
+          type: number
+        score:
+          type: number
+          description: Composite score 0..100 (higher = safer).
+        grade:
+          type: string
+          enum:
+            - A
+            - B
+            - C
+            - D
+            - F
+          description: Letter grade derived from score.
+        breakdown:
+          $ref: '#/components/schemas/SafetyScoreBreakdownDto'
+        computedAt:
+          type: string
+          format: date-time
+      required:
+        - lat
+        - lng
+        - radiusKm
+        - score
+        - grade
+        - breakdown
+        - computedAt
+    AdminListScamReportsResponseDto:
+      type: object
+      properties:
+        reports:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScamReportDto'
+      required:
+        - reports
+    AdminListSosEventsResponseDto:
+      type: object
+      properties:
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/SosEventDto'
+        total:
+          type: number
+      required:
+        - events
+        - total
+    AdminResolveSosRequestDto:
+      type: object
+      properties:
+        note:
+          type: object
+          nullable: true
+          description: Optional admin resolution note.
     CreateUploadUrlRequestDto:
       type: object
       properties:
@@ -4606,392 +5210,6 @@ components:
         - relaxationScore
         - createdAt
         - updatedAt
-    CoordinatesDto:
-      type: object
-      properties:
-        lat:
-          type: number
-          description: Latitude in decimal degrees, -90..90.
-        lng:
-          type: number
-          description: Longitude in decimal degrees, -180..180.
-      required:
-        - lat
-        - lng
-    ReportScamRequestDto:
-      type: object
-      properties:
-        category:
-          type: string
-          description: Scam category slug (e.g. "taxi-overcharge", "fake-temple").
-        severity:
-          type: string
-          enum:
-            - low
-            - medium
-            - high
-            - critical
-        center:
-          description: Where the scam was witnessed.
-          allOf:
-            - $ref: '#/components/schemas/CoordinatesDto'
-        description:
-          type: string
-          description: Free-form prose description of the scam.
-        evidenceUrls:
-          description: Optional URLs of evidence (photos uploaded to media bucket).
-          type: array
-          items:
-            type: string
-      required:
-        - category
-        - severity
-        - center
-        - description
-    ScamReportDto:
-      type: object
-      properties:
-        id:
-          type: string
-          format: cuid
-        reporterId:
-          type: string
-          format: cuid
-        category:
-          type: string
-        severity:
-          type: string
-          enum: &a46
-            - low
-            - medium
-            - high
-            - critical
-        description:
-          type: string
-        evidenceUrls:
-          type: array
-          items:
-            type: string
-        verified:
-          type: boolean
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-      required:
-        - id
-        - reporterId
-        - category
-        - severity
-        - description
-        - evidenceUrls
-        - verified
-        - createdAt
-        - updatedAt
-    FindNearbyScamsRequestDto:
-      type: object
-      properties:
-        center:
-          $ref: '#/components/schemas/CoordinatesDto'
-        radiusKm:
-          type: number
-          description: Search radius in kilometers.
-        category:
-          type: string
-          description: Filter by category slug.
-        minSeverity:
-          type: string
-          enum:
-            - low
-            - medium
-            - high
-            - critical
-        verifiedOnly:
-          type: boolean
-          description: Only return verified reports.
-        limit:
-          type: number
-          description: Cap on result count (default 50).
-      required:
-        - center
-        - radiusKm
-    ScamReportWithDistanceDto:
-      type: object
-      properties:
-        id:
-          type: string
-          format: cuid
-        reporterId:
-          type: string
-          format: cuid
-        category:
-          type: string
-        severity:
-          type: string
-          enum: *a46
-        description:
-          type: string
-        evidenceUrls:
-          type: array
-          items:
-            type: string
-        verified:
-          type: boolean
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-        distanceMeters:
-          type: number
-          description: Distance in meters from the search center.
-      required:
-        - id
-        - reporterId
-        - category
-        - severity
-        - description
-        - evidenceUrls
-        - verified
-        - createdAt
-        - updatedAt
-        - distanceMeters
-    FindNearbyScamsResponseDto:
-      type: object
-      properties:
-        reports:
-          description: Matching reports, nearest-first.
-          type: array
-          items:
-            $ref: '#/components/schemas/ScamReportWithDistanceDto'
-      required:
-        - reports
-    TriggerSosRequestDto:
-      type: object
-      properties:
-        trigger:
-          type: string
-          enum:
-            - panic
-            - medical
-            - theft
-            - lost
-            - other
-        center:
-          $ref: '#/components/schemas/CoordinatesDto'
-      required:
-        - trigger
-        - center
-    SosEventDto:
-      type: object
-      properties:
-        id:
-          type: string
-          format: cuid
-        userId:
-          type: string
-          format: cuid
-        trigger:
-          type: string
-          enum:
-            - panic
-            - medical
-            - theft
-            - lost
-            - other
-        resolvedAt:
-          type: object
-          nullable: true
-          format: date-time
-        resolutionNote:
-          type: object
-          nullable: true
-        createdAt:
-          type: string
-          format: date-time
-      required:
-        - id
-        - userId
-        - trigger
-        - resolvedAt
-        - resolutionNote
-        - createdAt
-    ListSosEventsResponseDto:
-      type: object
-      properties:
-        events:
-          type: array
-          items:
-            $ref: '#/components/schemas/SosEventDto'
-      required:
-        - events
-    ResolveSosRequestDto:
-      type: object
-      properties:
-        note:
-          type: object
-          nullable: true
-          description: Free-form note (max 500 chars).
-    FindNearbyCrimesRequestDto:
-      type: object
-      properties:
-        center:
-          $ref: '#/components/schemas/CoordinatesDto'
-        radiusKm:
-          type: number
-        category:
-          type: string
-        minSeverity:
-          type: string
-          enum:
-            - low
-            - medium
-            - high
-            - critical
-        sinceDays:
-          type: number
-          description: Restrict to incidents reported in the last N days.
-        limit:
-          type: number
-      required:
-        - center
-        - radiusKm
-    CrimeIncidentDto:
-      type: object
-      properties:
-        id:
-          type: string
-          format: cuid
-        source:
-          type: string
-          description: Source feed key.
-        category:
-          type: string
-        severity:
-          type: string
-          enum:
-            - low
-            - medium
-            - high
-            - critical
-        reportedAt:
-          type: string
-          format: date-time
-        distanceMeters:
-          type: number
-      required:
-        - id
-        - source
-        - category
-        - severity
-        - reportedAt
-        - distanceMeters
-    FindNearbyCrimesResponseDto:
-      type: object
-      properties:
-        incidents:
-          type: array
-          items:
-            $ref: '#/components/schemas/CrimeIncidentDto'
-      required:
-        - incidents
-    SafetyScoreRequestDto:
-      type: object
-      properties:
-        center:
-          $ref: '#/components/schemas/CoordinatesDto'
-        radiusKm:
-          type: number
-          description: Search radius in km (default depends on use-case).
-      required:
-        - center
-    SafetyScoreBreakdownDto:
-      type: object
-      properties:
-        crimes:
-          type: number
-        scams:
-          type: number
-        byCrimeSeverity:
-          type: object
-          additionalProperties:
-            type: number
-          description: Crime counts bucketed by severity.
-        byScamSeverity:
-          type: object
-          additionalProperties:
-            type: number
-          description: Scam counts bucketed by severity.
-      required:
-        - crimes
-        - scams
-        - byCrimeSeverity
-        - byScamSeverity
-    SafetyScoreResponseDto:
-      type: object
-      properties:
-        lat:
-          type: number
-        lng:
-          type: number
-        radiusKm:
-          type: number
-        score:
-          type: number
-          description: Composite score 0..100 (higher = safer).
-        grade:
-          type: string
-          enum:
-            - A
-            - B
-            - C
-            - D
-            - F
-          description: Letter grade derived from score.
-        breakdown:
-          $ref: '#/components/schemas/SafetyScoreBreakdownDto'
-        computedAt:
-          type: string
-          format: date-time
-      required:
-        - lat
-        - lng
-        - radiusKm
-        - score
-        - grade
-        - breakdown
-        - computedAt
-    AdminListScamReportsResponseDto:
-      type: object
-      properties:
-        reports:
-          type: array
-          items:
-            $ref: '#/components/schemas/ScamReportDto'
-      required:
-        - reports
-    AdminListSosEventsResponseDto:
-      type: object
-      properties:
-        events:
-          type: array
-          items:
-            $ref: '#/components/schemas/SosEventDto'
-        total:
-          type: number
-      required:
-        - events
-        - total
-    AdminResolveSosRequestDto:
-      type: object
-      properties:
-        note:
-          type: object
-          nullable: true
-          description: Optional admin resolution note.
     CastVoteRequestDto:
       type: object
       properties:

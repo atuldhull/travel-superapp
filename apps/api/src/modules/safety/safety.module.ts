@@ -66,6 +66,11 @@ import { SosController } from './interface/sos.controller';
     AdminListSosEventsUseCase,
     AdminResolveSosUseCase,
   ],
-  exports: [SCAM_REPORT_REPOSITORY, SOS_EVENT_REPOSITORY, CRIME_INCIDENT_REPOSITORY],
+  exports: [
+    SCAM_REPORT_REPOSITORY,
+    SOS_EVENT_REPOSITORY,
+    CRIME_INCIDENT_REPOSITORY,
+    GetSafetyScoreUseCase,
+  ],
 })
 export class SafetyModule {}

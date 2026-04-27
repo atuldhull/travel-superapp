@@ -46,6 +46,7 @@ import { PlacesController } from './interface/places.controller';
     PLACE_PROVIDER,
     FederatedSearchPlacesUseCase,
     IngestFederatedResultsUseCase,
+    SearchPlacesUseCase,
   ],
 })
 export class PlacesModule {}
