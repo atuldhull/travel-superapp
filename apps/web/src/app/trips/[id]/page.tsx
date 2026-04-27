@@ -24,6 +24,7 @@ import {
   getTripControllerListQueryKey,
   useMediaControllerListByTrip,
   useTripControllerBuildItinerary,
+  useTripControllerDuplicate,
   useTripControllerGetItinerary,
   useTripControllerGetOne,
   useTripControllerPlanWithAi,
@@ -49,6 +50,8 @@ import { Card, CardHeader, CardSubtitle, CardTitle } from '../../../components/u
 import { Field } from '../../../components/ui/input';
 import { Skeleton } from '../../../components/ui/skeleton';
 import { MediaUploader } from '../../../components/media-uploader';
+import { ExportPdfButton } from '../../../components/trip/export-pdf-button';
+import { EmailItineraryButton } from '../../../components/trip/email-itinerary-button';
 import { OpenOnMobileButton } from '../../../components/trip/open-on-mobile-button';
 import { PlaceSuggestionPicker } from '../../../components/trip/place-suggestion-picker';
 import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
@@ -91,6 +94,24 @@ export default function TripDetailPage() {
       onError: (err: unknown) => {
         const e = err as ApiError;
         setErrorMsg(`${e.code ?? `HTTP_${e.status ?? '???'}`} — ${e.message ?? 'Update failed.'}`);
+      },
+    },
+  });
+
+  const duplicateMutation = useTripControllerDuplicate({
+    mutation: {
+      onSuccess: async (response: { data?: unknown }) => {
+        const newTrip = response.data as TripDto;
+        await queryClient.invalidateQueries({
+          queryKey: getTripControllerListQueryKey({ limit: '20' }),
+        });
+        router.push(`/trips/${newTrip.id}`);
+      },
+      onError: (err: unknown) => {
+        const e = err as ApiError;
+        setErrorMsg(
+          `${e.code ?? `HTTP_${e.status ?? '???'}`} — ${e.message ?? 'Duplicate failed.'}`,
+        );
       },
     },
   });
@@ -180,6 +201,12 @@ export default function TripDetailPage() {
             setConfirmDelete(true);
             setErrorMsg(null);
           }}
+          onDuplicate={() => {
+            setErrorMsg(null);
+            duplicateMutation.mutate({ id });
+          }}
+          isDuplicating={duplicateMutation.isPending}
+          duplicateErrorMsg={errorMsg}
         />
       )}
       <ItinerarySection tripId={id} enabled={token !== null && !editing} />
@@ -229,9 +256,19 @@ interface ReadViewProps {
   readonly trip: TripDto;
   readonly onEdit: () => void;
   readonly onAskDelete: () => void;
+  readonly onDuplicate: () => void;
+  readonly isDuplicating: boolean;
+  readonly duplicateErrorMsg: string | null;
 }
 
-function ReadView({ trip, onEdit, onAskDelete }: ReadViewProps) {
+function ReadView({
+  trip,
+  onEdit,
+  onAskDelete,
+  onDuplicate,
+  isDuplicating,
+  duplicateErrorMsg,
+}: ReadViewProps) {
   const statusVariant: 'neutral' | 'brand' = trip.status === 'draft' ? 'neutral' : 'brand';
   return (
     <Card>
@@ -251,7 +288,18 @@ function ReadView({ trip, onEdit, onAskDelete }: ReadViewProps) {
             >
               Overview
             </Link>
+            <Link
+              href={`/trips/${trip.id}/expenses` as never}
+              className="inline-flex items-center gap-1 rounded-md border border-brand/30 px-3 py-1.5 text-sm font-medium text-brand transition hover:bg-brand/5"
+            >
+              Expenses
+            </Link>
             <OpenOnMobileButton tripId={trip.id} />
+            <ExportPdfButton tripId={trip.id} tripTitle={trip.title} />
+            <EmailItineraryButton tripId={trip.id} tripTitle={trip.title} />
+            <Button variant="outline" size="sm" onClick={onDuplicate} disabled={isDuplicating}>
+              {isDuplicating ? 'Duplicating…' : 'Duplicate'}
+            </Button>
             <Button variant="outline" size="sm" onClick={onEdit}>
               Edit
             </Button>
@@ -260,6 +308,11 @@ function ReadView({ trip, onEdit, onAskDelete }: ReadViewProps) {
             </Button>
           </div>
         </div>
+        {duplicateErrorMsg ? (
+          <p className="mt-2 rounded-md border border-danger/30 bg-danger/5 px-3 py-2 text-xs text-danger">
+            {duplicateErrorMsg}
+          </p>
+        ) : null}
       </CardHeader>
       <p className="text-sm text-muted">
         {trip.startsOn && trip.endsOn ? (

@@ -29,6 +29,11 @@ import {
 import { Button } from '../../../components/ui/button';
 import { Field } from '../../../components/ui/input';
 import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
+import {
+  listFrequentLocations,
+  recordLocation,
+  type FrequentLocation,
+} from '../../../lib/frequent-locations';
 import { useEffect } from 'react';
 
 // MapPicker is client-only (Leaflet touches `window`). next/dynamic
@@ -105,6 +110,14 @@ export default function NewTripPage() {
   const [startsOn, setStartsOn] = useState('');
   const [endsOn, setEndsOn] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [frequent, setFrequent] = useState<readonly FrequentLocation[]>([]);
+  const [titleFocused, setTitleFocused] = useState(false);
+
+  // Hydrate the frequent-locations memory client-side. localStorage
+  // touches `window` so we can't read it during prerender.
+  useEffect(() => {
+    setFrequent(listFrequentLocations(''));
+  }, []);
 
   function applyDurationPreset(preset: DurationPresetKey) {
     const { startsOn: s, endsOn: e } = computeDurationPreset(preset);
@@ -112,10 +125,33 @@ export default function NewTripPage() {
     setEndsOn(e);
   }
 
+  function applyFrequentLocation(loc: FrequentLocation) {
+    setTitle(loc.title);
+    setLat(loc.lat.toFixed(6));
+    setLng(loc.lng.toFixed(6));
+    setRadiusKm(String(loc.radiusKm));
+    setTitleFocused(false);
+  }
+
+  // Filter the suggestion list by the typed title (case-insensitive
+  // substring). Empty title shows the full top-5.
+  const titleSuggestions = title.trim()
+    ? frequent.filter((e) => e.title.toLowerCase().includes(title.trim().toLowerCase()))
+    : frequent;
+
   const createMutation = useTripControllerCreate({
     mutation: {
       onSuccess: async (response: { data?: unknown }) => {
         const trip = response.data as TripDto;
+        // Persist the destination so the next /trips/new visit
+        // autocompletes. Validation here mirrors onSubmit's parsing
+        // — the mutation only fires when those values are finite.
+        recordLocation({
+          title,
+          lat: Number(lat),
+          lng: Number(lng),
+          radiusKm: Number(radiusKm),
+        });
         // Invalidate the trips list so /trips re-fetches on arrival.
         await queryClient.invalidateQueries({
           queryKey: getTripControllerListQueryKey({ limit: '20' }),
@@ -176,14 +212,49 @@ export default function NewTripPage() {
       </p>
       <h1 className="text-3xl font-bold tracking-tight">New trip</h1>
       <form onSubmit={onSubmit} className="space-y-4">
-        <Field
-          label="Title"
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          required
-          help="1..120 characters."
-        />
+        <div className="relative">
+          <Field
+            label="Title"
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            onFocus={() => setTitleFocused(true)}
+            onBlur={() => {
+              // Delay so a click on the dropdown lands before it unmounts.
+              window.setTimeout(() => setTitleFocused(false), 120);
+            }}
+            required
+            help="1..120 characters. Recent destinations autocomplete below."
+            autoComplete="off"
+          />
+          {titleFocused && titleSuggestions.length > 0 ? (
+            <ul
+              role="listbox"
+              aria-label="Recent destinations"
+              className="absolute left-0 right-0 z-10 mt-1 max-h-60 overflow-auto rounded-md border border-muted/30 bg-background shadow-lg"
+            >
+              {titleSuggestions.map((loc) => (
+                <li key={loc.title}>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      // Prevent the input's blur from firing before our
+                      // click handler — otherwise the dropdown unmounts.
+                      e.preventDefault();
+                      applyFrequentLocation(loc);
+                    }}
+                    className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-muted/10"
+                  >
+                    <span className="truncate font-medium">{loc.title}</span>
+                    <span className="font-mono text-[10px] text-muted">
+                      {loc.lat.toFixed(2)}, {loc.lng.toFixed(2)} · {loc.radiusKm}km
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
         <div className="space-y-2">
           <span className="block text-sm font-medium">Center</span>
           <MapPicker

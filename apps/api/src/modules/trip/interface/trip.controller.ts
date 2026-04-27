@@ -46,6 +46,7 @@ import { CreateTripShareUseCase } from '../application/create-trip-share.use-cas
 import { ListTripSharesUseCase } from '../application/list-trip-shares.use-case';
 import { RevokeTripShareUseCase } from '../application/revoke-trip-share.use-case';
 import { DeleteTripUseCase } from '../application/delete-trip.use-case';
+import { DuplicateTripUseCase } from '../application/duplicate-trip.use-case';
 import { GetTripEateriesUseCase } from '../application/get-trip-eateries.use-case';
 import { GetTripEventsUseCase } from '../application/get-trip-events.use-case';
 import { GetTripOverviewUseCase, type Section } from '../application/get-trip-overview.use-case';
@@ -144,6 +145,7 @@ export class TripController {
     private readonly getTrip: GetTripUseCase,
     private readonly updateTrip: UpdateTripUseCase,
     private readonly deleteTrip: DeleteTripUseCase,
+    private readonly duplicateTrip: DuplicateTripUseCase,
     private readonly generateItinerary: GenerateItineraryStubUseCase,
     private readonly generatePlanWithAi: GeneratePlanWithAiUseCase,
     private readonly generateSamplePlan: GenerateSamplePlanUseCase,
@@ -259,6 +261,28 @@ export class TripController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string): Promise<void> {
     await this.deleteTrip.execute(id, user.sub);
+  }
+
+  /**
+   * Deep-copy a trip the caller owns. New trip is owned by the
+   * caller, lands as `draft`, gets a "(copy)" title suffix, preserves
+   * radius + dates + itinerary days/items. Used by the V.UX.5
+   * frequent-business-traveler flow.
+   */
+  @ApiOperation({
+    summary:
+      'Duplicate a trip the caller owns. Deep-copies title (+" (copy)"), center, radius, dates, itinerary days/items. New trip is `draft`.',
+  })
+  @ApiResponse({ status: 201, description: 'Newly-created duplicate trip.', type: TripResponseDto })
+  @ApiResponse({ status: 404, description: 'TRIP_NOT_FOUND.' })
+  @Post(':id/duplicate')
+  @HttpCode(HttpStatus.CREATED)
+  async duplicate(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ): Promise<TripDto> {
+    const trip = await this.duplicateTrip.execute({ tripId: id, userId: user.sub });
+    return toDto(trip);
   }
 
   /**

@@ -29,6 +29,7 @@ import { CreateTripDraftUseCase } from './application/create-trip-draft.use-case
 import { CreateTripShareUseCase } from './application/create-trip-share.use-case';
 import { ListTripSharesUseCase } from './application/list-trip-shares.use-case';
 import { DeleteTripUseCase } from './application/delete-trip.use-case';
+import { DuplicateTripUseCase } from './application/duplicate-trip.use-case';
 import { GenerateItineraryStubUseCase } from './application/generate-itinerary-stub.use-case';
 import { SeedSampleTripUseCase } from './application/seed-sample-trip.use-case';
 import { GeneratePlanWithAiUseCase } from './application/generate-plan-with-ai.use-case';
@@ -121,6 +122,7 @@ import { TripController } from './interface/trip.controller';
     GetTripTransportLegsUseCase,
     GetTripOverviewUseCase,
     SuggestPlacesForTripUseCase,
+    DuplicateTripUseCase,
     TripOverviewCache,
     AdminListTripsUseCase,
     AdminArchiveTripUseCase,
