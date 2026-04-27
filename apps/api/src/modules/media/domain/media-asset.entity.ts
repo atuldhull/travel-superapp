@@ -21,9 +21,14 @@ export interface MediaAsset {
   readonly id: string;
   readonly ownerId: string;
   readonly tripId: string | null;
+  readonly memoryBookId: string | null;
   readonly kind: MediaKind;
   readonly status: MediaStatus;
   readonly s3KeyRaw: string;
   readonly exifStripped: boolean;
+  /** V.UX.11 — per-asset narrative for memory-book story mode. */
+  readonly caption: string | null;
+  /** V.UX.11 — sort order within the memory book (0-based). */
+  readonly position: number;
   readonly createdAt: Date;
 }

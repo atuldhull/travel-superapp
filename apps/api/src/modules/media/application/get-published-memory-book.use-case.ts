@@ -18,13 +18,21 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { NotFoundError } from '@app/errors';
 import type { MemoryBookWithAssets } from '../domain/memory-book.entity';
-import { MEMORY_BOOK_REPOSITORY, type MemoryBookRepository } from './ports/memory-book.repository';
+import {
+  MEMORY_BOOK_REPOSITORY,
+  type MemoryBookAssetSummary,
+  type MemoryBookRepository,
+} from './ports/memory-book.repository';
+
+export interface PublishedMemoryBookWithAssets extends MemoryBookWithAssets {
+  readonly assets: readonly MemoryBookAssetSummary[];
+}
 
 @Injectable()
 export class GetPublishedMemoryBookUseCase {
   constructor(@Inject(MEMORY_BOOK_REPOSITORY) private readonly repo: MemoryBookRepository) {}
 
-  async execute(id: string): Promise<MemoryBookWithAssets> {
+  async execute(id: string): Promise<PublishedMemoryBookWithAssets> {
     const book = await this.repo.findPublishedById(id);
     if (!book) {
       throw new NotFoundError(
@@ -33,10 +41,8 @@ export class GetPublishedMemoryBookUseCase {
         'MEMORY_BOOK_NOT_FOUND',
       );
     }
-    // Owner-scoped asset listing reuses the existing repo method —
-    // safe because the public-read gate already passed (the book
-    // is published; its asset list is fair game).
-    const assetIds = await this.repo.listAssetIdsForOwner(id, book.ownerId);
-    return { book, assetIds };
+    const assets = await this.repo.listPublishedAssetSummariesForBook(id);
+    const assetIds = assets.map((a) => a.id);
+    return { book, assetIds, assets };
   }
 }

@@ -32,6 +32,7 @@ import type {
   MemoryBookWithAssetsResponseDto,
   PublicDownloadUrlResponseDto,
   PublicMemoryBookWithAssetsResponseDto,
+  UpdateAssetCaptionRequestDto,
   UpdateMemoryBookRequestDto,
 } from '../../schemas';
 
@@ -2219,6 +2220,119 @@ export const useMemoryBookControllerUnpublish = <TError = void, TContext = unkno
   TContext
 > => {
   const mutationOptions = getMemoryBookControllerUnpublishMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Set or clear an asset's caption (story-mode narrative). Owner-only.
+ */
+export type memoryBookControllerUpdateAssetCaptionResponse200 = {
+  data: MediaAssetDto;
+  status: 200;
+};
+
+export type memoryBookControllerUpdateAssetCaptionResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type memoryBookControllerUpdateAssetCaptionResponseSuccess =
+  memoryBookControllerUpdateAssetCaptionResponse200 & {
+    headers: Headers;
+  };
+export type memoryBookControllerUpdateAssetCaptionResponseError =
+  memoryBookControllerUpdateAssetCaptionResponse404 & {
+    headers: Headers;
+  };
+
+export type memoryBookControllerUpdateAssetCaptionResponse =
+  | memoryBookControllerUpdateAssetCaptionResponseSuccess
+  | memoryBookControllerUpdateAssetCaptionResponseError;
+
+export const getMemoryBookControllerUpdateAssetCaptionUrl = (id: string, assetId: string) => {
+  return `/api/v1/memory-books/${id}/assets/${assetId}/caption`;
+};
+
+export const memoryBookControllerUpdateAssetCaption = async (
+  id: string,
+  assetId: string,
+  updateAssetCaptionRequestDto: UpdateAssetCaptionRequestDto,
+  options?: RequestInit,
+): Promise<memoryBookControllerUpdateAssetCaptionResponse> => {
+  return apiFetch<memoryBookControllerUpdateAssetCaptionResponse>(
+    getMemoryBookControllerUpdateAssetCaptionUrl(id, assetId),
+    {
+      ...options,
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(updateAssetCaptionRequestDto),
+    },
+  );
+};
+
+export const getMemoryBookControllerUpdateAssetCaptionMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof memoryBookControllerUpdateAssetCaption>>,
+    TError,
+    { id: string; assetId: string; data: UpdateAssetCaptionRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof memoryBookControllerUpdateAssetCaption>>,
+  TError,
+  { id: string; assetId: string; data: UpdateAssetCaptionRequestDto },
+  TContext
+> => {
+  const mutationKey = ['memoryBookControllerUpdateAssetCaption'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof memoryBookControllerUpdateAssetCaption>>,
+    { id: string; assetId: string; data: UpdateAssetCaptionRequestDto }
+  > = (props) => {
+    const { id, assetId, data } = props ?? {};
+
+    return memoryBookControllerUpdateAssetCaption(id, assetId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type MemoryBookControllerUpdateAssetCaptionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof memoryBookControllerUpdateAssetCaption>>
+>;
+export type MemoryBookControllerUpdateAssetCaptionMutationBody = UpdateAssetCaptionRequestDto;
+export type MemoryBookControllerUpdateAssetCaptionMutationError = void;
+
+/**
+ * @summary Set or clear an asset's caption (story-mode narrative). Owner-only.
+ */
+export const useMemoryBookControllerUpdateAssetCaption = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof memoryBookControllerUpdateAssetCaption>>,
+    TError,
+    { id: string; assetId: string; data: UpdateAssetCaptionRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof memoryBookControllerUpdateAssetCaption>>,
+  TError,
+  { id: string; assetId: string; data: UpdateAssetCaptionRequestDto },
+  TContext
+> => {
+  const mutationOptions = getMemoryBookControllerUpdateAssetCaptionMutationOptions(options);
 
   return useMutation(mutationOptions);
 };

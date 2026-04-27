@@ -179,6 +179,9 @@ export type { TripWithRoleResponseDto } from './generated/schemas/tripWithRoleRe
 // V.UX.10: anonymous react + clone shared trip
 export type { HeartSharedTripResponseDto } from './generated/schemas/heartSharedTripResponseDto';
 export type { SharedTripHeartCountResponseDto } from './generated/schemas/sharedTripHeartCountResponseDto';
+// V.UX.11: memory-book asset captions + summaries
+export type { MemoryBookAssetSummaryDto } from './generated/schemas/memoryBookAssetSummaryDto';
+export type { UpdateAssetCaptionRequestDto } from './generated/schemas/updateAssetCaptionRequestDto';
 // V.UX.5: business-traveler — Expense / Balance schemas already
 // exported above (lines 121-126); social hooks barrel re-exported
 // above to surface useExpensesController{Create,List,Balances,Remove}.

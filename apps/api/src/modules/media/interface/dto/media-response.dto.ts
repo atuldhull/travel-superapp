@@ -20,6 +20,13 @@ export class MediaAssetDto {
   })
   declare tripId: string | null;
 
+  @ApiProperty({
+    nullable: true,
+    format: 'cuid',
+    description: 'Memory book the asset is attached to, or null if free-floating.',
+  })
+  declare memoryBookId: string | null;
+
   @ApiProperty({ enum: ['image', 'video'], description: 'Media type discriminator.' })
   declare kind: string;
 
@@ -29,8 +36,30 @@ export class MediaAssetDto {
   })
   declare status: string;
 
+  @ApiProperty({
+    nullable: true,
+    maxLength: 280,
+    description: 'V.UX.11 — owner-authored caption shown in story mode. Null = blank.',
+  })
+  declare caption: string | null;
+
+  @ApiProperty({
+    description: 'V.UX.11 — sort order within the memory book (0-based).',
+  })
+  declare position: number;
+
   @ApiProperty({ format: 'date-time' })
   declare createdAt: string;
+}
+
+/** Body for `PATCH /memory-books/:id/assets/:assetId/caption`. */
+export class UpdateAssetCaptionRequestDto {
+  @ApiProperty({
+    nullable: true,
+    maxLength: 280,
+    description: 'New caption. Null or blank clears the field.',
+  })
+  declare caption: string | null;
 }
 
 export class ListTripMediaResponseDto {

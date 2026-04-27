@@ -157,10 +157,13 @@ function toDomain(row: PrismaMediaAsset): MediaAsset {
     id: row.id,
     ownerId: row.ownerId,
     tripId: row.tripId,
+    memoryBookId: row.memoryBookId,
     kind: row.kind as MediaKind,
     status: row.status as MediaStatus,
     s3KeyRaw: row.s3KeyRaw,
     exifStripped: row.exifStripped,
+    caption: row.caption ?? null,
+    position: row.position,
     createdAt: row.createdAt,
   };
 }

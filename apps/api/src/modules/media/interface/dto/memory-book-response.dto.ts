@@ -48,6 +48,25 @@ export class FeaturedMemoryBooksResponseDto {
   declare books: PublicMemoryBookDto[];
 }
 
+/**
+ * V.UX.11 — slim asset summary returned alongside the book on
+ * read paths. Lets the public viewer + owner editor render
+ * captions inline without N round-trips.
+ */
+export class MemoryBookAssetSummaryDto {
+  @ApiProperty({ format: 'cuid' })
+  declare id: string;
+
+  @ApiProperty({ enum: ['image', 'video'] })
+  declare kind: string;
+
+  @ApiProperty({ nullable: true, maxLength: 280 })
+  declare caption: string | null;
+
+  @ApiProperty({ description: '0-based ordering within the book.' })
+  declare position: number;
+}
+
 export class PublicMemoryBookWithAssetsResponseDto {
   @ApiProperty({ type: PublicMemoryBookDto })
   declare book: PublicMemoryBookDto;
@@ -59,6 +78,12 @@ export class PublicMemoryBookWithAssetsResponseDto {
       'GET /memory-books/public/:id/assets/:assetId/download-url to mint a presigned URL per asset.',
   })
   declare assetIds: string[];
+
+  @ApiProperty({
+    type: [MemoryBookAssetSummaryDto],
+    description: 'V.UX.11 — same assets enriched with caption + position for story mode.',
+  })
+  declare assets: MemoryBookAssetSummaryDto[];
 }
 
 export class PublicDownloadUrlResponseDto {
@@ -130,6 +155,12 @@ export class MemoryBookWithAssetsResponseDto {
     description: 'Asset ids attached to this book (any status).',
   })
   declare assetIds: string[];
+
+  @ApiProperty({
+    type: [MemoryBookAssetSummaryDto],
+    description: 'V.UX.11 — same assets enriched with caption + position.',
+  })
+  declare assets: MemoryBookAssetSummaryDto[];
 }
 
 export class CreateMemoryBookRequestDto {

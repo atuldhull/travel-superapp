@@ -796,12 +796,16 @@ model MediaAsset {
   exifStripped Boolean     @default(false)
   coordinates  Unsupported("geography(Point, 4326)")?
   takenAt      DateTime?
+  // V.UX.11 — per-asset narrative + ordering for memory-book story mode.
+  caption      String?
+  position     Int         @default(0)
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 
   @@index([ownerId, createdAt])
   @@index([tripId, createdAt])
   @@index([status])
+  @@index([memoryBookId, position])
 }
 
 model MemoryBook {

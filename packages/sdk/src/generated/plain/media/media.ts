@@ -19,6 +19,7 @@ import type {
   MemoryBookWithAssetsResponseDto,
   PublicDownloadUrlResponseDto,
   PublicMemoryBookWithAssetsResponseDto,
+  UpdateAssetCaptionRequestDto,
   UpdateMemoryBookRequestDto,
 } from '../../schemas';
 
@@ -649,4 +650,51 @@ export const memoryBookControllerUnpublish = async (
     ...options,
     method: 'POST',
   });
+};
+
+/**
+ * @summary Set or clear an asset's caption (story-mode narrative). Owner-only.
+ */
+export type memoryBookControllerUpdateAssetCaptionResponse200 = {
+  data: MediaAssetDto;
+  status: 200;
+};
+
+export type memoryBookControllerUpdateAssetCaptionResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type memoryBookControllerUpdateAssetCaptionResponseSuccess =
+  memoryBookControllerUpdateAssetCaptionResponse200 & {
+    headers: Headers;
+  };
+export type memoryBookControllerUpdateAssetCaptionResponseError =
+  memoryBookControllerUpdateAssetCaptionResponse404 & {
+    headers: Headers;
+  };
+
+export type memoryBookControllerUpdateAssetCaptionResponse =
+  | memoryBookControllerUpdateAssetCaptionResponseSuccess
+  | memoryBookControllerUpdateAssetCaptionResponseError;
+
+export const getMemoryBookControllerUpdateAssetCaptionUrl = (id: string, assetId: string) => {
+  return `/api/v1/memory-books/${id}/assets/${assetId}/caption`;
+};
+
+export const memoryBookControllerUpdateAssetCaption = async (
+  id: string,
+  assetId: string,
+  updateAssetCaptionRequestDto: UpdateAssetCaptionRequestDto,
+  options?: RequestInit,
+): Promise<memoryBookControllerUpdateAssetCaptionResponse> => {
+  return apiFetch<memoryBookControllerUpdateAssetCaptionResponse>(
+    getMemoryBookControllerUpdateAssetCaptionUrl(id, assetId),
+    {
+      ...options,
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(updateAssetCaptionRequestDto),
+    },
+  );
 };
