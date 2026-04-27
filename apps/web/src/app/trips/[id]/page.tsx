@@ -49,6 +49,8 @@ import { Card, CardHeader, CardSubtitle, CardTitle } from '../../../components/u
 import { Field } from '../../../components/ui/input';
 import { Skeleton } from '../../../components/ui/skeleton';
 import { MediaUploader } from '../../../components/media-uploader';
+import { OpenOnMobileButton } from '../../../components/trip/open-on-mobile-button';
+import { PlaceSuggestionPicker } from '../../../components/trip/place-suggestion-picker';
 import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
 
 interface ApiError extends Error {
@@ -181,6 +183,7 @@ export default function TripDetailPage() {
         />
       )}
       <ItinerarySection tripId={id} enabled={token !== null && !editing} />
+      <PlaceSuggestionPicker tripId={id} enabled={token !== null && !editing} />
       <PlanWithAiSection tripId={id} enabled={token !== null && !editing} />
       <MediaSection tripId={id} enabled={token !== null && !editing} />
       <ShareSection tripId={id} enabled={token !== null && !editing} />
@@ -241,13 +244,14 @@ function ReadView({ trip, onEdit, onAskDelete }: ReadViewProps) {
               {trip.version}
             </CardSubtitle>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Link
               href={`/trips/${trip.id}/overview` as never}
               className="inline-flex items-center gap-1 rounded-md border border-brand/30 px-3 py-1.5 text-sm font-medium text-brand transition hover:bg-brand/5"
             >
               Overview
             </Link>
+            <OpenOnMobileButton tripId={trip.id} />
             <Button variant="outline" size="sm" onClick={onEdit}>
               Edit
             </Button>

@@ -23,6 +23,8 @@ import type {
   ItineraryListResponseDto,
   ListTripsResponseDto,
   SharedTripDto,
+  SuggestPlacesForTripRequestDto,
+  SuggestPlacesForTripResponseDto,
   TripControllerEateriesParams,
   TripControllerEventsParams,
   TripControllerListParams,
@@ -2654,6 +2656,115 @@ export function useTripControllerTransportLegs<
   return query;
 }
 
+/**
+ * @summary Suggest up to 6 ranked places near the trip's center. Optional category filter. Persists candidates to Place.
+ */
+export type tripControllerPlaceSuggestionsResponse200 = {
+  data: SuggestPlacesForTripResponseDto;
+  status: 200;
+};
+
+export type tripControllerPlaceSuggestionsResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type tripControllerPlaceSuggestionsResponseSuccess =
+  tripControllerPlaceSuggestionsResponse200 & {
+    headers: Headers;
+  };
+export type tripControllerPlaceSuggestionsResponseError =
+  tripControllerPlaceSuggestionsResponse404 & {
+    headers: Headers;
+  };
+
+export type tripControllerPlaceSuggestionsResponse =
+  | tripControllerPlaceSuggestionsResponseSuccess
+  | tripControllerPlaceSuggestionsResponseError;
+
+export const getTripControllerPlaceSuggestionsUrl = (id: string) => {
+  return `/api/v1/trips/${id}/place-suggestions`;
+};
+
+export const tripControllerPlaceSuggestions = async (
+  id: string,
+  suggestPlacesForTripRequestDto: SuggestPlacesForTripRequestDto,
+  options?: RequestInit,
+): Promise<tripControllerPlaceSuggestionsResponse> => {
+  return apiFetch<tripControllerPlaceSuggestionsResponse>(
+    getTripControllerPlaceSuggestionsUrl(id),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(suggestPlacesForTripRequestDto),
+    },
+  );
+};
+
+export const getTripControllerPlaceSuggestionsMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof tripControllerPlaceSuggestions>>,
+    TError,
+    { id: string; data: SuggestPlacesForTripRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof tripControllerPlaceSuggestions>>,
+  TError,
+  { id: string; data: SuggestPlacesForTripRequestDto },
+  TContext
+> => {
+  const mutationKey = ['tripControllerPlaceSuggestions'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof tripControllerPlaceSuggestions>>,
+    { id: string; data: SuggestPlacesForTripRequestDto }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return tripControllerPlaceSuggestions(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type TripControllerPlaceSuggestionsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof tripControllerPlaceSuggestions>>
+>;
+export type TripControllerPlaceSuggestionsMutationBody = SuggestPlacesForTripRequestDto;
+export type TripControllerPlaceSuggestionsMutationError = void;
+
+/**
+ * @summary Suggest up to 6 ranked places near the trip's center. Optional category filter. Persists candidates to Place.
+ */
+export const useTripControllerPlaceSuggestions = <TError = void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof tripControllerPlaceSuggestions>>,
+    TError,
+    { id: string; data: SuggestPlacesForTripRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof tripControllerPlaceSuggestions>>,
+  TError,
+  { id: string; data: SuggestPlacesForTripRequestDto },
+  TContext
+> => {
+  const mutationOptions = getTripControllerPlaceSuggestionsMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
 /**
  * @summary Replace items in an itinerary day. Owner OR active TripShare may write.
  */

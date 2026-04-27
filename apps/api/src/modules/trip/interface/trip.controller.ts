@@ -64,6 +64,7 @@ import { GetTripUseCase } from '../application/get-trip.use-case';
 import { ListItineraryUseCase } from '../application/list-itinerary.use-case';
 import { ListTripsUseCase } from '../application/list-trips.use-case';
 import { ResolveTripShareUseCase } from '../application/resolve-trip-share.use-case';
+import { SuggestPlacesForTripUseCase } from '../application/suggest-places-for-trip.use-case';
 import { UpdateDayItemsUseCase } from '../application/update-day-items.use-case';
 import { UpdateTripUseCase } from '../application/update-trip.use-case';
 import type { ItineraryDay } from '../domain/itinerary.entity';
@@ -76,11 +77,13 @@ import {
   CreateTripBodySchema,
   CreateTripShareBodySchema,
   GenerateSamplePlanBodySchema,
+  SuggestPlacesForTripBodySchema,
   UpdateDayItemsBodySchema,
   UpdateTripBodySchema,
   type CreateTripBody,
   type CreateTripShareBody,
   type GenerateSamplePlanBody,
+  type SuggestPlacesForTripBody,
   type UpdateDayItemsBody,
   type UpdateTripBody,
 } from './dto/trip.dto';
@@ -93,6 +96,8 @@ import {
   ItineraryListResponseDto,
   ListTripsResponseDto,
   SharedTripDto as SharedTripResponseDto,
+  SuggestPlacesForTripRequestDto,
+  SuggestPlacesForTripResponseDto,
   TripDto as TripResponseDto,
   TripShareResponseDto,
   UpdateDayItemsRequestDto,
@@ -154,6 +159,7 @@ export class TripController {
     private readonly getTripOverview: GetTripOverviewUseCase,
     private readonly getTripEvents: GetTripEventsUseCase,
     private readonly getTripTransportLegs: GetTripTransportLegsUseCase,
+    private readonly suggestPlacesForTrip: SuggestPlacesForTripUseCase,
     private readonly tripOverviewCache: TripOverviewCache,
   ) {}
 
@@ -664,6 +670,45 @@ export class TripController {
     return { legs };
   }
 
+  /**
+   * Suggest 6 ranked places near the trip's center for the V.UX.4
+   * weekend-traveler picker. Owner-only. Persists each candidate
+   * into the canonical Place catalog (idempotent via sourceKey) so
+   * the returned `placeId`s drop straight into itinerary items.
+   */
+  @ApiOperation({
+    summary:
+      "Suggest up to 6 ranked places near the trip's center. Optional category filter. Persists candidates to Place.",
+  })
+  @ApiBody({ type: SuggestPlacesForTripRequestDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Up to 6 suggested places, nearest first.',
+    type: SuggestPlacesForTripResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'TRIP_NOT_FOUND.' })
+  @Post(':id/place-suggestions')
+  @HttpCode(HttpStatus.OK)
+  async placeSuggestions(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(SuggestPlacesForTripBodySchema)) body: SuggestPlacesForTripBody,
+  ): Promise<{ suggestions: SuggestedPlaceDto[] }> {
+    const suggestions = await this.suggestPlacesForTrip.execute({
+      tripId: id,
+      userId: user.sub,
+      ...(body.category ? { category: body.category } : {}),
+    });
+    return {
+      suggestions: suggestions.map((s) => ({
+        placeId: s.placeId,
+        name: s.name,
+        category: s.category,
+        distanceMeters: s.distanceMeters,
+      })),
+    };
+  }
+
   @ApiOperation({
     summary: 'Replace items in an itinerary day. Owner OR active TripShare may write.',
   })
@@ -720,6 +765,13 @@ interface TripShareDto {
   readonly shareCode: string;
   readonly expiresAt: string | null;
   readonly createdAt: string;
+}
+
+interface SuggestedPlaceDto {
+  readonly placeId: string;
+  readonly name: string;
+  readonly category: string;
+  readonly distanceMeters: number;
 }
 
 interface TripShareOwnerDto {

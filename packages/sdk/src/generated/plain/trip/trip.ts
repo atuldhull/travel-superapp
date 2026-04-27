@@ -10,6 +10,8 @@ import type {
   ItineraryListResponseDto,
   ListTripsResponseDto,
   SharedTripDto,
+  SuggestPlacesForTripRequestDto,
+  SuggestPlacesForTripResponseDto,
   TripControllerEateriesParams,
   TripControllerEventsParams,
   TripControllerListParams,
@@ -692,6 +694,52 @@ export const tripControllerTransportLegs = async (
     ...options,
     method: 'GET',
   });
+};
+
+/**
+ * @summary Suggest up to 6 ranked places near the trip's center. Optional category filter. Persists candidates to Place.
+ */
+export type tripControllerPlaceSuggestionsResponse200 = {
+  data: SuggestPlacesForTripResponseDto;
+  status: 200;
+};
+
+export type tripControllerPlaceSuggestionsResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type tripControllerPlaceSuggestionsResponseSuccess =
+  tripControllerPlaceSuggestionsResponse200 & {
+    headers: Headers;
+  };
+export type tripControllerPlaceSuggestionsResponseError =
+  tripControllerPlaceSuggestionsResponse404 & {
+    headers: Headers;
+  };
+
+export type tripControllerPlaceSuggestionsResponse =
+  | tripControllerPlaceSuggestionsResponseSuccess
+  | tripControllerPlaceSuggestionsResponseError;
+
+export const getTripControllerPlaceSuggestionsUrl = (id: string) => {
+  return `/api/v1/trips/${id}/place-suggestions`;
+};
+
+export const tripControllerPlaceSuggestions = async (
+  id: string,
+  suggestPlacesForTripRequestDto: SuggestPlacesForTripRequestDto,
+  options?: RequestInit,
+): Promise<tripControllerPlaceSuggestionsResponse> => {
+  return apiFetch<tripControllerPlaceSuggestionsResponse>(
+    getTripControllerPlaceSuggestionsUrl(id),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(suggestPlacesForTripRequestDto),
+    },
+  );
 };
 
 /**

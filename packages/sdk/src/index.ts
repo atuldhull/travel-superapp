@@ -151,3 +151,7 @@ export type { GenerateSamplePlanRequestDto } from './generated/schemas/generateS
 export type { GenerateSamplePlanResponseDto } from './generated/schemas/generateSamplePlanResponseDto';
 export type { SamplePlanCenterDto } from './generated/schemas/samplePlanCenterDto';
 export type { SharedTripDto } from './generated/schemas/sharedTripDto';
+// V.UX.4: weekend-traveler place suggestions
+export type { SuggestedPlaceDto } from './generated/schemas/suggestedPlaceDto';
+export type { SuggestPlacesForTripRequestDto } from './generated/schemas/suggestPlacesForTripRequestDto';
+export type { SuggestPlacesForTripResponseDto } from './generated/schemas/suggestPlacesForTripResponseDto';

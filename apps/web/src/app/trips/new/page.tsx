@@ -45,6 +45,49 @@ interface ApiError extends Error {
   readonly status?: number;
 }
 
+/**
+ * V.UX.4 weekend-traveler quick picks. Each preset computes a date
+ * range starting from the next upcoming Friday so a Tuesday-evening
+ * planner sees fresh dates rather than yesterday's weekend.
+ */
+type DurationPresetKey = 'weekend' | 'long-weekend' | 'week';
+
+interface DurationPreset {
+  readonly key: DurationPresetKey;
+  readonly label: string;
+}
+
+const DURATION_PRESETS: readonly DurationPreset[] = [
+  { key: 'weekend', label: 'Weekend (2 nights)' },
+  { key: 'long-weekend', label: 'Long weekend (3 nights)' },
+  { key: 'week', label: 'Week (7 nights)' },
+];
+
+function computeDurationPreset(key: DurationPresetKey): { startsOn: string; endsOn: string } {
+  const now = new Date();
+  const day = now.getDay(); // 0 = Sun .. 6 = Sat
+  // Next Friday — if today is Friday, jump 7 days ahead so a "weekend"
+  // chip doesn't dump tomorrow on someone who's still planning.
+  const daysToFriday = (5 - day + 7) % 7 || 7;
+  const friday = new Date(now);
+  friday.setHours(0, 0, 0, 0);
+  friday.setDate(now.getDate() + daysToFriday);
+
+  const nights = key === 'weekend' ? 2 : key === 'long-weekend' ? 3 : 7;
+  const startsOn = friday;
+  const endsOn = new Date(friday);
+  endsOn.setDate(friday.getDate() + nights);
+  return { startsOn: toIsoDate(startsOn), endsOn: toIsoDate(endsOn) };
+}
+
+function toIsoDate(d: Date): string {
+  // YYYY-MM-DD in local time — what <input type="date"> wants.
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 export default function NewTripPage() {
   const router = useRouter();
   const token = useAuthToken();
@@ -62,6 +105,12 @@ export default function NewTripPage() {
   const [startsOn, setStartsOn] = useState('');
   const [endsOn, setEndsOn] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  function applyDurationPreset(preset: DurationPresetKey) {
+    const { startsOn: s, endsOn: e } = computeDurationPreset(preset);
+    setStartsOn(s);
+    setEndsOn(e);
+  }
 
   const createMutation = useTripControllerCreate({
     mutation: {
@@ -193,6 +242,36 @@ export default function NewTripPage() {
           required
           help="1..500"
         />
+        <div className="space-y-2">
+          <span className="block text-sm font-medium">Trip length</span>
+          <div className="flex flex-wrap gap-2">
+            {DURATION_PRESETS.map((p) => {
+              // The "active" check matches when both date fields equal what
+              // the preset would produce — that way a hand-tweaked range
+              // doesn't show a misleading active chip.
+              const target = computeDurationPreset(p.key);
+              const active = startsOn === target.startsOn && endsOn === target.endsOn;
+              return (
+                <button
+                  key={p.key}
+                  type="button"
+                  onClick={() => applyDurationPreset(p.key)}
+                  aria-pressed={active}
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition ${
+                    active
+                      ? 'border-brand bg-brand text-brand-foreground'
+                      : 'border-muted/30 text-muted hover:bg-muted/10'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-xs text-muted">
+            Quick picks auto-fill the dates below. You can still tweak them.
+          </p>
+        </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field
             label="Starts on (optional)"
