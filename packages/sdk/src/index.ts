@@ -156,6 +156,10 @@ export type { SharedTripDto } from './generated/schemas/sharedTripDto';
 export type { SuggestedPlaceDto } from './generated/schemas/suggestedPlaceDto';
 export type { SuggestPlacesForTripRequestDto } from './generated/schemas/suggestPlacesForTripRequestDto';
 export type { SuggestPlacesForTripResponseDto } from './generated/schemas/suggestPlacesForTripResponseDto';
+// V.UX.6: power-planner — optimize day route + per-day route coords
+export type { OptimizeDayRouteResponseDto } from './generated/schemas/optimizeDayRouteResponseDto';
+export type { DayRouteCoordDto } from './generated/schemas/dayRouteCoordDto';
+export type { DayRouteCoordsResponseDto } from './generated/schemas/dayRouteCoordsResponseDto';
 // V.UX.5: business-traveler — Expense / Balance schemas already
 // exported above (lines 121-126); social hooks barrel re-exported
 // above to surface useExpensesController{Create,List,Balances,Remove}.

@@ -47,6 +47,8 @@ import { ListTripSharesUseCase } from '../application/list-trip-shares.use-case'
 import { RevokeTripShareUseCase } from '../application/revoke-trip-share.use-case';
 import { DeleteTripUseCase } from '../application/delete-trip.use-case';
 import { DuplicateTripUseCase } from '../application/duplicate-trip.use-case';
+import { OptimizeDayRouteUseCase } from '../application/optimize-day-route.use-case';
+import { GetDayRouteCoordsUseCase } from '../application/get-day-route-coords.use-case';
 import { GetTripEateriesUseCase } from '../application/get-trip-eateries.use-case';
 import { GetTripEventsUseCase } from '../application/get-trip-events.use-case';
 import { GetTripOverviewUseCase, type Section } from '../application/get-trip-overview.use-case';
@@ -97,6 +99,8 @@ import {
   ItineraryListResponseDto,
   ListTripsResponseDto,
   SharedTripDto as SharedTripResponseDto,
+  DayRouteCoordsResponseDto,
+  OptimizeDayRouteResponseDto,
   SuggestPlacesForTripRequestDto,
   SuggestPlacesForTripResponseDto,
   TripDto as TripResponseDto,
@@ -146,6 +150,8 @@ export class TripController {
     private readonly updateTrip: UpdateTripUseCase,
     private readonly deleteTrip: DeleteTripUseCase,
     private readonly duplicateTrip: DuplicateTripUseCase,
+    private readonly optimizeDayRoute: OptimizeDayRouteUseCase,
+    private readonly getDayRouteCoords: GetDayRouteCoordsUseCase,
     private readonly generateItinerary: GenerateItineraryStubUseCase,
     private readonly generatePlanWithAi: GeneratePlanWithAiUseCase,
     private readonly generateSamplePlan: GenerateSamplePlanUseCase,
@@ -762,6 +768,60 @@ export class TripController {
       })),
     });
     return { day: toDayDto(day) };
+  }
+
+  /**
+   * V.UX.6 power-planner. Reorder a day's items via greedy nearest-
+   * neighbour over the cheapest fastest mode between consecutive
+   * stops. Same access gate as updateDay (owner OR active share).
+   */
+  @ApiOperation({
+    summary:
+      "Reorder a day's items to minimise travel time (greedy NN over the routing provider). Owner OR active share.",
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Reordered day + before/after total travel seconds.',
+    type: OptimizeDayRouteResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'TRIP_NOT_FOUND.' })
+  @Post(':tripId/days/:dayId/optimize')
+  @HttpCode(HttpStatus.OK)
+  async optimizeDay(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('tripId') tripId: string,
+    @Param('dayId') dayId: string,
+  ): Promise<{
+    day: ItineraryDayDto;
+    beforeSeconds: number;
+    afterSeconds: number;
+    skippedCount: number;
+  }> {
+    const result = await this.optimizeDayRoute.execute({ tripId, dayId, userId: user.sub });
+    return {
+      day: toDayDto(result.day),
+      beforeSeconds: result.beforeSeconds,
+      afterSeconds: result.afterSeconds,
+      skippedCount: result.skippedCount,
+    };
+  }
+
+  @ApiOperation({
+    summary: "Coords for a day's routable items, in current order. Powers the V.UX.6 RouteMap.",
+  })
+  @ApiResponse({ status: 200, description: 'Per-item coords.', type: DayRouteCoordsResponseDto })
+  @ApiResponse({ status: 404, description: 'TRIP_NOT_FOUND.' })
+  @Get(':tripId/days/:dayId/route-coords')
+  @HttpCode(HttpStatus.OK)
+  async dayRouteCoords(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('tripId') tripId: string,
+    @Param('dayId') dayId: string,
+  ): Promise<{
+    coords: ReadonlyArray<{ itemId: string; placeId: string; lat: number; lng: number }>;
+  }> {
+    const coords = await this.getDayRouteCoords.execute(tripId, dayId, user.sub);
+    return { coords };
   }
 }
 

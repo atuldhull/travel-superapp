@@ -54,6 +54,7 @@ import { ExportPdfButton } from '../../../components/trip/export-pdf-button';
 import { EmailItineraryButton } from '../../../components/trip/email-itinerary-button';
 import { OpenOnMobileButton } from '../../../components/trip/open-on-mobile-button';
 import { PlaceSuggestionPicker } from '../../../components/trip/place-suggestion-picker';
+import { PowerPlannerSection } from '../../../components/trip/power-planner-section';
 import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
 
 interface ApiError extends Error {
@@ -210,6 +211,7 @@ export default function TripDetailPage() {
         />
       )}
       <ItinerarySection tripId={id} enabled={token !== null && !editing} />
+      <PowerPlannerSection tripId={id} enabled={token !== null && !editing} />
       <PlaceSuggestionPicker tripId={id} enabled={token !== null && !editing} />
       <PlanWithAiSection tripId={id} enabled={token !== null && !editing} />
       <MediaSection tripId={id} enabled={token !== null && !editing} />

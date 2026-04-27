@@ -17,11 +17,13 @@ import type {
 import type {
   CreateTripRequestDto,
   CreateTripShareRequestDto,
+  DayRouteCoordsResponseDto,
   GeneratePlanWithAiResponseDto,
   GenerateSamplePlanRequestDto,
   GenerateSamplePlanResponseDto,
   ItineraryListResponseDto,
   ListTripsResponseDto,
+  OptimizeDayRouteResponseDto,
   SharedTripDto,
   SuggestPlacesForTripRequestDto,
   SuggestPlacesForTripResponseDto,
@@ -2971,3 +2973,300 @@ export const useTripControllerUpdateDay = <TError = void, TContext = unknown>(op
 
   return useMutation(mutationOptions);
 };
+/**
+ * @summary Reorder a day's items to minimise travel time (greedy NN over the routing provider). Owner OR active share.
+ */
+export type tripControllerOptimizeDayResponse200 = {
+  data: OptimizeDayRouteResponseDto;
+  status: 200;
+};
+
+export type tripControllerOptimizeDayResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type tripControllerOptimizeDayResponseSuccess = tripControllerOptimizeDayResponse200 & {
+  headers: Headers;
+};
+export type tripControllerOptimizeDayResponseError = tripControllerOptimizeDayResponse404 & {
+  headers: Headers;
+};
+
+export type tripControllerOptimizeDayResponse =
+  | tripControllerOptimizeDayResponseSuccess
+  | tripControllerOptimizeDayResponseError;
+
+export const getTripControllerOptimizeDayUrl = (tripId: string, dayId: string) => {
+  return `/api/v1/trips/${tripId}/days/${dayId}/optimize`;
+};
+
+export const tripControllerOptimizeDay = async (
+  tripId: string,
+  dayId: string,
+  options?: RequestInit,
+): Promise<tripControllerOptimizeDayResponse> => {
+  return apiFetch<tripControllerOptimizeDayResponse>(
+    getTripControllerOptimizeDayUrl(tripId, dayId),
+    {
+      ...options,
+      method: 'POST',
+    },
+  );
+};
+
+export const getTripControllerOptimizeDayMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof tripControllerOptimizeDay>>,
+    TError,
+    { tripId: string; dayId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof tripControllerOptimizeDay>>,
+  TError,
+  { tripId: string; dayId: string },
+  TContext
+> => {
+  const mutationKey = ['tripControllerOptimizeDay'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof tripControllerOptimizeDay>>,
+    { tripId: string; dayId: string }
+  > = (props) => {
+    const { tripId, dayId } = props ?? {};
+
+    return tripControllerOptimizeDay(tripId, dayId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type TripControllerOptimizeDayMutationResult = NonNullable<
+  Awaited<ReturnType<typeof tripControllerOptimizeDay>>
+>;
+
+export type TripControllerOptimizeDayMutationError = void;
+
+/**
+ * @summary Reorder a day's items to minimise travel time (greedy NN over the routing provider). Owner OR active share.
+ */
+export const useTripControllerOptimizeDay = <TError = void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof tripControllerOptimizeDay>>,
+    TError,
+    { tripId: string; dayId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof tripControllerOptimizeDay>>,
+  TError,
+  { tripId: string; dayId: string },
+  TContext
+> => {
+  const mutationOptions = getTripControllerOptimizeDayMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Coords for a day's routable items, in current order. Powers the V.UX.6 RouteMap.
+ */
+export type tripControllerDayRouteCoordsResponse200 = {
+  data: DayRouteCoordsResponseDto;
+  status: 200;
+};
+
+export type tripControllerDayRouteCoordsResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type tripControllerDayRouteCoordsResponseSuccess =
+  tripControllerDayRouteCoordsResponse200 & {
+    headers: Headers;
+  };
+export type tripControllerDayRouteCoordsResponseError = tripControllerDayRouteCoordsResponse404 & {
+  headers: Headers;
+};
+
+export type tripControllerDayRouteCoordsResponse =
+  | tripControllerDayRouteCoordsResponseSuccess
+  | tripControllerDayRouteCoordsResponseError;
+
+export const getTripControllerDayRouteCoordsUrl = (tripId: string, dayId: string) => {
+  return `/api/v1/trips/${tripId}/days/${dayId}/route-coords`;
+};
+
+export const tripControllerDayRouteCoords = async (
+  tripId: string,
+  dayId: string,
+  options?: RequestInit,
+): Promise<tripControllerDayRouteCoordsResponse> => {
+  return apiFetch<tripControllerDayRouteCoordsResponse>(
+    getTripControllerDayRouteCoordsUrl(tripId, dayId),
+    {
+      ...options,
+      method: 'GET',
+    },
+  );
+};
+
+export const getTripControllerDayRouteCoordsInfiniteQueryKey = (
+  tripId?: string,
+  dayId?: string,
+) => {
+  return ['infinite', `/api/v1/trips/${tripId}/days/${dayId}/route-coords`] as const;
+};
+
+export const getTripControllerDayRouteCoordsQueryKey = (tripId?: string, dayId?: string) => {
+  return [`/api/v1/trips/${tripId}/days/${dayId}/route-coords`] as const;
+};
+
+export const getTripControllerDayRouteCoordsInfiniteQueryOptions = <
+  TData = Awaited<ReturnType<typeof tripControllerDayRouteCoords>>,
+  TError = void,
+>(
+  tripId: string,
+  dayId: string,
+  options?: {
+    query?: UseInfiniteQueryOptions<
+      Awaited<ReturnType<typeof tripControllerDayRouteCoords>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getTripControllerDayRouteCoordsInfiniteQueryKey(tripId, dayId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof tripControllerDayRouteCoords>>> = ({
+    signal,
+  }) => tripControllerDayRouteCoords(tripId, dayId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(tripId && dayId),
+    staleTime: 30000,
+    ...queryOptions,
+  } as UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof tripControllerDayRouteCoords>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type TripControllerDayRouteCoordsInfiniteQueryResult = NonNullable<
+  Awaited<ReturnType<typeof tripControllerDayRouteCoords>>
+>;
+export type TripControllerDayRouteCoordsInfiniteQueryError = void;
+
+/**
+ * @summary Coords for a day's routable items, in current order. Powers the V.UX.6 RouteMap.
+ */
+
+export function useTripControllerDayRouteCoordsInfinite<
+  TData = Awaited<ReturnType<typeof tripControllerDayRouteCoords>>,
+  TError = void,
+>(
+  tripId: string,
+  dayId: string,
+  options?: {
+    query?: UseInfiniteQueryOptions<
+      Awaited<ReturnType<typeof tripControllerDayRouteCoords>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+): UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getTripControllerDayRouteCoordsInfiniteQueryOptions(tripId, dayId, options);
+
+  const query = useInfiniteQuery(queryOptions) as UseInfiniteQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getTripControllerDayRouteCoordsQueryOptions = <
+  TData = Awaited<ReturnType<typeof tripControllerDayRouteCoords>>,
+  TError = void,
+>(
+  tripId: string,
+  dayId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof tripControllerDayRouteCoords>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getTripControllerDayRouteCoordsQueryKey(tripId, dayId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof tripControllerDayRouteCoords>>> = ({
+    signal,
+  }) => tripControllerDayRouteCoords(tripId, dayId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(tripId && dayId),
+    staleTime: 30000,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof tripControllerDayRouteCoords>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type TripControllerDayRouteCoordsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof tripControllerDayRouteCoords>>
+>;
+export type TripControllerDayRouteCoordsQueryError = void;
+
+/**
+ * @summary Coords for a day's routable items, in current order. Powers the V.UX.6 RouteMap.
+ */
+
+export function useTripControllerDayRouteCoords<
+  TData = Awaited<ReturnType<typeof tripControllerDayRouteCoords>>,
+  TError = void,
+>(
+  tripId: string,
+  dayId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof tripControllerDayRouteCoords>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getTripControllerDayRouteCoordsQueryOptions(tripId, dayId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}

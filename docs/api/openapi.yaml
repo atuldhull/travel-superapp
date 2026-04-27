@@ -961,6 +961,60 @@ paths:
       security: *a11
       summary: Replace items in an itinerary day. Owner OR active TripShare may write.
       tags: *a12
+  /api/v1/trips/{tripId}/days/{dayId}/optimize:
+    post:
+      operationId: TripController_optimizeDay
+      parameters:
+        - name: tripId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: dayId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Reordered day + before/after total travel seconds.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OptimizeDayRouteResponseDto'
+        '404':
+          description: TRIP_NOT_FOUND.
+      security: *a11
+      summary: Reorder a day's items to minimise travel time (greedy NN over the
+        routing provider). Owner OR active share.
+      tags: *a12
+  /api/v1/trips/{tripId}/days/{dayId}/route-coords:
+    get:
+      operationId: TripController_dayRouteCoords
+      parameters:
+        - name: tripId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: dayId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Per-item coords.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayRouteCoordsResponseDto'
+        '404':
+          description: TRIP_NOT_FOUND.
+      security: *a11
+      summary: Coords for a day's routable items, in current order. Powers the V.UX.6
+        RouteMap.
+      tags: *a12
   /api/v1/admin/trips:
     get:
       operationId: AdminTripsController_list
@@ -3480,6 +3534,61 @@ components:
           $ref: '#/components/schemas/ItineraryDayDto'
       required:
         - day
+    OptimizeDayRouteResponseDto:
+      type: object
+      properties:
+        day:
+          description: Reordered itinerary day with refreshed items.
+          allOf:
+            - $ref: '#/components/schemas/ItineraryDayDto'
+        beforeSeconds:
+          type: number
+          description: Total travel seconds across all consecutive routable stops, in the
+            original order.
+        afterSeconds:
+          type: number
+          description: Total travel seconds in the optimized order. Compare to
+            `beforeSeconds`.
+        skippedCount:
+          type: number
+          description: Items dropped from the route (placeId no longer in the catalog).
+            Trailing in the new order; never lost.
+      required:
+        - day
+        - beforeSeconds
+        - afterSeconds
+        - skippedCount
+    DayRouteCoordDto:
+      type: object
+      properties:
+        itemId:
+          type: string
+          format: cuid
+        placeId:
+          type: string
+          format: cuid
+        lat:
+          type: number
+          description: Latitude in decimal degrees.
+        lng:
+          type: number
+          description: Longitude in decimal degrees.
+      required:
+        - itemId
+        - placeId
+        - lat
+        - lng
+    DayRouteCoordsResponseDto:
+      type: object
+      properties:
+        coords:
+          description: Routable items' coords in the day's current order. Items without a
+            placeId are skipped.
+          type: array
+          items:
+            $ref: '#/components/schemas/DayRouteCoordDto'
+      required:
+        - coords
     PlacesCoordinatesDto:
       type: object
       properties:
