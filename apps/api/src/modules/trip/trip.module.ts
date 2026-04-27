@@ -48,6 +48,7 @@ import { TRIP_REPOSITORY } from './application/ports/trip.repository';
 import { TRIP_SHARE_REPOSITORY } from './application/ports/trip-share.repository';
 import { ResolveTripShareUseCase } from './application/resolve-trip-share.use-case';
 import { RevokeTripShareUseCase } from './application/revoke-trip-share.use-case';
+import { SuggestPlacesForTripUseCase } from './application/suggest-places-for-trip.use-case';
 import { UpdateDayItemsUseCase } from './application/update-day-items.use-case';
 import { UpdateTripUseCase } from './application/update-trip.use-case';
 import { ClaudeTripPlannerAdapter } from './infrastructure/claude-trip-planner.adapter';
@@ -119,6 +120,7 @@ import { TripController } from './interface/trip.controller';
     GetTripEventsUseCase,
     GetTripTransportLegsUseCase,
     GetTripOverviewUseCase,
+    SuggestPlacesForTripUseCase,
     TripOverviewCache,
     AdminListTripsUseCase,
     AdminArchiveTripUseCase,

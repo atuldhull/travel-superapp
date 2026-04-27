@@ -879,6 +879,34 @@ paths:
       security: *a11
       summary: Compute transport legs between consecutive itinerary items.
       tags: *a12
+  /api/v1/trips/{id}/place-suggestions:
+    post:
+      operationId: TripController_placeSuggestions
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuggestPlacesForTripRequestDto'
+      responses:
+        '200':
+          description: Up to 6 suggested places, nearest first.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuggestPlacesForTripResponseDto'
+        '404':
+          description: TRIP_NOT_FOUND.
+      security: *a11
+      summary: Suggest up to 6 ranked places near the trip's center. Optional category
+        filter. Persists candidates to Place.
+      tags: *a12
   /api/v1/trips/{tripId}/itinerary/{dayId}:
     patch:
       operationId: TripController_updateDay
@@ -3359,6 +3387,43 @@ components:
         - events
         - transport
         - media
+    SuggestPlacesForTripRequestDto:
+      type: object
+      properties:
+        category:
+          type: string
+          description: Optional category filter ("museum", "cafe", "park", ...).
+    SuggestedPlaceDto:
+      type: object
+      properties:
+        placeId:
+          type: string
+          format: cuid
+          description: Persisted Place id, ready for itinerary items.
+        name:
+          type: string
+          description: Display name from the federated provider.
+        category:
+          type: string
+          description: Place category ("museum", "cafe", ...).
+        distanceMeters:
+          type: number
+          description: Straight-line distance from the trip center, metres.
+      required:
+        - placeId
+        - name
+        - category
+        - distanceMeters
+    SuggestPlacesForTripResponseDto:
+      type: object
+      properties:
+        suggestions:
+          description: Up to 6 ranked suggestions, nearest first.
+          type: array
+          items:
+            $ref: '#/components/schemas/SuggestedPlaceDto'
+      required:
+        - suggestions
     UpdateDayItemDto:
       type: object
       properties:

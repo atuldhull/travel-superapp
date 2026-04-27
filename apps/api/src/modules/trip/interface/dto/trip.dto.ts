@@ -88,3 +88,15 @@ export const CreateTripShareBodySchema = z
   })
   .strict();
 export type CreateTripShareBody = z.infer<typeof CreateTripShareBodySchema>;
+
+/**
+ * Body for `POST /trips/:id/place-suggestions`. Optional category
+ * filter narrows results to a single place type ("museum",
+ * "cafe", etc.). Empty body == "anything within range".
+ */
+export const SuggestPlacesForTripBodySchema = z
+  .object({
+    category: z.string().trim().min(1).max(60).optional(),
+  })
+  .strict();
+export type SuggestPlacesForTripBody = z.infer<typeof SuggestPlacesForTripBodySchema>;

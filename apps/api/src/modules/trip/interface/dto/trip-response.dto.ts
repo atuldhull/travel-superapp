@@ -205,6 +205,42 @@ export class GenerateSamplePlanResponseDto {
 }
 
 /**
+ * Body for `POST /trips/:id/place-suggestions`. Documentation-only —
+ * runtime validation stays on `SuggestPlacesForTripBodySchema`.
+ *
+ * Installed by prompt [V.UX.4].
+ */
+export class SuggestPlacesForTripRequestDto {
+  @ApiProperty({
+    required: false,
+    description: 'Optional category filter ("museum", "cafe", "park", ...).',
+  })
+  declare category?: string;
+}
+
+export class SuggestedPlaceDto {
+  @ApiProperty({ format: 'cuid', description: 'Persisted Place id, ready for itinerary items.' })
+  declare placeId: string;
+
+  @ApiProperty({ description: 'Display name from the federated provider.' })
+  declare name: string;
+
+  @ApiProperty({ description: 'Place category ("museum", "cafe", ...).' })
+  declare category: string;
+
+  @ApiProperty({ description: 'Straight-line distance from the trip center, metres.' })
+  declare distanceMeters: number;
+}
+
+export class SuggestPlacesForTripResponseDto {
+  @ApiProperty({
+    type: [SuggestedPlaceDto],
+    description: 'Up to 6 ranked suggestions, nearest first.',
+  })
+  declare suggestions: SuggestedPlaceDto[];
+}
+
+/**
  * Public-safe view returned by `GET /trips/shared/:code`. Notably omits
  * the owner's `userId` (only `ownerDisplayName` is exposed) and the
  * trip's center coordinates — the recipient gets the title, dates, and
