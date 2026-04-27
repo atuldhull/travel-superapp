@@ -174,6 +174,8 @@ export type { SettleTransferDto } from './generated/schemas/settleTransferDto';
 export type { SettleUpResponseDto } from './generated/schemas/settleUpResponseDto';
 export type { TripShareOwnerDto } from './generated/schemas/tripShareOwnerDto';
 export type { ListTripSharesResponseDto } from './generated/schemas/listTripSharesResponseDto';
+// V.UX.9: collaborator role + lists
+export type { TripWithRoleResponseDto } from './generated/schemas/tripWithRoleResponseDto';
 // V.UX.5: business-traveler — Expense / Balance schemas already
 // exported above (lines 121-126); social hooks barrel re-exported
 // above to surface useExpensesController{Create,List,Balances,Remove}.

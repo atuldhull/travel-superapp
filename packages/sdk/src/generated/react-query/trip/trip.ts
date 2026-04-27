@@ -35,6 +35,7 @@ import type {
   TripDto,
   TripOverviewResponseDto,
   TripShareResponseDto,
+  TripWithRoleResponseDto,
   UpdateDayItemsRequestDto,
   UpdateDayItemsResponseDto,
   UpdateTripRequestDto,
@@ -294,10 +295,10 @@ export function useTripControllerList<
 }
 
 /**
- * @summary Fetch a single trip the caller owns. 404 if missing or not theirs (IDOR-safe).
+ * @summary Fetch a single trip. Owner OR active collaborator (vote/expense). 404 otherwise (IDOR-safe).
  */
 export type tripControllerGetOneResponse200 = {
-  data: TripDto;
+  data: TripWithRoleResponseDto;
   status: 200;
 };
 
@@ -377,7 +378,7 @@ export type TripControllerGetOneInfiniteQueryResult = NonNullable<
 export type TripControllerGetOneInfiniteQueryError = void;
 
 /**
- * @summary Fetch a single trip the caller owns. 404 if missing or not theirs (IDOR-safe).
+ * @summary Fetch a single trip. Owner OR active collaborator (vote/expense). 404 otherwise (IDOR-safe).
  */
 
 export function useTripControllerGetOneInfinite<
@@ -435,7 +436,7 @@ export type TripControllerGetOneQueryResult = NonNullable<
 export type TripControllerGetOneQueryError = void;
 
 /**
- * @summary Fetch a single trip the caller owns. 404 if missing or not theirs (IDOR-safe).
+ * @summary Fetch a single trip. Owner OR active collaborator (vote/expense). 404 otherwise (IDOR-safe).
  */
 
 export function useTripControllerGetOne<

@@ -60,6 +60,23 @@ export class PrismaTripRepository implements TripRepository {
     return rows.map(toDomain);
   }
 
+  async listCollaboratedByUser(userId: string, limit: number): Promise<readonly Trip[]> {
+    // V.UX.9: a "collaborator" is any signed-in user who has cast a
+    // vote or recorded an expense (paid or in splitShare) on a trip
+    // they do NOT own. Trip-share has no per-user membership state,
+    // so participation is the proxy.
+    const cap = Math.min(Math.max(limit, 1), 100);
+    const rows = await this.prisma.trip.findMany({
+      where: {
+        userId: { not: userId },
+        OR: [{ votes: { some: { userId } } }, { expenses: { some: { paidById: userId } } }],
+      },
+      orderBy: { createdAt: 'desc' },
+      take: cap,
+    });
+    return rows.map(toDomain);
+  }
+
   async updateStatus(id: string, status: TripStatus): Promise<void> {
     await this.prisma.trip.update({
       where: { id },

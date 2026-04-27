@@ -22,6 +22,7 @@ import type {
   TripDto,
   TripOverviewResponseDto,
   TripShareResponseDto,
+  TripWithRoleResponseDto,
   UpdateDayItemsRequestDto,
   UpdateDayItemsResponseDto,
   UpdateTripRequestDto,
@@ -96,10 +97,10 @@ export const tripControllerList = async (
 };
 
 /**
- * @summary Fetch a single trip the caller owns. 404 if missing or not theirs (IDOR-safe).
+ * @summary Fetch a single trip. Owner OR active collaborator (vote/expense). 404 otherwise (IDOR-safe).
  */
 export type tripControllerGetOneResponse200 = {
-  data: TripDto;
+  data: TripWithRoleResponseDto;
   status: 200;
 };
 

@@ -288,6 +288,8 @@ export * from './tripShareOwnerDto';
 export * from './tripShareOwnerDtoExpiresAt';
 export * from './tripShareResponseDto';
 export * from './tripShareResponseDtoExpiresAt';
+export * from './tripWithRoleResponseDto';
+export * from './tripWithRoleResponseDtoOwnerDisplayName';
 export * from './unreadCountResponseDto';
 export * from './updateDayItemDto';
 export * from './updateDayItemDtoNotes';

@@ -533,16 +533,16 @@ paths:
             type: string
       responses:
         '200':
-          description: The trip.
+          description: The trip + caller role.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TripDto'
+                $ref: '#/components/schemas/TripWithRoleResponseDto'
         '404':
           description: TRIP_NOT_FOUND.
       security: *a11
-      summary: Fetch a single trip the caller owns. 404 if missing or not theirs
-        (IDOR-safe).
+      summary: Fetch a single trip. Owner OR active collaborator (vote/expense). 404
+        otherwise (IDOR-safe).
       tags: *a12
     patch:
       operationId: TripController_update
@@ -3061,8 +3061,31 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TripDto'
+        collaborated:
+          description: V.UX.9 — trips someone else owns but the caller participates in via
+            a vote or expense.
+          type: array
+          items:
+            $ref: '#/components/schemas/TripDto'
       required:
         - trips
+        - collaborated
+    TripWithRoleResponseDto:
+      type: object
+      properties:
+        trip:
+          $ref: '#/components/schemas/TripDto'
+        role:
+          type: string
+          description: '"owner" or "collaborator".'
+        ownerDisplayName:
+          type: object
+          nullable: true
+          description: Display name of the trip's owner — surfaced for collaborator banners.
+      required:
+        - trip
+        - role
+        - ownerDisplayName
     UpdateTripRequestDto:
       type: object
       properties:

@@ -65,6 +65,7 @@ export default function TripsPage() {
 
   const body = data?.data as unknown as ListTripsResponseDto | undefined;
   const trips: readonly TripDto[] = body?.trips ?? [];
+  const collaborated: readonly TripDto[] = body?.collaborated ?? [];
 
   return (
     <main className="space-y-6">
@@ -94,14 +95,30 @@ export default function TripsPage() {
         </ul>
       ) : isError ? (
         <ErrorState error={error} />
-      ) : trips.length === 0 ? (
+      ) : trips.length === 0 && collaborated.length === 0 ? (
         <EmptyState />
       ) : (
-        <ul className="grid gap-4 sm:grid-cols-2">
-          {trips.map((t) => (
-            <TripCard key={t.id} trip={t} />
-          ))}
-        </ul>
+        <>
+          {trips.length > 0 ? (
+            <ul className="grid gap-4 sm:grid-cols-2">
+              {trips.map((t) => (
+                <TripCard key={t.id} trip={t} role="owner" />
+              ))}
+            </ul>
+          ) : null}
+          {collaborated.length > 0 ? (
+            <section className="space-y-2">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
+                Shared with you
+              </h2>
+              <ul className="grid gap-4 sm:grid-cols-2">
+                {collaborated.map((t) => (
+                  <TripCard key={t.id} trip={t} role="collaborator" />
+                ))}
+              </ul>
+            </section>
+          ) : null}
+        </>
       )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link href="/" className="text-sm text-muted hover:underline">
@@ -127,11 +144,11 @@ function isSampleTrip(trip: TripDto): boolean {
   return trip.title.startsWith(SAMPLE_TRIP_PREFIX);
 }
 
-function TripCard({ trip }: { trip: TripDto }) {
+function TripCard({ trip, role }: { trip: TripDto; role: 'owner' | 'collaborator' }) {
   const sample = isSampleTrip(trip);
   const statusVariant: 'neutral' | 'brand' = trip.status === 'draft' ? 'neutral' : 'brand';
   return (
-    <Card as="li">
+    <Card as="li" className={role === 'collaborator' ? 'border-emerald-500/40' : undefined}>
       <CardHeader>
         <CardTitle>
           <Link href={`/trips/${trip.id}` as never} className="hover:underline">
@@ -140,6 +157,12 @@ function TripCard({ trip }: { trip: TripDto }) {
         </CardTitle>
         <CardSubtitle>
           <Badge variant={statusVariant}>{trip.status}</Badge>
+          {role === 'collaborator' ? (
+            <>
+              {' '}
+              · <Badge variant="brand">👥 shared</Badge>
+            </>
+          ) : null}
           {sample ? (
             <>
               {' '}

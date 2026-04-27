@@ -207,7 +207,12 @@ export default function TripDetailPage() {
     );
   }
 
-  const trip = data?.data as unknown as TripDto;
+  const trip = data?.data as unknown as TripDto & {
+    role?: 'owner' | 'collaborator';
+    ownerDisplayName?: string | null;
+  };
+  const role: 'owner' | 'collaborator' = trip?.role ?? 'owner';
+  const isCollaborator = role === 'collaborator';
 
   return (
     <main className="space-y-6">
@@ -216,7 +221,16 @@ export default function TripDetailPage() {
           ← Back to trips
         </Link>
       </p>
-      {editing ? (
+      {isCollaborator ? (
+        <p className="rounded-md border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-400">
+          👥 Collaborator on{' '}
+          <strong>
+            {trip.ownerDisplayName ? `${trip.ownerDisplayName}'s trip` : "someone else's trip"}
+          </strong>
+          . You can vote and add expenses, but only the owner can edit or delete.
+        </p>
+      ) : null}
+      {editing && !isCollaborator ? (
         <EditForm
           trip={trip}
           onCancel={() => {
@@ -230,6 +244,7 @@ export default function TripDetailPage() {
       ) : (
         <ReadView
           trip={trip}
+          role={role}
           onEdit={() => {
             setEditing(true);
             setErrorMsg(null);
@@ -302,6 +317,7 @@ export default function TripDetailPage() {
 
 interface ReadViewProps {
   readonly trip: TripDto;
+  readonly role: 'owner' | 'collaborator';
   readonly onEdit: () => void;
   readonly onAskDelete: () => void;
   readonly onDuplicate: () => void;
@@ -313,6 +329,7 @@ interface ReadViewProps {
 
 function ReadView({
   trip,
+  role,
   onEdit,
   onAskDelete,
   onDuplicate,
@@ -321,6 +338,7 @@ function ReadView({
   onLockToggle,
   isLockToggling,
 }: ReadViewProps) {
+  const isOwner = role === 'owner';
   const statusVariant: 'neutral' | 'brand' = trip.status === 'draft' ? 'neutral' : 'brand';
   return (
     <Card>
@@ -349,24 +367,33 @@ function ReadView({
             <OpenOnMobileButton tripId={trip.id} />
             <ExportPdfButton tripId={trip.id} tripTitle={trip.title} />
             <EmailItineraryButton tripId={trip.id} tripTitle={trip.title} />
-            <Button variant="outline" size="sm" onClick={onDuplicate} disabled={isDuplicating}>
-              {isDuplicating ? 'Duplicating…' : 'Duplicate'}
-            </Button>
-            <Button variant="outline" size="sm" onClick={onLockToggle} disabled={isLockToggling}>
-              {isLockToggling
-                ? trip.status === 'published'
-                  ? 'Unlocking…'
-                  : 'Locking…'
-                : trip.status === 'published'
-                  ? '🔓 Unlock'
-                  : '🔒 Lock'}
-            </Button>
-            <Button variant="outline" size="sm" onClick={onEdit}>
-              Edit
-            </Button>
-            <Button variant="ghost" size="sm" onClick={onAskDelete}>
-              Delete
-            </Button>
+            {isOwner ? (
+              <>
+                <Button variant="outline" size="sm" onClick={onDuplicate} disabled={isDuplicating}>
+                  {isDuplicating ? 'Duplicating…' : 'Duplicate'}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onLockToggle}
+                  disabled={isLockToggling}
+                >
+                  {isLockToggling
+                    ? trip.status === 'published'
+                      ? 'Unlocking…'
+                      : 'Locking…'
+                    : trip.status === 'published'
+                      ? '🔓 Unlock'
+                      : '🔒 Lock'}
+                </Button>
+                <Button variant="outline" size="sm" onClick={onEdit}>
+                  Edit
+                </Button>
+                <Button variant="ghost" size="sm" onClick={onAskDelete}>
+                  Delete
+                </Button>
+              </>
+            ) : null}
           </div>
         </div>
         {trip.status === 'published' ? (

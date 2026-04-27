@@ -45,6 +45,18 @@ export type TripItineraryGeneratedEvent = DomainEventOfName<
   TripItineraryGeneratedPayload
 >;
 
+/**
+ * V.UX.9: emitted when an owner locks a trip. Subscribers (e.g. the
+ * notifications handler) fan out a notification to every active
+ * collaborator on the trip.
+ */
+export interface TripLockedPayload {
+  readonly tripId: string;
+  readonly ownerId: string;
+  readonly title: string;
+}
+export type TripLockedEvent = DomainEventOfName<'Trip.TripLocked', TripLockedPayload>;
+
 export function makeEvent<TName extends string, TPayload>(
   name: TName,
   payload: TPayload,
