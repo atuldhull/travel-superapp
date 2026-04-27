@@ -210,6 +210,44 @@ export const tripControllerRemove = async (
 };
 
 /**
+ * @summary Duplicate a trip the caller owns. Deep-copies title (+" (copy)"), center, radius, dates, itinerary days/items. New trip is `draft`.
+ */
+export type tripControllerDuplicateResponse201 = {
+  data: TripDto;
+  status: 201;
+};
+
+export type tripControllerDuplicateResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type tripControllerDuplicateResponseSuccess = tripControllerDuplicateResponse201 & {
+  headers: Headers;
+};
+export type tripControllerDuplicateResponseError = tripControllerDuplicateResponse404 & {
+  headers: Headers;
+};
+
+export type tripControllerDuplicateResponse =
+  | tripControllerDuplicateResponseSuccess
+  | tripControllerDuplicateResponseError;
+
+export const getTripControllerDuplicateUrl = (id: string) => {
+  return `/api/v1/trips/${id}/duplicate`;
+};
+
+export const tripControllerDuplicate = async (
+  id: string,
+  options?: RequestInit,
+): Promise<tripControllerDuplicateResponse> => {
+  return apiFetch<tripControllerDuplicateResponse>(getTripControllerDuplicateUrl(id), {
+    ...options,
+    method: 'POST',
+  });
+};
+
+/**
  * @summary Generate itinerary stub for the trip (one ItineraryDay per date in the range).
  */
 export type tripControllerBuildItineraryResponse200 = {

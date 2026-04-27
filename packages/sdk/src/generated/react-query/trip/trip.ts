@@ -660,6 +660,107 @@ export const useTripControllerRemove = <TError = void, TContext = unknown>(optio
   return useMutation(mutationOptions);
 };
 /**
+ * @summary Duplicate a trip the caller owns. Deep-copies title (+" (copy)"), center, radius, dates, itinerary days/items. New trip is `draft`.
+ */
+export type tripControllerDuplicateResponse201 = {
+  data: TripDto;
+  status: 201;
+};
+
+export type tripControllerDuplicateResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type tripControllerDuplicateResponseSuccess = tripControllerDuplicateResponse201 & {
+  headers: Headers;
+};
+export type tripControllerDuplicateResponseError = tripControllerDuplicateResponse404 & {
+  headers: Headers;
+};
+
+export type tripControllerDuplicateResponse =
+  | tripControllerDuplicateResponseSuccess
+  | tripControllerDuplicateResponseError;
+
+export const getTripControllerDuplicateUrl = (id: string) => {
+  return `/api/v1/trips/${id}/duplicate`;
+};
+
+export const tripControllerDuplicate = async (
+  id: string,
+  options?: RequestInit,
+): Promise<tripControllerDuplicateResponse> => {
+  return apiFetch<tripControllerDuplicateResponse>(getTripControllerDuplicateUrl(id), {
+    ...options,
+    method: 'POST',
+  });
+};
+
+export const getTripControllerDuplicateMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof tripControllerDuplicate>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof tripControllerDuplicate>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ['tripControllerDuplicate'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof tripControllerDuplicate>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return tripControllerDuplicate(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type TripControllerDuplicateMutationResult = NonNullable<
+  Awaited<ReturnType<typeof tripControllerDuplicate>>
+>;
+
+export type TripControllerDuplicateMutationError = void;
+
+/**
+ * @summary Duplicate a trip the caller owns. Deep-copies title (+" (copy)"), center, radius, dates, itinerary days/items. New trip is `draft`.
+ */
+export const useTripControllerDuplicate = <TError = void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof tripControllerDuplicate>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof tripControllerDuplicate>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationOptions = getTripControllerDuplicateMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
  * @summary Generate itinerary stub for the trip (one ItineraryDay per date in the range).
  */
 export type tripControllerBuildItineraryResponse200 = {

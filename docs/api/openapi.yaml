@@ -586,6 +586,28 @@ paths:
       security: *a11
       summary: Delete a trip the caller owns. Cascades to itinerary days, items, shares.
       tags: *a12
+  /api/v1/trips/{id}/duplicate:
+    post:
+      operationId: TripController_duplicate
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Newly-created duplicate trip.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripDto'
+        '404':
+          description: TRIP_NOT_FOUND.
+      security: *a11
+      summary: Duplicate a trip the caller owns. Deep-copies title (+" (copy)"),
+        center, radius, dates, itinerary days/items. New trip is `draft`.
+      tags: *a12
   /api/v1/trips/{id}/itinerary:
     post:
       operationId: TripController_buildItinerary

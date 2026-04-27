@@ -23,6 +23,7 @@ export { apiFetch, configureSdk, type ApiError } from './runtime/fetcher';
 export * from './generated/react-query/media/media';
 export * from './generated/react-query/identity/identity';
 export * from './generated/react-query/trip/trip';
+export * from './generated/react-query/social/social';
 
 // Schema types from openapi.yaml's components/schemas. Re-exported so
 // consumers don't have to reach into deep generated paths. Add the
@@ -155,3 +156,6 @@ export type { SharedTripDto } from './generated/schemas/sharedTripDto';
 export type { SuggestedPlaceDto } from './generated/schemas/suggestedPlaceDto';
 export type { SuggestPlacesForTripRequestDto } from './generated/schemas/suggestPlacesForTripRequestDto';
 export type { SuggestPlacesForTripResponseDto } from './generated/schemas/suggestPlacesForTripResponseDto';
+// V.UX.5: business-traveler — Expense / Balance schemas already
+// exported above (lines 121-126); social hooks barrel re-exported
+// above to surface useExpensesController{Create,List,Balances,Remove}.
