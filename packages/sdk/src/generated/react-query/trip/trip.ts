@@ -1708,6 +1708,107 @@ export function useTripControllerGetSharedTrip<
 }
 
 /**
+ * @summary Clone a publicly-shared trip into the caller's account. Auth required.
+ */
+export type tripControllerCloneSharedResponse201 = {
+  data: TripDto;
+  status: 201;
+};
+
+export type tripControllerCloneSharedResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type tripControllerCloneSharedResponseSuccess = tripControllerCloneSharedResponse201 & {
+  headers: Headers;
+};
+export type tripControllerCloneSharedResponseError = tripControllerCloneSharedResponse404 & {
+  headers: Headers;
+};
+
+export type tripControllerCloneSharedResponse =
+  | tripControllerCloneSharedResponseSuccess
+  | tripControllerCloneSharedResponseError;
+
+export const getTripControllerCloneSharedUrl = (code: string) => {
+  return `/api/v1/trips/shared/${code}/clone`;
+};
+
+export const tripControllerCloneShared = async (
+  code: string,
+  options?: RequestInit,
+): Promise<tripControllerCloneSharedResponse> => {
+  return apiFetch<tripControllerCloneSharedResponse>(getTripControllerCloneSharedUrl(code), {
+    ...options,
+    method: 'POST',
+  });
+};
+
+export const getTripControllerCloneSharedMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof tripControllerCloneShared>>,
+    TError,
+    { code: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof tripControllerCloneShared>>,
+  TError,
+  { code: string },
+  TContext
+> => {
+  const mutationKey = ['tripControllerCloneShared'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof tripControllerCloneShared>>,
+    { code: string }
+  > = (props) => {
+    const { code } = props ?? {};
+
+    return tripControllerCloneShared(code, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type TripControllerCloneSharedMutationResult = NonNullable<
+  Awaited<ReturnType<typeof tripControllerCloneShared>>
+>;
+
+export type TripControllerCloneSharedMutationError = void;
+
+/**
+ * @summary Clone a publicly-shared trip into the caller's account. Auth required.
+ */
+export const useTripControllerCloneShared = <TError = void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof tripControllerCloneShared>>,
+    TError,
+    { code: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof tripControllerCloneShared>>,
+  TError,
+  { code: string },
+  TContext
+> => {
+  const mutationOptions = getTripControllerCloneSharedMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
  * @summary Trip overview composite — 7 sections (itinerary, weather, stays, eateries, events, transport, media). Per-section graceful degradation. 60s TTL cache.
  */
 export type tripControllerOverviewResponse200 = {

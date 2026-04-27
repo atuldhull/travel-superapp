@@ -559,6 +559,44 @@ export const tripControllerGetSharedTrip = async (
 };
 
 /**
+ * @summary Clone a publicly-shared trip into the caller's account. Auth required.
+ */
+export type tripControllerCloneSharedResponse201 = {
+  data: TripDto;
+  status: 201;
+};
+
+export type tripControllerCloneSharedResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type tripControllerCloneSharedResponseSuccess = tripControllerCloneSharedResponse201 & {
+  headers: Headers;
+};
+export type tripControllerCloneSharedResponseError = tripControllerCloneSharedResponse404 & {
+  headers: Headers;
+};
+
+export type tripControllerCloneSharedResponse =
+  | tripControllerCloneSharedResponseSuccess
+  | tripControllerCloneSharedResponseError;
+
+export const getTripControllerCloneSharedUrl = (code: string) => {
+  return `/api/v1/trips/shared/${code}/clone`;
+};
+
+export const tripControllerCloneShared = async (
+  code: string,
+  options?: RequestInit,
+): Promise<tripControllerCloneSharedResponse> => {
+  return apiFetch<tripControllerCloneSharedResponse>(getTripControllerCloneSharedUrl(code), {
+    ...options,
+    method: 'POST',
+  });
+};
+
+/**
  * @summary Trip overview composite — 7 sections (itinerary, weather, stays, eateries, events, transport, media). Per-section graceful degradation. 60s TTL cache.
  */
 export type tripControllerOverviewResponse200 = {

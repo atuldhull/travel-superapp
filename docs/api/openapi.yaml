@@ -788,6 +788,27 @@ paths:
       security: *a11
       summary: Public read of a shared trip by code. No auth required.
       tags: *a12
+  /api/v1/trips/shared/{code}/clone:
+    post:
+      operationId: TripController_cloneShared
+      parameters:
+        - name: code
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: New draft trip cloned from the source share-code.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripDto'
+        '404':
+          description: SHARE_NOT_FOUND or SHARE_EXPIRED.
+      security: *a11
+      summary: Clone a publicly-shared trip into the caller's account. Auth required.
+      tags: *a12
   /api/v1/trips/{id}/overview:
     get:
       operationId: TripController_overview
@@ -2607,6 +2628,50 @@ paths:
         always zero.
       tags:
         - social
+  /api/v1/trips/shared/{code}/heart:
+    post:
+      operationId: SharedTripReactController_heartTrip
+      parameters:
+        - name: code
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Updated heart count for the trip.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HeartSharedTripResponseDto'
+        '404':
+          description: SHARE_NOT_FOUND or SHARE_EXPIRED.
+        '429':
+          description: Too many requests — wait 60s.
+      summary: ❤️ a publicly-shared trip. No auth. Per-IP rate-limited at 1/min so
+        anonymous fans can react but scripts can't farm hearts.
+      tags: &a41
+        - social
+  /api/v1/trips/shared/{code}/hearts:
+    get:
+      operationId: SharedTripReactController_getHearts
+      parameters:
+        - name: code
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Heart count snapshot.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SharedTripHeartCountResponseDto'
+        '404':
+          description: SHARE_NOT_FOUND or SHARE_EXPIRED.
+      summary: Current ❤️ count for a shared trip. Public, no auth.
+      tags: *a41
   /api/v1/account/export:
     get:
       operationId: AccountController_exportMyData
@@ -2619,11 +2684,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserDataExportResponseDto'
-      security: &a41
+      security: &a42
         - bearer: []
       summary: Full GDPR/DPDP/COPPA self-export bundle as a single JSON object. ~30
         sections; sensitive fields stripped.
-      tags: &a42
+      tags: &a43
         - account
   /api/v1/account/export.ndjson:
     get:
@@ -2633,10 +2698,10 @@ paths:
         '200':
           description: Streaming NDJSON. Each line is a `{type,data}` envelope; downstream
             tooling (jq -c, ndjson-cli) parses incrementally.
-      security: *a41
+      security: *a42
       summary: 'NDJSON variant of the export bundle — one `{type,data}` envelope per
         line. Content-Type: application/x-ndjson.'
-      tags: *a42
+      tags: *a43
   /api/v1/account:
     delete:
       operationId: AccountController_deleteMyAccount
@@ -2644,10 +2709,10 @@ paths:
       responses:
         '204':
           description: Account marked soft-deleted; sessions revoked.
-      security: *a41
+      security: *a42
       summary: Soft-delete the caller's account + revoke all live sessions. GDPR Art.
         17 / DPDP §12 right-to-erasure.
-      tags: *a42
+      tags: *a43
   /api/v1/admin/users:
     get:
       operationId: AdminUsersController_list
@@ -2686,11 +2751,11 @@ paths:
                 $ref: '#/components/schemas/AdminListUsersResponseDto'
         '400':
           description: VALIDATION_FAILED — role not in user|premium|agent|admin.
-      security: &a43
+      security: &a44
         - bearer: []
       summary: List users with optional ?role / ?deleted / ?q filters. Offset
         pagination via ?limit + ?offset. Admin-only.
-      tags: &a44
+      tags: &a45
         - admin
   /api/v1/admin/users/{id}/ban:
     post:
@@ -2706,9 +2771,9 @@ paths:
           description: Banned.
         '404':
           description: USER_NOT_FOUND.
-      security: *a43
+      security: *a44
       summary: Ban a user (soft-delete + revoke sessions). Admin-only.
-      tags: *a44
+      tags: *a45
   /api/v1/admin/users/{id}/unban:
     post:
       operationId: AdminUsersController_unban
@@ -2723,9 +2788,9 @@ paths:
           description: Unbanned.
         '404':
           description: USER_NOT_FOUND.
-      security: *a43
+      security: *a44
       summary: Unban a user (clear deletedAt). Admin-only.
-      tags: *a44
+      tags: *a45
   /api/v1/admin/account-purge:
     post:
       operationId: AdminPurgeController_forcePurge
@@ -4411,7 +4476,7 @@ components:
           description: Filter to a subset of modes; empty/omitted means all available.
           items:
             type: string
-            enum: &a45
+            enum: &a46
               - walk
               - public_transit
               - bicycle
@@ -4427,7 +4492,7 @@ components:
       properties:
         mode:
           type: string
-          enum: *a45
+          enum: *a46
         distanceMeters:
           type: number
         durationSeconds:
@@ -4514,7 +4579,7 @@ components:
           type: string
         severity:
           type: string
-          enum: &a46
+          enum: &a47
             - low
             - medium
             - high
@@ -4583,7 +4648,7 @@ components:
           type: string
         severity:
           type: string
-          enum: *a46
+          enum: *a47
         description:
           type: string
         evidenceUrls:
@@ -5831,6 +5896,31 @@ components:
         - reviews
         - votes
         - recentReviews
+    HeartSharedTripResponseDto:
+      type: object
+      properties:
+        tripId:
+          type: string
+          format: cuid
+          description: The trip the heart was applied to.
+        hearts:
+          type: number
+          description: Heart count after this increment.
+      required:
+        - tripId
+        - hearts
+    SharedTripHeartCountResponseDto:
+      type: object
+      properties:
+        tripId:
+          type: string
+          format: cuid
+        hearts:
+          type: number
+          description: Current heart count.
+      required:
+        - tripId
+        - hearts
     UserDataExportMetadataDto:
       type: object
       properties:

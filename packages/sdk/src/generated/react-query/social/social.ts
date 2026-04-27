@@ -22,6 +22,7 @@ import type {
   EateryReviewSummaryResponseDto,
   ExpenseDto,
   ExpensesControllerListParams,
+  HeartSharedTripResponseDto,
   ListBalancesResponseDto,
   ListExpensesResponseDto,
   ListReviewsResponseDto,
@@ -34,6 +35,7 @@ import type {
   ReviewsControllerSummaryParams,
   RevokeVoteRequestDto,
   SettleUpResponseDto,
+  SharedTripHeartCountResponseDto,
   StayReviewSummaryResponseDto,
   VoteDto,
   VoteSummaryDto,
@@ -2694,6 +2696,307 @@ export function useAgentReviewSummaryControllerSummary<
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getAgentReviewSummaryControllerSummaryQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary ❤️ a publicly-shared trip. No auth. Per-IP rate-limited at 1/min so anonymous fans can react but scripts can't farm hearts.
+ */
+export type sharedTripReactControllerHeartTripResponse200 = {
+  data: HeartSharedTripResponseDto;
+  status: 200;
+};
+
+export type sharedTripReactControllerHeartTripResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type sharedTripReactControllerHeartTripResponse429 = {
+  data: void;
+  status: 429;
+};
+
+export type sharedTripReactControllerHeartTripResponseSuccess =
+  sharedTripReactControllerHeartTripResponse200 & {
+    headers: Headers;
+  };
+export type sharedTripReactControllerHeartTripResponseError = (
+  | sharedTripReactControllerHeartTripResponse404
+  | sharedTripReactControllerHeartTripResponse429
+) & {
+  headers: Headers;
+};
+
+export type sharedTripReactControllerHeartTripResponse =
+  | sharedTripReactControllerHeartTripResponseSuccess
+  | sharedTripReactControllerHeartTripResponseError;
+
+export const getSharedTripReactControllerHeartTripUrl = (code: string) => {
+  return `/api/v1/trips/shared/${code}/heart`;
+};
+
+export const sharedTripReactControllerHeartTrip = async (
+  code: string,
+  options?: RequestInit,
+): Promise<sharedTripReactControllerHeartTripResponse> => {
+  return apiFetch<sharedTripReactControllerHeartTripResponse>(
+    getSharedTripReactControllerHeartTripUrl(code),
+    {
+      ...options,
+      method: 'POST',
+    },
+  );
+};
+
+export const getSharedTripReactControllerHeartTripMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sharedTripReactControllerHeartTrip>>,
+    TError,
+    { code: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof sharedTripReactControllerHeartTrip>>,
+  TError,
+  { code: string },
+  TContext
+> => {
+  const mutationKey = ['sharedTripReactControllerHeartTrip'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof sharedTripReactControllerHeartTrip>>,
+    { code: string }
+  > = (props) => {
+    const { code } = props ?? {};
+
+    return sharedTripReactControllerHeartTrip(code, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SharedTripReactControllerHeartTripMutationResult = NonNullable<
+  Awaited<ReturnType<typeof sharedTripReactControllerHeartTrip>>
+>;
+
+export type SharedTripReactControllerHeartTripMutationError = void;
+
+/**
+ * @summary ❤️ a publicly-shared trip. No auth. Per-IP rate-limited at 1/min so anonymous fans can react but scripts can't farm hearts.
+ */
+export const useSharedTripReactControllerHeartTrip = <TError = void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sharedTripReactControllerHeartTrip>>,
+    TError,
+    { code: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof sharedTripReactControllerHeartTrip>>,
+  TError,
+  { code: string },
+  TContext
+> => {
+  const mutationOptions = getSharedTripReactControllerHeartTripMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Current ❤️ count for a shared trip. Public, no auth.
+ */
+export type sharedTripReactControllerGetHeartsResponse200 = {
+  data: SharedTripHeartCountResponseDto;
+  status: 200;
+};
+
+export type sharedTripReactControllerGetHeartsResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type sharedTripReactControllerGetHeartsResponseSuccess =
+  sharedTripReactControllerGetHeartsResponse200 & {
+    headers: Headers;
+  };
+export type sharedTripReactControllerGetHeartsResponseError =
+  sharedTripReactControllerGetHeartsResponse404 & {
+    headers: Headers;
+  };
+
+export type sharedTripReactControllerGetHeartsResponse =
+  | sharedTripReactControllerGetHeartsResponseSuccess
+  | sharedTripReactControllerGetHeartsResponseError;
+
+export const getSharedTripReactControllerGetHeartsUrl = (code: string) => {
+  return `/api/v1/trips/shared/${code}/hearts`;
+};
+
+export const sharedTripReactControllerGetHearts = async (
+  code: string,
+  options?: RequestInit,
+): Promise<sharedTripReactControllerGetHeartsResponse> => {
+  return apiFetch<sharedTripReactControllerGetHeartsResponse>(
+    getSharedTripReactControllerGetHeartsUrl(code),
+    {
+      ...options,
+      method: 'GET',
+    },
+  );
+};
+
+export const getSharedTripReactControllerGetHeartsInfiniteQueryKey = (code?: string) => {
+  return ['infinite', `/api/v1/trips/shared/${code}/hearts`] as const;
+};
+
+export const getSharedTripReactControllerGetHeartsQueryKey = (code?: string) => {
+  return [`/api/v1/trips/shared/${code}/hearts`] as const;
+};
+
+export const getSharedTripReactControllerGetHeartsInfiniteQueryOptions = <
+  TData = Awaited<ReturnType<typeof sharedTripReactControllerGetHearts>>,
+  TError = void,
+>(
+  code: string,
+  options?: {
+    query?: UseInfiniteQueryOptions<
+      Awaited<ReturnType<typeof sharedTripReactControllerGetHearts>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getSharedTripReactControllerGetHeartsInfiniteQueryKey(code);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof sharedTripReactControllerGetHearts>>> = ({
+    signal,
+  }) => sharedTripReactControllerGetHearts(code, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!code,
+    staleTime: 30000,
+    ...queryOptions,
+  } as UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof sharedTripReactControllerGetHearts>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type SharedTripReactControllerGetHeartsInfiniteQueryResult = NonNullable<
+  Awaited<ReturnType<typeof sharedTripReactControllerGetHearts>>
+>;
+export type SharedTripReactControllerGetHeartsInfiniteQueryError = void;
+
+/**
+ * @summary Current ❤️ count for a shared trip. Public, no auth.
+ */
+
+export function useSharedTripReactControllerGetHeartsInfinite<
+  TData = Awaited<ReturnType<typeof sharedTripReactControllerGetHearts>>,
+  TError = void,
+>(
+  code: string,
+  options?: {
+    query?: UseInfiniteQueryOptions<
+      Awaited<ReturnType<typeof sharedTripReactControllerGetHearts>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+): UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getSharedTripReactControllerGetHeartsInfiniteQueryOptions(code, options);
+
+  const query = useInfiniteQuery(queryOptions) as UseInfiniteQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getSharedTripReactControllerGetHeartsQueryOptions = <
+  TData = Awaited<ReturnType<typeof sharedTripReactControllerGetHearts>>,
+  TError = void,
+>(
+  code: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof sharedTripReactControllerGetHearts>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getSharedTripReactControllerGetHeartsQueryKey(code);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof sharedTripReactControllerGetHearts>>> = ({
+    signal,
+  }) => sharedTripReactControllerGetHearts(code, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!code,
+    staleTime: 30000,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof sharedTripReactControllerGetHearts>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type SharedTripReactControllerGetHeartsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof sharedTripReactControllerGetHearts>>
+>;
+export type SharedTripReactControllerGetHeartsQueryError = void;
+
+/**
+ * @summary Current ❤️ count for a shared trip. Public, no auth.
+ */
+
+export function useSharedTripReactControllerGetHearts<
+  TData = Awaited<ReturnType<typeof sharedTripReactControllerGetHearts>>,
+  TError = void,
+>(
+  code: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof sharedTripReactControllerGetHearts>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getSharedTripReactControllerGetHeartsQueryOptions(code, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

@@ -26,6 +26,9 @@ import { GetReviewBundleForTargetUseCase } from './application/get-review-bundle
 import { GetReviewSummaryUseCase } from './application/get-review-summary.use-case';
 import { GetTripBalancesUseCase } from './application/get-trip-balances.use-case';
 import { SettleUpUseCase } from './application/settle-up.use-case';
+import { HeartSharedTripUseCase } from './application/heart-shared-trip.use-case';
+import { TripHeartCounter } from './infrastructure/trip-heart-counter';
+import { SharedTripReactController } from './interface/shared-trip-react.controller';
 import { GetVoteSummaryUseCase } from './application/get-vote-summary.use-case';
 import { ListMyReviewsUseCase } from './application/list-my-reviews.use-case';
 import { ListReviewsForTargetUseCase } from './application/list-reviews-for-target.use-case';
@@ -59,6 +62,7 @@ import { VotesController } from './interface/votes.controller';
     StayReviewSummaryController,
     EateryReviewSummaryController,
     AgentReviewSummaryController,
+    SharedTripReactController,
   ],
   providers: [
     { provide: VOTE_REPOSITORY, useClass: PrismaVoteRepository },
@@ -72,6 +76,8 @@ import { VotesController } from './interface/votes.controller';
     ListTripExpensesUseCase,
     GetTripBalancesUseCase,
     SettleUpUseCase,
+    HeartSharedTripUseCase,
+    TripHeartCounter,
     CreateReviewUseCase,
     DeleteReviewUseCase,
     ListReviewsForTargetUseCase,
