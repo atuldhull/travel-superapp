@@ -38,6 +38,7 @@ import {
   ExpenseDto as ExpenseResponseDto,
   ListBalancesResponseDto,
   ListExpensesResponseDto,
+  SettleUpResponseDto,
 } from './dto/social-response.dto';
 import { type AuthenticatedUser, CurrentUser } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
@@ -45,6 +46,7 @@ import { CreateExpenseUseCase } from '../application/create-expense.use-case';
 import { DeleteExpenseUseCase } from '../application/delete-expense.use-case';
 import { GetTripBalancesUseCase } from '../application/get-trip-balances.use-case';
 import { ListTripExpensesUseCase } from '../application/list-trip-expenses.use-case';
+import { SettleUpUseCase, type SettleTransfer } from '../application/settle-up.use-case';
 import type { Expense, UserBalance } from '../domain/expense.entity';
 import { CreateExpenseBodySchema, type CreateExpenseBody } from './dto/social.dto';
 
@@ -84,6 +86,7 @@ export class ExpensesController {
     private readonly listUc: ListTripExpensesUseCase,
     private readonly balancesUc: GetTripBalancesUseCase,
     private readonly deleteUc: DeleteExpenseUseCase,
+    private readonly settleUpUc: SettleUpUseCase,
   ) {}
 
   @ApiOperation({
@@ -154,6 +157,30 @@ export class ExpensesController {
   ): Promise<{ balances: readonly UserBalance[] }> {
     const balances = await this.balancesUc.execute({ tripId, userId: user.sub });
     return { balances };
+  }
+
+  /**
+   * V.UX.8 settle-up. Translates the per-user net balances into a
+   * minimum-cashflow set of transfers. ≤ K-1 transfers for K
+   * non-zero balance holders.
+   */
+  @ApiOperation({
+    summary:
+      'Settle-up plan — greedy minimum-cashflow transfers that zero the trip ledger. Owner OR active share.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Transfer plan that zeros every balance.',
+    type: SettleUpResponseDto,
+  })
+  @Get('settle-up')
+  @HttpCode(HttpStatus.OK)
+  async settleUp(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('tripId') tripId: string,
+  ): Promise<{ transfers: readonly SettleTransfer[] }> {
+    const transfers = await this.settleUpUc.execute({ tripId, userId: user.sub });
+    return { transfers };
   }
 
   @ApiOperation({

@@ -511,6 +511,37 @@ export class TripShareResponseDto {
 }
 
 /**
+ * Owner-side share row. Same as TripShareResponseDto plus `publicRead`
+ * (false when the share has been revoked). Used by `GET /trips/:id/shares`.
+ *
+ * Installed by prompt [V.UX.8].
+ */
+export class TripShareOwnerDto {
+  @ApiProperty({ format: 'cuid' })
+  declare id: string;
+
+  @ApiProperty()
+  declare shareCode: string;
+
+  @ApiProperty({ description: 'False = revoked.' })
+  declare publicRead: boolean;
+
+  @ApiProperty({ nullable: true, format: 'date-time' })
+  declare expiresAt: string | null;
+
+  @ApiProperty({ format: 'date-time' })
+  declare createdAt: string;
+}
+
+export class ListTripSharesResponseDto {
+  @ApiProperty({
+    type: [TripShareOwnerDto],
+    description: 'Every share the owner has minted (active + revoked).',
+  })
+  declare shares: TripShareOwnerDto[];
+}
+
+/**
  * Body class for PATCH /trips/:id. Documentation-only — runtime
  * validation stays on `UpdateTripBodySchema` in `trip.dto.ts`. All
  * fields optional; only provided fields change. Date fields accept

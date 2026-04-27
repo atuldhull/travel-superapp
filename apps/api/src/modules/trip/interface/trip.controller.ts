@@ -49,6 +49,7 @@ import { DeleteTripUseCase } from '../application/delete-trip.use-case';
 import { DuplicateTripUseCase } from '../application/duplicate-trip.use-case';
 import { OptimizeDayRouteUseCase } from '../application/optimize-day-route.use-case';
 import { GetDayRouteCoordsUseCase } from '../application/get-day-route-coords.use-case';
+import { LockTripUseCase, UnlockTripUseCase } from '../application/lock-trip.use-case';
 import { GetTripEateriesUseCase } from '../application/get-trip-eateries.use-case';
 import { GetTripEventsUseCase } from '../application/get-trip-events.use-case';
 import { GetTripOverviewUseCase, type Section } from '../application/get-trip-overview.use-case';
@@ -97,6 +98,7 @@ import {
   GenerateSamplePlanRequestDto,
   GenerateSamplePlanResponseDto,
   ItineraryListResponseDto,
+  ListTripSharesResponseDto,
   ListTripsResponseDto,
   SharedTripDto as SharedTripResponseDto,
   DayRouteCoordsResponseDto,
@@ -152,6 +154,8 @@ export class TripController {
     private readonly duplicateTrip: DuplicateTripUseCase,
     private readonly optimizeDayRoute: OptimizeDayRouteUseCase,
     private readonly getDayRouteCoords: GetDayRouteCoordsUseCase,
+    private readonly lockTrip: LockTripUseCase,
+    private readonly unlockTrip: UnlockTripUseCase,
     private readonly generateItinerary: GenerateItineraryStubUseCase,
     private readonly generatePlanWithAi: GeneratePlanWithAiUseCase,
     private readonly generateSamplePlan: GenerateSamplePlanUseCase,
@@ -288,6 +292,43 @@ export class TripController {
     @Param('id') id: string,
   ): Promise<TripDto> {
     const trip = await this.duplicateTrip.execute({ tripId: id, userId: user.sub });
+    return toDto(trip);
+  }
+
+  /**
+   * V.UX.8 group-organiser lock. Owner-only. Flips status →
+   * 'published'; collaborators with active TripShare can still
+   * read/vote/expense, but only the owner can mutate the itinerary
+   * or trip metadata until /unlock.
+   */
+  @ApiOperation({
+    summary:
+      'Lock the trip — freezes itinerary edits for share-collaborators; owner-only writes still work.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Trip after lock (status="published").',
+    type: TripResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'TRIP_NOT_FOUND.' })
+  @Post(':id/lock')
+  @HttpCode(HttpStatus.OK)
+  async lock(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string): Promise<TripDto> {
+    const trip = await this.lockTrip.execute(id, user.sub);
+    return toDto(trip);
+  }
+
+  @ApiOperation({ summary: 'Unlock the trip — restores share-collaborator edit access.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Trip after unlock (status="draft").',
+    type: TripResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'TRIP_NOT_FOUND.' })
+  @Post(':id/unlock')
+  @HttpCode(HttpStatus.OK)
+  async unlock(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string): Promise<TripDto> {
+    const trip = await this.unlockTrip.execute(id, user.sub);
     return toDto(trip);
   }
 
@@ -641,6 +682,11 @@ export class TripController {
    * other Trip endpoint.
    */
   @ApiOperation({ summary: 'List active share codes for the trip the caller owns.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Owner-side share rows (active + revoked).',
+    type: ListTripSharesResponseDto,
+  })
   @Get(':id/shares')
   @HttpCode(HttpStatus.OK)
   async listShares(

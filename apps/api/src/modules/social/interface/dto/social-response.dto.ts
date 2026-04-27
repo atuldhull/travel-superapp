@@ -252,6 +252,33 @@ export class ListBalancesResponseDto {
   declare balances: UserBalanceDto[];
 }
 
+/**
+ * V.UX.8 settle-up suggestion. One transfer = one user pays another a
+ * fixed USD amount. The full list zeros the ledger; expect ≤ K-1
+ * transfers for K non-zero balance holders.
+ *
+ * Installed by prompt [V.UX.8].
+ */
+export class SettleTransferDto {
+  @ApiProperty({ format: 'cuid', description: 'User who pays.' })
+  declare fromUserId: string;
+
+  @ApiProperty({ format: 'cuid', description: 'User who receives.' })
+  declare toUserId: string;
+
+  @ApiProperty({ description: 'USD as 2dp string ("12.50").' })
+  declare amountUsd: string;
+}
+
+export class SettleUpResponseDto {
+  @ApiProperty({
+    type: [SettleTransferDto],
+    description:
+      'Greedy minimum-cashflow transfer plan. ≤ K-1 transfers for K non-zero balance holders.',
+  })
+  declare transfers: SettleTransferDto[];
+}
+
 // ─── Review bundle composite ─────────────────────────────────────
 
 export class RecentReviewDto {

@@ -22,6 +22,7 @@ import type {
   GenerateSamplePlanRequestDto,
   GenerateSamplePlanResponseDto,
   ItineraryListResponseDto,
+  ListTripSharesResponseDto,
   ListTripsResponseDto,
   OptimizeDayRouteResponseDto,
   SharedTripDto,
@@ -759,6 +760,205 @@ export const useTripControllerDuplicate = <TError = void, TContext = unknown>(op
   TContext
 > => {
   const mutationOptions = getTripControllerDuplicateMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Lock the trip — freezes itinerary edits for share-collaborators; owner-only writes still work.
+ */
+export type tripControllerLockResponse200 = {
+  data: TripDto;
+  status: 200;
+};
+
+export type tripControllerLockResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type tripControllerLockResponseSuccess = tripControllerLockResponse200 & {
+  headers: Headers;
+};
+export type tripControllerLockResponseError = tripControllerLockResponse404 & {
+  headers: Headers;
+};
+
+export type tripControllerLockResponse =
+  | tripControllerLockResponseSuccess
+  | tripControllerLockResponseError;
+
+export const getTripControllerLockUrl = (id: string) => {
+  return `/api/v1/trips/${id}/lock`;
+};
+
+export const tripControllerLock = async (
+  id: string,
+  options?: RequestInit,
+): Promise<tripControllerLockResponse> => {
+  return apiFetch<tripControllerLockResponse>(getTripControllerLockUrl(id), {
+    ...options,
+    method: 'POST',
+  });
+};
+
+export const getTripControllerLockMutationOptions = <TError = void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof tripControllerLock>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof tripControllerLock>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ['tripControllerLock'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof tripControllerLock>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return tripControllerLock(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type TripControllerLockMutationResult = NonNullable<
+  Awaited<ReturnType<typeof tripControllerLock>>
+>;
+
+export type TripControllerLockMutationError = void;
+
+/**
+ * @summary Lock the trip — freezes itinerary edits for share-collaborators; owner-only writes still work.
+ */
+export const useTripControllerLock = <TError = void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof tripControllerLock>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof tripControllerLock>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationOptions = getTripControllerLockMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Unlock the trip — restores share-collaborator edit access.
+ */
+export type tripControllerUnlockResponse200 = {
+  data: TripDto;
+  status: 200;
+};
+
+export type tripControllerUnlockResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type tripControllerUnlockResponseSuccess = tripControllerUnlockResponse200 & {
+  headers: Headers;
+};
+export type tripControllerUnlockResponseError = tripControllerUnlockResponse404 & {
+  headers: Headers;
+};
+
+export type tripControllerUnlockResponse =
+  | tripControllerUnlockResponseSuccess
+  | tripControllerUnlockResponseError;
+
+export const getTripControllerUnlockUrl = (id: string) => {
+  return `/api/v1/trips/${id}/unlock`;
+};
+
+export const tripControllerUnlock = async (
+  id: string,
+  options?: RequestInit,
+): Promise<tripControllerUnlockResponse> => {
+  return apiFetch<tripControllerUnlockResponse>(getTripControllerUnlockUrl(id), {
+    ...options,
+    method: 'POST',
+  });
+};
+
+export const getTripControllerUnlockMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof tripControllerUnlock>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof tripControllerUnlock>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ['tripControllerUnlock'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof tripControllerUnlock>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return tripControllerUnlock(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type TripControllerUnlockMutationResult = NonNullable<
+  Awaited<ReturnType<typeof tripControllerUnlock>>
+>;
+
+export type TripControllerUnlockMutationError = void;
+
+/**
+ * @summary Unlock the trip — restores share-collaborator edit access.
+ */
+export const useTripControllerUnlock = <TError = void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof tripControllerUnlock>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof tripControllerUnlock>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationOptions = getTripControllerUnlockMutationOptions(options);
 
   return useMutation(mutationOptions);
 };
@@ -2358,7 +2558,7 @@ export function useTripControllerWeather<
  * @summary List active share codes for the trip the caller owns.
  */
 export type tripControllerListSharesResponse200 = {
-  data: void;
+  data: ListTripSharesResponseDto;
   status: 200;
 };
 

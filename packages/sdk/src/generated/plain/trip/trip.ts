@@ -9,6 +9,7 @@ import type {
   GenerateSamplePlanRequestDto,
   GenerateSamplePlanResponseDto,
   ItineraryListResponseDto,
+  ListTripSharesResponseDto,
   ListTripsResponseDto,
   OptimizeDayRouteResponseDto,
   SharedTripDto,
@@ -244,6 +245,82 @@ export const tripControllerDuplicate = async (
   options?: RequestInit,
 ): Promise<tripControllerDuplicateResponse> => {
   return apiFetch<tripControllerDuplicateResponse>(getTripControllerDuplicateUrl(id), {
+    ...options,
+    method: 'POST',
+  });
+};
+
+/**
+ * @summary Lock the trip — freezes itinerary edits for share-collaborators; owner-only writes still work.
+ */
+export type tripControllerLockResponse200 = {
+  data: TripDto;
+  status: 200;
+};
+
+export type tripControllerLockResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type tripControllerLockResponseSuccess = tripControllerLockResponse200 & {
+  headers: Headers;
+};
+export type tripControllerLockResponseError = tripControllerLockResponse404 & {
+  headers: Headers;
+};
+
+export type tripControllerLockResponse =
+  | tripControllerLockResponseSuccess
+  | tripControllerLockResponseError;
+
+export const getTripControllerLockUrl = (id: string) => {
+  return `/api/v1/trips/${id}/lock`;
+};
+
+export const tripControllerLock = async (
+  id: string,
+  options?: RequestInit,
+): Promise<tripControllerLockResponse> => {
+  return apiFetch<tripControllerLockResponse>(getTripControllerLockUrl(id), {
+    ...options,
+    method: 'POST',
+  });
+};
+
+/**
+ * @summary Unlock the trip — restores share-collaborator edit access.
+ */
+export type tripControllerUnlockResponse200 = {
+  data: TripDto;
+  status: 200;
+};
+
+export type tripControllerUnlockResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type tripControllerUnlockResponseSuccess = tripControllerUnlockResponse200 & {
+  headers: Headers;
+};
+export type tripControllerUnlockResponseError = tripControllerUnlockResponse404 & {
+  headers: Headers;
+};
+
+export type tripControllerUnlockResponse =
+  | tripControllerUnlockResponseSuccess
+  | tripControllerUnlockResponseError;
+
+export const getTripControllerUnlockUrl = (id: string) => {
+  return `/api/v1/trips/${id}/unlock`;
+};
+
+export const tripControllerUnlock = async (
+  id: string,
+  options?: RequestInit,
+): Promise<tripControllerUnlockResponse> => {
+  return apiFetch<tripControllerUnlockResponse>(getTripControllerUnlockUrl(id), {
     ...options,
     method: 'POST',
   });
@@ -658,7 +735,7 @@ export const tripControllerWeather = async (
  * @summary List active share codes for the trip the caller owns.
  */
 export type tripControllerListSharesResponse200 = {
-  data: void;
+  data: ListTripSharesResponseDto;
   status: 200;
 };
 

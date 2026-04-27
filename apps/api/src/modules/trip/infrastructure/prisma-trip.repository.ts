@@ -46,6 +46,11 @@ export class PrismaTripRepository implements TripRepository {
     return row ? toDomain(row) : null;
   }
 
+  async findById(id: string): Promise<Trip | null> {
+    const row = await this.prisma.trip.findUnique({ where: { id } });
+    return row ? toDomain(row) : null;
+  }
+
   async listByUser(userId: string, limit: number): Promise<readonly Trip[]> {
     const rows = await this.prisma.trip.findMany({
       where: { userId },
