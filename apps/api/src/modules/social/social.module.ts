@@ -25,6 +25,7 @@ import { DeleteReviewUseCase } from './application/delete-review.use-case';
 import { GetReviewBundleForTargetUseCase } from './application/get-review-bundle-for-target.use-case';
 import { GetReviewSummaryUseCase } from './application/get-review-summary.use-case';
 import { GetTripBalancesUseCase } from './application/get-trip-balances.use-case';
+import { SettleUpUseCase } from './application/settle-up.use-case';
 import { GetVoteSummaryUseCase } from './application/get-vote-summary.use-case';
 import { ListMyReviewsUseCase } from './application/list-my-reviews.use-case';
 import { ListReviewsForTargetUseCase } from './application/list-reviews-for-target.use-case';
@@ -70,6 +71,7 @@ import { VotesController } from './interface/votes.controller';
     DeleteExpenseUseCase,
     ListTripExpensesUseCase,
     GetTripBalancesUseCase,
+    SettleUpUseCase,
     CreateReviewUseCase,
     DeleteReviewUseCase,
     ListReviewsForTargetUseCase,

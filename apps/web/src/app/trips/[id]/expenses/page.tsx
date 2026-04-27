@@ -29,10 +29,12 @@ import {
   useExpensesControllerCreate,
   useExpensesControllerList,
   useExpensesControllerRemove,
+  useExpensesControllerSettleUp,
   useTripControllerGetOne,
   type CreateExpenseRequestDto,
   type ListBalancesResponseDto,
   type ListExpensesResponseDto,
+  type SettleUpResponseDto,
   type TripDto,
   type UserBalanceDto,
   type WhoAmIResponseDto,
@@ -83,6 +85,9 @@ export default function TripExpensesPage() {
     { query: { enabled: token !== null && tripId !== '' } },
   );
   const { data: balancesData, isLoading: balancesLoading } = useExpensesControllerBalances(tripId, {
+    query: { enabled: token !== null && tripId !== '' },
+  });
+  const { data: settleData } = useExpensesControllerSettleUp(tripId, {
     query: { enabled: token !== null && tripId !== '' },
   });
 
@@ -330,6 +335,49 @@ export default function TripExpensesPage() {
             })}
           </ul>
         )}
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Settle up</CardTitle>
+          <CardSubtitle>
+            Greedy minimum-cashflow plan — N-1 transfers max for N non-zero balances.
+          </CardSubtitle>
+        </CardHeader>
+        {(() => {
+          const transfers =
+            (settleData?.data as unknown as SettleUpResponseDto | undefined)?.transfers ?? [];
+          if (transfers.length === 0) {
+            return (
+              <p className="text-sm text-muted">
+                Nothing to settle — every balance is zero (or no expenses yet).
+              </p>
+            );
+          }
+          return (
+            <ul className="space-y-1.5">
+              {transfers.map((t, i) => (
+                <li
+                  key={`${t.fromUserId}-${t.toUserId}-${i}`}
+                  className="flex items-center justify-between gap-3 text-sm"
+                >
+                  <span className="font-mono text-xs">
+                    <code className="rounded bg-muted/10 px-1.5 py-0.5">
+                      {t.fromUserId.slice(0, 8)}…
+                    </code>{' '}
+                    →{' '}
+                    <code className="rounded bg-muted/10 px-1.5 py-0.5">
+                      {t.toUserId.slice(0, 8)}…
+                    </code>
+                  </span>
+                  <span className="font-mono font-semibold text-brand">
+                    ${Number(t.amountUsd).toFixed(2)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          );
+        })()}
       </Card>
     </main>
   );

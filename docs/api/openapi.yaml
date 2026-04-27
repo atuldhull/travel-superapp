@@ -608,6 +608,49 @@ paths:
       summary: Duplicate a trip the caller owns. Deep-copies title (+" (copy)"),
         center, radius, dates, itinerary days/items. New trip is `draft`.
       tags: *a12
+  /api/v1/trips/{id}/lock:
+    post:
+      operationId: TripController_lock
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Trip after lock (status="published").
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripDto'
+        '404':
+          description: TRIP_NOT_FOUND.
+      security: *a11
+      summary: Lock the trip — freezes itinerary edits for share-collaborators;
+        owner-only writes still work.
+      tags: *a12
+  /api/v1/trips/{id}/unlock:
+    post:
+      operationId: TripController_unlock
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Trip after unlock (status="draft").
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripDto'
+        '404':
+          description: TRIP_NOT_FOUND.
+      security: *a11
+      summary: Unlock the trip — restores share-collaborator edit access.
+      tags: *a12
   /api/v1/trips/{id}/itinerary:
     post:
       operationId: TripController_buildItinerary
@@ -861,7 +904,11 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: Owner-side share rows (active + revoked).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListTripSharesResponseDto'
       security: *a11
       summary: List active share codes for the trip the caller owns.
       tags: *a12
@@ -2291,6 +2338,27 @@ paths:
       summary: Net per-user "who owes whom" ledger. Sum is zero (modulo 2dp). 60s
         cache; write-invalidated on expense create/delete.
       tags: *a38
+  /api/v1/trips/{tripId}/expenses/settle-up:
+    get:
+      operationId: ExpensesController_settleUp
+      parameters:
+        - name: tripId
+          required: true
+          in: path
+          description: Trip id (auth-gated to owner OR active TripShare).
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Transfer plan that zeros every balance.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettleUpResponseDto'
+      security: *a37
+      summary: Settle-up plan — greedy minimum-cashflow transfers that zero the trip
+        ledger. Owner OR active share.
+      tags: *a38
   /api/v1/trips/{tripId}/expenses/{id}:
     delete:
       operationId: ExpensesController_remove
@@ -3486,6 +3554,40 @@ components:
         - events
         - transport
         - media
+    TripShareOwnerDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        shareCode:
+          type: string
+        publicRead:
+          type: boolean
+          description: False = revoked.
+        expiresAt:
+          type: object
+          nullable: true
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - shareCode
+        - publicRead
+        - expiresAt
+        - createdAt
+    ListTripSharesResponseDto:
+      type: object
+      properties:
+        shares:
+          description: Every share the owner has minted (active + revoked).
+          type: array
+          items:
+            $ref: '#/components/schemas/TripShareOwnerDto'
+      required:
+        - shares
     SuggestPlacesForTripRequestDto:
       type: object
       properties:
@@ -5405,6 +5507,35 @@ components:
             $ref: '#/components/schemas/UserBalanceDto'
       required:
         - balances
+    SettleTransferDto:
+      type: object
+      properties:
+        fromUserId:
+          type: string
+          format: cuid
+          description: User who pays.
+        toUserId:
+          type: string
+          format: cuid
+          description: User who receives.
+        amountUsd:
+          type: string
+          description: USD as 2dp string ("12.50").
+      required:
+        - fromUserId
+        - toUserId
+        - amountUsd
+    SettleUpResponseDto:
+      type: object
+      properties:
+        transfers:
+          description: Greedy minimum-cashflow transfer plan. ≤ K-1 transfers for K
+            non-zero balance holders.
+          type: array
+          items:
+            $ref: '#/components/schemas/SettleTransferDto'
+      required:
+        - transfers
     CreateReviewRequestDto:
       type: object
       properties:

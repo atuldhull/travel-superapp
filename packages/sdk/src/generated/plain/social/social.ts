@@ -20,6 +20,7 @@ import type {
   ReviewsControllerListMineParams,
   ReviewsControllerSummaryParams,
   RevokeVoteRequestDto,
+  SettleUpResponseDto,
   StayReviewSummaryResponseDto,
   VoteDto,
   VoteSummaryDto,
@@ -210,6 +211,33 @@ export const expensesControllerBalances = async (
   options?: RequestInit,
 ): Promise<expensesControllerBalancesResponse> => {
   return apiFetch<expensesControllerBalancesResponse>(getExpensesControllerBalancesUrl(tripId), {
+    ...options,
+    method: 'GET',
+  });
+};
+
+/**
+ * @summary Settle-up plan — greedy minimum-cashflow transfers that zero the trip ledger. Owner OR active share.
+ */
+export type expensesControllerSettleUpResponse200 = {
+  data: SettleUpResponseDto;
+  status: 200;
+};
+
+export type expensesControllerSettleUpResponseSuccess = expensesControllerSettleUpResponse200 & {
+  headers: Headers;
+};
+export type expensesControllerSettleUpResponse = expensesControllerSettleUpResponseSuccess;
+
+export const getExpensesControllerSettleUpUrl = (tripId: string) => {
+  return `/api/v1/trips/${tripId}/expenses/settle-up`;
+};
+
+export const expensesControllerSettleUp = async (
+  tripId: string,
+  options?: RequestInit,
+): Promise<expensesControllerSettleUpResponse> => {
+  return apiFetch<expensesControllerSettleUpResponse>(getExpensesControllerSettleUpUrl(tripId), {
     ...options,
     method: 'GET',
   });

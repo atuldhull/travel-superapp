@@ -34,6 +34,7 @@ import { DuplicateTripUseCase } from './application/duplicate-trip.use-case';
 import { OptimizeDayRouteUseCase } from './application/optimize-day-route.use-case';
 import { GetDayRouteCoordsUseCase } from './application/get-day-route-coords.use-case';
 import { NearMeNowUseCase } from './application/near-me-now.use-case';
+import { LockTripUseCase, UnlockTripUseCase } from './application/lock-trip.use-case';
 import { GenerateItineraryStubUseCase } from './application/generate-itinerary-stub.use-case';
 import { SeedSampleTripUseCase } from './application/seed-sample-trip.use-case';
 import { GeneratePlanWithAiUseCase } from './application/generate-plan-with-ai.use-case';
@@ -132,6 +133,8 @@ import { TripController } from './interface/trip.controller';
     OptimizeDayRouteUseCase,
     GetDayRouteCoordsUseCase,
     NearMeNowUseCase,
+    LockTripUseCase,
+    UnlockTripUseCase,
     TripOverviewCache,
     AdminListTripsUseCase,
     AdminArchiveTripUseCase,

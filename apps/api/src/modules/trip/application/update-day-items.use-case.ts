@@ -102,6 +102,17 @@ export class UpdateDayItemsUseCase {
           'TRIP_NOT_FOUND',
         );
       }
+      // V.UX.8 lock gate: share-collaborators can't mutate when the
+      // owner has flipped the trip to `published` (= locked). Owner
+      // path skips this branch entirely (ownTrip non-null).
+      const tripRow = await this.trips.findById(cmd.tripId);
+      if (tripRow && tripRow.status === 'published') {
+        throw new NotFoundError(
+          `Trip not found: ${cmd.tripId}`,
+          { tripId: cmd.tripId },
+          'TRIP_NOT_FOUND',
+        );
+      }
     }
 
     // Day lookup is unscoped now — the access gate above already

@@ -28,6 +28,17 @@ export interface TripRepository {
    *  row matches or the trip belongs to a different user. */
   findByIdForUser(id: string, userId: string): Promise<Trip | null>;
 
+  /**
+   * Scope-free read by id. Returns `null` when no row matches.
+   * Used by collab-aware paths (e.g. UpdateDayItems with active
+   * share) that need to read fields like `status` without being
+   * scoped to any single user. Callers MUST run their own access
+   * gate before exposing the result.
+   *
+   * Added by `[V.UX.8]` for the lock-trip gate.
+   */
+  findById(id: string): Promise<Trip | null>;
+
   /** Simple listing for the user's own trips — descending by
    *  `createdAt`, capped by the caller. */
   listByUser(userId: string, limit: number): Promise<readonly Trip[]>;

@@ -169,6 +169,11 @@ export type { NearMeWeatherDto } from './generated/schemas/nearMeWeatherDto';
 export type { NearMeWeatherDayDto } from './generated/schemas/nearMeWeatherDayDto';
 export type { NearMeSafetyDto } from './generated/schemas/nearMeSafetyDto';
 export type { NearMeRouteLegDto } from './generated/schemas/nearMeRouteLegDto';
+// V.UX.8: group-organiser settle-up + vote-summary types
+export type { SettleTransferDto } from './generated/schemas/settleTransferDto';
+export type { SettleUpResponseDto } from './generated/schemas/settleUpResponseDto';
+export type { TripShareOwnerDto } from './generated/schemas/tripShareOwnerDto';
+export type { ListTripSharesResponseDto } from './generated/schemas/listTripSharesResponseDto';
 // V.UX.5: business-traveler — Expense / Balance schemas already
 // exported above (lines 121-126); social hooks barrel re-exported
 // above to surface useExpensesController{Create,List,Balances,Remove}.

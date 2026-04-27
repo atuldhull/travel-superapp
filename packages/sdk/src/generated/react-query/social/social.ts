@@ -33,6 +33,7 @@ import type {
   ReviewsControllerListMineParams,
   ReviewsControllerSummaryParams,
   RevokeVoteRequestDto,
+  SettleUpResponseDto,
   StayReviewSummaryResponseDto,
   VoteDto,
   VoteSummaryDto,
@@ -825,6 +826,167 @@ export function useExpensesControllerBalances<
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getExpensesControllerBalancesQueryOptions(tripId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary Settle-up plan — greedy minimum-cashflow transfers that zero the trip ledger. Owner OR active share.
+ */
+export type expensesControllerSettleUpResponse200 = {
+  data: SettleUpResponseDto;
+  status: 200;
+};
+
+export type expensesControllerSettleUpResponseSuccess = expensesControllerSettleUpResponse200 & {
+  headers: Headers;
+};
+export type expensesControllerSettleUpResponse = expensesControllerSettleUpResponseSuccess;
+
+export const getExpensesControllerSettleUpUrl = (tripId: string) => {
+  return `/api/v1/trips/${tripId}/expenses/settle-up`;
+};
+
+export const expensesControllerSettleUp = async (
+  tripId: string,
+  options?: RequestInit,
+): Promise<expensesControllerSettleUpResponse> => {
+  return apiFetch<expensesControllerSettleUpResponse>(getExpensesControllerSettleUpUrl(tripId), {
+    ...options,
+    method: 'GET',
+  });
+};
+
+export const getExpensesControllerSettleUpInfiniteQueryKey = (tripId?: string) => {
+  return ['infinite', `/api/v1/trips/${tripId}/expenses/settle-up`] as const;
+};
+
+export const getExpensesControllerSettleUpQueryKey = (tripId?: string) => {
+  return [`/api/v1/trips/${tripId}/expenses/settle-up`] as const;
+};
+
+export const getExpensesControllerSettleUpInfiniteQueryOptions = <
+  TData = Awaited<ReturnType<typeof expensesControllerSettleUp>>,
+  TError = unknown,
+>(
+  tripId: string,
+  options?: {
+    query?: UseInfiniteQueryOptions<
+      Awaited<ReturnType<typeof expensesControllerSettleUp>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getExpensesControllerSettleUpInfiniteQueryKey(tripId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof expensesControllerSettleUp>>> = ({
+    signal,
+  }) => expensesControllerSettleUp(tripId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!tripId,
+    staleTime: 30000,
+    ...queryOptions,
+  } as UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof expensesControllerSettleUp>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ExpensesControllerSettleUpInfiniteQueryResult = NonNullable<
+  Awaited<ReturnType<typeof expensesControllerSettleUp>>
+>;
+export type ExpensesControllerSettleUpInfiniteQueryError = unknown;
+
+/**
+ * @summary Settle-up plan — greedy minimum-cashflow transfers that zero the trip ledger. Owner OR active share.
+ */
+
+export function useExpensesControllerSettleUpInfinite<
+  TData = Awaited<ReturnType<typeof expensesControllerSettleUp>>,
+  TError = unknown,
+>(
+  tripId: string,
+  options?: {
+    query?: UseInfiniteQueryOptions<
+      Awaited<ReturnType<typeof expensesControllerSettleUp>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+): UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getExpensesControllerSettleUpInfiniteQueryOptions(tripId, options);
+
+  const query = useInfiniteQuery(queryOptions) as UseInfiniteQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getExpensesControllerSettleUpQueryOptions = <
+  TData = Awaited<ReturnType<typeof expensesControllerSettleUp>>,
+  TError = unknown,
+>(
+  tripId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof expensesControllerSettleUp>>, TError, TData>;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getExpensesControllerSettleUpQueryKey(tripId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof expensesControllerSettleUp>>> = ({
+    signal,
+  }) => expensesControllerSettleUp(tripId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!tripId,
+    staleTime: 30000,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof expensesControllerSettleUp>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type ExpensesControllerSettleUpQueryResult = NonNullable<
+  Awaited<ReturnType<typeof expensesControllerSettleUp>>
+>;
+export type ExpensesControllerSettleUpQueryError = unknown;
+
+/**
+ * @summary Settle-up plan — greedy minimum-cashflow transfers that zero the trip ledger. Owner OR active share.
+ */
+
+export function useExpensesControllerSettleUp<
+  TData = Awaited<ReturnType<typeof expensesControllerSettleUp>>,
+  TError = unknown,
+>(
+  tripId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof expensesControllerSettleUp>>, TError, TData>;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getExpensesControllerSettleUpQueryOptions(tripId, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

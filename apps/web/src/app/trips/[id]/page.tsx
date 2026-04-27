@@ -25,6 +25,8 @@ import {
   useMediaControllerListByTrip,
   useTripControllerBuildItinerary,
   useTripControllerDuplicate,
+  useTripControllerLock,
+  useTripControllerUnlock,
   useTripControllerGetItinerary,
   useTripControllerGetOne,
   useTripControllerPlanWithAi,
@@ -55,6 +57,8 @@ import { EmailItineraryButton } from '../../../components/trip/email-itinerary-b
 import { OpenOnMobileButton } from '../../../components/trip/open-on-mobile-button';
 import { PlaceSuggestionPicker } from '../../../components/trip/place-suggestion-picker';
 import { PowerPlannerSection } from '../../../components/trip/power-planner-section';
+import { ShareList } from '../../../components/trip/share-list';
+import { VoteButtons } from '../../../components/trip/vote-buttons';
 import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
 
 interface ApiError extends Error {
@@ -95,6 +99,38 @@ export default function TripDetailPage() {
       onError: (err: unknown) => {
         const e = err as ApiError;
         setErrorMsg(`${e.code ?? `HTTP_${e.status ?? '???'}`} — ${e.message ?? 'Update failed.'}`);
+      },
+    },
+  });
+
+  const lockMutation = useTripControllerLock({
+    mutation: {
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: getTripControllerGetOneQueryKey(id) });
+        await queryClient.invalidateQueries({
+          queryKey: getTripControllerListQueryKey({ limit: '20' }),
+        });
+        setErrorMsg(null);
+      },
+      onError: (err: unknown) => {
+        const e = err as ApiError;
+        setErrorMsg(`${e.code ?? `HTTP_${e.status ?? '???'}`} — ${e.message ?? 'Lock failed.'}`);
+      },
+    },
+  });
+
+  const unlockMutation = useTripControllerUnlock({
+    mutation: {
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: getTripControllerGetOneQueryKey(id) });
+        await queryClient.invalidateQueries({
+          queryKey: getTripControllerListQueryKey({ limit: '20' }),
+        });
+        setErrorMsg(null);
+      },
+      onError: (err: unknown) => {
+        const e = err as ApiError;
+        setErrorMsg(`${e.code ?? `HTTP_${e.status ?? '???'}`} — ${e.message ?? 'Unlock failed.'}`);
       },
     },
   });
@@ -208,11 +244,21 @@ export default function TripDetailPage() {
           }}
           isDuplicating={duplicateMutation.isPending}
           duplicateErrorMsg={errorMsg}
+          onLockToggle={() => {
+            setErrorMsg(null);
+            if (trip.status === 'published') {
+              unlockMutation.mutate({ id });
+            } else {
+              lockMutation.mutate({ id });
+            }
+          }}
+          isLockToggling={lockMutation.isPending || unlockMutation.isPending}
         />
       )}
       <ItinerarySection tripId={id} enabled={token !== null && !editing} />
       <PowerPlannerSection tripId={id} enabled={token !== null && !editing} />
       <PlaceSuggestionPicker tripId={id} enabled={token !== null && !editing} />
+      <ShareList tripId={id} enabled={token !== null && !editing} />
       <PlanWithAiSection tripId={id} enabled={token !== null && !editing} />
       <MediaSection tripId={id} enabled={token !== null && !editing} />
       <ShareSection tripId={id} enabled={token !== null && !editing} />
@@ -261,6 +307,8 @@ interface ReadViewProps {
   readonly onDuplicate: () => void;
   readonly isDuplicating: boolean;
   readonly duplicateErrorMsg: string | null;
+  readonly onLockToggle: () => void;
+  readonly isLockToggling: boolean;
 }
 
 function ReadView({
@@ -270,6 +318,8 @@ function ReadView({
   onDuplicate,
   isDuplicating,
   duplicateErrorMsg,
+  onLockToggle,
+  isLockToggling,
 }: ReadViewProps) {
   const statusVariant: 'neutral' | 'brand' = trip.status === 'draft' ? 'neutral' : 'brand';
   return (
@@ -302,6 +352,15 @@ function ReadView({
             <Button variant="outline" size="sm" onClick={onDuplicate} disabled={isDuplicating}>
               {isDuplicating ? 'Duplicating…' : 'Duplicate'}
             </Button>
+            <Button variant="outline" size="sm" onClick={onLockToggle} disabled={isLockToggling}>
+              {isLockToggling
+                ? trip.status === 'published'
+                  ? 'Unlocking…'
+                  : 'Locking…'
+                : trip.status === 'published'
+                  ? '🔓 Unlock'
+                  : '🔒 Lock'}
+            </Button>
             <Button variant="outline" size="sm" onClick={onEdit}>
               Edit
             </Button>
@@ -310,6 +369,12 @@ function ReadView({
             </Button>
           </div>
         </div>
+        {trip.status === 'published' ? (
+          <p className="mt-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+            🔒 <strong>Locked.</strong> Share collaborators can read + vote + log expenses, but only
+            you can edit the itinerary or trip metadata. Unlock to reopen edits.
+          </p>
+        ) : null}
         {duplicateErrorMsg ? (
           <p className="mt-2 rounded-md border border-danger/30 bg-danger/5 px-3 py-2 text-xs text-danger">
             {duplicateErrorMsg}
@@ -511,7 +576,7 @@ function ItinerarySection({ tripId, enabled }: ItinerarySectionProps) {
       ) : (
         <ol className="space-y-3">
           {days.map((d) => (
-            <DayRow key={d.id} day={d} />
+            <DayRow key={d.id} day={d} tripId={tripId} />
           ))}
         </ol>
       )}
@@ -519,7 +584,7 @@ function ItinerarySection({ tripId, enabled }: ItinerarySectionProps) {
   );
 }
 
-function DayRow({ day }: { day: ItineraryDayDto }) {
+function DayRow({ day, tripId }: { day: ItineraryDayDto; tripId: string }) {
   const [editing, setEditing] = useState(false);
   const dateStr = new Date(day.date as unknown as string).toLocaleDateString();
   return (
@@ -550,9 +615,14 @@ function DayRow({ day }: { day: ItineraryDayDto }) {
             const notes = it.notes as unknown as string | null;
             const placeId = it.placeId as unknown as string | null;
             return (
-              <li key={it.id}>
-                · {notes ?? <em>(no notes)</em>}
-                {placeId ? <span className="ml-1 opacity-70">({placeId.slice(0, 8)}…)</span> : null}
+              <li key={it.id} className="flex items-start justify-between gap-2 py-1">
+                <span className="flex-1">
+                  · {notes ?? <em>(no notes)</em>}
+                  {placeId ? (
+                    <span className="ml-1 opacity-70">({placeId.slice(0, 8)}…)</span>
+                  ) : null}
+                </span>
+                <VoteButtons tripId={tripId} targetId={it.id} targetType="itinerary_item" />
               </li>
             );
           })}
