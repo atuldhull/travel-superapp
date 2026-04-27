@@ -24,6 +24,7 @@ export * from './generated/react-query/media/media';
 export * from './generated/react-query/identity/identity';
 export * from './generated/react-query/trip/trip';
 export * from './generated/react-query/social/social';
+export * from './generated/react-query/near-me/near-me';
 
 // Schema types from openapi.yaml's components/schemas. Re-exported so
 // consumers don't have to reach into deep generated paths. Add the
@@ -160,6 +161,14 @@ export type { SuggestPlacesForTripResponseDto } from './generated/schemas/sugges
 export type { OptimizeDayRouteResponseDto } from './generated/schemas/optimizeDayRouteResponseDto';
 export type { DayRouteCoordDto } from './generated/schemas/dayRouteCoordDto';
 export type { DayRouteCoordsResponseDto } from './generated/schemas/dayRouteCoordsResponseDto';
+// V.UX.7: spontaneous-improviser — near-me composite
+export type { NearMeNowRequestDto } from './generated/schemas/nearMeNowRequestDto';
+export type { NearMeNowResponseDto } from './generated/schemas/nearMeNowResponseDto';
+export type { NearMePlaceDto } from './generated/schemas/nearMePlaceDto';
+export type { NearMeWeatherDto } from './generated/schemas/nearMeWeatherDto';
+export type { NearMeWeatherDayDto } from './generated/schemas/nearMeWeatherDayDto';
+export type { NearMeSafetyDto } from './generated/schemas/nearMeSafetyDto';
+export type { NearMeRouteLegDto } from './generated/schemas/nearMeRouteLegDto';
 // V.UX.5: business-traveler — Expense / Balance schemas already
 // exported above (lines 121-126); social hooks barrel re-exported
 // above to surface useExpensesController{Create,List,Balances,Remove}.

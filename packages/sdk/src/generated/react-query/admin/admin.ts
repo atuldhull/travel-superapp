@@ -634,481 +634,6 @@ export const useAdminTripsControllerRemove = <TError = unknown, TContext = unkno
   return useMutation(mutationOptions);
 };
 /**
- * @summary Cross-user list of media with optional ?ownerId, ?kind, ?status filters. Admin-only.
- */
-export type adminMediaControllerListResponse200 = {
-  data: AdminListMediaResponseDto;
-  status: 200;
-};
-
-export type adminMediaControllerListResponse400 = {
-  data: void;
-  status: 400;
-};
-
-export type adminMediaControllerListResponseSuccess = adminMediaControllerListResponse200 & {
-  headers: Headers;
-};
-export type adminMediaControllerListResponseError = adminMediaControllerListResponse400 & {
-  headers: Headers;
-};
-
-export type adminMediaControllerListResponse =
-  | adminMediaControllerListResponseSuccess
-  | adminMediaControllerListResponseError;
-
-export const getAdminMediaControllerListUrl = (params: AdminMediaControllerListParams) => {
-  const normalizedParams = new URLSearchParams();
-
-  Object.entries(params || {}).forEach(([key, value]) => {
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString());
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0
-    ? `/api/v1/admin/media?${stringifiedParams}`
-    : `/api/v1/admin/media`;
-};
-
-export const adminMediaControllerList = async (
-  params: AdminMediaControllerListParams,
-  options?: RequestInit,
-): Promise<adminMediaControllerListResponse> => {
-  return apiFetch<adminMediaControllerListResponse>(getAdminMediaControllerListUrl(params), {
-    ...options,
-    method: 'GET',
-  });
-};
-
-export const getAdminMediaControllerListInfiniteQueryKey = (
-  params?: AdminMediaControllerListParams,
-) => {
-  return ['infinite', `/api/v1/admin/media`, ...(params ? [params] : [])] as const;
-};
-
-export const getAdminMediaControllerListQueryKey = (params?: AdminMediaControllerListParams) => {
-  return [`/api/v1/admin/media`, ...(params ? [params] : [])] as const;
-};
-
-export const getAdminMediaControllerListInfiniteQueryOptions = <
-  TData = Awaited<ReturnType<typeof adminMediaControllerList>>,
-  TError = void,
->(
-  params: AdminMediaControllerListParams,
-  options?: {
-    query?: UseInfiniteQueryOptions<
-      Awaited<ReturnType<typeof adminMediaControllerList>>,
-      TError,
-      TData
-    >;
-    request?: SecondParameter<typeof apiFetch>;
-  },
-) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {};
-
-  const queryKey = queryOptions?.queryKey ?? getAdminMediaControllerListInfiniteQueryKey(params);
-
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof adminMediaControllerList>>> = ({
-    signal,
-    pageParam,
-  }) =>
-    adminMediaControllerList(
-      { ...params, limit: pageParam || params?.['limit'] },
-      { signal, ...requestOptions },
-    );
-
-  return { queryKey, queryFn, staleTime: 30000, ...queryOptions } as UseInfiniteQueryOptions<
-    Awaited<ReturnType<typeof adminMediaControllerList>>,
-    TError,
-    TData
-  > & { queryKey: QueryKey };
-};
-
-export type AdminMediaControllerListInfiniteQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminMediaControllerList>>
->;
-export type AdminMediaControllerListInfiniteQueryError = void;
-
-/**
- * @summary Cross-user list of media with optional ?ownerId, ?kind, ?status filters. Admin-only.
- */
-
-export function useAdminMediaControllerListInfinite<
-  TData = Awaited<ReturnType<typeof adminMediaControllerList>>,
-  TError = void,
->(
-  params: AdminMediaControllerListParams,
-  options?: {
-    query?: UseInfiniteQueryOptions<
-      Awaited<ReturnType<typeof adminMediaControllerList>>,
-      TError,
-      TData
-    >;
-    request?: SecondParameter<typeof apiFetch>;
-  },
-): UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getAdminMediaControllerListInfiniteQueryOptions(params, options);
-
-  const query = useInfiniteQuery(queryOptions) as UseInfiniteQueryResult<TData, TError> & {
-    queryKey: QueryKey;
-  };
-
-  query.queryKey = queryOptions.queryKey;
-
-  return query;
-}
-
-export const getAdminMediaControllerListQueryOptions = <
-  TData = Awaited<ReturnType<typeof adminMediaControllerList>>,
-  TError = void,
->(
-  params: AdminMediaControllerListParams,
-  options?: {
-    query?: UseQueryOptions<Awaited<ReturnType<typeof adminMediaControllerList>>, TError, TData>;
-    request?: SecondParameter<typeof apiFetch>;
-  },
-) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {};
-
-  const queryKey = queryOptions?.queryKey ?? getAdminMediaControllerListQueryKey(params);
-
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof adminMediaControllerList>>> = ({
-    signal,
-  }) => adminMediaControllerList(params, { signal, ...requestOptions });
-
-  return { queryKey, queryFn, staleTime: 30000, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof adminMediaControllerList>>,
-    TError,
-    TData
-  > & { queryKey: QueryKey };
-};
-
-export type AdminMediaControllerListQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminMediaControllerList>>
->;
-export type AdminMediaControllerListQueryError = void;
-
-/**
- * @summary Cross-user list of media with optional ?ownerId, ?kind, ?status filters. Admin-only.
- */
-
-export function useAdminMediaControllerList<
-  TData = Awaited<ReturnType<typeof adminMediaControllerList>>,
-  TError = void,
->(
-  params: AdminMediaControllerListParams,
-  options?: {
-    query?: UseQueryOptions<Awaited<ReturnType<typeof adminMediaControllerList>>, TError, TData>;
-    request?: SecondParameter<typeof apiFetch>;
-  },
-): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getAdminMediaControllerListQueryOptions(params, options);
-
-  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  query.queryKey = queryOptions.queryKey;
-
-  return query;
-}
-
-/**
- * @summary Hard-delete media (takedown). Trip + memory book references SetNull-cascade.
- */
-export type adminMediaControllerRemoveResponse204 = {
-  data: void;
-  status: 204;
-};
-
-export type adminMediaControllerRemoveResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type adminMediaControllerRemoveResponseSuccess = adminMediaControllerRemoveResponse204 & {
-  headers: Headers;
-};
-export type adminMediaControllerRemoveResponseError = adminMediaControllerRemoveResponse404 & {
-  headers: Headers;
-};
-
-export type adminMediaControllerRemoveResponse =
-  | adminMediaControllerRemoveResponseSuccess
-  | adminMediaControllerRemoveResponseError;
-
-export const getAdminMediaControllerRemoveUrl = (id: string) => {
-  return `/api/v1/admin/media/${id}`;
-};
-
-export const adminMediaControllerRemove = async (
-  id: string,
-  options?: RequestInit,
-): Promise<adminMediaControllerRemoveResponse> => {
-  return apiFetch<adminMediaControllerRemoveResponse>(getAdminMediaControllerRemoveUrl(id), {
-    ...options,
-    method: 'DELETE',
-  });
-};
-
-export const getAdminMediaControllerRemoveMutationOptions = <
-  TError = void,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof adminMediaControllerRemove>>,
-    TError,
-    { id: string },
-    TContext
-  >;
-  request?: SecondParameter<typeof apiFetch>;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof adminMediaControllerRemove>>,
-  TError,
-  { id: string },
-  TContext
-> => {
-  const mutationKey = ['adminMediaControllerRemove'];
-  const { mutation: mutationOptions, request: requestOptions } = options
-    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, request: undefined };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminMediaControllerRemove>>,
-    { id: string }
-  > = (props) => {
-    const { id } = props ?? {};
-
-    return adminMediaControllerRemove(id, requestOptions);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type AdminMediaControllerRemoveMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminMediaControllerRemove>>
->;
-
-export type AdminMediaControllerRemoveMutationError = void;
-
-/**
- * @summary Hard-delete media (takedown). Trip + memory book references SetNull-cascade.
- */
-export const useAdminMediaControllerRemove = <TError = void, TContext = unknown>(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof adminMediaControllerRemove>>,
-    TError,
-    { id: string },
-    TContext
-  >;
-  request?: SecondParameter<typeof apiFetch>;
-}): UseMutationResult<
-  Awaited<ReturnType<typeof adminMediaControllerRemove>>,
-  TError,
-  { id: string },
-  TContext
-> => {
-  const mutationOptions = getAdminMediaControllerRemoveMutationOptions(options);
-
-  return useMutation(mutationOptions);
-};
-/**
- * @summary Curate a new Place into the canonical catalog. Admin-only.
- */
-export type adminControllerCreateResponse201 = {
-  data: AdminPlaceDto;
-  status: 201;
-};
-
-export type adminControllerCreateResponseSuccess = adminControllerCreateResponse201 & {
-  headers: Headers;
-};
-export type adminControllerCreateResponse = adminControllerCreateResponseSuccess;
-
-export const getAdminControllerCreateUrl = () => {
-  return `/api/v1/admin/places`;
-};
-
-export const adminControllerCreate = async (
-  adminCreatePlaceRequestDto: AdminCreatePlaceRequestDto,
-  options?: RequestInit,
-): Promise<adminControllerCreateResponse> => {
-  return apiFetch<adminControllerCreateResponse>(getAdminControllerCreateUrl(), {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(adminCreatePlaceRequestDto),
-  });
-};
-
-export const getAdminControllerCreateMutationOptions = <
-  TError = unknown,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof adminControllerCreate>>,
-    TError,
-    { data: AdminCreatePlaceRequestDto },
-    TContext
-  >;
-  request?: SecondParameter<typeof apiFetch>;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof adminControllerCreate>>,
-  TError,
-  { data: AdminCreatePlaceRequestDto },
-  TContext
-> => {
-  const mutationKey = ['adminControllerCreate'];
-  const { mutation: mutationOptions, request: requestOptions } = options
-    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, request: undefined };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminControllerCreate>>,
-    { data: AdminCreatePlaceRequestDto }
-  > = (props) => {
-    const { data } = props ?? {};
-
-    return adminControllerCreate(data, requestOptions);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type AdminControllerCreateMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminControllerCreate>>
->;
-export type AdminControllerCreateMutationBody = AdminCreatePlaceRequestDto;
-export type AdminControllerCreateMutationError = unknown;
-
-/**
- * @summary Curate a new Place into the canonical catalog. Admin-only.
- */
-export const useAdminControllerCreate = <TError = unknown, TContext = unknown>(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof adminControllerCreate>>,
-    TError,
-    { data: AdminCreatePlaceRequestDto },
-    TContext
-  >;
-  request?: SecondParameter<typeof apiFetch>;
-}): UseMutationResult<
-  Awaited<ReturnType<typeof adminControllerCreate>>,
-  TError,
-  { data: AdminCreatePlaceRequestDto },
-  TContext
-> => {
-  const mutationOptions = getAdminControllerCreateMutationOptions(options);
-
-  return useMutation(mutationOptions);
-};
-/**
- * @summary Remove a Place from the canonical catalog. Admin-only.
- */
-export type adminControllerRemoveResponse204 = {
-  data: void;
-  status: 204;
-};
-
-export type adminControllerRemoveResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type adminControllerRemoveResponseSuccess = adminControllerRemoveResponse204 & {
-  headers: Headers;
-};
-export type adminControllerRemoveResponseError = adminControllerRemoveResponse404 & {
-  headers: Headers;
-};
-
-export type adminControllerRemoveResponse =
-  | adminControllerRemoveResponseSuccess
-  | adminControllerRemoveResponseError;
-
-export const getAdminControllerRemoveUrl = (id: string) => {
-  return `/api/v1/admin/places/${id}`;
-};
-
-export const adminControllerRemove = async (
-  id: string,
-  options?: RequestInit,
-): Promise<adminControllerRemoveResponse> => {
-  return apiFetch<adminControllerRemoveResponse>(getAdminControllerRemoveUrl(id), {
-    ...options,
-    method: 'DELETE',
-  });
-};
-
-export const getAdminControllerRemoveMutationOptions = <
-  TError = void,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof adminControllerRemove>>,
-    TError,
-    { id: string },
-    TContext
-  >;
-  request?: SecondParameter<typeof apiFetch>;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof adminControllerRemove>>,
-  TError,
-  { id: string },
-  TContext
-> => {
-  const mutationKey = ['adminControllerRemove'];
-  const { mutation: mutationOptions, request: requestOptions } = options
-    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, request: undefined };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminControllerRemove>>,
-    { id: string }
-  > = (props) => {
-    const { id } = props ?? {};
-
-    return adminControllerRemove(id, requestOptions);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type AdminControllerRemoveMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminControllerRemove>>
->;
-
-export type AdminControllerRemoveMutationError = void;
-
-/**
- * @summary Remove a Place from the canonical catalog. Admin-only.
- */
-export const useAdminControllerRemove = <TError = void, TContext = unknown>(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof adminControllerRemove>>,
-    TError,
-    { id: string },
-    TContext
-  >;
-  request?: SecondParameter<typeof apiFetch>;
-}): UseMutationResult<
-  Awaited<ReturnType<typeof adminControllerRemove>>,
-  TError,
-  { id: string },
-  TContext
-> => {
-  const mutationOptions = getAdminControllerRemoveMutationOptions(options);
-
-  return useMutation(mutationOptions);
-};
-/**
  * @summary List scam reports for moderation. Default = pending; ?verified=true for the verified pile.
  */
 export type adminScamModerationControllerListResponse200 = {
@@ -1904,6 +1429,481 @@ export const useAdminSosControllerResolve = <TError = void, TContext = unknown>(
   TContext
 > => {
   const mutationOptions = getAdminSosControllerResolveMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Cross-user list of media with optional ?ownerId, ?kind, ?status filters. Admin-only.
+ */
+export type adminMediaControllerListResponse200 = {
+  data: AdminListMediaResponseDto;
+  status: 200;
+};
+
+export type adminMediaControllerListResponse400 = {
+  data: void;
+  status: 400;
+};
+
+export type adminMediaControllerListResponseSuccess = adminMediaControllerListResponse200 & {
+  headers: Headers;
+};
+export type adminMediaControllerListResponseError = adminMediaControllerListResponse400 & {
+  headers: Headers;
+};
+
+export type adminMediaControllerListResponse =
+  | adminMediaControllerListResponseSuccess
+  | adminMediaControllerListResponseError;
+
+export const getAdminMediaControllerListUrl = (params: AdminMediaControllerListParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/admin/media?${stringifiedParams}`
+    : `/api/v1/admin/media`;
+};
+
+export const adminMediaControllerList = async (
+  params: AdminMediaControllerListParams,
+  options?: RequestInit,
+): Promise<adminMediaControllerListResponse> => {
+  return apiFetch<adminMediaControllerListResponse>(getAdminMediaControllerListUrl(params), {
+    ...options,
+    method: 'GET',
+  });
+};
+
+export const getAdminMediaControllerListInfiniteQueryKey = (
+  params?: AdminMediaControllerListParams,
+) => {
+  return ['infinite', `/api/v1/admin/media`, ...(params ? [params] : [])] as const;
+};
+
+export const getAdminMediaControllerListQueryKey = (params?: AdminMediaControllerListParams) => {
+  return [`/api/v1/admin/media`, ...(params ? [params] : [])] as const;
+};
+
+export const getAdminMediaControllerListInfiniteQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminMediaControllerList>>,
+  TError = void,
+>(
+  params: AdminMediaControllerListParams,
+  options?: {
+    query?: UseInfiniteQueryOptions<
+      Awaited<ReturnType<typeof adminMediaControllerList>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAdminMediaControllerListInfiniteQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof adminMediaControllerList>>> = ({
+    signal,
+    pageParam,
+  }) =>
+    adminMediaControllerList(
+      { ...params, limit: pageParam || params?.['limit'] },
+      { signal, ...requestOptions },
+    );
+
+  return { queryKey, queryFn, staleTime: 30000, ...queryOptions } as UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof adminMediaControllerList>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminMediaControllerListInfiniteQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminMediaControllerList>>
+>;
+export type AdminMediaControllerListInfiniteQueryError = void;
+
+/**
+ * @summary Cross-user list of media with optional ?ownerId, ?kind, ?status filters. Admin-only.
+ */
+
+export function useAdminMediaControllerListInfinite<
+  TData = Awaited<ReturnType<typeof adminMediaControllerList>>,
+  TError = void,
+>(
+  params: AdminMediaControllerListParams,
+  options?: {
+    query?: UseInfiniteQueryOptions<
+      Awaited<ReturnType<typeof adminMediaControllerList>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+): UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminMediaControllerListInfiniteQueryOptions(params, options);
+
+  const query = useInfiniteQuery(queryOptions) as UseInfiniteQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getAdminMediaControllerListQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminMediaControllerList>>,
+  TError = void,
+>(
+  params: AdminMediaControllerListParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof adminMediaControllerList>>, TError, TData>;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAdminMediaControllerListQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof adminMediaControllerList>>> = ({
+    signal,
+  }) => adminMediaControllerList(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, staleTime: 30000, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminMediaControllerList>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminMediaControllerListQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminMediaControllerList>>
+>;
+export type AdminMediaControllerListQueryError = void;
+
+/**
+ * @summary Cross-user list of media with optional ?ownerId, ?kind, ?status filters. Admin-only.
+ */
+
+export function useAdminMediaControllerList<
+  TData = Awaited<ReturnType<typeof adminMediaControllerList>>,
+  TError = void,
+>(
+  params: AdminMediaControllerListParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof adminMediaControllerList>>, TError, TData>;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminMediaControllerListQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary Hard-delete media (takedown). Trip + memory book references SetNull-cascade.
+ */
+export type adminMediaControllerRemoveResponse204 = {
+  data: void;
+  status: 204;
+};
+
+export type adminMediaControllerRemoveResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type adminMediaControllerRemoveResponseSuccess = adminMediaControllerRemoveResponse204 & {
+  headers: Headers;
+};
+export type adminMediaControllerRemoveResponseError = adminMediaControllerRemoveResponse404 & {
+  headers: Headers;
+};
+
+export type adminMediaControllerRemoveResponse =
+  | adminMediaControllerRemoveResponseSuccess
+  | adminMediaControllerRemoveResponseError;
+
+export const getAdminMediaControllerRemoveUrl = (id: string) => {
+  return `/api/v1/admin/media/${id}`;
+};
+
+export const adminMediaControllerRemove = async (
+  id: string,
+  options?: RequestInit,
+): Promise<adminMediaControllerRemoveResponse> => {
+  return apiFetch<adminMediaControllerRemoveResponse>(getAdminMediaControllerRemoveUrl(id), {
+    ...options,
+    method: 'DELETE',
+  });
+};
+
+export const getAdminMediaControllerRemoveMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminMediaControllerRemove>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminMediaControllerRemove>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ['adminMediaControllerRemove'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminMediaControllerRemove>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return adminMediaControllerRemove(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminMediaControllerRemoveMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminMediaControllerRemove>>
+>;
+
+export type AdminMediaControllerRemoveMutationError = void;
+
+/**
+ * @summary Hard-delete media (takedown). Trip + memory book references SetNull-cascade.
+ */
+export const useAdminMediaControllerRemove = <TError = void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminMediaControllerRemove>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminMediaControllerRemove>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationOptions = getAdminMediaControllerRemoveMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Curate a new Place into the canonical catalog. Admin-only.
+ */
+export type adminControllerCreateResponse201 = {
+  data: AdminPlaceDto;
+  status: 201;
+};
+
+export type adminControllerCreateResponseSuccess = adminControllerCreateResponse201 & {
+  headers: Headers;
+};
+export type adminControllerCreateResponse = adminControllerCreateResponseSuccess;
+
+export const getAdminControllerCreateUrl = () => {
+  return `/api/v1/admin/places`;
+};
+
+export const adminControllerCreate = async (
+  adminCreatePlaceRequestDto: AdminCreatePlaceRequestDto,
+  options?: RequestInit,
+): Promise<adminControllerCreateResponse> => {
+  return apiFetch<adminControllerCreateResponse>(getAdminControllerCreateUrl(), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(adminCreatePlaceRequestDto),
+  });
+};
+
+export const getAdminControllerCreateMutationOptions = <
+  TError = unknown,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminControllerCreate>>,
+    TError,
+    { data: AdminCreatePlaceRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminControllerCreate>>,
+  TError,
+  { data: AdminCreatePlaceRequestDto },
+  TContext
+> => {
+  const mutationKey = ['adminControllerCreate'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminControllerCreate>>,
+    { data: AdminCreatePlaceRequestDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminControllerCreate(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminControllerCreateMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminControllerCreate>>
+>;
+export type AdminControllerCreateMutationBody = AdminCreatePlaceRequestDto;
+export type AdminControllerCreateMutationError = unknown;
+
+/**
+ * @summary Curate a new Place into the canonical catalog. Admin-only.
+ */
+export const useAdminControllerCreate = <TError = unknown, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminControllerCreate>>,
+    TError,
+    { data: AdminCreatePlaceRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminControllerCreate>>,
+  TError,
+  { data: AdminCreatePlaceRequestDto },
+  TContext
+> => {
+  const mutationOptions = getAdminControllerCreateMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Remove a Place from the canonical catalog. Admin-only.
+ */
+export type adminControllerRemoveResponse204 = {
+  data: void;
+  status: 204;
+};
+
+export type adminControllerRemoveResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type adminControllerRemoveResponseSuccess = adminControllerRemoveResponse204 & {
+  headers: Headers;
+};
+export type adminControllerRemoveResponseError = adminControllerRemoveResponse404 & {
+  headers: Headers;
+};
+
+export type adminControllerRemoveResponse =
+  | adminControllerRemoveResponseSuccess
+  | adminControllerRemoveResponseError;
+
+export const getAdminControllerRemoveUrl = (id: string) => {
+  return `/api/v1/admin/places/${id}`;
+};
+
+export const adminControllerRemove = async (
+  id: string,
+  options?: RequestInit,
+): Promise<adminControllerRemoveResponse> => {
+  return apiFetch<adminControllerRemoveResponse>(getAdminControllerRemoveUrl(id), {
+    ...options,
+    method: 'DELETE',
+  });
+};
+
+export const getAdminControllerRemoveMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminControllerRemove>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminControllerRemove>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ['adminControllerRemove'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminControllerRemove>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return adminControllerRemove(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminControllerRemoveMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminControllerRemove>>
+>;
+
+export type AdminControllerRemoveMutationError = void;
+
+/**
+ * @summary Remove a Place from the canonical catalog. Admin-only.
+ */
+export const useAdminControllerRemove = <TError = void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminControllerRemove>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminControllerRemove>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationOptions = getAdminControllerRemoveMutationOptions(options);
 
   return useMutation(mutationOptions);
 };

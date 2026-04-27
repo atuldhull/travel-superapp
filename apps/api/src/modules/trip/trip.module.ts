@@ -19,6 +19,7 @@ import { EventsModule } from '../events/events.module';
 import { FoodModule } from '../food/food.module';
 import { MediaModule } from '../media/media.module';
 import { PlacesModule } from '../places/places.module';
+import { SafetyModule } from '../safety/safety.module';
 import { StaysModule } from '../stays/stays.module';
 import { TransportModule } from '../transport/transport.module';
 import { WeatherModule } from '../weather/weather.module';
@@ -32,6 +33,7 @@ import { DeleteTripUseCase } from './application/delete-trip.use-case';
 import { DuplicateTripUseCase } from './application/duplicate-trip.use-case';
 import { OptimizeDayRouteUseCase } from './application/optimize-day-route.use-case';
 import { GetDayRouteCoordsUseCase } from './application/get-day-route-coords.use-case';
+import { NearMeNowUseCase } from './application/near-me-now.use-case';
 import { GenerateItineraryStubUseCase } from './application/generate-itinerary-stub.use-case';
 import { SeedSampleTripUseCase } from './application/seed-sample-trip.use-case';
 import { GeneratePlanWithAiUseCase } from './application/generate-plan-with-ai.use-case';
@@ -61,6 +63,7 @@ import { PrismaTripShareRepository } from './infrastructure/prisma-trip-share.re
 import { StubTripPlannerAdapter } from './infrastructure/stub-trip-planner.adapter';
 import { TripOverviewCache } from './infrastructure/trip-overview-cache';
 import { AdminTripsController } from './interface/admin-trips.controller';
+import { NearMeController } from './interface/near-me.controller';
 import { TripController } from './interface/trip.controller';
 
 @Module({
@@ -82,9 +85,10 @@ import { TripController } from './interface/trip.controller';
     FoodModule,
     EventsModule,
     TransportModule,
+    SafetyModule,
     forwardRef(() => MediaModule),
   ],
-  controllers: [TripController, AdminTripsController],
+  controllers: [TripController, AdminTripsController, NearMeController],
   providers: [
     { provide: TRIP_REPOSITORY, useClass: PrismaTripRepository },
     { provide: ITINERARY_REPOSITORY, useClass: PrismaItineraryRepository },
@@ -127,6 +131,7 @@ import { TripController } from './interface/trip.controller';
     DuplicateTripUseCase,
     OptimizeDayRouteUseCase,
     GetDayRouteCoordsUseCase,
+    NearMeNowUseCase,
     TripOverviewCache,
     AdminListTripsUseCase,
     AdminArchiveTripUseCase,

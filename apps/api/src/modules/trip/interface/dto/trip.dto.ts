@@ -100,3 +100,18 @@ export const SuggestPlacesForTripBodySchema = z
   })
   .strict();
 export type SuggestPlacesForTripBody = z.infer<typeof SuggestPlacesForTripBodySchema>;
+
+/**
+ * Body for `POST /near-me`. V.UX.7 spontaneous-improviser composite.
+ * Caller's geolocation + optional walking radius (defaults to 3km;
+ * caps at 10).
+ *
+ * Installed by prompt [V.UX.7].
+ */
+export const NearMeNowBodySchema = z
+  .object({
+    center: Coord,
+    radiusKm: z.number().positive().max(10).optional(),
+  })
+  .strict();
+export type NearMeNowBody = z.infer<typeof NearMeNowBodySchema>;

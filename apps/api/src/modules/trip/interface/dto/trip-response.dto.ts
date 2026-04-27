@@ -301,6 +301,154 @@ export class DayRouteCoordsResponseDto {
 }
 
 /**
+ * V.UX.7 spontaneous-improviser composite. POST /near-me. Public,
+ * no auth, no DB writes. Single request answers "what's near me +
+ * how do I get there + is it safe + is it raining".
+ *
+ * Installed by prompt [V.UX.7].
+ */
+export class NearMeNowCenterDto {
+  @ApiProperty({ description: 'Caller latitude.', minimum: -90, maximum: 90 })
+  declare lat: number;
+
+  @ApiProperty({ description: 'Caller longitude.', minimum: -180, maximum: 180 })
+  declare lng: number;
+}
+
+export class NearMeNowRequestDto {
+  @ApiProperty({ type: NearMeNowCenterDto })
+  declare center: NearMeNowCenterDto;
+
+  @ApiProperty({
+    required: false,
+    minimum: 0.5,
+    maximum: 10,
+    description: 'Walking radius in km. Defaults to 3, caps at 10.',
+  })
+  declare radiusKm?: number;
+}
+
+export class NearMeRouteLegDto {
+  @ApiProperty({ description: 'Transport mode (walk / public_transit / taxi / ...).' })
+  declare mode: string;
+
+  @ApiProperty({ description: 'Straight-line travel distance, metres.' })
+  declare distanceMeters: number;
+
+  @ApiProperty({ description: 'Estimated travel duration, seconds.' })
+  declare durationSeconds: number;
+
+  @ApiProperty({ nullable: true, description: 'Provider-derived USD estimate (null when free).' })
+  declare estimatedCostUsd: number | null;
+
+  @ApiProperty({ description: 'Provider confidence: high / medium / low.' })
+  declare confidence: string;
+}
+
+export class NearMePlaceDto {
+  @ApiProperty({ format: 'cuid' })
+  declare id: string;
+
+  @ApiProperty({ description: 'Place name.' })
+  declare name: string;
+
+  @ApiProperty({ description: 'Category ("cafe", "park", ...).' })
+  declare category: string;
+
+  @ApiProperty({ description: 'Latitude.' })
+  declare lat: number;
+
+  @ApiProperty({ description: 'Longitude.' })
+  declare lng: number;
+
+  @ApiProperty({ description: 'Straight-line distance from caller, metres.' })
+  declare distanceMeters: number;
+
+  @ApiProperty({
+    type: [NearMeRouteLegDto],
+    description:
+      'Walking-preferred routes from caller to this place. Empty array when routing fails.',
+  })
+  declare routes: NearMeRouteLegDto[];
+}
+
+export class NearMeWeatherDayDto {
+  @ApiProperty({ description: 'ISO date (forecast timezone).', format: 'date' })
+  declare date: string;
+
+  @ApiProperty({ description: 'Forecast high in °C.' })
+  declare maxTempC: number;
+
+  @ApiProperty({ description: 'Forecast low in °C.' })
+  declare minTempC: number;
+
+  @ApiProperty({ description: 'WMO weather code (Open-Meteo).' })
+  declare weatherCode: number;
+
+  @ApiProperty({
+    nullable: true,
+    description: '0–100 probability of precipitation, or null when unavailable.',
+  })
+  declare precipitationProbabilityPercent: number | null;
+}
+
+export class NearMeWeatherDto {
+  @ApiProperty({ description: 'Latitude (caller).' })
+  declare lat: number;
+
+  @ApiProperty({ description: 'Longitude (caller).' })
+  declare lng: number;
+
+  @ApiProperty({ description: 'IANA timezone resolved by the weather provider.' })
+  declare timezone: string;
+
+  @ApiProperty({ type: [NearMeWeatherDayDto], description: 'Daily forecast (1 day for near-me).' })
+  declare days: NearMeWeatherDayDto[];
+}
+
+export class NearMeSafetyBreakdownDto {
+  @ApiProperty({ description: 'Total crime incidents in the radius/time window.' })
+  declare crimes: number;
+
+  @ApiProperty({ description: 'Total scam reports in the radius.' })
+  declare scams: number;
+}
+
+export class NearMeSafetyDto {
+  @ApiProperty({ minimum: 0, maximum: 100 })
+  declare score: number;
+
+  @ApiProperty({ description: 'A/B/C/D/F letter grade.' })
+  declare grade: string;
+
+  @ApiProperty({ type: NearMeSafetyBreakdownDto })
+  declare breakdown: NearMeSafetyBreakdownDto;
+
+  @ApiProperty({ description: 'Radius the score covers, km.' })
+  declare radiusKm: number;
+}
+
+export class NearMeNowResponseDto {
+  @ApiProperty({ type: NearMeNowCenterDto })
+  declare center: NearMeNowCenterDto;
+
+  @ApiProperty({ description: 'Search radius (after clamp), km.' })
+  declare radiusKm: number;
+
+  @ApiProperty({ type: [NearMePlaceDto], description: 'Up to 5 nearest places.' })
+  declare places: NearMePlaceDto[];
+
+  @ApiProperty({ type: NearMeWeatherDto })
+  declare weather: NearMeWeatherDto;
+
+  @ApiProperty({ type: NearMeSafetyDto })
+  declare safety: NearMeSafetyDto;
+
+  @ApiProperty({ format: 'date-time' })
+  declare fetchedAt: string;
+}
+
+/**
  * Public-safe view returned by `GET /trips/shared/:code`. Notably omits
  * the owner's `userId` (only `ownerDisplayName` is exposed) and the
  * trip's center coordinates — the recipient gets the title, dates, and
