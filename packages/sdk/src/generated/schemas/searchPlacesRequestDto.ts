@@ -15,4 +15,6 @@ export interface SearchPlacesRequestDto {
    * @maxItems 10
    */
   requiredFeatures?: string[];
+  /** V.UX.17 — premium "curated only" filter. True keeps only places with PlaceTag key="curated" value="true". */
+  curatedOnly?: boolean;
 }

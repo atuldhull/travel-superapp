@@ -1636,6 +1636,33 @@ paths:
       security: *a23
       summary: Admin-resolve an SOS event with an optional resolution note.
       tags: *a24
+  /api/v1/agents/match-for-trip:
+    post:
+      operationId: AgentsController_matchForTrip
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MatchAgentForTripRequestDto'
+      responses:
+        '200':
+          description: Top 3 matches, oldest possible empty array.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchAgentForTripResponseDto'
+        '403':
+          description: ROLE_FORBIDDEN.
+        '404':
+          description: TRIP_NOT_FOUND.
+      security:
+        - bearer: []
+      summary: 'Premium-only concierge match: top 3 verified agents for the
+        caller-owned trip, optionally region-filtered.'
+      tags:
+        - agents
   /api/v1/account/export:
     get:
       operationId: AccountController_exportMyData
@@ -4179,6 +4206,10 @@ components:
           type: array
           items:
             type: string
+        curatedOnly:
+          type: boolean
+          description: V.UX.17 — premium "curated only" filter. True keeps only places
+            with PlaceTag key="curated" value="true".
       required:
         - center
         - radiusKm
@@ -5102,6 +5133,71 @@ components:
           type: object
           nullable: true
           description: Optional admin resolution note.
+    MatchAgentForTripRequestDto:
+      type: object
+      properties:
+        tripId:
+          type: string
+          format: cuid
+          description: Caller-owned trip id.
+        region:
+          type: string
+          minLength: 1
+          maxLength: 80
+          description: Destination region token (e.g. "France", "Bali"). Case-sensitive
+            exact match against any Agent.regions entry. Omit to match top-rated
+            verified agents globally.
+      required:
+        - tripId
+    AgentMatchDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        displayName:
+          type: string
+          maxLength: 120
+        bio:
+          type: object
+          nullable: true
+        languages:
+          type: array
+          items:
+            type: string
+        regions:
+          type: array
+          items:
+            type: string
+        ratingAverage:
+          type: number
+          description: 0..5 rounded to 1 decimal.
+        ratingCount:
+          type: number
+        verifiedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - displayName
+        - bio
+        - languages
+        - regions
+        - ratingAverage
+        - ratingCount
+        - verifiedAt
+    MatchAgentForTripResponseDto:
+      type: object
+      properties:
+        matches:
+          description: Up to 3 verified agents, ordered by ratingAverage DESC, ratingCount
+            DESC, verifiedAt DESC. Empty array is valid (no matches for this
+            region yet).
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentMatchDto'
+      required:
+        - matches
     UserDataExportMetadataDto:
       type: object
       properties:

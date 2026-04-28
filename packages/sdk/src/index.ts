@@ -28,6 +28,8 @@ export * from './generated/react-query/near-me/near-me';
 // V.UX.13 — safety + account surfaces (SOS trigger + trusted-contacts CRUD).
 export * from './generated/react-query/safety/safety';
 export * from './generated/react-query/account/account';
+// V.UX.17 — premium concierge agent-match.
+export * from './generated/react-query/agents/agents';
 
 // Schema types from openapi.yaml's components/schemas. Re-exported so
 // consumers don't have to reach into deep generated paths. Add the
@@ -194,6 +196,10 @@ export type { AddTrustedContactRequestDto } from './generated/schemas/addTrusted
 // V.UX.14: family-mode preferences
 export type { PreferencesDto } from './generated/schemas/preferencesDto';
 export type { UpdatePreferencesRequestDto } from './generated/schemas/updatePreferencesRequestDto';
+// V.UX.17: premium concierge agent-match
+export type { AgentMatchDto } from './generated/schemas/agentMatchDto';
+export type { MatchAgentForTripRequestDto } from './generated/schemas/matchAgentForTripRequestDto';
+export type { MatchAgentForTripResponseDto } from './generated/schemas/matchAgentForTripResponseDto';
 // V.UX.5: business-traveler — Expense / Balance schemas already
 // exported above (lines 121-126); social hooks barrel re-exported
 // above to surface useExpensesController{Create,List,Balances,Remove}.

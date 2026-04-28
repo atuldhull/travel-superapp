@@ -35,6 +35,13 @@ export class SearchPlacesRequestDto {
       'V.UX.14 — required PlaceTag values under key="feature". A place must carry every listed feature.',
   })
   declare requiredFeatures?: string[];
+
+  @ApiProperty({
+    required: false,
+    description:
+      'V.UX.17 — premium "curated only" filter. True keeps only places with PlaceTag key="curated" value="true".',
+  })
+  declare curatedOnly?: boolean;
 }
 
 export class FederatedSearchPlacesRequestDto {

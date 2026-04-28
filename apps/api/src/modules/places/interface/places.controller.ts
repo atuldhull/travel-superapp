@@ -105,6 +105,7 @@ export class PlacesController {
       category?: string;
       limit?: number;
       requiredFeatures?: string[];
+      curatedOnly?: boolean;
     } = {
       center: body.center,
       radiusKm: body.radiusKm,
@@ -114,6 +115,7 @@ export class PlacesController {
     if (body.requiredFeatures !== undefined && body.requiredFeatures.length > 0) {
       command.requiredFeatures = body.requiredFeatures;
     }
+    if (body.curatedOnly === true) command.curatedOnly = true;
     const places = await this.searchPlaces.execute(command);
     return { places: places.map(toDto) };
   }

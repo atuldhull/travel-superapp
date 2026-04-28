@@ -373,6 +373,16 @@ function ReadView({
             <ExportPdfButton tripId={trip.id} tripTitle={trip.title} />
             <EmailItineraryButton tripId={trip.id} tripTitle={trip.title} />
             <AudioReadout tripId={trip.id} tripTitle={trip.title} enabled={true} />
+            {/* V.UX.17 — premium concierge entry. Visible to everyone;
+                the destination page itself wraps content in
+                <PremiumGate> so non-premium callers see the upgrade
+                CTA on click. */}
+            <Link
+              href={`/trips/${trip.id}/concierge` as never}
+              className="inline-flex items-center gap-1 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-1.5 text-sm font-medium text-amber-700 transition hover:bg-amber-500/20 dark:text-amber-300"
+            >
+              ✨ Concierge
+            </Link>
             {isOwner ? (
               <>
                 <Button variant="outline" size="sm" onClick={onDuplicate} disabled={isDuplicating}>
