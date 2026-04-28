@@ -16,6 +16,15 @@ export const UpdatePreferencesBodySchema = z.object({
   familyMode: z.boolean().optional(),
   kidAges: z.array(z.number().int().min(0).max(17)).max(8).optional(),
   comfortMode: z.boolean().optional(),
+  budgetMode: z.boolean().optional(),
+  // Decimal as a string on the wire — same shape as ExpenseDto's
+  // amountUsd. Null clears the target.
+  dailyBudgetUsd: z
+    .string()
+    .trim()
+    .regex(/^\d{1,6}(\.\d{1,2})?$/, 'must be a non-negative number with up to 2 decimals')
+    .nullable()
+    .optional(),
 });
 export type UpdatePreferencesBody = z.infer<typeof UpdatePreferencesBodySchema>;
 
@@ -51,6 +60,20 @@ export class UpdatePreferencesRequestDto {
     description: 'V.UX.15 — accessibility/senior comfort mode (larger fonts, step-free routing).',
   })
   declare comfortMode?: boolean;
+
+  @ApiProperty({
+    required: false,
+    description: 'V.UX.16 — budget-backpacker mode toggle.',
+  })
+  declare budgetMode?: boolean;
+
+  @ApiProperty({
+    required: false,
+    nullable: true,
+    description:
+      'V.UX.16 — daily target USD as a decimal string (e.g. "50.00"). Null clears the target.',
+  })
+  declare dailyBudgetUsd?: string | null;
 }
 
 export class PreferencesDto {
@@ -80,6 +103,15 @@ export class PreferencesDto {
 
   @ApiProperty({ description: 'V.UX.15 — accessibility comfort-mode toggle.' })
   declare comfortMode: boolean;
+
+  @ApiProperty({ description: 'V.UX.16 — budget-backpacker mode toggle.' })
+  declare budgetMode: boolean;
+
+  @ApiProperty({
+    nullable: true,
+    description: 'V.UX.16 — daily target USD as a decimal string, or null if unset.',
+  })
+  declare dailyBudgetUsd: string | null;
 
   @ApiProperty({ format: 'date-time' })
   declare createdAt: string;

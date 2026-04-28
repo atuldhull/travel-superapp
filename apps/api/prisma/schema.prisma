@@ -284,6 +284,14 @@ model Preferences {
   // size + line-height + tap-target padding, and transport searches
   // default `stepFreeOnly: true`.
   comfortMode    Boolean  @default(false)
+  // V.UX.16 — budget-backpacker persona. When `budgetMode = true`
+  // search forms hide listings priced above the user's tier and the
+  // trip detail page surfaces a sticky "Today's spend: $X / $Y"
+  // banner that pulls from the existing Expense rows. `dailyBudgetUsd`
+  // is the daily target in USD (null = no target set yet but mode
+  // can still be on).
+  budgetMode      Boolean  @default(false)
+  dailyBudgetUsd  Decimal? @db.Decimal(10, 2)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }

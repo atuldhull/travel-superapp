@@ -29,6 +29,13 @@ export class SearchEventsRequestDto {
 
   @ApiProperty({ required: false, description: 'Filter by category slug.' })
   declare category?: string;
+
+  @ApiProperty({
+    required: false,
+    description:
+      'V.UX.16 — budget-backpacker filter. True = only free events (priceMin 0 or null).',
+  })
+  declare freeOnly?: boolean;
 }
 
 export class EventListingDto {

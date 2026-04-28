@@ -55,6 +55,7 @@ import { MediaUploader } from '../../../components/media-uploader';
 import { ExportPdfButton } from '../../../components/trip/export-pdf-button';
 import { EmailItineraryButton } from '../../../components/trip/email-itinerary-button';
 import { OpenOnMobileButton } from '../../../components/trip/open-on-mobile-button';
+import { DailySpendBanner } from '../../../components/budget/daily-spend-banner';
 import { AudioReadout } from '../../../components/trip/audio-readout';
 import { PacingWarning } from '../../../components/trip/pacing-warning';
 import { PlaceSuggestionPicker } from '../../../components/trip/place-suggestion-picker';
@@ -272,6 +273,7 @@ export default function TripDetailPage() {
           isLockToggling={lockMutation.isPending || unlockMutation.isPending}
         />
       )}
+      <DailySpendBanner tripId={id} enabled={token !== null && !editing} />
       <PacingWarning tripId={id} enabled={token !== null && !editing} />
       <ItinerarySection tripId={id} enabled={token !== null && !editing} />
       <PowerPlannerSection tripId={id} enabled={token !== null && !editing} />

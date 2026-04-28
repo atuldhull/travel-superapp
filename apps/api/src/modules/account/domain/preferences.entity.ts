@@ -32,6 +32,20 @@ export interface Preferences {
    * tap targets) and transport searches default `stepFreeOnly: true`.
    */
   readonly comfortMode: boolean;
+  /**
+   * V.UX.16 — budget-backpacker persona. When true, search forms
+   * cap pricing (events default `freeOnly`, stays prefer the
+   * cheapest tiers) and the trip detail page shows a daily-spend
+   * banner.
+   */
+  readonly budgetMode: boolean;
+  /**
+   * V.UX.16 — daily target USD. `null` = no target set; the banner
+   * still renders the day's running total but skips the "/ $Y" cap.
+   * Decimal column on the wire is a string (Prisma's Decimal); we
+   * preserve the string form here to avoid float drift.
+   */
+  readonly dailyBudgetUsd: string | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }

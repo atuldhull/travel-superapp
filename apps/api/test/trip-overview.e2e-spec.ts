@@ -79,6 +79,7 @@ class StubStay implements StayProvider {
         distanceMeters: 300,
         priceUsdPerNight: 110,
         currency: 'USD',
+        stayType: 'inn',
       },
     ];
   }

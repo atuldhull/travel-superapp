@@ -26,5 +26,9 @@ export const SearchStaysBodySchema = z.object({
    * sends `['crib', 'high_chair', 'stroller_accessible']`.
    */
   requiredAmenities: z.array(z.string().trim().min(1).max(40)).max(10).optional(),
+  /** V.UX.16 — exact match against StayListing.stayType. */
+  stayType: z.string().trim().min(1).max(40).optional(),
+  /** V.UX.16 — drop listings with priceUsdPerNight > cap. */
+  maxPriceUsdPerNight: z.number().positive().max(100_000).optional(),
 });
 export type SearchStaysBody = z.infer<typeof SearchStaysBodySchema>;

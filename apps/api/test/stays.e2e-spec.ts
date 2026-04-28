@@ -54,6 +54,7 @@ class RecordingStayProvider implements StayProvider {
         distanceMeters: 500,
         priceUsdPerNight: 99,
         currency: 'USD',
+        stayType: 'inn',
       },
     ];
   }

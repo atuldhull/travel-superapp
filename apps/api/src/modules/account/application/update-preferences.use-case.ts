@@ -27,6 +27,10 @@ export interface UpdatePreferencesCommand {
   readonly kidAges?: readonly number[];
   /** V.UX.15 — accessibility / senior comfort-mode toggle. */
   readonly comfortMode?: boolean;
+  /** V.UX.16 — budget-backpacker mode toggle. */
+  readonly budgetMode?: boolean;
+  /** V.UX.16 — daily target USD as a string (or null to clear). */
+  readonly dailyBudgetUsd?: string | null;
 }
 
 @Injectable()
@@ -65,6 +69,18 @@ export class UpdatePreferencesUseCase {
       }
     }
 
+    if (cmd.dailyBudgetUsd !== undefined && cmd.dailyBudgetUsd !== null) {
+      const n = Number(cmd.dailyBudgetUsd);
+      if (!Number.isFinite(n) || n < 0 || n > 100_000) {
+        throw new ValidationError(
+          'Daily budget must be a non-negative number ≤ 100000',
+          { dailyBudgetUsd: ['0..100000'] },
+          { dailyBudgetUsd: cmd.dailyBudgetUsd },
+          'INVALID_DAILY_BUDGET',
+        );
+      }
+    }
+
     return this.repo.upsert({
       userId: cmd.userId,
       ...(cmd.diet !== undefined ? { diet: cmd.diet } : {}),
@@ -74,6 +90,8 @@ export class UpdatePreferencesUseCase {
       ...(cmd.familyMode !== undefined ? { familyMode: cmd.familyMode } : {}),
       ...(cmd.kidAges !== undefined ? { kidAges: cmd.kidAges } : {}),
       ...(cmd.comfortMode !== undefined ? { comfortMode: cmd.comfortMode } : {}),
+      ...(cmd.budgetMode !== undefined ? { budgetMode: cmd.budgetMode } : {}),
+      ...(cmd.dailyBudgetUsd !== undefined ? { dailyBudgetUsd: cmd.dailyBudgetUsd } : {}),
     });
   }
 }

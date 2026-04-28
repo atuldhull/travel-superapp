@@ -33,6 +33,8 @@ export class PrismaPreferencesRepository implements PreferencesRepository {
       familyMode: false,
       kidAges: [],
       comfortMode: false,
+      budgetMode: false,
+      dailyBudgetUsd: null,
       createdAt: now,
       updatedAt: now,
     };
@@ -49,6 +51,8 @@ export class PrismaPreferencesRepository implements PreferencesRepository {
     if (input.familyMode !== undefined) updateData['familyMode'] = input.familyMode;
     if (input.kidAges !== undefined) updateData['kidAges'] = [...input.kidAges];
     if (input.comfortMode !== undefined) updateData['comfortMode'] = input.comfortMode;
+    if (input.budgetMode !== undefined) updateData['budgetMode'] = input.budgetMode;
+    if (input.dailyBudgetUsd !== undefined) updateData['dailyBudgetUsd'] = input.dailyBudgetUsd;
 
     const row = await this.prisma.preferences.upsert({
       where: { userId: input.userId },
@@ -62,6 +66,8 @@ export class PrismaPreferencesRepository implements PreferencesRepository {
         familyMode: input.familyMode ?? false,
         kidAges: input.kidAges ? [...input.kidAges] : [],
         comfortMode: input.comfortMode ?? false,
+        budgetMode: input.budgetMode ?? false,
+        dailyBudgetUsd: input.dailyBudgetUsd ?? null,
       },
     });
     return toDomain(row);
@@ -79,6 +85,11 @@ function toDomain(row: PrismaPreferences): Preferences {
     familyMode: row.familyMode,
     kidAges: row.kidAges,
     comfortMode: row.comfortMode,
+    budgetMode: row.budgetMode,
+    // Prisma surfaces Decimal as a Decimal.js instance — `.toFixed(2)`
+    // gives us the canonical 2-decimal string the rest of the wire
+    // uses for money.
+    dailyBudgetUsd: row.dailyBudgetUsd === null ? null : row.dailyBudgetUsd.toFixed(2),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };

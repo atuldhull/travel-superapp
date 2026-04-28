@@ -22,5 +22,7 @@ export const SearchEventsBodySchema = z.object({
   from: IsoDatetime,
   to: IsoDatetime,
   category: z.string().trim().min(1).max(40).optional(),
+  /** V.UX.16 — budget-backpacker free-events filter. */
+  freeOnly: z.boolean().optional(),
 });
 export type SearchEventsBody = z.infer<typeof SearchEventsBodySchema>;

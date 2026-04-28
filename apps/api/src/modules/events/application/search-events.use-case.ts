@@ -29,6 +29,8 @@ export interface SearchEventsCommand {
   readonly from: string;
   readonly to: string;
   readonly category?: string;
+  /** V.UX.16 — budget-backpacker free-events filter. */
+  readonly freeOnly?: boolean;
 }
 
 @Injectable()
@@ -104,6 +106,7 @@ export class SearchEventsUseCase {
       from: cmd.from,
       to: cmd.to,
       ...(cmd.category ? { category: cmd.category } : {}),
+      ...(cmd.freeOnly === true ? { freeOnly: true } : {}),
     });
   }
 }

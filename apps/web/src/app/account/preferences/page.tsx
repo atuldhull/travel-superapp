@@ -58,6 +58,9 @@ export default function PreferencesPage() {
   // the localStorage value drives the .comfort class instantly, the
   // server value follows the user across devices.
   const comfortLocal = useComfortMode();
+  // V.UX.16 — budget-backpacker buffer.
+  const [budgetMode, setBudgetMode] = useState(false);
+  const [dailyBudgetText, setDailyBudgetText] = useState('');
 
   useEffect(() => {
     if (bootComplete && token === null) router.replace('/login');
@@ -74,6 +77,8 @@ export default function PreferencesPage() {
     if (!prefs) return;
     setFamilyMode(prefs.familyMode);
     setKidAgesText(prefs.kidAges.join(', '));
+    setBudgetMode(prefs.budgetMode);
+    setDailyBudgetText((prefs.dailyBudgetUsd as unknown as string | null) ?? '' ?? '');
     // V.UX.15 — when the server says comfort mode is on but
     // localStorage doesn't, sync down so the user gets the larger
     // type / spacing on this fresh device too. Don't sync the
@@ -150,10 +155,24 @@ export default function PreferencesPage() {
       setErrorMsg(`Up to ${MAX_KIDS} kids.`);
       return;
     }
+    // V.UX.16 — parse daily budget. Empty string = clear (null).
+    const trimmedBudget = dailyBudgetText.trim();
+    let dailyBudgetUsd: string | null | undefined;
+    if (trimmedBudget.length === 0) {
+      dailyBudgetUsd = null;
+    } else if (/^\d{1,6}(\.\d{1,2})?$/.test(trimmedBudget)) {
+      dailyBudgetUsd = trimmedBudget;
+    } else {
+      setErrorMsg('Daily budget must be a non-negative number with up to 2 decimals.');
+      return;
+    }
+
     const data: UpdatePreferencesRequestDto = {
       familyMode,
       kidAges: parsedAges,
       comfortMode: comfortLocal,
+      budgetMode,
+      dailyBudgetUsd: dailyBudgetUsd as unknown as UpdatePreferencesRequestDto['dailyBudgetUsd'],
     };
     updateMutation.mutate({ data });
   }
@@ -216,6 +235,30 @@ export default function PreferencesPage() {
               ) : null}
             </span>
           </label>
+          <label className="flex items-start gap-3 rounded-md border border-muted/15 bg-muted/5 p-3 text-sm">
+            <input
+              type="checkbox"
+              checked={budgetMode}
+              onChange={(e) => setBudgetMode(e.target.checked)}
+              className="mt-0.5 h-4 w-4"
+            />
+            <span>
+              <span className="font-medium">💰 Budget mode</span>
+              <span className="block text-xs text-muted">
+                Hides above-tier listings; surfaces a "Today's spend" banner on every trip.
+              </span>
+            </span>
+          </label>
+          <Field label="Daily budget USD (optional)">
+            <input
+              type="text"
+              inputMode="decimal"
+              value={dailyBudgetText}
+              onChange={(e) => setDailyBudgetText(e.target.value)}
+              placeholder="e.g. 50.00"
+              className="w-full rounded-md border border-muted/30 bg-transparent px-3 py-2 text-sm"
+            />
+          </Field>
           <Field label="Kid ages (comma-separated, 0–17)">
             <input
               type="text"

@@ -26,4 +26,13 @@ export interface StayListing {
   readonly distanceMeters: number;
   readonly priceUsdPerNight: number | null;
   readonly currency: string | null;
+  /**
+   * V.UX.16 — coarse property-type slug. Lets the budget-backpacker
+   * persona filter stays to `'hostel'`, the family persona prefer
+   * `'apartment'`, etc. Free-form on the wire so new types
+   * (`'guesthouse'`, `'capsule'`) don't need a provider-port edit.
+   * Mock provider tags its three fixtures as `'boutique'` /
+   * `'inn'` / `'hostel'`.
+   */
+  readonly stayType: string;
 }

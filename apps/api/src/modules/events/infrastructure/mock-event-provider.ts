@@ -126,11 +126,23 @@ export class MockEventProvider implements EventProvider {
     });
 
     const toMs = Date.parse(input.to);
-    return results
-      .filter((e) => e.distanceMeters <= input.radiusKm * 1_000)
-      .filter((e) => Date.parse(e.startsAt) < toMs) // starts before window ends
-      .filter((e) => Date.parse(e.endsAt) > fromMs) // ends after window starts
-      .filter((e) => (input.category ? e.category === input.category.toLowerCase() : true))
-      .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt));
+    return (
+      results
+        .filter((e) => e.distanceMeters <= input.radiusKm * 1_000)
+        .filter((e) => Date.parse(e.startsAt) < toMs) // starts before window ends
+        .filter((e) => Date.parse(e.endsAt) > fromMs) // ends after window starts
+        .filter((e) => (input.category ? e.category === input.category.toLowerCase() : true))
+        // V.UX.16 — free-only filter. priceMin null = unknown / community
+        // event without a posted price (mock farmers-market); '0.00' =
+        // explicitly free (mock art-opening). Anything else costs money.
+        .filter((e) => (input.freeOnly === true ? isFree(e.priceMin) : true))
+        .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt))
+    );
   }
+}
+
+function isFree(priceMin: string | null): boolean {
+  if (priceMin === null) return true;
+  const n = Number(priceMin);
+  return Number.isFinite(n) && n === 0;
 }

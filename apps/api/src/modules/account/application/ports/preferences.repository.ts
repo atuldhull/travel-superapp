@@ -18,6 +18,14 @@ export interface UpsertPreferencesInput {
   readonly kidAges?: readonly number[];
   /** V.UX.15 — accessibility / senior comfort-mode toggle. */
   readonly comfortMode?: boolean;
+  /** V.UX.16 — budget-backpacker mode toggle. */
+  readonly budgetMode?: boolean;
+  /**
+   * V.UX.16 — daily target USD. `null` clears, `undefined` skips the
+   * field on update, a decimal string sets it. Keep it as a string
+   * to round-trip through Prisma's Decimal without float drift.
+   */
+  readonly dailyBudgetUsd?: string | null;
 }
 
 export interface PreferencesRepository {

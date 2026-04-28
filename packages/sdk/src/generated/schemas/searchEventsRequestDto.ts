@@ -12,4 +12,6 @@ export interface SearchEventsRequestDto {
   to: string;
   /** Filter by category slug. */
   category?: string;
+  /** V.UX.16 — budget-backpacker filter. True = only free events (priceMin 0 or null). */
+  freeOnly?: boolean;
 }
