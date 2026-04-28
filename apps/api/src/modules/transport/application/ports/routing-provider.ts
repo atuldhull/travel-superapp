@@ -19,6 +19,12 @@ export interface GetRoutesInput {
   readonly destinationLat: number;
   readonly destinationLng: number;
   readonly modes?: readonly TransportMode[];
+  /**
+   * V.UX.15 — when true, the provider returns only legs whose
+   * `stepFree` flag is true. Optional; default behaviour is to
+   * return every available leg.
+   */
+  readonly stepFreeOnly?: boolean;
 }
 
 export interface RoutingProvider {

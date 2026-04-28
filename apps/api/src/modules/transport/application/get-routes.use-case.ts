@@ -23,6 +23,11 @@ export interface GetRoutesCommand {
   readonly origin: { readonly lat: number; readonly lng: number };
   readonly destination: { readonly lat: number; readonly lng: number };
   readonly modes?: readonly TransportMode[];
+  /**
+   * V.UX.15 — accessibility / senior persona. When true the
+   * provider returns only step-free legs. Default false.
+   */
+  readonly stepFreeOnly?: boolean;
 }
 
 @Injectable()
@@ -60,6 +65,7 @@ export class GetRoutesUseCase {
       destinationLat: cmd.destination.lat,
       destinationLng: cmd.destination.lng,
       ...(cmd.modes && cmd.modes.length > 0 ? { modes: cmd.modes } : {}),
+      ...(cmd.stepFreeOnly === true ? { stepFreeOnly: true } : {}),
     });
   }
 }

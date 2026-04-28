@@ -30,4 +30,13 @@ export interface RouteLeg {
   /** Provider-reported confidence: real providers tell you whether
    *  traffic data was available + fresh; mock always returns 'high'. */
   readonly confidence: 'high' | 'medium' | 'low';
+  /**
+   * V.UX.15 — true iff this leg is step-free (wheelchair / stroller
+   * accessible end-to-end). Mock provider derives it deterministically:
+   * `walk` and `public_transit` are NOT step-free by default (stairs
+   * at stations); `bicycle`, `two_wheeler`, `car`, `taxi`,
+   * `rideshare` are. Real adapters can source this from accessibility
+   * metadata (station equipment, sidewalk grade, etc.).
+   */
+  readonly stepFree: boolean;
 }

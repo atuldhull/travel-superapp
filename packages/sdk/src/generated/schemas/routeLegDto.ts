@@ -15,4 +15,6 @@ export interface RouteLegDto {
    */
   estimatedCostUsd: RouteLegDtoEstimatedCostUsd;
   confidence: RouteLegDtoConfidence;
+  /** V.UX.15 — true iff this leg is step-free (wheelchair / stroller accessible). */
+  stepFree: boolean;
 }

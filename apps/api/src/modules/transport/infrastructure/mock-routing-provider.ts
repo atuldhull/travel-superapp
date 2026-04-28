@@ -77,17 +77,36 @@ export class MockRoutingProvider implements RoutingProvider {
       const durationSeconds = Math.round((distanceMeters / 1000 / params.speedKmh) * 3600);
       const cost = params.baseUsd + params.perKmUsd * (distanceMeters / 1000);
       const estimatedCostUsd = cost === 0 ? null : round2(cost);
+      const stepFree = STEP_FREE_BY_MODE[mode];
+      if (input.stepFreeOnly && !stepFree) continue;
       legs.push({
         mode,
         distanceMeters,
         durationSeconds,
         estimatedCostUsd,
         confidence: 'high',
+        stepFree,
       });
     }
     return legs;
   }
 }
+
+/**
+ * V.UX.15 — coarse step-free defaults. `walk` is excluded because
+ * sidewalks have curbs/stairs in many places; `public_transit` is
+ * excluded because most stations have stairs without lifts. Real
+ * adapters source this from accessibility metadata.
+ */
+const STEP_FREE_BY_MODE: Record<TransportMode, boolean> = {
+  walk: false,
+  public_transit: false,
+  bicycle: true,
+  two_wheeler: true,
+  car: true,
+  taxi: true,
+  rideshare: true,
+};
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100;

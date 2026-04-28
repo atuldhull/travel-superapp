@@ -44,13 +44,17 @@ function cacheKey(input: GetRoutesInput): string {
   // used by the place-search caches because routing legs are more
   // sensitive to small position shifts (origin across a road =
   // different leg). Sorted mode list so `[car, walk]` and
-  // `[walk, car]` share a cache entry.
+  // `[walk, car]` share a cache entry. V.UX.15 — `stepFreeOnly`
+  // also participates so a stepFree query and a default query for
+  // the same coords don't share a stale cache entry.
   const modes = input.modes ? [...input.modes].sort().join(',') : '';
+  const stepFree = input.stepFreeOnly === true ? 'sf' : '';
   return [
     input.originLat.toFixed(4),
     input.originLng.toFixed(4),
     input.destinationLat.toFixed(4),
     input.destinationLng.toFixed(4),
     modes,
+    stepFree,
   ].join(':');
 }

@@ -30,6 +30,11 @@ const themeBootScript = `
     var pref = (stored === 'light' || stored === 'dark' || stored === 'system') ? stored : 'system';
     var dark = pref === 'dark' || (pref === 'system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
     if (dark) document.documentElement.classList.add('dark');
+    // V.UX.15 — comfort mode boot. Mirror the theme dance so the
+    // .comfort class lands on <html> BEFORE React hydrates (no
+    // flash-of-wrong-density).
+    var comfort = localStorage.getItem('travel-web-comfort');
+    if (comfort === 'on') document.documentElement.classList.add('comfort');
   } catch (e) { /* localStorage unavailable — fall through to default light */ }
 })();
 `;

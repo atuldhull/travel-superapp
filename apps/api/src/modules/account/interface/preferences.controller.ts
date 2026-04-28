@@ -33,6 +33,7 @@ interface PreferencesDto {
   readonly budgetTier: number;
   readonly familyMode: boolean;
   readonly kidAges: readonly number[];
+  readonly comfortMode: boolean;
   readonly createdAt: string;
   readonly updatedAt: string;
 }
@@ -47,6 +48,7 @@ function toDto(p: Preferences): PreferencesDto {
     budgetTier: p.budgetTier,
     familyMode: p.familyMode,
     kidAges: p.kidAges,
+    comfortMode: p.comfortMode,
     createdAt: p.createdAt.toISOString(),
     updatedAt: p.updatedAt.toISOString(),
   };
@@ -97,6 +99,7 @@ export class PreferencesController {
       ...(body.budgetTier !== undefined ? { budgetTier: body.budgetTier } : {}),
       ...(body.familyMode !== undefined ? { familyMode: body.familyMode } : {}),
       ...(body.kidAges !== undefined ? { kidAges: body.kidAges } : {}),
+      ...(body.comfortMode !== undefined ? { comfortMode: body.comfortMode } : {}),
     });
     return toDto(updated);
   }

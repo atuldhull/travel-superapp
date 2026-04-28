@@ -21,4 +21,6 @@ export interface UpdatePreferencesRequestDto {
    * @maxItems 8
    */
   kidAges?: number[];
+  /** V.UX.15 — accessibility/senior comfort mode (larger fonts, step-free routing). */
+  comfortMode?: boolean;
 }

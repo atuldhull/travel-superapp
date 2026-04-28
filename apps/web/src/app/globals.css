@@ -44,3 +44,35 @@
   --color-brand: #60a5fa;
   --color-brand-foreground: #0b1220;
 }
+
+/*
+ * V.UX.15 — comfort mode (accessibility / senior persona). Applied
+ * via `<html class="comfort">` by `apps/web/src/lib/comfort-mode.ts`
+ * + the inline boot script in layout.tsx (mirrors the theme dance).
+ * Bumps body font 1.25×, line-height by 0.15, and gives every
+ * interactive element a min 44px tap target. The `:is(...)` selector
+ * covers the elements we use most without plumbing a className
+ * through every component.
+ */
+html.comfort body {
+  font-size: 1.25rem;
+  line-height: 1.65;
+}
+html.comfort :is(button, a, select, label) {
+  min-height: 44px;
+}
+html.comfort :is(button, a) {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+html.comfort :is(
+    input[type='text'],
+    input[type='email'],
+    input[type='tel'],
+    input[type='number'],
+    textarea
+  ) {
+  font-size: 1.05rem;
+  padding-top: 0.6rem;
+  padding-bottom: 0.6rem;
+}

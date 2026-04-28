@@ -17,6 +17,8 @@ export interface PreferencesDto {
   familyMode: boolean;
   /** @maxItems 8 */
   kidAges: number[];
+  /** V.UX.15 — accessibility comfort-mode toggle. */
+  comfortMode: boolean;
   createdAt: string;
   updatedAt: string;
 }
