@@ -14,7 +14,12 @@ import type {
   UseQueryResult,
 } from '@tanstack/react-query';
 
-import type { UserDataExportResponseDto } from '../../schemas';
+import type {
+  AddTrustedContactRequestDto,
+  ListTrustedContactsResponseDto,
+  TrustedContactDto,
+  UserDataExportResponseDto,
+} from '../../schemas';
 
 import { apiFetch } from '../../../runtime/fetcher';
 
@@ -403,6 +408,355 @@ export const useAccountControllerDeleteMyAccount = <
   TContext
 > => {
   const mutationOptions = getAccountControllerDeleteMyAccountMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary List the caller's pre-set safety contacts. Cap 3 per account.
+ */
+export type trustedContactsControllerListResponse200 = {
+  data: ListTrustedContactsResponseDto;
+  status: 200;
+};
+
+export type trustedContactsControllerListResponseSuccess =
+  trustedContactsControllerListResponse200 & {
+    headers: Headers;
+  };
+export type trustedContactsControllerListResponse = trustedContactsControllerListResponseSuccess;
+
+export const getTrustedContactsControllerListUrl = () => {
+  return `/api/v1/account/trusted-contacts`;
+};
+
+export const trustedContactsControllerList = async (
+  options?: RequestInit,
+): Promise<trustedContactsControllerListResponse> => {
+  return apiFetch<trustedContactsControllerListResponse>(getTrustedContactsControllerListUrl(), {
+    ...options,
+    method: 'GET',
+  });
+};
+
+export const getTrustedContactsControllerListInfiniteQueryKey = () => {
+  return ['infinite', `/api/v1/account/trusted-contacts`] as const;
+};
+
+export const getTrustedContactsControllerListQueryKey = () => {
+  return [`/api/v1/account/trusted-contacts`] as const;
+};
+
+export const getTrustedContactsControllerListInfiniteQueryOptions = <
+  TData = Awaited<ReturnType<typeof trustedContactsControllerList>>,
+  TError = unknown,
+>(options?: {
+  query?: UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof trustedContactsControllerList>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getTrustedContactsControllerListInfiniteQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof trustedContactsControllerList>>> = ({
+    signal,
+  }) => trustedContactsControllerList({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, staleTime: 30000, ...queryOptions } as UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof trustedContactsControllerList>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type TrustedContactsControllerListInfiniteQueryResult = NonNullable<
+  Awaited<ReturnType<typeof trustedContactsControllerList>>
+>;
+export type TrustedContactsControllerListInfiniteQueryError = unknown;
+
+/**
+ * @summary List the caller's pre-set safety contacts. Cap 3 per account.
+ */
+
+export function useTrustedContactsControllerListInfinite<
+  TData = Awaited<ReturnType<typeof trustedContactsControllerList>>,
+  TError = unknown,
+>(options?: {
+  query?: UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof trustedContactsControllerList>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getTrustedContactsControllerListInfiniteQueryOptions(options);
+
+  const query = useInfiniteQuery(queryOptions) as UseInfiniteQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getTrustedContactsControllerListQueryOptions = <
+  TData = Awaited<ReturnType<typeof trustedContactsControllerList>>,
+  TError = unknown,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof trustedContactsControllerList>>, TError, TData>;
+  request?: SecondParameter<typeof apiFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getTrustedContactsControllerListQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof trustedContactsControllerList>>> = ({
+    signal,
+  }) => trustedContactsControllerList({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, staleTime: 30000, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof trustedContactsControllerList>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type TrustedContactsControllerListQueryResult = NonNullable<
+  Awaited<ReturnType<typeof trustedContactsControllerList>>
+>;
+export type TrustedContactsControllerListQueryError = unknown;
+
+/**
+ * @summary List the caller's pre-set safety contacts. Cap 3 per account.
+ */
+
+export function useTrustedContactsControllerList<
+  TData = Awaited<ReturnType<typeof trustedContactsControllerList>>,
+  TError = unknown,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof trustedContactsControllerList>>, TError, TData>;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getTrustedContactsControllerListQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary Add a trusted contact. Requires at least one of phone or email. 422 CONTACT_LIMIT_REACHED past 3.
+ */
+export type trustedContactsControllerAddResponse201 = {
+  data: TrustedContactDto;
+  status: 201;
+};
+
+export type trustedContactsControllerAddResponse422 = {
+  data: void;
+  status: 422;
+};
+
+export type trustedContactsControllerAddResponseSuccess =
+  trustedContactsControllerAddResponse201 & {
+    headers: Headers;
+  };
+export type trustedContactsControllerAddResponseError = trustedContactsControllerAddResponse422 & {
+  headers: Headers;
+};
+
+export type trustedContactsControllerAddResponse =
+  | trustedContactsControllerAddResponseSuccess
+  | trustedContactsControllerAddResponseError;
+
+export const getTrustedContactsControllerAddUrl = () => {
+  return `/api/v1/account/trusted-contacts`;
+};
+
+export const trustedContactsControllerAdd = async (
+  addTrustedContactRequestDto: AddTrustedContactRequestDto,
+  options?: RequestInit,
+): Promise<trustedContactsControllerAddResponse> => {
+  return apiFetch<trustedContactsControllerAddResponse>(getTrustedContactsControllerAddUrl(), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(addTrustedContactRequestDto),
+  });
+};
+
+export const getTrustedContactsControllerAddMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof trustedContactsControllerAdd>>,
+    TError,
+    { data: AddTrustedContactRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof trustedContactsControllerAdd>>,
+  TError,
+  { data: AddTrustedContactRequestDto },
+  TContext
+> => {
+  const mutationKey = ['trustedContactsControllerAdd'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof trustedContactsControllerAdd>>,
+    { data: AddTrustedContactRequestDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return trustedContactsControllerAdd(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type TrustedContactsControllerAddMutationResult = NonNullable<
+  Awaited<ReturnType<typeof trustedContactsControllerAdd>>
+>;
+export type TrustedContactsControllerAddMutationBody = AddTrustedContactRequestDto;
+export type TrustedContactsControllerAddMutationError = void;
+
+/**
+ * @summary Add a trusted contact. Requires at least one of phone or email. 422 CONTACT_LIMIT_REACHED past 3.
+ */
+export const useTrustedContactsControllerAdd = <TError = void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof trustedContactsControllerAdd>>,
+    TError,
+    { data: AddTrustedContactRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof trustedContactsControllerAdd>>,
+  TError,
+  { data: AddTrustedContactRequestDto },
+  TContext
+> => {
+  const mutationOptions = getTrustedContactsControllerAddMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Delete one of the caller-owned trusted contacts.
+ */
+export type trustedContactsControllerRemoveResponse204 = {
+  data: void;
+  status: 204;
+};
+
+export type trustedContactsControllerRemoveResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type trustedContactsControllerRemoveResponseSuccess =
+  trustedContactsControllerRemoveResponse204 & {
+    headers: Headers;
+  };
+export type trustedContactsControllerRemoveResponseError =
+  trustedContactsControllerRemoveResponse404 & {
+    headers: Headers;
+  };
+
+export type trustedContactsControllerRemoveResponse =
+  | trustedContactsControllerRemoveResponseSuccess
+  | trustedContactsControllerRemoveResponseError;
+
+export const getTrustedContactsControllerRemoveUrl = (id: string) => {
+  return `/api/v1/account/trusted-contacts/${id}`;
+};
+
+export const trustedContactsControllerRemove = async (
+  id: string,
+  options?: RequestInit,
+): Promise<trustedContactsControllerRemoveResponse> => {
+  return apiFetch<trustedContactsControllerRemoveResponse>(
+    getTrustedContactsControllerRemoveUrl(id),
+    {
+      ...options,
+      method: 'DELETE',
+    },
+  );
+};
+
+export const getTrustedContactsControllerRemoveMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof trustedContactsControllerRemove>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof trustedContactsControllerRemove>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ['trustedContactsControllerRemove'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof trustedContactsControllerRemove>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return trustedContactsControllerRemove(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type TrustedContactsControllerRemoveMutationResult = NonNullable<
+  Awaited<ReturnType<typeof trustedContactsControllerRemove>>
+>;
+
+export type TrustedContactsControllerRemoveMutationError = void;
+
+/**
+ * @summary Delete one of the caller-owned trusted contacts.
+ */
+export const useTrustedContactsControllerRemove = <TError = void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof trustedContactsControllerRemove>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof trustedContactsControllerRemove>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationOptions = getTrustedContactsControllerRemoveMutationOptions(options);
 
   return useMutation(mutationOptions);
 };

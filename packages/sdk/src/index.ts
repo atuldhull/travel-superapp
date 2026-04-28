@@ -25,6 +25,9 @@ export * from './generated/react-query/identity/identity';
 export * from './generated/react-query/trip/trip';
 export * from './generated/react-query/social/social';
 export * from './generated/react-query/near-me/near-me';
+// V.UX.13 — safety + account surfaces (SOS trigger + trusted-contacts CRUD).
+export * from './generated/react-query/safety/safety';
+export * from './generated/react-query/account/account';
 
 // Schema types from openapi.yaml's components/schemas. Re-exported so
 // consumers don't have to reach into deep generated paths. Add the
@@ -184,6 +187,10 @@ export type { MemoryBookAssetSummaryDto } from './generated/schemas/memoryBookAs
 export type { UpdateAssetCaptionRequestDto } from './generated/schemas/updateAssetCaptionRequestDto';
 // V.UX.12: memory-book drag-reorder
 export type { ReorderBookAssetsRequestDto } from './generated/schemas/reorderBookAssetsRequestDto';
+// V.UX.13: safety-first trusted contacts
+export type { TrustedContactDto } from './generated/schemas/trustedContactDto';
+export type { ListTrustedContactsResponseDto } from './generated/schemas/listTrustedContactsResponseDto';
+export type { AddTrustedContactRequestDto } from './generated/schemas/addTrustedContactRequestDto';
 // V.UX.5: business-traveler — Expense / Balance schemas already
 // exported above (lines 121-126); social hooks barrel re-exported
 // above to surface useExpensesController{Create,List,Balances,Remove}.

@@ -1636,6 +1636,197 @@ paths:
       security: *a23
       summary: Admin-resolve an SOS event with an optional resolution note.
       tags: *a24
+  /api/v1/account/export:
+    get:
+      operationId: AccountController_exportMyData
+      parameters: []
+      responses:
+        '200':
+          description: Full export bundle. Per-section row shapes documented in
+            user-data-export.entity.ts.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDataExportResponseDto'
+      security: &a25
+        - bearer: []
+      summary: Full GDPR/DPDP/COPPA self-export bundle as a single JSON object. ~30
+        sections; sensitive fields stripped.
+      tags: &a26
+        - account
+  /api/v1/account/export.ndjson:
+    get:
+      operationId: AccountController_exportMyDataNdjson
+      parameters: []
+      responses:
+        '200':
+          description: Streaming NDJSON. Each line is a `{type,data}` envelope; downstream
+            tooling (jq -c, ndjson-cli) parses incrementally.
+      security: *a25
+      summary: 'NDJSON variant of the export bundle — one `{type,data}` envelope per
+        line. Content-Type: application/x-ndjson.'
+      tags: *a26
+  /api/v1/account:
+    delete:
+      operationId: AccountController_deleteMyAccount
+      parameters: []
+      responses:
+        '204':
+          description: Account marked soft-deleted; sessions revoked.
+      security: *a25
+      summary: Soft-delete the caller's account + revoke all live sessions. GDPR Art.
+        17 / DPDP §12 right-to-erasure.
+      tags: *a26
+  /api/v1/admin/users:
+    get:
+      operationId: AdminUsersController_list
+      parameters:
+        - name: role
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: deleted
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: q
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: offset
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Matching users + total.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminListUsersResponseDto'
+        '400':
+          description: VALIDATION_FAILED — role not in user|premium|agent|admin.
+      security: &a27
+        - bearer: []
+      summary: List users with optional ?role / ?deleted / ?q filters. Offset
+        pagination via ?limit + ?offset. Admin-only.
+      tags: &a28
+        - admin
+  /api/v1/admin/users/{id}/ban:
+    post:
+      operationId: AdminUsersController_ban
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Banned.
+        '404':
+          description: USER_NOT_FOUND.
+      security: *a27
+      summary: Ban a user (soft-delete + revoke sessions). Admin-only.
+      tags: *a28
+  /api/v1/admin/users/{id}/unban:
+    post:
+      operationId: AdminUsersController_unban
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Unbanned.
+        '404':
+          description: USER_NOT_FOUND.
+      security: *a27
+      summary: Unban a user (clear deletedAt). Admin-only.
+      tags: *a28
+  /api/v1/admin/account-purge:
+    post:
+      operationId: AdminPurgeController_forcePurge
+      parameters: []
+      responses:
+        '200':
+          description: Tick fired (or skipped if already running).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminPurgeForceResponseDto'
+      security:
+        - bearer: []
+      summary: Force the account-purge scheduler tick. Idempotent — re-entrant guard
+        skips overlapping calls.
+      tags:
+        - admin
+  /api/v1/account/trusted-contacts:
+    get:
+      operationId: TrustedContactsController_list
+      parameters: []
+      responses:
+        '200':
+          description: Caller's contacts, oldest-first.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListTrustedContactsResponseDto'
+      security: &a29
+        - bearer: []
+      summary: List the caller's pre-set safety contacts. Cap 3 per account.
+      tags: &a30
+        - account
+    post:
+      operationId: TrustedContactsController_add
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddTrustedContactRequestDto'
+      responses:
+        '201':
+          description: Newly-created row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrustedContactDto'
+        '422':
+          description: CONTACT_CHANNEL_REQUIRED or CONTACT_LIMIT_REACHED.
+      security: *a29
+      summary: Add a trusted contact. Requires at least one of phone or email. 422
+        CONTACT_LIMIT_REACHED past 3.
+      tags: *a30
+  /api/v1/account/trusted-contacts/{id}:
+    delete:
+      operationId: TrustedContactsController_remove
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Deleted.
+        '404':
+          description: CONTACT_NOT_FOUND.
+      security: *a29
+      summary: Delete one of the caller-owned trusted contacts.
+      tags: *a30
   /api/v1/media/upload-url:
     post:
       operationId: MediaController_createUploadUrl
@@ -1653,11 +1844,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CreateUploadUrlResponseDto'
-      security: &a25
+      security: &a31
         - bearer: []
       summary: Issue a presigned PUT URL for direct-to-S3 upload. Creates the
         MediaAsset row in `processing` status.
-      tags: &a26
+      tags: &a32
         - media
   /api/v1/media/{id}/confirm:
     post:
@@ -1677,10 +1868,10 @@ paths:
                 $ref: '#/components/schemas/MediaAssetDto'
         '404':
           description: MEDIA_NOT_FOUND.
-      security: *a25
+      security: *a31
       summary: Confirm upload landed (HEAD verifies bytes). Flips status to `ready`.
         Image kind also flips exifStripped.
-      tags: *a26
+      tags: *a32
   /api/v1/media/{id}/download-url:
     get:
       operationId: MediaController_downloadUrl
@@ -1699,9 +1890,9 @@ paths:
                 $ref: '#/components/schemas/MediaDownloadUrlResponseDto'
         '404':
           description: MEDIA_NOT_FOUND.
-      security: *a25
+      security: *a31
       summary: Short-lived presigned GET URL for the asset. Owner-gated.
-      tags: *a26
+      tags: *a32
   /api/v1/media/{id}/trip:
     patch:
       operationId: MediaController_attachToTrip
@@ -1726,10 +1917,10 @@ paths:
                 $ref: '#/components/schemas/MediaAssetDto'
         '404':
           description: MEDIA_NOT_FOUND or TRIP_NOT_FOUND.
-      security: *a25
+      security: *a31
       summary: Attach (`{tripId}`) or detach (`{tripId:null}`) the media to a trip.
         Double owner-gated.
-      tags: *a26
+      tags: *a32
   /api/v1/media/trip/{tripId}:
     get:
       operationId: MediaController_listByTrip
@@ -1751,10 +1942,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListTripMediaResponseDto'
-      security: *a25
+      security: *a31
       summary: List the caller's `ready` media attached to a trip. ?limit=N (1..200,
         default 50).
-      tags: *a26
+      tags: *a32
   /api/v1/media/{id}/memory-book:
     patch:
       operationId: MediaController_attachToBook
@@ -1779,10 +1970,10 @@ paths:
                 $ref: '#/components/schemas/MediaAssetDto'
         '404':
           description: MEDIA_NOT_FOUND or BOOK_NOT_FOUND.
-      security: *a25
+      security: *a31
       summary: Attach (`{memoryBookId}`) or detach (`{memoryBookId:null}`) the media
         to a memory book. Double owner-gated.
-      tags: *a26
+      tags: *a32
   /api/v1/memory-books/featured:
     get:
       operationId: MemoryBookController_featured
@@ -1799,11 +1990,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FeaturedMemoryBooksResponseDto'
-      security: &a27
+      security: &a33
         - bearer: []
       summary: Public discovery — currently-published memory books across all users,
         ordered by publishedAt DESC.
-      tags: &a28
+      tags: &a34
         - media
   /api/v1/memory-books/public/{id}:
     get:
@@ -1823,10 +2014,10 @@ paths:
                 $ref: '#/components/schemas/PublicMemoryBookWithAssetsResponseDto'
         '404':
           description: BOOK_NOT_PUBLISHED.
-      security: *a27
+      security: *a33
       summary: Public read of a published memory book by id. The cuid is the
         unguessable token.
-      tags: *a28
+      tags: *a34
   /api/v1/memory-books/public/{id}/assets/{assetId}/download-url:
     get:
       operationId: MemoryBookController_getPublicAssetDownloadUrl
@@ -1850,10 +2041,10 @@ paths:
                 $ref: '#/components/schemas/PublicDownloadUrlResponseDto'
         '404':
           description: BOOK_NOT_PUBLISHED, MEDIA_NOT_FOUND, or NOT_ATTACHED.
-      security: *a27
+      security: *a33
       summary: 'Public presigned download URL for a memory-book asset. Three-clause
         gate: book published + asset attached + asset ready.'
-      tags: *a28
+      tags: *a34
   /api/v1/memory-books:
     post:
       operationId: MemoryBookController_create
@@ -1871,9 +2062,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MemoryBookDto'
-      security: *a27
+      security: *a33
       summary: Create a memory book (draft). Owner = caller.
-      tags: *a28
+      tags: *a34
     get:
       operationId: MemoryBookController_list
       parameters:
@@ -1889,10 +2080,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListMemoryBooksResponseDto'
-      security: *a27
+      security: *a33
       summary: List the caller's memory books, newest first. ?limit=N (1..200, default
         50). Owner-scoped.
-      tags: *a28
+      tags: *a34
   /api/v1/memory-books/{id}:
     get:
       operationId: MemoryBookController_getOne
@@ -1911,9 +2102,9 @@ paths:
                 $ref: '#/components/schemas/MemoryBookWithAssetsResponseDto'
         '404':
           description: BOOK_NOT_FOUND.
-      security: *a27
+      security: *a33
       summary: Get one of the caller-owned books + the attached asset ids.
-      tags: *a28
+      tags: *a34
     patch:
       operationId: MemoryBookController_update
       parameters:
@@ -1937,9 +2128,9 @@ paths:
                 $ref: '#/components/schemas/MemoryBookDto'
         '404':
           description: BOOK_NOT_FOUND.
-      security: *a27
+      security: *a33
       summary: Update one of the caller-owned books. Partial update.
-      tags: *a28
+      tags: *a34
     delete:
       operationId: MemoryBookController_remove
       parameters:
@@ -1953,9 +2144,9 @@ paths:
           description: Deleted.
         '404':
           description: BOOK_NOT_FOUND.
-      security: *a27
+      security: *a33
       summary: Delete one of the caller-owned books. SetNull on MediaAsset.memoryBookId.
-      tags: *a28
+      tags: *a34
   /api/v1/memory-books/{id}/publish:
     post:
       operationId: MemoryBookController_publish
@@ -1974,9 +2165,9 @@ paths:
                 $ref: '#/components/schemas/MemoryBookDto'
         '404':
           description: BOOK_NOT_FOUND.
-      security: *a27
+      security: *a33
       summary: Publish a book — flips publishedAt to now (idempotent).
-      tags: *a28
+      tags: *a34
   /api/v1/memory-books/{id}/unpublish:
     post:
       operationId: MemoryBookController_unpublish
@@ -1995,9 +2186,9 @@ paths:
                 $ref: '#/components/schemas/MemoryBookDto'
         '404':
           description: BOOK_NOT_FOUND.
-      security: *a27
+      security: *a33
       summary: Unpublish a book — clears publishedAt (idempotent).
-      tags: *a28
+      tags: *a34
   /api/v1/memory-books/{id}/assets/{assetId}/caption:
     patch:
       operationId: MemoryBookController_updateAssetCaption
@@ -2027,9 +2218,9 @@ paths:
                 $ref: '#/components/schemas/MediaAssetDto'
         '404':
           description: MEDIA_NOT_FOUND.
-      security: *a27
+      security: *a33
       summary: Set or clear an asset's caption (story-mode narrative). Owner-only.
-      tags: *a28
+      tags: *a34
   /api/v1/memory-books/{id}/asset-order:
     patch:
       operationId: MemoryBookController_reorderAssets
@@ -2052,10 +2243,10 @@ paths:
           description: MEMORY_BOOK_NOT_FOUND.
         '422':
           description: INVALID_ASSET_ORDER (duplicates, length mismatch, or unknown id).
-      security: *a27
+      security: *a33
       summary: Persist asset ordering for the memory book. Body is the desired
         permutation of attached asset ids.
-      tags: *a28
+      tags: *a34
   /api/v1/admin/media:
     get:
       operationId: AdminMediaController_list
@@ -2094,11 +2285,11 @@ paths:
                 $ref: '#/components/schemas/AdminListMediaResponseDto'
         '400':
           description: VALIDATION_FAILED — kind / status invalid.
-      security: &a29
+      security: &a35
         - bearer: []
       summary: Cross-user list of media with optional ?ownerId, ?kind, ?status
         filters. Admin-only.
-      tags: &a30
+      tags: &a36
         - admin
   /api/v1/admin/media/{id}:
     delete:
@@ -2114,10 +2305,10 @@ paths:
           description: Deleted.
         '404':
           description: MEDIA_NOT_FOUND.
-      security: *a29
+      security: *a35
       summary: Hard-delete media (takedown). Trip + memory book references
         SetNull-cascade.
-      tags: *a30
+      tags: *a36
   /api/v1/notifications/me/unread-count:
     get:
       operationId: NotificationsController_unreadCount
@@ -2129,11 +2320,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UnreadCountResponseDto'
-      security: &a31
+      security: &a37
         - bearer: []
       summary: 'Returns { unread: N } for the home-screen badge. Single indexed COUNT
         — cheap.'
-      tags: &a32
+      tags: &a38
         - notifications
   /api/v1/notifications/me:
     get:
@@ -2158,10 +2349,10 @@ paths:
                 $ref: '#/components/schemas/ListMyNotificationsResponseDto'
         '400':
           description: VALIDATION_FAILED — channel is not one of push|email|sms.
-      security: *a31
+      security: *a37
       summary: List the caller's recent notifications. Optional
         ?channel=push|email|sms narrows to one delivery channel.
-      tags: *a32
+      tags: *a38
   /api/v1/notifications/read-all:
     post:
       operationId: NotificationsController_markAllRead
@@ -2173,10 +2364,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MarkAllReadResponseDto'
-      security: *a31
+      security: *a37
       summary: 'Mark every unread row as read. Returns { marked: N }. Idempotent
         (second call returns 0).'
-      tags: *a32
+      tags: *a38
   /api/v1/notifications/{id}/read:
     post:
       operationId: NotificationsController_markRead
@@ -2195,9 +2386,9 @@ paths:
                 $ref: '#/components/schemas/NotificationLogDto'
         '404':
           description: NOTIFICATION_NOT_FOUND.
-      security: *a31
+      security: *a37
       summary: Mark one notification as read. Owner-gated; 404 on cross-user / missing.
-      tags: *a32
+      tags: *a38
   /api/v1/notifications/{id}/unread:
     post:
       operationId: NotificationsController_markUnread
@@ -2216,9 +2407,9 @@ paths:
                 $ref: '#/components/schemas/NotificationLogDto'
         '404':
           description: NOTIFICATION_NOT_FOUND.
-      security: *a31
+      security: *a37
       summary: Mark one notification as UNread (symmetric to /read). Owner-gated.
-      tags: *a32
+      tags: *a38
   /api/v1/notifications/{id}:
     delete:
       operationId: NotificationsController_remove
@@ -2233,10 +2424,10 @@ paths:
           description: Deleted.
         '404':
           description: NOTIFICATION_NOT_FOUND.
-      security: *a31
+      security: *a37
       summary: Hard-delete a notification (inbox prune). Owner-gated; 404 on
         cross-user / missing.
-      tags: *a32
+      tags: *a38
   /api/v1/admin/places:
     post:
       operationId: AdminController_create
@@ -2254,10 +2445,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AdminPlaceDto'
-      security: &a33
+      security: &a39
         - bearer: []
       summary: Curate a new Place into the canonical catalog. Admin-only.
-      tags: &a34
+      tags: &a40
         - admin
   /api/v1/admin/places/{id}:
     delete:
@@ -2273,9 +2464,9 @@ paths:
           description: Deleted.
         '404':
           description: PLACE_NOT_FOUND.
-      security: *a33
+      security: *a39
       summary: Remove a Place from the canonical catalog. Admin-only.
-      tags: *a34
+      tags: *a40
   /api/v1/trips/{tripId}/votes:
     post:
       operationId: SocialController_cast
@@ -2298,11 +2489,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VoteDto'
-      security: &a35
+      security: &a41
         - bearer: []
       summary: 'Cast or update a vote on a trip target. Body: { targetType, targetId,
         value }. Auth gate: owner OR active TripShare.'
-      tags: &a36
+      tags: &a42
         - social
     delete:
       operationId: SocialController_revoke
@@ -2321,10 +2512,10 @@ paths:
       responses:
         '204':
           description: Revoked (or no-op if no prior vote).
-      security: *a35
+      security: *a41
       summary: 'Revoke a previously-cast vote. Body: { targetType, targetId }.
         Idempotent.'
-      tags: *a36
+      tags: *a42
     get:
       operationId: SocialController_list
       parameters:
@@ -2340,9 +2531,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListTripVotesResponseDto'
-      security: *a35
+      security: *a41
       summary: Aggregated tallies for a trip's votes + the caller's own vote per target.
-      tags: *a36
+      tags: *a42
   /api/v1/trips/{tripId}/expenses:
     post:
       operationId: ExpensesController_create
@@ -2366,11 +2557,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ExpenseDto'
-      security: &a37
+      security: &a43
         - bearer: []
       summary: 'Record a shared expense on a trip. Auth gate: owner OR active
         TripShare. Splits sum-checked.'
-      tags: &a38
+      tags: &a44
         - social
     get:
       operationId: ExpensesController_list
@@ -2393,9 +2584,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListExpensesResponseDto'
-      security: *a37
+      security: *a43
       summary: List trip expenses, most-recent-first. ?limit=N (1..500, default 50).
-      tags: *a38
+      tags: *a44
   /api/v1/trips/{tripId}/expenses/balances:
     get:
       operationId: ExpensesController_balances
@@ -2413,10 +2604,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListBalancesResponseDto'
-      security: *a37
+      security: *a43
       summary: Net per-user "who owes whom" ledger. Sum is zero (modulo 2dp). 60s
         cache; write-invalidated on expense create/delete.
-      tags: *a38
+      tags: *a44
   /api/v1/trips/{tripId}/expenses/settle-up:
     get:
       operationId: ExpensesController_settleUp
@@ -2434,10 +2625,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SettleUpResponseDto'
-      security: *a37
+      security: *a43
       summary: Settle-up plan — greedy minimum-cashflow transfers that zero the trip
         ledger. Owner OR active share.
-      tags: *a38
+      tags: *a44
   /api/v1/trips/{tripId}/expenses/{id}:
     delete:
       operationId: ExpensesController_remove
@@ -2457,10 +2648,10 @@ paths:
           description: Deleted.
         '404':
           description: EXPENSE_NOT_FOUND.
-      security: *a37
+      security: *a43
       summary: Delete an expense. Payer-only — only the user who recorded it can
         remove it.
-      tags: *a38
+      tags: *a44
   /api/v1/reviews:
     post:
       operationId: ReviewsController_create
@@ -2478,11 +2669,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ReviewDto'
-      security: &a39
+      security: &a45
         - bearer: []
       summary: Create a review for any review-target (place/stay/eatery/agent).
         Owner-stamped to the caller.
-      tags: &a40
+      tags: &a46
         - social
     get:
       operationId: ReviewsController_listForTarget
@@ -2511,10 +2702,10 @@ paths:
                 $ref: '#/components/schemas/ListReviewsResponseDto'
         '400':
           description: VALIDATION_FAILED — targetType / targetId missing or invalid.
-      security: *a39
+      security: *a45
       summary: Target-scoped review listing. ?targetType + ?targetId required.
         Most-recent-first.
-      tags: *a40
+      tags: *a46
   /api/v1/reviews/summary:
     get:
       operationId: ReviewsController_summary
@@ -2538,10 +2729,10 @@ paths:
                 $ref: '#/components/schemas/ReviewSummaryDto'
         '400':
           description: VALIDATION_FAILED — targetType / targetId missing or invalid.
-      security: *a39
+      security: *a45
       summary: Aggregated review summary { count, average, histogram } for a target.
         @Public.
-      tags: *a40
+      tags: *a46
   /api/v1/reviews/mine:
     get:
       operationId: ReviewsController_listMine
@@ -2558,10 +2749,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListReviewsResponseDto'
-      security: *a39
+      security: *a45
       summary: List the caller's authored reviews, most-recent-first. ?limit=N
         (1..200, default 50).
-      tags: *a40
+      tags: *a46
   /api/v1/reviews/{id}:
     delete:
       operationId: ReviewsController_remove
@@ -2576,10 +2767,10 @@ paths:
           description: Deleted.
         '404':
           description: REVIEW_NOT_FOUND.
-      security: *a39
+      security: *a45
       summary: Delete one of the caller's reviews. Author-gated; 404 on cross-user /
         missing.
-      tags: *a40
+      tags: *a46
   /api/v1/votes/summary:
     get:
       operationId: VotesController_summary
@@ -2708,7 +2899,7 @@ paths:
           description: Too many requests — wait 60s.
       summary: ❤️ a publicly-shared trip. No auth. Per-IP rate-limited at 1/min so
         anonymous fans can react but scripts can't farm hearts.
-      tags: &a41
+      tags: &a47
         - social
   /api/v1/trips/shared/{code}/hearts:
     get:
@@ -2729,143 +2920,7 @@ paths:
         '404':
           description: SHARE_NOT_FOUND or SHARE_EXPIRED.
       summary: Current ❤️ count for a shared trip. Public, no auth.
-      tags: *a41
-  /api/v1/account/export:
-    get:
-      operationId: AccountController_exportMyData
-      parameters: []
-      responses:
-        '200':
-          description: Full export bundle. Per-section row shapes documented in
-            user-data-export.entity.ts.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserDataExportResponseDto'
-      security: &a42
-        - bearer: []
-      summary: Full GDPR/DPDP/COPPA self-export bundle as a single JSON object. ~30
-        sections; sensitive fields stripped.
-      tags: &a43
-        - account
-  /api/v1/account/export.ndjson:
-    get:
-      operationId: AccountController_exportMyDataNdjson
-      parameters: []
-      responses:
-        '200':
-          description: Streaming NDJSON. Each line is a `{type,data}` envelope; downstream
-            tooling (jq -c, ndjson-cli) parses incrementally.
-      security: *a42
-      summary: 'NDJSON variant of the export bundle — one `{type,data}` envelope per
-        line. Content-Type: application/x-ndjson.'
-      tags: *a43
-  /api/v1/account:
-    delete:
-      operationId: AccountController_deleteMyAccount
-      parameters: []
-      responses:
-        '204':
-          description: Account marked soft-deleted; sessions revoked.
-      security: *a42
-      summary: Soft-delete the caller's account + revoke all live sessions. GDPR Art.
-        17 / DPDP §12 right-to-erasure.
-      tags: *a43
-  /api/v1/admin/users:
-    get:
-      operationId: AdminUsersController_list
-      parameters:
-        - name: role
-          required: true
-          in: query
-          schema:
-            type: string
-        - name: deleted
-          required: true
-          in: query
-          schema:
-            type: string
-        - name: q
-          required: true
-          in: query
-          schema:
-            type: string
-        - name: limit
-          required: true
-          in: query
-          schema:
-            type: string
-        - name: offset
-          required: true
-          in: query
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Matching users + total.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AdminListUsersResponseDto'
-        '400':
-          description: VALIDATION_FAILED — role not in user|premium|agent|admin.
-      security: &a44
-        - bearer: []
-      summary: List users with optional ?role / ?deleted / ?q filters. Offset
-        pagination via ?limit + ?offset. Admin-only.
-      tags: &a45
-        - admin
-  /api/v1/admin/users/{id}/ban:
-    post:
-      operationId: AdminUsersController_ban
-      parameters:
-        - name: id
-          required: true
-          in: path
-          schema:
-            type: string
-      responses:
-        '204':
-          description: Banned.
-        '404':
-          description: USER_NOT_FOUND.
-      security: *a44
-      summary: Ban a user (soft-delete + revoke sessions). Admin-only.
-      tags: *a45
-  /api/v1/admin/users/{id}/unban:
-    post:
-      operationId: AdminUsersController_unban
-      parameters:
-        - name: id
-          required: true
-          in: path
-          schema:
-            type: string
-      responses:
-        '204':
-          description: Unbanned.
-        '404':
-          description: USER_NOT_FOUND.
-      security: *a44
-      summary: Unban a user (clear deletedAt). Admin-only.
-      tags: *a45
-  /api/v1/admin/account-purge:
-    post:
-      operationId: AdminPurgeController_forcePurge
-      parameters: []
-      responses:
-        '200':
-          description: Tick fired (or skipped if already running).
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AdminPurgeForceResponseDto'
-      security:
-        - bearer: []
-      summary: Force the account-purge scheduler tick. Idempotent — re-entrant guard
-        skips overlapping calls.
-      tags:
-        - admin
+      tags: *a47
   /api/v1/feed/me:
     get:
       operationId: FeedController_me
@@ -4534,7 +4589,7 @@ components:
           description: Filter to a subset of modes; empty/omitted means all available.
           items:
             type: string
-            enum: &a46
+            enum: &a48
               - walk
               - public_transit
               - bicycle
@@ -4550,7 +4605,7 @@ components:
       properties:
         mode:
           type: string
-          enum: *a46
+          enum: *a48
         distanceMeters:
           type: number
         durationSeconds:
@@ -4637,7 +4692,7 @@ components:
           type: string
         severity:
           type: string
-          enum: &a47
+          enum: &a49
             - low
             - medium
             - high
@@ -4706,7 +4761,7 @@ components:
           type: string
         severity:
           type: string
-          enum: *a47
+          enum: *a49
         description:
           type: string
         evidenceUrls:
@@ -4968,6 +5023,256 @@ components:
           type: object
           nullable: true
           description: Optional admin resolution note.
+    UserDataExportMetadataDto:
+      type: object
+      properties:
+        exportedAt:
+          type: string
+          format: date-time
+          description: ISO-8601 timestamp of when the bundle was generated.
+        formatVersion:
+          type: number
+          enum:
+            - 1
+          description: Bundle format version. Bumps on shape changes.
+        userId:
+          type: string
+          format: cuid
+      required:
+        - exportedAt
+        - formatVersion
+        - userId
+    UserDataExportResponseDto:
+      type: object
+      properties:
+        metadata:
+          $ref: '#/components/schemas/UserDataExportMetadataDto'
+        identity:
+          type: object
+          additionalProperties: true
+          description: Identity bloc — { user, preferences, sessions, devices,
+            oauthIdentities, mfaBackupCodes }. Per-row shapes documented in
+            user-data-export.entity.ts.
+        trips:
+          type: object
+          additionalProperties: true
+          description: 'Trips section — { count, rows[] }. Row shape: ExportedTrip in
+            user-data-export.entity.ts.'
+        itineraryDays:
+          type: object
+          additionalProperties: true
+          description: Itinerary days — { count, rows[] }.
+        itineraryItems:
+          type: object
+          additionalProperties: true
+          description: Itinerary items — { count, rows[] }.
+        tripVersions:
+          type: object
+          additionalProperties: true
+        tripShares:
+          type: object
+          additionalProperties: true
+        scamReports:
+          type: object
+          additionalProperties: true
+        sosEvents:
+          type: object
+          additionalProperties: true
+        notificationPreference:
+          type: object
+          additionalProperties: true
+          nullable: true
+          description: Notification preferences row, or null if never set.
+        notificationLogs:
+          type: object
+          additionalProperties: true
+        mediaAssets:
+          type: object
+          additionalProperties: true
+        memoryBooks:
+          type: object
+          additionalProperties: true
+        votes:
+          type: object
+          additionalProperties: true
+        expenses:
+          type: object
+          additionalProperties: true
+        reviews:
+          type: object
+          additionalProperties: true
+        dishReports:
+          type: object
+          additionalProperties: true
+        stayBookings:
+          type: object
+          additionalProperties: true
+        subscriptions:
+          type: object
+          additionalProperties: true
+        escrowHolds:
+          type: object
+          additionalProperties: true
+        commissions:
+          type: object
+          additionalProperties: true
+        agentProfile:
+          type: object
+          additionalProperties: true
+          nullable: true
+          description: Agent profile row if the user is a verified agent, else null.
+        liveEvents:
+          type: object
+          additionalProperties: true
+      required:
+        - metadata
+        - identity
+        - trips
+        - itineraryDays
+        - itineraryItems
+        - tripVersions
+        - tripShares
+        - scamReports
+        - sosEvents
+        - notificationPreference
+        - notificationLogs
+        - mediaAssets
+        - memoryBooks
+        - votes
+        - expenses
+        - reviews
+        - dishReports
+        - stayBookings
+        - subscriptions
+        - escrowHolds
+        - commissions
+        - agentProfile
+        - liveEvents
+    AdminUserDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        emailHash:
+          type: string
+          description: sha256(email) — opaque email surrogate.
+        displayName:
+          type: string
+        role:
+          type: string
+          enum:
+            - user
+            - premium
+            - agent
+            - admin
+        mfaEnabled:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        deletedAt:
+          type: object
+          nullable: true
+          format: date-time
+          description: Soft-delete timestamp; null if active.
+      required:
+        - id
+        - emailHash
+        - displayName
+        - role
+        - mfaEnabled
+        - createdAt
+        - updatedAt
+        - deletedAt
+    AdminListUsersResponseDto:
+      type: object
+      properties:
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminUserDto'
+        total:
+          type: number
+          description: Total matching rows across all pages.
+      required:
+        - users
+        - total
+    AdminPurgeForceResponseDto:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          description: Always true on success — the scheduler tick was kicked off.
+      required:
+        - ok
+    TrustedContactDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        userId:
+          type: string
+          format: cuid
+        name:
+          type: string
+          maxLength: 80
+        phone:
+          type: object
+          nullable: true
+          maxLength: 40
+        email:
+          type: object
+          nullable: true
+          format: email
+          maxLength: 254
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - userId
+        - name
+        - phone
+        - email
+        - createdAt
+        - updatedAt
+    ListTrustedContactsResponseDto:
+      type: object
+      properties:
+        contacts:
+          description: Caller's pre-set safety contacts. At most 3 per account.
+          type: array
+          items:
+            $ref: '#/components/schemas/TrustedContactDto'
+      required:
+        - contacts
+    AddTrustedContactRequestDto:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        phone:
+          type: object
+          nullable: true
+          minLength: 3
+          maxLength: 40
+        email:
+          type: object
+          nullable: true
+          format: email
+          maxLength: 254
+      required:
+        - name
     CreateUploadUrlRequestDto:
       type: object
       properties:
@@ -6054,192 +6359,6 @@ components:
       required:
         - tripId
         - hearts
-    UserDataExportMetadataDto:
-      type: object
-      properties:
-        exportedAt:
-          type: string
-          format: date-time
-          description: ISO-8601 timestamp of when the bundle was generated.
-        formatVersion:
-          type: number
-          enum:
-            - 1
-          description: Bundle format version. Bumps on shape changes.
-        userId:
-          type: string
-          format: cuid
-      required:
-        - exportedAt
-        - formatVersion
-        - userId
-    UserDataExportResponseDto:
-      type: object
-      properties:
-        metadata:
-          $ref: '#/components/schemas/UserDataExportMetadataDto'
-        identity:
-          type: object
-          additionalProperties: true
-          description: Identity bloc — { user, preferences, sessions, devices,
-            oauthIdentities, mfaBackupCodes }. Per-row shapes documented in
-            user-data-export.entity.ts.
-        trips:
-          type: object
-          additionalProperties: true
-          description: 'Trips section — { count, rows[] }. Row shape: ExportedTrip in
-            user-data-export.entity.ts.'
-        itineraryDays:
-          type: object
-          additionalProperties: true
-          description: Itinerary days — { count, rows[] }.
-        itineraryItems:
-          type: object
-          additionalProperties: true
-          description: Itinerary items — { count, rows[] }.
-        tripVersions:
-          type: object
-          additionalProperties: true
-        tripShares:
-          type: object
-          additionalProperties: true
-        scamReports:
-          type: object
-          additionalProperties: true
-        sosEvents:
-          type: object
-          additionalProperties: true
-        notificationPreference:
-          type: object
-          additionalProperties: true
-          nullable: true
-          description: Notification preferences row, or null if never set.
-        notificationLogs:
-          type: object
-          additionalProperties: true
-        mediaAssets:
-          type: object
-          additionalProperties: true
-        memoryBooks:
-          type: object
-          additionalProperties: true
-        votes:
-          type: object
-          additionalProperties: true
-        expenses:
-          type: object
-          additionalProperties: true
-        reviews:
-          type: object
-          additionalProperties: true
-        dishReports:
-          type: object
-          additionalProperties: true
-        stayBookings:
-          type: object
-          additionalProperties: true
-        subscriptions:
-          type: object
-          additionalProperties: true
-        escrowHolds:
-          type: object
-          additionalProperties: true
-        commissions:
-          type: object
-          additionalProperties: true
-        agentProfile:
-          type: object
-          additionalProperties: true
-          nullable: true
-          description: Agent profile row if the user is a verified agent, else null.
-        liveEvents:
-          type: object
-          additionalProperties: true
-      required:
-        - metadata
-        - identity
-        - trips
-        - itineraryDays
-        - itineraryItems
-        - tripVersions
-        - tripShares
-        - scamReports
-        - sosEvents
-        - notificationPreference
-        - notificationLogs
-        - mediaAssets
-        - memoryBooks
-        - votes
-        - expenses
-        - reviews
-        - dishReports
-        - stayBookings
-        - subscriptions
-        - escrowHolds
-        - commissions
-        - agentProfile
-        - liveEvents
-    AdminUserDto:
-      type: object
-      properties:
-        id:
-          type: string
-          format: cuid
-        emailHash:
-          type: string
-          description: sha256(email) — opaque email surrogate.
-        displayName:
-          type: string
-        role:
-          type: string
-          enum:
-            - user
-            - premium
-            - agent
-            - admin
-        mfaEnabled:
-          type: boolean
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-        deletedAt:
-          type: object
-          nullable: true
-          format: date-time
-          description: Soft-delete timestamp; null if active.
-      required:
-        - id
-        - emailHash
-        - displayName
-        - role
-        - mfaEnabled
-        - createdAt
-        - updatedAt
-        - deletedAt
-    AdminListUsersResponseDto:
-      type: object
-      properties:
-        users:
-          type: array
-          items:
-            $ref: '#/components/schemas/AdminUserDto'
-        total:
-          type: number
-          description: Total matching rows across all pages.
-      required:
-        - users
-        - total
-    AdminPurgeForceResponseDto:
-      type: object
-      properties:
-        ok:
-          type: boolean
-          description: Always true on success — the scheduler tick was kicked off.
-      required:
-        - ok
     FeedItemDto:
       type: object
       properties:

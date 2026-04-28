@@ -24,7 +24,7 @@ import {
   type NearMeNowRequestDto,
   type NearMeNowResponseDto,
 } from '@app/sdk';
-import { Badge } from '../../components/ui/badge';
+import { SafetyBadge } from '../../components/safety/safety-badge';
 import { Button } from '../../components/ui/button';
 import { Card, CardHeader, CardSubtitle, CardTitle } from '../../components/ui/card';
 import { PlaceCard } from '../../components/near-me/place-card';
@@ -232,7 +232,11 @@ export default function NearMePage() {
           ) : (
             <ul className="space-y-2">
               {response.places.map((p) => (
-                <PlaceCard key={p.id} place={p} />
+                <PlaceCard
+                  key={p.id}
+                  place={p}
+                  safety={{ score: response.safety.score, grade: response.safety.grade }}
+                />
               ))}
             </ul>
           )}
@@ -270,14 +274,13 @@ function WeatherTile({ weather }: { weather: NearMeNowResponseDto['weather'] }) 
 }
 
 function SafetyTile({ safety }: { safety: NearMeNowResponseDto['safety'] }) {
-  const variant: 'brand' | 'neutral' = safety.score >= 75 ? 'brand' : 'neutral';
   return (
     <div className="rounded-md border border-muted/15 bg-surface p-3">
       <p className="text-[10px] uppercase tracking-wider text-muted">Safety</p>
-      <p className="mt-1 font-mono text-sm">
-        {safety.score}/100 <Badge variant={variant}>{safety.grade}</Badge>
-      </p>
-      <p className="text-[10px] text-muted">{safety.radiusKm}km radius</p>
+      <div className="mt-1">
+        <SafetyBadge score={safety.score} grade={safety.grade} />
+      </div>
+      <p className="mt-1 text-[10px] text-muted">{safety.radiusKm}km radius</p>
     </div>
   );
 }

@@ -10,12 +10,19 @@
 
 import type { NearMePlaceDto, NearMeRouteLegDto } from '@app/sdk';
 import { Badge } from '../ui/badge';
+import { SafetyBadge } from '../safety/safety-badge';
 
 interface PlaceCardProps {
   readonly place: NearMePlaceDto;
+  /**
+   * V.UX.13 — area-level safety score (the same `response.safety`
+   * the parent already fetches via /near-me). Stamped on every card
+   * for the safety-first persona's at-a-glance check.
+   */
+  readonly safety?: { readonly score: number; readonly grade: string };
 }
 
-export function PlaceCard({ place }: PlaceCardProps) {
+export function PlaceCard({ place, safety }: PlaceCardProps) {
   const walking = place.routes.find((r) => r.mode === 'walk');
   const fastest = place.routes.reduce<NearMeRouteLegDto | undefined>((best, r) => {
     if (!best) return r;
@@ -30,6 +37,12 @@ export function PlaceCard({ place }: PlaceCardProps) {
             <Badge variant="neutral">{place.category}</Badge>
             <span>·</span>
             <span>{formatDistance(place.distanceMeters)}</span>
+            {safety ? (
+              <>
+                <span>·</span>
+                <SafetyBadge score={safety.score} grade={safety.grade} compact />
+              </>
+            ) : null}
           </p>
         </div>
       </div>
