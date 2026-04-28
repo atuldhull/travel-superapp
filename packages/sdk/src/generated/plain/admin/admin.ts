@@ -455,6 +455,159 @@ export const adminSosControllerResolve = async (
 };
 
 /**
+ * @summary List users with optional ?role / ?deleted / ?q filters. Offset pagination via ?limit + ?offset. Admin-only.
+ */
+export type adminUsersControllerListResponse200 = {
+  data: AdminListUsersResponseDto;
+  status: 200;
+};
+
+export type adminUsersControllerListResponse400 = {
+  data: void;
+  status: 400;
+};
+
+export type adminUsersControllerListResponseSuccess = adminUsersControllerListResponse200 & {
+  headers: Headers;
+};
+export type adminUsersControllerListResponseError = adminUsersControllerListResponse400 & {
+  headers: Headers;
+};
+
+export type adminUsersControllerListResponse =
+  | adminUsersControllerListResponseSuccess
+  | adminUsersControllerListResponseError;
+
+export const getAdminUsersControllerListUrl = (params: AdminUsersControllerListParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/admin/users?${stringifiedParams}`
+    : `/api/v1/admin/users`;
+};
+
+export const adminUsersControllerList = async (
+  params: AdminUsersControllerListParams,
+  options?: RequestInit,
+): Promise<adminUsersControllerListResponse> => {
+  return apiFetch<adminUsersControllerListResponse>(getAdminUsersControllerListUrl(params), {
+    ...options,
+    method: 'GET',
+  });
+};
+
+/**
+ * @summary Ban a user (soft-delete + revoke sessions). Admin-only.
+ */
+export type adminUsersControllerBanResponse204 = {
+  data: void;
+  status: 204;
+};
+
+export type adminUsersControllerBanResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type adminUsersControllerBanResponseSuccess = adminUsersControllerBanResponse204 & {
+  headers: Headers;
+};
+export type adminUsersControllerBanResponseError = adminUsersControllerBanResponse404 & {
+  headers: Headers;
+};
+
+export type adminUsersControllerBanResponse =
+  | adminUsersControllerBanResponseSuccess
+  | adminUsersControllerBanResponseError;
+
+export const getAdminUsersControllerBanUrl = (id: string) => {
+  return `/api/v1/admin/users/${id}/ban`;
+};
+
+export const adminUsersControllerBan = async (
+  id: string,
+  options?: RequestInit,
+): Promise<adminUsersControllerBanResponse> => {
+  return apiFetch<adminUsersControllerBanResponse>(getAdminUsersControllerBanUrl(id), {
+    ...options,
+    method: 'POST',
+  });
+};
+
+/**
+ * @summary Unban a user (clear deletedAt). Admin-only.
+ */
+export type adminUsersControllerUnbanResponse204 = {
+  data: void;
+  status: 204;
+};
+
+export type adminUsersControllerUnbanResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type adminUsersControllerUnbanResponseSuccess = adminUsersControllerUnbanResponse204 & {
+  headers: Headers;
+};
+export type adminUsersControllerUnbanResponseError = adminUsersControllerUnbanResponse404 & {
+  headers: Headers;
+};
+
+export type adminUsersControllerUnbanResponse =
+  | adminUsersControllerUnbanResponseSuccess
+  | adminUsersControllerUnbanResponseError;
+
+export const getAdminUsersControllerUnbanUrl = (id: string) => {
+  return `/api/v1/admin/users/${id}/unban`;
+};
+
+export const adminUsersControllerUnban = async (
+  id: string,
+  options?: RequestInit,
+): Promise<adminUsersControllerUnbanResponse> => {
+  return apiFetch<adminUsersControllerUnbanResponse>(getAdminUsersControllerUnbanUrl(id), {
+    ...options,
+    method: 'POST',
+  });
+};
+
+/**
+ * @summary Force the account-purge scheduler tick. Idempotent — re-entrant guard skips overlapping calls.
+ */
+export type adminPurgeControllerForcePurgeResponse200 = {
+  data: AdminPurgeForceResponseDto;
+  status: 200;
+};
+
+export type adminPurgeControllerForcePurgeResponseSuccess =
+  adminPurgeControllerForcePurgeResponse200 & {
+    headers: Headers;
+  };
+export type adminPurgeControllerForcePurgeResponse = adminPurgeControllerForcePurgeResponseSuccess;
+
+export const getAdminPurgeControllerForcePurgeUrl = () => {
+  return `/api/v1/admin/account-purge`;
+};
+
+export const adminPurgeControllerForcePurge = async (
+  options?: RequestInit,
+): Promise<adminPurgeControllerForcePurgeResponse> => {
+  return apiFetch<adminPurgeControllerForcePurgeResponse>(getAdminPurgeControllerForcePurgeUrl(), {
+    ...options,
+    method: 'POST',
+  });
+};
+
+/**
  * @summary Cross-user list of media with optional ?ownerId, ?kind, ?status filters. Admin-only.
  */
 export type adminMediaControllerListResponse200 = {
@@ -606,158 +759,5 @@ export const adminControllerRemove = async (
   return apiFetch<adminControllerRemoveResponse>(getAdminControllerRemoveUrl(id), {
     ...options,
     method: 'DELETE',
-  });
-};
-
-/**
- * @summary List users with optional ?role / ?deleted / ?q filters. Offset pagination via ?limit + ?offset. Admin-only.
- */
-export type adminUsersControllerListResponse200 = {
-  data: AdminListUsersResponseDto;
-  status: 200;
-};
-
-export type adminUsersControllerListResponse400 = {
-  data: void;
-  status: 400;
-};
-
-export type adminUsersControllerListResponseSuccess = adminUsersControllerListResponse200 & {
-  headers: Headers;
-};
-export type adminUsersControllerListResponseError = adminUsersControllerListResponse400 & {
-  headers: Headers;
-};
-
-export type adminUsersControllerListResponse =
-  | adminUsersControllerListResponseSuccess
-  | adminUsersControllerListResponseError;
-
-export const getAdminUsersControllerListUrl = (params: AdminUsersControllerListParams) => {
-  const normalizedParams = new URLSearchParams();
-
-  Object.entries(params || {}).forEach(([key, value]) => {
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString());
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0
-    ? `/api/v1/admin/users?${stringifiedParams}`
-    : `/api/v1/admin/users`;
-};
-
-export const adminUsersControllerList = async (
-  params: AdminUsersControllerListParams,
-  options?: RequestInit,
-): Promise<adminUsersControllerListResponse> => {
-  return apiFetch<adminUsersControllerListResponse>(getAdminUsersControllerListUrl(params), {
-    ...options,
-    method: 'GET',
-  });
-};
-
-/**
- * @summary Ban a user (soft-delete + revoke sessions). Admin-only.
- */
-export type adminUsersControllerBanResponse204 = {
-  data: void;
-  status: 204;
-};
-
-export type adminUsersControllerBanResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type adminUsersControllerBanResponseSuccess = adminUsersControllerBanResponse204 & {
-  headers: Headers;
-};
-export type adminUsersControllerBanResponseError = adminUsersControllerBanResponse404 & {
-  headers: Headers;
-};
-
-export type adminUsersControllerBanResponse =
-  | adminUsersControllerBanResponseSuccess
-  | adminUsersControllerBanResponseError;
-
-export const getAdminUsersControllerBanUrl = (id: string) => {
-  return `/api/v1/admin/users/${id}/ban`;
-};
-
-export const adminUsersControllerBan = async (
-  id: string,
-  options?: RequestInit,
-): Promise<adminUsersControllerBanResponse> => {
-  return apiFetch<adminUsersControllerBanResponse>(getAdminUsersControllerBanUrl(id), {
-    ...options,
-    method: 'POST',
-  });
-};
-
-/**
- * @summary Unban a user (clear deletedAt). Admin-only.
- */
-export type adminUsersControllerUnbanResponse204 = {
-  data: void;
-  status: 204;
-};
-
-export type adminUsersControllerUnbanResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type adminUsersControllerUnbanResponseSuccess = adminUsersControllerUnbanResponse204 & {
-  headers: Headers;
-};
-export type adminUsersControllerUnbanResponseError = adminUsersControllerUnbanResponse404 & {
-  headers: Headers;
-};
-
-export type adminUsersControllerUnbanResponse =
-  | adminUsersControllerUnbanResponseSuccess
-  | adminUsersControllerUnbanResponseError;
-
-export const getAdminUsersControllerUnbanUrl = (id: string) => {
-  return `/api/v1/admin/users/${id}/unban`;
-};
-
-export const adminUsersControllerUnban = async (
-  id: string,
-  options?: RequestInit,
-): Promise<adminUsersControllerUnbanResponse> => {
-  return apiFetch<adminUsersControllerUnbanResponse>(getAdminUsersControllerUnbanUrl(id), {
-    ...options,
-    method: 'POST',
-  });
-};
-
-/**
- * @summary Force the account-purge scheduler tick. Idempotent — re-entrant guard skips overlapping calls.
- */
-export type adminPurgeControllerForcePurgeResponse200 = {
-  data: AdminPurgeForceResponseDto;
-  status: 200;
-};
-
-export type adminPurgeControllerForcePurgeResponseSuccess =
-  adminPurgeControllerForcePurgeResponse200 & {
-    headers: Headers;
-  };
-export type adminPurgeControllerForcePurgeResponse = adminPurgeControllerForcePurgeResponseSuccess;
-
-export const getAdminPurgeControllerForcePurgeUrl = () => {
-  return `/api/v1/admin/account-purge`;
-};
-
-export const adminPurgeControllerForcePurge = async (
-  options?: RequestInit,
-): Promise<adminPurgeControllerForcePurgeResponse> => {
-  return apiFetch<adminPurgeControllerForcePurgeResponse>(getAdminPurgeControllerForcePurgeUrl(), {
-    ...options,
-    method: 'POST',
   });
 };

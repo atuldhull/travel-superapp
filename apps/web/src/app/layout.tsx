@@ -13,6 +13,7 @@ import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import Script from 'next/script';
 import './globals.css';
+import { SosFab } from '../components/safety/sos-fab';
 import { ThemeToggle } from '../components/ui/theme-toggle';
 import { WhoAmIBadge } from '../components/whoami-badge';
 import { Providers } from './providers';
@@ -52,6 +53,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             </header>
             {children}
           </div>
+          {/* V.UX.13 — persistent SOS FAB. Renders disabled for
+              anonymous callers; tap → confirm modal → POST /safety/sos
+              → fan-out to trusted contacts. */}
+          <SosFab />
         </Providers>
       </body>
     </html>

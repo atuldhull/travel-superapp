@@ -161,6 +161,7 @@ model User {
   commissions        Commission[]
   scamReports        ScamReport[]
   sosEvents          SosEvent[]
+  trustedContacts    TrustedContact[]
   stayBookings       StayBooking[]
   notificationPrefs  NotificationPreference?
   notificationLogs   NotificationLog[]
@@ -609,6 +610,23 @@ model SosEvent {
 
   @@index([userId, createdAt])
   @@index([resolvedAt])
+}
+
+// V.UX.13 — pre-set safety contacts. Cap of 3 enforced in the
+// use-case (no DB-level constraint; same approach as MfaBackupCode's
+// per-user cap). On SOS trigger, these are fanned out via the
+// stub SMS adapter (real Twilio lands in a follow-up).
+model TrustedContact {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  phone     String?
+  email     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, createdAt])
 }
 
 // ─── 8. Weather & Environment ───────────────────────────────────────────
