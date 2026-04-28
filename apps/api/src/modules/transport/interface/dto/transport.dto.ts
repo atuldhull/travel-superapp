@@ -30,5 +30,10 @@ export const GetRoutesBodySchema = z.object({
   origin: Coord,
   destination: Coord,
   modes: z.array(TransportModeSchema).max(7).optional(),
+  /**
+   * V.UX.15 — accessibility / senior persona. When true the
+   * response is filtered to step-free legs only.
+   */
+  stepFreeOnly: z.boolean().optional(),
 });
 export type GetRoutesBody = z.infer<typeof GetRoutesBodySchema>;

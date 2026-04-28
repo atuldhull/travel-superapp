@@ -26,6 +26,12 @@ export interface Preferences {
   readonly budgetTier: number;
   readonly familyMode: boolean;
   readonly kidAges: readonly number[];
+  /**
+   * V.UX.15 — accessibility / senior persona. When true the web
+   * applies a `.comfort` class on `<html>` (larger fonts +
+   * tap targets) and transport searches default `stepFreeOnly: true`.
+   */
+  readonly comfortMode: boolean;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }

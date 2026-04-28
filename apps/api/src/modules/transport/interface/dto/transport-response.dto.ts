@@ -38,6 +38,13 @@ export class GetRoutesRequestDto {
     description: 'Filter to a subset of modes; empty/omitted means all available.',
   })
   declare modes?: string[];
+
+  @ApiProperty({
+    required: false,
+    description:
+      'V.UX.15 — when true, only step-free legs are returned (wheelchair / stroller accessible).',
+  })
+  declare stepFreeOnly?: boolean;
 }
 
 export class RouteLegDto {
@@ -58,6 +65,11 @@ export class RouteLegDto {
 
   @ApiProperty({ enum: ['high', 'medium', 'low'] })
   declare confidence: string;
+
+  @ApiProperty({
+    description: 'V.UX.15 — true iff this leg is step-free (wheelchair / stroller accessible).',
+  })
+  declare stepFree: boolean;
 }
 
 export class GetRoutesResponseDto {

@@ -55,6 +55,7 @@ import { MediaUploader } from '../../../components/media-uploader';
 import { ExportPdfButton } from '../../../components/trip/export-pdf-button';
 import { EmailItineraryButton } from '../../../components/trip/email-itinerary-button';
 import { OpenOnMobileButton } from '../../../components/trip/open-on-mobile-button';
+import { AudioReadout } from '../../../components/trip/audio-readout';
 import { PacingWarning } from '../../../components/trip/pacing-warning';
 import { PlaceSuggestionPicker } from '../../../components/trip/place-suggestion-picker';
 import { PowerPlannerSection } from '../../../components/trip/power-planner-section';
@@ -369,6 +370,7 @@ function ReadView({
             <OpenOnMobileButton tripId={trip.id} />
             <ExportPdfButton tripId={trip.id} tripTitle={trip.title} />
             <EmailItineraryButton tripId={trip.id} tripTitle={trip.title} />
+            <AudioReadout tripId={trip.id} tripTitle={trip.title} enabled={true} />
             {isOwner ? (
               <>
                 <Button variant="outline" size="sm" onClick={onDuplicate} disabled={isDuplicating}>

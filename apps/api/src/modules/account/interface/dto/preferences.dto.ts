@@ -15,6 +15,7 @@ export const UpdatePreferencesBodySchema = z.object({
   budgetTier: z.number().int().min(1).max(5).optional(),
   familyMode: z.boolean().optional(),
   kidAges: z.array(z.number().int().min(0).max(17)).max(8).optional(),
+  comfortMode: z.boolean().optional(),
 });
 export type UpdatePreferencesBody = z.infer<typeof UpdatePreferencesBodySchema>;
 
@@ -44,6 +45,12 @@ export class UpdatePreferencesRequestDto {
     description: 'Ages of any travelling children, each 0..17.',
   })
   declare kidAges?: number[];
+
+  @ApiProperty({
+    required: false,
+    description: 'V.UX.15 — accessibility/senior comfort mode (larger fonts, step-free routing).',
+  })
+  declare comfortMode?: boolean;
 }
 
 export class PreferencesDto {
@@ -70,6 +77,9 @@ export class PreferencesDto {
 
   @ApiProperty({ type: [Number], maxItems: 8 })
   declare kidAges: number[];
+
+  @ApiProperty({ description: 'V.UX.15 — accessibility comfort-mode toggle.' })
+  declare comfortMode: boolean;
 
   @ApiProperty({ format: 'date-time' })
   declare createdAt: string;

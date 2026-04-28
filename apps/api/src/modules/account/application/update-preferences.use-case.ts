@@ -25,6 +25,8 @@ export interface UpdatePreferencesCommand {
   readonly budgetTier?: number;
   readonly familyMode?: boolean;
   readonly kidAges?: readonly number[];
+  /** V.UX.15 — accessibility / senior comfort-mode toggle. */
+  readonly comfortMode?: boolean;
 }
 
 @Injectable()
@@ -71,6 +73,7 @@ export class UpdatePreferencesUseCase {
       ...(cmd.budgetTier !== undefined ? { budgetTier: cmd.budgetTier } : {}),
       ...(cmd.familyMode !== undefined ? { familyMode: cmd.familyMode } : {}),
       ...(cmd.kidAges !== undefined ? { kidAges: cmd.kidAges } : {}),
+      ...(cmd.comfortMode !== undefined ? { comfortMode: cmd.comfortMode } : {}),
     });
   }
 }

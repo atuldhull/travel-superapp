@@ -29,6 +29,8 @@ import { Button } from '../../../components/ui/button';
 import { Card, CardHeader, CardSubtitle, CardTitle } from '../../../components/ui/card';
 import { Field } from '../../../components/ui/input';
 import { Skeleton } from '../../../components/ui/skeleton';
+import { setComfortMode } from '../../../lib/comfort-mode';
+import { useComfortMode } from '../../../lib/use-comfort-mode';
 import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
 
 interface ApiError extends Error {
@@ -52,6 +54,10 @@ export default function PreferencesPage() {
   // without waiting on a round-trip.
   const [familyMode, setFamilyMode] = useState(false);
   const [kidAgesText, setKidAgesText] = useState('');
+  // V.UX.15 — comfort mode lives in localStorage AND server prefs;
+  // the localStorage value drives the .comfort class instantly, the
+  // server value follows the user across devices.
+  const comfortLocal = useComfortMode();
 
   useEffect(() => {
     if (bootComplete && token === null) router.replace('/login');
@@ -68,6 +74,14 @@ export default function PreferencesPage() {
     if (!prefs) return;
     setFamilyMode(prefs.familyMode);
     setKidAgesText(prefs.kidAges.join(', '));
+    // V.UX.15 — when the server says comfort mode is on but
+    // localStorage doesn't, sync down so the user gets the larger
+    // type / spacing on this fresh device too. Don't sync the
+    // other direction (localStorage off + server on → trust server).
+    if (prefs.comfortMode && !comfortLocal) {
+      setComfortMode(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prefs]);
 
   async function refresh() {
@@ -139,8 +153,16 @@ export default function PreferencesPage() {
     const data: UpdatePreferencesRequestDto = {
       familyMode,
       kidAges: parsedAges,
+      comfortMode: comfortLocal,
     };
     updateMutation.mutate({ data });
+  }
+
+  function toggleComfort(next: boolean) {
+    // Local-first: flip the .comfort class instantly so the user
+    // sees the layout adjust before the server round-trip lands.
+    // The save button still mirrors the value to the server below.
+    setComfortMode(next);
   }
 
   return (
@@ -172,6 +194,26 @@ export default function PreferencesPage() {
                 Auto-adds kid-friendly / stroller / high-chair / crib chips to search; pacing
                 warning on heavy days.
               </span>
+            </span>
+          </label>
+          <label className="flex items-start gap-3 rounded-md border border-muted/15 bg-muted/5 p-3 text-sm">
+            <input
+              type="checkbox"
+              checked={comfortLocal}
+              onChange={(e) => toggleComfort(e.target.checked)}
+              className="mt-0.5 h-4 w-4"
+            />
+            <span>
+              <span className="font-medium">Comfort mode</span>
+              <span className="block text-xs text-muted">
+                Larger fonts, increased line-height, bigger tap targets. Step-free routes are
+                preferred in transport searches.
+              </span>
+              {comfortLocal ? (
+                <span className="mt-1 block rounded border border-brand/30 bg-brand/5 px-2 py-1 text-[11px] text-brand">
+                  ✓ Layout adjusted — more space, larger text.
+                </span>
+              ) : null}
             </span>
           </label>
           <Field label="Kid ages (comma-separated, 0–17)">

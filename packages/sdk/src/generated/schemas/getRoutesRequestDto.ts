@@ -9,4 +9,6 @@ export interface GetRoutesRequestDto {
   destination: TransportCoordinatesDto;
   /** Filter to a subset of modes; empty/omitted means all available. */
   modes?: GetRoutesRequestDtoModesItem[];
+  /** V.UX.15 — when true, only step-free legs are returned (wheelchair / stroller accessible). */
+  stepFreeOnly?: boolean;
 }

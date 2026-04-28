@@ -32,6 +32,7 @@ export class PrismaPreferencesRepository implements PreferencesRepository {
       budgetTier: 2,
       familyMode: false,
       kidAges: [],
+      comfortMode: false,
       createdAt: now,
       updatedAt: now,
     };
@@ -47,6 +48,7 @@ export class PrismaPreferencesRepository implements PreferencesRepository {
     if (input.budgetTier !== undefined) updateData['budgetTier'] = input.budgetTier;
     if (input.familyMode !== undefined) updateData['familyMode'] = input.familyMode;
     if (input.kidAges !== undefined) updateData['kidAges'] = [...input.kidAges];
+    if (input.comfortMode !== undefined) updateData['comfortMode'] = input.comfortMode;
 
     const row = await this.prisma.preferences.upsert({
       where: { userId: input.userId },
@@ -59,6 +61,7 @@ export class PrismaPreferencesRepository implements PreferencesRepository {
         budgetTier: input.budgetTier ?? 2,
         familyMode: input.familyMode ?? false,
         kidAges: input.kidAges ? [...input.kidAges] : [],
+        comfortMode: input.comfortMode ?? false,
       },
     });
     return toDomain(row);
@@ -75,6 +78,7 @@ function toDomain(row: PrismaPreferences): Preferences {
     budgetTier: row.budgetTier,
     familyMode: row.familyMode,
     kidAges: row.kidAges,
+    comfortMode: row.comfortMode,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };

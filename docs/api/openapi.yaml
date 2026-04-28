@@ -4650,6 +4650,10 @@ components:
               - car
               - taxi
               - rideshare
+        stepFreeOnly:
+          type: boolean
+          description: V.UX.15 — when true, only step-free legs are returned (wheelchair /
+            stroller accessible).
       required:
         - origin
         - destination
@@ -4674,12 +4678,17 @@ components:
             - high
             - medium
             - low
+        stepFree:
+          type: boolean
+          description: V.UX.15 — true iff this leg is step-free (wheelchair / stroller
+            accessible).
       required:
         - mode
         - distanceMeters
         - durationSeconds
         - estimatedCostUsd
         - confidence
+        - stepFree
     GetRoutesResponseDto:
       type: object
       properties:
@@ -5359,6 +5368,9 @@ components:
           type: array
           items:
             type: number
+        comfortMode:
+          type: boolean
+          description: V.UX.15 — accessibility comfort-mode toggle.
         createdAt:
           type: string
           format: date-time
@@ -5374,6 +5386,7 @@ components:
         - budgetTier
         - familyMode
         - kidAges
+        - comfortMode
         - createdAt
         - updatedAt
     UpdatePreferencesRequestDto:
@@ -5407,6 +5420,10 @@ components:
           type: array
           items:
             type: number
+        comfortMode:
+          type: boolean
+          description: V.UX.15 — accessibility/senior comfort mode (larger fonts,
+            step-free routing).
     CreateUploadUrlRequestDto:
       type: object
       properties:

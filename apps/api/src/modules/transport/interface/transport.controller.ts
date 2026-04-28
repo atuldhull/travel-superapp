@@ -41,6 +41,7 @@ export class TransportController {
       origin: body.origin,
       destination: body.destination,
       ...(body.modes && body.modes.length > 0 ? { modes: body.modes } : {}),
+      ...(body.stepFreeOnly === true ? { stepFreeOnly: true } : {}),
     });
     return { routes: legs };
   }

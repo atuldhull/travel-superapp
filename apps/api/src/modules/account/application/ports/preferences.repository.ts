@@ -16,6 +16,8 @@ export interface UpsertPreferencesInput {
   readonly budgetTier?: number;
   readonly familyMode?: boolean;
   readonly kidAges?: readonly number[];
+  /** V.UX.15 — accessibility / senior comfort-mode toggle. */
+  readonly comfortMode?: boolean;
 }
 
 export interface PreferencesRepository {

@@ -279,6 +279,11 @@ model Preferences {
   // warning when a day has > 4 items.
   familyMode     Boolean  @default(false)
   kidAges        Int[]    // ages of any travelling children, 0..17
+  // V.UX.15 — accessibility / senior persona. When enabled, the web
+  // client applies a `.comfort` class on `<html>` that bumps font
+  // size + line-height + tap-target padding, and transport searches
+  // default `stepFreeOnly: true`.
+  comfortMode    Boolean  @default(false)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }
