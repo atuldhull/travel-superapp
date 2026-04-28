@@ -1663,6 +1663,31 @@ paths:
         caller-owned trip, optionally region-filtered.'
       tags:
         - agents
+  /api/v1/safety/country-primer/{countryCode}:
+    get:
+      operationId: CountryPrimerController_get
+      parameters:
+        - name: countryCode
+          required: true
+          in: path
+          description: ISO 3166-1 alpha-2 code (case-insensitive).
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Primer.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CountryPrimerDto'
+        '404':
+          description: COUNTRY_PRIMER_NOT_FOUND.
+      security:
+        - bearer: []
+      summary: Editorial first-time-international primer for a destination — visa
+        info, top scams, emergency numbers, survival phrases.
+      tags:
+        - safety
   /api/v1/account/export:
     get:
       operationId: AccountController_exportMyData
@@ -3017,6 +3042,31 @@ paths:
         Optional ?limit caps the page size.
       tags:
         - feed
+  /api/v1/translation/translate:
+    post:
+      operationId: TranslationController_translate
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TranslateTextRequestDto'
+      responses:
+        '200':
+          description: Translated text + provenance.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TranslationDto'
+        '422':
+          description: INVALID_TEXT | INVALID_TARGET_LANG | INVALID_SOURCE_LANG.
+      security:
+        - bearer: []
+      summary: Translate a snippet of text. v1 ships a stub provider — real providers
+        swap later.
+      tags:
+        - translation
 info:
   title: TravelSuperApp API
   description: OpenAPI export from the running NestJS app. Per-route schemas land
@@ -5198,6 +5248,63 @@ components:
             $ref: '#/components/schemas/AgentMatchDto'
       required:
         - matches
+    EmergencyNumberDto:
+      type: object
+      properties:
+        label:
+          type: string
+        number:
+          type: string
+      required:
+        - label
+        - number
+    LanguagePhraseDto:
+      type: object
+      properties:
+        translation:
+          type: string
+          description: Phrase in the destination language.
+        english:
+          type: string
+          description: English meaning.
+      required:
+        - translation
+        - english
+    CountryPrimerDto:
+      type: object
+      properties:
+        countryCode:
+          type: string
+          description: ISO 3166-1 alpha-2, lowercase.
+        countryName:
+          type: string
+        visaInfo:
+          type: string
+        topScamCategories:
+          description: Most prevalent scam categories.
+          type: array
+          items:
+            type: string
+        emergencyNumbers:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmergencyNumberDto'
+        languagePhrases:
+          type: array
+          items:
+            $ref: '#/components/schemas/LanguagePhraseDto'
+        seededAt:
+          type: string
+          format: date-time
+          description: When the editorial seed was last refreshed.
+      required:
+        - countryCode
+        - countryName
+        - visaInfo
+        - topScamCategories
+        - emergencyNumbers
+        - languagePhrases
+        - seededAt
     UserDataExportMetadataDto:
       type: object
       properties:
@@ -6676,3 +6783,45 @@ components:
       required:
         - items
         - nextBefore
+    TranslateTextRequestDto:
+      type: object
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 10000
+        targetLang:
+          type: string
+          minLength: 1
+          maxLength: 16
+          description: BCP-47 target language tag (e.g. "en", "fr", "ja", "zh-Hans-CN").
+        sourceLang:
+          type: string
+          minLength: 1
+          maxLength: 16
+          description: Optional source language tag. Provider auto-detects when omitted.
+      required:
+        - text
+        - targetLang
+    TranslationDto:
+      type: object
+      properties:
+        sourceText:
+          type: string
+        translatedText:
+          type: string
+        sourceLang:
+          type: object
+          nullable: true
+          description: BCP-47 detected or supplied source language.
+        targetLang:
+          type: string
+        provider:
+          type: string
+          description: Underlying provider id (e.g. "stub", "google").
+      required:
+        - sourceText
+        - translatedText
+        - sourceLang
+        - targetLang
+        - provider

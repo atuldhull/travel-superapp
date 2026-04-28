@@ -22,6 +22,7 @@ import { AdminResolveSosUseCase } from './application/admin-resolve-sos.use-case
 import { DismissScamReportUseCase } from './application/dismiss-scam-report.use-case';
 import { FindNearbyCrimesUseCase } from './application/find-nearby-crimes.use-case';
 import { FindNearbyScamsUseCase } from './application/find-nearby-scams.use-case';
+import { GetCountryPrimerUseCase } from './application/get-country-primer.use-case';
 import { GetSafetyScoreUseCase } from './application/get-safety-score.use-case';
 import { ListMySosEventsUseCase } from './application/list-my-sos-events.use-case';
 import { ListScamReportsForModerationUseCase } from './application/list-scam-reports-for-moderation.use-case';
@@ -43,6 +44,7 @@ import { StubContactNotifierAdapter } from './infrastructure/stub-contact-notifi
 import { AdminScamModerationController } from './interface/admin-scam-moderation.controller';
 import { AdminSosController } from './interface/admin-sos.controller';
 import { AgentsController } from './interface/agents.controller';
+import { CountryPrimerController } from './interface/country-primer.controller';
 import { CrimeLayerController } from './interface/crime.controller';
 import { SafetyScoreController } from './interface/safety-score.controller';
 import { SafetyController } from './interface/safety.controller';
@@ -66,6 +68,7 @@ import { SosController } from './interface/sos.controller';
     AdminScamModerationController,
     AdminSosController,
     AgentsController,
+    CountryPrimerController,
   ],
   providers: [
     { provide: SCAM_REPORT_REPOSITORY, useClass: PrismaScamReportRepository },
@@ -90,6 +93,7 @@ import { SosController } from './interface/sos.controller';
     AdminListSosEventsUseCase,
     AdminResolveSosUseCase,
     MatchAgentForTripUseCase,
+    GetCountryPrimerUseCase,
   ],
   exports: [
     SCAM_REPORT_REPOSITORY,

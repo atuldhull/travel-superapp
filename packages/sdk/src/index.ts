@@ -30,6 +30,9 @@ export * from './generated/react-query/safety/safety';
 export * from './generated/react-query/account/account';
 // V.UX.17 — premium concierge agent-match.
 export * from './generated/react-query/agents/agents';
+// V.UX.18 — translation widget. CountryPrimer hooks live under the
+// already-star-exported safety barrel (controller uses @ApiTags('safety')).
+export * from './generated/react-query/translation/translation';
 
 // Schema types from openapi.yaml's components/schemas. Re-exported so
 // consumers don't have to reach into deep generated paths. Add the
@@ -200,6 +203,12 @@ export type { UpdatePreferencesRequestDto } from './generated/schemas/updatePref
 export type { AgentMatchDto } from './generated/schemas/agentMatchDto';
 export type { MatchAgentForTripRequestDto } from './generated/schemas/matchAgentForTripRequestDto';
 export type { MatchAgentForTripResponseDto } from './generated/schemas/matchAgentForTripResponseDto';
+// V.UX.18: translation + country primer
+export type { TranslationDto } from './generated/schemas/translationDto';
+export type { TranslateTextRequestDto } from './generated/schemas/translateTextRequestDto';
+export type { CountryPrimerDto } from './generated/schemas/countryPrimerDto';
+export type { EmergencyNumberDto } from './generated/schemas/emergencyNumberDto';
+export type { LanguagePhraseDto } from './generated/schemas/languagePhraseDto';
 // V.UX.5: business-traveler — Expense / Balance schemas already
 // exported above (lines 121-126); social hooks barrel re-exported
 // above to surface useExpensesController{Create,List,Balances,Remove}.
