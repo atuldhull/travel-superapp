@@ -28,6 +28,12 @@ const MAX_SEARCH_RADIUS_KM = 50;
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
 const PLACE_FEATURE_TAG_KEY = 'feature';
+/**
+ * V.UX.17 — curated tag. A place is "curated" iff it has a
+ * `PlaceTag` row with key='curated' AND value='true'. Editorial
+ * surface only — set by content ops, not by user action.
+ */
+const PLACE_CURATED_TAG_KEY = 'curated';
 
 export interface SearchPlacesCommand {
   readonly center: { readonly lat: number; readonly lng: number };
@@ -40,6 +46,12 @@ export interface SearchPlacesCommand {
    * is treated the same as omitted.
    */
   readonly requiredFeatures?: readonly string[];
+  /**
+   * V.UX.17 — premium "curated only" toggle. When true, only places
+   * carrying a `PlaceTag` row with `key='curated' AND value='true'`
+   * pass. Same post-filter join the requiredFeatures path uses.
+   */
+  readonly curatedOnly?: boolean;
 }
 
 @Injectable()
@@ -73,35 +85,47 @@ export class SearchPlacesUseCase {
     });
 
     const features = (cmd.requiredFeatures ?? []).filter((f) => f.length > 0);
-    if (features.length === 0) return rows.slice(0, limit);
+    const curatedOnly = cmd.curatedOnly === true;
+    if (features.length === 0 && !curatedOnly) return rows.slice(0, limit);
 
-    // Post-filter: keep only places that carry every requested feature
-    // tag. One round-trip pulls the matching tag rows for the candidate
-    // ids; we intersect in memory rather than running N tag queries.
+    // Post-filter: pull every relevant tag (feature + curated) for
+    // the candidate ids in a single round-trip and intersect in
+    // memory. Same shape as the V.UX.14 path; curated short-circuits
+    // through the same query so we don't grow N independent joins.
     const candidateIds = rows.map((r) => r.id);
     if (candidateIds.length === 0) return [];
+    const tagKeys: string[] = [];
+    if (features.length > 0) tagKeys.push(PLACE_FEATURE_TAG_KEY);
+    if (curatedOnly) tagKeys.push(PLACE_CURATED_TAG_KEY);
     const tagRows = await this.prisma.placeTag.findMany({
       where: {
         placeId: { in: candidateIds },
-        key: PLACE_FEATURE_TAG_KEY,
-        value: { in: [...features] },
+        key: { in: tagKeys },
       },
-      select: { placeId: true, value: true },
+      select: { placeId: true, key: true, value: true },
     });
     const featuresByPlace = new Map<string, Set<string>>();
+    const curatedPlaces = new Set<string>();
     for (const t of tagRows) {
-      let set = featuresByPlace.get(t.placeId);
-      if (!set) {
-        set = new Set<string>();
-        featuresByPlace.set(t.placeId, set);
+      if (t.key === PLACE_FEATURE_TAG_KEY) {
+        let set = featuresByPlace.get(t.placeId);
+        if (!set) {
+          set = new Set<string>();
+          featuresByPlace.set(t.placeId, set);
+        }
+        set.add(t.value);
+      } else if (t.key === PLACE_CURATED_TAG_KEY && t.value === 'true') {
+        curatedPlaces.add(t.placeId);
       }
-      set.add(t.value);
     }
     const requiredSet = new Set(features);
     const passing = rows.filter((p) => {
-      const have = featuresByPlace.get(p.id);
-      if (!have) return false;
-      for (const f of requiredSet) if (!have.has(f)) return false;
+      if (curatedOnly && !curatedPlaces.has(p.id)) return false;
+      if (requiredSet.size > 0) {
+        const have = featuresByPlace.get(p.id);
+        if (!have) return false;
+        for (const f of requiredSet) if (!have.has(f)) return false;
+      }
       return true;
     });
     return passing.slice(0, limit);

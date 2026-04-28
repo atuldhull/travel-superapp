@@ -78,7 +78,7 @@ export default function PreferencesPage() {
     setFamilyMode(prefs.familyMode);
     setKidAgesText(prefs.kidAges.join(', '));
     setBudgetMode(prefs.budgetMode);
-    setDailyBudgetText((prefs.dailyBudgetUsd as unknown as string | null) ?? '' ?? '');
+    setDailyBudgetText((prefs.dailyBudgetUsd as unknown as string | null) ?? '');
     // V.UX.15 — when the server says comfort mode is on but
     // localStorage doesn't, sync down so the user gets the larger
     // type / spacing on this fresh device too. Don't sync the

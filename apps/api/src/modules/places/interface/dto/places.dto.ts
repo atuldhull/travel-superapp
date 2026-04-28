@@ -25,6 +25,8 @@ export const SearchPlacesBodySchema = z.object({
    * `['kid_friendly', 'stroller_accessible']`.
    */
   requiredFeatures: z.array(z.string().trim().min(1).max(60)).max(10).optional(),
+  /** V.UX.17 — premium curated-only filter. */
+  curatedOnly: z.boolean().optional(),
 });
 export type SearchPlacesBody = z.infer<typeof SearchPlacesBodySchema>;
 
