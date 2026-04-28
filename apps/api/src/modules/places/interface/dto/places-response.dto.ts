@@ -26,6 +26,15 @@ export class SearchPlacesRequestDto {
 
   @ApiProperty({ required: false, description: 'Cap on result count.' })
   declare limit?: number;
+
+  @ApiProperty({
+    required: false,
+    type: [String],
+    maxItems: 10,
+    description:
+      'V.UX.14 — required PlaceTag values under key="feature". A place must carry every listed feature.',
+  })
+  declare requiredFeatures?: string[];
 }
 
 export class FederatedSearchPlacesRequestDto {

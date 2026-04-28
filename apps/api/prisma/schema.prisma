@@ -273,6 +273,12 @@ model Preferences {
   travelType     String[] // solo, couple, family, business, ...
   budgetTier     Int      @default(2) // 1 (budget) .. 5 (luxury)
   dnd            Json? // quiet-hours rules: { start: "22:00", end: "07:00", tz }
+  // V.UX.14 — family-mode persona. When enabled, the search forms
+  // auto-add family filter chips (kid_friendly, stroller_accessible,
+  // high_chair, crib) and the trip detail page surfaces a pacing
+  // warning when a day has > 4 items.
+  familyMode     Boolean  @default(false)
+  kidAges        Int[]    // ages of any travelling children, 0..17
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }

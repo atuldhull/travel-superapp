@@ -104,12 +104,16 @@ export class PlacesController {
       radiusKm: number;
       category?: string;
       limit?: number;
+      requiredFeatures?: string[];
     } = {
       center: body.center,
       radiusKm: body.radiusKm,
     };
     if (body.category !== undefined) command.category = body.category;
     if (body.limit !== undefined) command.limit = body.limit;
+    if (body.requiredFeatures !== undefined && body.requiredFeatures.length > 0) {
+      command.requiredFeatures = body.requiredFeatures;
+    }
     const places = await this.searchPlaces.execute(command);
     return { places: places.map(toDto) };
   }

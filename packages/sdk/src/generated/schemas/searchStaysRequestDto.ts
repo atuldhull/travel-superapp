@@ -12,4 +12,9 @@ export interface SearchStaysRequestDto {
   checkOut: string;
   /** Guest count (default 2). */
   guests?: number;
+  /**
+   * V.UX.14 — required amenities (case-insensitive substring match). Family-mode UI sends ["crib","high_chair","stroller_accessible"].
+   * @maxItems 10
+   */
+  requiredAmenities?: string[];
 }

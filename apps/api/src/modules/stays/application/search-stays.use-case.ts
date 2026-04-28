@@ -24,6 +24,14 @@ export interface SearchStaysCommand {
   readonly checkIn: string;
   readonly checkOut: string;
   readonly guests?: number;
+  /**
+   * V.UX.14 — when set, a listing must include every amenity in
+   * the array (case-insensitive substring/equality match against
+   * its `amenities` field). Empty / missing = no filter. Family-
+   * mode UI passes `['crib', 'high_chair', 'stroller_accessible']`
+   * by default; users can prune the chips before searching.
+   */
+  readonly requiredAmenities?: readonly string[];
 }
 
 @Injectable()
@@ -103,13 +111,27 @@ export class SearchStaysUseCase {
     const guests =
       cmd.guests === undefined ? 1 : Math.max(1, Math.min(MAX_GUESTS, Math.floor(cmd.guests)));
 
-    return this.provider.searchNearby({
+    const listings = await this.provider.searchNearby({
       lat: cmd.lat,
       lng: cmd.lng,
       radiusKm: cmd.radiusKm,
       checkIn: cmd.checkIn,
       checkOut: cmd.checkOut,
       guests,
+    });
+
+    const required = (cmd.requiredAmenities ?? [])
+      .map((a) => a.trim().toLowerCase())
+      .filter((a) => a.length > 0);
+    if (required.length === 0) return listings;
+
+    // Post-filter: a listing passes iff every required amenity has at
+    // least one matching entry (case-insensitive). Provider data is
+    // free-form, so we lean on substring match — `crib` matches both
+    // `crib` and `baby_crib`.
+    return listings.filter((l) => {
+      const lower = l.amenities.map((a) => a.toLowerCase());
+      return required.every((r) => lower.some((a) => a.includes(r)));
     });
   }
 }

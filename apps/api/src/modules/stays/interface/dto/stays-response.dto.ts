@@ -29,6 +29,15 @@ export class SearchStaysRequestDto {
 
   @ApiProperty({ required: false, description: 'Guest count (default 2).' })
   declare guests?: number;
+
+  @ApiProperty({
+    required: false,
+    type: [String],
+    maxItems: 10,
+    description:
+      'V.UX.14 — required amenities (case-insensitive substring match). Family-mode UI sends ["crib","high_chair","stroller_accessible"].',
+  })
+  declare requiredAmenities?: string[];
 }
 
 export class StayListingDto {

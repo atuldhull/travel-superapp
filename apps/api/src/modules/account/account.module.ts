@@ -28,23 +28,28 @@ import { AdminUnbanUserUseCase } from './application/admin-unban-user.use-case';
 import { DeleteAccountUseCase } from './application/delete-account.use-case';
 import { DeleteTrustedContactUseCase } from './application/delete-trusted-contact.use-case';
 import { ExportUserDataUseCase } from './application/export-user-data.use-case';
+import { GetPreferencesUseCase } from './application/get-preferences.use-case';
 import { ListTrustedContactsUseCase } from './application/list-trusted-contacts.use-case';
 import { StreamAccountExportUseCase } from './application/stream-account-export.use-case';
+import { UpdatePreferencesUseCase } from './application/update-preferences.use-case';
 import { ACCOUNT_DELETER } from './application/ports/account-deleter';
 import { ACCOUNT_PURGER } from './application/ports/account-purger';
 import { ADMIN_USER_QUERY } from './application/ports/admin-user-query';
+import { PREFERENCES_REPOSITORY } from './application/ports/preferences.repository';
 import { TRUSTED_CONTACT_REPOSITORY } from './application/ports/trusted-contact.repository';
 import { USER_DATA_AGGREGATOR } from './application/ports/user-data-aggregator';
 import { PurgeSoftDeletedUsersUseCase } from './application/purge-soft-deleted-users.use-case';
 import { PrismaAccountDeleter } from './infrastructure/prisma-account-deleter';
 import { PrismaAccountPurger } from './infrastructure/prisma-account-purger';
 import { PrismaAdminUserQuery } from './infrastructure/prisma-admin-user-query';
+import { PrismaPreferencesRepository } from './infrastructure/prisma-preferences.repository';
 import { PrismaTrustedContactRepository } from './infrastructure/prisma-trusted-contact.repository';
 import { PrismaUserDataAggregator } from './infrastructure/prisma-user-data-aggregator';
 import { AccountPurgeScheduler } from './interface/account-purge.scheduler';
 import { AccountController } from './interface/account.controller';
 import { AdminPurgeController } from './interface/admin-purge.controller';
 import { AdminUsersController } from './interface/admin-users.controller';
+import { PreferencesController } from './interface/preferences.controller';
 import { TrustedContactsController } from './interface/trusted-contacts.controller';
 
 @Module({
@@ -53,6 +58,7 @@ import { TrustedContactsController } from './interface/trusted-contacts.controll
     AdminUsersController,
     AdminPurgeController,
     TrustedContactsController,
+    PreferencesController,
   ],
   providers: [
     { provide: USER_DATA_AGGREGATOR, useClass: PrismaUserDataAggregator },
@@ -60,6 +66,7 @@ import { TrustedContactsController } from './interface/trusted-contacts.controll
     { provide: ACCOUNT_PURGER, useClass: PrismaAccountPurger },
     { provide: ADMIN_USER_QUERY, useClass: PrismaAdminUserQuery },
     { provide: TRUSTED_CONTACT_REPOSITORY, useClass: PrismaTrustedContactRepository },
+    { provide: PREFERENCES_REPOSITORY, useClass: PrismaPreferencesRepository },
     ExportUserDataUseCase,
     StreamAccountExportUseCase,
     DeleteAccountUseCase,
@@ -71,6 +78,8 @@ import { TrustedContactsController } from './interface/trusted-contacts.controll
     ListTrustedContactsUseCase,
     AddTrustedContactUseCase,
     DeleteTrustedContactUseCase,
+    GetPreferencesUseCase,
+    UpdatePreferencesUseCase,
   ],
   // V.UX.13 — TRUSTED_CONTACT_REPOSITORY is consumed by the Safety
   // module's TriggerSosUseCase to fan out an SOS to the caller's

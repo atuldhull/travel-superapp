@@ -53,6 +53,9 @@ export class StaysController {
       checkIn: body.checkIn,
       checkOut: body.checkOut,
       ...(body.guests !== undefined ? { guests: body.guests } : {}),
+      ...(body.requiredAmenities !== undefined && body.requiredAmenities.length > 0
+        ? { requiredAmenities: body.requiredAmenities }
+        : {}),
     });
     return { stays };
   }

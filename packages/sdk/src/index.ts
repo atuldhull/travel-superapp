@@ -191,6 +191,9 @@ export type { ReorderBookAssetsRequestDto } from './generated/schemas/reorderBoo
 export type { TrustedContactDto } from './generated/schemas/trustedContactDto';
 export type { ListTrustedContactsResponseDto } from './generated/schemas/listTrustedContactsResponseDto';
 export type { AddTrustedContactRequestDto } from './generated/schemas/addTrustedContactRequestDto';
+// V.UX.14: family-mode preferences
+export type { PreferencesDto } from './generated/schemas/preferencesDto';
+export type { UpdatePreferencesRequestDto } from './generated/schemas/updatePreferencesRequestDto';
 // V.UX.5: business-traveler — Expense / Balance schemas already
 // exported above (lines 121-126); social hooks barrel re-exported
 // above to surface useExpensesController{Create,List,Balances,Remove}.

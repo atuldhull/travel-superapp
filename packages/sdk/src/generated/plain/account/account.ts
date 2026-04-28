@@ -4,7 +4,9 @@
 import type {
   AddTrustedContactRequestDto,
   ListTrustedContactsResponseDto,
+  PreferencesDto,
   TrustedContactDto,
+  UpdatePreferencesRequestDto,
   UserDataExportResponseDto,
 } from '../../schemas';
 
@@ -206,6 +208,78 @@ export const trustedContactsControllerRemove = async (
     {
       ...options,
       method: 'DELETE',
+    },
+  );
+};
+
+/**
+ * @summary Caller's preferences. Returns a synthetic default shape if the user has never written any.
+ */
+export type preferencesControllerGetMineResponse200 = {
+  data: PreferencesDto;
+  status: 200;
+};
+
+export type preferencesControllerGetMineResponseSuccess =
+  preferencesControllerGetMineResponse200 & {
+    headers: Headers;
+  };
+export type preferencesControllerGetMineResponse = preferencesControllerGetMineResponseSuccess;
+
+export const getPreferencesControllerGetMineUrl = () => {
+  return `/api/v1/account/preferences`;
+};
+
+export const preferencesControllerGetMine = async (
+  options?: RequestInit,
+): Promise<preferencesControllerGetMineResponse> => {
+  return apiFetch<preferencesControllerGetMineResponse>(getPreferencesControllerGetMineUrl(), {
+    ...options,
+    method: 'GET',
+  });
+};
+
+/**
+ * @summary Partial update of the caller-owned preferences. Idempotent upsert; empty body is a no-op.
+ */
+export type preferencesControllerUpdateMineResponse200 = {
+  data: PreferencesDto;
+  status: 200;
+};
+
+export type preferencesControllerUpdateMineResponse422 = {
+  data: void;
+  status: 422;
+};
+
+export type preferencesControllerUpdateMineResponseSuccess =
+  preferencesControllerUpdateMineResponse200 & {
+    headers: Headers;
+  };
+export type preferencesControllerUpdateMineResponseError =
+  preferencesControllerUpdateMineResponse422 & {
+    headers: Headers;
+  };
+
+export type preferencesControllerUpdateMineResponse =
+  | preferencesControllerUpdateMineResponseSuccess
+  | preferencesControllerUpdateMineResponseError;
+
+export const getPreferencesControllerUpdateMineUrl = () => {
+  return `/api/v1/account/preferences`;
+};
+
+export const preferencesControllerUpdateMine = async (
+  updatePreferencesRequestDto: UpdatePreferencesRequestDto,
+  options?: RequestInit,
+): Promise<preferencesControllerUpdateMineResponse> => {
+  return apiFetch<preferencesControllerUpdateMineResponse>(
+    getPreferencesControllerUpdateMineUrl(),
+    {
+      ...options,
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(updatePreferencesRequestDto),
     },
   );
 };
