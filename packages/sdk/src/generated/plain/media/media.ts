@@ -19,6 +19,7 @@ import type {
   MemoryBookWithAssetsResponseDto,
   PublicDownloadUrlResponseDto,
   PublicMemoryBookWithAssetsResponseDto,
+  ReorderBookAssetsRequestDto,
   UpdateAssetCaptionRequestDto,
   UpdateMemoryBookRequestDto,
 } from '../../schemas';
@@ -695,6 +696,59 @@ export const memoryBookControllerUpdateAssetCaption = async (
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(updateAssetCaptionRequestDto),
+    },
+  );
+};
+
+/**
+ * @summary Persist asset ordering for the memory book. Body is the desired permutation of attached asset ids.
+ */
+export type memoryBookControllerReorderAssetsResponse204 = {
+  data: void;
+  status: 204;
+};
+
+export type memoryBookControllerReorderAssetsResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type memoryBookControllerReorderAssetsResponse422 = {
+  data: void;
+  status: 422;
+};
+
+export type memoryBookControllerReorderAssetsResponseSuccess =
+  memoryBookControllerReorderAssetsResponse204 & {
+    headers: Headers;
+  };
+export type memoryBookControllerReorderAssetsResponseError = (
+  | memoryBookControllerReorderAssetsResponse404
+  | memoryBookControllerReorderAssetsResponse422
+) & {
+  headers: Headers;
+};
+
+export type memoryBookControllerReorderAssetsResponse =
+  | memoryBookControllerReorderAssetsResponseSuccess
+  | memoryBookControllerReorderAssetsResponseError;
+
+export const getMemoryBookControllerReorderAssetsUrl = (id: string) => {
+  return `/api/v1/memory-books/${id}/asset-order`;
+};
+
+export const memoryBookControllerReorderAssets = async (
+  id: string,
+  reorderBookAssetsRequestDto: ReorderBookAssetsRequestDto,
+  options?: RequestInit,
+): Promise<memoryBookControllerReorderAssetsResponse> => {
+  return apiFetch<memoryBookControllerReorderAssetsResponse>(
+    getMemoryBookControllerReorderAssetsUrl(id),
+    {
+      ...options,
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(reorderBookAssetsRequestDto),
     },
   );
 };

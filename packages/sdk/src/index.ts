@@ -182,6 +182,8 @@ export type { SharedTripHeartCountResponseDto } from './generated/schemas/shared
 // V.UX.11: memory-book asset captions + summaries
 export type { MemoryBookAssetSummaryDto } from './generated/schemas/memoryBookAssetSummaryDto';
 export type { UpdateAssetCaptionRequestDto } from './generated/schemas/updateAssetCaptionRequestDto';
+// V.UX.12: memory-book drag-reorder
+export type { ReorderBookAssetsRequestDto } from './generated/schemas/reorderBookAssetsRequestDto';
 // V.UX.5: business-traveler — Expense / Balance schemas already
 // exported above (lines 121-126); social hooks barrel re-exported
 // above to surface useExpensesController{Create,List,Balances,Remove}.

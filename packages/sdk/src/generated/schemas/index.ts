@@ -211,6 +211,7 @@ export * from './publicMemoryBookWithAssetsResponseDto';
 export * from './recentReviewDto';
 export * from './refreshSuccessResponseDto';
 export * from './registerRequestDto';
+export * from './reorderBookAssetsRequestDto';
 export * from './reportScamRequestDto';
 export * from './reportScamRequestDtoSeverity';
 export * from './resolveSosRequestDto';

@@ -41,20 +41,24 @@ import { GetPublishedMemoryBookUseCase } from '../application/get-published-memo
 import { ListMemoryBooksUseCase } from '../application/list-memory-books.use-case';
 import { ListPublishedMemoryBooksUseCase } from '../application/list-published-memory-books.use-case';
 import { PublishMemoryBookUseCase } from '../application/publish-memory-book.use-case';
+import { ReorderBookAssetsUseCase } from '../application/reorder-book-assets.use-case';
 import { UnpublishMemoryBookUseCase } from '../application/unpublish-memory-book.use-case';
 import { UpdateAssetCaptionUseCase } from '../application/update-asset-caption.use-case';
 import { UpdateMemoryBookUseCase } from '../application/update-memory-book.use-case';
 import type { MemoryBook } from '../domain/memory-book.entity';
 import {
   CreateMemoryBookBodySchema,
+  ReorderBookAssetsBodySchema,
   UpdateAssetCaptionBodySchema,
   UpdateMemoryBookBodySchema,
   type CreateMemoryBookBody,
+  type ReorderBookAssetsBody,
   type UpdateAssetCaptionBody,
   type UpdateMemoryBookBody,
 } from './dto/media.dto';
 import {
   MediaAssetDto as MediaAssetResponseDto,
+  ReorderBookAssetsRequestDto,
   UpdateAssetCaptionRequestDto,
 } from './dto/media-response.dto';
 import {
@@ -130,6 +134,7 @@ export class MemoryBookController {
     private readonly publishedAssetDlUc: GetPublishedAssetDownloadUrlUseCase,
     private readonly listPublishedUc: ListPublishedMemoryBooksUseCase,
     private readonly updateAssetCaptionUc: UpdateAssetCaptionUseCase,
+    private readonly reorderAssetsUc: ReorderBookAssetsUseCase,
   ) {}
 
   // ─── Public-read routes — declared first so Nest's order-of-
@@ -380,5 +385,35 @@ export class MemoryBookController {
       position: asset.position,
       createdAt: asset.createdAt.toISOString(),
     };
+  }
+
+  /**
+   * V.UX.12 — persist a drag-and-drop reordering of attached assets.
+   * Body must be a strict permutation of the currently-attached
+   * `ready` asset ids (no missing, no extras, no duplicates).
+   */
+  @ApiOperation({
+    summary:
+      'Persist asset ordering for the memory book. Body is the desired permutation of attached asset ids.',
+  })
+  @ApiBody({ type: ReorderBookAssetsRequestDto })
+  @ApiResponse({ status: 204, description: 'Reordering applied.' })
+  @ApiResponse({ status: 404, description: 'MEMORY_BOOK_NOT_FOUND.' })
+  @ApiResponse({
+    status: 422,
+    description: 'INVALID_ASSET_ORDER (duplicates, length mismatch, or unknown id).',
+  })
+  @Patch(':id/asset-order')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async reorderAssets(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(ReorderBookAssetsBodySchema)) body: ReorderBookAssetsBody,
+  ): Promise<void> {
+    await this.reorderAssetsUc.execute({
+      memoryBookId: id,
+      ownerId: user.sub,
+      assetIds: body.assetIds,
+    });
   }
 }

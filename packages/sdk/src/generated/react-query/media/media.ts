@@ -32,6 +32,7 @@ import type {
   MemoryBookWithAssetsResponseDto,
   PublicDownloadUrlResponseDto,
   PublicMemoryBookWithAssetsResponseDto,
+  ReorderBookAssetsRequestDto,
   UpdateAssetCaptionRequestDto,
   UpdateMemoryBookRequestDto,
 } from '../../schemas';
@@ -2333,6 +2334,122 @@ export const useMemoryBookControllerUpdateAssetCaption = <
   TContext
 > => {
   const mutationOptions = getMemoryBookControllerUpdateAssetCaptionMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Persist asset ordering for the memory book. Body is the desired permutation of attached asset ids.
+ */
+export type memoryBookControllerReorderAssetsResponse204 = {
+  data: void;
+  status: 204;
+};
+
+export type memoryBookControllerReorderAssetsResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type memoryBookControllerReorderAssetsResponse422 = {
+  data: void;
+  status: 422;
+};
+
+export type memoryBookControllerReorderAssetsResponseSuccess =
+  memoryBookControllerReorderAssetsResponse204 & {
+    headers: Headers;
+  };
+export type memoryBookControllerReorderAssetsResponseError = (
+  | memoryBookControllerReorderAssetsResponse404
+  | memoryBookControllerReorderAssetsResponse422
+) & {
+  headers: Headers;
+};
+
+export type memoryBookControllerReorderAssetsResponse =
+  | memoryBookControllerReorderAssetsResponseSuccess
+  | memoryBookControllerReorderAssetsResponseError;
+
+export const getMemoryBookControllerReorderAssetsUrl = (id: string) => {
+  return `/api/v1/memory-books/${id}/asset-order`;
+};
+
+export const memoryBookControllerReorderAssets = async (
+  id: string,
+  reorderBookAssetsRequestDto: ReorderBookAssetsRequestDto,
+  options?: RequestInit,
+): Promise<memoryBookControllerReorderAssetsResponse> => {
+  return apiFetch<memoryBookControllerReorderAssetsResponse>(
+    getMemoryBookControllerReorderAssetsUrl(id),
+    {
+      ...options,
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(reorderBookAssetsRequestDto),
+    },
+  );
+};
+
+export const getMemoryBookControllerReorderAssetsMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof memoryBookControllerReorderAssets>>,
+    TError,
+    { id: string; data: ReorderBookAssetsRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof memoryBookControllerReorderAssets>>,
+  TError,
+  { id: string; data: ReorderBookAssetsRequestDto },
+  TContext
+> => {
+  const mutationKey = ['memoryBookControllerReorderAssets'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof memoryBookControllerReorderAssets>>,
+    { id: string; data: ReorderBookAssetsRequestDto }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return memoryBookControllerReorderAssets(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type MemoryBookControllerReorderAssetsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof memoryBookControllerReorderAssets>>
+>;
+export type MemoryBookControllerReorderAssetsMutationBody = ReorderBookAssetsRequestDto;
+export type MemoryBookControllerReorderAssetsMutationError = void;
+
+/**
+ * @summary Persist asset ordering for the memory book. Body is the desired permutation of attached asset ids.
+ */
+export const useMemoryBookControllerReorderAssets = <TError = void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof memoryBookControllerReorderAssets>>,
+    TError,
+    { id: string; data: ReorderBookAssetsRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof memoryBookControllerReorderAssets>>,
+  TError,
+  { id: string; data: ReorderBookAssetsRequestDto },
+  TContext
+> => {
+  const mutationOptions = getMemoryBookControllerReorderAssetsMutationOptions(options);
 
   return useMutation(mutationOptions);
 };

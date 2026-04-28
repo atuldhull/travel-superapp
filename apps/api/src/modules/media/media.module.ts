@@ -37,6 +37,7 @@ import { MEDIA_ASSET_REPOSITORY } from './application/ports/media-asset.reposito
 import { MEMORY_BOOK_REPOSITORY } from './application/ports/memory-book.repository';
 import { STORAGE_PROVIDER } from './application/ports/storage-provider';
 import { PublishMemoryBookUseCase } from './application/publish-memory-book.use-case';
+import { ReorderBookAssetsUseCase } from './application/reorder-book-assets.use-case';
 import { UnpublishMemoryBookUseCase } from './application/unpublish-memory-book.use-case';
 import { UpdateAssetCaptionUseCase } from './application/update-asset-caption.use-case';
 import { UpdateMemoryBookUseCase } from './application/update-memory-book.use-case';
@@ -73,6 +74,7 @@ import { OrphanS3SweepScheduler } from './interface/orphan-s3-sweep.scheduler';
     DeleteMemoryBookUseCase,
     AttachMediaToBookUseCase,
     UpdateAssetCaptionUseCase,
+    ReorderBookAssetsUseCase,
     PublishMemoryBookUseCase,
     UnpublishMemoryBookUseCase,
     GetPublishedMemoryBookUseCase,
