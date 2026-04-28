@@ -1827,6 +1827,45 @@ paths:
       security: *a29
       summary: Delete one of the caller-owned trusted contacts.
       tags: *a30
+  /api/v1/account/preferences:
+    get:
+      operationId: PreferencesController_getMine
+      parameters: []
+      responses:
+        '200':
+          description: Preferences row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreferencesDto'
+      security: &a31
+        - bearer: []
+      summary: Caller's preferences. Returns a synthetic default shape if the user has
+        never written any.
+      tags: &a32
+        - account
+    patch:
+      operationId: PreferencesController_updateMine
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePreferencesRequestDto'
+      responses:
+        '200':
+          description: Updated preferences.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreferencesDto'
+        '422':
+          description: INVALID_BUDGET_TIER, INVALID_KID_AGE, or TOO_MANY_KIDS.
+      security: *a31
+      summary: Partial update of the caller-owned preferences. Idempotent upsert;
+        empty body is a no-op.
+      tags: *a32
   /api/v1/media/upload-url:
     post:
       operationId: MediaController_createUploadUrl
@@ -1844,11 +1883,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CreateUploadUrlResponseDto'
-      security: &a31
+      security: &a33
         - bearer: []
       summary: Issue a presigned PUT URL for direct-to-S3 upload. Creates the
         MediaAsset row in `processing` status.
-      tags: &a32
+      tags: &a34
         - media
   /api/v1/media/{id}/confirm:
     post:
@@ -1868,10 +1907,10 @@ paths:
                 $ref: '#/components/schemas/MediaAssetDto'
         '404':
           description: MEDIA_NOT_FOUND.
-      security: *a31
+      security: *a33
       summary: Confirm upload landed (HEAD verifies bytes). Flips status to `ready`.
         Image kind also flips exifStripped.
-      tags: *a32
+      tags: *a34
   /api/v1/media/{id}/download-url:
     get:
       operationId: MediaController_downloadUrl
@@ -1890,9 +1929,9 @@ paths:
                 $ref: '#/components/schemas/MediaDownloadUrlResponseDto'
         '404':
           description: MEDIA_NOT_FOUND.
-      security: *a31
+      security: *a33
       summary: Short-lived presigned GET URL for the asset. Owner-gated.
-      tags: *a32
+      tags: *a34
   /api/v1/media/{id}/trip:
     patch:
       operationId: MediaController_attachToTrip
@@ -1917,10 +1956,10 @@ paths:
                 $ref: '#/components/schemas/MediaAssetDto'
         '404':
           description: MEDIA_NOT_FOUND or TRIP_NOT_FOUND.
-      security: *a31
+      security: *a33
       summary: Attach (`{tripId}`) or detach (`{tripId:null}`) the media to a trip.
         Double owner-gated.
-      tags: *a32
+      tags: *a34
   /api/v1/media/trip/{tripId}:
     get:
       operationId: MediaController_listByTrip
@@ -1942,10 +1981,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListTripMediaResponseDto'
-      security: *a31
+      security: *a33
       summary: List the caller's `ready` media attached to a trip. ?limit=N (1..200,
         default 50).
-      tags: *a32
+      tags: *a34
   /api/v1/media/{id}/memory-book:
     patch:
       operationId: MediaController_attachToBook
@@ -1970,10 +2009,10 @@ paths:
                 $ref: '#/components/schemas/MediaAssetDto'
         '404':
           description: MEDIA_NOT_FOUND or BOOK_NOT_FOUND.
-      security: *a31
+      security: *a33
       summary: Attach (`{memoryBookId}`) or detach (`{memoryBookId:null}`) the media
         to a memory book. Double owner-gated.
-      tags: *a32
+      tags: *a34
   /api/v1/memory-books/featured:
     get:
       operationId: MemoryBookController_featured
@@ -1990,11 +2029,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FeaturedMemoryBooksResponseDto'
-      security: &a33
+      security: &a35
         - bearer: []
       summary: Public discovery — currently-published memory books across all users,
         ordered by publishedAt DESC.
-      tags: &a34
+      tags: &a36
         - media
   /api/v1/memory-books/public/{id}:
     get:
@@ -2014,10 +2053,10 @@ paths:
                 $ref: '#/components/schemas/PublicMemoryBookWithAssetsResponseDto'
         '404':
           description: BOOK_NOT_PUBLISHED.
-      security: *a33
+      security: *a35
       summary: Public read of a published memory book by id. The cuid is the
         unguessable token.
-      tags: *a34
+      tags: *a36
   /api/v1/memory-books/public/{id}/assets/{assetId}/download-url:
     get:
       operationId: MemoryBookController_getPublicAssetDownloadUrl
@@ -2041,10 +2080,10 @@ paths:
                 $ref: '#/components/schemas/PublicDownloadUrlResponseDto'
         '404':
           description: BOOK_NOT_PUBLISHED, MEDIA_NOT_FOUND, or NOT_ATTACHED.
-      security: *a33
+      security: *a35
       summary: 'Public presigned download URL for a memory-book asset. Three-clause
         gate: book published + asset attached + asset ready.'
-      tags: *a34
+      tags: *a36
   /api/v1/memory-books:
     post:
       operationId: MemoryBookController_create
@@ -2062,9 +2101,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MemoryBookDto'
-      security: *a33
+      security: *a35
       summary: Create a memory book (draft). Owner = caller.
-      tags: *a34
+      tags: *a36
     get:
       operationId: MemoryBookController_list
       parameters:
@@ -2080,10 +2119,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListMemoryBooksResponseDto'
-      security: *a33
+      security: *a35
       summary: List the caller's memory books, newest first. ?limit=N (1..200, default
         50). Owner-scoped.
-      tags: *a34
+      tags: *a36
   /api/v1/memory-books/{id}:
     get:
       operationId: MemoryBookController_getOne
@@ -2102,9 +2141,9 @@ paths:
                 $ref: '#/components/schemas/MemoryBookWithAssetsResponseDto'
         '404':
           description: BOOK_NOT_FOUND.
-      security: *a33
+      security: *a35
       summary: Get one of the caller-owned books + the attached asset ids.
-      tags: *a34
+      tags: *a36
     patch:
       operationId: MemoryBookController_update
       parameters:
@@ -2128,9 +2167,9 @@ paths:
                 $ref: '#/components/schemas/MemoryBookDto'
         '404':
           description: BOOK_NOT_FOUND.
-      security: *a33
+      security: *a35
       summary: Update one of the caller-owned books. Partial update.
-      tags: *a34
+      tags: *a36
     delete:
       operationId: MemoryBookController_remove
       parameters:
@@ -2144,9 +2183,9 @@ paths:
           description: Deleted.
         '404':
           description: BOOK_NOT_FOUND.
-      security: *a33
+      security: *a35
       summary: Delete one of the caller-owned books. SetNull on MediaAsset.memoryBookId.
-      tags: *a34
+      tags: *a36
   /api/v1/memory-books/{id}/publish:
     post:
       operationId: MemoryBookController_publish
@@ -2165,9 +2204,9 @@ paths:
                 $ref: '#/components/schemas/MemoryBookDto'
         '404':
           description: BOOK_NOT_FOUND.
-      security: *a33
+      security: *a35
       summary: Publish a book — flips publishedAt to now (idempotent).
-      tags: *a34
+      tags: *a36
   /api/v1/memory-books/{id}/unpublish:
     post:
       operationId: MemoryBookController_unpublish
@@ -2186,9 +2225,9 @@ paths:
                 $ref: '#/components/schemas/MemoryBookDto'
         '404':
           description: BOOK_NOT_FOUND.
-      security: *a33
+      security: *a35
       summary: Unpublish a book — clears publishedAt (idempotent).
-      tags: *a34
+      tags: *a36
   /api/v1/memory-books/{id}/assets/{assetId}/caption:
     patch:
       operationId: MemoryBookController_updateAssetCaption
@@ -2218,9 +2257,9 @@ paths:
                 $ref: '#/components/schemas/MediaAssetDto'
         '404':
           description: MEDIA_NOT_FOUND.
-      security: *a33
+      security: *a35
       summary: Set or clear an asset's caption (story-mode narrative). Owner-only.
-      tags: *a34
+      tags: *a36
   /api/v1/memory-books/{id}/asset-order:
     patch:
       operationId: MemoryBookController_reorderAssets
@@ -2243,10 +2282,10 @@ paths:
           description: MEMORY_BOOK_NOT_FOUND.
         '422':
           description: INVALID_ASSET_ORDER (duplicates, length mismatch, or unknown id).
-      security: *a33
+      security: *a35
       summary: Persist asset ordering for the memory book. Body is the desired
         permutation of attached asset ids.
-      tags: *a34
+      tags: *a36
   /api/v1/admin/media:
     get:
       operationId: AdminMediaController_list
@@ -2285,11 +2324,11 @@ paths:
                 $ref: '#/components/schemas/AdminListMediaResponseDto'
         '400':
           description: VALIDATION_FAILED — kind / status invalid.
-      security: &a35
+      security: &a37
         - bearer: []
       summary: Cross-user list of media with optional ?ownerId, ?kind, ?status
         filters. Admin-only.
-      tags: &a36
+      tags: &a38
         - admin
   /api/v1/admin/media/{id}:
     delete:
@@ -2305,10 +2344,10 @@ paths:
           description: Deleted.
         '404':
           description: MEDIA_NOT_FOUND.
-      security: *a35
+      security: *a37
       summary: Hard-delete media (takedown). Trip + memory book references
         SetNull-cascade.
-      tags: *a36
+      tags: *a38
   /api/v1/notifications/me/unread-count:
     get:
       operationId: NotificationsController_unreadCount
@@ -2320,11 +2359,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UnreadCountResponseDto'
-      security: &a37
+      security: &a39
         - bearer: []
       summary: 'Returns { unread: N } for the home-screen badge. Single indexed COUNT
         — cheap.'
-      tags: &a38
+      tags: &a40
         - notifications
   /api/v1/notifications/me:
     get:
@@ -2349,10 +2388,10 @@ paths:
                 $ref: '#/components/schemas/ListMyNotificationsResponseDto'
         '400':
           description: VALIDATION_FAILED — channel is not one of push|email|sms.
-      security: *a37
+      security: *a39
       summary: List the caller's recent notifications. Optional
         ?channel=push|email|sms narrows to one delivery channel.
-      tags: *a38
+      tags: *a40
   /api/v1/notifications/read-all:
     post:
       operationId: NotificationsController_markAllRead
@@ -2364,10 +2403,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MarkAllReadResponseDto'
-      security: *a37
+      security: *a39
       summary: 'Mark every unread row as read. Returns { marked: N }. Idempotent
         (second call returns 0).'
-      tags: *a38
+      tags: *a40
   /api/v1/notifications/{id}/read:
     post:
       operationId: NotificationsController_markRead
@@ -2386,9 +2425,9 @@ paths:
                 $ref: '#/components/schemas/NotificationLogDto'
         '404':
           description: NOTIFICATION_NOT_FOUND.
-      security: *a37
+      security: *a39
       summary: Mark one notification as read. Owner-gated; 404 on cross-user / missing.
-      tags: *a38
+      tags: *a40
   /api/v1/notifications/{id}/unread:
     post:
       operationId: NotificationsController_markUnread
@@ -2407,9 +2446,9 @@ paths:
                 $ref: '#/components/schemas/NotificationLogDto'
         '404':
           description: NOTIFICATION_NOT_FOUND.
-      security: *a37
+      security: *a39
       summary: Mark one notification as UNread (symmetric to /read). Owner-gated.
-      tags: *a38
+      tags: *a40
   /api/v1/notifications/{id}:
     delete:
       operationId: NotificationsController_remove
@@ -2424,10 +2463,10 @@ paths:
           description: Deleted.
         '404':
           description: NOTIFICATION_NOT_FOUND.
-      security: *a37
+      security: *a39
       summary: Hard-delete a notification (inbox prune). Owner-gated; 404 on
         cross-user / missing.
-      tags: *a38
+      tags: *a40
   /api/v1/admin/places:
     post:
       operationId: AdminController_create
@@ -2445,10 +2484,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AdminPlaceDto'
-      security: &a39
+      security: &a41
         - bearer: []
       summary: Curate a new Place into the canonical catalog. Admin-only.
-      tags: &a40
+      tags: &a42
         - admin
   /api/v1/admin/places/{id}:
     delete:
@@ -2464,9 +2503,9 @@ paths:
           description: Deleted.
         '404':
           description: PLACE_NOT_FOUND.
-      security: *a39
+      security: *a41
       summary: Remove a Place from the canonical catalog. Admin-only.
-      tags: *a40
+      tags: *a42
   /api/v1/trips/{tripId}/votes:
     post:
       operationId: SocialController_cast
@@ -2489,11 +2528,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VoteDto'
-      security: &a41
+      security: &a43
         - bearer: []
       summary: 'Cast or update a vote on a trip target. Body: { targetType, targetId,
         value }. Auth gate: owner OR active TripShare.'
-      tags: &a42
+      tags: &a44
         - social
     delete:
       operationId: SocialController_revoke
@@ -2512,10 +2551,10 @@ paths:
       responses:
         '204':
           description: Revoked (or no-op if no prior vote).
-      security: *a41
+      security: *a43
       summary: 'Revoke a previously-cast vote. Body: { targetType, targetId }.
         Idempotent.'
-      tags: *a42
+      tags: *a44
     get:
       operationId: SocialController_list
       parameters:
@@ -2531,9 +2570,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListTripVotesResponseDto'
-      security: *a41
+      security: *a43
       summary: Aggregated tallies for a trip's votes + the caller's own vote per target.
-      tags: *a42
+      tags: *a44
   /api/v1/trips/{tripId}/expenses:
     post:
       operationId: ExpensesController_create
@@ -2557,11 +2596,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ExpenseDto'
-      security: &a43
+      security: &a45
         - bearer: []
       summary: 'Record a shared expense on a trip. Auth gate: owner OR active
         TripShare. Splits sum-checked.'
-      tags: &a44
+      tags: &a46
         - social
     get:
       operationId: ExpensesController_list
@@ -2584,9 +2623,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListExpensesResponseDto'
-      security: *a43
+      security: *a45
       summary: List trip expenses, most-recent-first. ?limit=N (1..500, default 50).
-      tags: *a44
+      tags: *a46
   /api/v1/trips/{tripId}/expenses/balances:
     get:
       operationId: ExpensesController_balances
@@ -2604,10 +2643,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListBalancesResponseDto'
-      security: *a43
+      security: *a45
       summary: Net per-user "who owes whom" ledger. Sum is zero (modulo 2dp). 60s
         cache; write-invalidated on expense create/delete.
-      tags: *a44
+      tags: *a46
   /api/v1/trips/{tripId}/expenses/settle-up:
     get:
       operationId: ExpensesController_settleUp
@@ -2625,10 +2664,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SettleUpResponseDto'
-      security: *a43
+      security: *a45
       summary: Settle-up plan — greedy minimum-cashflow transfers that zero the trip
         ledger. Owner OR active share.
-      tags: *a44
+      tags: *a46
   /api/v1/trips/{tripId}/expenses/{id}:
     delete:
       operationId: ExpensesController_remove
@@ -2648,10 +2687,10 @@ paths:
           description: Deleted.
         '404':
           description: EXPENSE_NOT_FOUND.
-      security: *a43
+      security: *a45
       summary: Delete an expense. Payer-only — only the user who recorded it can
         remove it.
-      tags: *a44
+      tags: *a46
   /api/v1/reviews:
     post:
       operationId: ReviewsController_create
@@ -2669,11 +2708,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ReviewDto'
-      security: &a45
+      security: &a47
         - bearer: []
       summary: Create a review for any review-target (place/stay/eatery/agent).
         Owner-stamped to the caller.
-      tags: &a46
+      tags: &a48
         - social
     get:
       operationId: ReviewsController_listForTarget
@@ -2702,10 +2741,10 @@ paths:
                 $ref: '#/components/schemas/ListReviewsResponseDto'
         '400':
           description: VALIDATION_FAILED — targetType / targetId missing or invalid.
-      security: *a45
+      security: *a47
       summary: Target-scoped review listing. ?targetType + ?targetId required.
         Most-recent-first.
-      tags: *a46
+      tags: *a48
   /api/v1/reviews/summary:
     get:
       operationId: ReviewsController_summary
@@ -2729,10 +2768,10 @@ paths:
                 $ref: '#/components/schemas/ReviewSummaryDto'
         '400':
           description: VALIDATION_FAILED — targetType / targetId missing or invalid.
-      security: *a45
+      security: *a47
       summary: Aggregated review summary { count, average, histogram } for a target.
         @Public.
-      tags: *a46
+      tags: *a48
   /api/v1/reviews/mine:
     get:
       operationId: ReviewsController_listMine
@@ -2749,10 +2788,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListReviewsResponseDto'
-      security: *a45
+      security: *a47
       summary: List the caller's authored reviews, most-recent-first. ?limit=N
         (1..200, default 50).
-      tags: *a46
+      tags: *a48
   /api/v1/reviews/{id}:
     delete:
       operationId: ReviewsController_remove
@@ -2767,10 +2806,10 @@ paths:
           description: Deleted.
         '404':
           description: REVIEW_NOT_FOUND.
-      security: *a45
+      security: *a47
       summary: Delete one of the caller's reviews. Author-gated; 404 on cross-user /
         missing.
-      tags: *a46
+      tags: *a48
   /api/v1/votes/summary:
     get:
       operationId: VotesController_summary
@@ -2899,7 +2938,7 @@ paths:
           description: Too many requests — wait 60s.
       summary: ❤️ a publicly-shared trip. No auth. Per-IP rate-limited at 1/min so
         anonymous fans can react but scripts can't farm hearts.
-      tags: &a47
+      tags: &a49
         - social
   /api/v1/trips/shared/{code}/hearts:
     get:
@@ -2920,7 +2959,7 @@ paths:
         '404':
           description: SHARE_NOT_FOUND or SHARE_EXPIRED.
       summary: Current ❤️ count for a shared trip. Public, no auth.
-      tags: *a47
+      tags: *a49
   /api/v1/feed/me:
     get:
       operationId: FeedController_me
@@ -4133,6 +4172,13 @@ components:
         limit:
           type: number
           description: Cap on result count.
+        requiredFeatures:
+          maxItems: 10
+          description: V.UX.14 — required PlaceTag values under key="feature". A place
+            must carry every listed feature.
+          type: array
+          items:
+            type: string
       required:
         - center
         - radiusKm
@@ -4330,6 +4376,13 @@ components:
         guests:
           type: number
           description: Guest count (default 2).
+        requiredAmenities:
+          maxItems: 10
+          description: V.UX.14 — required amenities (case-insensitive substring match).
+            Family-mode UI sends ["crib","high_chair","stroller_accessible"].
+          type: array
+          items:
+            type: string
       required:
         - center
         - radiusKm
@@ -4589,7 +4642,7 @@ components:
           description: Filter to a subset of modes; empty/omitted means all available.
           items:
             type: string
-            enum: &a48
+            enum: &a50
               - walk
               - public_transit
               - bicycle
@@ -4605,7 +4658,7 @@ components:
       properties:
         mode:
           type: string
-          enum: *a48
+          enum: *a50
         distanceMeters:
           type: number
         durationSeconds:
@@ -4692,7 +4745,7 @@ components:
           type: string
         severity:
           type: string
-          enum: &a49
+          enum: &a51
             - low
             - medium
             - high
@@ -4761,7 +4814,7 @@ components:
           type: string
         severity:
           type: string
-          enum: *a49
+          enum: *a51
         description:
           type: string
         evidenceUrls:
@@ -5273,6 +5326,87 @@ components:
           maxLength: 254
       required:
         - name
+    PreferencesDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        userId:
+          type: string
+          format: cuid
+        diet:
+          type: array
+          items:
+            type: string
+        accessibility:
+          type: array
+          items:
+            type: string
+        travelType:
+          type: array
+          items:
+            type: string
+        budgetTier:
+          type: number
+          minimum: 1
+          maximum: 5
+        familyMode:
+          type: boolean
+          description: V.UX.14 — family-mode toggle.
+        kidAges:
+          maxItems: 8
+          type: array
+          items:
+            type: number
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - userId
+        - diet
+        - accessibility
+        - travelType
+        - budgetTier
+        - familyMode
+        - kidAges
+        - createdAt
+        - updatedAt
+    UpdatePreferencesRequestDto:
+      type: object
+      properties:
+        diet:
+          maxItems: 20
+          type: array
+          items:
+            type: string
+        accessibility:
+          maxItems: 20
+          type: array
+          items:
+            type: string
+        travelType:
+          maxItems: 20
+          type: array
+          items:
+            type: string
+        budgetTier:
+          type: number
+          minimum: 1
+          maximum: 5
+        familyMode:
+          type: boolean
+          description: V.UX.14 — flips search forms into family-aware mode.
+        kidAges:
+          maxItems: 8
+          description: Ages of any travelling children, each 0..17.
+          type: array
+          items:
+            type: number
     CreateUploadUrlRequestDto:
       type: object
       properties:

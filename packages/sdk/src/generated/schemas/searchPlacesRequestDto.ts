@@ -10,4 +10,9 @@ export interface SearchPlacesRequestDto {
   category?: string;
   /** Cap on result count. */
   limit?: number;
+  /**
+   * V.UX.14 — required PlaceTag values under key="feature". A place must carry every listed feature.
+   * @maxItems 10
+   */
+  requiredFeatures?: string[];
 }

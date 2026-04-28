@@ -55,6 +55,7 @@ import { MediaUploader } from '../../../components/media-uploader';
 import { ExportPdfButton } from '../../../components/trip/export-pdf-button';
 import { EmailItineraryButton } from '../../../components/trip/email-itinerary-button';
 import { OpenOnMobileButton } from '../../../components/trip/open-on-mobile-button';
+import { PacingWarning } from '../../../components/trip/pacing-warning';
 import { PlaceSuggestionPicker } from '../../../components/trip/place-suggestion-picker';
 import { PowerPlannerSection } from '../../../components/trip/power-planner-section';
 import { ShareList } from '../../../components/trip/share-list';
@@ -270,6 +271,7 @@ export default function TripDetailPage() {
           isLockToggling={lockMutation.isPending || unlockMutation.isPending}
         />
       )}
+      <PacingWarning tripId={id} enabled={token !== null && !editing} />
       <ItinerarySection tripId={id} enabled={token !== null && !editing} />
       <PowerPlannerSection tripId={id} enabled={token !== null && !editing} />
       <PlaceSuggestionPicker tripId={id} enabled={token !== null && !editing} />

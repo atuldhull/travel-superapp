@@ -19,6 +19,12 @@ export const SearchPlacesBodySchema = z.object({
   radiusKm: z.number().positive().max(10_000),
   category: z.string().trim().min(1).max(60).optional(),
   limit: z.number().int().positive().max(100).optional(),
+  /**
+   * V.UX.14 — list of `PlaceTag.value` values (under key='feature')
+   * that a place must carry to pass. Family-mode UI sends e.g.
+   * `['kid_friendly', 'stroller_accessible']`.
+   */
+  requiredFeatures: z.array(z.string().trim().min(1).max(60)).max(10).optional(),
 });
 export type SearchPlacesBody = z.infer<typeof SearchPlacesBodySchema>;
 

@@ -17,7 +17,9 @@ import type {
 import type {
   AddTrustedContactRequestDto,
   ListTrustedContactsResponseDto,
+  PreferencesDto,
   TrustedContactDto,
+  UpdatePreferencesRequestDto,
   UserDataExportResponseDto,
 } from '../../schemas';
 
@@ -757,6 +759,253 @@ export const useTrustedContactsControllerRemove = <TError = void, TContext = unk
   TContext
 > => {
   const mutationOptions = getTrustedContactsControllerRemoveMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Caller's preferences. Returns a synthetic default shape if the user has never written any.
+ */
+export type preferencesControllerGetMineResponse200 = {
+  data: PreferencesDto;
+  status: 200;
+};
+
+export type preferencesControllerGetMineResponseSuccess =
+  preferencesControllerGetMineResponse200 & {
+    headers: Headers;
+  };
+export type preferencesControllerGetMineResponse = preferencesControllerGetMineResponseSuccess;
+
+export const getPreferencesControllerGetMineUrl = () => {
+  return `/api/v1/account/preferences`;
+};
+
+export const preferencesControllerGetMine = async (
+  options?: RequestInit,
+): Promise<preferencesControllerGetMineResponse> => {
+  return apiFetch<preferencesControllerGetMineResponse>(getPreferencesControllerGetMineUrl(), {
+    ...options,
+    method: 'GET',
+  });
+};
+
+export const getPreferencesControllerGetMineInfiniteQueryKey = () => {
+  return ['infinite', `/api/v1/account/preferences`] as const;
+};
+
+export const getPreferencesControllerGetMineQueryKey = () => {
+  return [`/api/v1/account/preferences`] as const;
+};
+
+export const getPreferencesControllerGetMineInfiniteQueryOptions = <
+  TData = Awaited<ReturnType<typeof preferencesControllerGetMine>>,
+  TError = unknown,
+>(options?: {
+  query?: UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof preferencesControllerGetMine>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getPreferencesControllerGetMineInfiniteQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof preferencesControllerGetMine>>> = ({
+    signal,
+  }) => preferencesControllerGetMine({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, staleTime: 30000, ...queryOptions } as UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof preferencesControllerGetMine>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type PreferencesControllerGetMineInfiniteQueryResult = NonNullable<
+  Awaited<ReturnType<typeof preferencesControllerGetMine>>
+>;
+export type PreferencesControllerGetMineInfiniteQueryError = unknown;
+
+/**
+ * @summary Caller's preferences. Returns a synthetic default shape if the user has never written any.
+ */
+
+export function usePreferencesControllerGetMineInfinite<
+  TData = Awaited<ReturnType<typeof preferencesControllerGetMine>>,
+  TError = unknown,
+>(options?: {
+  query?: UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof preferencesControllerGetMine>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getPreferencesControllerGetMineInfiniteQueryOptions(options);
+
+  const query = useInfiniteQuery(queryOptions) as UseInfiniteQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getPreferencesControllerGetMineQueryOptions = <
+  TData = Awaited<ReturnType<typeof preferencesControllerGetMine>>,
+  TError = unknown,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof preferencesControllerGetMine>>, TError, TData>;
+  request?: SecondParameter<typeof apiFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getPreferencesControllerGetMineQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof preferencesControllerGetMine>>> = ({
+    signal,
+  }) => preferencesControllerGetMine({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, staleTime: 30000, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof preferencesControllerGetMine>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type PreferencesControllerGetMineQueryResult = NonNullable<
+  Awaited<ReturnType<typeof preferencesControllerGetMine>>
+>;
+export type PreferencesControllerGetMineQueryError = unknown;
+
+/**
+ * @summary Caller's preferences. Returns a synthetic default shape if the user has never written any.
+ */
+
+export function usePreferencesControllerGetMine<
+  TData = Awaited<ReturnType<typeof preferencesControllerGetMine>>,
+  TError = unknown,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof preferencesControllerGetMine>>, TError, TData>;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getPreferencesControllerGetMineQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary Partial update of the caller-owned preferences. Idempotent upsert; empty body is a no-op.
+ */
+export type preferencesControllerUpdateMineResponse200 = {
+  data: PreferencesDto;
+  status: 200;
+};
+
+export type preferencesControllerUpdateMineResponse422 = {
+  data: void;
+  status: 422;
+};
+
+export type preferencesControllerUpdateMineResponseSuccess =
+  preferencesControllerUpdateMineResponse200 & {
+    headers: Headers;
+  };
+export type preferencesControllerUpdateMineResponseError =
+  preferencesControllerUpdateMineResponse422 & {
+    headers: Headers;
+  };
+
+export type preferencesControllerUpdateMineResponse =
+  | preferencesControllerUpdateMineResponseSuccess
+  | preferencesControllerUpdateMineResponseError;
+
+export const getPreferencesControllerUpdateMineUrl = () => {
+  return `/api/v1/account/preferences`;
+};
+
+export const preferencesControllerUpdateMine = async (
+  updatePreferencesRequestDto: UpdatePreferencesRequestDto,
+  options?: RequestInit,
+): Promise<preferencesControllerUpdateMineResponse> => {
+  return apiFetch<preferencesControllerUpdateMineResponse>(
+    getPreferencesControllerUpdateMineUrl(),
+    {
+      ...options,
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(updatePreferencesRequestDto),
+    },
+  );
+};
+
+export const getPreferencesControllerUpdateMineMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof preferencesControllerUpdateMine>>,
+    TError,
+    { data: UpdatePreferencesRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof preferencesControllerUpdateMine>>,
+  TError,
+  { data: UpdatePreferencesRequestDto },
+  TContext
+> => {
+  const mutationKey = ['preferencesControllerUpdateMine'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof preferencesControllerUpdateMine>>,
+    { data: UpdatePreferencesRequestDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return preferencesControllerUpdateMine(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PreferencesControllerUpdateMineMutationResult = NonNullable<
+  Awaited<ReturnType<typeof preferencesControllerUpdateMine>>
+>;
+export type PreferencesControllerUpdateMineMutationBody = UpdatePreferencesRequestDto;
+export type PreferencesControllerUpdateMineMutationError = void;
+
+/**
+ * @summary Partial update of the caller-owned preferences. Idempotent upsert; empty body is a no-op.
+ */
+export const usePreferencesControllerUpdateMine = <TError = void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof preferencesControllerUpdateMine>>,
+    TError,
+    { data: UpdatePreferencesRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof preferencesControllerUpdateMine>>,
+  TError,
+  { data: UpdatePreferencesRequestDto },
+  TContext
+> => {
+  const mutationOptions = getPreferencesControllerUpdateMineMutationOptions(options);
 
   return useMutation(mutationOptions);
 };
