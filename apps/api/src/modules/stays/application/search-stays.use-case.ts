@@ -32,6 +32,18 @@ export interface SearchStaysCommand {
    * by default; users can prune the chips before searching.
    */
   readonly requiredAmenities?: readonly string[];
+  /**
+   * V.UX.16 — case-insensitive exact match against `StayListing.stayType`.
+   * Budget-backpacker UI passes `'hostel'`; family persona could
+   * prefer `'apartment'`. Empty / missing = no filter.
+   */
+  readonly stayType?: string;
+  /**
+   * V.UX.16 — when set, listings whose `priceUsdPerNight` exceeds
+   * the cap are dropped. Listings with `null` price are kept
+   * (provider didn't quote — the user decides on click-through).
+   */
+  readonly maxPriceUsdPerNight?: number;
 }
 
 @Injectable()
@@ -123,15 +135,28 @@ export class SearchStaysUseCase {
     const required = (cmd.requiredAmenities ?? [])
       .map((a) => a.trim().toLowerCase())
       .filter((a) => a.length > 0);
-    if (required.length === 0) return listings;
+    const stayType = cmd.stayType?.trim().toLowerCase();
+    const maxPrice =
+      typeof cmd.maxPriceUsdPerNight === 'number' && cmd.maxPriceUsdPerNight > 0
+        ? cmd.maxPriceUsdPerNight
+        : null;
 
-    // Post-filter: a listing passes iff every required amenity has at
-    // least one matching entry (case-insensitive). Provider data is
-    // free-form, so we lean on substring match — `crib` matches both
-    // `crib` and `baby_crib`.
+    if (required.length === 0 && !stayType && maxPrice === null) return listings;
+
     return listings.filter((l) => {
-      const lower = l.amenities.map((a) => a.toLowerCase());
-      return required.every((r) => lower.some((a) => a.includes(r)));
+      // V.UX.14 — required amenities (substring match).
+      if (required.length > 0) {
+        const lower = l.amenities.map((a) => a.toLowerCase());
+        if (!required.every((r) => lower.some((a) => a.includes(r)))) return false;
+      }
+      // V.UX.16 — exact stayType match (case-insensitive).
+      if (stayType && l.stayType.toLowerCase() !== stayType) return false;
+      // V.UX.16 — price cap; listings with null price (no live quote)
+      // pass through so the user can click for a quote.
+      if (maxPrice !== null && l.priceUsdPerNight !== null && l.priceUsdPerNight > maxPrice) {
+        return false;
+      }
+      return true;
     });
   }
 }

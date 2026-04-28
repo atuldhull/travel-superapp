@@ -39,6 +39,7 @@ export class MockStayProvider implements StayProvider {
         distanceMeters: 200,
         priceUsdPerNight: 180 + input.guests * 10,
         currency: 'USD',
+        stayType: 'boutique',
       },
       {
         externalId: `${PROVIDER}:midtown-${round(input.lat)}-${round(input.lng)}`,
@@ -51,18 +52,20 @@ export class MockStayProvider implements StayProvider {
         distanceMeters: 1_500,
         priceUsdPerNight: 95 + input.guests * 5,
         currency: 'USD',
+        stayType: 'inn',
       },
       {
         externalId: `${PROVIDER}:budget-${round(input.lat)}-${round(input.lng)}`,
         provider: PROVIDER,
-        name: 'Budget Suburb',
+        name: 'Budget Hostel',
         starRating: 2.5,
         amenities: ['wifi'],
         lat: input.lat + 0.035,
         lng: input.lng + 0.022,
         distanceMeters: 4_000,
-        priceUsdPerNight: 55,
+        priceUsdPerNight: 25,
         currency: 'USD',
+        stayType: 'hostel',
       },
     ];
 

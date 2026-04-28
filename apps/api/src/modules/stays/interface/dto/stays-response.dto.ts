@@ -38,6 +38,19 @@ export class SearchStaysRequestDto {
       'V.UX.14 — required amenities (case-insensitive substring match). Family-mode UI sends ["crib","high_chair","stroller_accessible"].',
   })
   declare requiredAmenities?: string[];
+
+  @ApiProperty({
+    required: false,
+    description: 'V.UX.16 — exact match against StayListing.stayType (e.g. "hostel", "boutique").',
+  })
+  declare stayType?: string;
+
+  @ApiProperty({
+    required: false,
+    description:
+      'V.UX.16 — listings whose priceUsdPerNight exceeds this cap are dropped. Listings without a quoted price pass through.',
+  })
+  declare maxPriceUsdPerNight?: number;
 }
 
 export class StayListingDto {
@@ -73,6 +86,12 @@ export class StayListingDto {
     description: 'ISO 4217 code of the original quote currency (price is normalized to USD).',
   })
   declare currency: string | null;
+
+  @ApiProperty({
+    description:
+      'V.UX.16 — coarse property type (e.g. "boutique", "inn", "hostel"). Free-form so adapters can add new types without a schema change.',
+  })
+  declare stayType: string;
 }
 
 export class SearchStaysResponseDto {

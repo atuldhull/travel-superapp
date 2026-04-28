@@ -16,6 +16,11 @@ export interface SearchEventsInput {
   readonly from: string;
   readonly to: string;
   readonly category?: string;
+  /**
+   * V.UX.16 — when true, only events with `priceMin` of '0.00' or
+   * null (free / no-price-info) are returned. Default false.
+   */
+  readonly freeOnly?: boolean;
 }
 
 export interface EventProvider {

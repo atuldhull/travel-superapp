@@ -30,4 +30,6 @@ export interface StayListingDto {
    * @nullable
    */
   currency: StayListingDtoCurrency;
+  /** V.UX.16 — coarse property type (e.g. "boutique", "inn", "hostel"). Free-form so adapters can add new types without a schema change. */
+  stayType: string;
 }

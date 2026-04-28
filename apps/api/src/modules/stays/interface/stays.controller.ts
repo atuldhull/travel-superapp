@@ -56,6 +56,10 @@ export class StaysController {
       ...(body.requiredAmenities !== undefined && body.requiredAmenities.length > 0
         ? { requiredAmenities: body.requiredAmenities }
         : {}),
+      ...(body.stayType !== undefined ? { stayType: body.stayType } : {}),
+      ...(body.maxPriceUsdPerNight !== undefined
+        ? { maxPriceUsdPerNight: body.maxPriceUsdPerNight }
+        : {}),
     });
     return { stays };
   }

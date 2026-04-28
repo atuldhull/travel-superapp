@@ -45,6 +45,7 @@ export class EventsController {
       from: body.from,
       to: body.to,
       ...(body.category ? { category: body.category } : {}),
+      ...(body.freeOnly === true ? { freeOnly: true } : {}),
     });
     return { events };
   }

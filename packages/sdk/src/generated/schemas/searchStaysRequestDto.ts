@@ -17,4 +17,8 @@ export interface SearchStaysRequestDto {
    * @maxItems 10
    */
   requiredAmenities?: string[];
+  /** V.UX.16 — exact match against StayListing.stayType (e.g. "hostel", "boutique"). */
+  stayType?: string;
+  /** V.UX.16 — listings whose priceUsdPerNight exceeds this cap are dropped. Listings without a quoted price pass through. */
+  maxPriceUsdPerNight?: number;
 }

@@ -4383,6 +4383,14 @@ components:
           type: array
           items:
             type: string
+        stayType:
+          type: string
+          description: V.UX.16 — exact match against StayListing.stayType (e.g. "hostel",
+            "boutique").
+        maxPriceUsdPerNight:
+          type: number
+          description: V.UX.16 — listings whose priceUsdPerNight exceeds this cap are
+            dropped. Listings without a quoted price pass through.
       required:
         - center
         - radiusKm
@@ -4422,6 +4430,10 @@ components:
           nullable: true
           description: ISO 4217 code of the original quote currency (price is normalized
             to USD).
+        stayType:
+          type: string
+          description: V.UX.16 — coarse property type (e.g. "boutique", "inn", "hostel").
+            Free-form so adapters can add new types without a schema change.
       required:
         - externalId
         - provider
@@ -4433,6 +4445,7 @@ components:
         - distanceMeters
         - priceUsdPerNight
         - currency
+        - stayType
     SearchStaysResponseDto:
       type: object
       properties:
@@ -4547,6 +4560,10 @@ components:
         category:
           type: string
           description: Filter by category slug.
+        freeOnly:
+          type: boolean
+          description: V.UX.16 — budget-backpacker filter. True = only free events
+            (priceMin 0 or null).
       required:
         - center
         - radiusKm
@@ -5371,6 +5388,13 @@ components:
         comfortMode:
           type: boolean
           description: V.UX.15 — accessibility comfort-mode toggle.
+        budgetMode:
+          type: boolean
+          description: V.UX.16 — budget-backpacker mode toggle.
+        dailyBudgetUsd:
+          type: object
+          nullable: true
+          description: V.UX.16 — daily target USD as a decimal string, or null if unset.
         createdAt:
           type: string
           format: date-time
@@ -5387,6 +5411,8 @@ components:
         - familyMode
         - kidAges
         - comfortMode
+        - budgetMode
+        - dailyBudgetUsd
         - createdAt
         - updatedAt
     UpdatePreferencesRequestDto:
@@ -5424,6 +5450,14 @@ components:
           type: boolean
           description: V.UX.15 — accessibility/senior comfort mode (larger fonts,
             step-free routing).
+        budgetMode:
+          type: boolean
+          description: V.UX.16 — budget-backpacker mode toggle.
+        dailyBudgetUsd:
+          type: object
+          nullable: true
+          description: V.UX.16 — daily target USD as a decimal string (e.g. "50.00"). Null
+            clears the target.
     CreateUploadUrlRequestDto:
       type: object
       properties:

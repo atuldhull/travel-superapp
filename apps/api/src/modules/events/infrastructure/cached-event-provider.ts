@@ -41,6 +41,10 @@ export class CachedEventProvider implements EventProvider {
 
 function cacheKey(input: SearchEventsInput): string {
   // Same 3-decimal coord coarsening the other 4 modules use.
+  // V.UX.16 — `freeOnly` participates in the key so a free-only
+  // query and an unfiltered query don't share a stale entry
+  // (same lesson as the V.UX.15 stepFreeOnly fix).
+  const free = input.freeOnly === true ? 'free' : '';
   return [
     input.lat.toFixed(3),
     input.lng.toFixed(3),
@@ -48,5 +52,6 @@ function cacheKey(input: SearchEventsInput): string {
     input.from,
     input.to,
     input.category ?? '',
+    free,
   ].join(':');
 }
