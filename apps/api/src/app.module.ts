@@ -36,6 +36,7 @@ import { SafetyModule } from './modules/safety/safety.module';
 import { SocialModule } from './modules/social/social.module';
 import { StaysModule } from './modules/stays/stays.module';
 import { TransportModule } from './modules/transport/transport.module';
+import { TranslationModule } from './modules/translation/translation.module';
 import { TripModule } from './modules/trip/trip.module';
 import { WeatherModule } from './modules/weather/weather.module';
 
@@ -75,6 +76,7 @@ import { WeatherModule } from './modules/weather/weather.module';
     SocialModule,
     AccountModule,
     FeedModule,
+    TranslationModule,
   ],
   providers: [
     AppNestLoggerService,

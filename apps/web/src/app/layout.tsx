@@ -14,6 +14,7 @@ import type { ReactNode } from 'react';
 import Script from 'next/script';
 import './globals.css';
 import { SosFab } from '../components/safety/sos-fab';
+import { TranslateWidget } from '../components/translation/translate-widget';
 import { ThemeToggle } from '../components/ui/theme-toggle';
 import { WhoAmIBadge } from '../components/whoami-badge';
 import { Providers } from './providers';
@@ -62,6 +63,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               anonymous callers; tap → confirm modal → POST /safety/sos
               → fan-out to trusted contacts. */}
           <SosFab />
+          {/* V.UX.18 — persistent translate widget bottom-left.
+              Disabled for anonymous callers (api requires auth). */}
+          <TranslateWidget />
         </Providers>
       </body>
     </html>

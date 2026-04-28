@@ -383,6 +383,14 @@ function ReadView({
             >
               ✨ Concierge
             </Link>
+            {/* V.UX.18 — pre-trip primer (visa, scams, emergency,
+                phrases). Editorial seed; auth-gated. */}
+            <Link
+              href={`/trips/${trip.id}/primer` as never}
+              className="inline-flex items-center gap-1 rounded-md border border-brand/30 px-3 py-1.5 text-sm font-medium text-brand transition hover:bg-brand/5"
+            >
+              🌐 Primer
+            </Link>
             {isOwner ? (
               <>
                 <Button variant="outline" size="sm" onClick={onDuplicate} disabled={isDuplicating}>

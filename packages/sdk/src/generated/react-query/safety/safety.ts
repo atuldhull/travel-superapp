@@ -15,6 +15,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  CountryPrimerDto,
   FindNearbyCrimesRequestDto,
   FindNearbyCrimesResponseDto,
   FindNearbyScamsRequestDto,
@@ -765,3 +766,178 @@ export const useSafetyScoreControllerScore = <TError = unknown, TContext = unkno
 
   return useMutation(mutationOptions);
 };
+/**
+ * @summary Editorial first-time-international primer for a destination — visa info, top scams, emergency numbers, survival phrases.
+ */
+export type countryPrimerControllerGetResponse200 = {
+  data: CountryPrimerDto;
+  status: 200;
+};
+
+export type countryPrimerControllerGetResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type countryPrimerControllerGetResponseSuccess = countryPrimerControllerGetResponse200 & {
+  headers: Headers;
+};
+export type countryPrimerControllerGetResponseError = countryPrimerControllerGetResponse404 & {
+  headers: Headers;
+};
+
+export type countryPrimerControllerGetResponse =
+  | countryPrimerControllerGetResponseSuccess
+  | countryPrimerControllerGetResponseError;
+
+export const getCountryPrimerControllerGetUrl = (countryCode: string) => {
+  return `/api/v1/safety/country-primer/${countryCode}`;
+};
+
+export const countryPrimerControllerGet = async (
+  countryCode: string,
+  options?: RequestInit,
+): Promise<countryPrimerControllerGetResponse> => {
+  return apiFetch<countryPrimerControllerGetResponse>(
+    getCountryPrimerControllerGetUrl(countryCode),
+    {
+      ...options,
+      method: 'GET',
+    },
+  );
+};
+
+export const getCountryPrimerControllerGetInfiniteQueryKey = (countryCode?: string) => {
+  return ['infinite', `/api/v1/safety/country-primer/${countryCode}`] as const;
+};
+
+export const getCountryPrimerControllerGetQueryKey = (countryCode?: string) => {
+  return [`/api/v1/safety/country-primer/${countryCode}`] as const;
+};
+
+export const getCountryPrimerControllerGetInfiniteQueryOptions = <
+  TData = Awaited<ReturnType<typeof countryPrimerControllerGet>>,
+  TError = void,
+>(
+  countryCode: string,
+  options?: {
+    query?: UseInfiniteQueryOptions<
+      Awaited<ReturnType<typeof countryPrimerControllerGet>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getCountryPrimerControllerGetInfiniteQueryKey(countryCode);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof countryPrimerControllerGet>>> = ({
+    signal,
+  }) => countryPrimerControllerGet(countryCode, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!countryCode,
+    staleTime: 30000,
+    ...queryOptions,
+  } as UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof countryPrimerControllerGet>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type CountryPrimerControllerGetInfiniteQueryResult = NonNullable<
+  Awaited<ReturnType<typeof countryPrimerControllerGet>>
+>;
+export type CountryPrimerControllerGetInfiniteQueryError = void;
+
+/**
+ * @summary Editorial first-time-international primer for a destination — visa info, top scams, emergency numbers, survival phrases.
+ */
+
+export function useCountryPrimerControllerGetInfinite<
+  TData = Awaited<ReturnType<typeof countryPrimerControllerGet>>,
+  TError = void,
+>(
+  countryCode: string,
+  options?: {
+    query?: UseInfiniteQueryOptions<
+      Awaited<ReturnType<typeof countryPrimerControllerGet>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+): UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getCountryPrimerControllerGetInfiniteQueryOptions(countryCode, options);
+
+  const query = useInfiniteQuery(queryOptions) as UseInfiniteQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getCountryPrimerControllerGetQueryOptions = <
+  TData = Awaited<ReturnType<typeof countryPrimerControllerGet>>,
+  TError = void,
+>(
+  countryCode: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof countryPrimerControllerGet>>, TError, TData>;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getCountryPrimerControllerGetQueryKey(countryCode);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof countryPrimerControllerGet>>> = ({
+    signal,
+  }) => countryPrimerControllerGet(countryCode, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!countryCode,
+    staleTime: 30000,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof countryPrimerControllerGet>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type CountryPrimerControllerGetQueryResult = NonNullable<
+  Awaited<ReturnType<typeof countryPrimerControllerGet>>
+>;
+export type CountryPrimerControllerGetQueryError = void;
+
+/**
+ * @summary Editorial first-time-international primer for a destination — visa info, top scams, emergency numbers, survival phrases.
+ */
+
+export function useCountryPrimerControllerGet<
+  TData = Awaited<ReturnType<typeof countryPrimerControllerGet>>,
+  TError = void,
+>(
+  countryCode: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof countryPrimerControllerGet>>, TError, TData>;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getCountryPrimerControllerGetQueryOptions(countryCode, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
