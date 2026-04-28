@@ -13,21 +13,31 @@
  * `yet-another-react-lightbox`, social-share row (Web Share API +
  * Twitter / WhatsApp / copy), and a "Plan a similar trip" CTA.
  *
+ * V.UX.12 preview mode: when `?preview=true`, swap the public read
+ * + public-asset-download hooks for their owner-gated equivalents
+ * so the editor can preview unpublished drafts. Theme variables are
+ * applied via inline `style` on the root, and a `postMessage`
+ * listener lets the parent editor swap them in real time without a
+ * reload.
+ *
  * Installed by prompt [IV.18.19.48]; thumbnails [IV.18.19.50]; story
- * + share polish [V.UX.11].
+ * + share polish [V.UX.11]; preview mode [V.UX.12].
  */
 'use client';
 
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import {
+  useMediaControllerDownloadUrl,
+  useMemoryBookControllerGetOne,
   useMemoryBookControllerGetPublic,
   useMemoryBookControllerGetPublicAssetDownloadUrl,
+  type MediaDownloadUrlResponseDto,
   type MemoryBookAssetSummaryDto,
+  type MemoryBookWithAssetsResponseDto,
   type PublicDownloadUrlResponseDto,
-  type PublicMemoryBookDto,
   type PublicMemoryBookWithAssetsResponseDto,
 } from '@app/sdk';
 import { Badge } from '../../../components/ui/badge';
@@ -35,7 +45,9 @@ import { Button } from '../../../components/ui/button';
 import { Card, CardHeader, CardSubtitle, CardTitle } from '../../../components/ui/card';
 import { Skeleton } from '../../../components/ui/skeleton';
 import { SocialShare } from '../../../components/memory-book/social-share';
+import { getThemeBySlug } from '../../../components/memory-book/theme-picker';
 import type { LightboxSlide } from '../../../components/memory-book/lightbox';
+import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
 
 const MemoryBookLightbox = dynamic(
   () => import('../../../components/memory-book/lightbox').then((m) => m.MemoryBookLightbox),
@@ -49,49 +61,93 @@ interface ApiError extends Error {
 
 type Mode = 'grid' | 'story';
 
+interface NormalizedBook {
+  readonly id: string;
+  readonly title: string;
+  readonly theme: string;
+  readonly publishedAt: string | null;
+}
+
+interface ThemeOverride {
+  readonly accent: string;
+  readonly bg: string;
+}
+
 export default function PublicMemoryBookPage() {
   const params = useParams<{ id: string }>();
+  const search = useSearchParams();
   const id = params?.id ?? '';
+  const preview = search?.get('preview') === 'true';
+
+  const token = useAuthToken();
+  const bootComplete = useAuthBootComplete();
+
   const [mode, setMode] = useState<Mode>('grid');
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const [resolvedUrls, setResolvedUrls] = useState<Record<string, string>>({});
+  const [themeOverride, setThemeOverride] = useState<ThemeOverride | null>(null);
 
-  const { data, isLoading, isError, error } = useMemoryBookControllerGetPublic(id, {
-    query: { enabled: id !== '', retry: false },
+  // Always call BOTH hooks so React's hook-call order stays stable;
+  // gate them with `enabled` so only the relevant request actually
+  // fires.
+  const publicQ = useMemoryBookControllerGetPublic(id, {
+    query: { enabled: id !== '' && !preview, retry: false },
+  });
+  const ownerQ = useMemoryBookControllerGetOne(id, {
+    query: { enabled: id !== '' && preview && token !== null, retry: false },
   });
 
-  if (isLoading) {
-    return (
-      <main className="space-y-4">
-        <Skeleton className="h-8 w-2/3" />
-        <Skeleton className="h-4 w-1/2" />
-        <Skeleton className="h-32 w-full" />
-      </main>
-    );
-  }
+  // Listen for parent-editor theme broadcasts (V.UX.12). Same-origin
+  // only; ignore any cross-origin messages.
+  useEffect(() => {
+    if (!preview) return;
+    function onMessage(event: MessageEvent) {
+      if (event.origin !== window.location.origin) return;
+      const data = event.data as { type?: string; accent?: string; bg?: string } | null;
+      if (!data || data.type !== 'memory-book-theme') return;
+      if (typeof data.accent !== 'string' || typeof data.bg !== 'string') return;
+      setThemeOverride({ accent: data.accent, bg: data.bg });
+    }
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, [preview]);
 
-  if (isError) {
-    const e = error as ApiError;
-    const missing = e.status === 404;
-    return (
-      <main className="space-y-4">
-        <p className="rounded-md border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
-          {missing
-            ? 'This memory book was unpublished or never existed.'
-            : `Couldn't load book (${e.code ?? `HTTP_${e.status ?? '???'}`}). ${e.message ?? ''}`}
-        </p>
-        <p>
-          <Link href="/featured" className="text-sm text-muted hover:underline">
-            ← Featured
-          </Link>
-        </p>
-      </main>
-    );
-  }
+  const isLoading = preview
+    ? !bootComplete || (token !== null && ownerQ.isLoading)
+    : publicQ.isLoading;
+  const isError = preview ? ownerQ.isError : publicQ.isError;
+  const error = preview ? ownerQ.error : publicQ.error;
 
-  const body = data?.data as unknown as PublicMemoryBookWithAssetsResponseDto;
-  const book: PublicMemoryBookDto = body.book;
-  const assets: readonly MemoryBookAssetSummaryDto[] = body.assets ?? [];
+  // Pull the active record into a unified shape so the JSX
+  // downstream doesn't have to branch on source.
+  const previewBody = ownerQ.data?.data as unknown as MemoryBookWithAssetsResponseDto | undefined;
+  const publicBody = publicQ.data?.data as unknown | undefined as
+    | PublicMemoryBookWithAssetsResponseDto
+    | undefined;
+
+  const normalizedBook: NormalizedBook | null = useMemo(() => {
+    if (preview && previewBody) {
+      return {
+        id: previewBody.book.id,
+        title: previewBody.book.title,
+        theme: previewBody.book.theme,
+        publishedAt: (previewBody.book.publishedAt as unknown as string | null) ?? null,
+      };
+    }
+    if (!preview && publicBody) {
+      return {
+        id: publicBody.book.id,
+        title: publicBody.book.title,
+        theme: publicBody.book.theme,
+        publishedAt: publicBody.book.publishedAt,
+      };
+    }
+    return null;
+  }, [preview, previewBody, publicBody]);
+
+  const assets: readonly MemoryBookAssetSummaryDto[] = preview
+    ? (previewBody?.assets ?? [])
+    : (publicBody?.assets ?? []);
 
   const readingMinutes = useMemo(() => {
     const captionWords = assets.reduce(
@@ -105,6 +161,63 @@ export default function PublicMemoryBookPage() {
     return Math.max(1, Math.ceil(fromCaptions + fromAssets));
   }, [assets]);
 
+  const themeStyle = useMemo(() => {
+    const t = themeOverride ?? getThemeBySlug(normalizedBook?.theme ?? 'classic');
+    return {
+      backgroundColor: t.bg,
+      borderTop: `4px solid ${t.accent}`,
+    } as React.CSSProperties;
+  }, [themeOverride, normalizedBook?.theme]);
+
+  if (preview && bootComplete && token === null) {
+    return (
+      <main className="space-y-4 p-4">
+        <p className="rounded-md border border-warning/30 bg-warning/5 px-4 py-3 text-sm">
+          Preview requires you to be signed in as the owner.
+        </p>
+      </main>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <main className="space-y-4 p-4">
+        <Skeleton className="h-8 w-2/3" />
+        <Skeleton className="h-4 w-1/2" />
+        <Skeleton className="h-32 w-full" />
+      </main>
+    );
+  }
+
+  if (isError) {
+    const e = error as ApiError;
+    const missing = e?.status === 404;
+    return (
+      <main className="space-y-4 p-4">
+        <p className="rounded-md border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
+          {missing
+            ? preview
+              ? "We couldn't find this draft to preview."
+              : 'This memory book was unpublished or never existed.'
+            : `Couldn't load book (${e?.code ?? `HTTP_${e?.status ?? '???'}`}). ${e?.message ?? ''}`}
+        </p>
+        {!preview ? (
+          <p>
+            <Link href="/featured" className="text-sm text-muted hover:underline">
+              ← Featured
+            </Link>
+          </p>
+        ) : null}
+      </main>
+    );
+  }
+
+  if (!normalizedBook) return null;
+
+  function handleAssetUrlResolved(assetId: string, url: string) {
+    setResolvedUrls((prev) => (prev[assetId] === url ? prev : { ...prev, [assetId]: url }));
+  }
+
   const lightboxSlides: LightboxSlide[] = assets
     .map((a) => ({
       src: resolvedUrls[a.id] ?? '',
@@ -112,35 +225,42 @@ export default function PublicMemoryBookPage() {
     }))
     .filter((s): s is LightboxSlide => s.src !== '');
 
-  function handleAssetUrlResolved(assetId: string, url: string) {
-    setResolvedUrls((prev) => (prev[assetId] === url ? prev : { ...prev, [assetId]: url }));
-  }
-
   const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
 
   return (
-    <main className="space-y-6">
-      <p>
-        <Link href="/featured" className="text-sm text-muted hover:underline">
-          ← Featured
-        </Link>
-      </p>
+    <main className="space-y-6 rounded-md p-4 transition-colors" style={themeStyle}>
+      {preview ? (
+        <p className="rounded-md border border-brand/30 bg-brand/10 px-3 py-2 text-xs">
+          🔍 Preview mode — only you can see this. Publish from the editor when you're ready.
+        </p>
+      ) : (
+        <p>
+          <Link href="/featured" className="text-sm text-muted hover:underline">
+            ← Featured
+          </Link>
+        </p>
+      )}
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <CardTitle>{book.title}</CardTitle>
+              <CardTitle>{normalizedBook.title}</CardTitle>
               <CardSubtitle>
-                Published {new Date(book.publishedAt).toLocaleDateString()} · {assets.length}{' '}
-                {assets.length === 1 ? 'asset' : 'assets'} · ~{readingMinutes} min read
+                {normalizedBook.publishedAt ? (
+                  <>Published {new Date(normalizedBook.publishedAt).toLocaleDateString()} · </>
+                ) : (
+                  <>Draft · </>
+                )}
+                {assets.length} {assets.length === 1 ? 'asset' : 'assets'} · ~{readingMinutes} min
+                read
               </CardSubtitle>
             </div>
-            <Badge variant="brand">{book.theme}</Badge>
+            <Badge variant="brand">{normalizedBook.theme}</Badge>
           </div>
         </CardHeader>
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <Link
-            href={`/trips/new?title=${encodeURIComponent(book.title)}` as never}
+            href={`/trips/new?title=${encodeURIComponent(normalizedBook.title)}` as never}
             className="inline-flex items-center gap-1 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-brand-foreground shadow-sm transition hover:opacity-90"
           >
             ✨ Plan a similar trip
@@ -154,9 +274,15 @@ export default function PublicMemoryBookPage() {
             {mode === 'grid' ? '📖 Story mode' : '🔲 Grid mode'}
           </Button>
         </div>
-        <div className="mt-3 border-t border-muted/15 pt-3">
-          <SocialShare title={book.title} text={`Memory book: ${book.title}`} url={shareUrl} />
-        </div>
+        {!preview ? (
+          <div className="mt-3 border-t border-muted/15 pt-3">
+            <SocialShare
+              title={normalizedBook.title}
+              text={`Memory book: ${normalizedBook.title}`}
+              url={shareUrl}
+            />
+          </div>
+        ) : null}
       </Card>
       {assets.length === 0 ? (
         <p className="text-sm text-muted">This book has no attached assets yet.</p>
@@ -167,6 +293,7 @@ export default function PublicMemoryBookPage() {
               key={a.id}
               bookId={id}
               asset={a}
+              preview={preview}
               onUrlResolved={handleAssetUrlResolved}
               onClick={() => setLightboxIdx(idx)}
             />
@@ -179,6 +306,7 @@ export default function PublicMemoryBookPage() {
               key={a.id}
               bookId={id}
               asset={a}
+              preview={preview}
               index={idx + 1}
               total={assets.length}
               onUrlResolved={handleAssetUrlResolved}
@@ -201,12 +329,13 @@ export default function PublicMemoryBookPage() {
 interface AssetTileProps {
   readonly bookId: string;
   readonly asset: MemoryBookAssetSummaryDto;
+  readonly preview: boolean;
   readonly onUrlResolved: (assetId: string, url: string) => void;
   readonly onClick?: () => void;
 }
 
-function AssetThumb({ bookId, asset, onUrlResolved, onClick }: AssetTileProps) {
-  const url = useResolvedAssetUrl(bookId, asset.id, onUrlResolved);
+function AssetThumb({ bookId, asset, preview, onUrlResolved, onClick }: AssetTileProps) {
+  const url = useResolvedAssetUrl(bookId, asset.id, preview, onUrlResolved);
   const caption = (asset.caption as unknown as string | null) ?? null;
   return (
     <li className="flex flex-col rounded-md border border-muted/15 bg-muted/5 p-2 text-xs">
@@ -239,8 +368,16 @@ interface StoryFrameProps extends AssetTileProps {
   readonly total: number;
 }
 
-function StoryFrame({ bookId, asset, index, total, onUrlResolved, onClick }: StoryFrameProps) {
-  const url = useResolvedAssetUrl(bookId, asset.id, onUrlResolved);
+function StoryFrame({
+  bookId,
+  asset,
+  preview,
+  index,
+  total,
+  onUrlResolved,
+  onClick,
+}: StoryFrameProps) {
+  const url = useResolvedAssetUrl(bookId, asset.id, preview, onUrlResolved);
   const caption = (asset.caption as unknown as string | null) ?? null;
   return (
     <li className="overflow-hidden rounded-lg border border-muted/15 bg-surface">
@@ -284,22 +421,32 @@ interface ResolvedUrl {
 function useResolvedAssetUrl(
   bookId: string,
   assetId: string,
+  preview: boolean,
   onUrlResolved: (assetId: string, url: string) => void,
 ): ResolvedUrl {
-  const { data, isLoading, isError } = useMemoryBookControllerGetPublicAssetDownloadUrl(
-    bookId,
-    assetId,
-    { query: { retry: false, staleTime: 60_000 } },
-  );
-  const url = (data?.data as unknown as PublicDownloadUrlResponseDto | undefined)?.url ?? null;
-  // Push the resolved URL up to the parent on every render that gets
-  // a new value — useEffect keeps the parent state in sync without
-  // mutating during render.
+  // Hooks must be called unconditionally — gate via `enabled` so
+  // only one hits the wire per call site.
+  const publicQ = useMemoryBookControllerGetPublicAssetDownloadUrl(bookId, assetId, {
+    query: { enabled: !preview, retry: false, staleTime: 60_000 },
+  });
+  const ownerQ = useMediaControllerDownloadUrl(assetId, {
+    query: { enabled: preview, retry: false, staleTime: 60_000 },
+  });
+
+  const publicUrl =
+    (publicQ.data?.data as unknown as PublicDownloadUrlResponseDto | undefined)?.url ?? null;
+  const ownerUrl =
+    (ownerQ.data?.data as unknown as MediaDownloadUrlResponseDto | undefined)?.url ?? null;
+
+  const url = preview ? ownerUrl : publicUrl;
+  const isLoading = preview ? ownerQ.isLoading : publicQ.isLoading;
+  const isError = preview ? ownerQ.isError : publicQ.isError;
+
   useEffect(() => {
     if (url) onUrlResolved(assetId, url);
-    // onUrlResolved is stable from the parent; we don't need to
-    // re-run when its identity changes.
+    // onUrlResolved is stable from the parent.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assetId, url]);
+
   return { src: url, loading: isLoading, error: isError };
 }

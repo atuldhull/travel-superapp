@@ -111,6 +111,20 @@ export interface MemoryBookRepository {
    * Added by `[IV.18.13.1]`.
    */
   listPublished(limit: number): Promise<readonly MemoryBook[]>;
+
+  /**
+   * V.UX.12 — atomically write `position` for every asset attached
+   * to `bookId` in the order given by `orderedAssetIds`. The
+   * use-case is responsible for verifying the list is a strict
+   * permutation of the currently-attached assets before calling
+   * here. Wrapped in a single Prisma transaction so a half-applied
+   * reorder is impossible.
+   */
+  reorderAssetsForOwner(
+    bookId: string,
+    ownerId: string,
+    orderedAssetIds: readonly string[],
+  ): Promise<void>;
 }
 
 /**

@@ -62,6 +62,19 @@ export class UpdateAssetCaptionRequestDto {
   declare caption: string | null;
 }
 
+/** Body for `PATCH /memory-books/:id/asset-order`. V.UX.12. */
+export class ReorderBookAssetsRequestDto {
+  @ApiProperty({
+    type: [String],
+    minItems: 1,
+    maxItems: 500,
+    description:
+      'Strict permutation of currently-attached asset ids. ' +
+      'Order in this array becomes the persisted MediaAsset.position.',
+  })
+  declare assetIds: string[];
+}
+
 export class ListTripMediaResponseDto {
   @ApiProperty({
     type: [MediaAssetDto],

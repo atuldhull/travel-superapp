@@ -76,3 +76,14 @@ export const UpdateAssetCaptionBodySchema = z.object({
   caption: z.string().trim().max(280).nullable(),
 });
 export type UpdateAssetCaptionBody = z.infer<typeof UpdateAssetCaptionBodySchema>;
+
+/**
+ * Body for `PATCH /memory-books/:id/asset-order`. V.UX.12 lets
+ * owners persist a drag-and-drop reordering of the attached
+ * assets. Cap at 500 rows — way past any realistic memory-book
+ * size, but still bounds the transaction the repo will open.
+ */
+export const ReorderBookAssetsBodySchema = z.object({
+  assetIds: z.array(z.string().trim().min(1).max(64)).min(1).max(500),
+});
+export type ReorderBookAssetsBody = z.infer<typeof ReorderBookAssetsBodySchema>;

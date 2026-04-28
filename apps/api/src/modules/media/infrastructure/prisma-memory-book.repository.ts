@@ -161,6 +161,27 @@ export class PrismaMemoryBookRepository implements MemoryBookRepository {
     return rows.map(toDomain);
   }
 
+  async reorderAssetsForOwner(
+    bookId: string,
+    ownerId: string,
+    orderedAssetIds: readonly string[],
+  ): Promise<void> {
+    if (orderedAssetIds.length === 0) return;
+    // Per-row updateMany scoped to (bookId, ownerId) is the atomic
+    // gate — a stranger's asset id smuggled in via the URL silently
+    // updates 0 rows. The use-case has already validated the list
+    // is a permutation of the currently-attached assets, so each
+    // updateMany should hit exactly 1 row.
+    await this.prisma.$transaction(
+      orderedAssetIds.map((id, idx) =>
+        this.prisma.mediaAsset.updateMany({
+          where: { id, memoryBookId: bookId, ownerId },
+          data: { position: idx },
+        }),
+      ),
+    );
+  }
+
   async findPublishedAssetForBook(
     bookId: string,
     assetId: string,
