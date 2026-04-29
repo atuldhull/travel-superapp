@@ -18,12 +18,20 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { createLogger } from '@app/logger';
-import type { GetDailyForecastInput, WeatherProvider } from '../application/ports/weather-provider';
+import type {
+  GetDailyForecastInput,
+  GetHourlyForecastInput,
+  WeatherProvider,
+} from '../application/ports/weather-provider';
 import { WEATHER_CACHE, type WeatherCache } from '../application/ports/weather-cache';
-import type { WeatherForecast } from '../domain/weather-forecast.entity';
+import type { HourlyWeatherForecast, WeatherForecast } from '../domain/weather-forecast.entity';
 import { OpenMeteoWeatherProvider } from './open-meteo-provider';
 
 const CACHE_TTL_SECONDS = 30 * 60;
+// V.UX.21 — hourly forecasts move faster than daily. 10 minutes
+// keeps the adventure-window widget reactive without burning the
+// Open-Meteo quota during a hot UI loop.
+const HOURLY_CACHE_TTL_SECONDS = 10 * 60;
 const log = createLogger('weather.cached-provider');
 
 @Injectable()
@@ -46,6 +54,24 @@ export class CachedWeatherProvider implements WeatherProvider {
     await this.cache.set(key, fresh, CACHE_TTL_SECONDS);
     return fresh;
   }
+
+  /**
+   * V.UX.21 — same coarse-resolution coord rounding as the daily
+   * path; the cache key includes `hours` so a 24h request and a
+   * 48h request don't share an entry (they'd return wrong-sized
+   * arrays).
+   */
+  async getHourlyForecast(input: GetHourlyForecastInput): Promise<HourlyWeatherForecast> {
+    const key = hourlyCacheKey(input);
+    const cached = await this.cache.getHourly(key);
+    if (cached) {
+      log.debug({ key }, 'weather_hourly_cache_hit');
+      return cached;
+    }
+    const fresh = await this.inner.getHourlyForecast(input);
+    await this.cache.setHourly(key, fresh, HOURLY_CACHE_TTL_SECONDS);
+    return fresh;
+  }
 }
 
 function cacheKey(input: GetDailyForecastInput): string {
@@ -53,4 +79,8 @@ function cacheKey(input: GetDailyForecastInput): string {
   // picking "the same cafe" share a cache entry; not so coarse that
   // cross-city forecasts collide.
   return `${input.lat.toFixed(3)}:${input.lng.toFixed(3)}:${input.days}`;
+}
+
+function hourlyCacheKey(input: GetHourlyForecastInput): string {
+  return `${input.lat.toFixed(3)}:${input.lng.toFixed(3)}:${input.hours}`;
 }

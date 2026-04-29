@@ -401,6 +401,11 @@ model Place {
   address        String?
   countryCode    String?
   relaxationScore Float   @default(0) // 0..1
+  // V.UX.21 — provider-specific extras. Adventure persona conventions
+  // (no schema migration needed; metadata is free-form JSON):
+  //   - difficulty: 'easy' | 'moderate' | 'hard' | 'expert'
+  //   - elevationM: number  (peak elevation, metres)
+  //   - activityType: 'hike' | 'climb' | 'kayak' | 'surf' | 'cycle' | ...
   metadata       Json? // provider-specific extras
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

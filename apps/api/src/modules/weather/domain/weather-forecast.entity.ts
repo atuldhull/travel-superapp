@@ -27,3 +27,27 @@ export interface WeatherForecast {
   readonly timezone: string;
   readonly days: readonly DailyForecast[];
 }
+
+/**
+ * V.UX.21 — single hour bucket of forecast detail, for the
+ * adventure / outdoor persona (precip, wind, temp at hourly
+ * granularity so a hiker can pick the best slot in the next 24h).
+ */
+export interface HourlyForecast {
+  /** ISO timestamp in the forecast's local timezone. */
+  readonly time: string;
+  readonly tempC: number;
+  /** 0–100. Provider's confidence; `null` if not reported. */
+  readonly precipitationProbabilityPercent: number | null;
+  /** Wind speed at 10m, km/h. `null` if not reported. */
+  readonly windSpeedKmh: number | null;
+  /** WMO weather code (see module doc). */
+  readonly weatherCode: number;
+}
+
+export interface HourlyWeatherForecast {
+  readonly lat: number;
+  readonly lng: number;
+  readonly timezone: string;
+  readonly hours: readonly HourlyForecast[];
+}

@@ -55,6 +55,10 @@ class StubOpenMeteo implements WeatherProvider {
       })),
     };
   }
+
+  async getHourlyForecast(): Promise<never> {
+    throw new Error('weather-cache stub does not exercise hourly');
+  }
 }
 
 describe('Weather cache (integration, requires Docker Postgres + Redis)', () => {

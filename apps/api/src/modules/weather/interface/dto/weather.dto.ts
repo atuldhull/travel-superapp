@@ -18,3 +18,15 @@ export const WeatherForecastQuerySchema = z.object({
   days: z.coerce.number().int().positive().max(100).optional(),
 });
 export type WeatherForecastQuery = z.infer<typeof WeatherForecastQuerySchema>;
+
+/**
+ * V.UX.21 — hourly forecast query for the adventure persona.
+ * Use-case clamps `hours` to [1, 48]; Zod is loose enough to let
+ * the typed `INVALID_COORDINATES` win on the lat/lng path.
+ */
+export const HourlyWeatherForecastQuerySchema = z.object({
+  lat: z.coerce.number().min(-90).max(90),
+  lng: z.coerce.number().min(-180).max(180),
+  hours: z.coerce.number().int().positive().max(200).optional(),
+});
+export type HourlyWeatherForecastQuery = z.infer<typeof HourlyWeatherForecastQuerySchema>;

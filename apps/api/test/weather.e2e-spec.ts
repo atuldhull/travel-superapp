@@ -22,9 +22,13 @@ import { PrismaService } from '../src/common/db/prisma.service';
 import {
   WEATHER_PROVIDER,
   type GetDailyForecastInput,
+  type GetHourlyForecastInput,
   type WeatherProvider,
 } from '../src/modules/weather/application/ports/weather-provider';
-import type { WeatherForecast } from '../src/modules/weather/domain/weather-forecast.entity';
+import type {
+  HourlyWeatherForecast,
+  WeatherForecast,
+} from '../src/modules/weather/domain/weather-forecast.entity';
 
 const TEST_PREFIX = 'weather-e2e';
 
@@ -33,12 +37,16 @@ const TEST_PREFIX = 'weather-e2e';
 // full module re-compile.
 class StubWeatherProvider implements WeatherProvider {
   public calls: GetDailyForecastInput[] = [];
+  public hourlyCalls: GetHourlyForecastInput[] = [];
   public nextResponse: WeatherForecast | null = null;
+  public nextHourlyResponse: HourlyWeatherForecast | null = null;
   public nextError: Error | null = null;
 
   reset(): void {
     this.calls = [];
+    this.hourlyCalls = [];
     this.nextResponse = null;
+    this.nextHourlyResponse = null;
     this.nextError = null;
   }
 
@@ -60,6 +68,24 @@ class StubWeatherProvider implements WeatherProvider {
           precipitationProbabilityPercent: 10,
         },
       ],
+    };
+  }
+
+  async getHourlyForecast(input: GetHourlyForecastInput): Promise<HourlyWeatherForecast> {
+    this.hourlyCalls.push(input);
+    if (this.nextError) throw this.nextError;
+    if (this.nextHourlyResponse) return this.nextHourlyResponse;
+    return {
+      lat: input.lat,
+      lng: input.lng,
+      timezone: 'Etc/UTC',
+      hours: Array.from({ length: input.hours }, (_, i) => ({
+        time: `2026-09-01T${String(i % 24).padStart(2, '0')}:00`,
+        tempC: 18 + (i % 12),
+        precipitationProbabilityPercent: 10,
+        windSpeedKmh: 12,
+        weatherCode: 1,
+      })),
     };
   }
 }
@@ -226,6 +252,83 @@ describe('Weather module (integration, requires Docker Postgres)', () => {
     const res = await app.inject({
       method: 'GET',
       url: '/api/v1/weather/forecast?lat=10&lng=10',
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(res.statusCode).toBe(502);
+    expect(JSON.parse(res.body).code).toBe('WEATHER_PROVIDER_UNAVAILABLE');
+  });
+
+  // V.UX.21 — hourly forecast surface for the adventure persona.
+  it('GET /weather/forecast/hourly without bearer → 401 UNAUTHENTICATED', async () => {
+    if (!dbReachable) return;
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/weather/forecast/hourly?lat=10&lng=10',
+    });
+    expect(res.statusCode).toBe(401);
+    expect(JSON.parse(res.body).code).toBe('UNAUTHENTICATED');
+  });
+
+  it('GET /weather/forecast/hourly returns 24 hourly buckets with the expected fields', async () => {
+    if (!dbReachable) return;
+    const token = await accessToken('hourly-default');
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/weather/forecast/hourly?lat=51.5&lng=-0.1',
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.body) as HourlyWeatherForecast;
+    expect(body.lat).toBe(51.5);
+    expect(body.lng).toBe(-0.1);
+    expect(body.hours).toHaveLength(24);
+    for (const h of body.hours) {
+      expect(typeof h.time).toBe('string');
+      expect(typeof h.tempC).toBe('number');
+      expect(typeof h.weatherCode).toBe('number');
+      expect(['number']).toContain(typeof h.windSpeedKmh);
+      expect(['number']).toContain(typeof h.precipitationProbabilityPercent);
+    }
+    expect(stub.hourlyCalls.at(-1)?.hours).toBe(24);
+  });
+
+  it('clamps `hours` above 48 to 48', async () => {
+    if (!dbReachable) return;
+    const token = await accessToken('hourly-clamp');
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/weather/forecast/hourly?lat=10&lng=10&hours=72',
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.body) as HourlyWeatherForecast;
+    expect(body.hours).toHaveLength(48);
+    expect(stub.hourlyCalls.at(-1)?.hours).toBe(48);
+  });
+
+  it('rejects lat > 90 with 422 VALIDATION_FAILED on the hourly endpoint', async () => {
+    if (!dbReachable) return;
+    const token = await accessToken('hourly-bad-lat');
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/weather/forecast/hourly?lat=120&lng=10',
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(res.statusCode).toBe(422);
+  });
+
+  it('hourly upstream failure → 502 WEATHER_PROVIDER_UNAVAILABLE', async () => {
+    if (!dbReachable) return;
+    const token = await accessToken('hourly-fail');
+    stub.nextError = new (await import('@app/errors')).ExternalServiceError(
+      'open-meteo',
+      'simulated_outage',
+      {},
+      'WEATHER_PROVIDER_UNAVAILABLE',
+    );
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/weather/forecast/hourly?lat=10&lng=10',
       headers: { authorization: `Bearer ${token}` },
     });
     expect(res.statusCode).toBe(502);

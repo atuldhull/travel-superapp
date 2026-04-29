@@ -11,7 +11,7 @@ import type {
   UseQueryResult,
 } from '@tanstack/react-query';
 
-import type { WeatherForecastResponseDto } from '../../schemas';
+import type { HourlyWeatherForecastResponseDto, WeatherForecastResponseDto } from '../../schemas';
 
 import { apiFetch } from '../../../runtime/fetcher';
 
@@ -166,6 +166,163 @@ export function useWeatherControllerForecast<
   request?: SecondParameter<typeof apiFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getWeatherControllerForecastQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary Hourly forecast (precip + wind + temp) for the next 1..48 hours. Powers the adventure-window widget.
+ */
+export type weatherControllerHourlyResponse200 = {
+  data: HourlyWeatherForecastResponseDto;
+  status: 200;
+};
+
+export type weatherControllerHourlyResponse422 = {
+  data: void;
+  status: 422;
+};
+
+export type weatherControllerHourlyResponse502 = {
+  data: void;
+  status: 502;
+};
+
+export type weatherControllerHourlyResponseSuccess = weatherControllerHourlyResponse200 & {
+  headers: Headers;
+};
+export type weatherControllerHourlyResponseError = (
+  | weatherControllerHourlyResponse422
+  | weatherControllerHourlyResponse502
+) & {
+  headers: Headers;
+};
+
+export type weatherControllerHourlyResponse =
+  | weatherControllerHourlyResponseSuccess
+  | weatherControllerHourlyResponseError;
+
+export const getWeatherControllerHourlyUrl = () => {
+  return `/api/v1/weather/forecast/hourly`;
+};
+
+export const weatherControllerHourly = async (
+  options?: RequestInit,
+): Promise<weatherControllerHourlyResponse> => {
+  return apiFetch<weatherControllerHourlyResponse>(getWeatherControllerHourlyUrl(), {
+    ...options,
+    method: 'GET',
+  });
+};
+
+export const getWeatherControllerHourlyInfiniteQueryKey = () => {
+  return ['infinite', `/api/v1/weather/forecast/hourly`] as const;
+};
+
+export const getWeatherControllerHourlyQueryKey = () => {
+  return [`/api/v1/weather/forecast/hourly`] as const;
+};
+
+export const getWeatherControllerHourlyInfiniteQueryOptions = <
+  TData = Awaited<ReturnType<typeof weatherControllerHourly>>,
+  TError = void,
+>(options?: {
+  query?: UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof weatherControllerHourly>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getWeatherControllerHourlyInfiniteQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof weatherControllerHourly>>> = ({
+    signal,
+  }) => weatherControllerHourly({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, staleTime: 30000, ...queryOptions } as UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof weatherControllerHourly>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type WeatherControllerHourlyInfiniteQueryResult = NonNullable<
+  Awaited<ReturnType<typeof weatherControllerHourly>>
+>;
+export type WeatherControllerHourlyInfiniteQueryError = void;
+
+/**
+ * @summary Hourly forecast (precip + wind + temp) for the next 1..48 hours. Powers the adventure-window widget.
+ */
+
+export function useWeatherControllerHourlyInfinite<
+  TData = Awaited<ReturnType<typeof weatherControllerHourly>>,
+  TError = void,
+>(options?: {
+  query?: UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof weatherControllerHourly>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getWeatherControllerHourlyInfiniteQueryOptions(options);
+
+  const query = useInfiniteQuery(queryOptions) as UseInfiniteQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getWeatherControllerHourlyQueryOptions = <
+  TData = Awaited<ReturnType<typeof weatherControllerHourly>>,
+  TError = void,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof weatherControllerHourly>>, TError, TData>;
+  request?: SecondParameter<typeof apiFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getWeatherControllerHourlyQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof weatherControllerHourly>>> = ({
+    signal,
+  }) => weatherControllerHourly({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, staleTime: 30000, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof weatherControllerHourly>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type WeatherControllerHourlyQueryResult = NonNullable<
+  Awaited<ReturnType<typeof weatherControllerHourly>>
+>;
+export type WeatherControllerHourlyQueryError = void;
+
+/**
+ * @summary Hourly forecast (precip + wind + temp) for the next 1..48 hours. Powers the adventure-window widget.
+ */
+
+export function useWeatherControllerHourly<
+  TData = Awaited<ReturnType<typeof weatherControllerHourly>>,
+  TError = void,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof weatherControllerHourly>>, TError, TData>;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getWeatherControllerHourlyQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
