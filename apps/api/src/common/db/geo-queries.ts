@@ -184,6 +184,77 @@ export class GeoQueries {
   }
 
   /**
+   * V.UX.20 — pluck the coordinates for a batch of Eatery ids. Same
+   * shape + semantics as `findCoordinatesForPlaceIds` (Eatery has a
+   * PostGIS `coordinates` column too). Used by the food-crawl
+   * builder to compute walking-time between consecutive stops.
+   */
+  async findCoordinatesForEateryIds(
+    ids: readonly string[],
+  ): Promise<Map<string, { lat: number; lng: number }>> {
+    if (ids.length === 0) return new Map();
+    const rows = await this.prisma.$queryRaw<Array<{ id: string; lat: number; lng: number }>>`
+      SELECT id,
+             ST_Y(coordinates::geometry) AS lat,
+             ST_X(coordinates::geometry) AS lng
+      FROM "Eatery"
+      WHERE id = ANY(${ids as string[]}::text[])
+    `;
+    const out = new Map<string, { lat: number; lng: number }>();
+    for (const r of rows) {
+      out.set(r.id, { lat: r.lat, lng: r.lng });
+    }
+    return out;
+  }
+
+  /**
+   * V.UX.20 — insert an Eatery row with PostGIS Point coordinates.
+   * Mirrors `insertPlace`. Used by integration tests + future
+   * federated-eatery ingest (the canonical Eatery catalog mirrors
+   * Place's pattern). `cuisineTags` is `text[]` — empty default.
+   */
+  async insertEatery(input: InsertEateryInput): Promise<{
+    id: string;
+    name: string;
+    placeId: string | null;
+    cuisineTags: string[];
+    priceTier: number;
+  }> {
+    const id = randomUUID();
+    const now = new Date();
+    const rows = await this.prisma.$queryRaw<
+      Array<{
+        id: string;
+        name: string;
+        placeId: string | null;
+        cuisineTags: string[];
+        priceTier: number;
+      }>
+    >`
+      INSERT INTO "Eatery" (
+        id, "placeId", name, "cuisineTags", "priceTier",
+        coordinates, "createdAt", "updatedAt"
+      )
+      VALUES (
+        ${id},
+        ${input.placeId ?? null},
+        ${input.name},
+        ${input.cuisineTags ?? []}::text[],
+        ${input.priceTier ?? 2},
+        ST_SetSRID(ST_MakePoint(${input.lng}, ${input.lat}), 4326)::geography,
+        ${now},
+        ${now}
+      )
+      RETURNING id, name, "placeId", "cuisineTags", "priceTier"
+    `;
+    const row = rows[0];
+    if (!row) {
+      throw new Error('insertEatery: no row returned');
+    }
+    return row;
+  }
+
+  /**
    * Move an existing Place to a new lat/lng. Returns the row count
    * actually updated (0 if no Place with that id exists).
    */
@@ -521,6 +592,15 @@ export interface InsertCrimeIncidentInput {
   readonly lng: number;
   /** When the incident was reported by its upstream source. */
   readonly reportedAt: Date;
+}
+
+export interface InsertEateryInput {
+  readonly name: string;
+  readonly lat: number;
+  readonly lng: number;
+  readonly placeId?: string | null;
+  readonly cuisineTags?: readonly string[];
+  readonly priceTier?: number;
 }
 
 export interface FindCrimeIncidentsInput {

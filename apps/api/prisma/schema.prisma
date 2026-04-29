@@ -515,6 +515,12 @@ model Dish {
   eatery     Eatery   @relation(fields: [eateryId], references: [id], onDelete: Cascade)
   name       String
   priceUsd   Decimal? @db.Decimal(8, 2)
+  // V.UX.20 — foodie persona: optional photo + caption captured at
+  // report time. photoUrl points to a publicly-readable URL (S3
+  // pre-signed GET or external URL). caption is free-text, capped
+  // in the use-case.
+  photoUrl   String?
+  caption    String?
   reportedBy String?
   reporter   User?    @relation(fields: [reportedBy], references: [id], onDelete: SetNull)
   createdAt  DateTime @default(now())
