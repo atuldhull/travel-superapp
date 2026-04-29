@@ -35,6 +35,10 @@ export * from './generated/react-query/agents/agents';
 export * from './generated/react-query/translation/translation';
 // V.UX.19 — hyper-local hidden-gem discovery hook lives in the places barrel.
 export * from './generated/react-query/places/places';
+// V.UX.20 — foodie persona: dish-level surfaces + food crawl. Both
+// the FoodController and the new FoodCrawlController use @ApiTags('food'),
+// so orval emits both groups of hooks under the same food barrel.
+export * from './generated/react-query/food/food';
 
 // Schema types from openapi.yaml's components/schemas. Re-exported so
 // consumers don't have to reach into deep generated paths. Add the
@@ -215,6 +219,13 @@ export type { LanguagePhraseDto } from './generated/schemas/languagePhraseDto';
 export type { HiddenGemDto } from './generated/schemas/hiddenGemDto';
 export type { DiscoverHiddenGemsRequestDto } from './generated/schemas/discoverHiddenGemsRequestDto';
 export type { DiscoverHiddenGemsResponseDto } from './generated/schemas/discoverHiddenGemsResponseDto';
+// V.UX.20: foodie persona — dish reports + food-crawl planner
+export type { DishDto } from './generated/schemas/dishDto';
+export type { ListDishesResponseDto } from './generated/schemas/listDishesResponseDto';
+export type { AddDishReportRequestDto } from './generated/schemas/addDishReportRequestDto';
+export type { BuildFoodCrawlRequestDto } from './generated/schemas/buildFoodCrawlRequestDto';
+export type { BuildFoodCrawlResponseDto } from './generated/schemas/buildFoodCrawlResponseDto';
+export type { FoodCrawlStopDto } from './generated/schemas/foodCrawlStopDto';
 // V.UX.5: business-traveler — Expense / Balance schemas already
 // exported above (lines 121-126); social hooks barrel re-exported
 // above to surface useExpensesController{Create,List,Balances,Remove}.

@@ -85,7 +85,10 @@ import { TripController } from './interface/trip.controller';
     PlacesModule,
     WeatherModule,
     StaysModule,
-    FoodModule,
+    // V.UX.20 — FoodModule now imports TripModule (forwardRef) so the
+    // food-crawl builder can owner-gate by trip. Both sides must use
+    // forwardRef to break the cycle.
+    forwardRef(() => FoodModule),
     EventsModule,
     TransportModule,
     SafetyModule,
