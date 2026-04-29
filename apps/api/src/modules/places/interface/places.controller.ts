@@ -16,18 +16,26 @@
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
+import {
+  DiscoverHiddenGemsUseCase,
+  type HiddenGem,
+} from '../application/discover-hidden-gems.use-case';
 import { FederatedSearchPlacesUseCase } from '../application/federated-search-places.use-case';
 import { IngestFederatedResultsUseCase } from '../application/ingest-federated-results.use-case';
 import { SearchPlacesUseCase } from '../application/search-places.use-case';
 import type { FederatedPlaceResult } from '../domain/federated-place-result.entity';
 import type { PlaceWithDistance } from '../domain/place.entity';
 import {
+  DiscoverHiddenGemsBodySchema,
   FederatedSearchPlacesBodySchema,
   SearchPlacesBodySchema,
+  type DiscoverHiddenGemsBody,
   type FederatedSearchPlacesBody,
   type SearchPlacesBody,
 } from './dto/places.dto';
 import {
+  DiscoverHiddenGemsRequestDto,
+  DiscoverHiddenGemsResponseDto,
   FederatedSearchPlacesRequestDto,
   FederatedSearchPlacesResponseDto,
   SearchPlacesRequestDto,
@@ -62,6 +70,19 @@ function toDto(p: PlaceWithDistance): PlaceDto {
   };
 }
 
+interface HiddenGemRowDto extends PlaceDto {
+  readonly reviewCount: number;
+  readonly reviewAverage: number;
+}
+
+function toGemDto(g: HiddenGem): HiddenGemRowDto {
+  return {
+    ...toDto(g),
+    reviewCount: g.reviewCount,
+    reviewAverage: Math.round(g.reviewAverage * 100) / 100,
+  };
+}
+
 interface FederatedResultDto extends FederatedPlaceResult {
   /**
    * Canonical Place id when `ingest=true` was passed (and the row
@@ -82,6 +103,7 @@ export class PlacesController {
     private readonly searchPlaces: SearchPlacesUseCase,
     private readonly federatedSearch: FederatedSearchPlacesUseCase,
     private readonly ingest: IngestFederatedResultsUseCase,
+    private readonly discoverHiddenGems: DiscoverHiddenGemsUseCase,
   ) {}
 
   @ApiOperation({
@@ -163,5 +185,41 @@ export class PlacesController {
       return { ...r, placeId: row.place.id, created: row.created };
     });
     return { results: merged };
+  }
+
+  /**
+   * V.UX.19 — hyper-local discovery. Returns places within a
+   * day-trip radius whose review count sits in the gem zone (5..50)
+   * — enough validation to trust, not so many it's a tourist trap.
+   * Sorted by descending average rating (ties → higher review count).
+   */
+  @ApiOperation({
+    summary:
+      'Hidden-gem discovery within a day-trip radius. Filters to places with 5..50 reviews, sorts by average rating.',
+  })
+  @ApiBody({ type: DiscoverHiddenGemsRequestDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Hidden-gem places.',
+    type: DiscoverHiddenGemsResponseDto,
+  })
+  @Post('hidden-gems')
+  @HttpCode(HttpStatus.OK)
+  async hiddenGems(
+    @Body(new ZodValidationPipe(DiscoverHiddenGemsBodySchema)) body: DiscoverHiddenGemsBody,
+  ): Promise<{ gems: HiddenGemRowDto[] }> {
+    const command: {
+      center: { lat: number; lng: number };
+      radiusKm: number;
+      category?: string;
+      limit?: number;
+    } = {
+      center: body.center,
+      radiusKm: body.radiusKm,
+    };
+    if (body.category !== undefined) command.category = body.category;
+    if (body.limit !== undefined) command.limit = body.limit;
+    const gems = await this.discoverHiddenGems.execute(command);
+    return { gems: gems.map(toGemDto) };
   }
 }

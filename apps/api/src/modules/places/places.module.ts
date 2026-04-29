@@ -13,6 +13,7 @@
  * Installed by prompt [IV.18.2.9].
  */
 import { Module } from '@nestjs/common';
+import { DiscoverHiddenGemsUseCase } from './application/discover-hidden-gems.use-case';
 import { FederatedSearchPlacesUseCase } from './application/federated-search-places.use-case';
 import { IngestFederatedResultsUseCase } from './application/ingest-federated-results.use-case';
 import { SearchPlacesUseCase } from './application/search-places.use-case';
@@ -40,6 +41,7 @@ import { PlacesController } from './interface/places.controller';
     { provide: PLACE_PROVIDER, useClass: CachedPlaceProvider },
     FederatedSearchPlacesUseCase,
     IngestFederatedResultsUseCase,
+    DiscoverHiddenGemsUseCase,
   ],
   exports: [
     PLACE_REPOSITORY,
@@ -47,6 +49,7 @@ import { PlacesController } from './interface/places.controller';
     FederatedSearchPlacesUseCase,
     IngestFederatedResultsUseCase,
     SearchPlacesUseCase,
+    DiscoverHiddenGemsUseCase,
   ],
 })
 export class PlacesModule {}
