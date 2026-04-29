@@ -21,4 +21,6 @@ export interface SearchStaysRequestDto {
   stayType?: string;
   /** V.UX.16 — listings whose priceUsdPerNight exceeds this cap are dropped. Listings without a quoted price pass through. */
   maxPriceUsdPerNight?: number;
+  /** V.UX.23 — drop listings whose wifiSpeedMbps falls below this floor (or whose wifi speed is unknown). Drives the nomad-mode wifi-speed slider. */
+  minWifiSpeedMbps?: number;
 }

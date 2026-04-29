@@ -108,9 +108,8 @@ describe('GET /api/v1/events/festivals (integration, requires Docker Postgres + 
   }
 
   function url(params: Record<string, string | number>): string {
-    const qs = new URLSearchParams(
-      Object.entries(params).map(([k, v]) => [k, String(v)]),
-    ).toString();
+    const tuples: [string, string][] = Object.entries(params).map(([k, v]) => [k, String(v)]);
+    const qs = new URLSearchParams(tuples).toString();
     return `/api/v1/events/festivals?${qs}`;
   }
 

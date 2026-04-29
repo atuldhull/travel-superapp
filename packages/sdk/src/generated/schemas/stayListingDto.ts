@@ -4,6 +4,7 @@
 import type { StayListingDtoStarRating } from './stayListingDtoStarRating';
 import type { StayListingDtoPriceUsdPerNight } from './stayListingDtoPriceUsdPerNight';
 import type { StayListingDtoCurrency } from './stayListingDtoCurrency';
+import type { StayListingDtoWifiSpeedMbps } from './stayListingDtoWifiSpeedMbps';
 
 export interface StayListingDto {
   /** Provider-side id, e.g. "booking:1234567". */
@@ -30,6 +31,11 @@ export interface StayListingDto {
    * @nullable
    */
   currency: StayListingDtoCurrency;
-  /** V.UX.16 — coarse property type (e.g. "boutique", "inn", "hostel"). Free-form so adapters can add new types without a schema change. */
+  /** V.UX.16 — coarse property type (e.g. "boutique", "inn", "hostel"). Free-form so adapters can add new types without a schema change. Extended in V.UX.23 with "monthly" for long-stay nomad rentals. */
   stayType: string;
+  /**
+   * V.UX.23 — provider-posted average wifi speed in Mbps, or null when unknown.
+   * @nullable
+   */
+  wifiSpeedMbps: StayListingDtoWifiSpeedMbps;
 }

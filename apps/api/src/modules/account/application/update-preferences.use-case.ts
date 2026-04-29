@@ -31,6 +31,8 @@ export interface UpdatePreferencesCommand {
   readonly budgetMode?: boolean;
   /** V.UX.16 — daily target USD as a string (or null to clear). */
   readonly dailyBudgetUsd?: string | null;
+  /** V.UX.23 — digital-nomad mode toggle. */
+  readonly nomadMode?: boolean;
 }
 
 @Injectable()
@@ -92,6 +94,7 @@ export class UpdatePreferencesUseCase {
       ...(cmd.comfortMode !== undefined ? { comfortMode: cmd.comfortMode } : {}),
       ...(cmd.budgetMode !== undefined ? { budgetMode: cmd.budgetMode } : {}),
       ...(cmd.dailyBudgetUsd !== undefined ? { dailyBudgetUsd: cmd.dailyBudgetUsd } : {}),
+      ...(cmd.nomadMode !== undefined ? { nomadMode: cmd.nomadMode } : {}),
     });
   }
 }

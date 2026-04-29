@@ -30,5 +30,7 @@ export const SearchStaysBodySchema = z.object({
   stayType: z.string().trim().min(1).max(40).optional(),
   /** V.UX.16 — drop listings with priceUsdPerNight > cap. */
   maxPriceUsdPerNight: z.number().positive().max(100_000).optional(),
+  /** V.UX.23 — drop listings with wifiSpeedMbps < floor (or null). */
+  minWifiSpeedMbps: z.number().int().positive().max(10_000).optional(),
 });
 export type SearchStaysBody = z.infer<typeof SearchStaysBodySchema>;

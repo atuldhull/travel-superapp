@@ -25,6 +25,8 @@ export const UpdatePreferencesBodySchema = z.object({
     .regex(/^\d{1,6}(\.\d{1,2})?$/, 'must be a non-negative number with up to 2 decimals')
     .nullable()
     .optional(),
+  /** V.UX.23 — digital-nomad mode toggle. */
+  nomadMode: z.boolean().optional(),
 });
 export type UpdatePreferencesBody = z.infer<typeof UpdatePreferencesBodySchema>;
 
@@ -74,6 +76,13 @@ export class UpdatePreferencesRequestDto {
       'V.UX.16 — daily target USD as a decimal string (e.g. "50.00"). Null clears the target.',
   })
   declare dailyBudgetUsd?: string | null;
+
+  @ApiProperty({
+    required: false,
+    description:
+      'V.UX.23 — digital-nomad mode. Stays form defaults to a 4-week window + monthly stay-type.',
+  })
+  declare nomadMode?: boolean;
 }
 
 export class PreferencesDto {
@@ -112,6 +121,9 @@ export class PreferencesDto {
     description: 'V.UX.16 — daily target USD as a decimal string, or null if unset.',
   })
   declare dailyBudgetUsd: string | null;
+
+  @ApiProperty({ description: 'V.UX.23 — digital-nomad mode toggle.' })
+  declare nomadMode: boolean;
 
   @ApiProperty({ format: 'date-time' })
   declare createdAt: string;

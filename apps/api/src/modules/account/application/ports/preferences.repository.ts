@@ -26,6 +26,8 @@ export interface UpsertPreferencesInput {
    * to round-trip through Prisma's Decimal without float drift.
    */
   readonly dailyBudgetUsd?: string | null;
+  /** V.UX.23 — digital-nomad mode toggle. */
+  readonly nomadMode?: boolean;
 }
 
 export interface PreferencesRepository {

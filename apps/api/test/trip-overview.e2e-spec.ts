@@ -83,6 +83,7 @@ class StubStay implements StayProvider {
         priceUsdPerNight: 110,
         currency: 'USD',
         stayType: 'inn',
+        wifiSpeedMbps: 50,
       },
     ];
   }

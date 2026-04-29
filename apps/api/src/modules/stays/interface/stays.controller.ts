@@ -60,6 +60,7 @@ export class StaysController {
       ...(body.maxPriceUsdPerNight !== undefined
         ? { maxPriceUsdPerNight: body.maxPriceUsdPerNight }
         : {}),
+      ...(body.minWifiSpeedMbps !== undefined ? { minWifiSpeedMbps: body.minWifiSpeedMbps } : {}),
     });
     return { stays };
   }

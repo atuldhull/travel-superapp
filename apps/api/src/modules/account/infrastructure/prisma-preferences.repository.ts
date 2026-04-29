@@ -35,6 +35,7 @@ export class PrismaPreferencesRepository implements PreferencesRepository {
       comfortMode: false,
       budgetMode: false,
       dailyBudgetUsd: null,
+      nomadMode: false,
       createdAt: now,
       updatedAt: now,
     };
@@ -53,6 +54,7 @@ export class PrismaPreferencesRepository implements PreferencesRepository {
     if (input.comfortMode !== undefined) updateData['comfortMode'] = input.comfortMode;
     if (input.budgetMode !== undefined) updateData['budgetMode'] = input.budgetMode;
     if (input.dailyBudgetUsd !== undefined) updateData['dailyBudgetUsd'] = input.dailyBudgetUsd;
+    if (input.nomadMode !== undefined) updateData['nomadMode'] = input.nomadMode;
 
     const row = await this.prisma.preferences.upsert({
       where: { userId: input.userId },
@@ -68,6 +70,7 @@ export class PrismaPreferencesRepository implements PreferencesRepository {
         comfortMode: input.comfortMode ?? false,
         budgetMode: input.budgetMode ?? false,
         dailyBudgetUsd: input.dailyBudgetUsd ?? null,
+        nomadMode: input.nomadMode ?? false,
       },
     });
     return toDomain(row);
@@ -90,6 +93,7 @@ function toDomain(row: PrismaPreferences): Preferences {
     // gives us the canonical 2-decimal string the rest of the wire
     // uses for money.
     dailyBudgetUsd: row.dailyBudgetUsd === null ? null : row.dailyBudgetUsd.toFixed(2),
+    nomadMode: row.nomadMode,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };

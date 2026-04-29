@@ -36,6 +36,7 @@ interface PreferencesDto {
   readonly comfortMode: boolean;
   readonly budgetMode: boolean;
   readonly dailyBudgetUsd: string | null;
+  readonly nomadMode: boolean;
   readonly createdAt: string;
   readonly updatedAt: string;
 }
@@ -53,6 +54,7 @@ function toDto(p: Preferences): PreferencesDto {
     comfortMode: p.comfortMode,
     budgetMode: p.budgetMode,
     dailyBudgetUsd: p.dailyBudgetUsd,
+    nomadMode: p.nomadMode,
     createdAt: p.createdAt.toISOString(),
     updatedAt: p.updatedAt.toISOString(),
   };
@@ -106,6 +108,7 @@ export class PreferencesController {
       ...(body.comfortMode !== undefined ? { comfortMode: body.comfortMode } : {}),
       ...(body.budgetMode !== undefined ? { budgetMode: body.budgetMode } : {}),
       ...(body.dailyBudgetUsd !== undefined ? { dailyBudgetUsd: body.dailyBudgetUsd } : {}),
+      ...(body.nomadMode !== undefined ? { nomadMode: body.nomadMode } : {}),
     });
     return toDto(updated);
   }

@@ -172,7 +172,10 @@ describe('Preferences + family-mode filters (V.UX.14 — integration)', () => {
     });
     expect(res.statusCode).toBe(200);
     const body = JSON.parse(res.body) as { stays: { amenities: string[] }[] };
-    expect(body.stays).toHaveLength(3);
+    // V.UX.23 — mock fixtures grew from 3 to 4 (added "Nomad Loft"
+    // for the digital-nomad persona). All 4 carry "wifi" so this
+    // amenity filter keeps every fixture.
+    expect(body.stays).toHaveLength(4);
   });
 
   it('Stays search with requiredAmenities=["crib"] returns 0 (mock has none)', async () => {

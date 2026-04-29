@@ -32,7 +32,14 @@ export interface StayListing {
    * `'apartment'`, etc. Free-form on the wire so new types
    * (`'guesthouse'`, `'capsule'`) don't need a provider-port edit.
    * Mock provider tags its three fixtures as `'boutique'` /
-   * `'inn'` / `'hostel'`.
+   * `'inn'` / `'hostel'`. Extended in V.UX.23 with `'monthly'` for
+   * long-stay nomad rentals.
    */
   readonly stayType: string;
+  /**
+   * V.UX.23 — provider-posted average wifi speed in Mbps, or null
+   * when not reported. Drives the nomad-mode wifi-speed filter +
+   * the wifi badge on each stay card.
+   */
+  readonly wifiSpeedMbps: number | null;
 }

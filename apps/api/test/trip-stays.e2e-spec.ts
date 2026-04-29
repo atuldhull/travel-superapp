@@ -50,6 +50,7 @@ class RecordingStayProvider implements StayProvider {
         priceUsdPerNight: 129,
         currency: 'USD',
         stayType: 'inn',
+        wifiSpeedMbps: 50,
       },
     ];
   }

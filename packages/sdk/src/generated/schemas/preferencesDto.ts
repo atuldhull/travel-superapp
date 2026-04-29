@@ -27,6 +27,8 @@ export interface PreferencesDto {
    * @nullable
    */
   dailyBudgetUsd: PreferencesDtoDailyBudgetUsd;
+  /** V.UX.23 — digital-nomad mode toggle. */
+  nomadMode: boolean;
   createdAt: string;
   updatedAt: string;
 }
