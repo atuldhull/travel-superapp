@@ -58,6 +58,7 @@ import { OpenOnMobileButton } from '../../../components/trip/open-on-mobile-butt
 import { DailySpendBanner } from '../../../components/budget/daily-spend-banner';
 import { AudioReadout } from '../../../components/trip/audio-readout';
 import { PacingWarning } from '../../../components/trip/pacing-warning';
+import { DayFestivalBanner, useFestivalsByDate } from '../../../components/trip/festival-overlay';
 import { AdventureWindow } from '../../../components/weather/adventure-window';
 import { PlaceSuggestionPicker } from '../../../components/trip/place-suggestion-picker';
 import { PowerPlannerSection } from '../../../components/trip/power-planner-section';
@@ -590,6 +591,19 @@ function ItinerarySection({ tripId, enabled }: ItinerarySectionProps) {
   const body = data?.data as unknown as ItineraryListResponseDto | undefined;
   const days: readonly ItineraryDayDto[] = body?.days ?? [];
 
+  // V.UX.22 — fetch festivals once for the trip's date span and
+  // pass the resolved per-day map down so DayRow can stamp a "🎉
+  // X today" banner without re-querying per row.
+  const fromIso =
+    days.length > 0 ? new Date(days[0]!.date as unknown as string).toISOString() : null;
+  const toIso =
+    days.length > 0
+      ? new Date(
+          new Date(days[days.length - 1]!.date as unknown as string).getTime() + 86_400_000,
+        ).toISOString()
+      : null;
+  const { festivalsByDate } = useFestivalsByDate({ fromIso, toIso });
+
   return (
     <Card>
       <CardHeader>
@@ -629,7 +643,7 @@ function ItinerarySection({ tripId, enabled }: ItinerarySectionProps) {
       ) : (
         <ol className="space-y-3">
           {days.map((d) => (
-            <DayRow key={d.id} day={d} tripId={tripId} />
+            <DayRow key={d.id} day={d} tripId={tripId} festivalsByDate={festivalsByDate} />
           ))}
         </ol>
       )}
@@ -637,7 +651,15 @@ function ItinerarySection({ tripId, enabled }: ItinerarySectionProps) {
   );
 }
 
-function DayRow({ day, tripId }: { day: ItineraryDayDto; tripId: string }) {
+function DayRow({
+  day,
+  tripId,
+  festivalsByDate,
+}: {
+  day: ItineraryDayDto;
+  tripId: string;
+  festivalsByDate: ReadonlyMap<string, ReadonlyArray<{ readonly title: string }>>;
+}) {
   const [editing, setEditing] = useState(false);
   const dateStr = new Date(day.date as unknown as string).toLocaleDateString();
   return (
@@ -658,6 +680,21 @@ function DayRow({ day, tripId }: { day: ItineraryDayDto; tripId: string }) {
       {day.summary ? (
         <p className="text-xs text-muted">{day.summary as unknown as string}</p>
       ) : null}
+      <DayFestivalBanner
+        dayDate={day.date as unknown as string}
+        festivalsByDate={
+          festivalsByDate as ReadonlyMap<
+            string,
+            readonly {
+              externalId: string;
+              title: string;
+              venueName: string | null;
+              startsAt: string;
+              endsAt: string;
+            }[]
+          >
+        }
+      />
       {editing ? (
         <DayItemsEditor day={day} onClose={() => setEditing(false)} />
       ) : day.items.length === 0 ? (

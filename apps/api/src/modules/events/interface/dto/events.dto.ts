@@ -26,3 +26,17 @@ export const SearchEventsBodySchema = z.object({
   freeOnly: z.boolean().optional(),
 });
 export type SearchEventsBody = z.infer<typeof SearchEventsBodySchema>;
+
+/**
+ * V.UX.22 — `GET /events/festivals` query coercion. Centre is split
+ * into `lat` / `lng` query params; `radiusKm` defaults to 30 (the
+ * use-case cap). Use-case validates ordering + window length.
+ */
+export const FestivalsDuringQuerySchema = z.object({
+  lat: z.coerce.number().min(-90).max(90),
+  lng: z.coerce.number().min(-180).max(180),
+  radiusKm: z.coerce.number().positive().max(10_000).optional(),
+  from: IsoDatetime,
+  to: IsoDatetime,
+});
+export type FestivalsDuringQuery = z.infer<typeof FestivalsDuringQuerySchema>;

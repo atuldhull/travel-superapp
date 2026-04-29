@@ -1416,11 +1416,55 @@ paths:
                 $ref: '#/components/schemas/SearchEventsResponseDto'
         '422':
           description: INVALID_COORDINATES | INVALID_RADIUS | INVALID_DATE_RANGE.
-      security:
+      security: &a21
         - bearer: []
       summary: Search events within a radius and date window.
-      tags:
+      tags: &a22
         - events
+  /api/v1/events/festivals:
+    get:
+      operationId: EventsController_festivals
+      parameters:
+        - name: to
+          required: true
+          in: query
+          description: ISO-8601 datetime.
+          schema:
+            type: string
+        - name: from
+          required: true
+          in: query
+          description: ISO-8601 datetime.
+          schema:
+            type: string
+        - name: radiusKm
+          required: false
+          in: query
+          schema:
+            type: number
+        - name: lng
+          required: true
+          in: query
+          schema:
+            type: number
+        - name: lat
+          required: true
+          in: query
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Festivals overlapping the window, soonest-first.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FestivalsDuringResponseDto'
+        '422':
+          description: INVALID_COORDINATES | INVALID_RADIUS | INVALID_DATE_RANGE.
+      security: *a21
+      summary: List festival events overlapping [from, to] near a centre. Powers the
+        day-card overlay on trip pages.
+      tags: *a22
   /api/v1/transport/routes:
     post:
       operationId: TransportController_routes
@@ -1463,10 +1507,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ScamReportDto'
-      security: &a21
+      security: &a23
         - bearer: []
       summary: File a crowd-sourced scam report at the given coordinates.
-      tags: &a22
+      tags: &a24
         - safety
   /api/v1/safety/scam-reports/search:
     post:
@@ -1485,10 +1529,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FindNearbyScamsResponseDto'
-      security: *a21
+      security: *a23
       summary: Find scam reports within a radius. Optional filters by category /
         minSeverity / verifiedOnly.
-      tags: *a22
+      tags: *a24
   /api/v1/safety/sos:
     post:
       operationId: SosController_trigger
@@ -1506,10 +1550,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SosEventDto'
-      security: &a23
+      security: &a25
         - bearer: []
       summary: Trigger an SOS event at the given coordinates.
-      tags: &a24
+      tags: &a26
         - safety
     get:
       operationId: SosController_listMine
@@ -1526,10 +1570,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListSosEventsResponseDto'
-      security: *a23
+      security: *a25
       summary: List the caller's SOS events, most-recent-first. ?limit (1..200,
         default 50).
-      tags: *a24
+      tags: *a26
   /api/v1/safety/sos/{id}/resolve:
     post:
       operationId: SosController_resolve
@@ -1554,9 +1598,9 @@ paths:
                 $ref: '#/components/schemas/SosEventDto'
         '404':
           description: SOS_NOT_FOUND.
-      security: *a23
+      security: *a25
       summary: Mark an SOS event resolved (owner-only).
-      tags: *a24
+      tags: *a26
   /api/v1/safety/crimes/search:
     post:
       operationId: CrimeLayerController_search
@@ -1624,11 +1668,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AdminListScamReportsResponseDto'
-      security: &a25
+      security: &a27
         - bearer: []
       summary: List scam reports for moderation. Default = pending; ?verified=true for
         the verified pile.
-      tags: &a26
+      tags: &a28
         - admin
   /api/v1/admin/safety/scam-reports/{id}/verify:
     post:
@@ -1648,9 +1692,9 @@ paths:
                 $ref: '#/components/schemas/ScamReportDto'
         '404':
           description: SCAM_REPORT_NOT_FOUND.
-      security: *a25
+      security: *a27
       summary: Mark a scam report verified.
-      tags: *a26
+      tags: *a28
   /api/v1/admin/safety/scam-reports/{id}/unverify:
     post:
       operationId: AdminScamModerationController_unverify
@@ -1669,9 +1713,9 @@ paths:
                 $ref: '#/components/schemas/ScamReportDto'
         '404':
           description: SCAM_REPORT_NOT_FOUND.
-      security: *a25
+      security: *a27
       summary: Flip a verified report back to pending.
-      tags: *a26
+      tags: *a28
   /api/v1/admin/safety/scam-reports/{id}:
     delete:
       operationId: AdminScamModerationController_dismiss
@@ -1686,9 +1730,9 @@ paths:
           description: Dismissed.
         '404':
           description: SCAM_REPORT_NOT_FOUND.
-      security: *a25
+      security: *a27
       summary: Dismiss a scam report (hard-delete).
-      tags: *a26
+      tags: *a28
   /api/v1/admin/safety/sos-events:
     get:
       operationId: AdminSosController_list
@@ -1717,11 +1761,11 @@ paths:
                 $ref: '#/components/schemas/AdminListSosEventsResponseDto'
         '400':
           description: VALIDATION_FAILED — status not in active|resolved.
-      security: &a27
+      security: &a29
         - bearer: []
       summary: 'Triage list of SOS events. ?status=active|resolved (default: both).
         Offset pagination.'
-      tags: &a28
+      tags: &a30
         - admin
   /api/v1/admin/safety/sos-events/{id}/resolve:
     post:
@@ -1747,9 +1791,9 @@ paths:
                 $ref: '#/components/schemas/SosEventDto'
         '404':
           description: SOS_NOT_FOUND.
-      security: *a27
+      security: *a29
       summary: Admin-resolve an SOS event with an optional resolution note.
-      tags: *a28
+      tags: *a30
   /api/v1/agents/match-for-trip:
     post:
       operationId: AgentsController_matchForTrip
@@ -1814,11 +1858,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserDataExportResponseDto'
-      security: &a29
+      security: &a31
         - bearer: []
       summary: Full GDPR/DPDP/COPPA self-export bundle as a single JSON object. ~30
         sections; sensitive fields stripped.
-      tags: &a30
+      tags: &a32
         - account
   /api/v1/account/export.ndjson:
     get:
@@ -1828,10 +1872,10 @@ paths:
         '200':
           description: Streaming NDJSON. Each line is a `{type,data}` envelope; downstream
             tooling (jq -c, ndjson-cli) parses incrementally.
-      security: *a29
+      security: *a31
       summary: 'NDJSON variant of the export bundle — one `{type,data}` envelope per
         line. Content-Type: application/x-ndjson.'
-      tags: *a30
+      tags: *a32
   /api/v1/account:
     delete:
       operationId: AccountController_deleteMyAccount
@@ -1839,10 +1883,10 @@ paths:
       responses:
         '204':
           description: Account marked soft-deleted; sessions revoked.
-      security: *a29
+      security: *a31
       summary: Soft-delete the caller's account + revoke all live sessions. GDPR Art.
         17 / DPDP §12 right-to-erasure.
-      tags: *a30
+      tags: *a32
   /api/v1/admin/users:
     get:
       operationId: AdminUsersController_list
@@ -1881,11 +1925,11 @@ paths:
                 $ref: '#/components/schemas/AdminListUsersResponseDto'
         '400':
           description: VALIDATION_FAILED — role not in user|premium|agent|admin.
-      security: &a31
+      security: &a33
         - bearer: []
       summary: List users with optional ?role / ?deleted / ?q filters. Offset
         pagination via ?limit + ?offset. Admin-only.
-      tags: &a32
+      tags: &a34
         - admin
   /api/v1/admin/users/{id}/ban:
     post:
@@ -1901,9 +1945,9 @@ paths:
           description: Banned.
         '404':
           description: USER_NOT_FOUND.
-      security: *a31
+      security: *a33
       summary: Ban a user (soft-delete + revoke sessions). Admin-only.
-      tags: *a32
+      tags: *a34
   /api/v1/admin/users/{id}/unban:
     post:
       operationId: AdminUsersController_unban
@@ -1918,9 +1962,9 @@ paths:
           description: Unbanned.
         '404':
           description: USER_NOT_FOUND.
-      security: *a31
+      security: *a33
       summary: Unban a user (clear deletedAt). Admin-only.
-      tags: *a32
+      tags: *a34
   /api/v1/admin/account-purge:
     post:
       operationId: AdminPurgeController_forcePurge
@@ -1949,10 +1993,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListTrustedContactsResponseDto'
-      security: &a33
+      security: &a35
         - bearer: []
       summary: List the caller's pre-set safety contacts. Cap 3 per account.
-      tags: &a34
+      tags: &a36
         - account
     post:
       operationId: TrustedContactsController_add
@@ -1972,10 +2016,10 @@ paths:
                 $ref: '#/components/schemas/TrustedContactDto'
         '422':
           description: CONTACT_CHANNEL_REQUIRED or CONTACT_LIMIT_REACHED.
-      security: *a33
+      security: *a35
       summary: Add a trusted contact. Requires at least one of phone or email. 422
         CONTACT_LIMIT_REACHED past 3.
-      tags: *a34
+      tags: *a36
   /api/v1/account/trusted-contacts/{id}:
     delete:
       operationId: TrustedContactsController_remove
@@ -1990,9 +2034,9 @@ paths:
           description: Deleted.
         '404':
           description: CONTACT_NOT_FOUND.
-      security: *a33
+      security: *a35
       summary: Delete one of the caller-owned trusted contacts.
-      tags: *a34
+      tags: *a36
   /api/v1/account/preferences:
     get:
       operationId: PreferencesController_getMine
@@ -2004,11 +2048,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PreferencesDto'
-      security: &a35
+      security: &a37
         - bearer: []
       summary: Caller's preferences. Returns a synthetic default shape if the user has
         never written any.
-      tags: &a36
+      tags: &a38
         - account
     patch:
       operationId: PreferencesController_updateMine
@@ -2028,10 +2072,10 @@ paths:
                 $ref: '#/components/schemas/PreferencesDto'
         '422':
           description: INVALID_BUDGET_TIER, INVALID_KID_AGE, or TOO_MANY_KIDS.
-      security: *a35
+      security: *a37
       summary: Partial update of the caller-owned preferences. Idempotent upsert;
         empty body is a no-op.
-      tags: *a36
+      tags: *a38
   /api/v1/media/upload-url:
     post:
       operationId: MediaController_createUploadUrl
@@ -2049,11 +2093,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CreateUploadUrlResponseDto'
-      security: &a37
+      security: &a39
         - bearer: []
       summary: Issue a presigned PUT URL for direct-to-S3 upload. Creates the
         MediaAsset row in `processing` status.
-      tags: &a38
+      tags: &a40
         - media
   /api/v1/media/{id}/confirm:
     post:
@@ -2073,10 +2117,10 @@ paths:
                 $ref: '#/components/schemas/MediaAssetDto'
         '404':
           description: MEDIA_NOT_FOUND.
-      security: *a37
+      security: *a39
       summary: Confirm upload landed (HEAD verifies bytes). Flips status to `ready`.
         Image kind also flips exifStripped.
-      tags: *a38
+      tags: *a40
   /api/v1/media/{id}/download-url:
     get:
       operationId: MediaController_downloadUrl
@@ -2095,9 +2139,9 @@ paths:
                 $ref: '#/components/schemas/MediaDownloadUrlResponseDto'
         '404':
           description: MEDIA_NOT_FOUND.
-      security: *a37
+      security: *a39
       summary: Short-lived presigned GET URL for the asset. Owner-gated.
-      tags: *a38
+      tags: *a40
   /api/v1/media/{id}/trip:
     patch:
       operationId: MediaController_attachToTrip
@@ -2122,10 +2166,10 @@ paths:
                 $ref: '#/components/schemas/MediaAssetDto'
         '404':
           description: MEDIA_NOT_FOUND or TRIP_NOT_FOUND.
-      security: *a37
+      security: *a39
       summary: Attach (`{tripId}`) or detach (`{tripId:null}`) the media to a trip.
         Double owner-gated.
-      tags: *a38
+      tags: *a40
   /api/v1/media/trip/{tripId}:
     get:
       operationId: MediaController_listByTrip
@@ -2147,10 +2191,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListTripMediaResponseDto'
-      security: *a37
+      security: *a39
       summary: List the caller's `ready` media attached to a trip. ?limit=N (1..200,
         default 50).
-      tags: *a38
+      tags: *a40
   /api/v1/media/{id}/memory-book:
     patch:
       operationId: MediaController_attachToBook
@@ -2175,10 +2219,10 @@ paths:
                 $ref: '#/components/schemas/MediaAssetDto'
         '404':
           description: MEDIA_NOT_FOUND or BOOK_NOT_FOUND.
-      security: *a37
+      security: *a39
       summary: Attach (`{memoryBookId}`) or detach (`{memoryBookId:null}`) the media
         to a memory book. Double owner-gated.
-      tags: *a38
+      tags: *a40
   /api/v1/memory-books/featured:
     get:
       operationId: MemoryBookController_featured
@@ -2195,11 +2239,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FeaturedMemoryBooksResponseDto'
-      security: &a39
+      security: &a41
         - bearer: []
       summary: Public discovery — currently-published memory books across all users,
         ordered by publishedAt DESC.
-      tags: &a40
+      tags: &a42
         - media
   /api/v1/memory-books/public/{id}:
     get:
@@ -2219,10 +2263,10 @@ paths:
                 $ref: '#/components/schemas/PublicMemoryBookWithAssetsResponseDto'
         '404':
           description: BOOK_NOT_PUBLISHED.
-      security: *a39
+      security: *a41
       summary: Public read of a published memory book by id. The cuid is the
         unguessable token.
-      tags: *a40
+      tags: *a42
   /api/v1/memory-books/public/{id}/assets/{assetId}/download-url:
     get:
       operationId: MemoryBookController_getPublicAssetDownloadUrl
@@ -2246,10 +2290,10 @@ paths:
                 $ref: '#/components/schemas/PublicDownloadUrlResponseDto'
         '404':
           description: BOOK_NOT_PUBLISHED, MEDIA_NOT_FOUND, or NOT_ATTACHED.
-      security: *a39
+      security: *a41
       summary: 'Public presigned download URL for a memory-book asset. Three-clause
         gate: book published + asset attached + asset ready.'
-      tags: *a40
+      tags: *a42
   /api/v1/memory-books:
     post:
       operationId: MemoryBookController_create
@@ -2267,9 +2311,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MemoryBookDto'
-      security: *a39
+      security: *a41
       summary: Create a memory book (draft). Owner = caller.
-      tags: *a40
+      tags: *a42
     get:
       operationId: MemoryBookController_list
       parameters:
@@ -2285,10 +2329,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListMemoryBooksResponseDto'
-      security: *a39
+      security: *a41
       summary: List the caller's memory books, newest first. ?limit=N (1..200, default
         50). Owner-scoped.
-      tags: *a40
+      tags: *a42
   /api/v1/memory-books/{id}:
     get:
       operationId: MemoryBookController_getOne
@@ -2307,9 +2351,9 @@ paths:
                 $ref: '#/components/schemas/MemoryBookWithAssetsResponseDto'
         '404':
           description: BOOK_NOT_FOUND.
-      security: *a39
+      security: *a41
       summary: Get one of the caller-owned books + the attached asset ids.
-      tags: *a40
+      tags: *a42
     patch:
       operationId: MemoryBookController_update
       parameters:
@@ -2333,9 +2377,9 @@ paths:
                 $ref: '#/components/schemas/MemoryBookDto'
         '404':
           description: BOOK_NOT_FOUND.
-      security: *a39
+      security: *a41
       summary: Update one of the caller-owned books. Partial update.
-      tags: *a40
+      tags: *a42
     delete:
       operationId: MemoryBookController_remove
       parameters:
@@ -2349,9 +2393,9 @@ paths:
           description: Deleted.
         '404':
           description: BOOK_NOT_FOUND.
-      security: *a39
+      security: *a41
       summary: Delete one of the caller-owned books. SetNull on MediaAsset.memoryBookId.
-      tags: *a40
+      tags: *a42
   /api/v1/memory-books/{id}/publish:
     post:
       operationId: MemoryBookController_publish
@@ -2370,9 +2414,9 @@ paths:
                 $ref: '#/components/schemas/MemoryBookDto'
         '404':
           description: BOOK_NOT_FOUND.
-      security: *a39
+      security: *a41
       summary: Publish a book — flips publishedAt to now (idempotent).
-      tags: *a40
+      tags: *a42
   /api/v1/memory-books/{id}/unpublish:
     post:
       operationId: MemoryBookController_unpublish
@@ -2391,9 +2435,9 @@ paths:
                 $ref: '#/components/schemas/MemoryBookDto'
         '404':
           description: BOOK_NOT_FOUND.
-      security: *a39
+      security: *a41
       summary: Unpublish a book — clears publishedAt (idempotent).
-      tags: *a40
+      tags: *a42
   /api/v1/memory-books/{id}/assets/{assetId}/caption:
     patch:
       operationId: MemoryBookController_updateAssetCaption
@@ -2423,9 +2467,9 @@ paths:
                 $ref: '#/components/schemas/MediaAssetDto'
         '404':
           description: MEDIA_NOT_FOUND.
-      security: *a39
+      security: *a41
       summary: Set or clear an asset's caption (story-mode narrative). Owner-only.
-      tags: *a40
+      tags: *a42
   /api/v1/memory-books/{id}/asset-order:
     patch:
       operationId: MemoryBookController_reorderAssets
@@ -2448,10 +2492,10 @@ paths:
           description: MEMORY_BOOK_NOT_FOUND.
         '422':
           description: INVALID_ASSET_ORDER (duplicates, length mismatch, or unknown id).
-      security: *a39
+      security: *a41
       summary: Persist asset ordering for the memory book. Body is the desired
         permutation of attached asset ids.
-      tags: *a40
+      tags: *a42
   /api/v1/admin/media:
     get:
       operationId: AdminMediaController_list
@@ -2490,11 +2534,11 @@ paths:
                 $ref: '#/components/schemas/AdminListMediaResponseDto'
         '400':
           description: VALIDATION_FAILED — kind / status invalid.
-      security: &a41
+      security: &a43
         - bearer: []
       summary: Cross-user list of media with optional ?ownerId, ?kind, ?status
         filters. Admin-only.
-      tags: &a42
+      tags: &a44
         - admin
   /api/v1/admin/media/{id}:
     delete:
@@ -2510,10 +2554,10 @@ paths:
           description: Deleted.
         '404':
           description: MEDIA_NOT_FOUND.
-      security: *a41
+      security: *a43
       summary: Hard-delete media (takedown). Trip + memory book references
         SetNull-cascade.
-      tags: *a42
+      tags: *a44
   /api/v1/notifications/me/unread-count:
     get:
       operationId: NotificationsController_unreadCount
@@ -2525,11 +2569,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UnreadCountResponseDto'
-      security: &a43
+      security: &a45
         - bearer: []
       summary: 'Returns { unread: N } for the home-screen badge. Single indexed COUNT
         — cheap.'
-      tags: &a44
+      tags: &a46
         - notifications
   /api/v1/notifications/me:
     get:
@@ -2554,10 +2598,10 @@ paths:
                 $ref: '#/components/schemas/ListMyNotificationsResponseDto'
         '400':
           description: VALIDATION_FAILED — channel is not one of push|email|sms.
-      security: *a43
+      security: *a45
       summary: List the caller's recent notifications. Optional
         ?channel=push|email|sms narrows to one delivery channel.
-      tags: *a44
+      tags: *a46
   /api/v1/notifications/read-all:
     post:
       operationId: NotificationsController_markAllRead
@@ -2569,10 +2613,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MarkAllReadResponseDto'
-      security: *a43
+      security: *a45
       summary: 'Mark every unread row as read. Returns { marked: N }. Idempotent
         (second call returns 0).'
-      tags: *a44
+      tags: *a46
   /api/v1/notifications/{id}/read:
     post:
       operationId: NotificationsController_markRead
@@ -2591,9 +2635,9 @@ paths:
                 $ref: '#/components/schemas/NotificationLogDto'
         '404':
           description: NOTIFICATION_NOT_FOUND.
-      security: *a43
+      security: *a45
       summary: Mark one notification as read. Owner-gated; 404 on cross-user / missing.
-      tags: *a44
+      tags: *a46
   /api/v1/notifications/{id}/unread:
     post:
       operationId: NotificationsController_markUnread
@@ -2612,9 +2656,9 @@ paths:
                 $ref: '#/components/schemas/NotificationLogDto'
         '404':
           description: NOTIFICATION_NOT_FOUND.
-      security: *a43
+      security: *a45
       summary: Mark one notification as UNread (symmetric to /read). Owner-gated.
-      tags: *a44
+      tags: *a46
   /api/v1/notifications/{id}:
     delete:
       operationId: NotificationsController_remove
@@ -2629,10 +2673,10 @@ paths:
           description: Deleted.
         '404':
           description: NOTIFICATION_NOT_FOUND.
-      security: *a43
+      security: *a45
       summary: Hard-delete a notification (inbox prune). Owner-gated; 404 on
         cross-user / missing.
-      tags: *a44
+      tags: *a46
   /api/v1/admin/places:
     post:
       operationId: AdminController_create
@@ -2650,10 +2694,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AdminPlaceDto'
-      security: &a45
+      security: &a47
         - bearer: []
       summary: Curate a new Place into the canonical catalog. Admin-only.
-      tags: &a46
+      tags: &a48
         - admin
   /api/v1/admin/places/{id}:
     delete:
@@ -2669,9 +2713,9 @@ paths:
           description: Deleted.
         '404':
           description: PLACE_NOT_FOUND.
-      security: *a45
+      security: *a47
       summary: Remove a Place from the canonical catalog. Admin-only.
-      tags: *a46
+      tags: *a48
   /api/v1/trips/{tripId}/votes:
     post:
       operationId: SocialController_cast
@@ -2694,11 +2738,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VoteDto'
-      security: &a47
+      security: &a49
         - bearer: []
       summary: 'Cast or update a vote on a trip target. Body: { targetType, targetId,
         value }. Auth gate: owner OR active TripShare.'
-      tags: &a48
+      tags: &a50
         - social
     delete:
       operationId: SocialController_revoke
@@ -2717,10 +2761,10 @@ paths:
       responses:
         '204':
           description: Revoked (or no-op if no prior vote).
-      security: *a47
+      security: *a49
       summary: 'Revoke a previously-cast vote. Body: { targetType, targetId }.
         Idempotent.'
-      tags: *a48
+      tags: *a50
     get:
       operationId: SocialController_list
       parameters:
@@ -2736,9 +2780,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListTripVotesResponseDto'
-      security: *a47
+      security: *a49
       summary: Aggregated tallies for a trip's votes + the caller's own vote per target.
-      tags: *a48
+      tags: *a50
   /api/v1/trips/{tripId}/expenses:
     post:
       operationId: ExpensesController_create
@@ -2762,11 +2806,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ExpenseDto'
-      security: &a49
+      security: &a51
         - bearer: []
       summary: 'Record a shared expense on a trip. Auth gate: owner OR active
         TripShare. Splits sum-checked.'
-      tags: &a50
+      tags: &a52
         - social
     get:
       operationId: ExpensesController_list
@@ -2789,9 +2833,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListExpensesResponseDto'
-      security: *a49
+      security: *a51
       summary: List trip expenses, most-recent-first. ?limit=N (1..500, default 50).
-      tags: *a50
+      tags: *a52
   /api/v1/trips/{tripId}/expenses/balances:
     get:
       operationId: ExpensesController_balances
@@ -2809,10 +2853,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListBalancesResponseDto'
-      security: *a49
+      security: *a51
       summary: Net per-user "who owes whom" ledger. Sum is zero (modulo 2dp). 60s
         cache; write-invalidated on expense create/delete.
-      tags: *a50
+      tags: *a52
   /api/v1/trips/{tripId}/expenses/settle-up:
     get:
       operationId: ExpensesController_settleUp
@@ -2830,10 +2874,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SettleUpResponseDto'
-      security: *a49
+      security: *a51
       summary: Settle-up plan — greedy minimum-cashflow transfers that zero the trip
         ledger. Owner OR active share.
-      tags: *a50
+      tags: *a52
   /api/v1/trips/{tripId}/expenses/{id}:
     delete:
       operationId: ExpensesController_remove
@@ -2853,10 +2897,10 @@ paths:
           description: Deleted.
         '404':
           description: EXPENSE_NOT_FOUND.
-      security: *a49
+      security: *a51
       summary: Delete an expense. Payer-only — only the user who recorded it can
         remove it.
-      tags: *a50
+      tags: *a52
   /api/v1/reviews:
     post:
       operationId: ReviewsController_create
@@ -2874,11 +2918,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ReviewDto'
-      security: &a51
+      security: &a53
         - bearer: []
       summary: Create a review for any review-target (place/stay/eatery/agent).
         Owner-stamped to the caller.
-      tags: &a52
+      tags: &a54
         - social
     get:
       operationId: ReviewsController_listForTarget
@@ -2907,10 +2951,10 @@ paths:
                 $ref: '#/components/schemas/ListReviewsResponseDto'
         '400':
           description: VALIDATION_FAILED — targetType / targetId missing or invalid.
-      security: *a51
+      security: *a53
       summary: Target-scoped review listing. ?targetType + ?targetId required.
         Most-recent-first.
-      tags: *a52
+      tags: *a54
   /api/v1/reviews/summary:
     get:
       operationId: ReviewsController_summary
@@ -2934,10 +2978,10 @@ paths:
                 $ref: '#/components/schemas/ReviewSummaryDto'
         '400':
           description: VALIDATION_FAILED — targetType / targetId missing or invalid.
-      security: *a51
+      security: *a53
       summary: Aggregated review summary { count, average, histogram } for a target.
         @Public.
-      tags: *a52
+      tags: *a54
   /api/v1/reviews/mine:
     get:
       operationId: ReviewsController_listMine
@@ -2954,10 +2998,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListReviewsResponseDto'
-      security: *a51
+      security: *a53
       summary: List the caller's authored reviews, most-recent-first. ?limit=N
         (1..200, default 50).
-      tags: *a52
+      tags: *a54
   /api/v1/reviews/{id}:
     delete:
       operationId: ReviewsController_remove
@@ -2972,10 +3016,10 @@ paths:
           description: Deleted.
         '404':
           description: REVIEW_NOT_FOUND.
-      security: *a51
+      security: *a53
       summary: Delete one of the caller's reviews. Author-gated; 404 on cross-user /
         missing.
-      tags: *a52
+      tags: *a54
   /api/v1/votes/summary:
     get:
       operationId: VotesController_summary
@@ -3104,7 +3148,7 @@ paths:
           description: Too many requests — wait 60s.
       summary: ❤️ a publicly-shared trip. No auth. Per-IP rate-limited at 1/min so
         anonymous fans can react but scripts can't farm hearts.
-      tags: &a53
+      tags: &a55
         - social
   /api/v1/trips/shared/{code}/hearts:
     get:
@@ -3125,7 +3169,7 @@ paths:
         '404':
           description: SHARE_NOT_FOUND or SHARE_EXPIRED.
       summary: Current ❤️ count for a shared trip. Public, no auth.
-      tags: *a53
+      tags: *a55
   /api/v1/feed/me:
     get:
       operationId: FeedController_me
@@ -5065,6 +5109,16 @@ components:
             $ref: '#/components/schemas/EventListingDto'
       required:
         - events
+    FestivalsDuringResponseDto:
+      type: object
+      properties:
+        festivals:
+          description: Festival events overlapping the requested window, soonest-first.
+          type: array
+          items:
+            $ref: '#/components/schemas/EventListingDto'
+      required:
+        - festivals
     TransportCoordinatesDto:
       type: object
       properties:
@@ -5087,7 +5141,7 @@ components:
           description: Filter to a subset of modes; empty/omitted means all available.
           items:
             type: string
-            enum: &a54
+            enum: &a56
               - walk
               - public_transit
               - bicycle
@@ -5107,7 +5161,7 @@ components:
       properties:
         mode:
           type: string
-          enum: *a54
+          enum: *a56
         distanceMeters:
           type: number
         durationSeconds:
@@ -5199,7 +5253,7 @@ components:
           type: string
         severity:
           type: string
-          enum: &a55
+          enum: &a57
             - low
             - medium
             - high
@@ -5268,7 +5322,7 @@ components:
           type: string
         severity:
           type: string
-          enum: *a55
+          enum: *a57
         description:
           type: string
         evidenceUrls:

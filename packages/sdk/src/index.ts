@@ -41,6 +41,8 @@ export * from './generated/react-query/places/places';
 export * from './generated/react-query/food/food';
 // V.UX.21 — adventure persona: hourly forecast hook lives in the weather barrel.
 export * from './generated/react-query/weather/weather';
+// V.UX.22 — cultural persona: festival overlay hook lives in the events barrel.
+export * from './generated/react-query/events/events';
 
 // Schema types from openapi.yaml's components/schemas. Re-exported so
 // consumers don't have to reach into deep generated paths. Add the
@@ -231,6 +233,9 @@ export type { FoodCrawlStopDto } from './generated/schemas/foodCrawlStopDto';
 // V.UX.21: adventure persona — hourly forecast surfaces
 export type { HourlyForecastDto } from './generated/schemas/hourlyForecastDto';
 export type { HourlyWeatherForecastResponseDto } from './generated/schemas/hourlyWeatherForecastResponseDto';
+// V.UX.22: cultural persona — festival calendar overlay
+export type { FestivalsDuringResponseDto } from './generated/schemas/festivalsDuringResponseDto';
+export type { EventsControllerFestivalsParams } from './generated/schemas/eventsControllerFestivalsParams';
 // V.UX.5: business-traveler — Expense / Balance schemas already
 // exported above (lines 121-126); social hooks barrel re-exported
 // above to surface useExpensesController{Create,List,Balances,Remove}.

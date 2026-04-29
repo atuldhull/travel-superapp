@@ -89,3 +89,11 @@ export class SearchEventsResponseDto {
   @ApiProperty({ type: [EventListingDto] })
   declare events: EventListingDto[];
 }
+
+export class FestivalsDuringResponseDto {
+  @ApiProperty({
+    type: [EventListingDto],
+    description: 'Festival events overlapping the requested window, soonest-first.',
+  })
+  declare festivals: EventListingDto[];
+}
