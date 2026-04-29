@@ -61,6 +61,8 @@ export default function PreferencesPage() {
   // V.UX.16 — budget-backpacker buffer.
   const [budgetMode, setBudgetMode] = useState(false);
   const [dailyBudgetText, setDailyBudgetText] = useState('');
+  // V.UX.23 — digital-nomad buffer.
+  const [nomadMode, setNomadMode] = useState(false);
 
   useEffect(() => {
     if (bootComplete && token === null) router.replace('/login');
@@ -79,6 +81,7 @@ export default function PreferencesPage() {
     setKidAgesText(prefs.kidAges.join(', '));
     setBudgetMode(prefs.budgetMode);
     setDailyBudgetText((prefs.dailyBudgetUsd as unknown as string | null) ?? '');
+    setNomadMode(prefs.nomadMode);
     // V.UX.15 — when the server says comfort mode is on but
     // localStorage doesn't, sync down so the user gets the larger
     // type / spacing on this fresh device too. Don't sync the
@@ -173,6 +176,7 @@ export default function PreferencesPage() {
       comfortMode: comfortLocal,
       budgetMode,
       dailyBudgetUsd: dailyBudgetUsd as unknown as UpdatePreferencesRequestDto['dailyBudgetUsd'],
+      nomadMode,
     };
     updateMutation.mutate({ data });
   }
@@ -259,6 +263,21 @@ export default function PreferencesPage() {
               className="w-full rounded-md border border-muted/30 bg-transparent px-3 py-2 text-sm"
             />
           </Field>
+          <label className="flex items-start gap-3 rounded-md border border-muted/15 bg-muted/5 p-3 text-sm">
+            <input
+              type="checkbox"
+              checked={nomadMode}
+              onChange={(e) => setNomadMode(e.target.checked)}
+              className="mt-0.5 h-4 w-4"
+            />
+            <span>
+              <span className="font-medium">👨‍💻 Nomad mode</span>
+              <span className="block text-xs text-muted">
+                Stays search defaults to monthly + the wifi-speed filter; surfaces the
+                connectivity-info pages.
+              </span>
+            </span>
+          </label>
           <Field label="Kid ages (comma-separated, 0–17)">
             <input
               type="text"

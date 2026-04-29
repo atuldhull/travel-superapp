@@ -16,6 +16,7 @@ import type {
 
 import type {
   AddTrustedContactRequestDto,
+  ConnectivityInfoDto,
   ListTrustedContactsResponseDto,
   PreferencesDto,
   TrustedContactDto,
@@ -1009,3 +1010,191 @@ export const usePreferencesControllerUpdateMine = <TError = void, TContext = unk
 
   return useMutation(mutationOptions);
 };
+/**
+ * @summary Per-country connectivity info (mobile + fixed avg speeds, SIM cost, best carrier, power plugs). Public; seeded editorially.
+ */
+export type connectivityControllerByCountryResponse200 = {
+  data: ConnectivityInfoDto;
+  status: 200;
+};
+
+export type connectivityControllerByCountryResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type connectivityControllerByCountryResponseSuccess =
+  connectivityControllerByCountryResponse200 & {
+    headers: Headers;
+  };
+export type connectivityControllerByCountryResponseError =
+  connectivityControllerByCountryResponse404 & {
+    headers: Headers;
+  };
+
+export type connectivityControllerByCountryResponse =
+  | connectivityControllerByCountryResponseSuccess
+  | connectivityControllerByCountryResponseError;
+
+export const getConnectivityControllerByCountryUrl = (countryCode: string) => {
+  return `/api/v1/connectivity/${countryCode}`;
+};
+
+export const connectivityControllerByCountry = async (
+  countryCode: string,
+  options?: RequestInit,
+): Promise<connectivityControllerByCountryResponse> => {
+  return apiFetch<connectivityControllerByCountryResponse>(
+    getConnectivityControllerByCountryUrl(countryCode),
+    {
+      ...options,
+      method: 'GET',
+    },
+  );
+};
+
+export const getConnectivityControllerByCountryInfiniteQueryKey = (countryCode?: string) => {
+  return ['infinite', `/api/v1/connectivity/${countryCode}`] as const;
+};
+
+export const getConnectivityControllerByCountryQueryKey = (countryCode?: string) => {
+  return [`/api/v1/connectivity/${countryCode}`] as const;
+};
+
+export const getConnectivityControllerByCountryInfiniteQueryOptions = <
+  TData = Awaited<ReturnType<typeof connectivityControllerByCountry>>,
+  TError = void,
+>(
+  countryCode: string,
+  options?: {
+    query?: UseInfiniteQueryOptions<
+      Awaited<ReturnType<typeof connectivityControllerByCountry>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getConnectivityControllerByCountryInfiniteQueryKey(countryCode);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof connectivityControllerByCountry>>> = ({
+    signal,
+  }) => connectivityControllerByCountry(countryCode, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!countryCode,
+    staleTime: 30000,
+    ...queryOptions,
+  } as UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof connectivityControllerByCountry>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ConnectivityControllerByCountryInfiniteQueryResult = NonNullable<
+  Awaited<ReturnType<typeof connectivityControllerByCountry>>
+>;
+export type ConnectivityControllerByCountryInfiniteQueryError = void;
+
+/**
+ * @summary Per-country connectivity info (mobile + fixed avg speeds, SIM cost, best carrier, power plugs). Public; seeded editorially.
+ */
+
+export function useConnectivityControllerByCountryInfinite<
+  TData = Awaited<ReturnType<typeof connectivityControllerByCountry>>,
+  TError = void,
+>(
+  countryCode: string,
+  options?: {
+    query?: UseInfiniteQueryOptions<
+      Awaited<ReturnType<typeof connectivityControllerByCountry>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+): UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getConnectivityControllerByCountryInfiniteQueryOptions(countryCode, options);
+
+  const query = useInfiniteQuery(queryOptions) as UseInfiniteQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getConnectivityControllerByCountryQueryOptions = <
+  TData = Awaited<ReturnType<typeof connectivityControllerByCountry>>,
+  TError = void,
+>(
+  countryCode: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof connectivityControllerByCountry>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getConnectivityControllerByCountryQueryKey(countryCode);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof connectivityControllerByCountry>>> = ({
+    signal,
+  }) => connectivityControllerByCountry(countryCode, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!countryCode,
+    staleTime: 30000,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof connectivityControllerByCountry>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ConnectivityControllerByCountryQueryResult = NonNullable<
+  Awaited<ReturnType<typeof connectivityControllerByCountry>>
+>;
+export type ConnectivityControllerByCountryQueryError = void;
+
+/**
+ * @summary Per-country connectivity info (mobile + fixed avg speeds, SIM cost, best carrier, power plugs). Public; seeded editorially.
+ */
+
+export function useConnectivityControllerByCountry<
+  TData = Awaited<ReturnType<typeof connectivityControllerByCountry>>,
+  TError = void,
+>(
+  countryCode: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof connectivityControllerByCountry>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getConnectivityControllerByCountryQueryOptions(countryCode, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}

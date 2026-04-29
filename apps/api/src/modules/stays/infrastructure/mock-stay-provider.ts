@@ -40,6 +40,7 @@ export class MockStayProvider implements StayProvider {
         priceUsdPerNight: 180 + input.guests * 10,
         currency: 'USD',
         stayType: 'boutique',
+        wifiSpeedMbps: 120,
       },
       {
         externalId: `${PROVIDER}:midtown-${round(input.lat)}-${round(input.lng)}`,
@@ -53,6 +54,7 @@ export class MockStayProvider implements StayProvider {
         priceUsdPerNight: 95 + input.guests * 5,
         currency: 'USD',
         stayType: 'inn',
+        wifiSpeedMbps: 60,
       },
       {
         externalId: `${PROVIDER}:budget-${round(input.lat)}-${round(input.lng)}`,
@@ -66,6 +68,25 @@ export class MockStayProvider implements StayProvider {
         priceUsdPerNight: 25,
         currency: 'USD',
         stayType: 'hostel',
+        wifiSpeedMbps: 15,
+      },
+      // V.UX.23 — digital-nomad fixture: monthly rental with strong
+      // wifi. Priced as the per-night equivalent of a $1500/month
+      // serviced apartment (≈ $50/night) so a long-stay search keeps
+      // the daily-budget banner sane.
+      {
+        externalId: `${PROVIDER}:nomad-loft-${round(input.lat)}-${round(input.lng)}`,
+        provider: PROVIDER,
+        name: 'Nomad Loft (monthly)',
+        starRating: 4.0,
+        amenities: ['wifi', 'workspace', 'kitchen', 'laundry'],
+        lat: input.lat + 0.005,
+        lng: input.lng + 0.004,
+        distanceMeters: 700,
+        priceUsdPerNight: 50,
+        currency: 'USD',
+        stayType: 'monthly',
+        wifiSpeedMbps: 200,
       },
     ];
 

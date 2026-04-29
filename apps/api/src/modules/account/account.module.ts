@@ -22,6 +22,7 @@
  */
 import { Module } from '@nestjs/common';
 import { AddTrustedContactUseCase } from './application/add-trusted-contact.use-case';
+import { GetConnectivityInfoUseCase } from './application/get-connectivity-info.use-case';
 import { AdminBanUserUseCase } from './application/admin-ban-user.use-case';
 import { AdminListUsersUseCase } from './application/admin-list-users.use-case';
 import { AdminUnbanUserUseCase } from './application/admin-unban-user.use-case';
@@ -49,6 +50,7 @@ import { AccountPurgeScheduler } from './interface/account-purge.scheduler';
 import { AccountController } from './interface/account.controller';
 import { AdminPurgeController } from './interface/admin-purge.controller';
 import { AdminUsersController } from './interface/admin-users.controller';
+import { ConnectivityController } from './interface/connectivity.controller';
 import { PreferencesController } from './interface/preferences.controller';
 import { TrustedContactsController } from './interface/trusted-contacts.controller';
 
@@ -59,6 +61,7 @@ import { TrustedContactsController } from './interface/trusted-contacts.controll
     AdminPurgeController,
     TrustedContactsController,
     PreferencesController,
+    ConnectivityController,
   ],
   providers: [
     { provide: USER_DATA_AGGREGATOR, useClass: PrismaUserDataAggregator },
@@ -80,6 +83,7 @@ import { TrustedContactsController } from './interface/trusted-contacts.controll
     DeleteTrustedContactUseCase,
     GetPreferencesUseCase,
     UpdatePreferencesUseCase,
+    GetConnectivityInfoUseCase,
   ],
   // V.UX.13 — TRUSTED_CONTACT_REPOSITORY is consumed by the Safety
   // module's TriggerSosUseCase to fan out an SOS to the caller's

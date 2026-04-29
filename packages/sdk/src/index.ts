@@ -236,6 +236,11 @@ export type { HourlyWeatherForecastResponseDto } from './generated/schemas/hourl
 // V.UX.22: cultural persona — festival calendar overlay
 export type { FestivalsDuringResponseDto } from './generated/schemas/festivalsDuringResponseDto';
 export type { EventsControllerFestivalsParams } from './generated/schemas/eventsControllerFestivalsParams';
+// V.UX.23: digital-nomad persona — connectivity info per country.
+// Hook (`useConnectivityControllerByCountry`) lives in the
+// already-star-exported account barrel (controller uses
+// @ApiTags('account')).
+export type { ConnectivityInfoDto } from './generated/schemas/connectivityInfoDto';
 // V.UX.5: business-traveler — Expense / Balance schemas already
 // exported above (lines 121-126); social hooks barrel re-exported
 // above to surface useExpensesController{Create,List,Balances,Remove}.

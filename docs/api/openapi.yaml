@@ -2076,6 +2076,29 @@ paths:
       summary: Partial update of the caller-owned preferences. Idempotent upsert;
         empty body is a no-op.
       tags: *a38
+  /api/v1/connectivity/{countryCode}:
+    get:
+      operationId: ConnectivityController_byCountry
+      parameters:
+        - name: countryCode
+          required: true
+          in: path
+          description: ISO-3166-1 alpha-2 country code, case-insensitive (e.g. "pt", "th").
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Connectivity info for the country.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectivityInfoDto'
+        '404':
+          description: CONNECTIVITY_INFO_NOT_FOUND — country not in the editorial seed yet.
+      summary: Per-country connectivity info (mobile + fixed avg speeds, SIM cost,
+        best carrier, power plugs). Public; seeded editorially.
+      tags:
+        - account
   /api/v1/media/upload-url:
     post:
       operationId: MediaController_createUploadUrl
@@ -4750,6 +4773,11 @@ components:
           type: number
           description: V.UX.16 — listings whose priceUsdPerNight exceeds this cap are
             dropped. Listings without a quoted price pass through.
+        minWifiSpeedMbps:
+          type: number
+          description: V.UX.23 — drop listings whose wifiSpeedMbps falls below this floor
+            (or whose wifi speed is unknown). Drives the nomad-mode wifi-speed
+            slider.
       required:
         - center
         - radiusKm
@@ -4793,6 +4821,12 @@ components:
           type: string
           description: V.UX.16 — coarse property type (e.g. "boutique", "inn", "hostel").
             Free-form so adapters can add new types without a schema change.
+            Extended in V.UX.23 with "monthly" for long-stay nomad rentals.
+        wifiSpeedMbps:
+          type: object
+          nullable: true
+          description: V.UX.23 — provider-posted average wifi speed in Mbps, or null when
+            unknown.
       required:
         - externalId
         - provider
@@ -4805,6 +4839,7 @@ components:
         - priceUsdPerNight
         - currency
         - stayType
+        - wifiSpeedMbps
     SearchStaysResponseDto:
       type: object
       properties:
@@ -5999,6 +6034,9 @@ components:
           type: object
           nullable: true
           description: V.UX.16 — daily target USD as a decimal string, or null if unset.
+        nomadMode:
+          type: boolean
+          description: V.UX.23 — digital-nomad mode toggle.
         createdAt:
           type: string
           format: date-time
@@ -6017,6 +6055,7 @@ components:
         - comfortMode
         - budgetMode
         - dailyBudgetUsd
+        - nomadMode
         - createdAt
         - updatedAt
     UpdatePreferencesRequestDto:
@@ -6062,6 +6101,48 @@ components:
           nullable: true
           description: V.UX.16 — daily target USD as a decimal string (e.g. "50.00"). Null
             clears the target.
+        nomadMode:
+          type: boolean
+          description: V.UX.23 — digital-nomad mode. Stays form defaults to a 4-week
+            window + monthly stay-type.
+    ConnectivityInfoDto:
+      type: object
+      properties:
+        countryCode:
+          type: string
+          description: ISO-3166-1 alpha-2 lowercase.
+        countryName:
+          type: string
+        avgMobileDownloadMbps:
+          type: number
+          description: Average mobile download speed in Mbps.
+        avgFixedDownloadMbps:
+          type: number
+          description: Average fixed-line download speed in Mbps.
+        simCostUsd10Gb:
+          type: number
+          description: Approx prepaid SIM cost for ~10 GB of data, USD.
+        bestCarrier:
+          type: string
+          description: Best mobile carrier for travelers (editorial pick).
+        powerPlugs:
+          description: IEC plug-type letters in use (e.g. ["A","B"], ["C","F"]).
+          type: array
+          items:
+            type: string
+        seededAt:
+          type: string
+          format: date
+          description: ISO date the seed was last refreshed.
+      required:
+        - countryCode
+        - countryName
+        - avgMobileDownloadMbps
+        - avgFixedDownloadMbps
+        - simCostUsd10Gb
+        - bestCarrier
+        - powerPlugs
+        - seededAt
     CreateUploadUrlRequestDto:
       type: object
       properties:

@@ -292,6 +292,10 @@ model Preferences {
   // can still be on).
   budgetMode      Boolean  @default(false)
   dailyBudgetUsd  Decimal? @db.Decimal(10, 2)
+  // V.UX.23 — digital-nomad persona. When enabled, the stays search
+  // form defaults to a 4-week window + the wifi-speed slider, and
+  // the home page surfaces the connectivity-info link.
+  nomadMode       Boolean  @default(false)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }
@@ -410,6 +414,9 @@ model Place {
   //   - etiquette: string  (free-text — "remove shoes", "no flash photography")
   //   - dressCode: string  (free-text — "shoulders + knees covered")
   //   - venueType: 'temple' | 'mosque' | 'church' | 'synagogue' | 'shrine' | ...
+  // V.UX.23 — digital-nomad persona: `category = 'coworking'` is the
+  // canonical slug for co-working venues; metadata may carry
+  // `wifiSpeedMbps: number` + `desksAvailable: number` extras.
   metadata       Json? // provider-specific extras
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -455,6 +462,10 @@ model Stay {
   name         String
   starRating   Float?
   amenities    String[]
+  // V.UX.23 — digital-nomad persona: posted average wifi speed (Mbps).
+  // Surfaced alongside other listing fields so the nomad-mode UI can
+  // filter / sort. Null when the provider doesn't report it.
+  wifiSpeedMbps Int?
   coordinates  Unsupported("geography(Point, 4326)")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt

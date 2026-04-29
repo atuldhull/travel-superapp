@@ -46,6 +46,12 @@ export interface Preferences {
    * preserve the string form here to avoid float drift.
    */
   readonly dailyBudgetUsd: string | null;
+  /**
+   * V.UX.23 — digital-nomad persona. When true the stays search
+   * defaults to a 4-week window + monthly stay-type, and the home
+   * page surfaces the connectivity-info link.
+   */
+  readonly nomadMode: boolean;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }

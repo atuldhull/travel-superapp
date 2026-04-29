@@ -3,6 +3,7 @@
 // Regenerate via: pnpm --filter=@app/sdk sdk:gen
 import type {
   AddTrustedContactRequestDto,
+  ConnectivityInfoDto,
   ListTrustedContactsResponseDto,
   PreferencesDto,
   TrustedContactDto,
@@ -280,6 +281,49 @@ export const preferencesControllerUpdateMine = async (
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(updatePreferencesRequestDto),
+    },
+  );
+};
+
+/**
+ * @summary Per-country connectivity info (mobile + fixed avg speeds, SIM cost, best carrier, power plugs). Public; seeded editorially.
+ */
+export type connectivityControllerByCountryResponse200 = {
+  data: ConnectivityInfoDto;
+  status: 200;
+};
+
+export type connectivityControllerByCountryResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type connectivityControllerByCountryResponseSuccess =
+  connectivityControllerByCountryResponse200 & {
+    headers: Headers;
+  };
+export type connectivityControllerByCountryResponseError =
+  connectivityControllerByCountryResponse404 & {
+    headers: Headers;
+  };
+
+export type connectivityControllerByCountryResponse =
+  | connectivityControllerByCountryResponseSuccess
+  | connectivityControllerByCountryResponseError;
+
+export const getConnectivityControllerByCountryUrl = (countryCode: string) => {
+  return `/api/v1/connectivity/${countryCode}`;
+};
+
+export const connectivityControllerByCountry = async (
+  countryCode: string,
+  options?: RequestInit,
+): Promise<connectivityControllerByCountryResponse> => {
+  return apiFetch<connectivityControllerByCountryResponse>(
+    getConnectivityControllerByCountryUrl(countryCode),
+    {
+      ...options,
+      method: 'GET',
     },
   );
 };

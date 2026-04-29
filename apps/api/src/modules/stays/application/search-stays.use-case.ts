@@ -14,7 +14,10 @@ import { STAY_PROVIDER, type StayProvider } from './ports/stay-provider';
 
 const MAX_RADIUS_KM = 50;
 const MAX_GUESTS = 20;
-const MAX_TRIP_DAYS = 30;
+// V.UX.23 — bumped from 30 to 90 nights so the digital-nomad
+// persona's 4-week / 8-week long-stay searches are valid. Old
+// short-trip callers are unaffected — the cap was always upper-bound.
+const MAX_TRIP_DAYS = 90;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 export interface SearchStaysCommand {
@@ -44,6 +47,14 @@ export interface SearchStaysCommand {
    * (provider didn't quote — the user decides on click-through).
    */
   readonly maxPriceUsdPerNight?: number;
+  /**
+   * V.UX.23 — digital-nomad wifi-speed floor (Mbps). Listings whose
+   * `wifiSpeedMbps` falls below this number are dropped. Listings
+   * with `null` wifiSpeedMbps are also dropped when the filter is
+   * set — better to omit a "we don't know" listing than to suggest
+   * it might be fast enough.
+   */
+  readonly minWifiSpeedMbps?: number;
 }
 
 @Injectable()
@@ -140,8 +151,14 @@ export class SearchStaysUseCase {
       typeof cmd.maxPriceUsdPerNight === 'number' && cmd.maxPriceUsdPerNight > 0
         ? cmd.maxPriceUsdPerNight
         : null;
+    const minWifi =
+      typeof cmd.minWifiSpeedMbps === 'number' && cmd.minWifiSpeedMbps > 0
+        ? cmd.minWifiSpeedMbps
+        : null;
 
-    if (required.length === 0 && !stayType && maxPrice === null) return listings;
+    if (required.length === 0 && !stayType && maxPrice === null && minWifi === null) {
+      return listings;
+    }
 
     return listings.filter((l) => {
       // V.UX.14 — required amenities (substring match).
@@ -154,6 +171,13 @@ export class SearchStaysUseCase {
       // V.UX.16 — price cap; listings with null price (no live quote)
       // pass through so the user can click for a quote.
       if (maxPrice !== null && l.priceUsdPerNight !== null && l.priceUsdPerNight > maxPrice) {
+        return false;
+      }
+      // V.UX.23 — wifi-speed floor; null-wifi listings are dropped
+      // when the filter is set (vs the price-cap behaviour, since
+      // "wifi speed is unknown" is a stronger negative signal for
+      // the nomad persona than "price not quoted").
+      if (minWifi !== null && (l.wifiSpeedMbps === null || l.wifiSpeedMbps < minWifi)) {
         return false;
       }
       return true;

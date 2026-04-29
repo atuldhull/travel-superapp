@@ -55,6 +55,7 @@ class RecordingStayProvider implements StayProvider {
         priceUsdPerNight: 99,
         currency: 'USD',
         stayType: 'inn',
+        wifiSpeedMbps: 50,
       },
     ];
   }
@@ -235,14 +236,16 @@ describe('Stays module (integration, requires Docker Postgres + Redis)', () => {
     expect(JSON.parse(res.body).code).toBe('INVALID_DATE_RANGE');
   });
 
-  it('date range > 30 nights → 422 INVALID_DATE_RANGE', async () => {
+  it('date range > 90 nights → 422 INVALID_DATE_RANGE', async () => {
     if (!dbReachable) return;
     const tok = await token('long-range');
+    // V.UX.23 — cap bumped from 30 to 90 nights so the digital-nomad
+    // long-stay searches are valid. Push past 90 here (~120 nights).
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/stays/search',
       headers: { authorization: `Bearer ${tok}` },
-      payload: basePayload({ checkIn: '2026-10-01', checkOut: '2026-12-15' }),
+      payload: basePayload({ checkIn: '2026-10-01', checkOut: '2027-02-15' }),
     });
     expect(res.statusCode).toBe(422);
     expect(JSON.parse(res.body).code).toBe('INVALID_DATE_RANGE');

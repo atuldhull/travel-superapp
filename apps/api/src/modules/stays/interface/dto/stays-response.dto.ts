@@ -51,6 +51,13 @@ export class SearchStaysRequestDto {
       'V.UX.16 — listings whose priceUsdPerNight exceeds this cap are dropped. Listings without a quoted price pass through.',
   })
   declare maxPriceUsdPerNight?: number;
+
+  @ApiProperty({
+    required: false,
+    description:
+      'V.UX.23 — drop listings whose wifiSpeedMbps falls below this floor (or whose wifi speed is unknown). Drives the nomad-mode wifi-speed slider.',
+  })
+  declare minWifiSpeedMbps?: number;
 }
 
 export class StayListingDto {
@@ -89,9 +96,15 @@ export class StayListingDto {
 
   @ApiProperty({
     description:
-      'V.UX.16 — coarse property type (e.g. "boutique", "inn", "hostel"). Free-form so adapters can add new types without a schema change.',
+      'V.UX.16 — coarse property type (e.g. "boutique", "inn", "hostel"). Free-form so adapters can add new types without a schema change. Extended in V.UX.23 with "monthly" for long-stay nomad rentals.',
   })
   declare stayType: string;
+
+  @ApiProperty({
+    nullable: true,
+    description: 'V.UX.23 — provider-posted average wifi speed in Mbps, or null when unknown.',
+  })
+  declare wifiSpeedMbps: number | null;
 }
 
 export class SearchStaysResponseDto {

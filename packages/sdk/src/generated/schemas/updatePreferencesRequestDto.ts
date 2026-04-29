@@ -31,4 +31,6 @@ export interface UpdatePreferencesRequestDto {
    * @nullable
    */
   dailyBudgetUsd?: UpdatePreferencesRequestDtoDailyBudgetUsd;
+  /** V.UX.23 — digital-nomad mode. Stays form defaults to a 4-week window + monthly stay-type. */
+  nomadMode?: boolean;
 }
