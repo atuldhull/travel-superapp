@@ -9,7 +9,7 @@
  *
  * Installed by prompt [IV.18.5.2].
  */
-import type { WeatherForecast } from '../../domain/weather-forecast.entity';
+import type { HourlyWeatherForecast, WeatherForecast } from '../../domain/weather-forecast.entity';
 
 export interface WeatherCache {
   /** Returns the cached forecast if still fresh, `null` on miss or
@@ -20,6 +20,12 @@ export interface WeatherCache {
    *  to write MUST NOT propagate to the caller (the original
    *  forecast was already successfully fetched). */
   set(key: string, value: WeatherForecast, ttlSeconds: number): Promise<void>;
+
+  /** V.UX.21 — hourly forecast read/write. Separate methods (not a
+   *  generic typed map) so adapters can pick different TTLs / key
+   *  prefixes per kind without leaking that into the use-case. */
+  getHourly(key: string): Promise<HourlyWeatherForecast | null>;
+  setHourly(key: string, value: HourlyWeatherForecast, ttlSeconds: number): Promise<void>;
 }
 
 export const WEATHER_CACHE = Symbol('WeatherCache');

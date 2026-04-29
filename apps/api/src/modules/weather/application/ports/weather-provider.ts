@@ -10,7 +10,7 @@
  *
  * Installed by prompt [IV.18.5.1].
  */
-import type { WeatherForecast } from '../../domain/weather-forecast.entity';
+import type { HourlyWeatherForecast, WeatherForecast } from '../../domain/weather-forecast.entity';
 
 export interface GetDailyForecastInput {
   readonly lat: number;
@@ -19,8 +19,20 @@ export interface GetDailyForecastInput {
   readonly days: number;
 }
 
+/**
+ * V.UX.21 — hourly forecast input for the adventure / outdoor persona.
+ * `hours` clamped to [1, 48] at the use-case (Open-Meteo gives 16 days
+ * of hourly data, but the adventure-window UX cares about the next 24-48h).
+ */
+export interface GetHourlyForecastInput {
+  readonly lat: number;
+  readonly lng: number;
+  readonly hours: number;
+}
+
 export interface WeatherProvider {
   getDailyForecast(input: GetDailyForecastInput): Promise<WeatherForecast>;
+  getHourlyForecast(input: GetHourlyForecastInput): Promise<HourlyWeatherForecast>;
 }
 
 export const WEATHER_PROVIDER = Symbol('WeatherProvider');

@@ -20,6 +20,7 @@
  */
 import { Module } from '@nestjs/common';
 import { GetForecastUseCase } from './application/get-forecast.use-case';
+import { GetHourlyForecastUseCase } from './application/get-hourly-forecast.use-case';
 import { WEATHER_CACHE } from './application/ports/weather-cache';
 import { WEATHER_PROVIDER } from './application/ports/weather-provider';
 import { CachedWeatherProvider } from './infrastructure/cached-weather-provider';
@@ -39,7 +40,8 @@ import { WeatherController } from './interface/weather.controller';
     // of the port gets caching for free.
     { provide: WEATHER_PROVIDER, useClass: CachedWeatherProvider },
     GetForecastUseCase,
+    GetHourlyForecastUseCase,
   ],
-  exports: [WEATHER_PROVIDER, GetForecastUseCase],
+  exports: [WEATHER_PROVIDER, GetForecastUseCase, GetHourlyForecastUseCase],
 })
 export class WeatherModule {}

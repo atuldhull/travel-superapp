@@ -18,8 +18,17 @@
 import { Injectable } from '@nestjs/common';
 import { ExternalServiceError } from '@app/errors';
 import { createLogger } from '@app/logger';
-import type { DailyForecast, WeatherForecast } from '../domain/weather-forecast.entity';
-import type { GetDailyForecastInput, WeatherProvider } from '../application/ports/weather-provider';
+import type {
+  DailyForecast,
+  HourlyForecast,
+  HourlyWeatherForecast,
+  WeatherForecast,
+} from '../domain/weather-forecast.entity';
+import type {
+  GetDailyForecastInput,
+  GetHourlyForecastInput,
+  WeatherProvider,
+} from '../application/ports/weather-provider';
 
 const OPEN_METEO_URL = 'https://api.open-meteo.com/v1/forecast';
 const log = createLogger('weather.open-meteo');
@@ -35,6 +44,19 @@ interface OpenMeteoDaily {
 interface OpenMeteoResponse {
   readonly timezone: string;
   readonly daily: OpenMeteoDaily;
+}
+
+interface OpenMeteoHourly {
+  readonly time: readonly string[];
+  readonly temperature_2m: readonly number[];
+  readonly precipitation_probability: ReadonlyArray<number | null>;
+  readonly wind_speed_10m: ReadonlyArray<number | null>;
+  readonly weather_code: readonly number[];
+}
+
+interface OpenMeteoHourlyResponse {
+  readonly timezone: string;
+  readonly hourly: OpenMeteoHourly;
 }
 
 @Injectable()
@@ -99,6 +121,74 @@ export class OpenMeteoWeatherProvider implements WeatherProvider {
       lng: input.lng,
       timezone: body.timezone,
       days,
+    };
+  }
+
+  /**
+   * V.UX.21 — hourly forecast for the adventure persona. Same
+   * Open-Meteo `/v1/forecast` endpoint, but with the `hourly=...`
+   * query string and `forecast_days` set to ceil(hours/24) so we
+   * pull just enough days to satisfy the requested window. The
+   * response is then trimmed to exactly `input.hours` rows.
+   */
+  async getHourlyForecast(input: GetHourlyForecastInput): Promise<HourlyWeatherForecast> {
+    const days = Math.max(1, Math.min(16, Math.ceil(input.hours / 24)));
+    const url = new URL(OPEN_METEO_URL);
+    url.searchParams.set('latitude', input.lat.toString());
+    url.searchParams.set('longitude', input.lng.toString());
+    url.searchParams.set(
+      'hourly',
+      'temperature_2m,precipitation_probability,wind_speed_10m,weather_code',
+    );
+    url.searchParams.set('forecast_days', days.toString());
+    url.searchParams.set('timezone', 'auto');
+
+    let res: Response;
+    try {
+      res = await fetch(url.toString(), { method: 'GET' });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      log.warn({ err: message }, 'open_meteo_hourly_fetch_failed');
+      throw new ExternalServiceError(
+        'open-meteo',
+        'fetch_failed',
+        { message },
+        'WEATHER_PROVIDER_UNAVAILABLE',
+      );
+    }
+    if (!res.ok) {
+      log.warn({ status: res.status }, 'open_meteo_hourly_non_ok');
+      throw new ExternalServiceError(
+        'open-meteo',
+        `http_${res.status}`,
+        { status: res.status },
+        'WEATHER_PROVIDER_UNAVAILABLE',
+      );
+    }
+
+    const body = (await res.json()) as OpenMeteoHourlyResponse;
+    if (!body.hourly || !Array.isArray(body.hourly.time)) {
+      throw new ExternalServiceError(
+        'open-meteo',
+        'malformed_response',
+        {},
+        'WEATHER_PROVIDER_UNAVAILABLE',
+      );
+    }
+
+    const hours: HourlyForecast[] = body.hourly.time.slice(0, input.hours).map((time, i) => ({
+      time,
+      tempC: body.hourly.temperature_2m[i] ?? 0,
+      precipitationProbabilityPercent: body.hourly.precipitation_probability[i] ?? null,
+      windSpeedKmh: body.hourly.wind_speed_10m[i] ?? null,
+      weatherCode: body.hourly.weather_code[i] ?? 0,
+    }));
+
+    return {
+      lat: input.lat,
+      lng: input.lng,
+      timezone: body.timezone,
+      hours,
     };
   }
 }

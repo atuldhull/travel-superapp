@@ -44,6 +44,10 @@ class StubWeatherProvider implements WeatherProvider {
     }));
     return { lat: input.lat, lng: input.lng, timezone: 'Etc/UTC', days };
   }
+
+  async getHourlyForecast(): Promise<never> {
+    throw new Error('trip-weather stub does not exercise hourly');
+  }
 }
 
 describe('Trip × Weather (integration, requires Docker Postgres)', () => {

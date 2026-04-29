@@ -63,6 +63,9 @@ class StubWeather implements WeatherProvider {
       })),
     };
   }
+  async getHourlyForecast(): Promise<never> {
+    throw new Error('overview stub does not exercise hourly');
+  }
 }
 
 class StubStay implements StayProvider {

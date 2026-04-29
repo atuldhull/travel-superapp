@@ -42,3 +42,37 @@ export class WeatherForecastResponseDto {
   @ApiProperty({ type: [DailyForecastDto] })
   declare days: DailyForecastDto[];
 }
+
+export class HourlyForecastDto {
+  @ApiProperty({ description: 'ISO timestamp in the forecast timezone.' })
+  declare time: string;
+
+  @ApiProperty({ description: 'Temperature in °C.' })
+  declare tempC: number;
+
+  @ApiProperty({
+    nullable: true,
+    description: 'Provider precipitation confidence 0..100, or null if not reported.',
+  })
+  declare precipitationProbabilityPercent: number | null;
+
+  @ApiProperty({ nullable: true, description: 'Wind speed at 10m, km/h.' })
+  declare windSpeedKmh: number | null;
+
+  @ApiProperty({ description: 'WMO weather code.' })
+  declare weatherCode: number;
+}
+
+export class HourlyWeatherForecastResponseDto {
+  @ApiProperty()
+  declare lat: number;
+
+  @ApiProperty()
+  declare lng: number;
+
+  @ApiProperty({ description: 'IANA timezone string Open-Meteo resolved the coords to.' })
+  declare timezone: string;
+
+  @ApiProperty({ type: [HourlyForecastDto] })
+  declare hours: HourlyForecastDto[];
+}

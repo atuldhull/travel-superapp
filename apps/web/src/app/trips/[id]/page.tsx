@@ -58,6 +58,7 @@ import { OpenOnMobileButton } from '../../../components/trip/open-on-mobile-butt
 import { DailySpendBanner } from '../../../components/budget/daily-spend-banner';
 import { AudioReadout } from '../../../components/trip/audio-readout';
 import { PacingWarning } from '../../../components/trip/pacing-warning';
+import { AdventureWindow } from '../../../components/weather/adventure-window';
 import { PlaceSuggestionPicker } from '../../../components/trip/place-suggestion-picker';
 import { PowerPlannerSection } from '../../../components/trip/power-planner-section';
 import { ShareList } from '../../../components/trip/share-list';
@@ -275,6 +276,7 @@ export default function TripDetailPage() {
       )}
       <DailySpendBanner tripId={id} enabled={token !== null && !editing} />
       <PacingWarning tripId={id} enabled={token !== null && !editing} />
+      <AdventureWindow />
       <ItinerarySection tripId={id} enabled={token !== null && !editing} />
       <PowerPlannerSection tripId={id} enabled={token !== null && !editing} />
       <PlaceSuggestionPicker tripId={id} enabled={token !== null && !editing} />
