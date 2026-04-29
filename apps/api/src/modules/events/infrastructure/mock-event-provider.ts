@@ -101,6 +101,25 @@ export class MockEventProvider implements EventProvider {
         priceMax: '180.00',
         sourceUrl: 'https://mock.example/symphony',
       },
+      // V.UX.22 — cultural persona seed. Single multi-day festival
+      // fixture so the festivals-during use-case has something to
+      // overlay on day cards.
+      {
+        slug: 'diwali',
+        title: 'Diwali Festival of Lights',
+        category: 'festival',
+        description: 'Citywide lantern + fireworks celebration',
+        venueName: 'Old Town Square',
+        offsetLat: 0.005,
+        offsetLng: 0.004,
+        distanceMeters: 700,
+        startOffsetHours: 24,
+        durationHours: 72,
+        currency: null,
+        priceMin: null,
+        priceMax: null,
+        sourceUrl: 'https://mock.example/diwali',
+      },
     ];
 
     const results: EventListing[] = fixtures.map((f) => {

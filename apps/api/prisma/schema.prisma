@@ -406,6 +406,10 @@ model Place {
   //   - difficulty: 'easy' | 'moderate' | 'hard' | 'expert'
   //   - elevationM: number  (peak elevation, metres)
   //   - activityType: 'hike' | 'climb' | 'kayak' | 'surf' | 'cycle' | ...
+  // V.UX.22 — cultural / religious persona conventions:
+  //   - etiquette: string  (free-text — "remove shoes", "no flash photography")
+  //   - dressCode: string  (free-text — "shoulders + knees covered")
+  //   - venueType: 'temple' | 'mosque' | 'church' | 'synagogue' | 'shrine' | ...
   metadata       Json? // provider-specific extras
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

@@ -12,6 +12,7 @@
  * Installed by prompt [IV.18.9.1].
  */
 import { Module } from '@nestjs/common';
+import { FestivalsDuringUseCase } from './application/festivals-during.use-case';
 import { SearchEventsUseCase } from './application/search-events.use-case';
 import { EVENT_CACHE } from './application/ports/event-cache';
 import { EVENT_PROVIDER } from './application/ports/event-provider';
@@ -27,7 +28,8 @@ import { EventsController } from './interface/events.controller';
     { provide: EVENT_CACHE, useClass: RedisEventCache },
     { provide: EVENT_PROVIDER, useClass: CachedEventProvider },
     SearchEventsUseCase,
+    FestivalsDuringUseCase,
   ],
-  exports: [EVENT_PROVIDER, SearchEventsUseCase],
+  exports: [EVENT_PROVIDER, SearchEventsUseCase, FestivalsDuringUseCase],
 })
 export class EventsModule {}
