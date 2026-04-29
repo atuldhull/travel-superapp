@@ -146,3 +146,60 @@ export class FederatedSearchPlacesResponseDto {
   @ApiProperty({ type: [FederatedPlaceResultDto] })
   declare results: FederatedPlaceResultDto[];
 }
+
+export class DiscoverHiddenGemsRequestDto {
+  @ApiProperty({ type: PlacesCoordinatesDto })
+  declare center: PlacesCoordinatesDto;
+
+  @ApiProperty({ description: 'Day-trip radius in km. Use-case caps at 300.' })
+  declare radiusKm: number;
+
+  @ApiProperty({ required: false, description: 'Filter by category slug.' })
+  declare category?: string;
+
+  @ApiProperty({ required: false, description: 'Cap on result count (default 20, max 50).' })
+  declare limit?: number;
+}
+
+export class HiddenGemDto {
+  @ApiProperty({ format: 'cuid' })
+  declare id: string;
+
+  @ApiProperty()
+  declare sourceKey: string;
+
+  @ApiProperty()
+  declare name: string;
+
+  @ApiProperty()
+  declare category: string;
+
+  @ApiProperty({ nullable: true })
+  declare address: string | null;
+
+  @ApiProperty({ nullable: true, description: 'ISO 3166-1 alpha-2.' })
+  declare countryCode: string | null;
+
+  @ApiProperty({ description: 'Curated local relaxation score 0..100.' })
+  declare relaxationScore: number;
+
+  @ApiProperty()
+  declare distanceMeters: number;
+
+  @ApiProperty({ description: 'Review count — always between 5 and 50 inclusive for gems.' })
+  declare reviewCount: number;
+
+  @ApiProperty({ description: 'Average review rating 1..5.' })
+  declare reviewAverage: number;
+
+  @ApiProperty({ format: 'date-time' })
+  declare createdAt: string;
+
+  @ApiProperty({ format: 'date-time' })
+  declare updatedAt: string;
+}
+
+export class DiscoverHiddenGemsResponseDto {
+  @ApiProperty({ type: [HiddenGemDto] })
+  declare gems: HiddenGemDto[];
+}

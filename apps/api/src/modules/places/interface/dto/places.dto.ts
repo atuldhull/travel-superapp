@@ -46,3 +46,16 @@ export const FederatedSearchPlacesBodySchema = z.object({
   ingest: z.boolean().optional(),
 });
 export type FederatedSearchPlacesBody = z.infer<typeof FederatedSearchPlacesBodySchema>;
+
+/**
+ * V.UX.19 — hidden-gem discovery. Same coord shape as search,
+ * but the use-case caps radius at 300km (day-trip distance) and
+ * limit at 50.
+ */
+export const DiscoverHiddenGemsBodySchema = z.object({
+  center: Coord,
+  radiusKm: z.number().positive().max(10_000),
+  category: z.string().trim().min(1).max(60).optional(),
+  limit: z.number().int().positive().max(50).optional(),
+});
+export type DiscoverHiddenGemsBody = z.infer<typeof DiscoverHiddenGemsBodySchema>;

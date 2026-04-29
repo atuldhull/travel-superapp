@@ -1217,6 +1217,27 @@ paths:
       summary: Federated search across external providers (Google/FSQ/OSM). Optional
         ingest=true write-through to the canonical catalog.
       tags: *a16
+  /api/v1/places/hidden-gems:
+    post:
+      operationId: PlacesController_hiddenGems
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DiscoverHiddenGemsRequestDto'
+      responses:
+        '200':
+          description: Hidden-gem places.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscoverHiddenGemsResponseDto'
+      security: *a15
+      summary: Hidden-gem discovery within a day-trip radius. Filters to places with
+        5..50 reviews, sorts by average rating.
+      tags: *a16
   /api/v1/weather/forecast:
     get:
       operationId: WeatherController_forecast
@@ -4384,6 +4405,81 @@ components:
             $ref: '#/components/schemas/FederatedPlaceResultDto'
       required:
         - results
+    DiscoverHiddenGemsRequestDto:
+      type: object
+      properties:
+        center:
+          $ref: '#/components/schemas/PlacesCoordinatesDto'
+        radiusKm:
+          type: number
+          description: Day-trip radius in km. Use-case caps at 300.
+        category:
+          type: string
+          description: Filter by category slug.
+        limit:
+          type: number
+          description: Cap on result count (default 20, max 50).
+      required:
+        - center
+        - radiusKm
+    HiddenGemDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        sourceKey:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+        address:
+          type: object
+          nullable: true
+        countryCode:
+          type: object
+          nullable: true
+          description: ISO 3166-1 alpha-2.
+        relaxationScore:
+          type: number
+          description: Curated local relaxation score 0..100.
+        distanceMeters:
+          type: number
+        reviewCount:
+          type: number
+          description: Review count — always between 5 and 50 inclusive for gems.
+        reviewAverage:
+          type: number
+          description: Average review rating 1..5.
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - sourceKey
+        - name
+        - category
+        - address
+        - countryCode
+        - relaxationScore
+        - distanceMeters
+        - reviewCount
+        - reviewAverage
+        - createdAt
+        - updatedAt
+    DiscoverHiddenGemsResponseDto:
+      type: object
+      properties:
+        gems:
+          type: array
+          items:
+            $ref: '#/components/schemas/HiddenGemDto'
+      required:
+        - gems
     DailyForecastDto:
       type: object
       properties:

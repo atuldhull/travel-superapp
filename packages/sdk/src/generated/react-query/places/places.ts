@@ -9,6 +9,8 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  DiscoverHiddenGemsRequestDto,
+  DiscoverHiddenGemsResponseDto,
   FederatedSearchPlacesRequestDto,
   FederatedSearchPlacesResponseDto,
   SearchPlacesRequestDto,
@@ -200,6 +202,98 @@ export const usePlacesControllerFederated = <TError = unknown, TContext = unknow
   TContext
 > => {
   const mutationOptions = getPlacesControllerFederatedMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Hidden-gem discovery within a day-trip radius. Filters to places with 5..50 reviews, sorts by average rating.
+ */
+export type placesControllerHiddenGemsResponse200 = {
+  data: DiscoverHiddenGemsResponseDto;
+  status: 200;
+};
+
+export type placesControllerHiddenGemsResponseSuccess = placesControllerHiddenGemsResponse200 & {
+  headers: Headers;
+};
+export type placesControllerHiddenGemsResponse = placesControllerHiddenGemsResponseSuccess;
+
+export const getPlacesControllerHiddenGemsUrl = () => {
+  return `/api/v1/places/hidden-gems`;
+};
+
+export const placesControllerHiddenGems = async (
+  discoverHiddenGemsRequestDto: DiscoverHiddenGemsRequestDto,
+  options?: RequestInit,
+): Promise<placesControllerHiddenGemsResponse> => {
+  return apiFetch<placesControllerHiddenGemsResponse>(getPlacesControllerHiddenGemsUrl(), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(discoverHiddenGemsRequestDto),
+  });
+};
+
+export const getPlacesControllerHiddenGemsMutationOptions = <
+  TError = unknown,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof placesControllerHiddenGems>>,
+    TError,
+    { data: DiscoverHiddenGemsRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof placesControllerHiddenGems>>,
+  TError,
+  { data: DiscoverHiddenGemsRequestDto },
+  TContext
+> => {
+  const mutationKey = ['placesControllerHiddenGems'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof placesControllerHiddenGems>>,
+    { data: DiscoverHiddenGemsRequestDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return placesControllerHiddenGems(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PlacesControllerHiddenGemsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof placesControllerHiddenGems>>
+>;
+export type PlacesControllerHiddenGemsMutationBody = DiscoverHiddenGemsRequestDto;
+export type PlacesControllerHiddenGemsMutationError = unknown;
+
+/**
+ * @summary Hidden-gem discovery within a day-trip radius. Filters to places with 5..50 reviews, sorts by average rating.
+ */
+export const usePlacesControllerHiddenGems = <TError = unknown, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof placesControllerHiddenGems>>,
+    TError,
+    { data: DiscoverHiddenGemsRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof placesControllerHiddenGems>>,
+  TError,
+  { data: DiscoverHiddenGemsRequestDto },
+  TContext
+> => {
+  const mutationOptions = getPlacesControllerHiddenGemsMutationOptions(options);
 
   return useMutation(mutationOptions);
 };

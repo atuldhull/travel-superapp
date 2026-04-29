@@ -33,6 +33,8 @@ export * from './generated/react-query/agents/agents';
 // V.UX.18 — translation widget. CountryPrimer hooks live under the
 // already-star-exported safety barrel (controller uses @ApiTags('safety')).
 export * from './generated/react-query/translation/translation';
+// V.UX.19 — hyper-local hidden-gem discovery hook lives in the places barrel.
+export * from './generated/react-query/places/places';
 
 // Schema types from openapi.yaml's components/schemas. Re-exported so
 // consumers don't have to reach into deep generated paths. Add the
@@ -209,6 +211,10 @@ export type { TranslateTextRequestDto } from './generated/schemas/translateTextR
 export type { CountryPrimerDto } from './generated/schemas/countryPrimerDto';
 export type { EmergencyNumberDto } from './generated/schemas/emergencyNumberDto';
 export type { LanguagePhraseDto } from './generated/schemas/languagePhraseDto';
+// V.UX.19: hyper-local hidden-gem discovery (under places barrel — already exported above)
+export type { HiddenGemDto } from './generated/schemas/hiddenGemDto';
+export type { DiscoverHiddenGemsRequestDto } from './generated/schemas/discoverHiddenGemsRequestDto';
+export type { DiscoverHiddenGemsResponseDto } from './generated/schemas/discoverHiddenGemsResponseDto';
 // V.UX.5: business-traveler — Expense / Balance schemas already
 // exported above (lines 121-126); social hooks barrel re-exported
 // above to surface useExpensesController{Create,List,Balances,Remove}.
