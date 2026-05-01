@@ -1,4 +1,11 @@
 packages:
   - 'apps/*'
   - '!apps/ai-service'
+  # V.UX.27 — apps/mobile is excluded from the root pnpm workspace
+  # because Expo 51 pins React 18.2 + @types/react@18 transitively,
+  # which corrupts apps/web's @types/react@19 resolution when both
+  # versions sit in the same workspace store. Mobile has its own
+  # isolated install (run from apps/mobile/) and its own pnpm-lock.
+  # Re-include when Expo 52 (React 19) is the baseline.
+  - '!apps/mobile'
   - 'packages/*'

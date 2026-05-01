@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "TravelSuperApp",
+    "slug": "travel-super-app",
+    "version": "0.0.0",
+    "orientation": "portrait",
+    "scheme": "travelapp",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": false,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.travelsuperapp.mobile",
+      "associatedDomains": ["applinks:travelsuperapp.local"]
+    },
+    "android": {
+      "package": "com.travelsuperapp.mobile",
+      "adaptiveIcon": { "backgroundColor": "#0a0a0a" },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [{ "scheme": "https", "host": "travelsuperapp.local" }],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
+    },
+    "web": { "bundler": "metro", "output": "single" },
+    "plugins": ["expo-router"],
+    "experiments": { "typedRoutes": true },
+    "extra": {
+      "router": {
+        "origin": "https://travelsuperapp.local"
+      }
+    }
+  }
+}
