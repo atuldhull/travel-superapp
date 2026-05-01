@@ -37,13 +37,18 @@ import { DeleteReviewUseCase } from '../application/delete-review.use-case';
 import { GetReviewSummaryUseCase } from '../application/get-review-summary.use-case';
 import { ListMyReviewsUseCase } from '../application/list-my-reviews.use-case';
 import { ListReviewsForTargetUseCase } from '../application/list-reviews-for-target.use-case';
+import { RespondToReviewUseCase } from '../application/respond-to-review.use-case';
 import type { Review, ReviewTargetType } from '../domain/review.entity';
 import type { ReviewSummary } from '../application/ports/review.repository';
 import {
   CreateReviewBodySchema,
+  RespondToReviewBodySchema,
   ReviewTargetTypeSchema,
   type CreateReviewBody,
+  type RespondToReviewBody,
 } from './dto/social.dto';
+import { Roles } from '../../../common/auth';
+import { RespondToReviewRequestDto } from './dto/social-response.dto';
 
 interface ReviewDto {
   readonly id: string;
@@ -55,6 +60,8 @@ interface ReviewDto {
   readonly body: string;
   readonly language: string;
   readonly verifiedBooking: boolean;
+  readonly responseBody: string | null;
+  readonly responseAt: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
 }
@@ -70,6 +77,8 @@ function toDto(r: Review): ReviewDto {
     body: r.body,
     language: r.language,
     verifiedBooking: r.verifiedBooking,
+    responseBody: r.responseBody,
+    responseAt: r.responseAt === null ? null : r.responseAt.toISOString(),
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),
   };
@@ -103,6 +112,7 @@ export class ReviewsController {
     private readonly listMineUc: ListMyReviewsUseCase,
     private readonly deleteUc: DeleteReviewUseCase,
     private readonly summaryUc: GetReviewSummaryUseCase,
+    private readonly respondUc: RespondToReviewUseCase,
   ) {}
 
   @ApiOperation({
@@ -252,5 +262,36 @@ export class ReviewsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string): Promise<void> {
     await this.deleteUc.execute({ id, authorId: user.sub });
+  }
+
+  /**
+   * V.UX.24 — agent (target-owner) reply on a review about themselves.
+   * One-shot: a re-submit gets 409 REVIEW_RESPONSE_LOCKED. Caller must
+   * hold the agent role; non-agent targets get 403.
+   */
+  @ApiOperation({
+    summary:
+      'Agent reply to a review (one-shot). 403 if the review is not about the caller; 409 on re-submit.',
+  })
+  @ApiBody({ type: RespondToReviewRequestDto })
+  @ApiResponse({ status: 200, description: 'Updated review row.', type: ReviewResponseDto })
+  @ApiResponse({ status: 404, description: 'REVIEW_NOT_FOUND | AGENT_PROFILE_NOT_FOUND.' })
+  @ApiResponse({ status: 403, description: 'REVIEW_RESPONSE_FORBIDDEN | ROLE_FORBIDDEN.' })
+  @ApiResponse({ status: 409, description: 'REVIEW_RESPONSE_LOCKED.' })
+  @ApiResponse({ status: 422, description: 'INVALID_REVIEW_RESPONSE.' })
+  @Roles('agent', 'admin')
+  @Post(':id/response')
+  @HttpCode(HttpStatus.OK)
+  async respond(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(RespondToReviewBodySchema)) body: RespondToReviewBody,
+  ): Promise<ReviewDto> {
+    const updated = await this.respondUc.execute({
+      userId: user.sub,
+      reviewId: id,
+      responseBody: body.responseBody,
+    });
+    return toDto(updated);
   }
 }

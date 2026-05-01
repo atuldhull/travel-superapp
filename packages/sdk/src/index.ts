@@ -241,6 +241,17 @@ export type { EventsControllerFestivalsParams } from './generated/schemas/events
 // already-star-exported account barrel (controller uses
 // @ApiTags('account')).
 export type { ConnectivityInfoDto } from './generated/schemas/connectivityInfoDto';
+// V.UX.24: agent persona — caller-self profile, dashboard, and
+// review-response surfaces. Self hooks live under the
+// already-star-exported `agents` barrel (@ApiTags('agents'));
+// the response hook lives in the `social` barrel.
+export type { AgentProfileDto } from './generated/schemas/agentProfileDto';
+export type { UpdateAgentProfileRequestDto } from './generated/schemas/updateAgentProfileRequestDto';
+export type { AgentDashboardDto } from './generated/schemas/agentDashboardDto';
+export type { AgentBookingSummaryDto } from './generated/schemas/agentBookingSummaryDto';
+export type { AgentEarningsSummaryDto } from './generated/schemas/agentEarningsSummaryDto';
+export type { AgentReviewWithResponseDto } from './generated/schemas/agentReviewWithResponseDto';
+export type { RespondToReviewRequestDto } from './generated/schemas/respondToReviewRequestDto';
 // V.UX.5: business-traveler — Expense / Balance schemas already
 // exported above (lines 121-126); social hooks barrel re-exported
 // above to surface useExpensesController{Create,List,Balances,Remove}.

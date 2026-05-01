@@ -34,6 +34,13 @@ export interface Review {
   readonly body: string;
   readonly language: string;
   readonly verifiedBooking: boolean;
+  /**
+   * V.UX.24 — target-owner reply (e.g. an agent replying to a
+   * review about themselves). Stamped at most once; the use-case
+   * rejects re-submissions. Null until the owner responds.
+   */
+  readonly responseBody: string | null;
+  readonly responseAt: Date | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }

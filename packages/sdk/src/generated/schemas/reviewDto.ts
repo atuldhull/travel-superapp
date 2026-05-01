@@ -3,6 +3,8 @@
 // Regenerate via: pnpm --filter=@app/sdk sdk:gen
 import type { ReviewDtoTripId } from './reviewDtoTripId';
 import type { ReviewDtoTargetType } from './reviewDtoTargetType';
+import type { ReviewDtoResponseBody } from './reviewDtoResponseBody';
+import type { ReviewDtoResponseAt } from './reviewDtoResponseAt';
 
 export interface ReviewDto {
   id: string;
@@ -15,6 +17,13 @@ export interface ReviewDto {
   body: string;
   language: string;
   verifiedBooking: boolean;
+  /**
+   * V.UX.24 — agent reply on this review (one-shot).
+   * @nullable
+   */
+  responseBody: ReviewDtoResponseBody;
+  /** @nullable */
+  responseAt: ReviewDtoResponseAt;
   createdAt: string;
   updatedAt: string;
 }

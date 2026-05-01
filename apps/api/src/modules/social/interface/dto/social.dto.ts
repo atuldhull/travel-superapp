@@ -76,3 +76,12 @@ export const CreateReviewBodySchema = z.object({
   language: z.string().trim().length(2).optional(),
 });
 export type CreateReviewBody = z.infer<typeof CreateReviewBodySchema>;
+
+/**
+ * V.UX.24 — agent reply body. Use-case caps at 2000 chars; Zod
+ * keeps the wire shape sane (1..2000).
+ */
+export const RespondToReviewBodySchema = z.object({
+  responseBody: z.string().trim().min(1).max(2000),
+});
+export type RespondToReviewBody = z.infer<typeof RespondToReviewBodySchema>;

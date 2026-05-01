@@ -28,6 +28,7 @@ import type {
   ListReviewsResponseDto,
   ListTripVotesResponseDto,
   PlaceReviewSummaryResponseDto,
+  RespondToReviewRequestDto,
   ReviewDto,
   ReviewSummaryDto,
   ReviewsControllerListForTargetParams,
@@ -1837,6 +1838,130 @@ export const useReviewsControllerRemove = <TError = void, TContext = unknown>(op
   TContext
 > => {
   const mutationOptions = getReviewsControllerRemoveMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Agent reply to a review (one-shot). 403 if the review is not about the caller; 409 on re-submit.
+ */
+export type reviewsControllerRespondResponse200 = {
+  data: ReviewDto;
+  status: 200;
+};
+
+export type reviewsControllerRespondResponse403 = {
+  data: void;
+  status: 403;
+};
+
+export type reviewsControllerRespondResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type reviewsControllerRespondResponse409 = {
+  data: void;
+  status: 409;
+};
+
+export type reviewsControllerRespondResponse422 = {
+  data: void;
+  status: 422;
+};
+
+export type reviewsControllerRespondResponseSuccess = reviewsControllerRespondResponse200 & {
+  headers: Headers;
+};
+export type reviewsControllerRespondResponseError = (
+  | reviewsControllerRespondResponse403
+  | reviewsControllerRespondResponse404
+  | reviewsControllerRespondResponse409
+  | reviewsControllerRespondResponse422
+) & {
+  headers: Headers;
+};
+
+export type reviewsControllerRespondResponse =
+  | reviewsControllerRespondResponseSuccess
+  | reviewsControllerRespondResponseError;
+
+export const getReviewsControllerRespondUrl = (id: string) => {
+  return `/api/v1/reviews/${id}/response`;
+};
+
+export const reviewsControllerRespond = async (
+  id: string,
+  respondToReviewRequestDto: RespondToReviewRequestDto,
+  options?: RequestInit,
+): Promise<reviewsControllerRespondResponse> => {
+  return apiFetch<reviewsControllerRespondResponse>(getReviewsControllerRespondUrl(id), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(respondToReviewRequestDto),
+  });
+};
+
+export const getReviewsControllerRespondMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof reviewsControllerRespond>>,
+    TError,
+    { id: string; data: RespondToReviewRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof reviewsControllerRespond>>,
+  TError,
+  { id: string; data: RespondToReviewRequestDto },
+  TContext
+> => {
+  const mutationKey = ['reviewsControllerRespond'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof reviewsControllerRespond>>,
+    { id: string; data: RespondToReviewRequestDto }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return reviewsControllerRespond(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ReviewsControllerRespondMutationResult = NonNullable<
+  Awaited<ReturnType<typeof reviewsControllerRespond>>
+>;
+export type ReviewsControllerRespondMutationBody = RespondToReviewRequestDto;
+export type ReviewsControllerRespondMutationError = void;
+
+/**
+ * @summary Agent reply to a review (one-shot). 403 if the review is not about the caller; 409 on re-submit.
+ */
+export const useReviewsControllerRespond = <TError = void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof reviewsControllerRespond>>,
+    TError,
+    { id: string; data: RespondToReviewRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof reviewsControllerRespond>>,
+  TError,
+  { id: string; data: RespondToReviewRequestDto },
+  TContext
+> => {
+  const mutationOptions = getReviewsControllerRespondMutationOptions(options);
 
   return useMutation(mutationOptions);
 };

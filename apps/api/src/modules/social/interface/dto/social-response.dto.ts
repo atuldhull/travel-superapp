@@ -29,6 +29,15 @@ export class CreateReviewRequestDto {
   declare language?: string;
 }
 
+export class RespondToReviewRequestDto {
+  @ApiProperty({
+    description: "Agent's reply (1..2000 chars). Stamped at most once per review.",
+    minLength: 1,
+    maxLength: 2000,
+  })
+  declare responseBody: string;
+}
+
 export class ReviewDto {
   @ApiProperty({ format: 'cuid' })
   declare id: string;
@@ -56,6 +65,15 @@ export class ReviewDto {
 
   @ApiProperty()
   declare verifiedBooking: boolean;
+
+  @ApiProperty({
+    nullable: true,
+    description: 'V.UX.24 — agent reply on this review (one-shot).',
+  })
+  declare responseBody: string | null;
+
+  @ApiProperty({ nullable: true, format: 'date-time' })
+  declare responseAt: string | null;
 
   @ApiProperty({ format: 'date-time' })
   declare createdAt: string;
