@@ -23,11 +23,13 @@ import type {
   ExpenseDto,
   ExpensesControllerListParams,
   HeartSharedTripResponseDto,
+  HelpfulVoteResponseDto,
   ListBalancesResponseDto,
   ListExpensesResponseDto,
   ListReviewsResponseDto,
   ListTripVotesResponseDto,
   PlaceReviewSummaryResponseDto,
+  PublicReviewerProfileDto,
   RespondToReviewRequestDto,
   ReviewDto,
   ReviewSummaryDto,
@@ -1966,6 +1968,115 @@ export const useReviewsControllerRespond = <TError = void, TContext = unknown>(o
   return useMutation(mutationOptions);
 };
 /**
+ * @summary Mark a review as helpful. Idempotent (re-vote returns the current count). Author can't self-vote.
+ */
+export type reviewsControllerHelpfulResponse200 = {
+  data: HelpfulVoteResponseDto;
+  status: 200;
+};
+
+export type reviewsControllerHelpfulResponse403 = {
+  data: void;
+  status: 403;
+};
+
+export type reviewsControllerHelpfulResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type reviewsControllerHelpfulResponseSuccess = reviewsControllerHelpfulResponse200 & {
+  headers: Headers;
+};
+export type reviewsControllerHelpfulResponseError = (
+  | reviewsControllerHelpfulResponse403
+  | reviewsControllerHelpfulResponse404
+) & {
+  headers: Headers;
+};
+
+export type reviewsControllerHelpfulResponse =
+  | reviewsControllerHelpfulResponseSuccess
+  | reviewsControllerHelpfulResponseError;
+
+export const getReviewsControllerHelpfulUrl = (id: string) => {
+  return `/api/v1/reviews/${id}/helpful`;
+};
+
+export const reviewsControllerHelpful = async (
+  id: string,
+  options?: RequestInit,
+): Promise<reviewsControllerHelpfulResponse> => {
+  return apiFetch<reviewsControllerHelpfulResponse>(getReviewsControllerHelpfulUrl(id), {
+    ...options,
+    method: 'POST',
+  });
+};
+
+export const getReviewsControllerHelpfulMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof reviewsControllerHelpful>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof reviewsControllerHelpful>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ['reviewsControllerHelpful'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof reviewsControllerHelpful>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return reviewsControllerHelpful(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ReviewsControllerHelpfulMutationResult = NonNullable<
+  Awaited<ReturnType<typeof reviewsControllerHelpful>>
+>;
+
+export type ReviewsControllerHelpfulMutationError = void;
+
+/**
+ * @summary Mark a review as helpful. Idempotent (re-vote returns the current count). Author can't self-vote.
+ */
+export const useReviewsControllerHelpful = <TError = void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof reviewsControllerHelpful>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof reviewsControllerHelpful>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationOptions = getReviewsControllerHelpfulMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
  * @summary Cross-trip vote tally for { targetType, targetId }. @Public — crowd-signal aggregation.
  */
 export type votesControllerSummaryResponse200 = {
@@ -3122,6 +3233,194 @@ export function useSharedTripReactControllerGetHearts<
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getSharedTripReactControllerGetHeartsQueryOptions(code, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary Public reviewer profile: karma + badges + recent reviews. Public; no auth required.
+ */
+export type publicUserProfileControllerProfileResponse200 = {
+  data: PublicReviewerProfileDto;
+  status: 200;
+};
+
+export type publicUserProfileControllerProfileResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type publicUserProfileControllerProfileResponseSuccess =
+  publicUserProfileControllerProfileResponse200 & {
+    headers: Headers;
+  };
+export type publicUserProfileControllerProfileResponseError =
+  publicUserProfileControllerProfileResponse404 & {
+    headers: Headers;
+  };
+
+export type publicUserProfileControllerProfileResponse =
+  | publicUserProfileControllerProfileResponseSuccess
+  | publicUserProfileControllerProfileResponseError;
+
+export const getPublicUserProfileControllerProfileUrl = (userId: string) => {
+  return `/api/v1/users/${userId}/profile`;
+};
+
+export const publicUserProfileControllerProfile = async (
+  userId: string,
+  options?: RequestInit,
+): Promise<publicUserProfileControllerProfileResponse> => {
+  return apiFetch<publicUserProfileControllerProfileResponse>(
+    getPublicUserProfileControllerProfileUrl(userId),
+    {
+      ...options,
+      method: 'GET',
+    },
+  );
+};
+
+export const getPublicUserProfileControllerProfileInfiniteQueryKey = (userId?: string) => {
+  return ['infinite', `/api/v1/users/${userId}/profile`] as const;
+};
+
+export const getPublicUserProfileControllerProfileQueryKey = (userId?: string) => {
+  return [`/api/v1/users/${userId}/profile`] as const;
+};
+
+export const getPublicUserProfileControllerProfileInfiniteQueryOptions = <
+  TData = Awaited<ReturnType<typeof publicUserProfileControllerProfile>>,
+  TError = void,
+>(
+  userId: string,
+  options?: {
+    query?: UseInfiniteQueryOptions<
+      Awaited<ReturnType<typeof publicUserProfileControllerProfile>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getPublicUserProfileControllerProfileInfiniteQueryKey(userId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof publicUserProfileControllerProfile>>> = ({
+    signal,
+  }) => publicUserProfileControllerProfile(userId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!userId,
+    staleTime: 30000,
+    ...queryOptions,
+  } as UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof publicUserProfileControllerProfile>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type PublicUserProfileControllerProfileInfiniteQueryResult = NonNullable<
+  Awaited<ReturnType<typeof publicUserProfileControllerProfile>>
+>;
+export type PublicUserProfileControllerProfileInfiniteQueryError = void;
+
+/**
+ * @summary Public reviewer profile: karma + badges + recent reviews. Public; no auth required.
+ */
+
+export function usePublicUserProfileControllerProfileInfinite<
+  TData = Awaited<ReturnType<typeof publicUserProfileControllerProfile>>,
+  TError = void,
+>(
+  userId: string,
+  options?: {
+    query?: UseInfiniteQueryOptions<
+      Awaited<ReturnType<typeof publicUserProfileControllerProfile>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+): UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getPublicUserProfileControllerProfileInfiniteQueryOptions(userId, options);
+
+  const query = useInfiniteQuery(queryOptions) as UseInfiniteQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getPublicUserProfileControllerProfileQueryOptions = <
+  TData = Awaited<ReturnType<typeof publicUserProfileControllerProfile>>,
+  TError = void,
+>(
+  userId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof publicUserProfileControllerProfile>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getPublicUserProfileControllerProfileQueryKey(userId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof publicUserProfileControllerProfile>>> = ({
+    signal,
+  }) => publicUserProfileControllerProfile(userId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!userId,
+    staleTime: 30000,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof publicUserProfileControllerProfile>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type PublicUserProfileControllerProfileQueryResult = NonNullable<
+  Awaited<ReturnType<typeof publicUserProfileControllerProfile>>
+>;
+export type PublicUserProfileControllerProfileQueryError = void;
+
+/**
+ * @summary Public reviewer profile: karma + badges + recent reviews. Public; no auth required.
+ */
+
+export function usePublicUserProfileControllerProfile<
+  TData = Awaited<ReturnType<typeof publicUserProfileControllerProfile>>,
+  TError = void,
+>(
+  userId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof publicUserProfileControllerProfile>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getPublicUserProfileControllerProfileQueryOptions(userId, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

@@ -32,12 +32,14 @@ import {
 } from './dto/social-response.dto';
 import { type AuthenticatedUser, CurrentUser, Public } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
+import { CastHelpfulVoteUseCase } from '../application/cast-helpful-vote.use-case';
 import { CreateReviewUseCase } from '../application/create-review.use-case';
 import { DeleteReviewUseCase } from '../application/delete-review.use-case';
 import { GetReviewSummaryUseCase } from '../application/get-review-summary.use-case';
 import { ListMyReviewsUseCase } from '../application/list-my-reviews.use-case';
 import { ListReviewsForTargetUseCase } from '../application/list-reviews-for-target.use-case';
 import { RespondToReviewUseCase } from '../application/respond-to-review.use-case';
+import { HelpfulVoteResponseDto } from './dto/karma-response.dto';
 import type { Review, ReviewTargetType } from '../domain/review.entity';
 import type { ReviewSummary } from '../application/ports/review.repository';
 import {
@@ -113,6 +115,7 @@ export class ReviewsController {
     private readonly deleteUc: DeleteReviewUseCase,
     private readonly summaryUc: GetReviewSummaryUseCase,
     private readonly respondUc: RespondToReviewUseCase,
+    private readonly helpfulUc: CastHelpfulVoteUseCase,
   ) {}
 
   @ApiOperation({
@@ -293,5 +296,35 @@ export class ReviewsController {
       responseBody: body.responseBody,
     });
     return toDto(updated);
+  }
+
+  /**
+   * V.UX.25 — community "found this review helpful" upvote.
+   * Idempotent — re-clicks return the current count without an
+   * error. Self-vote rejected with 403 HELPFUL_VOTE_SELF.
+   */
+  @ApiOperation({
+    summary:
+      "Mark a review as helpful. Idempotent (re-vote returns the current count). Author can't self-vote.",
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Helpful count after the vote.',
+    type: HelpfulVoteResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'REVIEW_NOT_FOUND.' })
+  @ApiResponse({ status: 403, description: 'HELPFUL_VOTE_SELF.' })
+  @Post(':id/helpful')
+  @HttpCode(HttpStatus.OK)
+  async helpful(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ): Promise<HelpfulVoteResponseDto> {
+    const result = await this.helpfulUc.execute({ voterId: user.sub, reviewId: id });
+    return {
+      reviewId: result.reviewId,
+      helpfulCount: result.helpfulCount,
+      outcome: result.outcome,
+    };
   }
 }

@@ -10,11 +10,13 @@ import type {
   ExpenseDto,
   ExpensesControllerListParams,
   HeartSharedTripResponseDto,
+  HelpfulVoteResponseDto,
   ListBalancesResponseDto,
   ListExpensesResponseDto,
   ListReviewsResponseDto,
   ListTripVotesResponseDto,
   PlaceReviewSummaryResponseDto,
+  PublicReviewerProfileDto,
   RespondToReviewRequestDto,
   ReviewDto,
   ReviewSummaryDto,
@@ -558,6 +560,52 @@ export const reviewsControllerRespond = async (
 };
 
 /**
+ * @summary Mark a review as helpful. Idempotent (re-vote returns the current count). Author can't self-vote.
+ */
+export type reviewsControllerHelpfulResponse200 = {
+  data: HelpfulVoteResponseDto;
+  status: 200;
+};
+
+export type reviewsControllerHelpfulResponse403 = {
+  data: void;
+  status: 403;
+};
+
+export type reviewsControllerHelpfulResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type reviewsControllerHelpfulResponseSuccess = reviewsControllerHelpfulResponse200 & {
+  headers: Headers;
+};
+export type reviewsControllerHelpfulResponseError = (
+  | reviewsControllerHelpfulResponse403
+  | reviewsControllerHelpfulResponse404
+) & {
+  headers: Headers;
+};
+
+export type reviewsControllerHelpfulResponse =
+  | reviewsControllerHelpfulResponseSuccess
+  | reviewsControllerHelpfulResponseError;
+
+export const getReviewsControllerHelpfulUrl = (id: string) => {
+  return `/api/v1/reviews/${id}/helpful`;
+};
+
+export const reviewsControllerHelpful = async (
+  id: string,
+  options?: RequestInit,
+): Promise<reviewsControllerHelpfulResponse> => {
+  return apiFetch<reviewsControllerHelpfulResponse>(getReviewsControllerHelpfulUrl(id), {
+    ...options,
+    method: 'POST',
+  });
+};
+
+/**
  * @summary Cross-trip vote tally for { targetType, targetId }. @Public — crowd-signal aggregation.
  */
 export type votesControllerSummaryResponse200 = {
@@ -821,6 +869,49 @@ export const sharedTripReactControllerGetHearts = async (
 ): Promise<sharedTripReactControllerGetHeartsResponse> => {
   return apiFetch<sharedTripReactControllerGetHeartsResponse>(
     getSharedTripReactControllerGetHeartsUrl(code),
+    {
+      ...options,
+      method: 'GET',
+    },
+  );
+};
+
+/**
+ * @summary Public reviewer profile: karma + badges + recent reviews. Public; no auth required.
+ */
+export type publicUserProfileControllerProfileResponse200 = {
+  data: PublicReviewerProfileDto;
+  status: 200;
+};
+
+export type publicUserProfileControllerProfileResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type publicUserProfileControllerProfileResponseSuccess =
+  publicUserProfileControllerProfileResponse200 & {
+    headers: Headers;
+  };
+export type publicUserProfileControllerProfileResponseError =
+  publicUserProfileControllerProfileResponse404 & {
+    headers: Headers;
+  };
+
+export type publicUserProfileControllerProfileResponse =
+  | publicUserProfileControllerProfileResponseSuccess
+  | publicUserProfileControllerProfileResponseError;
+
+export const getPublicUserProfileControllerProfileUrl = (userId: string) => {
+  return `/api/v1/users/${userId}/profile`;
+};
+
+export const publicUserProfileControllerProfile = async (
+  userId: string,
+  options?: RequestInit,
+): Promise<publicUserProfileControllerProfileResponse> => {
+  return apiFetch<publicUserProfileControllerProfileResponse>(
+    getPublicUserProfileControllerProfileUrl(userId),
     {
       ...options,
       method: 'GET',
