@@ -18,16 +18,19 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { SafetyModule } from '../safety/safety.module';
 import { TripModule } from '../trip/trip.module';
+import { CastHelpfulVoteUseCase } from './application/cast-helpful-vote.use-case';
 import { CastVoteUseCase } from './application/cast-vote.use-case';
 import { CreateExpenseUseCase } from './application/create-expense.use-case';
 import { CreateReviewUseCase } from './application/create-review.use-case';
 import { DeleteExpenseUseCase } from './application/delete-expense.use-case';
 import { DeleteReviewUseCase } from './application/delete-review.use-case';
+import { GetPublicReviewerProfileUseCase } from './application/get-public-reviewer-profile.use-case';
 import { GetReviewBundleForTargetUseCase } from './application/get-review-bundle-for-target.use-case';
 import { GetReviewSummaryUseCase } from './application/get-review-summary.use-case';
 import { GetTripBalancesUseCase } from './application/get-trip-balances.use-case';
 import { SettleUpUseCase } from './application/settle-up.use-case';
 import { HeartSharedTripUseCase } from './application/heart-shared-trip.use-case';
+import { RecomputeKarmaUseCase } from './application/recompute-karma.use-case';
 import { TripHeartCounter } from './infrastructure/trip-heart-counter';
 import { SharedTripReactController } from './interface/shared-trip-react.controller';
 import { GetVoteSummaryUseCase } from './application/get-vote-summary.use-case';
@@ -36,18 +39,24 @@ import { ListReviewsForTargetUseCase } from './application/list-reviews-for-targ
 import { ListTripExpensesUseCase } from './application/list-trip-expenses.use-case';
 import { ListTripVotesUseCase } from './application/list-trip-votes.use-case';
 import { EXPENSE_REPOSITORY } from './application/ports/expense.repository';
+import { HELPFUL_VOTE_REPOSITORY } from './application/ports/helpful-vote.repository';
+import { KARMA_REPOSITORY } from './application/ports/karma.repository';
 import { REVIEW_REPOSITORY } from './application/ports/review.repository';
 import { VOTE_REPOSITORY } from './application/ports/vote.repository';
 import { RespondToReviewUseCase } from './application/respond-to-review.use-case';
 import { RevokeVoteUseCase } from './application/revoke-vote.use-case';
 import { PrismaExpenseRepository } from './infrastructure/prisma-expense.repository';
+import { PrismaHelpfulVoteRepository } from './infrastructure/prisma-helpful-vote.repository';
+import { PrismaKarmaRepository } from './infrastructure/prisma-karma.repository';
 import { PrismaReviewRepository } from './infrastructure/prisma-review.repository';
 import { PrismaVoteRepository } from './infrastructure/prisma-vote.repository';
 import { TripBalancesCache } from './infrastructure/trip-balances-cache';
 import { AgentReviewSummaryController } from './interface/agent-review-summary.controller';
 import { EateryReviewSummaryController } from './interface/eatery-review-summary.controller';
 import { ExpensesController } from './interface/expenses.controller';
+import { KarmaRecomputeScheduler } from './interface/karma-recompute.scheduler';
 import { PlaceReviewSummaryController } from './interface/place-review-summary.controller';
+import { PublicUserProfileController } from './interface/public-user-profile.controller';
 import { ReviewsController } from './interface/reviews.controller';
 import { SocialController } from './interface/social.controller';
 import { StayReviewSummaryController } from './interface/stay-review-summary.controller';
@@ -69,11 +78,14 @@ import { VotesController } from './interface/votes.controller';
     EateryReviewSummaryController,
     AgentReviewSummaryController,
     SharedTripReactController,
+    PublicUserProfileController,
   ],
   providers: [
     { provide: VOTE_REPOSITORY, useClass: PrismaVoteRepository },
     { provide: EXPENSE_REPOSITORY, useClass: PrismaExpenseRepository },
     { provide: REVIEW_REPOSITORY, useClass: PrismaReviewRepository },
+    { provide: HELPFUL_VOTE_REPOSITORY, useClass: PrismaHelpfulVoteRepository },
+    { provide: KARMA_REPOSITORY, useClass: PrismaKarmaRepository },
     CastVoteUseCase,
     RevokeVoteUseCase,
     ListTripVotesUseCase,
@@ -92,8 +104,12 @@ import { VotesController } from './interface/votes.controller';
     GetVoteSummaryUseCase,
     GetReviewBundleForTargetUseCase,
     RespondToReviewUseCase,
+    CastHelpfulVoteUseCase,
+    RecomputeKarmaUseCase,
+    GetPublicReviewerProfileUseCase,
+    KarmaRecomputeScheduler,
     TripBalancesCache,
   ],
-  exports: [VOTE_REPOSITORY, EXPENSE_REPOSITORY, REVIEW_REPOSITORY],
+  exports: [VOTE_REPOSITORY, EXPENSE_REPOSITORY, REVIEW_REPOSITORY, KARMA_REPOSITORY],
 })
 export class SocialModule {}

@@ -252,6 +252,12 @@ export type { AgentBookingSummaryDto } from './generated/schemas/agentBookingSum
 export type { AgentEarningsSummaryDto } from './generated/schemas/agentEarningsSummaryDto';
 export type { AgentReviewWithResponseDto } from './generated/schemas/agentReviewWithResponseDto';
 export type { RespondToReviewRequestDto } from './generated/schemas/respondToReviewRequestDto';
+// V.UX.25: reviewer karma + public profile + helpful votes. Hooks
+// live under the already-star-exported `social` barrel.
+export type { UserKarmaDto } from './generated/schemas/userKarmaDto';
+export type { HelpfulVoteResponseDto } from './generated/schemas/helpfulVoteResponseDto';
+export type { PublicReviewerProfileDto } from './generated/schemas/publicReviewerProfileDto';
+export type { PublicReviewerRecentReviewDto } from './generated/schemas/publicReviewerRecentReviewDto';
 // V.UX.5: business-traveler — Expense / Balance schemas already
 // exported above (lines 121-126); social hooks barrel re-exported
 // above to surface useExpensesController{Create,List,Balances,Remove}.

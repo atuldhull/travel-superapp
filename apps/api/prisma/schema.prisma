@@ -170,6 +170,9 @@ model User {
   dishReports        Dish[]
   moderationActions  ModerationItem[] @relation("ModerationActor")
   oauthIdentities    UserOAuthIdentity[]
+  // V.UX.25 — reviewer karma + helpful-vote relations.
+  karma              UserKarma?
+  helpfulVotes       HelpfulVote[]
 
   @@index([role])
   @@index([deletedAt])
@@ -844,8 +847,50 @@ model Review {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  // V.UX.25 — community "this review was helpful" upvotes. Distinct
+  // from Vote (which is itinerary-item polling). One row per
+  // (reviewer, voter) — the use-case enforces no-self-vote.
+  helpfulVotes HelpfulVote[]
+
   @@index([targetType, targetId])
   @@index([authorId, createdAt])
+}
+
+// V.UX.25 — reviewer-karma surface. One row per user; populated on
+// first helpful-vote received OR first scheduled recompute. The
+// computed `score` is `(reviewCount * 1) + (helpfulVotesReceived * 2)`
+// so a single helpful vote outweighs a single review — incentivises
+// quality > quantity. `badges` is a flat string[] (e.g.
+// `['contributor_10','helpful_100']`) so new badges land without a
+// schema change.
+model UserKarma {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  score                 Int      @default(0)
+  reviewCount           Int      @default(0)
+  helpfulVotesReceived  Int      @default(0)
+  badges                String[]
+  recomputedAt          DateTime @default(now())
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([score])
+}
+
+// V.UX.25 — "I found this review helpful" upvote. One row per
+// (reviewId, voterId). Self-votes rejected at the use-case (no DB
+// constraint; reviewer + author look-up is cheap).
+model HelpfulVote {
+  id        String   @id @default(cuid())
+  reviewId  String
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  voterId   String
+  voter     User     @relation(fields: [voterId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([reviewId, voterId])
+  @@index([voterId, createdAt])
 }
 
 // ─── 13. Media & Memory ─────────────────────────────────────────────────

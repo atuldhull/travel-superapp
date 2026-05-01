@@ -11,8 +11,14 @@
  */
 'use client';
 
-import { useAuthControllerMe, type WhoAmIResponseDto } from '@app/sdk';
+import {
+  useAuthControllerMe,
+  usePublicUserProfileControllerProfile,
+  type PublicReviewerProfileDto,
+  type WhoAmIResponseDto,
+} from '@app/sdk';
 import { Badge } from './ui/badge';
+import { KarmaPill } from './social/karma-pill';
 import { useAuthToken } from '../lib/use-auth-token';
 
 export function WhoAmIBadge() {
@@ -20,6 +26,16 @@ export function WhoAmIBadge() {
   const { data, isLoading, isError } = useAuthControllerMe({
     query: { enabled: token !== null },
   });
+
+  const me = data?.data as unknown as WhoAmIResponseDto | undefined;
+
+  // V.UX.25 — surface the caller's karma score next to their badge
+  // when signed in. Public endpoint, but we only enable the query
+  // once /auth/me has resolved so we know the user id.
+  const profile = usePublicUserProfileControllerProfile(me?.sub ?? '', {
+    query: { enabled: me !== undefined && me.sub.length > 0, retry: false },
+  });
+  const profileBody = profile.data?.data as unknown as PublicReviewerProfileDto | undefined;
 
   if (token === null || isError) return null;
   if (isLoading) {
@@ -29,7 +45,6 @@ export function WhoAmIBadge() {
       </span>
     );
   }
-  const me = data?.data as unknown as WhoAmIResponseDto | undefined;
   if (!me) return null;
 
   return (
@@ -38,6 +53,13 @@ export function WhoAmIBadge() {
       <code className="rounded bg-muted/10 px-1 py-0.5 font-mono text-[10px]">
         {me.sub.slice(0, 8)}…
       </code>
+      {profileBody ? (
+        <KarmaPill
+          displayName={profileBody.displayName}
+          score={profileBody.karma.score}
+          userId={profileBody.userId}
+        />
+      ) : null}
     </span>
   );
 }
