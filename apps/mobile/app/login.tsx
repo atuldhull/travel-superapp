@@ -11,7 +11,7 @@
  */
 import { useState } from 'react';
 import { Alert } from 'react-native';
-import { router } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { Button, Input, Text, YStack } from 'tamagui';
 import { useAuthControllerLogin, type AuthSuccessResponseDto } from '@app/sdk';
 import { setAccessToken } from '../lib/sdk';
@@ -54,9 +54,16 @@ export default function LoginScreen() {
       <Button onPress={handleSubmit} disabled={login.isPending}>
         {login.isPending ? 'Signing in…' : 'Sign in'}
       </Button>
-      <Text fontSize={12} color="$color10">
-        Magic-link + register flows land in the next mobile sub-prompt.
-      </Text>
+      <Link href="/register" asChild>
+        <Text fontSize={12} color="$blue10" textAlign="center">
+          New here? Create an account
+        </Text>
+      </Link>
+      <Link href="/auth/magic-link" asChild>
+        <Text fontSize={12} color="$blue10" textAlign="center">
+          Sign in with a magic link instead
+        </Text>
+      </Link>
     </YStack>
   );
 }
