@@ -3,19 +3,24 @@
  * surfaces: Trips, Explore (near-me + discover), Inbox (notifications),
  * Profile (whoami + sign-out).
  *
- * Icon strings are emoji for now — swap to lucide-react-native once
- * Tamagui's icon set is wired up (deferred to V.UX.27 sub-prompt 2).
+ * Sub-prompt 3 swapped the placeholder icons for lucide-react-native
+ * via @tamagui/lucide-icons (auto react-native-svg peer). Active tint
+ * tracks the brand colour so the tab bar feels on-brand.
  *
  * Installed by prompt [V.UX.27].
  */
 import { Tabs } from 'expo-router';
+import { Compass, Inbox, MapPin, User } from '@tamagui/lucide-icons';
+
+const ACTIVE = '#1d4ed8';
+const INACTIVE = '#525252';
 
 export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#1d4ed8',
-        tabBarInactiveTintColor: '#525252',
+        tabBarActiveTintColor: ACTIVE,
+        tabBarInactiveTintColor: INACTIVE,
         headerStyle: { backgroundColor: '#ffffff' },
       }}
     >
@@ -24,7 +29,7 @@ export default function TabsLayout() {
         options={{
           title: 'Trips',
           tabBarLabel: 'Trips',
-          tabBarIcon: () => null,
+          tabBarIcon: ({ color, size }) => <MapPin color={color} size={size} />,
         }}
       />
       <Tabs.Screen
@@ -32,7 +37,7 @@ export default function TabsLayout() {
         options={{
           title: 'Explore',
           tabBarLabel: 'Explore',
-          tabBarIcon: () => null,
+          tabBarIcon: ({ color, size }) => <Compass color={color} size={size} />,
         }}
       />
       <Tabs.Screen
@@ -40,7 +45,7 @@ export default function TabsLayout() {
         options={{
           title: 'Inbox',
           tabBarLabel: 'Inbox',
-          tabBarIcon: () => null,
+          tabBarIcon: ({ color, size }) => <Inbox color={color} size={size} />,
         }}
       />
       <Tabs.Screen
@@ -48,7 +53,7 @@ export default function TabsLayout() {
         options={{
           title: 'Profile',
           tabBarLabel: 'Profile',
-          tabBarIcon: () => null,
+          tabBarIcon: ({ color, size }) => <User color={color} size={size} />,
         }}
       />
     </Tabs>
