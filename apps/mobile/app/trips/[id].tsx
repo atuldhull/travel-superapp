@@ -9,9 +9,10 @@
  *
  * Installed by prompt [V.UX.27].
  */
-import { ScrollView } from 'react-native';
+import { ScrollView, Share } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { Spinner, Text, YStack } from 'tamagui';
+import { Button, Spinner, Text, XStack, YStack } from 'tamagui';
+import { Share2 } from '@tamagui/lucide-icons';
 import {
   useTripControllerGetItinerary,
   useTripControllerGetOne,
@@ -20,6 +21,7 @@ import {
 } from '@app/sdk';
 import { useAuthToken } from '../../lib/use-auth-token';
 import { useOnlineStatus } from '../../lib/use-online-status';
+import { tripDeepLink } from '../../lib/deep-links';
 
 export default function TripDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -53,9 +55,23 @@ export default function TripDetailScreen() {
             <Spinner />
           ) : tripBody ? (
             <YStack gap="$2">
-              <Text fontSize={20} fontWeight="700">
-                {tripBody.trip.title}
-              </Text>
+              <XStack justifyContent="space-between" alignItems="center">
+                <Text fontSize={20} fontWeight="700" flex={1}>
+                  {tripBody.trip.title}
+                </Text>
+                <Button
+                  size="$2"
+                  icon={Share2}
+                  onPress={() => {
+                    void Share.share({
+                      message: tripDeepLink(tripBody.trip.id),
+                      title: tripBody.trip.title,
+                    });
+                  }}
+                >
+                  Share
+                </Button>
+              </XStack>
               <Text fontSize={12} color="$color10">
                 {tripBody.role} · {tripBody.trip.status} · radius {tripBody.trip.radiusKm} km
               </Text>
