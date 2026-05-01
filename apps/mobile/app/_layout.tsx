@@ -53,6 +53,12 @@ export default function RootLayout() {
               >
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                 <Stack.Screen name="login" options={{ title: 'Sign in' }} />
+                <Stack.Screen name="register" options={{ title: 'Create account' }} />
+                <Stack.Screen name="auth/magic-link" options={{ title: 'Magic link' }} />
+                <Stack.Screen
+                  name="auth/magic-link/[token]"
+                  options={{ title: 'Signing in', headerBackVisible: false }}
+                />
                 <Stack.Screen name="trips/[id]" options={{ title: 'Trip' }} />
                 <Stack.Screen name="memory-books/[id]" options={{ title: 'Memory book' }} />
               </Stack>

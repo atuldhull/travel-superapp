@@ -1,37 +1,49 @@
 /**
- * V.UX.27 — minimal online/offline detection. Uses the browser-style
- * `navigator.onLine` API which `react-native-web` polyfills + which
- * `expo-network` writes through on native (the runtime is stubbed
- * to true at boot — the offline banner will only flip after the
- * first failed query, which is acceptable for a v1 shell).
+ * V.UX.27 (sub-prompt 2) — connectivity hook backed by
+ * `@react-native-community/netinfo` on native, falling back to the
+ * browser `navigator.onLine` event on the Expo `--web` target.
  *
- * Future: replace with `@react-native-community/netinfo` when we
- * want truly active connectivity monitoring + signal-quality data
- * for the "poor signal" banner mentioned in the persona spec.
+ * Returns `true` when the device has an active connection AND the OS
+ * confirms it can reach the internet (`isInternetReachable`). A
+ * captive-portal WiFi where we're "connected" but can't reach the api
+ * still surfaces the offline banner.
+ *
+ * Sub-prompt 1 used a bare `navigator.onLine` polyfill — that only
+ * worked on web. NetInfo gives the same hook a real RN signal.
  *
  * Installed by prompt [V.UX.27].
  */
 import { useEffect, useState } from 'react';
+import NetInfo from '@react-native-community/netinfo';
+import { Platform } from 'react-native';
 
 export function useOnlineStatus(): boolean {
-  const [online, setOnline] = useState<boolean>(() => {
-    if (typeof navigator !== 'undefined' && typeof navigator.onLine === 'boolean') {
-      return navigator.onLine;
-    }
-    return true;
-  });
+  const [online, setOnline] = useState<boolean>(true);
+
   useEffect(() => {
-    if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') {
+    if (Platform.OS === 'web') {
+      if (typeof navigator !== 'undefined' && typeof navigator.onLine === 'boolean') {
+        setOnline(navigator.onLine);
+      }
+      const on = () => setOnline(true);
+      const off = () => setOnline(false);
+      if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+        window.addEventListener('online', on);
+        window.addEventListener('offline', off);
+        return () => {
+          window.removeEventListener('online', on);
+          window.removeEventListener('offline', off);
+        };
+      }
       return;
     }
-    const on = () => setOnline(true);
-    const off = () => setOnline(false);
-    window.addEventListener('online', on);
-    window.addEventListener('offline', off);
-    return () => {
-      window.removeEventListener('online', on);
-      window.removeEventListener('offline', off);
-    };
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      const reachable = state.isInternetReachable;
+      const connected = state.isConnected ?? false;
+      setOnline(reachable === null ? connected : connected && reachable);
+    });
+    return unsubscribe;
   }, []);
+
   return online;
 }
