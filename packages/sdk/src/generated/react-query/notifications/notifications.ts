@@ -18,8 +18,13 @@ import type {
   ListMyNotificationsResponseDto,
   MarkAllReadResponseDto,
   NotificationLogDto,
+  NotificationPreferencesDto,
   NotificationsControllerListMineParams,
+  PushSubscriptionDto,
+  SubscribePushRequestDto,
   UnreadCountResponseDto,
+  UnsubscribePushRequestDto,
+  UpdateNotificationPreferencesRequestDto,
 } from '../../schemas';
 
 import { apiFetch } from '../../../runtime/fetcher';
@@ -784,6 +789,598 @@ export const useNotificationsControllerRemove = <TError = void, TContext = unkno
   TContext
 > => {
   const mutationOptions = getNotificationsControllerRemoveMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Soft-archive a notification (swipe-to-archive). Owner-gated; 404 on cross-user / missing. Idempotent.
+ */
+export type notificationsControllerArchiveResponse204 = {
+  data: void;
+  status: 204;
+};
+
+export type notificationsControllerArchiveResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type notificationsControllerArchiveResponseSuccess =
+  notificationsControllerArchiveResponse204 & {
+    headers: Headers;
+  };
+export type notificationsControllerArchiveResponseError =
+  notificationsControllerArchiveResponse404 & {
+    headers: Headers;
+  };
+
+export type notificationsControllerArchiveResponse =
+  | notificationsControllerArchiveResponseSuccess
+  | notificationsControllerArchiveResponseError;
+
+export const getNotificationsControllerArchiveUrl = (id: string) => {
+  return `/api/v1/notifications/${id}/archive`;
+};
+
+export const notificationsControllerArchive = async (
+  id: string,
+  options?: RequestInit,
+): Promise<notificationsControllerArchiveResponse> => {
+  return apiFetch<notificationsControllerArchiveResponse>(
+    getNotificationsControllerArchiveUrl(id),
+    {
+      ...options,
+      method: 'POST',
+    },
+  );
+};
+
+export const getNotificationsControllerArchiveMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof notificationsControllerArchive>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof notificationsControllerArchive>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ['notificationsControllerArchive'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof notificationsControllerArchive>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return notificationsControllerArchive(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type NotificationsControllerArchiveMutationResult = NonNullable<
+  Awaited<ReturnType<typeof notificationsControllerArchive>>
+>;
+
+export type NotificationsControllerArchiveMutationError = void;
+
+/**
+ * @summary Soft-archive a notification (swipe-to-archive). Owner-gated; 404 on cross-user / missing. Idempotent.
+ */
+export const useNotificationsControllerArchive = <TError = void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof notificationsControllerArchive>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof notificationsControllerArchive>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationOptions = getNotificationsControllerArchiveMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Caller's notification preferences. Returns a default shape if the user has never written one.
+ */
+export type notificationPreferencesControllerGetMineResponse200 = {
+  data: NotificationPreferencesDto;
+  status: 200;
+};
+
+export type notificationPreferencesControllerGetMineResponseSuccess =
+  notificationPreferencesControllerGetMineResponse200 & {
+    headers: Headers;
+  };
+export type notificationPreferencesControllerGetMineResponse =
+  notificationPreferencesControllerGetMineResponseSuccess;
+
+export const getNotificationPreferencesControllerGetMineUrl = () => {
+  return `/api/v1/notifications/preferences`;
+};
+
+export const notificationPreferencesControllerGetMine = async (
+  options?: RequestInit,
+): Promise<notificationPreferencesControllerGetMineResponse> => {
+  return apiFetch<notificationPreferencesControllerGetMineResponse>(
+    getNotificationPreferencesControllerGetMineUrl(),
+    {
+      ...options,
+      method: 'GET',
+    },
+  );
+};
+
+export const getNotificationPreferencesControllerGetMineInfiniteQueryKey = () => {
+  return ['infinite', `/api/v1/notifications/preferences`] as const;
+};
+
+export const getNotificationPreferencesControllerGetMineQueryKey = () => {
+  return [`/api/v1/notifications/preferences`] as const;
+};
+
+export const getNotificationPreferencesControllerGetMineInfiniteQueryOptions = <
+  TData = Awaited<ReturnType<typeof notificationPreferencesControllerGetMine>>,
+  TError = unknown,
+>(options?: {
+  query?: UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof notificationPreferencesControllerGetMine>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getNotificationPreferencesControllerGetMineInfiniteQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof notificationPreferencesControllerGetMine>>
+  > = ({ signal }) => notificationPreferencesControllerGetMine({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, staleTime: 30000, ...queryOptions } as UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof notificationPreferencesControllerGetMine>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type NotificationPreferencesControllerGetMineInfiniteQueryResult = NonNullable<
+  Awaited<ReturnType<typeof notificationPreferencesControllerGetMine>>
+>;
+export type NotificationPreferencesControllerGetMineInfiniteQueryError = unknown;
+
+/**
+ * @summary Caller's notification preferences. Returns a default shape if the user has never written one.
+ */
+
+export function useNotificationPreferencesControllerGetMineInfinite<
+  TData = Awaited<ReturnType<typeof notificationPreferencesControllerGetMine>>,
+  TError = unknown,
+>(options?: {
+  query?: UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof notificationPreferencesControllerGetMine>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getNotificationPreferencesControllerGetMineInfiniteQueryOptions(options);
+
+  const query = useInfiniteQuery(queryOptions) as UseInfiniteQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getNotificationPreferencesControllerGetMineQueryOptions = <
+  TData = Awaited<ReturnType<typeof notificationPreferencesControllerGetMine>>,
+  TError = unknown,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof notificationPreferencesControllerGetMine>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getNotificationPreferencesControllerGetMineQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof notificationPreferencesControllerGetMine>>
+  > = ({ signal }) => notificationPreferencesControllerGetMine({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, staleTime: 30000, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof notificationPreferencesControllerGetMine>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type NotificationPreferencesControllerGetMineQueryResult = NonNullable<
+  Awaited<ReturnType<typeof notificationPreferencesControllerGetMine>>
+>;
+export type NotificationPreferencesControllerGetMineQueryError = unknown;
+
+/**
+ * @summary Caller's notification preferences. Returns a default shape if the user has never written one.
+ */
+
+export function useNotificationPreferencesControllerGetMine<
+  TData = Awaited<ReturnType<typeof notificationPreferencesControllerGetMine>>,
+  TError = unknown,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof notificationPreferencesControllerGetMine>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getNotificationPreferencesControllerGetMineQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary Partial upsert of the caller-owned notification prefs. Idempotent. Empty body is a no-op.
+ */
+export type notificationPreferencesControllerUpdateMineResponse200 = {
+  data: NotificationPreferencesDto;
+  status: 200;
+};
+
+export type notificationPreferencesControllerUpdateMineResponse422 = {
+  data: void;
+  status: 422;
+};
+
+export type notificationPreferencesControllerUpdateMineResponseSuccess =
+  notificationPreferencesControllerUpdateMineResponse200 & {
+    headers: Headers;
+  };
+export type notificationPreferencesControllerUpdateMineResponseError =
+  notificationPreferencesControllerUpdateMineResponse422 & {
+    headers: Headers;
+  };
+
+export type notificationPreferencesControllerUpdateMineResponse =
+  | notificationPreferencesControllerUpdateMineResponseSuccess
+  | notificationPreferencesControllerUpdateMineResponseError;
+
+export const getNotificationPreferencesControllerUpdateMineUrl = () => {
+  return `/api/v1/notifications/preferences`;
+};
+
+export const notificationPreferencesControllerUpdateMine = async (
+  updateNotificationPreferencesRequestDto: UpdateNotificationPreferencesRequestDto,
+  options?: RequestInit,
+): Promise<notificationPreferencesControllerUpdateMineResponse> => {
+  return apiFetch<notificationPreferencesControllerUpdateMineResponse>(
+    getNotificationPreferencesControllerUpdateMineUrl(),
+    {
+      ...options,
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(updateNotificationPreferencesRequestDto),
+    },
+  );
+};
+
+export const getNotificationPreferencesControllerUpdateMineMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof notificationPreferencesControllerUpdateMine>>,
+    TError,
+    { data: UpdateNotificationPreferencesRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof notificationPreferencesControllerUpdateMine>>,
+  TError,
+  { data: UpdateNotificationPreferencesRequestDto },
+  TContext
+> => {
+  const mutationKey = ['notificationPreferencesControllerUpdateMine'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof notificationPreferencesControllerUpdateMine>>,
+    { data: UpdateNotificationPreferencesRequestDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return notificationPreferencesControllerUpdateMine(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type NotificationPreferencesControllerUpdateMineMutationResult = NonNullable<
+  Awaited<ReturnType<typeof notificationPreferencesControllerUpdateMine>>
+>;
+export type NotificationPreferencesControllerUpdateMineMutationBody =
+  UpdateNotificationPreferencesRequestDto;
+export type NotificationPreferencesControllerUpdateMineMutationError = void;
+
+/**
+ * @summary Partial upsert of the caller-owned notification prefs. Idempotent. Empty body is a no-op.
+ */
+export const useNotificationPreferencesControllerUpdateMine = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof notificationPreferencesControllerUpdateMine>>,
+    TError,
+    { data: UpdateNotificationPreferencesRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof notificationPreferencesControllerUpdateMine>>,
+  TError,
+  { data: UpdateNotificationPreferencesRequestDto },
+  TContext
+> => {
+  const mutationOptions = getNotificationPreferencesControllerUpdateMineMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Register or refresh a Web Push subscription. Idempotent on endpoint — re-subscribing the same browser takes ownership.
+ */
+export type pushSubscriptionsControllerSubscribeResponse201 = {
+  data: PushSubscriptionDto;
+  status: 201;
+};
+
+export type pushSubscriptionsControllerSubscribeResponse422 = {
+  data: void;
+  status: 422;
+};
+
+export type pushSubscriptionsControllerSubscribeResponseSuccess =
+  pushSubscriptionsControllerSubscribeResponse201 & {
+    headers: Headers;
+  };
+export type pushSubscriptionsControllerSubscribeResponseError =
+  pushSubscriptionsControllerSubscribeResponse422 & {
+    headers: Headers;
+  };
+
+export type pushSubscriptionsControllerSubscribeResponse =
+  | pushSubscriptionsControllerSubscribeResponseSuccess
+  | pushSubscriptionsControllerSubscribeResponseError;
+
+export const getPushSubscriptionsControllerSubscribeUrl = () => {
+  return `/api/v1/notifications/push/subscribe`;
+};
+
+export const pushSubscriptionsControllerSubscribe = async (
+  subscribePushRequestDto: SubscribePushRequestDto,
+  options?: RequestInit,
+): Promise<pushSubscriptionsControllerSubscribeResponse> => {
+  return apiFetch<pushSubscriptionsControllerSubscribeResponse>(
+    getPushSubscriptionsControllerSubscribeUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(subscribePushRequestDto),
+    },
+  );
+};
+
+export const getPushSubscriptionsControllerSubscribeMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof pushSubscriptionsControllerSubscribe>>,
+    TError,
+    { data: SubscribePushRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof pushSubscriptionsControllerSubscribe>>,
+  TError,
+  { data: SubscribePushRequestDto },
+  TContext
+> => {
+  const mutationKey = ['pushSubscriptionsControllerSubscribe'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof pushSubscriptionsControllerSubscribe>>,
+    { data: SubscribePushRequestDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return pushSubscriptionsControllerSubscribe(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PushSubscriptionsControllerSubscribeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof pushSubscriptionsControllerSubscribe>>
+>;
+export type PushSubscriptionsControllerSubscribeMutationBody = SubscribePushRequestDto;
+export type PushSubscriptionsControllerSubscribeMutationError = void;
+
+/**
+ * @summary Register or refresh a Web Push subscription. Idempotent on endpoint — re-subscribing the same browser takes ownership.
+ */
+export const usePushSubscriptionsControllerSubscribe = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof pushSubscriptionsControllerSubscribe>>,
+    TError,
+    { data: SubscribePushRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof pushSubscriptionsControllerSubscribe>>,
+  TError,
+  { data: SubscribePushRequestDto },
+  TContext
+> => {
+  const mutationOptions = getPushSubscriptionsControllerSubscribeMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Owner-scoped Web Push unsubscribe. 404 if the endpoint is not registered to caller.
+ */
+export type pushSubscriptionsControllerUnsubscribeResponse204 = {
+  data: void;
+  status: 204;
+};
+
+export type pushSubscriptionsControllerUnsubscribeResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type pushSubscriptionsControllerUnsubscribeResponseSuccess =
+  pushSubscriptionsControllerUnsubscribeResponse204 & {
+    headers: Headers;
+  };
+export type pushSubscriptionsControllerUnsubscribeResponseError =
+  pushSubscriptionsControllerUnsubscribeResponse404 & {
+    headers: Headers;
+  };
+
+export type pushSubscriptionsControllerUnsubscribeResponse =
+  | pushSubscriptionsControllerUnsubscribeResponseSuccess
+  | pushSubscriptionsControllerUnsubscribeResponseError;
+
+export const getPushSubscriptionsControllerUnsubscribeUrl = () => {
+  return `/api/v1/notifications/push/subscribe`;
+};
+
+export const pushSubscriptionsControllerUnsubscribe = async (
+  unsubscribePushRequestDto: UnsubscribePushRequestDto,
+  options?: RequestInit,
+): Promise<pushSubscriptionsControllerUnsubscribeResponse> => {
+  return apiFetch<pushSubscriptionsControllerUnsubscribeResponse>(
+    getPushSubscriptionsControllerUnsubscribeUrl(),
+    {
+      ...options,
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(unsubscribePushRequestDto),
+    },
+  );
+};
+
+export const getPushSubscriptionsControllerUnsubscribeMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof pushSubscriptionsControllerUnsubscribe>>,
+    TError,
+    { data: UnsubscribePushRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof pushSubscriptionsControllerUnsubscribe>>,
+  TError,
+  { data: UnsubscribePushRequestDto },
+  TContext
+> => {
+  const mutationKey = ['pushSubscriptionsControllerUnsubscribe'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof pushSubscriptionsControllerUnsubscribe>>,
+    { data: UnsubscribePushRequestDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return pushSubscriptionsControllerUnsubscribe(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PushSubscriptionsControllerUnsubscribeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof pushSubscriptionsControllerUnsubscribe>>
+>;
+export type PushSubscriptionsControllerUnsubscribeMutationBody = UnsubscribePushRequestDto;
+export type PushSubscriptionsControllerUnsubscribeMutationError = void;
+
+/**
+ * @summary Owner-scoped Web Push unsubscribe. 404 if the endpoint is not registered to caller.
+ */
+export const usePushSubscriptionsControllerUnsubscribe = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof pushSubscriptionsControllerUnsubscribe>>,
+    TError,
+    { data: UnsubscribePushRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof pushSubscriptionsControllerUnsubscribe>>,
+  TError,
+  { data: UnsubscribePushRequestDto },
+  TContext
+> => {
+  const mutationOptions = getPushSubscriptionsControllerUnsubscribeMutationOptions(options);
 
   return useMutation(mutationOptions);
 };

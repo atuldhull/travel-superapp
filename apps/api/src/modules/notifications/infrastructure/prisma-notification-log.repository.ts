@@ -46,11 +46,13 @@ export class PrismaNotificationLogRepository implements NotificationLogRepositor
     userId: string,
     limit: number,
     channel?: NotificationChannel,
+    includeArchived = false,
   ): Promise<readonly NotificationLog[]> {
     const rows = await this.prisma.notificationLog.findMany({
       where: {
         userId,
         ...(channel !== undefined ? { channel: channel as PrismaNotificationChannel } : {}),
+        ...(includeArchived ? {} : { archivedAt: null }),
       },
       orderBy: { createdAt: 'desc' },
       take: Math.min(Math.max(limit, 1), 200),
@@ -118,6 +120,34 @@ export class PrismaNotificationLogRepository implements NotificationLogRepositor
     });
     return result.count === 1;
   }
+
+  async archiveForUser(id: string, userId: string): Promise<boolean> {
+    // V.UX.26 — `archivedAt: null` clause makes the timestamp sticky
+    // (already-archived rows are a no-op for the timestamp). The
+    // existence check has to happen separately because updateMany's
+    // count drops to 0 when the row IS already archived; we still
+    // want the call to be idempotent.
+    const result = await this.prisma.notificationLog.updateMany({
+      where: { id, userId, archivedAt: null },
+      data: { archivedAt: new Date() },
+    });
+    if (result.count === 1) return true;
+    // Either already archived (idempotent success) or not-our-row
+    // (404). Disambiguate with a single owner-scoped lookup.
+    const exists = await this.prisma.notificationLog.count({ where: { id, userId } });
+    return exists === 1;
+  }
+
+  async countDeliveredSince(userId: string, since: Date): Promise<number> {
+    return this.prisma.notificationLog.count({
+      where: {
+        userId,
+        archivedAt: null,
+        status: 'delivered' as PrismaNotificationDeliveryStatus,
+        createdAt: { gte: since },
+      },
+    });
+  }
 }
 
 function toDomain(row: PrismaNotificationLog): NotificationLog {
@@ -129,6 +159,7 @@ function toDomain(row: PrismaNotificationLog): NotificationLog {
     status: row.status as NotificationDeliveryStatus,
     payload: (row.payload ?? {}) as Readonly<Record<string, unknown>>,
     read: row.read,
+    archivedAt: row.archivedAt,
     createdAt: row.createdAt,
     deliveredAt: row.deliveredAt,
   };

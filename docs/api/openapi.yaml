@@ -2677,6 +2677,11 @@ paths:
           in: query
           schema:
             type: string
+        - name: includeArchived
+          required: true
+          in: query
+          schema:
+            type: string
       responses:
         '200':
           description: Caller's recent deliveries, newest-first.
@@ -2765,6 +2770,106 @@ paths:
       summary: Hard-delete a notification (inbox prune). Owner-gated; 404 on
         cross-user / missing.
       tags: *a48
+  /api/v1/notifications/{id}/archive:
+    post:
+      operationId: NotificationsController_archive
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Archived.
+        '404':
+          description: NOTIFICATION_NOT_FOUND.
+      security: *a47
+      summary: Soft-archive a notification (swipe-to-archive). Owner-gated; 404 on
+        cross-user / missing. Idempotent.
+      tags: *a48
+  /api/v1/notifications/preferences:
+    get:
+      operationId: NotificationPreferencesController_getMine
+      parameters: []
+      responses:
+        '200':
+          description: Preferences row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPreferencesDto'
+      security: &a49
+        - bearer: []
+      summary: Caller's notification preferences. Returns a default shape if the user
+        has never written one.
+      tags: &a50
+        - notifications
+    patch:
+      operationId: NotificationPreferencesController_updateMine
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateNotificationPreferencesRequestDto'
+      responses:
+        '200':
+          description: Updated preferences.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPreferencesDto'
+        '422':
+          description: VALIDATION_FAILED.
+      security: *a49
+      summary: Partial upsert of the caller-owned notification prefs. Idempotent.
+        Empty body is a no-op.
+      tags: *a50
+  /api/v1/notifications/push/subscribe:
+    post:
+      operationId: PushSubscriptionsController_subscribe
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubscribePushRequestDto'
+      responses:
+        '201':
+          description: Subscription stored.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushSubscriptionDto'
+        '422':
+          description: VALIDATION_FAILED.
+      security: &a51
+        - bearer: []
+      summary: Register or refresh a Web Push subscription. Idempotent on endpoint —
+        re-subscribing the same browser takes ownership.
+      tags: &a52
+        - notifications
+    delete:
+      operationId: PushSubscriptionsController_unsubscribe
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnsubscribePushRequestDto'
+      responses:
+        '204':
+          description: Unsubscribed.
+        '404':
+          description: PUSH_SUBSCRIPTION_NOT_FOUND.
+      security: *a51
+      summary: Owner-scoped Web Push unsubscribe. 404 if the endpoint is not
+        registered to caller.
+      tags: *a52
   /api/v1/admin/places:
     post:
       operationId: AdminController_create
@@ -2782,10 +2887,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AdminPlaceDto'
-      security: &a49
+      security: &a53
         - bearer: []
       summary: Curate a new Place into the canonical catalog. Admin-only.
-      tags: &a50
+      tags: &a54
         - admin
   /api/v1/admin/places/{id}:
     delete:
@@ -2801,9 +2906,9 @@ paths:
           description: Deleted.
         '404':
           description: PLACE_NOT_FOUND.
-      security: *a49
+      security: *a53
       summary: Remove a Place from the canonical catalog. Admin-only.
-      tags: *a50
+      tags: *a54
   /api/v1/trips/{tripId}/votes:
     post:
       operationId: SocialController_cast
@@ -2826,11 +2931,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VoteDto'
-      security: &a51
+      security: &a55
         - bearer: []
       summary: 'Cast or update a vote on a trip target. Body: { targetType, targetId,
         value }. Auth gate: owner OR active TripShare.'
-      tags: &a52
+      tags: &a56
         - social
     delete:
       operationId: SocialController_revoke
@@ -2849,10 +2954,10 @@ paths:
       responses:
         '204':
           description: Revoked (or no-op if no prior vote).
-      security: *a51
+      security: *a55
       summary: 'Revoke a previously-cast vote. Body: { targetType, targetId }.
         Idempotent.'
-      tags: *a52
+      tags: *a56
     get:
       operationId: SocialController_list
       parameters:
@@ -2868,9 +2973,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListTripVotesResponseDto'
-      security: *a51
+      security: *a55
       summary: Aggregated tallies for a trip's votes + the caller's own vote per target.
-      tags: *a52
+      tags: *a56
   /api/v1/trips/{tripId}/expenses:
     post:
       operationId: ExpensesController_create
@@ -2894,11 +2999,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ExpenseDto'
-      security: &a53
+      security: &a57
         - bearer: []
       summary: 'Record a shared expense on a trip. Auth gate: owner OR active
         TripShare. Splits sum-checked.'
-      tags: &a54
+      tags: &a58
         - social
     get:
       operationId: ExpensesController_list
@@ -2921,9 +3026,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListExpensesResponseDto'
-      security: *a53
+      security: *a57
       summary: List trip expenses, most-recent-first. ?limit=N (1..500, default 50).
-      tags: *a54
+      tags: *a58
   /api/v1/trips/{tripId}/expenses/balances:
     get:
       operationId: ExpensesController_balances
@@ -2941,10 +3046,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListBalancesResponseDto'
-      security: *a53
+      security: *a57
       summary: Net per-user "who owes whom" ledger. Sum is zero (modulo 2dp). 60s
         cache; write-invalidated on expense create/delete.
-      tags: *a54
+      tags: *a58
   /api/v1/trips/{tripId}/expenses/settle-up:
     get:
       operationId: ExpensesController_settleUp
@@ -2962,10 +3067,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SettleUpResponseDto'
-      security: *a53
+      security: *a57
       summary: Settle-up plan — greedy minimum-cashflow transfers that zero the trip
         ledger. Owner OR active share.
-      tags: *a54
+      tags: *a58
   /api/v1/trips/{tripId}/expenses/{id}:
     delete:
       operationId: ExpensesController_remove
@@ -2985,10 +3090,10 @@ paths:
           description: Deleted.
         '404':
           description: EXPENSE_NOT_FOUND.
-      security: *a53
+      security: *a57
       summary: Delete an expense. Payer-only — only the user who recorded it can
         remove it.
-      tags: *a54
+      tags: *a58
   /api/v1/reviews:
     post:
       operationId: ReviewsController_create
@@ -3006,11 +3111,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ReviewDto'
-      security: &a55
+      security: &a59
         - bearer: []
       summary: Create a review for any review-target (place/stay/eatery/agent).
         Owner-stamped to the caller.
-      tags: &a56
+      tags: &a60
         - social
     get:
       operationId: ReviewsController_listForTarget
@@ -3039,10 +3144,10 @@ paths:
                 $ref: '#/components/schemas/ListReviewsResponseDto'
         '400':
           description: VALIDATION_FAILED — targetType / targetId missing or invalid.
-      security: *a55
+      security: *a59
       summary: Target-scoped review listing. ?targetType + ?targetId required.
         Most-recent-first.
-      tags: *a56
+      tags: *a60
   /api/v1/reviews/summary:
     get:
       operationId: ReviewsController_summary
@@ -3066,10 +3171,10 @@ paths:
                 $ref: '#/components/schemas/ReviewSummaryDto'
         '400':
           description: VALIDATION_FAILED — targetType / targetId missing or invalid.
-      security: *a55
+      security: *a59
       summary: Aggregated review summary { count, average, histogram } for a target.
         @Public.
-      tags: *a56
+      tags: *a60
   /api/v1/reviews/mine:
     get:
       operationId: ReviewsController_listMine
@@ -3086,10 +3191,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListReviewsResponseDto'
-      security: *a55
+      security: *a59
       summary: List the caller's authored reviews, most-recent-first. ?limit=N
         (1..200, default 50).
-      tags: *a56
+      tags: *a60
   /api/v1/reviews/{id}:
     delete:
       operationId: ReviewsController_remove
@@ -3104,10 +3209,10 @@ paths:
           description: Deleted.
         '404':
           description: REVIEW_NOT_FOUND.
-      security: *a55
+      security: *a59
       summary: Delete one of the caller's reviews. Author-gated; 404 on cross-user /
         missing.
-      tags: *a56
+      tags: *a60
   /api/v1/reviews/{id}/response:
     post:
       operationId: ReviewsController_respond
@@ -3138,10 +3243,10 @@ paths:
           description: REVIEW_RESPONSE_LOCKED.
         '422':
           description: INVALID_REVIEW_RESPONSE.
-      security: *a55
+      security: *a59
       summary: Agent reply to a review (one-shot). 403 if the review is not about the
         caller; 409 on re-submit.
-      tags: *a56
+      tags: *a60
   /api/v1/reviews/{id}/helpful:
     post:
       operationId: ReviewsController_helpful
@@ -3162,10 +3267,10 @@ paths:
           description: HELPFUL_VOTE_SELF.
         '404':
           description: REVIEW_NOT_FOUND.
-      security: *a55
+      security: *a59
       summary: Mark a review as helpful. Idempotent (re-vote returns the current
         count). Author can't self-vote.
-      tags: *a56
+      tags: *a60
   /api/v1/votes/summary:
     get:
       operationId: VotesController_summary
@@ -3294,7 +3399,7 @@ paths:
           description: Too many requests — wait 60s.
       summary: ❤️ a publicly-shared trip. No auth. Per-IP rate-limited at 1/min so
         anonymous fans can react but scripts can't farm hearts.
-      tags: &a57
+      tags: &a61
         - social
   /api/v1/trips/shared/{code}/hearts:
     get:
@@ -3315,7 +3420,7 @@ paths:
         '404':
           description: SHARE_NOT_FOUND or SHARE_EXPIRED.
       summary: Current ❤️ count for a shared trip. Public, no auth.
-      tags: *a57
+      tags: *a61
   /api/v1/users/{userId}/profile:
     get:
       operationId: PublicUserProfileController_profile
@@ -5322,7 +5427,7 @@ components:
           description: Filter to a subset of modes; empty/omitted means all available.
           items:
             type: string
-            enum: &a58
+            enum: &a62
               - walk
               - public_transit
               - bicycle
@@ -5342,7 +5447,7 @@ components:
       properties:
         mode:
           type: string
-          enum: *a58
+          enum: *a62
         distanceMeters:
           type: number
         durationSeconds:
@@ -5434,7 +5539,7 @@ components:
           type: string
         severity:
           type: string
-          enum: &a59
+          enum: &a63
             - low
             - medium
             - high
@@ -5503,7 +5608,7 @@ components:
           type: string
         severity:
           type: string
-          enum: *a59
+          enum: *a63
         description:
           type: string
         evidenceUrls:
@@ -6938,6 +7043,12 @@ components:
         read:
           type: boolean
           description: True once the recipient has read the notification.
+        archivedAt:
+          type: object
+          nullable: true
+          format: date-time
+          description: V.UX.26 — set when the user swipe-archived the row. Default lister
+            filters non-null out.
         createdAt:
           type: string
           format: date-time
@@ -6954,6 +7065,7 @@ components:
         - status
         - payload
         - read
+        - archivedAt
         - createdAt
         - deliveredAt
     ListMyNotificationsResponseDto:
@@ -6975,6 +7087,115 @@ components:
           description: Count of rows actually flipped on this call. 0 on idempotent re-call.
       required:
         - marked
+    NotificationPreferencesDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        userId:
+          type: string
+          format: cuid
+        push:
+          type: boolean
+        email:
+          type: boolean
+        sms:
+          type: boolean
+        categoriesDisabled:
+          type: array
+          items:
+            type: string
+            enum: &a64
+              - trip
+              - safety
+              - social
+              - digest
+              - account
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - userId
+        - push
+        - email
+        - sms
+        - categoriesDisabled
+        - createdAt
+        - updatedAt
+    UpdateNotificationPreferencesRequestDto:
+      type: object
+      properties:
+        push:
+          type: boolean
+          description: Global push channel toggle.
+        email:
+          type: boolean
+          description: Global email channel toggle.
+        sms:
+          type: boolean
+          description: Global SMS channel toggle.
+        categoriesDisabled:
+          type: array
+          description: Categories the user has opted out of. Empty array = all categories
+            on (the default).
+          items:
+            type: string
+            enum: *a64
+    SubscribePushKeysDto:
+      type: object
+      properties:
+        p256dh:
+          type: string
+          description: Web Push spec §3 — base64 client public key.
+        auth:
+          type: string
+          description: Web Push spec §3 — base64 auth secret.
+      required:
+        - p256dh
+        - auth
+    SubscribePushRequestDto:
+      type: object
+      properties:
+        endpoint:
+          type: string
+          description: Browser-vendor endpoint URL.
+        keys:
+          $ref: '#/components/schemas/SubscribePushKeysDto'
+      required:
+        - endpoint
+        - keys
+    PushSubscriptionDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        userId:
+          type: string
+          format: cuid
+        endpoint:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - userId
+        - endpoint
+        - createdAt
+    UnsubscribePushRequestDto:
+      type: object
+      properties:
+        endpoint:
+          type: string
+          description: Browser-vendor endpoint URL to unsubscribe.
+      required:
+        - endpoint
     AdminCreatePlaceRequestDto:
       type: object
       properties:

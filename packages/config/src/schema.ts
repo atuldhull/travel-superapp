@@ -96,6 +96,17 @@ const CommsSchema = z.object({
   TWILIO_AUTH_TOKEN: z.string().optional(),
   TWILIO_FROM_NUMBER: z.string().optional(),
   /**
+   * V.UX.26 — VAPID keys for the Web Push protocol. When all three are
+   * present, the WebPushDispatcher pushes payloads to subscribed
+   * browsers. When absent, the dispatcher no-ops (logs only) so dev
+   * + tests work without provisioning real keys.
+   *
+   * Generate with: `npx web-push generate-vapid-keys`.
+   */
+  VAPID_PUBLIC_KEY: z.string().optional(),
+  VAPID_PRIVATE_KEY: z.string().optional(),
+  VAPID_SUBJECT: z.string().default('mailto:no-reply@travel.local'),
+  /**
    * Public web base URL — used to build email links (magic-link, password
    * reset, etc.). Defaults to the local Next.js dev origin so the stub
    * mailer URL works out of the box. In staging/prod, set to the canonical

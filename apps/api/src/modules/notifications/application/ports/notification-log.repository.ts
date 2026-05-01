@@ -33,12 +33,19 @@ export interface NotificationLogRepository {
    * narrows to a single delivery channel (push / email / sms) for
    * channel-segmented inbox views; absence returns the union.
    *
-   * Channel filter added by `[IV.18.12.13]`.
+   * V.UX.26 — when `includeArchived` is false (default) the lister
+   * excludes rows with a non-null `archivedAt`. The `/inbox` UI
+   * relies on this default; an "All notifications" view can pass
+   * `includeArchived: true`.
+   *
+   * Channel filter added by `[IV.18.12.13]`. Archive filter added by
+   * `[V.UX.26]`.
    */
   listForUser(
     userId: string,
     limit: number,
     channel?: NotificationChannel,
+    includeArchived?: boolean,
   ): Promise<readonly NotificationLog[]>;
   /**
    * Flip `read = true` on a row the caller owns. Returns the
@@ -93,6 +100,19 @@ export interface NotificationLogRepository {
    * Added by `[IV.18.15.6]`.
    */
   deleteForUser(id: string, userId: string): Promise<boolean>;
+  /**
+   * V.UX.26 — soft-archive (swipe-to-archive). Sets `archivedAt = now()`
+   * if it isn't already set. Owner-scoped + IDOR-safe (id+owner both
+   * narrowed in the where-clause; missing/wrong-owner both yield false).
+   * Idempotent: re-archiving a row that's already archived returns true
+   * without touching the timestamp.
+   */
+  archiveForUser(id: string, userId: string): Promise<boolean>;
+  /**
+   * V.UX.26 — count delivered notifications for the user since `since`.
+   * Powers the weekly digest body. Filters out archived rows.
+   */
+  countDeliveredSince(userId: string, since: Date): Promise<number>;
 }
 
 export const NOTIFICATION_LOG_REPOSITORY = Symbol('NotificationLogRepository');

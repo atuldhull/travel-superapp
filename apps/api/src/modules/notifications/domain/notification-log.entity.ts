@@ -17,6 +17,9 @@ export interface NotificationLog {
   readonly status: NotificationDeliveryStatus;
   readonly payload: Readonly<Record<string, unknown>>;
   readonly read: boolean;
+  /** V.UX.26 — set when the user swipes-to-archive. Default lister
+   *  filters non-null out so the inbox stays trimmed. */
+  readonly archivedAt: Date | null;
   readonly createdAt: Date;
   readonly deliveredAt: Date | null;
 }

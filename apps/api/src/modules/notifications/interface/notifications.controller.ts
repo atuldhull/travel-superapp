@@ -52,6 +52,7 @@ import {
   NotificationLogDto as NotificationLogResponseDto,
   UnreadCountResponseDto,
 } from './dto/notifications-response.dto';
+import { ArchiveNotificationUseCase } from '../application/archive-notification.use-case';
 import { DeleteNotificationUseCase } from '../application/delete-notification.use-case';
 import { GetUnreadCountUseCase } from '../application/get-unread-count.use-case';
 import { ListMyNotificationsUseCase } from '../application/list-my-notifications.use-case';
@@ -69,6 +70,7 @@ interface NotificationLogDto {
   readonly status: string;
   readonly payload: Readonly<Record<string, unknown>>;
   readonly read: boolean;
+  readonly archivedAt: string | null;
   readonly createdAt: string;
   readonly deliveredAt: string | null;
 }
@@ -81,6 +83,7 @@ function toDto(n: NotificationLog): NotificationLogDto {
     status: n.status,
     payload: n.payload,
     read: n.read,
+    archivedAt: n.archivedAt ? n.archivedAt.toISOString() : null,
     createdAt: n.createdAt.toISOString(),
     deliveredAt: n.deliveredAt ? n.deliveredAt.toISOString() : null,
   };
@@ -97,6 +100,7 @@ export class NotificationsController {
     private readonly unreadCountUc: GetUnreadCountUseCase,
     private readonly markUnreadUc: MarkNotificationUnreadUseCase,
     private readonly deleteUc: DeleteNotificationUseCase,
+    private readonly archiveUc: ArchiveNotificationUseCase,
   ) {}
 
   /**
@@ -134,6 +138,7 @@ export class NotificationsController {
     @CurrentUser() user: AuthenticatedUser,
     @Query('limit') limit?: string,
     @Query('channel') channel?: string,
+    @Query('includeArchived') includeArchived?: string,
   ): Promise<{ notifications: NotificationLogDto[] }> {
     const parsed = limit ? Math.max(1, Math.min(200, Number(limit) || 50)) : 50;
     let parsedChannel: NotificationChannel | undefined;
@@ -146,7 +151,8 @@ export class NotificationsController {
       }
       parsedChannel = channel as NotificationChannel;
     }
-    const rows = await this.listUc.execute(user.sub, parsed, parsedChannel);
+    const includeArchivedBool = includeArchived === 'true' || includeArchived === '1';
+    const rows = await this.listUc.execute(user.sub, parsed, parsedChannel, includeArchivedBool);
     return { notifications: rows.map(toDto) };
   }
 
@@ -223,5 +229,22 @@ export class NotificationsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string): Promise<void> {
     await this.deleteUc.execute({ id, userId: user.sub });
+  }
+
+  /**
+   * V.UX.26 — soft-archive (swipe-to-archive). Owner-gated; 404 on
+   * cross-user / missing. Idempotent. The default lister filters
+   * archived rows; pass `?includeArchived=true` to see them again.
+   */
+  @ApiOperation({
+    summary:
+      'Soft-archive a notification (swipe-to-archive). Owner-gated; 404 on cross-user / missing. Idempotent.',
+  })
+  @ApiResponse({ status: 204, description: 'Archived.' })
+  @ApiResponse({ status: 404, description: 'NOTIFICATION_NOT_FOUND.' })
+  @Post(':id/archive')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async archive(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string): Promise<void> {
+    await this.archiveUc.execute({ id, userId: user.sub });
   }
 }

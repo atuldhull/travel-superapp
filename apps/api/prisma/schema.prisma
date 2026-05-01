@@ -165,6 +165,7 @@ model User {
   stayBookings       StayBooking[]
   notificationPrefs  NotificationPreference?
   notificationLogs   NotificationLog[]
+  pushSubscriptions  PushSubscription[]
   liveEvents         LiveEvent[]
   agent              Agent?
   dishReports        Dish[]
@@ -992,15 +993,44 @@ model Commission {
 // ─── 15. Notifications ──────────────────────────────────────────────────
 
 model NotificationPreference {
-  id           String @id @default(cuid())
-  userId       String @unique
-  user         User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  push         Boolean @default(true)
-  email        Boolean @default(true)
-  sms          Boolean @default(false)
-  quietHours   Json? // { start: "22:00", end: "07:00", tz }
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  push                Boolean  @default(true)
+  email               Boolean  @default(true)
+  sms                 Boolean  @default(false)
+  quietHours          Json? // { start: "22:00", end: "07:00", tz }
+  // V.UX.26 — per-category opt-out. Categories are derived from
+  // the `templateId` prefix at dispatch time (trip / safety /
+  // social / digest / account). Storing them as a string array
+  // keeps the schema flexible — new categories don't need a
+  // migration. Empty array = all categories on (the default).
+  categoriesDisabled  String[] @default([])
+  // V.UX.26 — last weekly-digest tick that fired for this user. The
+  // scheduler uses this to enforce a "Sunday 8am LOCAL, once per
+  // week" cadence without an external cron table. Null = never
+  // received one yet.
+  lastDigestSentAt    DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+// V.UX.26 — Web Push API subscription. One row per browser
+// install — endpoint is globally unique (the URL the browser
+// vendor minted). p256dh + auth are the public-key + auth-secret
+// the encrypt step needs (Web Push spec §3). Hard-deleted when
+// the user revokes permission OR the endpoint returns 410.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model NotificationLog {
@@ -1015,10 +1045,15 @@ model NotificationLog {
   errorMessage       String?
   attempts           Int                        @default(0)
   read               Boolean                    @default(false)
+  // V.UX.26 — inbox archive. Set when the user swipes-to-archive
+  // a row; the inbox lister filters out non-null. Hard-delete is
+  // still available via DELETE /notifications/:id.
+  archivedAt         DateTime?
   createdAt          DateTime                   @default(now())
   deliveredAt        DateTime?
 
   @@index([userId, read, createdAt])
+  @@index([userId, archivedAt, createdAt])
   @@index([status, createdAt])
 }
 
