@@ -55,6 +55,17 @@ export interface ReviewRepository {
    * (not null) so the consumer surface has a single shape.
    */
   aggregateByTarget(targetType: ReviewTargetType, targetId: string): Promise<ReviewSummary>;
+
+  /**
+   * V.UX.24 — set the target-owner reply on a review. Conditional
+   * update — only writes when `responseBody IS NULL`, so a re-submit
+   * returns null (use-case maps that to `REVIEW_RESPONSE_LOCKED`).
+   * `responseAt` is stamped to "now" by the adapter.
+   */
+  setResponse(input: {
+    readonly id: string;
+    readonly responseBody: string;
+  }): Promise<Review | null>;
 }
 
 export const REVIEW_REPOSITORY = Symbol('ReviewRepository');

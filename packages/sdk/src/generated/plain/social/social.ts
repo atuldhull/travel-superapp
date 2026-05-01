@@ -15,6 +15,7 @@ import type {
   ListReviewsResponseDto,
   ListTripVotesResponseDto,
   PlaceReviewSummaryResponseDto,
+  RespondToReviewRequestDto,
   ReviewDto,
   ReviewSummaryDto,
   ReviewsControllerListForTargetParams,
@@ -492,6 +493,67 @@ export const reviewsControllerRemove = async (
   return apiFetch<reviewsControllerRemoveResponse>(getReviewsControllerRemoveUrl(id), {
     ...options,
     method: 'DELETE',
+  });
+};
+
+/**
+ * @summary Agent reply to a review (one-shot). 403 if the review is not about the caller; 409 on re-submit.
+ */
+export type reviewsControllerRespondResponse200 = {
+  data: ReviewDto;
+  status: 200;
+};
+
+export type reviewsControllerRespondResponse403 = {
+  data: void;
+  status: 403;
+};
+
+export type reviewsControllerRespondResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type reviewsControllerRespondResponse409 = {
+  data: void;
+  status: 409;
+};
+
+export type reviewsControllerRespondResponse422 = {
+  data: void;
+  status: 422;
+};
+
+export type reviewsControllerRespondResponseSuccess = reviewsControllerRespondResponse200 & {
+  headers: Headers;
+};
+export type reviewsControllerRespondResponseError = (
+  | reviewsControllerRespondResponse403
+  | reviewsControllerRespondResponse404
+  | reviewsControllerRespondResponse409
+  | reviewsControllerRespondResponse422
+) & {
+  headers: Headers;
+};
+
+export type reviewsControllerRespondResponse =
+  | reviewsControllerRespondResponseSuccess
+  | reviewsControllerRespondResponseError;
+
+export const getReviewsControllerRespondUrl = (id: string) => {
+  return `/api/v1/reviews/${id}/response`;
+};
+
+export const reviewsControllerRespond = async (
+  id: string,
+  respondToReviewRequestDto: RespondToReviewRequestDto,
+  options?: RequestInit,
+): Promise<reviewsControllerRespondResponse> => {
+  return apiFetch<reviewsControllerRespondResponse>(getReviewsControllerRespondUrl(id), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(respondToReviewRequestDto),
   });
 };
 

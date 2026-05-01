@@ -835,6 +835,12 @@ model Review {
   body        String
   language    String   @default("en")
   verifiedBooking Boolean @default(false)
+  // V.UX.24 — agent (or other target owner) reply. Stamped at most
+  // once per review (the use-case rejects re-submissions). The
+  // V.UX.24 surface is agent-only; later slices may broaden to
+  // place/stay/eatery owners.
+  responseBody String?
+  responseAt   DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

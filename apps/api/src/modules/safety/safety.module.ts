@@ -22,6 +22,8 @@ import { AdminResolveSosUseCase } from './application/admin-resolve-sos.use-case
 import { DismissScamReportUseCase } from './application/dismiss-scam-report.use-case';
 import { FindNearbyCrimesUseCase } from './application/find-nearby-crimes.use-case';
 import { FindNearbyScamsUseCase } from './application/find-nearby-scams.use-case';
+import { GetAgentDashboardUseCase } from './application/get-agent-dashboard.use-case';
+import { GetAgentProfileUseCase } from './application/get-agent-profile.use-case';
 import { GetCountryPrimerUseCase } from './application/get-country-primer.use-case';
 import { GetSafetyScoreUseCase } from './application/get-safety-score.use-case';
 import { ListMySosEventsUseCase } from './application/list-my-sos-events.use-case';
@@ -35,6 +37,7 @@ import { SOS_EVENT_REPOSITORY } from './application/ports/sos-event.repository';
 import { ReportScamUseCase } from './application/report-scam.use-case';
 import { ResolveSosUseCase } from './application/resolve-sos.use-case';
 import { TriggerSosUseCase } from './application/trigger-sos.use-case';
+import { UpdateAgentProfileUseCase } from './application/update-agent-profile.use-case';
 import { VerifyScamReportUseCase } from './application/verify-scam-report.use-case';
 import { PrismaAgentRepository } from './infrastructure/prisma-agent.repository';
 import { PrismaCrimeIncidentRepository } from './infrastructure/prisma-crime-incident.repository';
@@ -43,6 +46,7 @@ import { PrismaSosEventRepository } from './infrastructure/prisma-sos-event.repo
 import { StubContactNotifierAdapter } from './infrastructure/stub-contact-notifier.adapter';
 import { AdminScamModerationController } from './interface/admin-scam-moderation.controller';
 import { AdminSosController } from './interface/admin-sos.controller';
+import { AgentSelfController } from './interface/agent-self.controller';
 import { AgentsController } from './interface/agents.controller';
 import { CountryPrimerController } from './interface/country-primer.controller';
 import { CrimeLayerController } from './interface/crime.controller';
@@ -68,6 +72,7 @@ import { SosController } from './interface/sos.controller';
     AdminScamModerationController,
     AdminSosController,
     AgentsController,
+    AgentSelfController,
     CountryPrimerController,
   ],
   providers: [
@@ -94,11 +99,17 @@ import { SosController } from './interface/sos.controller';
     AdminResolveSosUseCase,
     MatchAgentForTripUseCase,
     GetCountryPrimerUseCase,
+    GetAgentProfileUseCase,
+    UpdateAgentProfileUseCase,
+    GetAgentDashboardUseCase,
   ],
   exports: [
     SCAM_REPORT_REPOSITORY,
     SOS_EVENT_REPOSITORY,
     CRIME_INCIDENT_REPOSITORY,
+    // V.UX.24 — exported so the social module's RespondToReviewUseCase
+    // can owner-gate review responses against the caller's Agent row.
+    AGENT_REPOSITORY,
     GetSafetyScoreUseCase,
     StubContactNotifierAdapter,
   ],

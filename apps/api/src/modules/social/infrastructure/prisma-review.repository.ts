@@ -101,6 +101,23 @@ export class PrismaReviewRepository implements ReviewRepository {
       histogram: histogram as ReviewRatingHistogram,
     };
   }
+
+  async setResponse(input: {
+    readonly id: string;
+    readonly responseBody: string;
+  }): Promise<Review | null> {
+    // Conditional update — only writes when responseBody IS NULL.
+    // Re-submits hit count=0 and the use-case turns that into
+    // `REVIEW_RESPONSE_LOCKED` (the response is one-shot to keep
+    // the wire shape simple; an admin/edit flow lands in a follow-up).
+    const result = await this.prisma.review.updateMany({
+      where: { id: input.id, responseBody: null },
+      data: { responseBody: input.responseBody, responseAt: new Date() },
+    });
+    if (result.count === 0) return null;
+    const row = await this.prisma.review.findUnique({ where: { id: input.id } });
+    return row ? toDomain(row) : null;
+  }
 }
 
 function toDomain(row: PrismaReview): Review {
@@ -114,6 +131,8 @@ function toDomain(row: PrismaReview): Review {
     body: row.body,
     language: row.language,
     verifiedBooking: row.verifiedBooking,
+    responseBody: row.responseBody,
+    responseAt: row.responseAt,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };

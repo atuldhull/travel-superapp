@@ -15,7 +15,8 @@
  *
  * Installed by prompt [IV.18.12.3].
  */
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
+import { SafetyModule } from '../safety/safety.module';
 import { TripModule } from '../trip/trip.module';
 import { CastVoteUseCase } from './application/cast-vote.use-case';
 import { CreateExpenseUseCase } from './application/create-expense.use-case';
@@ -37,6 +38,7 @@ import { ListTripVotesUseCase } from './application/list-trip-votes.use-case';
 import { EXPENSE_REPOSITORY } from './application/ports/expense.repository';
 import { REVIEW_REPOSITORY } from './application/ports/review.repository';
 import { VOTE_REPOSITORY } from './application/ports/vote.repository';
+import { RespondToReviewUseCase } from './application/respond-to-review.use-case';
 import { RevokeVoteUseCase } from './application/revoke-vote.use-case';
 import { PrismaExpenseRepository } from './infrastructure/prisma-expense.repository';
 import { PrismaReviewRepository } from './infrastructure/prisma-review.repository';
@@ -52,7 +54,11 @@ import { StayReviewSummaryController } from './interface/stay-review-summary.con
 import { VotesController } from './interface/votes.controller';
 
 @Module({
-  imports: [TripModule],
+  // V.UX.24 — pulls AGENT_REPOSITORY from SafetyModule so the
+  // RespondToReviewUseCase can owner-gate against the caller's
+  // Agent row. forwardRef because cross-module loops are easy to
+  // introduce here as new persona surfaces land.
+  imports: [TripModule, forwardRef(() => SafetyModule)],
   controllers: [
     SocialController,
     ExpensesController,
@@ -85,6 +91,7 @@ import { VotesController } from './interface/votes.controller';
     GetReviewSummaryUseCase,
     GetVoteSummaryUseCase,
     GetReviewBundleForTargetUseCase,
+    RespondToReviewUseCase,
     TripBalancesCache,
   ],
   exports: [VOTE_REPOSITORY, EXPENSE_REPOSITORY, REVIEW_REPOSITORY],
