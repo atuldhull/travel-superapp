@@ -17,6 +17,7 @@ import { SosFab } from '../components/safety/sos-fab';
 import { TranslateWidget } from '../components/translation/translate-widget';
 import { ThemeToggle } from '../components/ui/theme-toggle';
 import { WhoAmIBadge } from '../components/whoami-badge';
+import { InboxBadge } from '../components/inbox/inbox-badge';
 import { Providers } from './providers';
 
 export const metadata: Metadata = {
@@ -55,7 +56,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <div className="mx-auto max-w-3xl px-6 py-10 space-y-6">
             <header className="flex items-center justify-between gap-3">
               <WhoAmIBadge />
-              <ThemeToggle />
+              <div className="flex items-center gap-2">
+                <InboxBadge />
+                <ThemeToggle />
+              </div>
             </header>
             {children}
           </div>

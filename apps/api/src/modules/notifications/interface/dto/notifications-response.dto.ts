@@ -32,6 +32,14 @@ export class NotificationLogDto {
   @ApiProperty({ description: 'True once the recipient has read the notification.' })
   declare read: boolean;
 
+  @ApiProperty({
+    nullable: true,
+    format: 'date-time',
+    description:
+      'V.UX.26 — set when the user swipe-archived the row. Default lister filters non-null out.',
+  })
+  declare archivedAt: string | null;
+
   @ApiProperty({ format: 'date-time' })
   declare createdAt: string;
 

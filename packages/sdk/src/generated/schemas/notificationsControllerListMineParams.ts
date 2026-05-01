@@ -5,4 +5,5 @@
 export type NotificationsControllerListMineParams = {
   limit: string;
   channel: string;
+  includeArchived: string;
 };

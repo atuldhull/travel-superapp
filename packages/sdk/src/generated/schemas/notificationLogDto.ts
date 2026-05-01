@@ -4,6 +4,7 @@
 import type { NotificationLogDtoChannel } from './notificationLogDtoChannel';
 import type { NotificationLogDtoStatus } from './notificationLogDtoStatus';
 import type { NotificationLogDtoPayload } from './notificationLogDtoPayload';
+import type { NotificationLogDtoArchivedAt } from './notificationLogDtoArchivedAt';
 import type { NotificationLogDtoDeliveredAt } from './notificationLogDtoDeliveredAt';
 
 export interface NotificationLogDto {
@@ -17,6 +18,11 @@ export interface NotificationLogDto {
   payload: NotificationLogDtoPayload;
   /** True once the recipient has read the notification. */
   read: boolean;
+  /**
+   * V.UX.26 — set when the user swipe-archived the row. Default lister filters non-null out.
+   * @nullable
+   */
+  archivedAt: NotificationLogDtoArchivedAt;
   createdAt: string;
   /**
    * When the deliver-side adapter reported success; null while queued/failed.

@@ -30,9 +30,10 @@ export class ListMyNotificationsUseCase {
     userId: string,
     limit?: number,
     channel?: NotificationChannel,
+    includeArchived = false,
   ): Promise<readonly NotificationLog[]> {
     const clamped =
       limit === undefined ? DEFAULT_LIMIT : Math.max(1, Math.min(MAX_LIMIT, Math.floor(limit)));
-    return this.repo.listForUser(userId, clamped, channel);
+    return this.repo.listForUser(userId, clamped, channel, includeArchived);
   }
 }

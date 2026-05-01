@@ -43,6 +43,12 @@ export * from './generated/react-query/food/food';
 export * from './generated/react-query/weather/weather';
 // V.UX.22 — cultural persona: festival overlay hook lives in the events barrel.
 export * from './generated/react-query/events/events';
+// V.UX.26 — notifications persona: inbox + per-category prefs + Web Push
+// subscription. The notifications barrel was implicit before; adding the
+// V.UX.26 surfaces (`useNotificationsControllerArchive`,
+// `useNotificationPreferencesController*`, `usePushSubscriptionsController*`)
+// requires it to be explicit.
+export * from './generated/react-query/notifications/notifications';
 
 // Schema types from openapi.yaml's components/schemas. Re-exported so
 // consumers don't have to reach into deep generated paths. Add the
@@ -258,6 +264,17 @@ export type { UserKarmaDto } from './generated/schemas/userKarmaDto';
 export type { HelpfulVoteResponseDto } from './generated/schemas/helpfulVoteResponseDto';
 export type { PublicReviewerProfileDto } from './generated/schemas/publicReviewerProfileDto';
 export type { PublicReviewerRecentReviewDto } from './generated/schemas/publicReviewerRecentReviewDto';
+// V.UX.26: notification persona — inbox archive + per-category prefs +
+// Web Push subscription. Hooks (useNotificationPreferencesController*,
+// usePushSubscriptionsController*, useNotificationsControllerArchive)
+// live under the already-star-exported `notifications` barrel via the
+// existing `@ApiTags('notifications')` grouping.
+export type { NotificationPreferencesDto } from './generated/schemas/notificationPreferencesDto';
+export type { UpdateNotificationPreferencesRequestDto } from './generated/schemas/updateNotificationPreferencesRequestDto';
+export type { PushSubscriptionDto } from './generated/schemas/pushSubscriptionDto';
+export type { SubscribePushRequestDto } from './generated/schemas/subscribePushRequestDto';
+export type { SubscribePushKeysDto } from './generated/schemas/subscribePushKeysDto';
+export type { UnsubscribePushRequestDto } from './generated/schemas/unsubscribePushRequestDto';
 // V.UX.5: business-traveler — Expense / Balance schemas already
 // exported above (lines 121-126); social hooks barrel re-exported
 // above to surface useExpensesController{Create,List,Balances,Remove}.

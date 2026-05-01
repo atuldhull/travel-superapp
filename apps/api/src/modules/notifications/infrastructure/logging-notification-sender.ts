@@ -26,10 +26,16 @@ import {
   NOTIFICATION_LOG_REPOSITORY,
   type NotificationLogRepository,
 } from '../application/ports/notification-log.repository';
+import {
+  NOTIFICATION_PREFERENCE_REPOSITORY,
+  type NotificationPreferenceRepository,
+} from '../application/ports/notification-preference.repository';
 import type {
   NotificationSender,
   SendNotificationInput,
 } from '../application/ports/notification-sender';
+import { categoryFromTemplateKey } from '../application/notification-category.helper';
+import { WebPushDispatcher } from './web-push-dispatcher';
 
 const log = createLogger('notifications.sender');
 
@@ -47,9 +53,61 @@ export class LoggingNotificationSender implements NotificationSender {
   constructor(
     @Inject(NOTIFICATION_LOG_REPOSITORY)
     private readonly logRepo: NotificationLogRepository,
+    @Inject(NOTIFICATION_PREFERENCE_REPOSITORY)
+    private readonly prefsRepo: NotificationPreferenceRepository,
+    @Inject(WebPushDispatcher)
+    private readonly webPush: WebPushDispatcher,
   ) {}
 
   async send(input: SendNotificationInput): Promise<void> {
+    // V.UX.26 — channel-level + per-category gate. The pref defaults
+    // (push=true, email=true, sms=false, no categories disabled)
+    // mean an unconfigured user still receives push + email.
+    const prefs = await this.prefsRepo.getOrDefault(input.userId);
+    const category = categoryFromTemplateKey(input.templateKey);
+    const channelOn =
+      (input.channel === 'push' && prefs.push) ||
+      (input.channel === 'email' && prefs.email) ||
+      (input.channel === 'sms' && prefs.sms);
+    const categoryOn = !prefs.categoriesDisabled.includes(category);
+    if (!channelOn || !categoryOn) {
+      log.info(
+        {
+          userId: input.userId,
+          channel: input.channel,
+          template: input.templateKey,
+          channelOn,
+          categoryOn,
+        },
+        'notification_send_suppressed_by_prefs',
+      );
+      try {
+        await this.logRepo.create({
+          userId: input.userId,
+          channel: input.channel,
+          templateId: input.templateKey,
+          status: 'suppressed',
+          payload: {
+            subject: input.subject,
+            body: input.body,
+            context: input.context,
+            reason: !channelOn ? 'channel_disabled' : 'category_disabled',
+          },
+          deliveredAt: null,
+        });
+      } catch (err) {
+        log.warn(
+          {
+            err: err instanceof Error ? err.message : String(err),
+            userId: input.userId,
+            template: input.templateKey,
+          },
+          'notification_log_persist_failed',
+        );
+      }
+      return;
+    }
+
     log.info(
       {
         userId: input.userId,
@@ -90,6 +148,21 @@ export class LoggingNotificationSender implements NotificationSender {
         },
         'notification_log_persist_failed',
       );
+    }
+
+    // V.UX.26 — push channel also fans out to the user's Web Push
+    // subscriptions. Best-effort; the dispatcher swallows per-sub
+    // failures + reaps 410-Gone endpoints.
+    if (input.channel === 'push') {
+      const url =
+        typeof input.context['url'] === 'string' ? (input.context['url'] as string) : undefined;
+      await this.webPush.dispatchToUser(input.userId, {
+        title: input.subject,
+        body: input.body,
+        ...(url !== undefined ? { url } : {}),
+        templateKey: input.templateKey,
+        context: input.context,
+      });
     }
   }
 

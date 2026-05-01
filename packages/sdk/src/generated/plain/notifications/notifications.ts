@@ -5,8 +5,13 @@ import type {
   ListMyNotificationsResponseDto,
   MarkAllReadResponseDto,
   NotificationLogDto,
+  NotificationPreferencesDto,
   NotificationsControllerListMineParams,
+  PushSubscriptionDto,
+  SubscribePushRequestDto,
   UnreadCountResponseDto,
+  UnsubscribePushRequestDto,
+  UpdateNotificationPreferencesRequestDto,
 } from '../../schemas';
 
 import { apiFetch } from '../../../runtime/fetcher';
@@ -254,4 +259,213 @@ export const notificationsControllerRemove = async (
     ...options,
     method: 'DELETE',
   });
+};
+
+/**
+ * @summary Soft-archive a notification (swipe-to-archive). Owner-gated; 404 on cross-user / missing. Idempotent.
+ */
+export type notificationsControllerArchiveResponse204 = {
+  data: void;
+  status: 204;
+};
+
+export type notificationsControllerArchiveResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type notificationsControllerArchiveResponseSuccess =
+  notificationsControllerArchiveResponse204 & {
+    headers: Headers;
+  };
+export type notificationsControllerArchiveResponseError =
+  notificationsControllerArchiveResponse404 & {
+    headers: Headers;
+  };
+
+export type notificationsControllerArchiveResponse =
+  | notificationsControllerArchiveResponseSuccess
+  | notificationsControllerArchiveResponseError;
+
+export const getNotificationsControllerArchiveUrl = (id: string) => {
+  return `/api/v1/notifications/${id}/archive`;
+};
+
+export const notificationsControllerArchive = async (
+  id: string,
+  options?: RequestInit,
+): Promise<notificationsControllerArchiveResponse> => {
+  return apiFetch<notificationsControllerArchiveResponse>(
+    getNotificationsControllerArchiveUrl(id),
+    {
+      ...options,
+      method: 'POST',
+    },
+  );
+};
+
+/**
+ * @summary Caller's notification preferences. Returns a default shape if the user has never written one.
+ */
+export type notificationPreferencesControllerGetMineResponse200 = {
+  data: NotificationPreferencesDto;
+  status: 200;
+};
+
+export type notificationPreferencesControllerGetMineResponseSuccess =
+  notificationPreferencesControllerGetMineResponse200 & {
+    headers: Headers;
+  };
+export type notificationPreferencesControllerGetMineResponse =
+  notificationPreferencesControllerGetMineResponseSuccess;
+
+export const getNotificationPreferencesControllerGetMineUrl = () => {
+  return `/api/v1/notifications/preferences`;
+};
+
+export const notificationPreferencesControllerGetMine = async (
+  options?: RequestInit,
+): Promise<notificationPreferencesControllerGetMineResponse> => {
+  return apiFetch<notificationPreferencesControllerGetMineResponse>(
+    getNotificationPreferencesControllerGetMineUrl(),
+    {
+      ...options,
+      method: 'GET',
+    },
+  );
+};
+
+/**
+ * @summary Partial upsert of the caller-owned notification prefs. Idempotent. Empty body is a no-op.
+ */
+export type notificationPreferencesControllerUpdateMineResponse200 = {
+  data: NotificationPreferencesDto;
+  status: 200;
+};
+
+export type notificationPreferencesControllerUpdateMineResponse422 = {
+  data: void;
+  status: 422;
+};
+
+export type notificationPreferencesControllerUpdateMineResponseSuccess =
+  notificationPreferencesControllerUpdateMineResponse200 & {
+    headers: Headers;
+  };
+export type notificationPreferencesControllerUpdateMineResponseError =
+  notificationPreferencesControllerUpdateMineResponse422 & {
+    headers: Headers;
+  };
+
+export type notificationPreferencesControllerUpdateMineResponse =
+  | notificationPreferencesControllerUpdateMineResponseSuccess
+  | notificationPreferencesControllerUpdateMineResponseError;
+
+export const getNotificationPreferencesControllerUpdateMineUrl = () => {
+  return `/api/v1/notifications/preferences`;
+};
+
+export const notificationPreferencesControllerUpdateMine = async (
+  updateNotificationPreferencesRequestDto: UpdateNotificationPreferencesRequestDto,
+  options?: RequestInit,
+): Promise<notificationPreferencesControllerUpdateMineResponse> => {
+  return apiFetch<notificationPreferencesControllerUpdateMineResponse>(
+    getNotificationPreferencesControllerUpdateMineUrl(),
+    {
+      ...options,
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(updateNotificationPreferencesRequestDto),
+    },
+  );
+};
+
+/**
+ * @summary Register or refresh a Web Push subscription. Idempotent on endpoint — re-subscribing the same browser takes ownership.
+ */
+export type pushSubscriptionsControllerSubscribeResponse201 = {
+  data: PushSubscriptionDto;
+  status: 201;
+};
+
+export type pushSubscriptionsControllerSubscribeResponse422 = {
+  data: void;
+  status: 422;
+};
+
+export type pushSubscriptionsControllerSubscribeResponseSuccess =
+  pushSubscriptionsControllerSubscribeResponse201 & {
+    headers: Headers;
+  };
+export type pushSubscriptionsControllerSubscribeResponseError =
+  pushSubscriptionsControllerSubscribeResponse422 & {
+    headers: Headers;
+  };
+
+export type pushSubscriptionsControllerSubscribeResponse =
+  | pushSubscriptionsControllerSubscribeResponseSuccess
+  | pushSubscriptionsControllerSubscribeResponseError;
+
+export const getPushSubscriptionsControllerSubscribeUrl = () => {
+  return `/api/v1/notifications/push/subscribe`;
+};
+
+export const pushSubscriptionsControllerSubscribe = async (
+  subscribePushRequestDto: SubscribePushRequestDto,
+  options?: RequestInit,
+): Promise<pushSubscriptionsControllerSubscribeResponse> => {
+  return apiFetch<pushSubscriptionsControllerSubscribeResponse>(
+    getPushSubscriptionsControllerSubscribeUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(subscribePushRequestDto),
+    },
+  );
+};
+
+/**
+ * @summary Owner-scoped Web Push unsubscribe. 404 if the endpoint is not registered to caller.
+ */
+export type pushSubscriptionsControllerUnsubscribeResponse204 = {
+  data: void;
+  status: 204;
+};
+
+export type pushSubscriptionsControllerUnsubscribeResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type pushSubscriptionsControllerUnsubscribeResponseSuccess =
+  pushSubscriptionsControllerUnsubscribeResponse204 & {
+    headers: Headers;
+  };
+export type pushSubscriptionsControllerUnsubscribeResponseError =
+  pushSubscriptionsControllerUnsubscribeResponse404 & {
+    headers: Headers;
+  };
+
+export type pushSubscriptionsControllerUnsubscribeResponse =
+  | pushSubscriptionsControllerUnsubscribeResponseSuccess
+  | pushSubscriptionsControllerUnsubscribeResponseError;
+
+export const getPushSubscriptionsControllerUnsubscribeUrl = () => {
+  return `/api/v1/notifications/push/subscribe`;
+};
+
+export const pushSubscriptionsControllerUnsubscribe = async (
+  unsubscribePushRequestDto: UnsubscribePushRequestDto,
+  options?: RequestInit,
+): Promise<pushSubscriptionsControllerUnsubscribeResponse> => {
+  return apiFetch<pushSubscriptionsControllerUnsubscribeResponse>(
+    getPushSubscriptionsControllerUnsubscribeUrl(),
+    {
+      ...options,
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(unsubscribePushRequestDto),
+    },
+  );
 };

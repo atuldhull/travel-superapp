@@ -19,10 +19,14 @@
  * RedisStreamsEventBus adapter.
  *
  * Installed by prompt [IV.18.2.8]. Persistence + read-API +
- * Safety.SosTriggered handler added in [IV.18.15.1].
+ * Safety.SosTriggered handler added in [IV.18.15.1]. V.UX.26
+ * adds: Web Push subscription surface, per-category prefs, swipe-
+ * to-archive, weekly-digest scheduler.
  */
 import { Module } from '@nestjs/common';
+import { ArchiveNotificationUseCase } from './application/archive-notification.use-case';
 import { DeleteNotificationUseCase } from './application/delete-notification.use-case';
+import { GetNotificationPreferencesUseCase } from './application/get-notification-preferences.use-case';
 import { ItineraryReadyHandler } from './application/handlers/itinerary-ready.handler';
 import { TripLockedHandler } from './application/handlers/trip-locked.handler';
 import { SessionIssuedHandler } from './application/handlers/session-issued.handler';
@@ -33,15 +37,37 @@ import { MarkAllNotificationsReadUseCase } from './application/mark-all-notifica
 import { MarkNotificationReadUseCase } from './application/mark-notification-read.use-case';
 import { MarkNotificationUnreadUseCase } from './application/mark-notification-unread.use-case';
 import { NOTIFICATION_LOG_REPOSITORY } from './application/ports/notification-log.repository';
+import { NOTIFICATION_PREFERENCE_REPOSITORY } from './application/ports/notification-preference.repository';
 import { NOTIFICATION_SENDER } from './application/ports/notification-sender';
+import { PUSH_SUBSCRIPTION_REPOSITORY } from './application/ports/push-subscription.repository';
+import { SendWeeklyDigestUseCase } from './application/send-weekly-digest.use-case';
+import { SubscribePushUseCase } from './application/subscribe-push.use-case';
+import { UnsubscribePushUseCase } from './application/unsubscribe-push.use-case';
+import { UpdateNotificationPreferencesUseCase } from './application/update-notification-preferences.use-case';
 import { LoggingNotificationSender } from './infrastructure/logging-notification-sender';
 import { PrismaNotificationLogRepository } from './infrastructure/prisma-notification-log.repository';
+import { PrismaNotificationPreferenceRepository } from './infrastructure/prisma-notification-preference.repository';
+import { PrismaPushSubscriptionRepository } from './infrastructure/prisma-push-subscription.repository';
+import { WebPushDispatcher } from './infrastructure/web-push-dispatcher';
 import { NotificationsController } from './interface/notifications.controller';
+import { NotificationPreferencesController } from './interface/notification-preferences.controller';
+import { PushSubscriptionsController } from './interface/push-subscriptions.controller';
+import { WeeklyDigestScheduler } from './interface/weekly-digest.scheduler';
 
 @Module({
-  controllers: [NotificationsController],
+  controllers: [
+    NotificationsController,
+    NotificationPreferencesController,
+    PushSubscriptionsController,
+  ],
   providers: [
     { provide: NOTIFICATION_LOG_REPOSITORY, useClass: PrismaNotificationLogRepository },
+    {
+      provide: NOTIFICATION_PREFERENCE_REPOSITORY,
+      useClass: PrismaNotificationPreferenceRepository,
+    },
+    { provide: PUSH_SUBSCRIPTION_REPOSITORY, useClass: PrismaPushSubscriptionRepository },
+    WebPushDispatcher,
     // Concrete sender — exposed as itself too so tests can
     // `moduleRef.get(LoggingNotificationSender)` to drain history.
     LoggingNotificationSender,
@@ -56,7 +82,20 @@ import { NotificationsController } from './interface/notifications.controller';
     GetUnreadCountUseCase,
     MarkNotificationUnreadUseCase,
     DeleteNotificationUseCase,
+    ArchiveNotificationUseCase,
+    GetNotificationPreferencesUseCase,
+    UpdateNotificationPreferencesUseCase,
+    SubscribePushUseCase,
+    UnsubscribePushUseCase,
+    SendWeeklyDigestUseCase,
+    WeeklyDigestScheduler,
   ],
-  exports: [NOTIFICATION_SENDER, NOTIFICATION_LOG_REPOSITORY, LoggingNotificationSender],
+  exports: [
+    NOTIFICATION_SENDER,
+    NOTIFICATION_LOG_REPOSITORY,
+    NOTIFICATION_PREFERENCE_REPOSITORY,
+    PUSH_SUBSCRIPTION_REPOSITORY,
+    LoggingNotificationSender,
+  ],
 })
 export class NotificationsModule {}
