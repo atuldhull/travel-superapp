@@ -28,6 +28,7 @@
     "yet-another-react-lightbox": "^3.21.0"
   },
   "devDependencies": {
+    "@axe-core/react": "^4.10.0",
     "@tailwindcss/postcss": "^4.0.0",
     "@types/leaflet": "^1.9.14",
     "@types/node": "^22.10.5",
