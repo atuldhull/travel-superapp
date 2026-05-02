@@ -31,6 +31,7 @@ import { Card, CardHeader, CardSubtitle, CardTitle } from '../../components/ui/c
 import { Skeleton } from '../../components/ui/skeleton';
 import { NotificationRow } from '../../components/inbox/notification-row';
 import { useAuthToken } from '../../lib/use-auth-token';
+import { announce } from '../../lib/announce';
 import {
   ensureWebPushSubscription,
   type WebPushSubscribeResult,
@@ -118,9 +119,11 @@ export default function InboxPage() {
     try {
       await archive.mutateAsync({ id });
       await refreshList();
+      announce('Notification archived');
     } catch (err) {
       const e = err as ApiError;
       setErrMsg(`${e.code ?? `HTTP_${e.status ?? '???'}`} — ${e.message ?? 'Archive failed.'}`);
+      announce(`Archive failed: ${e.message ?? 'Try again.'}`, 'assertive');
     } finally {
       setActiveArchiveId(null);
     }
@@ -131,9 +134,11 @@ export default function InboxPage() {
     try {
       await remove.mutateAsync({ id });
       await refreshList();
+      announce('Notification deleted');
     } catch (err) {
       const e = err as ApiError;
       setErrMsg(`${e.code ?? `HTTP_${e.status ?? '???'}`} — ${e.message ?? 'Delete failed.'}`);
+      announce(`Delete failed: ${e.message ?? 'Try again.'}`, 'assertive');
     } finally {
       setActiveDeleteId(null);
     }

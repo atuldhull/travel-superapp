@@ -13,11 +13,15 @@ import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import Script from 'next/script';
 import './globals.css';
+import Link from 'next/link';
 import { SosFab } from '../components/safety/sos-fab';
 import { TranslateWidget } from '../components/translation/translate-widget';
 import { ThemeToggle } from '../components/ui/theme-toggle';
 import { WhoAmIBadge } from '../components/whoami-badge';
 import { InboxBadge } from '../components/inbox/inbox-badge';
+import { AxeDevBoot } from '../components/a11y/axe-dev-boot';
+import { LiveRegion } from '../components/a11y/live-region';
+import { SkipToMain } from '../components/a11y/skip-to-main';
 import { Providers } from './providers';
 
 export const metadata: Metadata = {
@@ -52,16 +56,32 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         </Script>
       </head>
       <body className="bg-surface text-surface-foreground font-sans antialiased">
+        {/* V.UX.28 — first-tab-stop skip link. Hidden until focused. */}
+        <SkipToMain />
         <Providers>
           <div className="mx-auto max-w-3xl px-6 py-10 space-y-6">
-            <header className="flex items-center justify-between gap-3">
+            <header className="flex items-center justify-between gap-3" role="banner">
               <WhoAmIBadge />
-              <div className="flex items-center gap-2">
+              <nav aria-label="Primary" className="flex items-center gap-2">
                 <InboxBadge />
                 <ThemeToggle />
-              </div>
+              </nav>
             </header>
-            {children}
+            <main id="main" tabIndex={-1} className="outline-none">
+              {children}
+            </main>
+            <footer
+              role="contentinfo"
+              className="mt-8 flex items-center justify-between gap-3 border-t border-muted/15 pt-4 text-xs text-muted"
+            >
+              <span>© TravelSuperApp</span>
+              <Link
+                href={'/accessibility' as never}
+                className="rounded underline-offset-2 hover:underline focus:outline-none focus:ring-2 focus:ring-brand"
+              >
+                Accessibility statement
+              </Link>
+            </footer>
           </div>
           {/* V.UX.13 — persistent SOS FAB. Renders disabled for
               anonymous callers; tap → confirm modal → POST /safety/sos
@@ -70,6 +90,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           {/* V.UX.18 — persistent translate widget bottom-left.
               Disabled for anonymous callers (api requires auth). */}
           <TranslateWidget />
+          {/* V.UX.28 — visually-hidden ARIA live regions. Consumers
+              push messages via `announce()` from `lib/announce.ts`. */}
+          <LiveRegion />
+          {/* V.UX.28 — @axe-core/react in dev only. Logs a11y
+              violations to the console as React renders. */}
+          <AxeDevBoot />
         </Providers>
       </body>
     </html>

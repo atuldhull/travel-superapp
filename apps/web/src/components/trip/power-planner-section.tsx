@@ -205,6 +205,31 @@ export function PowerPlannerSection({ tripId, enabled }: PowerPlannerSectionProp
     });
   }
 
+  function reorderItem(params: {
+    dayId: string;
+    itemId: string;
+    direction: 'up' | 'down' | 'top' | 'bottom';
+  }) {
+    setErrMsg(null);
+    setOrder((prev) => {
+      const next = { ...prev };
+      const list = [...(next[params.dayId] ?? [])];
+      const idx = list.indexOf(params.itemId);
+      if (idx < 0) return prev;
+      let target = idx;
+      if (params.direction === 'up') target = Math.max(0, idx - 1);
+      else if (params.direction === 'down') target = Math.min(list.length - 1, idx + 1);
+      else if (params.direction === 'top') target = 0;
+      else target = list.length - 1;
+      if (target === idx) return prev;
+      list.splice(idx, 1);
+      list.splice(target, 0, params.itemId);
+      next[params.dayId] = list;
+      persistDay(params.dayId, list);
+      return next;
+    });
+  }
+
   function saveNotes(params: { dayId: string; itemId: string; notes: string }) {
     setErrMsg(null);
     const ids = order[params.dayId] ?? [];
@@ -264,6 +289,7 @@ export function PowerPlannerSection({ tripId, enabled }: PowerPlannerSectionProp
                 items={itemsInOrder}
                 localItemIds={ids}
                 onNotesBlur={saveNotes}
+                onItemReorder={reorderItem}
                 onOptimize={() => optimizeMutation.mutate({ tripId, dayId: d.id })}
                 isOptimizing={
                   optimizeMutation.isPending && optimizeMutation.variables?.dayId === d.id
@@ -284,6 +310,11 @@ interface DayPanelProps {
   readonly items: readonly DragItem[];
   readonly localItemIds: readonly string[];
   readonly onNotesBlur: (params: { dayId: string; itemId: string; notes: string }) => void;
+  readonly onItemReorder: (params: {
+    dayId: string;
+    itemId: string;
+    direction: 'up' | 'down' | 'top' | 'bottom';
+  }) => void;
   readonly onOptimize: () => void;
   readonly isOptimizing: boolean;
   readonly optMsg: OptimizeMessage | null;
@@ -295,6 +326,7 @@ function DayPanel({
   items,
   localItemIds,
   onNotesBlur,
+  onItemReorder,
   onOptimize,
   isOptimizing,
   optMsg,
@@ -345,7 +377,12 @@ function DayPanel({
         </p>
       ) : null}
       <div className="grid gap-3 lg:grid-cols-[1fr_minmax(0,360px)]">
-        <DayItemDragList dayId={day.id} items={items} onItemNotesBlur={onNotesBlur} />
+        <DayItemDragList
+          dayId={day.id}
+          items={items}
+          onItemNotesBlur={onNotesBlur}
+          onItemReorder={onItemReorder}
+        />
         <RouteMap stops={stops} className="h-56 w-full" />
       </div>
     </li>
