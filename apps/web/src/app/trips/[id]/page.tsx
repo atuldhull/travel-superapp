@@ -96,7 +96,7 @@ export default function TripDetailPage() {
       onSuccess: async (_response: unknown) => {
         await queryClient.invalidateQueries({ queryKey: getTripControllerGetOneQueryKey(id) });
         await queryClient.invalidateQueries({
-          queryKey: getTripControllerListQueryKey({ limit: '20' }),
+          queryKey: getTripControllerListQueryKey({ limit: '20' } as never),
         });
         setEditing(false);
         setErrorMsg(null);
@@ -113,7 +113,7 @@ export default function TripDetailPage() {
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: getTripControllerGetOneQueryKey(id) });
         await queryClient.invalidateQueries({
-          queryKey: getTripControllerListQueryKey({ limit: '20' }),
+          queryKey: getTripControllerListQueryKey({ limit: '20' } as never),
         });
         setErrorMsg(null);
       },
@@ -129,7 +129,7 @@ export default function TripDetailPage() {
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: getTripControllerGetOneQueryKey(id) });
         await queryClient.invalidateQueries({
-          queryKey: getTripControllerListQueryKey({ limit: '20' }),
+          queryKey: getTripControllerListQueryKey({ limit: '20' } as never),
         });
         setErrorMsg(null);
       },
@@ -145,7 +145,7 @@ export default function TripDetailPage() {
       onSuccess: async (response: { data?: unknown }) => {
         const newTrip = response.data as TripDto;
         await queryClient.invalidateQueries({
-          queryKey: getTripControllerListQueryKey({ limit: '20' }),
+          queryKey: getTripControllerListQueryKey({ limit: '20' } as never),
         });
         router.push(`/trips/${newTrip.id}`);
       },
@@ -162,7 +162,7 @@ export default function TripDetailPage() {
     mutation: {
       onSuccess: async () => {
         await queryClient.invalidateQueries({
-          queryKey: getTripControllerListQueryKey({ limit: '20' }),
+          queryKey: getTripControllerListQueryKey({ limit: '20' } as never),
         });
         router.push('/trips');
       },

@@ -49,6 +49,14 @@ export class TripDto {
   @ApiProperty({ description: 'Bumped on every accepted update — concurrency control.' })
   declare version: number;
 
+  @ApiProperty({
+    nullable: true,
+    format: 'date-time',
+    description:
+      'V.UX.30 — non-null when the trip is soft-archived (auto-sweep > 365 days OR manual). Default lister filters non-null out.',
+  })
+  declare archivedAt: string | null;
+
   @ApiProperty({ format: 'date-time' })
   declare createdAt: string;
 

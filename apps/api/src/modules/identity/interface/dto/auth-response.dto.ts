@@ -85,6 +85,14 @@ export class WhoAmIResponseDto {
       'True iff the user has completed (or skipped) the 3-step onboarding wizard. Web client uses this to decide whether to bounce post-login → /onboarding or → /trips. Installed by [V.UX.3].',
   })
   declare hasSeenOnboarding: boolean;
+
+  @ApiProperty({
+    nullable: true,
+    format: 'date-time',
+    description:
+      'V.UX.30 — the visit BEFORE the current one. Web compares this against now() to decide whether to render the welcome-back hero (>30d gap fires it). Null on first sign-in.',
+  })
+  declare previousSeenAt: string | null;
 }
 
 /**

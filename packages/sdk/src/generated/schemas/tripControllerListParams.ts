@@ -4,4 +4,5 @@
 
 export type TripControllerListParams = {
   limit: string;
+  archived: string;
 };

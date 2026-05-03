@@ -25,9 +25,11 @@ export interface ListTripsResult {
 export class ListTripsUseCase {
   constructor(@Inject(TRIP_REPOSITORY) private readonly trips: TripRepository) {}
 
-  async execute(userId: string, limit = 20): Promise<ListTripsResult> {
+  async execute(userId: string, limit = 20, archived = false): Promise<ListTripsResult> {
     const [owned, collaborated] = await Promise.all([
-      this.trips.listByUser(userId, limit),
+      this.trips.listByUser(userId, limit, archived),
+      // Collaborated trips don't carry an archived filter — collab is
+      // a participation signal, not a freshness one. Keep V.UX.9 shape.
       this.trips.listCollaboratedByUser(userId, limit),
     ]);
     return { owned, collaborated };

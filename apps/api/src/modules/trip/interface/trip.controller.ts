@@ -39,7 +39,12 @@ import {
 import { NotFoundError } from '@app/errors';
 import { type AuthenticatedUser, CurrentUser, Public } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
+import { ArchiveTripUseCase } from '../application/archive-trip.use-case';
 import { CreateTripDraftUseCase } from '../application/create-trip-draft.use-case';
+import {
+  SuggestFromHistoryUseCase,
+  type DestinationSuggestion,
+} from '../application/suggest-from-history.use-case';
 import { GeneratePlanWithAiUseCase } from '../application/generate-plan-with-ai.use-case';
 import { GenerateSamplePlanUseCase } from '../application/generate-sample-plan.use-case';
 import { CreateTripShareUseCase } from '../application/create-trip-share.use-case';
@@ -125,6 +130,7 @@ interface TripDto {
   readonly startsOn: string | null;
   readonly endsOn: string | null;
   readonly version: number;
+  readonly archivedAt: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
 }
@@ -139,6 +145,7 @@ function toDto(t: Trip): TripDto {
     startsOn: t.startsOn ? t.startsOn.toISOString() : null,
     endsOn: t.endsOn ? t.endsOn.toISOString() : null,
     version: t.version,
+    archivedAt: t.archivedAt ? t.archivedAt.toISOString() : null,
     createdAt: t.createdAt.toISOString(),
     updatedAt: t.updatedAt.toISOString(),
   };
@@ -177,6 +184,8 @@ export class TripController {
     private readonly getTripEvents: GetTripEventsUseCase,
     private readonly getTripTransportLegs: GetTripTransportLegsUseCase,
     private readonly suggestPlacesForTrip: SuggestPlacesForTripUseCase,
+    private readonly archiveTrip: ArchiveTripUseCase,
+    private readonly suggestFromHistory: SuggestFromHistoryUseCase,
     private readonly tripOverviewCache: TripOverviewCache,
   ) {}
 
@@ -214,13 +223,58 @@ export class TripController {
   async list(
     @CurrentUser() user: AuthenticatedUser,
     @Query('limit') limit?: string,
+    @Query('archived') archived?: string,
   ): Promise<{ trips: TripDto[]; collaborated: TripDto[] }> {
     const parsed = limit ? Math.max(1, Math.min(100, Number(limit) || 20)) : 20;
-    const { owned, collaborated } = await this.listTrips.execute(user.sub, parsed);
+    const archivedBool = archived === 'true' || archived === '1';
+    const { owned, collaborated } = await this.listTrips.execute(user.sub, parsed, archivedBool);
     return {
       trips: owned.map(toDto),
       collaborated: collaborated.map(toDto),
     };
+  }
+
+  @ApiOperation({
+    summary:
+      "V.UX.30 — destination suggestions seeded from caller's past trips. Empty history → 3 globally popular picks.",
+  })
+  @ApiResponse({ status: 200, description: 'Up to 3 suggestions.' })
+  @Get('suggestions')
+  @HttpCode(HttpStatus.OK)
+  async suggestions(
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<{ suggestions: DestinationSuggestion[] }> {
+    const suggestions = await this.suggestFromHistory.execute(user.sub);
+    return { suggestions: [...suggestions] };
+  }
+
+  @ApiOperation({
+    summary: 'V.UX.30 — archive a trip (soft). Idempotent. Owner-gated; 404 on cross-user.',
+  })
+  @ApiResponse({ status: 200, description: 'Archived trip row.', type: TripResponseDto })
+  @ApiResponse({ status: 404, description: 'TRIP_NOT_FOUND.' })
+  @ApiParam({ name: 'id', format: 'cuid' })
+  @Post(':id/archive')
+  @HttpCode(HttpStatus.OK)
+  async archive(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string): Promise<TripDto> {
+    const trip = await this.archiveTrip.execute({ id, userId: user.sub, archive: true });
+    return toDto(trip);
+  }
+
+  @ApiOperation({
+    summary: 'V.UX.30 — unarchive a trip. Idempotent. Owner-gated; 404 on cross-user.',
+  })
+  @ApiResponse({ status: 200, description: 'Unarchived trip row.', type: TripResponseDto })
+  @ApiResponse({ status: 404, description: 'TRIP_NOT_FOUND.' })
+  @ApiParam({ name: 'id', format: 'cuid' })
+  @Post(':id/unarchive')
+  @HttpCode(HttpStatus.OK)
+  async unarchive(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ): Promise<TripDto> {
+    const trip = await this.archiveTrip.execute({ id, userId: user.sub, archive: false });
+    return toDto(trip);
   }
 
   @ApiOperation({
