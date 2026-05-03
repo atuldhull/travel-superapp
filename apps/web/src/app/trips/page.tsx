@@ -16,7 +16,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useTripControllerList, type ListTripsResponseDto, type TripDto } from '@app/sdk';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -24,6 +24,8 @@ import { Card, CardHeader, CardSubtitle, CardTitle } from '../../components/ui/c
 import { Skeleton } from '../../components/ui/skeleton';
 import { clearAccessToken } from '../../lib/auth-store';
 import { useAuthBootComplete, useAuthToken } from '../../lib/use-auth-token';
+import { useShortcut } from '../../lib/use-shortcuts';
+import { useVimListNav } from '../../lib/use-vim-list-nav';
 
 export default function TripsPage() {
   const router = useRouter();
@@ -41,6 +43,14 @@ export default function TripsPage() {
     { limit: '20' },
     { query: { enabled: token !== null } },
   );
+
+  // V.UX.29 — vim j/k focus through trip cards + `n` to create.
+  const listRef = useRef<HTMLDivElement | null>(null);
+  useVimListNav(listRef, { enabled: token !== null });
+  useShortcut('n', (e) => {
+    e.preventDefault();
+    router.push('/trips/new' as never);
+  });
 
   function onLogout() {
     clearAccessToken();
@@ -98,7 +108,7 @@ export default function TripsPage() {
       ) : trips.length === 0 && collaborated.length === 0 ? (
         <EmptyState />
       ) : (
-        <>
+        <div ref={listRef}>
           {trips.length > 0 ? (
             <ul className="grid gap-4 sm:grid-cols-2">
               {trips.map((t) => (
@@ -107,7 +117,7 @@ export default function TripsPage() {
             </ul>
           ) : null}
           {collaborated.length > 0 ? (
-            <section className="space-y-2">
+            <section className="mt-6 space-y-2">
               <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
                 Shared with you
               </h2>
@@ -118,7 +128,7 @@ export default function TripsPage() {
               </ul>
             </section>
           ) : null}
-        </>
+        </div>
       )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link href="/" className="text-sm text-muted hover:underline">
@@ -151,7 +161,11 @@ function TripCard({ trip, role }: { trip: TripDto; role: 'owner' | 'collaborator
     <Card as="li" className={role === 'collaborator' ? 'border-emerald-500/40' : undefined}>
       <CardHeader>
         <CardTitle>
-          <Link href={`/trips/${trip.id}` as never} className="hover:underline">
+          <Link
+            href={`/trips/${trip.id}` as never}
+            data-vim-item
+            className="rounded outline-none hover:underline focus:ring-2 focus:ring-brand"
+          >
             {trip.title}
           </Link>
         </CardTitle>
