@@ -22,6 +22,8 @@ import { InboxBadge } from '../components/inbox/inbox-badge';
 import { AxeDevBoot } from '../components/a11y/axe-dev-boot';
 import { LiveRegion } from '../components/a11y/live-region';
 import { SkipToMain } from '../components/a11y/skip-to-main';
+import { CommandPalette } from '../components/cmdk/command-palette';
+import { ShortcutSheet } from '../components/cmdk/shortcut-sheet';
 import { Providers } from './providers';
 
 export const metadata: Metadata = {
@@ -96,6 +98,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           {/* V.UX.28 — @axe-core/react in dev only. Logs a11y
               violations to the console as React renders. */}
           <AxeDevBoot />
+          {/* V.UX.29 — global command palette (Cmd+K) + shortcut
+              cheat-sheet (?). Both render their own portal/modal so
+              they float above every other element. */}
+          <CommandPalette />
+          <ShortcutSheet />
         </Providers>
       </body>
     </html>
