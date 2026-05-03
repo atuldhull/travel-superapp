@@ -154,7 +154,7 @@ export default function NewTripPage() {
         });
         // Invalidate the trips list so /trips re-fetches on arrival.
         await queryClient.invalidateQueries({
-          queryKey: getTripControllerListQueryKey({ limit: '20' }),
+          queryKey: getTripControllerListQueryKey({ limit: '20' } as never),
         });
         router.push('/trips');
         // Surface trip id in the URL so the destination page can flash

@@ -393,6 +393,7 @@ export class AuthController {
     sid: string;
     role: 'user' | 'premium' | 'agent' | 'admin';
     hasSeenOnboarding: boolean;
+    previousSeenAt: string | null;
   }> {
     // Soft-deleted users would already have been rejected by the
     // JwtAuthGuard's session lookup, so a missing row here is a
@@ -401,11 +402,23 @@ export class AuthController {
     // so the web client doesn't loop them through /onboarding before
     // their session naturally invalidates.
     const row = await this.users.findById(user.sub);
+    // V.UX.30 — atomically swap lastSeenAt → previousSeenAt and pull
+    // the post-swap value so the welcome-back hero can render in the
+    // same round-trip. On error fall back to the row value so the
+    // probe never bounces.
+    let previousSeenAt: Date | null = row?.previousSeenAt ?? null;
+    try {
+      const stamp = await this.users.stampSeen(user.sub, new Date());
+      previousSeenAt = stamp.previousSeenAt;
+    } catch {
+      /* best-effort */
+    }
     return {
       sub: user.sub,
       sid: user.sid,
       role: user.role,
       hasSeenOnboarding: row?.hasSeenOnboarding ?? true,
+      previousSeenAt: previousSeenAt ? previousSeenAt.toISOString() : null,
     };
   }
 

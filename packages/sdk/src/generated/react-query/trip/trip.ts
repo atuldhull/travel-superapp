@@ -295,6 +295,346 @@ export function useTripControllerList<
 }
 
 /**
+ * @summary V.UX.30 — destination suggestions seeded from caller's past trips. Empty history → 3 globally popular picks.
+ */
+export type tripControllerSuggestionsResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type tripControllerSuggestionsResponseSuccess = tripControllerSuggestionsResponse200 & {
+  headers: Headers;
+};
+export type tripControllerSuggestionsResponse = tripControllerSuggestionsResponseSuccess;
+
+export const getTripControllerSuggestionsUrl = () => {
+  return `/api/v1/trips/suggestions`;
+};
+
+export const tripControllerSuggestions = async (
+  options?: RequestInit,
+): Promise<tripControllerSuggestionsResponse> => {
+  return apiFetch<tripControllerSuggestionsResponse>(getTripControllerSuggestionsUrl(), {
+    ...options,
+    method: 'GET',
+  });
+};
+
+export const getTripControllerSuggestionsInfiniteQueryKey = () => {
+  return ['infinite', `/api/v1/trips/suggestions`] as const;
+};
+
+export const getTripControllerSuggestionsQueryKey = () => {
+  return [`/api/v1/trips/suggestions`] as const;
+};
+
+export const getTripControllerSuggestionsInfiniteQueryOptions = <
+  TData = Awaited<ReturnType<typeof tripControllerSuggestions>>,
+  TError = unknown,
+>(options?: {
+  query?: UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof tripControllerSuggestions>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getTripControllerSuggestionsInfiniteQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof tripControllerSuggestions>>> = ({
+    signal,
+  }) => tripControllerSuggestions({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, staleTime: 30000, ...queryOptions } as UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof tripControllerSuggestions>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type TripControllerSuggestionsInfiniteQueryResult = NonNullable<
+  Awaited<ReturnType<typeof tripControllerSuggestions>>
+>;
+export type TripControllerSuggestionsInfiniteQueryError = unknown;
+
+/**
+ * @summary V.UX.30 — destination suggestions seeded from caller's past trips. Empty history → 3 globally popular picks.
+ */
+
+export function useTripControllerSuggestionsInfinite<
+  TData = Awaited<ReturnType<typeof tripControllerSuggestions>>,
+  TError = unknown,
+>(options?: {
+  query?: UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof tripControllerSuggestions>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getTripControllerSuggestionsInfiniteQueryOptions(options);
+
+  const query = useInfiniteQuery(queryOptions) as UseInfiniteQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getTripControllerSuggestionsQueryOptions = <
+  TData = Awaited<ReturnType<typeof tripControllerSuggestions>>,
+  TError = unknown,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof tripControllerSuggestions>>, TError, TData>;
+  request?: SecondParameter<typeof apiFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getTripControllerSuggestionsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof tripControllerSuggestions>>> = ({
+    signal,
+  }) => tripControllerSuggestions({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, staleTime: 30000, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof tripControllerSuggestions>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type TripControllerSuggestionsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof tripControllerSuggestions>>
+>;
+export type TripControllerSuggestionsQueryError = unknown;
+
+/**
+ * @summary V.UX.30 — destination suggestions seeded from caller's past trips. Empty history → 3 globally popular picks.
+ */
+
+export function useTripControllerSuggestions<
+  TData = Awaited<ReturnType<typeof tripControllerSuggestions>>,
+  TError = unknown,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof tripControllerSuggestions>>, TError, TData>;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getTripControllerSuggestionsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary V.UX.30 — archive a trip (soft). Idempotent. Owner-gated; 404 on cross-user.
+ */
+export type tripControllerArchiveResponse200 = {
+  data: TripDto;
+  status: 200;
+};
+
+export type tripControllerArchiveResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type tripControllerArchiveResponseSuccess = tripControllerArchiveResponse200 & {
+  headers: Headers;
+};
+export type tripControllerArchiveResponseError = tripControllerArchiveResponse404 & {
+  headers: Headers;
+};
+
+export type tripControllerArchiveResponse =
+  | tripControllerArchiveResponseSuccess
+  | tripControllerArchiveResponseError;
+
+export const getTripControllerArchiveUrl = (id: string) => {
+  return `/api/v1/trips/${id}/archive`;
+};
+
+export const tripControllerArchive = async (
+  id: string,
+  options?: RequestInit,
+): Promise<tripControllerArchiveResponse> => {
+  return apiFetch<tripControllerArchiveResponse>(getTripControllerArchiveUrl(id), {
+    ...options,
+    method: 'POST',
+  });
+};
+
+export const getTripControllerArchiveMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof tripControllerArchive>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof tripControllerArchive>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ['tripControllerArchive'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof tripControllerArchive>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return tripControllerArchive(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type TripControllerArchiveMutationResult = NonNullable<
+  Awaited<ReturnType<typeof tripControllerArchive>>
+>;
+
+export type TripControllerArchiveMutationError = void;
+
+/**
+ * @summary V.UX.30 — archive a trip (soft). Idempotent. Owner-gated; 404 on cross-user.
+ */
+export const useTripControllerArchive = <TError = void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof tripControllerArchive>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof tripControllerArchive>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationOptions = getTripControllerArchiveMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary V.UX.30 — unarchive a trip. Idempotent. Owner-gated; 404 on cross-user.
+ */
+export type tripControllerUnarchiveResponse200 = {
+  data: TripDto;
+  status: 200;
+};
+
+export type tripControllerUnarchiveResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type tripControllerUnarchiveResponseSuccess = tripControllerUnarchiveResponse200 & {
+  headers: Headers;
+};
+export type tripControllerUnarchiveResponseError = tripControllerUnarchiveResponse404 & {
+  headers: Headers;
+};
+
+export type tripControllerUnarchiveResponse =
+  | tripControllerUnarchiveResponseSuccess
+  | tripControllerUnarchiveResponseError;
+
+export const getTripControllerUnarchiveUrl = (id: string) => {
+  return `/api/v1/trips/${id}/unarchive`;
+};
+
+export const tripControllerUnarchive = async (
+  id: string,
+  options?: RequestInit,
+): Promise<tripControllerUnarchiveResponse> => {
+  return apiFetch<tripControllerUnarchiveResponse>(getTripControllerUnarchiveUrl(id), {
+    ...options,
+    method: 'POST',
+  });
+};
+
+export const getTripControllerUnarchiveMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof tripControllerUnarchive>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof tripControllerUnarchive>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ['tripControllerUnarchive'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof tripControllerUnarchive>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return tripControllerUnarchive(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type TripControllerUnarchiveMutationResult = NonNullable<
+  Awaited<ReturnType<typeof tripControllerUnarchive>>
+>;
+
+export type TripControllerUnarchiveMutationError = void;
+
+/**
+ * @summary V.UX.30 — unarchive a trip. Idempotent. Owner-gated; 404 on cross-user.
+ */
+export const useTripControllerUnarchive = <TError = void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof tripControllerUnarchive>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof tripControllerUnarchive>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationOptions = getTripControllerUnarchiveMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
  * @summary Fetch a single trip. Owner OR active collaborator (vote/expense). 404 otherwise (IDOR-safe).
  */
 export type tripControllerGetOneResponse200 = {

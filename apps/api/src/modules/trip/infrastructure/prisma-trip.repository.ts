@@ -51,9 +51,16 @@ export class PrismaTripRepository implements TripRepository {
     return row ? toDomain(row) : null;
   }
 
-  async listByUser(userId: string, limit: number): Promise<readonly Trip[]> {
+  async listByUser(userId: string, limit: number, archived?: boolean): Promise<readonly Trip[]> {
     const rows = await this.prisma.trip.findMany({
-      where: { userId },
+      where: {
+        userId,
+        ...(archived === undefined
+          ? {}
+          : archived
+            ? { archivedAt: { not: null } }
+            : { archivedAt: null }),
+      },
       orderBy: { createdAt: 'desc' },
       take: Math.min(Math.max(limit, 1), 100),
     });
@@ -152,6 +159,35 @@ export class PrismaTripRepository implements TripRepository {
     const result = await this.prisma.trip.deleteMany({ where: { id } });
     return result.count === 1;
   }
+
+  async setArchivedForUser(id: string, userId: string, archive: boolean): Promise<Trip | null> {
+    const result = await this.prisma.trip.updateMany({
+      where: { id, userId },
+      data: { archivedAt: archive ? new Date() : null },
+    });
+    if (result.count !== 1) return null;
+    const row = await this.prisma.trip.findUnique({ where: { id } });
+    return row ? toDomain(row) : null;
+  }
+
+  async autoArchiveOlderThan(cutoff: Date): Promise<number> {
+    const result = await this.prisma.trip.updateMany({
+      where: {
+        archivedAt: null,
+        createdAt: { lt: cutoff },
+      },
+      data: { archivedAt: new Date() },
+    });
+    return result.count;
+  }
+
+  async findMostRecentForUser(userId: string): Promise<Trip | null> {
+    const row = await this.prisma.trip.findFirst({
+      where: { userId, archivedAt: null },
+      orderBy: { createdAt: 'desc' },
+    });
+    return row ? toDomain(row) : null;
+  }
 }
 
 function toDomain(row: PrismaTrip): Trip {
@@ -164,6 +200,7 @@ function toDomain(row: PrismaTrip): Trip {
     startsOn: row.startsOn,
     endsOn: row.endsOn,
     version: row.version,
+    archivedAt: row.archivedAt,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };

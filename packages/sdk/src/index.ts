@@ -264,6 +264,11 @@ export type { UserKarmaDto } from './generated/schemas/userKarmaDto';
 export type { HelpfulVoteResponseDto } from './generated/schemas/helpfulVoteResponseDto';
 export type { PublicReviewerProfileDto } from './generated/schemas/publicReviewerProfileDto';
 export type { PublicReviewerRecentReviewDto } from './generated/schemas/publicReviewerRecentReviewDto';
+// V.UX.30: returning-user persona — Trip.archivedAt + welcome-back signal.
+// Hooks (useTripControllerArchive/Unarchive/Suggestions) live in the
+// already-star-exported `trip` barrel. WhoAmIResponseDto already
+// exported above (line 73) so the new `previousSeenAt` field flows
+// through automatically once the SDK is regenerated.
 // V.UX.26: notification persona — inbox archive + per-category prefs +
 // Web Push subscription. Hooks (useNotificationPreferencesController*,
 // usePushSubscriptionsController*, useNotificationsControllerArchive)

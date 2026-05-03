@@ -29,6 +29,14 @@ export interface UserRecord {
    * Installed by prompt [V.UX.3].
    */
   readonly hasSeenOnboarding: boolean;
+  /**
+   * V.UX.30 — `lastSeenAt` is the timestamp of the CURRENT visit;
+   * `previousSeenAt` is the visit BEFORE this one. The web hero
+   * compares `previousSeenAt → now` to decide if the user has been
+   * away long enough (>30d) to deserve the welcome-back banner.
+   */
+  readonly lastSeenAt: Date | null;
+  readonly previousSeenAt: Date | null;
 }
 
 export interface CreateUserInput {
@@ -74,6 +82,17 @@ export interface UserRepository {
    * Installed by prompt [V.UX.3].
    */
   markOnboardingComplete(userId: string): Promise<void>;
+
+  /**
+   * V.UX.30 — atomically swap `lastSeenAt → previousSeenAt` and stamp
+   * `lastSeenAt = now`. Returns the value `previousSeenAt` holds AFTER
+   * the swap so the caller can render the welcome-back hero without a
+   * second read. Throttled inside the adapter so repeated /auth/me hits
+   * within the same hour don't destroy the welcome-back signal:
+   * `previousSeenAt` only advances when the gap from current
+   * `lastSeenAt` to now exceeds the threshold (default 1 hour).
+   */
+  stampSeen(userId: string, now: Date): Promise<{ previousSeenAt: Date | null }>;
 }
 
 export const USER_REPOSITORY = Symbol('UserRepository');
