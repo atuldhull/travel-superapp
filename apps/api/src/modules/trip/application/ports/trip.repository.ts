@@ -40,8 +40,13 @@ export interface TripRepository {
   findById(id: string): Promise<Trip | null>;
 
   /** Simple listing for the user's own trips — descending by
-   *  `createdAt`, capped by the caller. */
-  listByUser(userId: string, limit: number): Promise<readonly Trip[]>;
+   *  `createdAt`, capped by the caller.
+   *
+   *  V.UX.30 — `archived` defaults to false (active only). Pass
+   *  `true` to fetch the Archived tab; `undefined` returns the union
+   *  (legacy callers + admin paths).
+   */
+  listByUser(userId: string, limit: number, archived?: boolean): Promise<readonly Trip[]>;
 
   /**
    * V.UX.9 collaborator listing. Returns trips the caller does NOT
@@ -98,6 +103,31 @@ export interface TripRepository {
    * actually removed. Added by `[IV.18.18.3]`.
    */
   adminDelete(id: string): Promise<boolean>;
+
+  /**
+   * V.UX.30 — set / clear `archivedAt` for a trip the caller owns.
+   * Returns the updated row OR null when the trip is missing /
+   * owned by another user (use-case maps both to 404 IDOR-safe).
+   * `archive=true` stamps now() if the row isn't already archived;
+   * `archive=false` clears the timestamp. Idempotent in both
+   * directions — a no-op set/clear still returns the row.
+   */
+  setArchivedForUser(id: string, userId: string, archive: boolean): Promise<Trip | null>;
+
+  /**
+   * V.UX.30 — auto-archive sweep. Sets `archivedAt = now()` on
+   * every trip whose `createdAt` is older than the cutoff AND
+   * isn't already archived. Returns the count actually flipped.
+   * No owner scope — runs across the whole table.
+   */
+  autoArchiveOlderThan(cutoff: Date): Promise<number>;
+
+  /**
+   * V.UX.30 — caller's most-recent trip (for the welcome-back hero).
+   * Filters out archived rows so we don't return a "Bali, 18 months
+   * ago" suggestion. Returns null when the user has no trips.
+   */
+  findMostRecentForUser(userId: string): Promise<Trip | null>;
 }
 
 export interface AdminTripListInput {

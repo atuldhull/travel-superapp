@@ -26,7 +26,10 @@ import { WeatherModule } from '../weather/weather.module';
 import { AdminArchiveTripUseCase } from './application/admin-archive-trip.use-case';
 import { AdminDeleteTripUseCase } from './application/admin-delete-trip.use-case';
 import { AdminListTripsUseCase } from './application/admin-list-trips.use-case';
+import { ArchiveTripUseCase } from './application/archive-trip.use-case';
+import { AutoArchiveOldTripsUseCase } from './application/auto-archive-old-trips.use-case';
 import { CreateTripDraftUseCase } from './application/create-trip-draft.use-case';
+import { SuggestFromHistoryUseCase } from './application/suggest-from-history.use-case';
 import { CreateTripShareUseCase } from './application/create-trip-share.use-case';
 import { ListTripSharesUseCase } from './application/list-trip-shares.use-case';
 import { DeleteTripUseCase } from './application/delete-trip.use-case';
@@ -66,6 +69,7 @@ import { PrismaTripShareRepository } from './infrastructure/prisma-trip-share.re
 import { StubTripPlannerAdapter } from './infrastructure/stub-trip-planner.adapter';
 import { TripOverviewCache } from './infrastructure/trip-overview-cache';
 import { AdminTripsController } from './interface/admin-trips.controller';
+import { AutoArchiveTripsScheduler } from './interface/auto-archive-trips.scheduler';
 import { NearMeController } from './interface/near-me.controller';
 import { TripController } from './interface/trip.controller';
 
@@ -146,6 +150,10 @@ import { TripController } from './interface/trip.controller';
     AdminListTripsUseCase,
     AdminArchiveTripUseCase,
     AdminDeleteTripUseCase,
+    ArchiveTripUseCase,
+    AutoArchiveOldTripsUseCase,
+    SuggestFromHistoryUseCase,
+    AutoArchiveTripsScheduler,
   ],
   exports: [TRIP_REPOSITORY, ITINERARY_REPOSITORY, TRIP_SHARE_REPOSITORY, SeedSampleTripUseCase],
 })

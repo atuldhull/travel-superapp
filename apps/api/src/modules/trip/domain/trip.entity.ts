@@ -17,6 +17,9 @@ export interface Trip {
   readonly startsOn: Date | null;
   readonly endsOn: Date | null;
   readonly version: number;
+  /** V.UX.30 — non-null when soft-archived (auto-sweep after 365 days
+   *  OR manual archive). Default lister filters these out. */
+  readonly archivedAt: Date | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }

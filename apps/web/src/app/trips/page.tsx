@@ -16,8 +16,19 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef } from 'react';
-import { useTripControllerList, type ListTripsResponseDto, type TripDto } from '@app/sdk';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  getTripControllerListQueryKey,
+  useAuthControllerMe,
+  useTripControllerArchive,
+  useTripControllerList,
+  useTripControllerSuggestions,
+  useTripControllerUnarchive,
+  type ListTripsResponseDto,
+  type TripDto,
+  type WhoAmIResponseDto,
+} from '@app/sdk';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card, CardHeader, CardSubtitle, CardTitle } from '../../components/ui/card';
@@ -26,11 +37,27 @@ import { clearAccessToken } from '../../lib/auth-store';
 import { useAuthBootComplete, useAuthToken } from '../../lib/use-auth-token';
 import { useShortcut } from '../../lib/use-shortcuts';
 import { useVimListNav } from '../../lib/use-vim-list-nav';
+import { announce } from '../../lib/announce';
+
+type TabKey = 'active' | 'archived';
+
+const WELCOME_BACK_GAP_MS = 30 * 24 * 60 * 60 * 1000;
+
+interface DestinationSuggestion {
+  destination: string;
+  countryCode: string;
+  lat: number;
+  lng: number;
+  hook: string;
+  anchor: string | null;
+}
 
 export default function TripsPage() {
   const router = useRouter();
   const token = useAuthToken();
   const bootComplete = useAuthBootComplete();
+  const queryClient = useQueryClient();
+  const [tab, setTab] = useState<TabKey>('active');
 
   useEffect(() => {
     // Hold the redirect until silent-refresh has had its chance —
@@ -39,10 +66,20 @@ export default function TripsPage() {
     if (bootComplete && token === null) router.replace('/login');
   }, [bootComplete, token, router]);
 
-  const { data, isLoading, isError, error } = useTripControllerList(
-    { limit: '20' },
-    { query: { enabled: token !== null } },
-  );
+  const params = { limit: '20', archived: tab === 'archived' ? 'true' : 'false' } as never;
+  const { data, isLoading, isError, error } = useTripControllerList(params, {
+    query: { enabled: token !== null },
+  });
+  const me = useAuthControllerMe({
+    query: { enabled: token !== null, retry: false },
+  });
+  // V.UX.30 — suggestions hero (always shown when authed; first-trip
+  // users get globally-popular picks).
+  const suggestionsQuery = useTripControllerSuggestions({
+    query: { enabled: token !== null, retry: false },
+  });
+  const archive = useTripControllerArchive();
+  const unarchive = useTripControllerUnarchive();
 
   // V.UX.29 — vim j/k focus through trip cards + `n` to create.
   const listRef = useRef<HTMLDivElement | null>(null);
@@ -55,6 +92,44 @@ export default function TripsPage() {
   function onLogout() {
     clearAccessToken();
     router.replace('/login');
+  }
+
+  async function refreshLists() {
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: getTripControllerListQueryKey({ limit: '20', archived: 'false' } as never),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: getTripControllerListQueryKey({ limit: '20', archived: 'true' } as never),
+      }),
+    ]);
+  }
+
+  async function handleArchive(id: string) {
+    try {
+      await archive.mutateAsync({ id });
+      await refreshLists();
+      announce('Trip archived');
+    } catch (err) {
+      const e = err as { code?: string; message?: string; status?: number };
+      announce(
+        `${e.code ?? `HTTP_${e.status ?? '???'}`} — ${e.message ?? 'Archive failed.'}`,
+        'assertive',
+      );
+    }
+  }
+  async function handleUnarchive(id: string) {
+    try {
+      await unarchive.mutateAsync({ id });
+      await refreshLists();
+      announce('Trip restored to active');
+    } catch (err) {
+      const e = err as { code?: string; message?: string; status?: number };
+      announce(
+        `${e.code ?? `HTTP_${e.status ?? '???'}`} — ${e.message ?? 'Unarchive failed.'}`,
+        'assertive',
+      );
+    }
   }
 
   if (!bootComplete) {
@@ -77,6 +152,8 @@ export default function TripsPage() {
   const trips: readonly TripDto[] = body?.trips ?? [];
   const collaborated: readonly TripDto[] = body?.collaborated ?? [];
 
+  const meBody = me.data?.data as WhoAmIResponseDto | undefined;
+  const previousSeenAt = meBody?.previousSeenAt as unknown as string | null | undefined;
   return (
     <main className="space-y-6">
       <div className="flex items-center justify-between">
@@ -93,6 +170,20 @@ export default function TripsPage() {
           </Button>
         </div>
       </div>
+
+      <WelcomeBackHero previousSeenAt={previousSeenAt ?? null} />
+
+      <SuggestionsHero queryData={suggestionsQuery.data} />
+
+      <nav aria-label="Trip filter" className="flex gap-2 border-b border-muted/15">
+        <TabButton active={tab === 'active'} onClick={() => setTab('active')}>
+          Active
+        </TabButton>
+        <TabButton active={tab === 'archived'} onClick={() => setTab('archived')}>
+          Archived
+        </TabButton>
+      </nav>
+
       {isLoading ? (
         <ul className="grid gap-4 sm:grid-cols-2">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -106,24 +197,43 @@ export default function TripsPage() {
       ) : isError ? (
         <ErrorState error={error} />
       ) : trips.length === 0 && collaborated.length === 0 ? (
-        <EmptyState />
+        tab === 'archived' ? (
+          <p className="rounded border border-muted/20 px-4 py-3 text-sm text-muted">
+            No archived trips yet. Trips auto-archive after 365 days, or you can archive manually
+            from the Active tab.
+          </p>
+        ) : (
+          <EmptyState />
+        )
       ) : (
         <div ref={listRef}>
           {trips.length > 0 ? (
             <ul className="grid gap-4 sm:grid-cols-2">
               {trips.map((t) => (
-                <TripCard key={t.id} trip={t} role="owner" />
+                <TripCard
+                  key={t.id}
+                  trip={t}
+                  role="owner"
+                  onArchive={tab === 'active' ? () => void handleArchive(t.id) : null}
+                  onUnarchive={tab === 'archived' ? () => void handleUnarchive(t.id) : null}
+                />
               ))}
             </ul>
           ) : null}
-          {collaborated.length > 0 ? (
+          {tab === 'active' && collaborated.length > 0 ? (
             <section className="mt-6 space-y-2">
               <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
                 Shared with you
               </h2>
               <ul className="grid gap-4 sm:grid-cols-2">
                 {collaborated.map((t) => (
-                  <TripCard key={t.id} trip={t} role="collaborator" />
+                  <TripCard
+                    key={t.id}
+                    trip={t}
+                    role="collaborator"
+                    onArchive={null}
+                    onUnarchive={null}
+                  />
                 ))}
               </ul>
             </section>
@@ -144,6 +254,89 @@ export default function TripsPage() {
   );
 }
 
+function TabButton({
+  active,
+  onClick,
+  children,
+}: {
+  readonly active: boolean;
+  readonly onClick: () => void;
+  readonly children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`-mb-px border-b-2 px-3 pb-2 text-sm font-medium transition ${
+        active ? 'border-brand text-brand' : 'border-transparent text-muted hover:text-foreground'
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function WelcomeBackHero({ previousSeenAt }: { previousSeenAt: string | null }) {
+  const gap = useMemo(() => {
+    if (!previousSeenAt) return null;
+    const t = new Date(previousSeenAt).getTime();
+    if (Number.isNaN(t)) return null;
+    return Date.now() - t;
+  }, [previousSeenAt]);
+  if (gap === null || gap < WELCOME_BACK_GAP_MS) return null;
+  const days = Math.floor(gap / (24 * 60 * 60 * 1000));
+  const months = Math.floor(days / 30);
+  const human = months >= 1 ? `${months} month${months === 1 ? '' : 's'}` : `${days} days`;
+  return (
+    <Card className="border-brand/40 bg-brand/5">
+      <CardHeader>
+        <CardTitle>👋 Welcome back!</CardTitle>
+        <CardSubtitle>
+          It&apos;s been about {human} since your last visit. Pick up where you left off — your
+          trips are below, or start something new.
+        </CardSubtitle>
+      </CardHeader>
+    </Card>
+  );
+}
+
+function SuggestionsHero({
+  queryData,
+}: {
+  readonly queryData: { data?: { suggestions: DestinationSuggestion[] } } | undefined;
+}) {
+  const suggestions = queryData?.data?.suggestions ?? [];
+  if (suggestions.length === 0) return null;
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Plan something new</CardTitle>
+        <CardSubtitle>
+          Curated picks based on where you&apos;ve been. Tap to start a trip there.
+        </CardSubtitle>
+      </CardHeader>
+      <ul className="grid gap-3 sm:grid-cols-3">
+        {suggestions.map((s) => (
+          <li key={s.destination} className="rounded border border-muted/20 p-3 text-sm">
+            <p className="font-semibold">{s.destination}</p>
+            <p className="mt-1 text-xs text-muted">{s.hook}</p>
+            {s.anchor ? <p className="mt-1 text-[10px] italic text-muted">{s.anchor}</p> : null}
+            <Link
+              href={
+                `/trips/new?title=${encodeURIComponent(s.destination)}&lat=${s.lat}&lng=${s.lng}` as never
+              }
+              className="mt-2 inline-block rounded border border-brand/40 px-2 py-1 text-xs text-brand hover:bg-brand/10"
+            >
+              ✈️ Plan a trip
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </Card>
+  );
+}
+
 /** Title prefix that flags a trip as the read-only sample seeded by
  *  the V.UX.3 onboarding Skip flow. Mirrors
  *  `SAMPLE_TRIP_TITLE_PREFIX` on the api side — kept in sync by hand
@@ -154,7 +347,17 @@ function isSampleTrip(trip: TripDto): boolean {
   return trip.title.startsWith(SAMPLE_TRIP_PREFIX);
 }
 
-function TripCard({ trip, role }: { trip: TripDto; role: 'owner' | 'collaborator' }) {
+function TripCard({
+  trip,
+  role,
+  onArchive,
+  onUnarchive,
+}: {
+  trip: TripDto;
+  role: 'owner' | 'collaborator';
+  onArchive: (() => void) | null;
+  onUnarchive: (() => void) | null;
+}) {
   const sample = isSampleTrip(trip);
   const statusVariant: 'neutral' | 'brand' = trip.status === 'draft' ? 'neutral' : 'brand';
   return (
@@ -194,6 +397,26 @@ function TripCard({ trip, role }: { trip: TripDto; role: 'owner' | 'collaborator
       ) : (
         <p className="text-sm text-muted">No dates yet</p>
       )}
+      {onArchive ? (
+        <button
+          type="button"
+          onClick={onArchive}
+          aria-label={`Archive ${trip.title}`}
+          className="mt-2 rounded border border-muted/30 px-2 py-1 text-xs text-muted hover:bg-muted/10 focus:outline-none focus:ring-2 focus:ring-brand"
+        >
+          📦 Archive
+        </button>
+      ) : null}
+      {onUnarchive ? (
+        <button
+          type="button"
+          onClick={onUnarchive}
+          aria-label={`Unarchive ${trip.title}`}
+          className="mt-2 rounded border border-muted/30 px-2 py-1 text-xs text-muted hover:bg-muted/10 focus:outline-none focus:ring-2 focus:ring-brand"
+        >
+          ↩️ Unarchive
+        </button>
+      ) : null}
     </Card>
   );
 }

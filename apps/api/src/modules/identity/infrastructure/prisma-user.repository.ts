@@ -73,6 +73,32 @@ export class PrismaUserRepository implements UserRepository {
       data: { hasSeenOnboarding: true },
     });
   }
+
+  async stampSeen(userId: string, now: Date): Promise<{ previousSeenAt: Date | null }> {
+    // V.UX.30 — only advance `previousSeenAt` when the gap from
+    // current `lastSeenAt` is > 1 hour. Otherwise repeat /auth/me
+    // hits within a single session would push `previousSeenAt`
+    // forward and destroy the welcome-back-after-30-days signal.
+    const SAMPLE_GAP_MS = 60 * 60 * 1000;
+    const row = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { lastSeenAt: true, previousSeenAt: true },
+    });
+    const last = row?.lastSeenAt ?? null;
+    const prev = row?.previousSeenAt ?? null;
+    if (last === null || now.getTime() - last.getTime() > SAMPLE_GAP_MS) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { previousSeenAt: last, lastSeenAt: now },
+      });
+      return { previousSeenAt: last };
+    }
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { lastSeenAt: now },
+    });
+    return { previousSeenAt: prev };
+  }
 }
 
 function toDomain(row: PrismaUser): UserRecord {
@@ -85,5 +111,7 @@ function toDomain(row: PrismaUser): UserRecord {
     mfaEnabled: row.mfaEnabled,
     mfaSecret: row.mfaSecret,
     hasSeenOnboarding: row.hasSeenOnboarding,
+    lastSeenAt: row.lastSeenAt,
+    previousSeenAt: row.previousSeenAt,
   };
 }

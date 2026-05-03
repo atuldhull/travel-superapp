@@ -3,6 +3,7 @@
 // Regenerate via: pnpm --filter=@app/sdk sdk:gen
 import type { TripDtoStartsOn } from './tripDtoStartsOn';
 import type { TripDtoEndsOn } from './tripDtoEndsOn';
+import type { TripDtoArchivedAt } from './tripDtoArchivedAt';
 
 export interface TripDto {
   id: string;
@@ -30,6 +31,11 @@ export interface TripDto {
   endsOn: TripDtoEndsOn;
   /** Bumped on every accepted update — concurrency control. */
   version: number;
+  /**
+   * V.UX.30 — non-null when the trip is soft-archived (auto-sweep > 365 days OR manual). Default lister filters non-null out.
+   * @nullable
+   */
+  archivedAt: TripDtoArchivedAt;
   createdAt: string;
   updatedAt: string;
 }

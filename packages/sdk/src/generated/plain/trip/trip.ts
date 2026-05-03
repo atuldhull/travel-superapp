@@ -97,6 +97,108 @@ export const tripControllerList = async (
 };
 
 /**
+ * @summary V.UX.30 — destination suggestions seeded from caller's past trips. Empty history → 3 globally popular picks.
+ */
+export type tripControllerSuggestionsResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type tripControllerSuggestionsResponseSuccess = tripControllerSuggestionsResponse200 & {
+  headers: Headers;
+};
+export type tripControllerSuggestionsResponse = tripControllerSuggestionsResponseSuccess;
+
+export const getTripControllerSuggestionsUrl = () => {
+  return `/api/v1/trips/suggestions`;
+};
+
+export const tripControllerSuggestions = async (
+  options?: RequestInit,
+): Promise<tripControllerSuggestionsResponse> => {
+  return apiFetch<tripControllerSuggestionsResponse>(getTripControllerSuggestionsUrl(), {
+    ...options,
+    method: 'GET',
+  });
+};
+
+/**
+ * @summary V.UX.30 — archive a trip (soft). Idempotent. Owner-gated; 404 on cross-user.
+ */
+export type tripControllerArchiveResponse200 = {
+  data: TripDto;
+  status: 200;
+};
+
+export type tripControllerArchiveResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type tripControllerArchiveResponseSuccess = tripControllerArchiveResponse200 & {
+  headers: Headers;
+};
+export type tripControllerArchiveResponseError = tripControllerArchiveResponse404 & {
+  headers: Headers;
+};
+
+export type tripControllerArchiveResponse =
+  | tripControllerArchiveResponseSuccess
+  | tripControllerArchiveResponseError;
+
+export const getTripControllerArchiveUrl = (id: string) => {
+  return `/api/v1/trips/${id}/archive`;
+};
+
+export const tripControllerArchive = async (
+  id: string,
+  options?: RequestInit,
+): Promise<tripControllerArchiveResponse> => {
+  return apiFetch<tripControllerArchiveResponse>(getTripControllerArchiveUrl(id), {
+    ...options,
+    method: 'POST',
+  });
+};
+
+/**
+ * @summary V.UX.30 — unarchive a trip. Idempotent. Owner-gated; 404 on cross-user.
+ */
+export type tripControllerUnarchiveResponse200 = {
+  data: TripDto;
+  status: 200;
+};
+
+export type tripControllerUnarchiveResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type tripControllerUnarchiveResponseSuccess = tripControllerUnarchiveResponse200 & {
+  headers: Headers;
+};
+export type tripControllerUnarchiveResponseError = tripControllerUnarchiveResponse404 & {
+  headers: Headers;
+};
+
+export type tripControllerUnarchiveResponse =
+  | tripControllerUnarchiveResponseSuccess
+  | tripControllerUnarchiveResponseError;
+
+export const getTripControllerUnarchiveUrl = (id: string) => {
+  return `/api/v1/trips/${id}/unarchive`;
+};
+
+export const tripControllerUnarchive = async (
+  id: string,
+  options?: RequestInit,
+): Promise<tripControllerUnarchiveResponse> => {
+  return apiFetch<tripControllerUnarchiveResponse>(getTripControllerUnarchiveUrl(id), {
+    ...options,
+    method: 'POST',
+  });
+};
+
+/**
  * @summary Fetch a single trip. Owner OR active collaborator (vote/expense). 404 otherwise (IDOR-safe).
  */
 export type tripControllerGetOneResponse200 = {

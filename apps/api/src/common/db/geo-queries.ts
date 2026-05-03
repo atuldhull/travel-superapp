@@ -129,7 +129,7 @@ export class GeoQueries {
       )
       RETURNING
         id, "userId", title, status, "radiusKm", "startsOn",
-        "endsOn", version, "createdAt", "updatedAt"
+        "endsOn", version, "archivedAt", "createdAt", "updatedAt"
     `;
     const row = rows[0];
     if (!row) {
