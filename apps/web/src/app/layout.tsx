@@ -14,6 +14,7 @@ import type { ReactNode } from 'react';
 import Script from 'next/script';
 import './globals.css';
 import Link from 'next/link';
+import { ActiveSosBanner } from '../components/safety/active-sos-banner';
 import { SosFab } from '../components/safety/sos-fab';
 import { TranslateWidget } from '../components/translation/translate-widget';
 import { ThemeToggle } from '../components/ui/theme-toggle';
@@ -61,6 +62,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         {/* V.UX.28 — first-tab-stop skip link. Hidden until focused. */}
         <SkipToMain />
         <Providers>
+          {/* V.UX.35 — sticky SOS banner. Renders nothing when no
+              active SOS; surfaces "I'm OK" cancel + local 911 when active. */}
+          <ActiveSosBanner />
           <div className="mx-auto max-w-3xl px-6 py-10 space-y-6">
             <header className="flex items-center justify-between gap-3" role="banner">
               <WhoAmIBadge />

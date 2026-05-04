@@ -283,6 +283,9 @@ export type { StorageStatsResponseDto } from './generated/schemas/storageStatsRe
 // land in the already-star-exported `account` + `admin` barrels.
 // The login `ACCOUNT_BANNED` error surfaces banReason + bannedAt
 // via ApiError.context.
+// V.UX.35: SOS hold-to-confirm + cancel + local emergency numbers.
+// useSosControllerCancel + useEmergencyNumbersControllerGet land in
+// the already-star-exported `safety` barrel.
 // V.UX.31: locked-out persona — password-reset request + consume.
 // Hooks (useAuthControllerPasswordResetRequest, ...PasswordResetConsume)
 // land in the already-star-exported `identity` barrel. MFA backup-code

@@ -8,6 +8,7 @@ import type {
   FindNearbyScamsRequestDto,
   FindNearbyScamsResponseDto,
   ListSosEventsResponseDto,
+  LocalEmergencyResponseDto,
   ReportScamRequestDto,
   ResolveSosRequestDto,
   SafetyScoreRequestDto,
@@ -188,6 +189,44 @@ export const sosControllerResolve = async (
 };
 
 /**
+ * @summary V.UX.35 — owner-scoped cancel of an active SOS (the 'I'm OK' button). 404 on already-resolved or cross-user.
+ */
+export type sosControllerCancelResponse200 = {
+  data: SosEventDto;
+  status: 200;
+};
+
+export type sosControllerCancelResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type sosControllerCancelResponseSuccess = sosControllerCancelResponse200 & {
+  headers: Headers;
+};
+export type sosControllerCancelResponseError = sosControllerCancelResponse404 & {
+  headers: Headers;
+};
+
+export type sosControllerCancelResponse =
+  | sosControllerCancelResponseSuccess
+  | sosControllerCancelResponseError;
+
+export const getSosControllerCancelUrl = (id: string) => {
+  return `/api/v1/safety/sos/${id}/cancel`;
+};
+
+export const sosControllerCancel = async (
+  id: string,
+  options?: RequestInit,
+): Promise<sosControllerCancelResponse> => {
+  return apiFetch<sosControllerCancelResponse>(getSosControllerCancelUrl(id), {
+    ...options,
+    method: 'POST',
+  });
+};
+
+/**
  * @summary Find crime incidents within a radius. Optional category / minSeverity / sinceDays filters.
  */
 export type crimeLayerControllerSearchResponse200 = {
@@ -279,6 +318,49 @@ export const countryPrimerControllerGet = async (
 ): Promise<countryPrimerControllerGetResponse> => {
   return apiFetch<countryPrimerControllerGetResponse>(
     getCountryPrimerControllerGetUrl(countryCode),
+    {
+      ...options,
+      method: 'GET',
+    },
+  );
+};
+
+/**
+ * @summary V.UX.35 — local police / ambulance / fire numbers for a country (~50 seeded). Public — sign-in not required mid-emergency.
+ */
+export type emergencyNumbersControllerGetResponse200 = {
+  data: LocalEmergencyResponseDto;
+  status: 200;
+};
+
+export type emergencyNumbersControllerGetResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type emergencyNumbersControllerGetResponseSuccess =
+  emergencyNumbersControllerGetResponse200 & {
+    headers: Headers;
+  };
+export type emergencyNumbersControllerGetResponseError =
+  emergencyNumbersControllerGetResponse404 & {
+    headers: Headers;
+  };
+
+export type emergencyNumbersControllerGetResponse =
+  | emergencyNumbersControllerGetResponseSuccess
+  | emergencyNumbersControllerGetResponseError;
+
+export const getEmergencyNumbersControllerGetUrl = (countryCode: string) => {
+  return `/api/v1/safety/emergency-numbers/${countryCode}`;
+};
+
+export const emergencyNumbersControllerGet = async (
+  countryCode: string,
+  options?: RequestInit,
+): Promise<emergencyNumbersControllerGetResponse> => {
+  return apiFetch<emergencyNumbersControllerGetResponse>(
+    getEmergencyNumbersControllerGetUrl(countryCode),
     {
       ...options,
       method: 'GET',
