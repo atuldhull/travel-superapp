@@ -44,6 +44,12 @@ interface ApiError extends Error {
 
 type Step = 'credentials' | 'mfa';
 
+interface BanState {
+  readonly reason: string;
+  readonly bannedAt: string | null;
+  readonly email: string;
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const [step, setStep] = useState<Step>('credentials');
@@ -51,6 +57,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [mfaCode, setMfaCode] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // V.UX.34 — when login surfaces ACCOUNT_BANNED, swap the form for
+  // an empathetic suspended view with the reason + appeal CTA.
+  const [banState, setBanState] = useState<BanState | null>(null);
 
   const oauthMutation = useAuthControllerOauth({
     mutation: {
@@ -93,7 +102,9 @@ export default function LoginPage() {
         router.push(destination as never);
       },
       onError: (err: unknown) => {
-        const e = err as ApiError & { context?: { reactivationToken?: string } };
+        const e = err as ApiError & {
+          context?: { reactivationToken?: string; banReason?: string; bannedAt?: string };
+        };
         if (e.code === 'MFA_REQUIRED') {
           setStep('mfa');
           setErrorMsg(null);
@@ -103,8 +114,18 @@ export default function LoginPage() {
           setErrorMsg('Invalid MFA code. Try again.');
           return;
         }
+        // V.UX.34 — admin-banned account. Render the empathetic
+        // suspended-state with the reason inline + an Appeal CTA.
+        if (e.code === 'ACCOUNT_BANNED' && e.context?.banReason) {
+          setBanState({
+            reason: e.context.banReason,
+            bannedAt: e.context.bannedAt ?? null,
+            email,
+          });
+          setErrorMsg(null);
+          return;
+        }
         // V.UX.33 — soft-deleted within the 7-day retention window.
-        // Forward the reactivation token to the dedicated page.
         if (e.code === 'ACCOUNT_DELETION_PENDING' && e.context?.reactivationToken) {
           const token = encodeURIComponent(e.context.reactivationToken);
           router.push(`/account/reactivate?token=${token}` as never);
@@ -145,9 +166,48 @@ export default function LoginPage() {
         </Link>
       </p>
       <h1 className="text-3xl font-bold tracking-tight">
-        {step === 'credentials' ? 'Sign in' : 'Two-factor authentication'}
+        {banState
+          ? 'Account suspended'
+          : step === 'credentials'
+            ? 'Sign in'
+            : 'Two-factor authentication'}
       </h1>
-      {step === 'credentials' ? (
+      {banState ? (
+        <div className="space-y-4">
+          <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-4 text-sm">
+            <p className="font-medium text-amber-700 dark:text-amber-400">
+              Your account has been suspended.
+            </p>
+            <p className="mt-2">
+              <strong>Reason:</strong> {banState.reason}
+            </p>
+            {banState.bannedAt ? (
+              <p className="mt-1 text-xs text-muted">
+                Suspended on {new Date(banState.bannedAt).toLocaleDateString()}.
+              </p>
+            ) : null}
+          </div>
+          <p className="text-sm text-muted">
+            We review every appeal personally. If you think this was a mistake, send us your side —
+            we&apos;ll get back within 1–2 business days.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href={`/appeal?email=${encodeURIComponent(banState.email)}` as never}
+              className="inline-flex items-center gap-1 rounded-md bg-brand px-3 py-1.5 text-sm font-medium text-brand-foreground transition hover:opacity-90"
+            >
+              File an appeal →
+            </Link>
+            <button
+              type="button"
+              onClick={() => setBanState(null)}
+              className="inline-flex items-center gap-1 rounded-md border border-muted/30 px-3 py-1.5 text-sm transition hover:bg-muted/10"
+            >
+              Try again
+            </button>
+          </div>
+        </div>
+      ) : step === 'credentials' ? (
         <form onSubmit={submitCredentials} className="space-y-4">
           <Field
             label="Email"

@@ -54,6 +54,23 @@ export interface AccountDeleter {
    * Added by `[IV.18.18.1]` for admin unban.
    */
   restoreUser(userId: string): Promise<boolean>;
+
+  /**
+   * V.UX.34 — admin ban. Sets `User.bannedAt = now()` + `banReason`
+   * + revokes sessions. Distinct from soft-delete (a row can be
+   * banned AND deleted — different columns). Idempotent: re-banning
+   * an already-banned user refreshes the reason + bumps `bannedAt`.
+   * Returns false only when the user row is missing entirely.
+   */
+  banUser(userId: string, bannedAt: Date, reason: string): Promise<boolean>;
+
+  /**
+   * V.UX.34 — clears `bannedAt + banReason` back to null. Sessions
+   * stay revoked from the original ban (same posture as
+   * `restoreUser`). Returns false when the user is missing OR was
+   * not currently banned.
+   */
+  unbanUser(userId: string): Promise<boolean>;
 }
 
 export const ACCOUNT_DELETER = Symbol('ACCOUNT_DELETER');

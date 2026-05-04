@@ -58,15 +58,20 @@ export interface UserRepository {
   findById(id: string): Promise<UserRecord | null>;
 
   /**
-   * V.UX.33 — same as `findByEmailHash` but ALSO returns soft-deleted
-   * rows + their `deletedAt` timestamp. Login uses this to detect
-   * "this account is scheduled for deletion" and return the
-   * reactivation challenge inside the 7-day window instead of
-   * INVALID_CREDENTIALS. Hard-deleted (purged) rows are still gone.
+   * V.UX.33 / V.UX.34 — same as `findByEmailHash` but ALSO returns
+   * soft-deleted + banned rows. Login uses this to surface the
+   * reactivation challenge (V.UX.33, deletedAt within 7d) and the
+   * banned-with-reason challenge (V.UX.34, bannedAt non-null).
+   * Hard-deleted (purged) rows are still gone.
    */
-  findByEmailHashIncludingDeleted(
-    emailHash: string,
-  ): Promise<(UserRecord & { readonly deletedAt: Date | null }) | null>;
+  findByEmailHashIncludingDeleted(emailHash: string): Promise<
+    | (UserRecord & {
+        readonly deletedAt: Date | null;
+        readonly bannedAt: Date | null;
+        readonly banReason: string | null;
+      })
+    | null
+  >;
 
   /**
    * Stage a TOTP secret during `/mfa/setup` — the user has scanned

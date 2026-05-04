@@ -278,6 +278,11 @@ export type { StorageStatsResponseDto } from './generated/schemas/storageStatsRe
 // exported `account` barrel. The login `ACCOUNT_DELETION_PENDING`
 // error surfaces the reactivation token via ApiError.context (the
 // runtime fetcher now preserves the DomainError context object).
+// V.UX.34: ban-with-reason + appeal queue. Public submit
+// (useAccountControllerAppeal) + admin queue (useAdminUsersControllerListAppeals)
+// land in the already-star-exported `account` + `admin` barrels.
+// The login `ACCOUNT_BANNED` error surfaces banReason + bannedAt
+// via ApiError.context.
 // V.UX.31: locked-out persona — password-reset request + consume.
 // Hooks (useAuthControllerPasswordResetRequest, ...PasswordResetConsume)
 // land in the already-star-exported `identity` barrel. MFA backup-code

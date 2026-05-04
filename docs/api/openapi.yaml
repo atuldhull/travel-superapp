@@ -2097,6 +2097,25 @@ paths:
       summary: V.UX.33 — restore a soft-deleted account within the 7-day window. Token
         from deletion-pending email or login response.
       tags: *a34
+  /api/v1/account/appeal:
+    post:
+      operationId: AccountController_appeal
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppealRequestDto'
+      responses:
+        '200':
+          description: Always ok.
+        '422':
+          description: INVALID_APPEAL_BODY.
+      security: *a33
+      summary: V.UX.34 — submit a ban appeal. Always returns 200 regardless of
+        registration / ban state.
+      tags: *a34
   /api/v1/admin/users:
     get:
       operationId: AdminUsersController_list
@@ -2150,13 +2169,22 @@ paths:
           in: path
           schema:
             type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminBanRequestDto'
       responses:
         '204':
           description: Banned.
         '404':
           description: USER_NOT_FOUND.
+        '422':
+          description: INVALID_BAN_REASON.
       security: *a35
-      summary: Ban a user (soft-delete + revoke sessions). Admin-only.
+      summary: V.UX.34 — ban a user with a user-readable reason. Sets bannedAt +
+        banReason + revokes sessions.
       tags: *a36
   /api/v1/admin/users/{id}/unban:
     post:
@@ -2173,7 +2201,37 @@ paths:
         '404':
           description: USER_NOT_FOUND.
       security: *a35
-      summary: Unban a user (clear deletedAt). Admin-only.
+      summary: V.UX.34 — unban a user (clears bannedAt + banReason). Admin-only.
+      tags: *a36
+  /api/v1/admin/users/appeals:
+    get:
+      operationId: AdminUsersController_listAppeals
+      parameters:
+        - name: status
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: offset
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Appeals + total count.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminListBanAppealsResponseDto'
+      security: *a35
+      summary: V.UX.34 — list ban appeals. Defaults to status=pending. Admin
+        moderation queue.
       tags: *a36
   /api/v1/admin/account-purge:
     post:
@@ -6600,6 +6658,20 @@ components:
           description: Restored user id.
       required:
         - userId
+    AppealRequestDto:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        body:
+          type: string
+          minLength: 10
+          maxLength: 2000
+      required:
+        - email
+        - body
     AdminUserDto:
       type: object
       properties:
@@ -6652,6 +6724,58 @@ components:
           description: Total matching rows across all pages.
       required:
         - users
+        - total
+    AdminBanRequestDto:
+      type: object
+      properties:
+        reason:
+          type: string
+          description: V.UX.34 — user-readable reason. Shown verbatim on the banned-login
+            page.
+          minLength: 1
+          maxLength: 280
+      required:
+        - reason
+    AdminBanAppealDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        userId:
+          type: string
+          format: cuid
+        emailHash:
+          type: string
+        body:
+          type: string
+        status:
+          type: string
+          enum:
+            - pending
+            - approved
+            - rejected
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - userId
+        - emailHash
+        - body
+        - status
+        - createdAt
+    AdminListBanAppealsResponseDto:
+      type: object
+      properties:
+        appeals:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminBanAppealDto'
+        total:
+          type: number
+      required:
+        - appeals
         - total
     AdminPurgeForceResponseDto:
       type: object
