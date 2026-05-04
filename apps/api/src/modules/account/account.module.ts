@@ -30,6 +30,7 @@ import { DeleteAccountUseCase } from './application/delete-account.use-case';
 import { DeleteTrustedContactUseCase } from './application/delete-trusted-contact.use-case';
 import { ExportUserDataUseCase } from './application/export-user-data.use-case';
 import { GetPreferencesUseCase } from './application/get-preferences.use-case';
+import { GetStorageStatsUseCase } from './application/get-storage-stats.use-case';
 import { ListTrustedContactsUseCase } from './application/list-trusted-contacts.use-case';
 import { StreamAccountExportUseCase } from './application/stream-account-export.use-case';
 import { UpdatePreferencesUseCase } from './application/update-preferences.use-case';
@@ -84,6 +85,7 @@ import { TrustedContactsController } from './interface/trusted-contacts.controll
     GetPreferencesUseCase,
     UpdatePreferencesUseCase,
     GetConnectivityInfoUseCase,
+    GetStorageStatsUseCase,
   ],
   // V.UX.13 — TRUSTED_CONTACT_REPOSITORY is consumed by the Safety
   // module's TriggerSosUseCase to fan out an SOS to the caller's

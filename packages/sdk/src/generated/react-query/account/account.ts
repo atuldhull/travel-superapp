@@ -19,6 +19,7 @@ import type {
   ConnectivityInfoDto,
   ListTrustedContactsResponseDto,
   PreferencesDto,
+  StorageStatsResponseDto,
   TrustedContactDto,
   UpdatePreferencesRequestDto,
   UserDataExportResponseDto,
@@ -27,6 +28,145 @@ import type {
 import { apiFetch } from '../../../runtime/fetcher';
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
+/**
+ * @summary V.UX.32 — caller-scoped storage stats per category. Powers the /account/privacy hub's 'we store: 24 trips, 130 photos…' panel.
+ */
+export type accountControllerStorageStatsResponse200 = {
+  data: StorageStatsResponseDto;
+  status: 200;
+};
+
+export type accountControllerStorageStatsResponseSuccess =
+  accountControllerStorageStatsResponse200 & {
+    headers: Headers;
+  };
+export type accountControllerStorageStatsResponse = accountControllerStorageStatsResponseSuccess;
+
+export const getAccountControllerStorageStatsUrl = () => {
+  return `/api/v1/account/stats`;
+};
+
+export const accountControllerStorageStats = async (
+  options?: RequestInit,
+): Promise<accountControllerStorageStatsResponse> => {
+  return apiFetch<accountControllerStorageStatsResponse>(getAccountControllerStorageStatsUrl(), {
+    ...options,
+    method: 'GET',
+  });
+};
+
+export const getAccountControllerStorageStatsInfiniteQueryKey = () => {
+  return ['infinite', `/api/v1/account/stats`] as const;
+};
+
+export const getAccountControllerStorageStatsQueryKey = () => {
+  return [`/api/v1/account/stats`] as const;
+};
+
+export const getAccountControllerStorageStatsInfiniteQueryOptions = <
+  TData = Awaited<ReturnType<typeof accountControllerStorageStats>>,
+  TError = unknown,
+>(options?: {
+  query?: UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof accountControllerStorageStats>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAccountControllerStorageStatsInfiniteQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof accountControllerStorageStats>>> = ({
+    signal,
+  }) => accountControllerStorageStats({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, staleTime: 30000, ...queryOptions } as UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof accountControllerStorageStats>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AccountControllerStorageStatsInfiniteQueryResult = NonNullable<
+  Awaited<ReturnType<typeof accountControllerStorageStats>>
+>;
+export type AccountControllerStorageStatsInfiniteQueryError = unknown;
+
+/**
+ * @summary V.UX.32 — caller-scoped storage stats per category. Powers the /account/privacy hub's 'we store: 24 trips, 130 photos…' panel.
+ */
+
+export function useAccountControllerStorageStatsInfinite<
+  TData = Awaited<ReturnType<typeof accountControllerStorageStats>>,
+  TError = unknown,
+>(options?: {
+  query?: UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof accountControllerStorageStats>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAccountControllerStorageStatsInfiniteQueryOptions(options);
+
+  const query = useInfiniteQuery(queryOptions) as UseInfiniteQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getAccountControllerStorageStatsQueryOptions = <
+  TData = Awaited<ReturnType<typeof accountControllerStorageStats>>,
+  TError = unknown,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof accountControllerStorageStats>>, TError, TData>;
+  request?: SecondParameter<typeof apiFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAccountControllerStorageStatsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof accountControllerStorageStats>>> = ({
+    signal,
+  }) => accountControllerStorageStats({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, staleTime: 30000, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof accountControllerStorageStats>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AccountControllerStorageStatsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof accountControllerStorageStats>>
+>;
+export type AccountControllerStorageStatsQueryError = unknown;
+
+/**
+ * @summary V.UX.32 — caller-scoped storage stats per category. Powers the /account/privacy hub's 'we store: 24 trips, 130 photos…' panel.
+ */
+
+export function useAccountControllerStorageStats<
+  TData = Awaited<ReturnType<typeof accountControllerStorageStats>>,
+  TError = unknown,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof accountControllerStorageStats>>, TError, TData>;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAccountControllerStorageStatsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
 
 /**
  * @summary Full GDPR/DPDP/COPPA self-export bundle as a single JSON object. ~30 sections; sensitive fields stripped.
