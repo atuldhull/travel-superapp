@@ -21,7 +21,7 @@
  */
 import { Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Roles } from '../../../common/auth';
+import { CurrentUser, Roles, type AuthenticatedUser } from '../../../common/auth';
 import { DismissScamReportUseCase } from '../application/dismiss-scam-report.use-case';
 import { ListScamReportsForModerationUseCase } from '../application/list-scam-reports-for-moderation.use-case';
 import { VerifyScamReportUseCase } from '../application/verify-scam-report.use-case';
@@ -93,8 +93,11 @@ export class AdminScamModerationController {
   @ApiResponse({ status: 404, description: 'SCAM_REPORT_NOT_FOUND.' })
   @Post(':id/verify')
   @HttpCode(HttpStatus.OK)
-  async verify(@Param('id') id: string): Promise<ScamReportDto> {
-    const row = await this.verifyUc.execute({ id, verified: true });
+  async verify(
+    @CurrentUser() admin: AuthenticatedUser,
+    @Param('id') id: string,
+  ): Promise<ScamReportDto> {
+    const row = await this.verifyUc.execute({ actorId: admin.sub, id, verified: true });
     return toDto(row);
   }
 
@@ -103,8 +106,11 @@ export class AdminScamModerationController {
   @ApiResponse({ status: 404, description: 'SCAM_REPORT_NOT_FOUND.' })
   @Post(':id/unverify')
   @HttpCode(HttpStatus.OK)
-  async unverify(@Param('id') id: string): Promise<ScamReportDto> {
-    const row = await this.verifyUc.execute({ id, verified: false });
+  async unverify(
+    @CurrentUser() admin: AuthenticatedUser,
+    @Param('id') id: string,
+  ): Promise<ScamReportDto> {
+    const row = await this.verifyUc.execute({ actorId: admin.sub, id, verified: false });
     return toDto(row);
   }
 
@@ -113,7 +119,7 @@ export class AdminScamModerationController {
   @ApiResponse({ status: 404, description: 'SCAM_REPORT_NOT_FOUND.' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async dismiss(@Param('id') id: string): Promise<void> {
-    await this.dismissUc.execute(id);
+  async dismiss(@CurrentUser() admin: AuthenticatedUser, @Param('id') id: string): Promise<void> {
+    await this.dismissUc.execute({ actorId: admin.sub, id });
   }
 }

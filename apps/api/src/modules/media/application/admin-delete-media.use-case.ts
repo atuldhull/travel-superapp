@@ -15,20 +15,46 @@
  *
  * 404 on missing row.
  *
- * Installed by prompt [IV.18.18.4].
+ * V.UX.36 — every successful delete writes one row to
+ * AdminAuditLog with `{action:'delete_media'}`.
+ *
+ * Installed by prompt [IV.18.18.4]; audit log added in [V.UX.36].
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { NotFoundError } from '@app/errors';
+import {
+  ADMIN_AUDIT_LOG_REPOSITORY,
+  type AdminAuditLogRepository,
+} from '../../admin/application/ports/admin-audit-log.repository';
+import { recordAdminAction } from '../../admin/application/record-admin-action.helper';
 import { MEDIA_ASSET_REPOSITORY, type MediaAssetRepository } from './ports/media-asset.repository';
+
+export interface AdminDeleteMediaCommand {
+  readonly actorId: string;
+  readonly mediaId: string;
+}
 
 @Injectable()
 export class AdminDeleteMediaUseCase {
-  constructor(@Inject(MEDIA_ASSET_REPOSITORY) private readonly media: MediaAssetRepository) {}
+  constructor(
+    @Inject(MEDIA_ASSET_REPOSITORY) private readonly media: MediaAssetRepository,
+    @Inject(ADMIN_AUDIT_LOG_REPOSITORY) private readonly audit: AdminAuditLogRepository,
+  ) {}
 
-  async execute(mediaId: string): Promise<void> {
-    const ok = await this.media.adminDelete(mediaId);
+  async execute(cmd: AdminDeleteMediaCommand): Promise<void> {
+    const ok = await this.media.adminDelete(cmd.mediaId);
     if (!ok) {
-      throw new NotFoundError(`Media not found: ${mediaId}`, { mediaId }, 'MEDIA_NOT_FOUND');
+      throw new NotFoundError(
+        `Media not found: ${cmd.mediaId}`,
+        { mediaId: cmd.mediaId },
+        'MEDIA_NOT_FOUND',
+      );
     }
+    await recordAdminAction(this.audit, {
+      actorId: cmd.actorId,
+      targetType: 'media',
+      targetId: cmd.mediaId,
+      action: 'delete_media',
+    });
   }
 }

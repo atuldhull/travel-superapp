@@ -27,7 +27,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Roles } from '../../../common/auth';
+import { CurrentUser, Roles, type AuthenticatedUser } from '../../../common/auth';
 import { AdminDeleteMediaUseCase } from '../application/admin-delete-media.use-case';
 import { AdminListMediaUseCase } from '../application/admin-list-media.use-case';
 import type { MediaAsset, MediaKind, MediaStatus } from '../domain/media-asset.entity';
@@ -127,7 +127,7 @@ export class AdminMediaController {
   @ApiResponse({ status: 404, description: 'MEDIA_NOT_FOUND.' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param('id') id: string): Promise<void> {
-    await this.deleteUc.execute(id);
+  async remove(@CurrentUser() admin: AuthenticatedUser, @Param('id') id: string): Promise<void> {
+    await this.deleteUc.execute({ actorId: admin.sub, mediaId: id });
   }
 }

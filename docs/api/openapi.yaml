@@ -3157,6 +3157,53 @@ paths:
       security: *a53
       summary: Remove a Place from the canonical catalog. Admin-only.
       tags: *a54
+  /api/v1/admin/audit-logs:
+    get:
+      operationId: AdminAuditLogsController_list
+      parameters:
+        - name: actorId
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: targetType
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: targetId
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: action
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: offset
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Matching audit rows + total.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminListAuditLogsResponseDto'
+      security:
+        - bearer: []
+      summary: V.UX.36 — read-only admin audit log. Filter by actorId / targetType /
+        targetId / action. Newest first.
+      tags:
+        - admin
   /api/v1/trips/{tripId}/votes:
     post:
       operationId: SocialController_cast
@@ -7756,6 +7803,56 @@ components:
         - relaxationScore
         - createdAt
         - updatedAt
+    AdminAuditLogDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        actorId:
+          type: object
+          format: cuid
+          nullable: true
+          description: User id of the admin who performed the action. Null if that admin
+            was later deleted.
+        targetType:
+          type: string
+          description: user | scam_report | sos | media | trip
+        targetId:
+          type: string
+        action:
+          type: string
+          description: ban | unban | verify_scam | dismiss_scam | resolve_sos |
+            delete_media | ...
+        context:
+          type: object
+          nullable: true
+          description: Per-action JSON payload (e.g. {reason} for ban, {note} for
+            resolve_sos).
+          additionalProperties: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - actorId
+        - targetType
+        - targetId
+        - action
+        - context
+        - createdAt
+    AdminListAuditLogsResponseDto:
+      type: object
+      properties:
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminAuditLogDto'
+        total:
+          type: number
+      required:
+        - rows
+        - total
     CastVoteRequestDto:
       type: object
       properties:

@@ -29,7 +29,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Roles } from '../../../common/auth';
+import { CurrentUser, Roles, type AuthenticatedUser } from '../../../common/auth';
 import { AdminArchiveTripUseCase } from '../application/admin-archive-trip.use-case';
 import { AdminDeleteTripUseCase } from '../application/admin-delete-trip.use-case';
 import { AdminListTripsUseCase } from '../application/admin-list-trips.use-case';
@@ -118,8 +118,8 @@ export class AdminTripsController {
   @ApiResponse({ status: 204, description: 'Trip archived.' })
   @Post(':id/archive')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async archive(@Param('id') id: string): Promise<void> {
-    await this.archiveUc.execute(id);
+  async archive(@CurrentUser() admin: AuthenticatedUser, @Param('id') id: string): Promise<void> {
+    await this.archiveUc.execute({ actorId: admin.sub, tripId: id });
   }
 
   @ApiOperation({
@@ -128,7 +128,7 @@ export class AdminTripsController {
   @ApiResponse({ status: 204, description: 'Trip deleted.' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param('id') id: string): Promise<void> {
-    await this.deleteUc.execute(id);
+  async remove(@CurrentUser() admin: AuthenticatedUser, @Param('id') id: string): Promise<void> {
+    await this.deleteUc.execute({ actorId: admin.sub, tripId: id });
   }
 }
