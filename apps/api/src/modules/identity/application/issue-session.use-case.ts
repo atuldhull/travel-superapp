@@ -45,7 +45,7 @@ export const MAX_SESSIONS_PER_USER = 10;
 
 export interface IssueSessionCommand {
   readonly userId: string;
-  readonly role: 'user' | 'premium' | 'agent' | 'admin' | 'compliance';
+  readonly role: 'user' | 'premium' | 'agent' | 'admin' | 'compliance' | 'sre';
   readonly deviceId: string | null;
   readonly userAgent: string | null;
   readonly ipHash: string | null;

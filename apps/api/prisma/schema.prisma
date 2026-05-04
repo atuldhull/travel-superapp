@@ -45,6 +45,10 @@ enum UserRole {
   // (retention dashboard + takedown list) but cannot ban / verify /
   // resolve / delete. Promoted by an admin via a future tooling flow.
   compliance
+  // V.UX.38 — site reliability engineer. Read-only access to the
+  // /ops dashboard (health probes + runbook index + force-purge).
+  // Cannot perform destructive moderation actions.
+  sre
 }
 
 enum TripStatus {

@@ -112,7 +112,7 @@ function appealToDto(a: AdminListedBanAppeal): {
   };
 }
 
-const VALID_ROLES: readonly UserRole[] = ['user', 'premium', 'agent', 'admin', 'compliance'];
+const VALID_ROLES: readonly UserRole[] = ['user', 'premium', 'agent', 'admin', 'compliance', 'sre'];
 
 interface AdminUserDto {
   readonly id: string;

@@ -38,6 +38,13 @@ export interface StorageProvider {
   objectExists(key: string): Promise<boolean>;
   listAllKeys(): Promise<readonly string[]>;
   deleteObject(key: string): Promise<void>;
+  /**
+   * V.UX.38 — bucket reachability probe used by `S3HealthIndicator`.
+   * Resolves with `{ ok: false, error }` instead of throwing so the
+   * /health/ready check stays soft on S3 (an S3 hiccup must NOT
+   * flip pods to Unhealthy and bounce them out of the LB pool).
+   */
+  pingBucket(): Promise<{ ok: boolean; latencyMs: number; error?: string }>;
 }
 
 export const STORAGE_PROVIDER = Symbol('StorageProvider');
