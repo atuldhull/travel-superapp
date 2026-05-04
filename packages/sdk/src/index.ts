@@ -269,6 +269,15 @@ export type { PublicReviewerRecentReviewDto } from './generated/schemas/publicRe
 // already-star-exported `trip` barrel. WhoAmIResponseDto already
 // exported above (line 73) so the new `previousSeenAt` field flows
 // through automatically once the SDK is regenerated.
+// V.UX.31: locked-out persona — password-reset request + consume.
+// Hooks (useAuthControllerPasswordResetRequest, ...PasswordResetConsume)
+// land in the already-star-exported `identity` barrel. MFA backup-code
+// recovery already ships through /login (mfaCode accepts 8-char backup
+// codes by regex per LoginBodySchema).
+export type { PasswordResetRequestRequestDto } from './generated/schemas/passwordResetRequestRequestDto';
+export type { PasswordResetConsumeRequestDto } from './generated/schemas/passwordResetConsumeRequestDto';
+export type { PasswordResetRequestResponseDto } from './generated/schemas/passwordResetRequestResponseDto';
+export type { PasswordResetConsumeResponseDto } from './generated/schemas/passwordResetConsumeResponseDto';
 // V.UX.26: notification persona — inbox archive + per-category prefs +
 // Web Push subscription. Hooks (useNotificationPreferencesController*,
 // usePushSubscriptionsController*, useNotificationsControllerArchive)

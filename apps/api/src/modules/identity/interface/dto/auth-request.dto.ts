@@ -73,3 +73,27 @@ export class OnboardingCompleteRequestDto {
   })
   declare seedSample?: boolean;
 }
+
+/**
+ * V.UX.31 — `POST /auth/password-reset/request` body.
+ */
+export class PasswordResetRequestRequestDto {
+  @ApiProperty({ format: 'email', maxLength: 254 })
+  declare email: string;
+}
+
+/**
+ * V.UX.31 — `POST /auth/password-reset/consume` body.
+ */
+export class PasswordResetConsumeRequestDto {
+  @ApiProperty({
+    description: '64 lower-case hex characters (32 random bytes) from the email link URL.',
+    pattern: '^[0-9a-f]{64}$',
+    minLength: 64,
+    maxLength: 64,
+  })
+  declare token: string;
+
+  @ApiProperty({ minLength: 12, maxLength: 128, description: 'New password (12..128 chars).' })
+  declare newPassword: string;
+}

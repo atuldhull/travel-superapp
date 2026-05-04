@@ -93,6 +93,14 @@ export interface UserRepository {
    * `lastSeenAt` to now exceeds the threshold (default 1 hour).
    */
   stampSeen(userId: string, now: Date): Promise<{ previousSeenAt: Date | null }>;
+
+  /**
+   * V.UX.31 — replace the user's password hash. Used by the password-
+   * reset consume flow. Caller MUST have already validated the
+   * single-use reset token AND the new plaintext against the
+   * complexity rules (12..128 chars, same as register).
+   */
+  setPasswordHash(userId: string, newPasswordHash: string): Promise<void>;
 }
 
 export const USER_REPOSITORY = Symbol('UserRepository');
