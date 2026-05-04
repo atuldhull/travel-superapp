@@ -21,6 +21,7 @@ import type {
   FindNearbyScamsRequestDto,
   FindNearbyScamsResponseDto,
   ListSosEventsResponseDto,
+  LocalEmergencyResponseDto,
   ReportScamRequestDto,
   ResolveSosRequestDto,
   SafetyScoreRequestDto,
@@ -583,6 +584,104 @@ export const useSosControllerResolve = <TError = void, TContext = unknown>(optio
   return useMutation(mutationOptions);
 };
 /**
+ * @summary V.UX.35 — owner-scoped cancel of an active SOS (the 'I'm OK' button). 404 on already-resolved or cross-user.
+ */
+export type sosControllerCancelResponse200 = {
+  data: SosEventDto;
+  status: 200;
+};
+
+export type sosControllerCancelResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type sosControllerCancelResponseSuccess = sosControllerCancelResponse200 & {
+  headers: Headers;
+};
+export type sosControllerCancelResponseError = sosControllerCancelResponse404 & {
+  headers: Headers;
+};
+
+export type sosControllerCancelResponse =
+  | sosControllerCancelResponseSuccess
+  | sosControllerCancelResponseError;
+
+export const getSosControllerCancelUrl = (id: string) => {
+  return `/api/v1/safety/sos/${id}/cancel`;
+};
+
+export const sosControllerCancel = async (
+  id: string,
+  options?: RequestInit,
+): Promise<sosControllerCancelResponse> => {
+  return apiFetch<sosControllerCancelResponse>(getSosControllerCancelUrl(id), {
+    ...options,
+    method: 'POST',
+  });
+};
+
+export const getSosControllerCancelMutationOptions = <TError = void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sosControllerCancel>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof sosControllerCancel>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ['sosControllerCancel'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof sosControllerCancel>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return sosControllerCancel(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SosControllerCancelMutationResult = NonNullable<
+  Awaited<ReturnType<typeof sosControllerCancel>>
+>;
+
+export type SosControllerCancelMutationError = void;
+
+/**
+ * @summary V.UX.35 — owner-scoped cancel of an active SOS (the 'I'm OK' button). 404 on already-resolved or cross-user.
+ */
+export const useSosControllerCancel = <TError = void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sosControllerCancel>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof sosControllerCancel>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationOptions = getSosControllerCancelMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
  * @summary Find crime incidents within a radius. Optional category / minSeverity / sinceDays filters.
  */
 export type crimeLayerControllerSearchResponse200 = {
@@ -934,6 +1033,192 @@ export function useCountryPrimerControllerGet<
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getCountryPrimerControllerGetQueryOptions(countryCode, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary V.UX.35 — local police / ambulance / fire numbers for a country (~50 seeded). Public — sign-in not required mid-emergency.
+ */
+export type emergencyNumbersControllerGetResponse200 = {
+  data: LocalEmergencyResponseDto;
+  status: 200;
+};
+
+export type emergencyNumbersControllerGetResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type emergencyNumbersControllerGetResponseSuccess =
+  emergencyNumbersControllerGetResponse200 & {
+    headers: Headers;
+  };
+export type emergencyNumbersControllerGetResponseError =
+  emergencyNumbersControllerGetResponse404 & {
+    headers: Headers;
+  };
+
+export type emergencyNumbersControllerGetResponse =
+  | emergencyNumbersControllerGetResponseSuccess
+  | emergencyNumbersControllerGetResponseError;
+
+export const getEmergencyNumbersControllerGetUrl = (countryCode: string) => {
+  return `/api/v1/safety/emergency-numbers/${countryCode}`;
+};
+
+export const emergencyNumbersControllerGet = async (
+  countryCode: string,
+  options?: RequestInit,
+): Promise<emergencyNumbersControllerGetResponse> => {
+  return apiFetch<emergencyNumbersControllerGetResponse>(
+    getEmergencyNumbersControllerGetUrl(countryCode),
+    {
+      ...options,
+      method: 'GET',
+    },
+  );
+};
+
+export const getEmergencyNumbersControllerGetInfiniteQueryKey = (countryCode?: string) => {
+  return ['infinite', `/api/v1/safety/emergency-numbers/${countryCode}`] as const;
+};
+
+export const getEmergencyNumbersControllerGetQueryKey = (countryCode?: string) => {
+  return [`/api/v1/safety/emergency-numbers/${countryCode}`] as const;
+};
+
+export const getEmergencyNumbersControllerGetInfiniteQueryOptions = <
+  TData = Awaited<ReturnType<typeof emergencyNumbersControllerGet>>,
+  TError = void,
+>(
+  countryCode: string,
+  options?: {
+    query?: UseInfiniteQueryOptions<
+      Awaited<ReturnType<typeof emergencyNumbersControllerGet>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getEmergencyNumbersControllerGetInfiniteQueryKey(countryCode);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof emergencyNumbersControllerGet>>> = ({
+    signal,
+  }) => emergencyNumbersControllerGet(countryCode, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!countryCode,
+    staleTime: 30000,
+    ...queryOptions,
+  } as UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof emergencyNumbersControllerGet>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type EmergencyNumbersControllerGetInfiniteQueryResult = NonNullable<
+  Awaited<ReturnType<typeof emergencyNumbersControllerGet>>
+>;
+export type EmergencyNumbersControllerGetInfiniteQueryError = void;
+
+/**
+ * @summary V.UX.35 — local police / ambulance / fire numbers for a country (~50 seeded). Public — sign-in not required mid-emergency.
+ */
+
+export function useEmergencyNumbersControllerGetInfinite<
+  TData = Awaited<ReturnType<typeof emergencyNumbersControllerGet>>,
+  TError = void,
+>(
+  countryCode: string,
+  options?: {
+    query?: UseInfiniteQueryOptions<
+      Awaited<ReturnType<typeof emergencyNumbersControllerGet>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+): UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getEmergencyNumbersControllerGetInfiniteQueryOptions(countryCode, options);
+
+  const query = useInfiniteQuery(queryOptions) as UseInfiniteQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getEmergencyNumbersControllerGetQueryOptions = <
+  TData = Awaited<ReturnType<typeof emergencyNumbersControllerGet>>,
+  TError = void,
+>(
+  countryCode: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof emergencyNumbersControllerGet>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getEmergencyNumbersControllerGetQueryKey(countryCode);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof emergencyNumbersControllerGet>>> = ({
+    signal,
+  }) => emergencyNumbersControllerGet(countryCode, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!countryCode,
+    staleTime: 30000,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof emergencyNumbersControllerGet>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type EmergencyNumbersControllerGetQueryResult = NonNullable<
+  Awaited<ReturnType<typeof emergencyNumbersControllerGet>>
+>;
+export type EmergencyNumbersControllerGetQueryError = void;
+
+/**
+ * @summary V.UX.35 — local police / ambulance / fire numbers for a country (~50 seeded). Public — sign-in not required mid-emergency.
+ */
+
+export function useEmergencyNumbersControllerGet<
+  TData = Awaited<ReturnType<typeof emergencyNumbersControllerGet>>,
+  TError = void,
+>(
+  countryCode: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof emergencyNumbersControllerGet>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getEmergencyNumbersControllerGetQueryOptions(countryCode, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
