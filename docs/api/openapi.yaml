@@ -1706,6 +1706,28 @@ paths:
       security: *a25
       summary: Mark an SOS event resolved (owner-only).
       tags: *a26
+  /api/v1/safety/sos/{id}/cancel:
+    post:
+      operationId: SosController_cancel
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Cancelled event row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SosEventDto'
+        '404':
+          description: SOS_NOT_FOUND.
+      security: *a25
+      summary: V.UX.35 — owner-scoped cancel of an active SOS (the 'I'm OK' button).
+        404 on already-resolved or cross-user.
+      tags: *a26
   /api/v1/safety/crimes/search:
     post:
       operationId: CrimeLayerController_search
@@ -2014,6 +2036,29 @@ paths:
         - bearer: []
       summary: Editorial first-time-international primer for a destination — visa
         info, top scams, emergency numbers, survival phrases.
+      tags:
+        - safety
+  /api/v1/safety/emergency-numbers/{countryCode}:
+    get:
+      operationId: EmergencyNumbersController_get
+      parameters:
+        - name: countryCode
+          required: true
+          in: path
+          description: ISO 3166-1 alpha-2 (case-insensitive).
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Numbers + optional note.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocalEmergencyResponseDto'
+        '404':
+          description: EMERGENCY_INFO_NOT_FOUND.
+      summary: V.UX.35 — local police / ambulance / fire numbers for a country (~50
+        seeded). Public — sign-in not required mid-emergency.
       tags:
         - safety
   /api/v1/account/stats:
@@ -6448,6 +6493,35 @@ components:
         - emergencyNumbers
         - languagePhrases
         - seededAt
+    LocalEmergencyResponseDto:
+      type: object
+      properties:
+        countryCode:
+          type: string
+          description: ISO 3166-1 alpha-2 country code.
+        countryName:
+          type: string
+        universal:
+          type: object
+          nullable: true
+          description: Universal short code (US 911, EU 112). Null when none.
+        police:
+          type: string
+        ambulance:
+          type: string
+        fire:
+          type: string
+        note:
+          type: object
+          nullable: true
+      required:
+        - countryCode
+        - countryName
+        - universal
+        - police
+        - ambulance
+        - fire
+        - note
     StorageStatsResponseDto:
       type: object
       properties:

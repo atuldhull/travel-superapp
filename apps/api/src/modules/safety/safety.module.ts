@@ -35,6 +35,8 @@ import { CRIME_INCIDENT_REPOSITORY } from './application/ports/crime-incident.re
 import { SCAM_REPORT_REPOSITORY } from './application/ports/scam-report.repository';
 import { SOS_EVENT_REPOSITORY } from './application/ports/sos-event.repository';
 import { ReportScamUseCase } from './application/report-scam.use-case';
+import { CancelSosUseCase } from './application/cancel-sos.use-case';
+import { GetLocalEmergencyUseCase } from './application/get-local-emergency.use-case';
 import { ResolveSosUseCase } from './application/resolve-sos.use-case';
 import { TriggerSosUseCase } from './application/trigger-sos.use-case';
 import { UpdateAgentProfileUseCase } from './application/update-agent-profile.use-case';
@@ -49,6 +51,7 @@ import { AdminSosController } from './interface/admin-sos.controller';
 import { AgentSelfController } from './interface/agent-self.controller';
 import { AgentsController } from './interface/agents.controller';
 import { CountryPrimerController } from './interface/country-primer.controller';
+import { EmergencyNumbersController } from './interface/emergency-numbers.controller';
 import { CrimeLayerController } from './interface/crime.controller';
 import { SafetyScoreController } from './interface/safety-score.controller';
 import { SafetyController } from './interface/safety.controller';
@@ -74,6 +77,7 @@ import { SosController } from './interface/sos.controller';
     AgentsController,
     AgentSelfController,
     CountryPrimerController,
+    EmergencyNumbersController,
   ],
   providers: [
     { provide: SCAM_REPORT_REPOSITORY, useClass: PrismaScamReportRepository },
@@ -102,6 +106,8 @@ import { SosController } from './interface/sos.controller';
     GetAgentProfileUseCase,
     UpdateAgentProfileUseCase,
     GetAgentDashboardUseCase,
+    CancelSosUseCase,
+    GetLocalEmergencyUseCase,
   ],
   exports: [
     SCAM_REPORT_REPOSITORY,

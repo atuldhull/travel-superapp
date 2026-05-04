@@ -15,6 +15,7 @@ import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from 
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { type AuthenticatedUser, CurrentUser } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
+import { CancelSosUseCase } from '../application/cancel-sos.use-case';
 import { ListMySosEventsUseCase } from '../application/list-my-sos-events.use-case';
 import { ResolveSosUseCase } from '../application/resolve-sos.use-case';
 import { TriggerSosUseCase } from '../application/trigger-sos.use-case';
@@ -60,6 +61,7 @@ export class SosController {
     private readonly triggerUc: TriggerSosUseCase,
     private readonly listUc: ListMySosEventsUseCase,
     private readonly resolveUc: ResolveSosUseCase,
+    private readonly cancelUc: CancelSosUseCase,
   ) {}
 
   @ApiOperation({ summary: 'Trigger an SOS event at the given coordinates.' })
@@ -111,6 +113,28 @@ export class SosController {
       userId: user.sub,
       ...(body.note !== undefined ? { note: body.note } : {}),
     });
+    return toDto(sos);
+  }
+
+  /**
+   * V.UX.35 — owner-scoped "I'm OK" cancel. Same write as
+   * `resolve` but stamps a stable `cancelled_by_user` resolution
+   * note so the audit trail distinguishes user-cancels from
+   * admin/responder resolutions.
+   */
+  @ApiOperation({
+    summary:
+      "V.UX.35 — owner-scoped cancel of an active SOS (the 'I'm OK' button). 404 on already-resolved or cross-user.",
+  })
+  @ApiResponse({ status: 200, description: 'Cancelled event row.', type: SosEventResponseDto })
+  @ApiResponse({ status: 404, description: 'SOS_NOT_FOUND.' })
+  @Post(':id/cancel')
+  @HttpCode(HttpStatus.OK)
+  async cancel(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ): Promise<SosEventDto> {
+    const sos = await this.cancelUc.execute({ id, userId: user.sub });
     return toDto(sos);
   }
 }
