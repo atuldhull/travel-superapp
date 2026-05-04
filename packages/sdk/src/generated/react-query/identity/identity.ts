@@ -23,6 +23,10 @@ import type {
   OAuthSignInRequestDto,
   OnboardingCompleteRequestDto,
   OnboardingCompleteResponseDto,
+  PasswordResetConsumeRequestDto,
+  PasswordResetConsumeResponseDto,
+  PasswordResetRequestRequestDto,
+  PasswordResetRequestResponseDto,
   RefreshSuccessResponseDto,
   RegisterRequestDto,
   WhoAmIResponseDto,
@@ -431,6 +435,221 @@ export const useAuthControllerMagicLinkConsume = <TError = void, TContext = unkn
   TContext
 > => {
   const mutationOptions = getAuthControllerMagicLinkConsumeMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary V.UX.31 — request a password-reset email. Always returns ok regardless of registration state.
+ */
+export type authControllerPasswordResetRequestResponse200 = {
+  data: PasswordResetRequestResponseDto;
+  status: 200;
+};
+
+export type authControllerPasswordResetRequestResponseSuccess =
+  authControllerPasswordResetRequestResponse200 & {
+    headers: Headers;
+  };
+export type authControllerPasswordResetRequestResponse =
+  authControllerPasswordResetRequestResponseSuccess;
+
+export const getAuthControllerPasswordResetRequestUrl = () => {
+  return `/api/v1/auth/password-reset/request`;
+};
+
+export const authControllerPasswordResetRequest = async (
+  passwordResetRequestRequestDto: PasswordResetRequestRequestDto,
+  options?: RequestInit,
+): Promise<authControllerPasswordResetRequestResponse> => {
+  return apiFetch<authControllerPasswordResetRequestResponse>(
+    getAuthControllerPasswordResetRequestUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(passwordResetRequestRequestDto),
+    },
+  );
+};
+
+export const getAuthControllerPasswordResetRequestMutationOptions = <
+  TError = unknown,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof authControllerPasswordResetRequest>>,
+    TError,
+    { data: PasswordResetRequestRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof authControllerPasswordResetRequest>>,
+  TError,
+  { data: PasswordResetRequestRequestDto },
+  TContext
+> => {
+  const mutationKey = ['authControllerPasswordResetRequest'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof authControllerPasswordResetRequest>>,
+    { data: PasswordResetRequestRequestDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return authControllerPasswordResetRequest(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AuthControllerPasswordResetRequestMutationResult = NonNullable<
+  Awaited<ReturnType<typeof authControllerPasswordResetRequest>>
+>;
+export type AuthControllerPasswordResetRequestMutationBody = PasswordResetRequestRequestDto;
+export type AuthControllerPasswordResetRequestMutationError = unknown;
+
+/**
+ * @summary V.UX.31 — request a password-reset email. Always returns ok regardless of registration state.
+ */
+export const useAuthControllerPasswordResetRequest = <
+  TError = unknown,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof authControllerPasswordResetRequest>>,
+    TError,
+    { data: PasswordResetRequestRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof authControllerPasswordResetRequest>>,
+  TError,
+  { data: PasswordResetRequestRequestDto },
+  TContext
+> => {
+  const mutationOptions = getAuthControllerPasswordResetRequestMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary V.UX.31 — consume the password-reset token + set a new password. Single-use, 15-min TTL.
+ */
+export type authControllerPasswordResetConsumeResponse200 = {
+  data: PasswordResetConsumeResponseDto;
+  status: 200;
+};
+
+export type authControllerPasswordResetConsumeResponse401 = {
+  data: void;
+  status: 401;
+};
+
+export type authControllerPasswordResetConsumeResponse422 = {
+  data: void;
+  status: 422;
+};
+
+export type authControllerPasswordResetConsumeResponseSuccess =
+  authControllerPasswordResetConsumeResponse200 & {
+    headers: Headers;
+  };
+export type authControllerPasswordResetConsumeResponseError = (
+  | authControllerPasswordResetConsumeResponse401
+  | authControllerPasswordResetConsumeResponse422
+) & {
+  headers: Headers;
+};
+
+export type authControllerPasswordResetConsumeResponse =
+  | authControllerPasswordResetConsumeResponseSuccess
+  | authControllerPasswordResetConsumeResponseError;
+
+export const getAuthControllerPasswordResetConsumeUrl = () => {
+  return `/api/v1/auth/password-reset/consume`;
+};
+
+export const authControllerPasswordResetConsume = async (
+  passwordResetConsumeRequestDto: PasswordResetConsumeRequestDto,
+  options?: RequestInit,
+): Promise<authControllerPasswordResetConsumeResponse> => {
+  return apiFetch<authControllerPasswordResetConsumeResponse>(
+    getAuthControllerPasswordResetConsumeUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(passwordResetConsumeRequestDto),
+    },
+  );
+};
+
+export const getAuthControllerPasswordResetConsumeMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof authControllerPasswordResetConsume>>,
+    TError,
+    { data: PasswordResetConsumeRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof authControllerPasswordResetConsume>>,
+  TError,
+  { data: PasswordResetConsumeRequestDto },
+  TContext
+> => {
+  const mutationKey = ['authControllerPasswordResetConsume'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof authControllerPasswordResetConsume>>,
+    { data: PasswordResetConsumeRequestDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return authControllerPasswordResetConsume(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AuthControllerPasswordResetConsumeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof authControllerPasswordResetConsume>>
+>;
+export type AuthControllerPasswordResetConsumeMutationBody = PasswordResetConsumeRequestDto;
+export type AuthControllerPasswordResetConsumeMutationError = void;
+
+/**
+ * @summary V.UX.31 — consume the password-reset token + set a new password. Single-use, 15-min TTL.
+ */
+export const useAuthControllerPasswordResetConsume = <TError = void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof authControllerPasswordResetConsume>>,
+    TError,
+    { data: PasswordResetConsumeRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof authControllerPasswordResetConsume>>,
+  TError,
+  { data: PasswordResetConsumeRequestDto },
+  TContext
+> => {
+  const mutationOptions = getAuthControllerPasswordResetConsumeMutationOptions(options);
 
   return useMutation(mutationOptions);
 };

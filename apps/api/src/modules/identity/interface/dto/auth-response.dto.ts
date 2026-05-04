@@ -59,6 +59,31 @@ export class MagicLinkRequestResponseDto {
 }
 
 /**
+ * V.UX.31 — response of `POST /auth/password-reset/request`. Same
+ * shape (and same enumeration-safe semantics) as the magic-link
+ * request response.
+ */
+export class PasswordResetRequestResponseDto {
+  @ApiProperty({
+    enum: ['ok'],
+    description: "Always 'ok'. Doesn't reveal whether the email is registered.",
+  })
+  declare status: string;
+}
+
+/**
+ * V.UX.31 — response of `POST /auth/password-reset/consume`.
+ * Body is intentionally minimal — the user must explicitly sign in
+ * with the new password. We don't auto-issue a session because the
+ * common case is "I forgot my password on a public computer"; we
+ * don't want a session to land in a browser the user just borrowed.
+ */
+export class PasswordResetConsumeResponseDto {
+  @ApiProperty({ enum: ['ok'] })
+  declare status: string;
+}
+
+/**
  * Response of `GET /auth/me`. Returns the stable JWT claims plus a
  * couple of hydrated User-row fields the web client needs to make
  * routing decisions WITHOUT a separate round-trip:

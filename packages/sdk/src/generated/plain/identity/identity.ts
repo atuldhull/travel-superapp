@@ -10,6 +10,10 @@ import type {
   OAuthSignInRequestDto,
   OnboardingCompleteRequestDto,
   OnboardingCompleteResponseDto,
+  PasswordResetConsumeRequestDto,
+  PasswordResetConsumeResponseDto,
+  PasswordResetRequestRequestDto,
+  PasswordResetRequestResponseDto,
   RefreshSuccessResponseDto,
   RegisterRequestDto,
   WhoAmIResponseDto,
@@ -168,6 +172,92 @@ export const authControllerMagicLinkConsume = async (
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(magicLinkConsumeRequestDto),
   });
+};
+
+/**
+ * @summary V.UX.31 — request a password-reset email. Always returns ok regardless of registration state.
+ */
+export type authControllerPasswordResetRequestResponse200 = {
+  data: PasswordResetRequestResponseDto;
+  status: 200;
+};
+
+export type authControllerPasswordResetRequestResponseSuccess =
+  authControllerPasswordResetRequestResponse200 & {
+    headers: Headers;
+  };
+export type authControllerPasswordResetRequestResponse =
+  authControllerPasswordResetRequestResponseSuccess;
+
+export const getAuthControllerPasswordResetRequestUrl = () => {
+  return `/api/v1/auth/password-reset/request`;
+};
+
+export const authControllerPasswordResetRequest = async (
+  passwordResetRequestRequestDto: PasswordResetRequestRequestDto,
+  options?: RequestInit,
+): Promise<authControllerPasswordResetRequestResponse> => {
+  return apiFetch<authControllerPasswordResetRequestResponse>(
+    getAuthControllerPasswordResetRequestUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(passwordResetRequestRequestDto),
+    },
+  );
+};
+
+/**
+ * @summary V.UX.31 — consume the password-reset token + set a new password. Single-use, 15-min TTL.
+ */
+export type authControllerPasswordResetConsumeResponse200 = {
+  data: PasswordResetConsumeResponseDto;
+  status: 200;
+};
+
+export type authControllerPasswordResetConsumeResponse401 = {
+  data: void;
+  status: 401;
+};
+
+export type authControllerPasswordResetConsumeResponse422 = {
+  data: void;
+  status: 422;
+};
+
+export type authControllerPasswordResetConsumeResponseSuccess =
+  authControllerPasswordResetConsumeResponse200 & {
+    headers: Headers;
+  };
+export type authControllerPasswordResetConsumeResponseError = (
+  | authControllerPasswordResetConsumeResponse401
+  | authControllerPasswordResetConsumeResponse422
+) & {
+  headers: Headers;
+};
+
+export type authControllerPasswordResetConsumeResponse =
+  | authControllerPasswordResetConsumeResponseSuccess
+  | authControllerPasswordResetConsumeResponseError;
+
+export const getAuthControllerPasswordResetConsumeUrl = () => {
+  return `/api/v1/auth/password-reset/consume`;
+};
+
+export const authControllerPasswordResetConsume = async (
+  passwordResetConsumeRequestDto: PasswordResetConsumeRequestDto,
+  options?: RequestInit,
+): Promise<authControllerPasswordResetConsumeResponse> => {
+  return apiFetch<authControllerPasswordResetConsumeResponse>(
+    getAuthControllerPasswordResetConsumeUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(passwordResetConsumeRequestDto),
+    },
+  );
 };
 
 /**

@@ -90,3 +90,23 @@ export const OAuthSignInBodySchema = z.object({
   idToken: z.string().min(1).max(8192),
 });
 export type OAuthSignInBody = z.infer<typeof OAuthSignInBodySchema>;
+
+/**
+ * V.UX.31 — body for `POST /auth/password-reset/request`. Email-only,
+ * non-revealing (always 200 regardless of registration state).
+ */
+export const PasswordResetRequestBodySchema = z.object({
+  email: z.string().trim().toLowerCase().email().max(254),
+});
+export type PasswordResetRequestBody = z.infer<typeof PasswordResetRequestBodySchema>;
+
+/**
+ * V.UX.31 — body for `POST /auth/password-reset/consume`. The token
+ * is the URL-fragment from the email link (64 hex chars, 32 random
+ * bytes). New password follows the same complexity rules as register.
+ */
+export const PasswordResetConsumeBodySchema = z.object({
+  token: z.string().regex(/^[0-9a-f]{64}$/, 'token must be 64 lower-case hex characters'),
+  newPassword: z.string().min(12).max(128),
+});
+export type PasswordResetConsumeBody = z.infer<typeof PasswordResetConsumeBodySchema>;

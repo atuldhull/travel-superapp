@@ -57,7 +57,9 @@ import {
   USER_REPOSITORY,
   type UserRepository,
 } from '../../identity/application/ports/user.repository';
+import { ConsumePasswordResetUseCase } from '../../identity/application/consume-password-reset.use-case';
 import { RequestMagicLinkUseCase } from '../../identity/application/request-magic-link.use-case';
+import { RequestPasswordResetUseCase } from '../../identity/application/request-password-reset.use-case';
 import { SeedSampleTripUseCase } from '../../trip/application/seed-sample-trip.use-case';
 import { SignInWithOAuthUseCase } from '../../identity/application/sign-in-with-oauth.use-case';
 import {
@@ -67,6 +69,8 @@ import {
   MfaCodeBodySchema,
   OAuthSignInBodySchema,
   OnboardingCompleteBodySchema,
+  PasswordResetConsumeBodySchema,
+  PasswordResetRequestBodySchema,
   RegisterBodySchema,
   type LoginBody,
   type MagicLinkConsumeBody,
@@ -74,12 +78,16 @@ import {
   type MfaCodeBody,
   type OAuthSignInBody,
   type OnboardingCompleteBody,
+  type PasswordResetConsumeBody,
+  type PasswordResetRequestBody,
   type RegisterBody,
 } from './dto/auth.dto';
 import {
   AuthSuccessResponseDto,
   MagicLinkRequestResponseDto,
   OnboardingCompleteResponseDto,
+  PasswordResetConsumeResponseDto,
+  PasswordResetRequestResponseDto,
   RefreshSuccessResponseDto,
   WhoAmIResponseDto,
 } from './dto/auth-response.dto';
@@ -89,6 +97,8 @@ import {
   MagicLinkRequestRequestDto,
   OAuthSignInRequestDto,
   OnboardingCompleteRequestDto,
+  PasswordResetConsumeRequestDto,
+  PasswordResetRequestRequestDto,
   RegisterRequestDto,
 } from './dto/auth-request.dto';
 
@@ -125,6 +135,8 @@ export class AuthController {
     private readonly oauthUc: SignInWithOAuthUseCase,
     private readonly magicLinkRequestUc: RequestMagicLinkUseCase,
     private readonly magicLinkConsumeUc: ConsumeMagicLinkUseCase,
+    private readonly passwordResetRequestUc: RequestPasswordResetUseCase,
+    private readonly passwordResetConsumeUc: ConsumePasswordResetUseCase,
     private readonly markOnboardingCompleteUc: MarkOnboardingCompleteUseCase,
     private readonly seedSampleTripUc: SeedSampleTripUseCase,
     @Inject(USER_REPOSITORY) private readonly users: UserRepository,
@@ -292,6 +304,68 @@ export class AuthController {
       accessToken: issued.accessToken,
       expiresAt: issued.accessTokenExpiresAt.toISOString(),
     };
+  }
+
+  /**
+   * V.UX.31 — request a password-reset email. Always returns success
+   * regardless of whether the email is registered (enumeration-safe).
+   * Soft-rate-limited at 5 tokens per email per 15-minute window
+   * inside the use-case; the named `auth` throttle bucket also caps
+   * total request volume.
+   *
+   * Installed by prompt [V.UX.31].
+   */
+  @ApiOperation({
+    summary:
+      'V.UX.31 — request a password-reset email. Always returns ok regardless of registration state.',
+  })
+  @ApiBody({ type: PasswordResetRequestRequestDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Always ok. Email may or may not have been sent.',
+    type: PasswordResetRequestResponseDto,
+  })
+  @Public()
+  @Post('password-reset/request')
+  @HttpCode(HttpStatus.OK)
+  async passwordResetRequest(
+    @Body(new ZodValidationPipe(PasswordResetRequestBodySchema)) body: PasswordResetRequestBody,
+  ): Promise<{ status: 'ok' }> {
+    await this.passwordResetRequestUc.execute({ email: body.email });
+    return { status: 'ok' };
+  }
+
+  /**
+   * V.UX.31 — consume the reset token and set a new password. The
+   * caller is NOT signed in afterward — they must explicitly /login
+   * with the new password (so a "borrowed device" reset doesn't
+   * leave a session in the borrowed browser).
+   *
+   * Installed by prompt [V.UX.31].
+   */
+  @ApiOperation({
+    summary:
+      'V.UX.31 — consume the password-reset token + set a new password. Single-use, 15-min TTL.',
+  })
+  @ApiBody({ type: PasswordResetConsumeRequestDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Password updated. User must sign in with the new password.',
+    type: PasswordResetConsumeResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'RESET_TOKEN_INVALID.' })
+  @ApiResponse({ status: 422, description: 'WEAK_PASSWORD or VALIDATION_FAILED.' })
+  @Public()
+  @Post('password-reset/consume')
+  @HttpCode(HttpStatus.OK)
+  async passwordResetConsume(
+    @Body(new ZodValidationPipe(PasswordResetConsumeBodySchema)) body: PasswordResetConsumeBody,
+  ): Promise<{ status: 'ok' }> {
+    await this.passwordResetConsumeUc.execute({
+      token: body.token,
+      newPassword: body.newPassword,
+    });
+    return { status: 'ok' };
   }
 
   @ApiOperation({

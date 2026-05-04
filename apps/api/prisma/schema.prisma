@@ -257,6 +257,22 @@ model MagicLinkToken {
   @@index([expiresAt])
 }
 
+// V.UX.31 — password-reset tokens. Sibling to MagicLinkToken with the
+// same single-use semantics: row exists, not consumed, not expired
+// → atomic `updateMany` consume claims it. The plaintext is sent in
+// the email link only; we store sha256(EMAIL_PEPPER + token).
+model PasswordResetToken {
+  id          String    @id @default(cuid())
+  emailHash   String
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  consumedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([emailHash, createdAt])
+  @@index([expiresAt])
+}
+
 // Single-use MFA recovery codes. Issued at enrolment (10 at a time)
 // + on explicit /mfa/backup-codes/regenerate. `codeHash` is sha256
 // of (BACKUP_CODE_PEPPER + plaintext) — the plaintext is returned
