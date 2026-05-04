@@ -10,24 +10,36 @@
  * the reason is shown to the user on the banned-login page so they
  * can write a meaningful appeal.
  *
+ * V.UX.36 — every successful ban writes one row to AdminAuditLog
+ * with `{action:'ban', context:{reason}}`.
+ *
  * Installed by prompt [IV.18.18.1]; reason + dedicated bannedAt
- * column added in [V.UX.34].
+ * column added in [V.UX.34]; audit log added in [V.UX.36].
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { UserNotFoundError, ValidationError } from '@app/errors';
+import {
+  ADMIN_AUDIT_LOG_REPOSITORY,
+  type AdminAuditLogRepository,
+} from '../../admin/application/ports/admin-audit-log.repository';
+import { recordAdminAction } from '../../admin/application/record-admin-action.helper';
 import { ACCOUNT_DELETER, type AccountDeleter } from './ports/account-deleter';
 
 const REASON_MIN = 1;
 const REASON_MAX = 280;
 
 export interface AdminBanUserCommand {
+  readonly actorId: string;
   readonly targetUserId: string;
   readonly reason: string;
 }
 
 @Injectable()
 export class AdminBanUserUseCase {
-  constructor(@Inject(ACCOUNT_DELETER) private readonly deleter: AccountDeleter) {}
+  constructor(
+    @Inject(ACCOUNT_DELETER) private readonly deleter: AccountDeleter,
+    @Inject(ADMIN_AUDIT_LOG_REPOSITORY) private readonly audit: AdminAuditLogRepository,
+  ) {}
 
   async execute(cmd: AdminBanUserCommand): Promise<void> {
     const trimmed = cmd.reason.trim();
@@ -41,5 +53,12 @@ export class AdminBanUserUseCase {
     }
     const ok = await this.deleter.banUser(cmd.targetUserId, new Date(), trimmed);
     if (!ok) throw new UserNotFoundError(cmd.targetUserId);
+    await recordAdminAction(this.audit, {
+      actorId: cmd.actorId,
+      targetType: 'user',
+      targetId: cmd.targetUserId,
+      action: 'ban',
+      context: { reason: trimmed },
+    });
   }
 }

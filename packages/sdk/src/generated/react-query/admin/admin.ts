@@ -15,8 +15,10 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AdminAuditLogsControllerListParams,
   AdminBanRequestDto,
   AdminCreatePlaceRequestDto,
+  AdminListAuditLogsResponseDto,
   AdminListBanAppealsResponseDto,
   AdminListMediaResponseDto,
   AdminListScamReportsResponseDto,
@@ -2580,3 +2582,187 @@ export const useAdminControllerRemove = <TError = void, TContext = unknown>(opti
 
   return useMutation(mutationOptions);
 };
+/**
+ * @summary V.UX.36 — read-only admin audit log. Filter by actorId / targetType / targetId / action. Newest first.
+ */
+export type adminAuditLogsControllerListResponse200 = {
+  data: AdminListAuditLogsResponseDto;
+  status: 200;
+};
+
+export type adminAuditLogsControllerListResponseSuccess =
+  adminAuditLogsControllerListResponse200 & {
+    headers: Headers;
+  };
+export type adminAuditLogsControllerListResponse = adminAuditLogsControllerListResponseSuccess;
+
+export const getAdminAuditLogsControllerListUrl = (params: AdminAuditLogsControllerListParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/admin/audit-logs?${stringifiedParams}`
+    : `/api/v1/admin/audit-logs`;
+};
+
+export const adminAuditLogsControllerList = async (
+  params: AdminAuditLogsControllerListParams,
+  options?: RequestInit,
+): Promise<adminAuditLogsControllerListResponse> => {
+  return apiFetch<adminAuditLogsControllerListResponse>(
+    getAdminAuditLogsControllerListUrl(params),
+    {
+      ...options,
+      method: 'GET',
+    },
+  );
+};
+
+export const getAdminAuditLogsControllerListInfiniteQueryKey = (
+  params?: AdminAuditLogsControllerListParams,
+) => {
+  return ['infinite', `/api/v1/admin/audit-logs`, ...(params ? [params] : [])] as const;
+};
+
+export const getAdminAuditLogsControllerListQueryKey = (
+  params?: AdminAuditLogsControllerListParams,
+) => {
+  return [`/api/v1/admin/audit-logs`, ...(params ? [params] : [])] as const;
+};
+
+export const getAdminAuditLogsControllerListInfiniteQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminAuditLogsControllerList>>,
+  TError = unknown,
+>(
+  params: AdminAuditLogsControllerListParams,
+  options?: {
+    query?: UseInfiniteQueryOptions<
+      Awaited<ReturnType<typeof adminAuditLogsControllerList>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminAuditLogsControllerListInfiniteQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof adminAuditLogsControllerList>>> = ({
+    signal,
+    pageParam,
+  }) =>
+    adminAuditLogsControllerList(
+      { ...params, limit: pageParam || params?.['limit'] },
+      { signal, ...requestOptions },
+    );
+
+  return { queryKey, queryFn, staleTime: 30000, ...queryOptions } as UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof adminAuditLogsControllerList>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminAuditLogsControllerListInfiniteQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminAuditLogsControllerList>>
+>;
+export type AdminAuditLogsControllerListInfiniteQueryError = unknown;
+
+/**
+ * @summary V.UX.36 — read-only admin audit log. Filter by actorId / targetType / targetId / action. Newest first.
+ */
+
+export function useAdminAuditLogsControllerListInfinite<
+  TData = Awaited<ReturnType<typeof adminAuditLogsControllerList>>,
+  TError = unknown,
+>(
+  params: AdminAuditLogsControllerListParams,
+  options?: {
+    query?: UseInfiniteQueryOptions<
+      Awaited<ReturnType<typeof adminAuditLogsControllerList>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+): UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminAuditLogsControllerListInfiniteQueryOptions(params, options);
+
+  const query = useInfiniteQuery(queryOptions) as UseInfiniteQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getAdminAuditLogsControllerListQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminAuditLogsControllerList>>,
+  TError = unknown,
+>(
+  params: AdminAuditLogsControllerListParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof adminAuditLogsControllerList>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAdminAuditLogsControllerListQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof adminAuditLogsControllerList>>> = ({
+    signal,
+  }) => adminAuditLogsControllerList(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, staleTime: 30000, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminAuditLogsControllerList>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminAuditLogsControllerListQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminAuditLogsControllerList>>
+>;
+export type AdminAuditLogsControllerListQueryError = unknown;
+
+/**
+ * @summary V.UX.36 — read-only admin audit log. Filter by actorId / targetType / targetId / action. Newest first.
+ */
+
+export function useAdminAuditLogsControllerList<
+  TData = Awaited<ReturnType<typeof adminAuditLogsControllerList>>,
+  TError = unknown,
+>(
+  params: AdminAuditLogsControllerListParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof adminAuditLogsControllerList>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminAuditLogsControllerListQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}

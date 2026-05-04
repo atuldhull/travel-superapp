@@ -27,7 +27,7 @@ import {
 } from '@nestjs/common';
 import { z } from 'zod';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Roles } from '../../../common/auth';
+import { CurrentUser, Roles, type AuthenticatedUser } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { AdminListSosEventsUseCase } from '../application/admin-list-sos-events.use-case';
 import { AdminResolveSosUseCase } from '../application/admin-resolve-sos.use-case';
@@ -116,10 +116,12 @@ export class AdminSosController {
   @Post(':id/resolve')
   @HttpCode(HttpStatus.OK)
   async resolve(
+    @CurrentUser() admin: AuthenticatedUser,
     @Param('id') id: string,
     @Body(new ZodValidationPipe(AdminResolveSosBodySchema)) body: AdminResolveSosBody,
   ): Promise<SosEventDto> {
     const row = await this.resolveUc.execute({
+      actorId: admin.sub,
       id,
       ...(body.note !== undefined && body.note !== null ? { note: body.note } : {}),
     });
