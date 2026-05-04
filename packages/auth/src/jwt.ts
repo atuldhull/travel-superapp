@@ -54,7 +54,7 @@ export interface JwtKeyring {
 export interface AccessTokenClaims {
   readonly sub: string;
   readonly sid: string;
-  readonly role: 'user' | 'premium' | 'agent' | 'admin';
+  readonly role: 'user' | 'premium' | 'agent' | 'admin' | 'compliance';
   readonly typ: 'access';
 }
 

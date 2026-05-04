@@ -100,10 +100,10 @@ export class WhoAmIResponseDto {
   declare sid: string;
 
   @ApiProperty({
-    enum: ['user', 'premium', 'agent', 'admin'],
+    enum: ['user', 'premium', 'agent', 'admin', 'compliance'],
     description: 'Role assigned to the session.',
   })
-  declare role: 'user' | 'premium' | 'agent' | 'admin';
+  declare role: 'user' | 'premium' | 'agent' | 'admin' | 'compliance';
 
   @ApiProperty({
     description:

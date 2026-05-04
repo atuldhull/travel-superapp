@@ -465,7 +465,7 @@ export class AuthController {
   async me(@CurrentUser() user: AuthenticatedUser): Promise<{
     sub: string;
     sid: string;
-    role: 'user' | 'premium' | 'agent' | 'admin';
+    role: 'user' | 'premium' | 'agent' | 'admin' | 'compliance';
     hasSeenOnboarding: boolean;
     previousSeenAt: string | null;
   }> {

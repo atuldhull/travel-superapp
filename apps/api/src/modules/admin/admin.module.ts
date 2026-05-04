@@ -22,21 +22,29 @@ import { PlacesModule } from '../places/places.module';
 import { AdminCreatePlaceUseCase } from './application/admin-create-place.use-case';
 import { AdminDeletePlaceUseCase } from './application/admin-delete-place.use-case';
 import { AdminListAuditLogsUseCase } from './application/admin-list-audit-logs.use-case';
+import { GetRetentionStatsUseCase } from './application/get-retention-stats.use-case';
+import { ListTakedownsUseCase } from './application/list-takedowns.use-case';
 import { ADMIN_AUDIT_LOG_REPOSITORY } from './application/ports/admin-audit-log.repository';
+import { COMPLIANCE_QUERIES_PORT } from './application/ports/compliance-queries.port';
 import { PrismaAdminAuditLogRepository } from './infrastructure/prisma-admin-audit-log.repository';
+import { PrismaComplianceQueries } from './infrastructure/prisma-compliance-queries';
 import { AdminAuditLogsController } from './interface/admin-audit-logs.controller';
 import { AdminController } from './interface/admin.controller';
+import { ComplianceController } from './interface/compliance.controller';
 
 @Global()
 @Module({
   // Import PlacesModule so the use-cases can inject PLACE_REPOSITORY.
   imports: [PlacesModule],
-  controllers: [AdminController, AdminAuditLogsController],
+  controllers: [AdminController, AdminAuditLogsController, ComplianceController],
   providers: [
     AdminCreatePlaceUseCase,
     AdminDeletePlaceUseCase,
     AdminListAuditLogsUseCase,
+    GetRetentionStatsUseCase,
+    ListTakedownsUseCase,
     { provide: ADMIN_AUDIT_LOG_REPOSITORY, useClass: PrismaAdminAuditLogRepository },
+    { provide: COMPLIANCE_QUERIES_PORT, useClass: PrismaComplianceQueries },
   ],
   // V.UX.36 — exported via @Global so cross-module admin use-cases
   // can record audit rows without module wiring churn.
