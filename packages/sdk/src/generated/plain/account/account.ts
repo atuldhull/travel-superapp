@@ -3,6 +3,7 @@
 // Regenerate via: pnpm --filter=@app/sdk sdk:gen
 import type {
   AddTrustedContactRequestDto,
+  AppealRequestDto,
   ConnectivityInfoDto,
   ListTrustedContactsResponseDto,
   PreferencesDto,
@@ -177,6 +178,46 @@ export const accountControllerReactivate = async (
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(reactivateRequestDto),
+  });
+};
+
+/**
+ * @summary V.UX.34 — submit a ban appeal. Always returns 200 regardless of registration / ban state.
+ */
+export type accountControllerAppealResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type accountControllerAppealResponse422 = {
+  data: void;
+  status: 422;
+};
+
+export type accountControllerAppealResponseSuccess = accountControllerAppealResponse200 & {
+  headers: Headers;
+};
+export type accountControllerAppealResponseError = accountControllerAppealResponse422 & {
+  headers: Headers;
+};
+
+export type accountControllerAppealResponse =
+  | accountControllerAppealResponseSuccess
+  | accountControllerAppealResponseError;
+
+export const getAccountControllerAppealUrl = () => {
+  return `/api/v1/account/appeal`;
+};
+
+export const accountControllerAppeal = async (
+  appealRequestDto: AppealRequestDto,
+  options?: RequestInit,
+): Promise<accountControllerAppealResponse> => {
+  return apiFetch<accountControllerAppealResponse>(getAccountControllerAppealUrl(), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(appealRequestDto),
   });
 };
 

@@ -67,4 +67,29 @@ export class PrismaAccountDeleter implements AccountDeleter {
     });
     return result.count === 1;
   }
+
+  async banUser(userId: string, bannedAt: Date, reason: string): Promise<boolean> {
+    // V.UX.34 — set bannedAt + reason + revoke sessions in one
+    // transaction. Idempotent: re-banning bumps the timestamp and
+    // refreshes the reason (admin can update).
+    const [userUpdate] = await this.prisma.$transaction([
+      this.prisma.user.updateMany({
+        where: { id: userId },
+        data: { bannedAt, banReason: reason },
+      }),
+      this.prisma.session.updateMany({
+        where: { userId, revokedAt: null },
+        data: { revokedAt: bannedAt },
+      }),
+    ]);
+    return userUpdate.count === 1;
+  }
+
+  async unbanUser(userId: string): Promise<boolean> {
+    const result = await this.prisma.user.updateMany({
+      where: { id: userId, bannedAt: { not: null } },
+      data: { bannedAt: null, banReason: null },
+    });
+    return result.count === 1;
+  }
 }

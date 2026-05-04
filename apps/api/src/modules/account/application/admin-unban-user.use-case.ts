@@ -1,17 +1,15 @@
 /**
- * Admin-driven user unban. Reverse of `AdminBanUserUseCase`:
- * clears `User.deletedAt` back to `null` so the user can log in
- * again. Sessions stay revoked — the user re-authenticates
- * fresh, which is the correct posture (we don't restore tokens
- * that were issued before the ban).
+ * Admin-driven user unban. V.UX.34 — clears `User.bannedAt +
+ * banReason` back to null. Sessions stay revoked (the user
+ * re-authenticates fresh; we don't restore tokens issued before
+ * the ban).
  *
- * 404 path:
- *   - User row is gone (hard-delete cron already swept it past
- *     the 7-day window) — restore is no longer possible.
- *   - User row exists but is already active (`deletedAt` null) —
- *     unban-on-active is a client bug; surface it.
+ * 404 paths:
+ *   - User row missing.
+ *   - User row exists but was never banned (`bannedAt` already null).
  *
- * Installed by prompt [IV.18.18.1].
+ * Installed by prompt [IV.18.18.1]; bannedAt-based wiring added in
+ * [V.UX.34].
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { UserNotFoundError } from '@app/errors';
@@ -22,7 +20,7 @@ export class AdminUnbanUserUseCase {
   constructor(@Inject(ACCOUNT_DELETER) private readonly deleter: AccountDeleter) {}
 
   async execute(targetUserId: string): Promise<void> {
-    const ok = await this.deleter.restoreUser(targetUserId);
+    const ok = await this.deleter.unbanUser(targetUserId);
     if (!ok) throw new UserNotFoundError(targetUserId);
   }
 }

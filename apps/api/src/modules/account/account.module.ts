@@ -30,9 +30,11 @@ import { DeleteAccountUseCase } from './application/delete-account.use-case';
 import { DeleteTrustedContactUseCase } from './application/delete-trusted-contact.use-case';
 import { ExportUserDataUseCase } from './application/export-user-data.use-case';
 import { GetPreferencesUseCase } from './application/get-preferences.use-case';
+import { AdminListBanAppealsUseCase } from './application/admin-list-ban-appeals.use-case';
 import { GetStorageStatsUseCase } from './application/get-storage-stats.use-case';
 import { ListTrustedContactsUseCase } from './application/list-trusted-contacts.use-case';
 import { ReactivateAccountUseCase } from './application/reactivate-account.use-case';
+import { SubmitBanAppealUseCase } from './application/submit-ban-appeal.use-case';
 import { StreamAccountExportUseCase } from './application/stream-account-export.use-case';
 import { UpdatePreferencesUseCase } from './application/update-preferences.use-case';
 import { ACCOUNT_DELETER } from './application/ports/account-deleter';
@@ -90,6 +92,8 @@ import { TrustedContactsController } from './interface/trusted-contacts.controll
     GetConnectivityInfoUseCase,
     GetStorageStatsUseCase,
     ReactivateAccountUseCase,
+    SubmitBanAppealUseCase,
+    AdminListBanAppealsUseCase,
     // V.UX.33 — Account needs MAILER_PORT for the deletion-pending
     // email. Identity also registers it; per-module providers are
     // safe because StubMailerAdapter shares state via a module-level

@@ -145,6 +145,12 @@ model User {
   // lastSeenAt → previousSeenAt on every hit.
   lastSeenAt       DateTime?
   previousSeenAt   DateTime?
+  // V.UX.34 — admin-driven ban. Distinct from `deletedAt` so a user
+  // who reactivates via the V.UX.33 link still can't log in if they
+  // remain banned. `banReason` is shown to the user on the banned-
+  // login page.
+  bannedAt         DateTime?
+  banReason        String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   // Soft-delete: GDPR erasure marks this, purger sweeps later.
@@ -180,9 +186,30 @@ model User {
   // V.UX.25 — reviewer karma + helpful-vote relations.
   karma              UserKarma?
   helpfulVotes       HelpfulVote[]
+  // V.UX.34 — ban-appeal queue.
+  banAppeals         BanAppeal[]
 
   @@index([role])
   @@index([deletedAt])
+  @@index([bannedAt])
+}
+
+// V.UX.34 — ban-appeal queue. Append-only; admin triages by status.
+// emailHash lets the (un-authed) submit endpoint look up the user
+// without leaking plaintext + supports per-email rate-limiting.
+model BanAppeal {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emailHash String
+  body      String
+  status    String   @default("pending") // pending | approved | rejected
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
+  @@index([emailHash, createdAt])
 }
 
 // Links a user to an external OAuth provider identity. The

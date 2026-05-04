@@ -15,7 +15,9 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AdminBanRequestDto,
   AdminCreatePlaceRequestDto,
+  AdminListBanAppealsResponseDto,
   AdminListMediaResponseDto,
   AdminListScamReportsResponseDto,
   AdminListSosEventsResponseDto,
@@ -27,6 +29,7 @@ import type {
   AdminScamModerationControllerListParams,
   AdminSosControllerListParams,
   AdminTripsControllerListParams,
+  AdminUsersControllerListAppealsParams,
   AdminUsersControllerListParams,
   ScamReportDto,
   SosEventDto,
@@ -1614,7 +1617,7 @@ export function useAdminUsersControllerList<
 }
 
 /**
- * @summary Ban a user (soft-delete + revoke sessions). Admin-only.
+ * @summary V.UX.34 — ban a user with a user-readable reason. Sets bannedAt + banReason + revokes sessions.
  */
 export type adminUsersControllerBanResponse204 = {
   data: void;
@@ -1626,10 +1629,18 @@ export type adminUsersControllerBanResponse404 = {
   status: 404;
 };
 
+export type adminUsersControllerBanResponse422 = {
+  data: void;
+  status: 422;
+};
+
 export type adminUsersControllerBanResponseSuccess = adminUsersControllerBanResponse204 & {
   headers: Headers;
 };
-export type adminUsersControllerBanResponseError = adminUsersControllerBanResponse404 & {
+export type adminUsersControllerBanResponseError = (
+  | adminUsersControllerBanResponse404
+  | adminUsersControllerBanResponse422
+) & {
   headers: Headers;
 };
 
@@ -1643,11 +1654,14 @@ export const getAdminUsersControllerBanUrl = (id: string) => {
 
 export const adminUsersControllerBan = async (
   id: string,
+  adminBanRequestDto: AdminBanRequestDto,
   options?: RequestInit,
 ): Promise<adminUsersControllerBanResponse> => {
   return apiFetch<adminUsersControllerBanResponse>(getAdminUsersControllerBanUrl(id), {
     ...options,
     method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(adminBanRequestDto),
   });
 };
 
@@ -1658,14 +1672,14 @@ export const getAdminUsersControllerBanMutationOptions = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof adminUsersControllerBan>>,
     TError,
-    { id: string },
+    { id: string; data: AdminBanRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof adminUsersControllerBan>>,
   TError,
-  { id: string },
+  { id: string; data: AdminBanRequestDto },
   TContext
 > => {
   const mutationKey = ['adminUsersControllerBan'];
@@ -1677,11 +1691,11 @@ export const getAdminUsersControllerBanMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof adminUsersControllerBan>>,
-    { id: string }
+    { id: string; data: AdminBanRequestDto }
   > = (props) => {
-    const { id } = props ?? {};
+    const { id, data } = props ?? {};
 
-    return adminUsersControllerBan(id, requestOptions);
+    return adminUsersControllerBan(id, data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -1690,24 +1704,24 @@ export const getAdminUsersControllerBanMutationOptions = <
 export type AdminUsersControllerBanMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminUsersControllerBan>>
 >;
-
+export type AdminUsersControllerBanMutationBody = AdminBanRequestDto;
 export type AdminUsersControllerBanMutationError = void;
 
 /**
- * @summary Ban a user (soft-delete + revoke sessions). Admin-only.
+ * @summary V.UX.34 — ban a user with a user-readable reason. Sets bannedAt + banReason + revokes sessions.
  */
 export const useAdminUsersControllerBan = <TError = void, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof adminUsersControllerBan>>,
     TError,
-    { id: string },
+    { id: string; data: AdminBanRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof apiFetch>;
 }): UseMutationResult<
   Awaited<ReturnType<typeof adminUsersControllerBan>>,
   TError,
-  { id: string },
+  { id: string; data: AdminBanRequestDto },
   TContext
 > => {
   const mutationOptions = getAdminUsersControllerBanMutationOptions(options);
@@ -1715,7 +1729,7 @@ export const useAdminUsersControllerBan = <TError = void, TContext = unknown>(op
   return useMutation(mutationOptions);
 };
 /**
- * @summary Unban a user (clear deletedAt). Admin-only.
+ * @summary V.UX.34 — unban a user (clears bannedAt + banReason). Admin-only.
  */
 export type adminUsersControllerUnbanResponse204 = {
   data: void;
@@ -1795,7 +1809,7 @@ export type AdminUsersControllerUnbanMutationResult = NonNullable<
 export type AdminUsersControllerUnbanMutationError = void;
 
 /**
- * @summary Unban a user (clear deletedAt). Admin-only.
+ * @summary V.UX.34 — unban a user (clears bannedAt + banReason). Admin-only.
  */
 export const useAdminUsersControllerUnban = <TError = void, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
@@ -1815,6 +1829,194 @@ export const useAdminUsersControllerUnban = <TError = void, TContext = unknown>(
 
   return useMutation(mutationOptions);
 };
+/**
+ * @summary V.UX.34 — list ban appeals. Defaults to status=pending. Admin moderation queue.
+ */
+export type adminUsersControllerListAppealsResponse200 = {
+  data: AdminListBanAppealsResponseDto;
+  status: 200;
+};
+
+export type adminUsersControllerListAppealsResponseSuccess =
+  adminUsersControllerListAppealsResponse200 & {
+    headers: Headers;
+  };
+export type adminUsersControllerListAppealsResponse =
+  adminUsersControllerListAppealsResponseSuccess;
+
+export const getAdminUsersControllerListAppealsUrl = (
+  params: AdminUsersControllerListAppealsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/admin/users/appeals?${stringifiedParams}`
+    : `/api/v1/admin/users/appeals`;
+};
+
+export const adminUsersControllerListAppeals = async (
+  params: AdminUsersControllerListAppealsParams,
+  options?: RequestInit,
+): Promise<adminUsersControllerListAppealsResponse> => {
+  return apiFetch<adminUsersControllerListAppealsResponse>(
+    getAdminUsersControllerListAppealsUrl(params),
+    {
+      ...options,
+      method: 'GET',
+    },
+  );
+};
+
+export const getAdminUsersControllerListAppealsInfiniteQueryKey = (
+  params?: AdminUsersControllerListAppealsParams,
+) => {
+  return ['infinite', `/api/v1/admin/users/appeals`, ...(params ? [params] : [])] as const;
+};
+
+export const getAdminUsersControllerListAppealsQueryKey = (
+  params?: AdminUsersControllerListAppealsParams,
+) => {
+  return [`/api/v1/admin/users/appeals`, ...(params ? [params] : [])] as const;
+};
+
+export const getAdminUsersControllerListAppealsInfiniteQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminUsersControllerListAppeals>>,
+  TError = unknown,
+>(
+  params: AdminUsersControllerListAppealsParams,
+  options?: {
+    query?: UseInfiniteQueryOptions<
+      Awaited<ReturnType<typeof adminUsersControllerListAppeals>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminUsersControllerListAppealsInfiniteQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof adminUsersControllerListAppeals>>> = ({
+    signal,
+    pageParam,
+  }) =>
+    adminUsersControllerListAppeals(
+      { ...params, limit: pageParam || params?.['limit'] },
+      { signal, ...requestOptions },
+    );
+
+  return { queryKey, queryFn, staleTime: 30000, ...queryOptions } as UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof adminUsersControllerListAppeals>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminUsersControllerListAppealsInfiniteQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminUsersControllerListAppeals>>
+>;
+export type AdminUsersControllerListAppealsInfiniteQueryError = unknown;
+
+/**
+ * @summary V.UX.34 — list ban appeals. Defaults to status=pending. Admin moderation queue.
+ */
+
+export function useAdminUsersControllerListAppealsInfinite<
+  TData = Awaited<ReturnType<typeof adminUsersControllerListAppeals>>,
+  TError = unknown,
+>(
+  params: AdminUsersControllerListAppealsParams,
+  options?: {
+    query?: UseInfiniteQueryOptions<
+      Awaited<ReturnType<typeof adminUsersControllerListAppeals>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+): UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminUsersControllerListAppealsInfiniteQueryOptions(params, options);
+
+  const query = useInfiniteQuery(queryOptions) as UseInfiniteQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getAdminUsersControllerListAppealsQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminUsersControllerListAppeals>>,
+  TError = unknown,
+>(
+  params: AdminUsersControllerListAppealsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof adminUsersControllerListAppeals>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAdminUsersControllerListAppealsQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof adminUsersControllerListAppeals>>> = ({
+    signal,
+  }) => adminUsersControllerListAppeals(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, staleTime: 30000, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminUsersControllerListAppeals>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminUsersControllerListAppealsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminUsersControllerListAppeals>>
+>;
+export type AdminUsersControllerListAppealsQueryError = unknown;
+
+/**
+ * @summary V.UX.34 — list ban appeals. Defaults to status=pending. Admin moderation queue.
+ */
+
+export function useAdminUsersControllerListAppeals<
+  TData = Awaited<ReturnType<typeof adminUsersControllerListAppeals>>,
+  TError = unknown,
+>(
+  params: AdminUsersControllerListAppealsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof adminUsersControllerListAppeals>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminUsersControllerListAppealsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
 /**
  * @summary Force the account-purge scheduler tick. Idempotent — re-entrant guard skips overlapping calls.
  */

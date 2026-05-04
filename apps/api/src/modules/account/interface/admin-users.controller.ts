@@ -18,6 +18,7 @@
  */
 import {
   BadRequestException,
+  Body,
   Controller,
   HttpCode,
   HttpStatus,
@@ -27,9 +28,23 @@ import {
   Query,
 } from '@nestjs/common';
 import type { UserRole } from '@prisma/client';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiProperty,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { z } from 'zod';
 import { Roles } from '../../../common/auth';
+import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { AdminBanUserUseCase } from '../application/admin-ban-user.use-case';
+import {
+  AdminListBanAppealsUseCase,
+  type AdminListedBanAppeal,
+  type BanAppealStatus,
+} from '../application/admin-list-ban-appeals.use-case';
 import { AdminListUsersUseCase } from '../application/admin-list-users.use-case';
 import { AdminUnbanUserUseCase } from '../application/admin-unban-user.use-case';
 import type { AdminUserRow } from '../application/ports/admin-user-query';
@@ -37,6 +52,68 @@ import {
   AdminListUsersResponseDto,
   AdminUserDto as AdminUserResponseDto,
 } from '../../admin/interface/dto/admin-response.dto';
+
+class AdminBanRequestDto {
+  @ApiProperty({
+    description: 'V.UX.34 — user-readable reason. Shown verbatim on the banned-login page.',
+    minLength: 1,
+    maxLength: 280,
+  })
+  declare reason: string;
+}
+
+const AdminBanBodySchema = z.object({
+  reason: z.string().trim().min(1).max(280),
+});
+type AdminBanBody = z.infer<typeof AdminBanBodySchema>;
+
+class AdminBanAppealDto {
+  @ApiProperty({ format: 'cuid' })
+  declare id: string;
+
+  @ApiProperty({ format: 'cuid' })
+  declare userId: string;
+
+  @ApiProperty()
+  declare emailHash: string;
+
+  @ApiProperty()
+  declare body: string;
+
+  @ApiProperty({ enum: ['pending', 'approved', 'rejected'] })
+  declare status: string;
+
+  @ApiProperty({ format: 'date-time' })
+  declare createdAt: string;
+}
+
+class AdminListBanAppealsResponseDto {
+  @ApiProperty({ type: [AdminBanAppealDto] })
+  declare appeals: AdminBanAppealDto[];
+
+  @ApiProperty()
+  declare total: number;
+}
+
+const VALID_APPEAL_STATUSES: readonly BanAppealStatus[] = ['pending', 'approved', 'rejected'];
+
+function appealToDto(a: AdminListedBanAppeal): {
+  id: string;
+  userId: string;
+  emailHash: string;
+  body: string;
+  status: string;
+  createdAt: string;
+} {
+  return {
+    id: a.id,
+    userId: a.userId,
+    emailHash: a.emailHash,
+    body: a.body,
+    status: a.status,
+    createdAt: a.createdAt.toISOString(),
+  };
+}
 
 const VALID_ROLES: readonly UserRole[] = ['user', 'premium', 'agent', 'admin'];
 
@@ -73,6 +150,7 @@ export class AdminUsersController {
     private readonly listUc: AdminListUsersUseCase,
     private readonly banUc: AdminBanUserUseCase,
     private readonly unbanUc: AdminUnbanUserUseCase,
+    private readonly listAppealsUc: AdminListBanAppealsUseCase,
   ) {}
 
   @ApiOperation({
@@ -122,21 +200,66 @@ export class AdminUsersController {
     return { users: result.rows.map(toDto), total: result.total };
   }
 
-  @ApiOperation({ summary: 'Ban a user (soft-delete + revoke sessions). Admin-only.' })
+  @ApiOperation({
+    summary:
+      'V.UX.34 — ban a user with a user-readable reason. Sets bannedAt + banReason + revokes sessions.',
+  })
+  @ApiBody({ type: AdminBanRequestDto })
   @ApiResponse({ status: 204, description: 'Banned.' })
+  @ApiResponse({ status: 422, description: 'INVALID_BAN_REASON.' })
   @ApiResponse({ status: 404, description: 'USER_NOT_FOUND.' })
   @Post(':id/ban')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async ban(@Param('id') id: string): Promise<void> {
-    await this.banUc.execute(id);
+  async ban(
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(AdminBanBodySchema)) body: AdminBanBody,
+  ): Promise<void> {
+    await this.banUc.execute({ targetUserId: id, reason: body.reason });
   }
 
-  @ApiOperation({ summary: 'Unban a user (clear deletedAt). Admin-only.' })
+  @ApiOperation({
+    summary: 'V.UX.34 — unban a user (clears bannedAt + banReason). Admin-only.',
+  })
   @ApiResponse({ status: 204, description: 'Unbanned.' })
   @ApiResponse({ status: 404, description: 'USER_NOT_FOUND.' })
   @Post(':id/unban')
   @HttpCode(HttpStatus.NO_CONTENT)
   async unban(@Param('id') id: string): Promise<void> {
     await this.unbanUc.execute(id);
+  }
+
+  @ApiOperation({
+    summary: 'V.UX.34 — list ban appeals. Defaults to status=pending. Admin moderation queue.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Appeals + total count.',
+    type: AdminListBanAppealsResponseDto,
+  })
+  @Get('appeals')
+  @HttpCode(HttpStatus.OK)
+  async listAppeals(
+    @Query('status') status?: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ): Promise<{ appeals: ReturnType<typeof appealToDto>[]; total: number }> {
+    let parsedStatus: BanAppealStatus | undefined;
+    if (status !== undefined) {
+      if (!VALID_APPEAL_STATUSES.includes(status as BanAppealStatus)) {
+        throw new BadRequestException({
+          code: 'VALIDATION_FAILED',
+          message: `status must be one of: ${VALID_APPEAL_STATUSES.join(' | ')}`,
+        });
+      }
+      parsedStatus = status as BanAppealStatus;
+    }
+    const parsedLimit = limit ? Math.max(1, Math.min(200, Number(limit) || 50)) : undefined;
+    const parsedOffset = offset ? Math.max(0, Number(offset) || 0) : undefined;
+    const result = await this.listAppealsUc.execute({
+      ...(parsedStatus !== undefined ? { status: parsedStatus } : {}),
+      ...(parsedLimit !== undefined ? { limit: parsedLimit } : {}),
+      ...(parsedOffset !== undefined ? { offset: parsedOffset } : {}),
+    });
+    return { appeals: result.rows.map(appealToDto), total: result.total };
   }
 }
