@@ -42,6 +42,7 @@ import {
 } from '../application/get-storage-stats.use-case';
 import { ReactivateAccountUseCase } from '../application/reactivate-account.use-case';
 import { StreamAccountExportUseCase } from '../application/stream-account-export.use-case';
+import { SubmitBanAppealUseCase } from '../application/submit-ban-appeal.use-case';
 import type { UserDataExport } from '../domain/user-data-export.entity';
 import { StorageStatsResponseDto, UserDataExportResponseDto } from './dto/account-response.dto';
 
@@ -63,6 +64,20 @@ const ReactivateBodySchema = z.object({
 });
 type ReactivateBody = z.infer<typeof ReactivateBodySchema>;
 
+class AppealRequestDto {
+  @ApiProperty({ format: 'email', maxLength: 254 })
+  declare email: string;
+
+  @ApiProperty({ minLength: 10, maxLength: 2000 })
+  declare body: string;
+}
+
+const AppealBodySchema = z.object({
+  email: z.string().trim().toLowerCase().email().max(254),
+  body: z.string().trim().min(10).max(2000),
+});
+type AppealBody = z.infer<typeof AppealBodySchema>;
+
 @ApiTags('account')
 @ApiBearerAuth()
 @Controller('account')
@@ -73,6 +88,7 @@ export class AccountController {
     private readonly deleteUc: DeleteAccountUseCase,
     private readonly storageStatsUc: GetStorageStatsUseCase,
     private readonly reactivateUc: ReactivateAccountUseCase,
+    private readonly submitAppealUc: SubmitBanAppealUseCase,
   ) {}
 
   /**
@@ -203,6 +219,29 @@ export class AccountController {
     @Body(new ZodValidationPipe(ReactivateBodySchema)) body: ReactivateBody,
   ): Promise<{ userId: string }> {
     return this.reactivateUc.execute({ token: body.token });
+  }
+
+  /**
+   * V.UX.34 — submit a ban appeal. Unauthed (banned users can't
+   * bearer-auth). Always returns 200 — non-existent + non-banned
+   * emails silently succeed (no enumeration leak). Soft rate-
+   * limited at 3 appeals per email per hour inside the use-case.
+   */
+  @ApiOperation({
+    summary:
+      'V.UX.34 — submit a ban appeal. Always returns 200 regardless of registration / ban state.',
+  })
+  @ApiBody({ type: AppealRequestDto })
+  @ApiResponse({ status: 200, description: 'Always ok.' })
+  @ApiResponse({ status: 422, description: 'INVALID_APPEAL_BODY.' })
+  @Public()
+  @Post('appeal')
+  @HttpCode(HttpStatus.OK)
+  async appeal(
+    @Body(new ZodValidationPipe(AppealBodySchema)) body: AppealBody,
+  ): Promise<{ status: 'ok' }> {
+    await this.submitAppealUc.execute({ email: body.email, body: body.body });
+    return { status: 'ok' };
   }
 }
 

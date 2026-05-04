@@ -64,6 +64,30 @@ async function ensureDummyHash(): Promise<string> {
 }
 
 /**
+ * V.UX.34 — when login finds a banned user (regardless of any
+ * deleted state) AND the password matches, throw this with the
+ * reason in `context`. The web client routes to the empathetic
+ * "your account has been suspended" view + the appeal form. The
+ * banned check fires BEFORE the deletion-pending one — a banned
+ * user reactivating via V.UX.33 still cannot log in.
+ */
+export class AccountBannedError extends UnauthorizedError {
+  constructor(
+    readonly banReason: string,
+    readonly bannedAt: Date,
+  ) {
+    super(
+      'Account has been suspended',
+      {
+        banReason,
+        bannedAt: bannedAt.toISOString(),
+      },
+      'ACCOUNT_BANNED',
+    );
+  }
+}
+
+/**
  * V.UX.33 — when login finds a soft-deleted user inside the
  * 7-day retention window AND the password matches, we throw
  * `AccountDeletionPendingError` instead of issuing a session.
@@ -143,6 +167,20 @@ export class LoginUseCase {
     if (!ok) {
       await this.failCounter.increment(emailHash);
       throw new UnauthorizedError('Invalid credentials', {}, 'INVALID_CREDENTIALS');
+    }
+
+    // V.UX.34 — admin ban takes precedence over self-delete. A
+    // user can be both banned (admin) AND scheduled for deletion
+    // (self) — we surface the ban first so reactivating via V.UX.33
+    // doesn't accidentally restore a banned account into a usable
+    // state. Reset the failure counter (credentials WERE correct;
+    // the ban is the gate).
+    if (userIncludingDeleted.bannedAt !== null) {
+      await this.failCounter.reset(emailHash);
+      throw new AccountBannedError(
+        userIncludingDeleted.banReason ?? 'No reason provided.',
+        userIncludingDeleted.bannedAt,
+      );
     }
 
     // V.UX.33 — soft-deleted within the 7-day window: surface the

@@ -16,6 +16,7 @@ import type {
 
 import type {
   AddTrustedContactRequestDto,
+  AppealRequestDto,
   ConnectivityInfoDto,
   ListTrustedContactsResponseDto,
   PreferencesDto,
@@ -664,6 +665,109 @@ export const useAccountControllerReactivate = <TError = void, TContext = unknown
   TContext
 > => {
   const mutationOptions = getAccountControllerReactivateMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary V.UX.34 — submit a ban appeal. Always returns 200 regardless of registration / ban state.
+ */
+export type accountControllerAppealResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type accountControllerAppealResponse422 = {
+  data: void;
+  status: 422;
+};
+
+export type accountControllerAppealResponseSuccess = accountControllerAppealResponse200 & {
+  headers: Headers;
+};
+export type accountControllerAppealResponseError = accountControllerAppealResponse422 & {
+  headers: Headers;
+};
+
+export type accountControllerAppealResponse =
+  | accountControllerAppealResponseSuccess
+  | accountControllerAppealResponseError;
+
+export const getAccountControllerAppealUrl = () => {
+  return `/api/v1/account/appeal`;
+};
+
+export const accountControllerAppeal = async (
+  appealRequestDto: AppealRequestDto,
+  options?: RequestInit,
+): Promise<accountControllerAppealResponse> => {
+  return apiFetch<accountControllerAppealResponse>(getAccountControllerAppealUrl(), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(appealRequestDto),
+  });
+};
+
+export const getAccountControllerAppealMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof accountControllerAppeal>>,
+    TError,
+    { data: AppealRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof accountControllerAppeal>>,
+  TError,
+  { data: AppealRequestDto },
+  TContext
+> => {
+  const mutationKey = ['accountControllerAppeal'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof accountControllerAppeal>>,
+    { data: AppealRequestDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return accountControllerAppeal(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AccountControllerAppealMutationResult = NonNullable<
+  Awaited<ReturnType<typeof accountControllerAppeal>>
+>;
+export type AccountControllerAppealMutationBody = AppealRequestDto;
+export type AccountControllerAppealMutationError = void;
+
+/**
+ * @summary V.UX.34 — submit a ban appeal. Always returns 200 regardless of registration / ban state.
+ */
+export const useAccountControllerAppeal = <TError = void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof accountControllerAppeal>>,
+    TError,
+    { data: AppealRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof accountControllerAppeal>>,
+  TError,
+  { data: AppealRequestDto },
+  TContext
+> => {
+  const mutationOptions = getAccountControllerAppealMutationOptions(options);
 
   return useMutation(mutationOptions);
 };

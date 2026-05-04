@@ -195,7 +195,7 @@ describe('Admin user moderation (integration, requires Docker Postgres)', () => 
     expect(body.users.every((u) => u.displayName.includes('alice-case-test'))).toBe(true);
   });
 
-  it('ban: target user is soft-deleted + sessions revoked + login fails after', async () => {
+  it('ban (V.UX.34): target user is banned + sessions revoked + login fails with ACCOUNT_BANNED', async () => {
     if (!dbReachable) return;
     const adminToken = await loginAsAdmin('banner');
     const target = await registerUser('ban-target');
@@ -209,29 +209,34 @@ describe('Admin user moderation (integration, requires Docker Postgres)', () => 
       method: 'POST',
       url: `/api/v1/admin/users/${target.userId}/ban`,
       headers: { authorization: `Bearer ${adminToken}` },
+      payload: { reason: 'Repeated TOS violations.' },
     });
     expect(ban.statusCode).toBe(204);
 
-    // User row soft-deleted.
+    // V.UX.34 — bannedAt + banReason set; deletedAt stays null.
     const u = await prisma.user.findUnique({ where: { id: target.userId } });
-    expect(u!.deletedAt).not.toBeNull();
+    expect(u!.bannedAt).not.toBeNull();
+    expect(u!.banReason).toBe('Repeated TOS violations.');
+    expect(u!.deletedAt).toBeNull();
     // Sessions revoked.
     const liveSessions = await prisma.session.count({
       where: { userId: target.userId, revokedAt: null },
     });
     expect(liveSessions).toBe(0);
 
-    // Subsequent login fails.
+    // Subsequent login surfaces the ban-with-reason challenge.
     const login = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/login',
       payload: { email: target.email, password: target.password },
     });
     expect(login.statusCode).toBe(401);
-    expect(JSON.parse(login.body).code).toBe('INVALID_CREDENTIALS');
+    const body = JSON.parse(login.body) as { code: string; context: { banReason?: string } };
+    expect(body.code).toBe('ACCOUNT_BANNED');
+    expect(body.context.banReason).toBe('Repeated TOS violations.');
   });
 
-  it('ban: idempotent guard — second ban on already-banned user → 404', async () => {
+  it('ban (V.UX.34): idempotent — second ban on already-banned user refreshes reason', async () => {
     if (!dbReachable) return;
     const adminToken = await loginAsAdmin('idem-ban');
     const target = await registerUser('idem-target');
@@ -240,6 +245,7 @@ describe('Admin user moderation (integration, requires Docker Postgres)', () => 
       method: 'POST',
       url: `/api/v1/admin/users/${target.userId}/ban`,
       headers: { authorization: `Bearer ${adminToken}` },
+      payload: { reason: 'First reason.' },
     });
     expect(first.statusCode).toBe(204);
 
@@ -247,12 +253,15 @@ describe('Admin user moderation (integration, requires Docker Postgres)', () => 
       method: 'POST',
       url: `/api/v1/admin/users/${target.userId}/ban`,
       headers: { authorization: `Bearer ${adminToken}` },
+      payload: { reason: 'Updated reason.' },
     });
-    expect(second.statusCode).toBe(404);
-    expect(JSON.parse(second.body).code).toBe('USER_NOT_FOUND');
+    expect(second.statusCode).toBe(204);
+
+    const u = await prisma.user.findUnique({ where: { id: target.userId } });
+    expect(u!.banReason).toBe('Updated reason.');
   });
 
-  it('unban: clears deletedAt; user can log in again', async () => {
+  it('unban (V.UX.34): clears bannedAt; user can log in again', async () => {
     if (!dbReachable) return;
     const adminToken = await loginAsAdmin('unbanner');
     const target = await registerUser('unban-target');
@@ -262,6 +271,7 @@ describe('Admin user moderation (integration, requires Docker Postgres)', () => 
       method: 'POST',
       url: `/api/v1/admin/users/${target.userId}/ban`,
       headers: { authorization: `Bearer ${adminToken}` },
+      payload: { reason: 'Spam suspicion.' },
     });
     const unban = await app.inject({
       method: 'POST',
@@ -270,9 +280,9 @@ describe('Admin user moderation (integration, requires Docker Postgres)', () => 
     });
     expect(unban.statusCode).toBe(204);
 
-    // deletedAt cleared.
     const u = await prisma.user.findUnique({ where: { id: target.userId } });
-    expect(u!.deletedAt).toBeNull();
+    expect(u!.bannedAt).toBeNull();
+    expect(u!.banReason).toBeNull();
 
     // Login works again.
     const login = await app.inject({
