@@ -15,4 +15,5 @@ export const WhoAmIResponseDtoRole = {
   agent: 'agent',
   admin: 'admin',
   compliance: 'compliance',
+  sre: 'sre',
 } as const;
