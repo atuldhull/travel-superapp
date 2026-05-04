@@ -2016,6 +2016,23 @@ paths:
         info, top scams, emergency numbers, survival phrases.
       tags:
         - safety
+  /api/v1/account/stats:
+    get:
+      operationId: AccountController_storageStats
+      parameters: []
+      responses:
+        '200':
+          description: Per-category row counts.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StorageStatsResponseDto'
+      security: &a33
+        - bearer: []
+      summary: "V.UX.32 — caller-scoped storage stats per category. Powers the
+        /account/privacy hub's 'we store: 24 trips, 130 photos…' panel."
+      tags: &a34
+        - account
   /api/v1/account/export:
     get:
       operationId: AccountController_exportMyData
@@ -2028,12 +2045,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserDataExportResponseDto'
-      security: &a33
-        - bearer: []
+      security: *a33
       summary: Full GDPR/DPDP/COPPA self-export bundle as a single JSON object. ~30
         sections; sensitive fields stripped.
-      tags: &a34
-        - account
+      tags: *a34
   /api/v1/account/export.ndjson:
     get:
       operationId: AccountController_exportMyDataNdjson
@@ -6350,6 +6365,73 @@ components:
         - emergencyNumbers
         - languagePhrases
         - seededAt
+    StorageStatsResponseDto:
+      type: object
+      properties:
+        trips:
+          type: number
+          description: Active (non-archived) trips.
+        tripsArchived:
+          type: number
+          description: Soft-archived trips (V.UX.30).
+        itineraryDays:
+          type: number
+        itineraryItems:
+          type: number
+        mediaAssets:
+          type: number
+          description: Photos + videos uploaded by the caller.
+        memoryBooks:
+          type: number
+        reviews:
+          type: number
+        votes:
+          type: number
+        expenses:
+          type: number
+        trustedContacts:
+          type: number
+          description: V.UX.13 trusted contacts.
+        notifications:
+          type: number
+        pushSubscriptions:
+          type: number
+          description: V.UX.26 Web Push subscriptions.
+        sosEvents:
+          type: number
+        scamReports:
+          type: number
+        dishReports:
+          type: number
+        oauthIdentities:
+          type: number
+          description: Linked OAuth identities (Google, Apple, etc.).
+        helpfulVotes:
+          type: number
+          description: V.UX.25 helpful votes the user has cast.
+        computedAt:
+          type: string
+          format: date-time
+          description: ISO timestamp the stats were computed at.
+      required:
+        - trips
+        - tripsArchived
+        - itineraryDays
+        - itineraryItems
+        - mediaAssets
+        - memoryBooks
+        - reviews
+        - votes
+        - expenses
+        - trustedContacts
+        - notifications
+        - pushSubscriptions
+        - sosEvents
+        - scamReports
+        - dishReports
+        - oauthIdentities
+        - helpfulVotes
+        - computedAt
     UserDataExportMetadataDto:
       type: object
       properties:

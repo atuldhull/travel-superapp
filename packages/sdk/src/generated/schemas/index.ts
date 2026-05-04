@@ -339,6 +339,7 @@ export * from './stayListingDtoStarRating';
 export * from './stayListingDtoWifiSpeedMbps';
 export * from './stayReviewSummaryResponseDto';
 export * from './staysCoordinatesDto';
+export * from './storageStatsResponseDto';
 export * from './subscribePushKeysDto';
 export * from './subscribePushRequestDto';
 export * from './suggestPlacesForTripRequestDto';
