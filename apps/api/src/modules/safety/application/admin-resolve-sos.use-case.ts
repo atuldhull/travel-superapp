@@ -7,21 +7,33 @@
  * Both signals collapse to the same code so the response shape
  * stays stable for the dashboard.
  *
- * Installed by prompt [IV.18.18.2].
+ * V.UX.36 — every successful resolve writes one row to
+ * AdminAuditLog with `{action:'resolve_sos', context:{note}}`.
+ *
+ * Installed by prompt [IV.18.18.2]; audit log added in [V.UX.36].
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { NotFoundError } from '@app/errors';
+import {
+  ADMIN_AUDIT_LOG_REPOSITORY,
+  type AdminAuditLogRepository,
+} from '../../admin/application/ports/admin-audit-log.repository';
+import { recordAdminAction } from '../../admin/application/record-admin-action.helper';
 import type { SosEvent } from '../domain/sos-event.entity';
 import { SOS_EVENT_REPOSITORY, type SosEventRepository } from './ports/sos-event.repository';
 
 export interface AdminResolveSosCommand {
+  readonly actorId: string;
   readonly id: string;
   readonly note?: string;
 }
 
 @Injectable()
 export class AdminResolveSosUseCase {
-  constructor(@Inject(SOS_EVENT_REPOSITORY) private readonly sos: SosEventRepository) {}
+  constructor(
+    @Inject(SOS_EVENT_REPOSITORY) private readonly sos: SosEventRepository,
+    @Inject(ADMIN_AUDIT_LOG_REPOSITORY) private readonly audit: AdminAuditLogRepository,
+  ) {}
 
   async execute(cmd: AdminResolveSosCommand): Promise<SosEvent> {
     const updated = await this.sos.adminResolve({
@@ -35,6 +47,13 @@ export class AdminResolveSosUseCase {
         'SOS_NOT_FOUND',
       );
     }
+    await recordAdminAction(this.audit, {
+      actorId: cmd.actorId,
+      targetType: 'sos',
+      targetId: cmd.id,
+      action: 'resolve_sos',
+      context: cmd.note ? { note: cmd.note } : null,
+    });
     return updated;
   }
 }

@@ -37,7 +37,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { z } from 'zod';
-import { Roles } from '../../../common/auth';
+import { CurrentUser, Roles, type AuthenticatedUser } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { AdminBanUserUseCase } from '../application/admin-ban-user.use-case';
 import {
@@ -48,10 +48,7 @@ import {
 import { AdminListUsersUseCase } from '../application/admin-list-users.use-case';
 import { AdminUnbanUserUseCase } from '../application/admin-unban-user.use-case';
 import type { AdminUserRow } from '../application/ports/admin-user-query';
-import {
-  AdminListUsersResponseDto,
-  AdminUserDto as AdminUserResponseDto,
-} from '../../admin/interface/dto/admin-response.dto';
+import { AdminListUsersResponseDto } from '../../admin/interface/dto/admin-response.dto';
 
 class AdminBanRequestDto {
   @ApiProperty({
@@ -211,10 +208,11 @@ export class AdminUsersController {
   @Post(':id/ban')
   @HttpCode(HttpStatus.NO_CONTENT)
   async ban(
+    @CurrentUser() admin: AuthenticatedUser,
     @Param('id') id: string,
     @Body(new ZodValidationPipe(AdminBanBodySchema)) body: AdminBanBody,
   ): Promise<void> {
-    await this.banUc.execute({ targetUserId: id, reason: body.reason });
+    await this.banUc.execute({ actorId: admin.sub, targetUserId: id, reason: body.reason });
   }
 
   @ApiOperation({
@@ -224,8 +222,8 @@ export class AdminUsersController {
   @ApiResponse({ status: 404, description: 'USER_NOT_FOUND.' })
   @Post(':id/unban')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async unban(@Param('id') id: string): Promise<void> {
-    await this.unbanUc.execute(id);
+  async unban(@CurrentUser() admin: AuthenticatedUser, @Param('id') id: string): Promise<void> {
+    await this.unbanUc.execute({ actorId: admin.sub, targetUserId: id });
   }
 
   @ApiOperation({

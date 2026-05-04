@@ -49,6 +49,13 @@ export * from './generated/react-query/events/events';
 // `useNotificationPreferencesController*`, `usePushSubscriptionsController*`)
 // requires it to be explicit.
 export * from './generated/react-query/notifications/notifications';
+// V.UX.36 — admin dashboard. Star-exports the entire admin barrel so
+// every admin queue (`useAdminUsersController*`, `useAdminMediaController*`,
+// `useAdminTripsController*`, `useAdminSosController*`,
+// `useAdminScamModerationController*`, `useAdminAuditLogsController*`,
+// `useAdminPlacesController*`, `useAdminPurgeController*`) is reachable
+// from `@app/sdk` without deep imports.
+export * from './generated/react-query/admin/admin';
 
 // Schema types from openapi.yaml's components/schemas. Re-exported so
 // consumers don't have to reach into deep generated paths. Add the
@@ -309,3 +316,11 @@ export type { UnsubscribePushRequestDto } from './generated/schemas/unsubscribeP
 // V.UX.5: business-traveler — Expense / Balance schemas already
 // exported above (lines 121-126); social hooks barrel re-exported
 // above to surface useExpensesController{Create,List,Balances,Remove}.
+// V.UX.36: admin dashboard — audit log schemas + ban/unban/scam/sos
+// schemas already exported above. The admin barrel itself is
+// star-exported (see top of file) so every queue's hook is reachable.
+export type { AdminAuditLogDto } from './generated/schemas/adminAuditLogDto';
+export type { AdminListAuditLogsResponseDto } from './generated/schemas/adminListAuditLogsResponseDto';
+export type { AdminAuditLogsControllerListParams } from './generated/schemas/adminAuditLogsControllerListParams';
+export type { AdminBanAppealDto } from './generated/schemas/adminBanAppealDto';
+export type { AdminListBanAppealsResponseDto } from './generated/schemas/adminListBanAppealsResponseDto';
