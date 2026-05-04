@@ -6,7 +6,7 @@
  *
  * Installed by prompt [III.11.3].
  */
-export type Role = 'user' | 'premium' | 'agent' | 'admin';
+export type Role = 'user' | 'premium' | 'agent' | 'admin' | 'compliance';
 
 export interface AuthenticatedUser {
   readonly sub: string; // user id

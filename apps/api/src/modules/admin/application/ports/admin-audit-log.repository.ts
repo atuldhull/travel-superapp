@@ -19,7 +19,12 @@ export interface ListAdminAuditLogQuery {
   readonly actorId?: string;
   readonly targetType?: string;
   readonly targetId?: string;
+  /** Single-action filter. Mutually exclusive with `actions`. */
   readonly action?: string;
+  /** V.UX.37 — multi-action filter (IN). Used by the compliance
+   *  takedown report to scope to delete_* / dismiss_* / archive_*
+   *  actions in one round trip. */
+  readonly actions?: readonly string[];
   readonly limit?: number;
   readonly offset?: number;
 }

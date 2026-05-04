@@ -41,7 +41,11 @@ export class PrismaAdminAuditLogRepository implements AdminAuditLogRepository {
       ...(query.actorId !== undefined ? { actorId: query.actorId } : {}),
       ...(query.targetType !== undefined ? { targetType: query.targetType } : {}),
       ...(query.targetId !== undefined ? { targetId: query.targetId } : {}),
-      ...(query.action !== undefined ? { action: query.action } : {}),
+      ...(query.actions && query.actions.length > 0
+        ? { action: { in: [...query.actions] } }
+        : query.action !== undefined
+          ? { action: query.action }
+          : {}),
     };
     const limit = query.limit ?? 50;
     const offset = query.offset ?? 0;

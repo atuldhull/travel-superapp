@@ -3204,6 +3204,48 @@ paths:
         targetId / action. Newest first.
       tags:
         - admin
+  /api/v1/compliance/retention:
+    get:
+      operationId: ComplianceController_retention
+      parameters: []
+      responses:
+        '200':
+          description: Counts.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetentionStatsResponseDto'
+      security: &a55
+        - bearer: []
+      summary: 'V.UX.37 — retention dashboard: 16 indexed counts (users / trips /
+        safety / inbox / appeals) + oldest-soft-delete age.'
+      tags: &a56
+        - compliance
+  /api/v1/compliance/takedowns:
+    get:
+      operationId: ComplianceController_takedowns
+      parameters:
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: offset
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Takedown rows + total.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TakedownListResponseDto'
+      security: *a55
+      summary: 'V.UX.37 — takedown report: AdminAuditLog scoped to delete_media |
+        delete_trip | archive_trip | dismiss_scam. Newest-first.'
+      tags: *a56
   /api/v1/trips/{tripId}/votes:
     post:
       operationId: SocialController_cast
@@ -3226,11 +3268,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VoteDto'
-      security: &a55
+      security: &a57
         - bearer: []
       summary: 'Cast or update a vote on a trip target. Body: { targetType, targetId,
         value }. Auth gate: owner OR active TripShare.'
-      tags: &a56
+      tags: &a58
         - social
     delete:
       operationId: SocialController_revoke
@@ -3249,10 +3291,10 @@ paths:
       responses:
         '204':
           description: Revoked (or no-op if no prior vote).
-      security: *a55
+      security: *a57
       summary: 'Revoke a previously-cast vote. Body: { targetType, targetId }.
         Idempotent.'
-      tags: *a56
+      tags: *a58
     get:
       operationId: SocialController_list
       parameters:
@@ -3268,9 +3310,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListTripVotesResponseDto'
-      security: *a55
+      security: *a57
       summary: Aggregated tallies for a trip's votes + the caller's own vote per target.
-      tags: *a56
+      tags: *a58
   /api/v1/trips/{tripId}/expenses:
     post:
       operationId: ExpensesController_create
@@ -3294,11 +3336,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ExpenseDto'
-      security: &a57
+      security: &a59
         - bearer: []
       summary: 'Record a shared expense on a trip. Auth gate: owner OR active
         TripShare. Splits sum-checked.'
-      tags: &a58
+      tags: &a60
         - social
     get:
       operationId: ExpensesController_list
@@ -3321,9 +3363,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListExpensesResponseDto'
-      security: *a57
+      security: *a59
       summary: List trip expenses, most-recent-first. ?limit=N (1..500, default 50).
-      tags: *a58
+      tags: *a60
   /api/v1/trips/{tripId}/expenses/balances:
     get:
       operationId: ExpensesController_balances
@@ -3341,10 +3383,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListBalancesResponseDto'
-      security: *a57
+      security: *a59
       summary: Net per-user "who owes whom" ledger. Sum is zero (modulo 2dp). 60s
         cache; write-invalidated on expense create/delete.
-      tags: *a58
+      tags: *a60
   /api/v1/trips/{tripId}/expenses/settle-up:
     get:
       operationId: ExpensesController_settleUp
@@ -3362,10 +3404,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SettleUpResponseDto'
-      security: *a57
+      security: *a59
       summary: Settle-up plan — greedy minimum-cashflow transfers that zero the trip
         ledger. Owner OR active share.
-      tags: *a58
+      tags: *a60
   /api/v1/trips/{tripId}/expenses/{id}:
     delete:
       operationId: ExpensesController_remove
@@ -3385,10 +3427,10 @@ paths:
           description: Deleted.
         '404':
           description: EXPENSE_NOT_FOUND.
-      security: *a57
+      security: *a59
       summary: Delete an expense. Payer-only — only the user who recorded it can
         remove it.
-      tags: *a58
+      tags: *a60
   /api/v1/reviews:
     post:
       operationId: ReviewsController_create
@@ -3406,11 +3448,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ReviewDto'
-      security: &a59
+      security: &a61
         - bearer: []
       summary: Create a review for any review-target (place/stay/eatery/agent).
         Owner-stamped to the caller.
-      tags: &a60
+      tags: &a62
         - social
     get:
       operationId: ReviewsController_listForTarget
@@ -3439,10 +3481,10 @@ paths:
                 $ref: '#/components/schemas/ListReviewsResponseDto'
         '400':
           description: VALIDATION_FAILED — targetType / targetId missing or invalid.
-      security: *a59
+      security: *a61
       summary: Target-scoped review listing. ?targetType + ?targetId required.
         Most-recent-first.
-      tags: *a60
+      tags: *a62
   /api/v1/reviews/summary:
     get:
       operationId: ReviewsController_summary
@@ -3466,10 +3508,10 @@ paths:
                 $ref: '#/components/schemas/ReviewSummaryDto'
         '400':
           description: VALIDATION_FAILED — targetType / targetId missing or invalid.
-      security: *a59
+      security: *a61
       summary: Aggregated review summary { count, average, histogram } for a target.
         @Public.
-      tags: *a60
+      tags: *a62
   /api/v1/reviews/mine:
     get:
       operationId: ReviewsController_listMine
@@ -3486,10 +3528,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListReviewsResponseDto'
-      security: *a59
+      security: *a61
       summary: List the caller's authored reviews, most-recent-first. ?limit=N
         (1..200, default 50).
-      tags: *a60
+      tags: *a62
   /api/v1/reviews/{id}:
     delete:
       operationId: ReviewsController_remove
@@ -3504,10 +3546,10 @@ paths:
           description: Deleted.
         '404':
           description: REVIEW_NOT_FOUND.
-      security: *a59
+      security: *a61
       summary: Delete one of the caller's reviews. Author-gated; 404 on cross-user /
         missing.
-      tags: *a60
+      tags: *a62
   /api/v1/reviews/{id}/response:
     post:
       operationId: ReviewsController_respond
@@ -3538,10 +3580,10 @@ paths:
           description: REVIEW_RESPONSE_LOCKED.
         '422':
           description: INVALID_REVIEW_RESPONSE.
-      security: *a59
+      security: *a61
       summary: Agent reply to a review (one-shot). 403 if the review is not about the
         caller; 409 on re-submit.
-      tags: *a60
+      tags: *a62
   /api/v1/reviews/{id}/helpful:
     post:
       operationId: ReviewsController_helpful
@@ -3562,10 +3604,10 @@ paths:
           description: HELPFUL_VOTE_SELF.
         '404':
           description: REVIEW_NOT_FOUND.
-      security: *a59
+      security: *a61
       summary: Mark a review as helpful. Idempotent (re-vote returns the current
         count). Author can't self-vote.
-      tags: *a60
+      tags: *a62
   /api/v1/votes/summary:
     get:
       operationId: VotesController_summary
@@ -3694,7 +3736,7 @@ paths:
           description: Too many requests — wait 60s.
       summary: ❤️ a publicly-shared trip. No auth. Per-IP rate-limited at 1/min so
         anonymous fans can react but scripts can't farm hearts.
-      tags: &a61
+      tags: &a63
         - social
   /api/v1/trips/shared/{code}/hearts:
     get:
@@ -3715,7 +3757,7 @@ paths:
         '404':
           description: SHARE_NOT_FOUND or SHARE_EXPIRED.
       summary: Current ❤️ count for a shared trip. Public, no auth.
-      tags: *a61
+      tags: *a63
   /api/v1/users/{userId}/profile:
     get:
       operationId: PublicUserProfileController_profile
@@ -4003,6 +4045,7 @@ components:
             - premium
             - agent
             - admin
+            - compliance
           description: Role assigned to the session.
         hasSeenOnboarding:
           type: boolean
@@ -5783,7 +5826,7 @@ components:
           description: Filter to a subset of modes; empty/omitted means all available.
           items:
             type: string
-            enum: &a62
+            enum: &a64
               - walk
               - public_transit
               - bicycle
@@ -5803,7 +5846,7 @@ components:
       properties:
         mode:
           type: string
-          enum: *a62
+          enum: *a64
         distanceMeters:
           type: number
         durationSeconds:
@@ -5895,7 +5938,7 @@ components:
           type: string
         severity:
           type: string
-          enum: &a63
+          enum: &a65
             - low
             - medium
             - high
@@ -5964,7 +6007,7 @@ components:
           type: string
         severity:
           type: string
-          enum: *a63
+          enum: *a65
         description:
           type: string
         evidenceUrls:
@@ -7642,7 +7685,7 @@ components:
           type: array
           items:
             type: string
-            enum: &a64
+            enum: &a66
               - trip
               - safety
               - social
@@ -7681,7 +7724,7 @@ components:
             on (the default).
           items:
             type: string
-            enum: *a64
+            enum: *a66
     SubscribePushKeysDto:
       type: object
       properties:
@@ -7848,6 +7891,150 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AdminAuditLogDto'
+        total:
+          type: number
+      required:
+        - rows
+        - total
+    RetentionUsersDto:
+      type: object
+      properties:
+        active:
+          type: number
+        softDeleted:
+          type: number
+        scheduledForPurge:
+          type: number
+        banned:
+          type: number
+        oldestSoftDeleteAt:
+          type: object
+          nullable: true
+          format: date-time
+        daysUntilPurgeForOldest:
+          type: object
+          nullable: true
+      required:
+        - active
+        - softDeleted
+        - scheduledForPurge
+        - banned
+        - oldestSoftDeleteAt
+        - daysUntilPurgeForOldest
+    RetentionTripsDto:
+      type: object
+      properties:
+        total:
+          type: number
+        archived:
+          type: number
+      required:
+        - total
+        - archived
+    RetentionSafetyDto:
+      type: object
+      properties:
+        activeSos:
+          type: number
+        resolvedSos:
+          type: number
+        pendingScamReports:
+          type: number
+        verifiedScamReports:
+          type: number
+      required:
+        - activeSos
+        - resolvedSos
+        - pendingScamReports
+        - verifiedScamReports
+    RetentionInboxDto:
+      type: object
+      properties:
+        notifications:
+          type: number
+        archivedNotifications:
+          type: number
+      required:
+        - notifications
+        - archivedNotifications
+    RetentionAppealsDto:
+      type: object
+      properties:
+        pending:
+          type: number
+        approved:
+          type: number
+        rejected:
+          type: number
+      required:
+        - pending
+        - approved
+        - rejected
+    RetentionStatsResponseDto:
+      type: object
+      properties:
+        retentionDays:
+          type: number
+          description: Retention window in days (default 7).
+        users:
+          $ref: '#/components/schemas/RetentionUsersDto'
+        trips:
+          $ref: '#/components/schemas/RetentionTripsDto'
+        safety:
+          $ref: '#/components/schemas/RetentionSafetyDto'
+        inbox:
+          $ref: '#/components/schemas/RetentionInboxDto'
+        appeals:
+          $ref: '#/components/schemas/RetentionAppealsDto'
+        computedAt:
+          type: string
+          format: date-time
+      required:
+        - retentionDays
+        - users
+        - trips
+        - safety
+        - inbox
+        - appeals
+        - computedAt
+    TakedownRowDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        actorId:
+          type: object
+          format: cuid
+          nullable: true
+        targetType:
+          type: string
+        targetId:
+          type: string
+        action:
+          type: string
+        context:
+          type: object
+          nullable: true
+          additionalProperties: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - actorId
+        - targetType
+        - targetId
+        - action
+        - context
+        - createdAt
+    TakedownListResponseDto:
+      type: object
+      properties:
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/TakedownRowDto'
         total:
           type: number
       required:

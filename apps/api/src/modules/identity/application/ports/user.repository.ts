@@ -6,7 +6,7 @@
  *
  * Installed by prompt [III.13.2] part 2.
  */
-export type UserRole = 'user' | 'premium' | 'agent' | 'admin';
+export type UserRole = 'user' | 'premium' | 'agent' | 'admin' | 'compliance';
 
 export interface UserRecord {
   readonly id: string;
