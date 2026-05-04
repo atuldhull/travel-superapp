@@ -19,12 +19,24 @@
  *
  * Installed by prompt [IV.18.16.2].
  */
+export interface SoftDeleteResult {
+  readonly ok: boolean;
+  /** V.UX.33 — plaintext email of the just-deleted user (utf8-decoded
+   *  from `User.emailEncrypted`). Used by DeleteAccountUseCase to
+   *  send the deletion-pending email with reactivation link. Null
+   *  when `ok` is false. */
+  readonly email: string | null;
+}
+
 export interface AccountDeleter {
   /**
-   * Returns `true` when a row was soft-deleted, `false` when the
-   * user didn't exist or was already deleted.
+   * Soft-deletes + revokes all sessions in a single transaction.
+   * Returns `{ok: true, email}` on success so the caller can send the
+   * deletion-pending email with a reactivation link;
+   * `{ok: false, email: null}` when the row was missing or already
+   * soft-deleted.
    */
-  softDeleteAndRevokeSessions(userId: string, deletedAt: Date): Promise<boolean>;
+  softDeleteAndRevokeSessions(userId: string, deletedAt: Date): Promise<SoftDeleteResult>;
   /**
    * Reverse of `softDeleteAndRevokeSessions` — clears `deletedAt`
    * back to `null`. Sessions stay revoked (the user has to log

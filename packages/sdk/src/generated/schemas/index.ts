@@ -272,6 +272,8 @@ export * from './publicReviewerProfileDto';
 export * from './publicReviewerRecentReviewDto';
 export * from './publicReviewerRecentReviewDtoTargetType';
 export * from './pushSubscriptionDto';
+export * from './reactivateRequestDto';
+export * from './reactivateResponseDto';
 export * from './recentReviewDto';
 export * from './refreshSuccessResponseDto';
 export * from './registerRequestDto';

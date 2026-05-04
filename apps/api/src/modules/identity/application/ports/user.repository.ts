@@ -58,6 +58,17 @@ export interface UserRepository {
   findById(id: string): Promise<UserRecord | null>;
 
   /**
+   * V.UX.33 — same as `findByEmailHash` but ALSO returns soft-deleted
+   * rows + their `deletedAt` timestamp. Login uses this to detect
+   * "this account is scheduled for deletion" and return the
+   * reactivation challenge inside the 7-day window instead of
+   * INVALID_CREDENTIALS. Hard-deleted (purged) rows are still gone.
+   */
+  findByEmailHashIncludingDeleted(
+    emailHash: string,
+  ): Promise<(UserRecord & { readonly deletedAt: Date | null }) | null>;
+
+  /**
    * Stage a TOTP secret during `/mfa/setup` — the user has scanned
    * the QR but hasn't proved they can generate codes yet. Keeps
    * `mfaEnabled` at its current value.

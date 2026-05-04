@@ -93,7 +93,7 @@ export default function LoginPage() {
         router.push(destination as never);
       },
       onError: (err: unknown) => {
-        const e = err as ApiError;
+        const e = err as ApiError & { context?: { reactivationToken?: string } };
         if (e.code === 'MFA_REQUIRED') {
           setStep('mfa');
           setErrorMsg(null);
@@ -101,6 +101,13 @@ export default function LoginPage() {
         }
         if (e.code === 'MFA_INVALID') {
           setErrorMsg('Invalid MFA code. Try again.');
+          return;
+        }
+        // V.UX.33 — soft-deleted within the 7-day retention window.
+        // Forward the reactivation token to the dedicated page.
+        if (e.code === 'ACCOUNT_DELETION_PENDING' && e.context?.reactivationToken) {
+          const token = encodeURIComponent(e.context.reactivationToken);
+          router.push(`/account/reactivate?token=${token}` as never);
           return;
         }
         setErrorMsg(e.message || 'Login failed.');

@@ -133,7 +133,7 @@ describe('DELETE /account (integration, requires Docker Postgres)', () => {
     expect(liveSessions).toBe(0);
   });
 
-  it('after delete → login with same credentials → 401 INVALID_CREDENTIALS', async () => {
+  it('after delete → login with same credentials → 401 ACCOUNT_DELETION_PENDING (V.UX.33)', async () => {
     if (!dbReachable) return;
     const { accessToken, email, password } = await registerUser('login-after');
 
@@ -143,13 +143,22 @@ describe('DELETE /account (integration, requires Docker Postgres)', () => {
       headers: { authorization: `Bearer ${accessToken}` },
     });
 
+    // V.UX.33 — within the 7-day retention window, login surfaces the
+    // reactivation challenge instead of a generic INVALID_CREDENTIALS.
+    // Past 7 days the row is purged + login degrades back to
+    // INVALID_CREDENTIALS; covered in reactivation.e2e-spec.
     const login = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/login',
       payload: { email, password },
     });
     expect(login.statusCode).toBe(401);
-    expect(JSON.parse(login.body).code).toBe('INVALID_CREDENTIALS');
+    const body = JSON.parse(login.body) as {
+      code: string;
+      context: { reactivationToken?: string };
+    };
+    expect(body.code).toBe('ACCOUNT_DELETION_PENDING');
+    expect(typeof body.context.reactivationToken).toBe('string');
   });
 
   it('after delete → /refresh fails (session revoked)', async () => {

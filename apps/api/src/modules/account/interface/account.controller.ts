@@ -20,20 +20,48 @@
  * Installed by prompt [IV.18.16.1]. DELETE added in [IV.18.16.2].
  * NDJSON streaming added in [IV.18.16.4].
  */
-import { Controller, Delete, Get, HttpCode, HttpStatus, Res } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Post, Res } from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiProperty,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { z } from 'zod';
 import type { FastifyReply } from 'fastify';
 import { Readable } from 'node:stream';
-import { type AuthenticatedUser, CurrentUser } from '../../../common/auth';
+import { type AuthenticatedUser, CurrentUser, Public } from '../../../common/auth';
+import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { DeleteAccountUseCase } from '../application/delete-account.use-case';
 import { ExportUserDataUseCase } from '../application/export-user-data.use-case';
 import {
   GetStorageStatsUseCase,
   type StorageStats,
 } from '../application/get-storage-stats.use-case';
+import { ReactivateAccountUseCase } from '../application/reactivate-account.use-case';
 import { StreamAccountExportUseCase } from '../application/stream-account-export.use-case';
 import type { UserDataExport } from '../domain/user-data-export.entity';
 import { StorageStatsResponseDto, UserDataExportResponseDto } from './dto/account-response.dto';
+
+class ReactivateRequestDto {
+  @ApiProperty({
+    description:
+      'V.UX.33 — opaque base64url HMAC token from the deletion-pending email or login response.',
+  })
+  declare token: string;
+}
+
+class ReactivateResponseDto {
+  @ApiProperty({ format: 'cuid', description: 'Restored user id.' })
+  declare userId: string;
+}
+
+const ReactivateBodySchema = z.object({
+  token: z.string().min(20).max(2048),
+});
+type ReactivateBody = z.infer<typeof ReactivateBodySchema>;
 
 @ApiTags('account')
 @ApiBearerAuth()
@@ -44,6 +72,7 @@ export class AccountController {
     private readonly streamExportUc: StreamAccountExportUseCase,
     private readonly deleteUc: DeleteAccountUseCase,
     private readonly storageStatsUc: GetStorageStatsUseCase,
+    private readonly reactivateUc: ReactivateAccountUseCase,
   ) {}
 
   /**
@@ -145,6 +174,35 @@ export class AccountController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteMyAccount(@CurrentUser() user: AuthenticatedUser): Promise<void> {
     await this.deleteUc.execute(user.sub);
+  }
+
+  /**
+   * V.UX.33 — reactivate a soft-deleted account inside the 7-day
+   * retention window. @Public — the bearer route can't be used (the
+   * sessions were revoked at delete time). Identity proof is the
+   * HMAC reactivation token (from the deletion-pending email OR the
+   * login response when valid credentials hit a soft-deleted row).
+   *
+   * Idempotent on the side effect: re-clicking a link after restore
+   * returns 404 ACCOUNT_NOT_RECOVERABLE (the row is now active);
+   * the web client treats both 200 and that 404 as "you're good,
+   * sign in".
+   */
+  @ApiOperation({
+    summary:
+      'V.UX.33 — restore a soft-deleted account within the 7-day window. Token from deletion-pending email or login response.',
+  })
+  @ApiBody({ type: ReactivateRequestDto })
+  @ApiResponse({ status: 200, description: 'Account restored.', type: ReactivateResponseDto })
+  @ApiResponse({ status: 401, description: 'REACTIVATION_INVALID — token bad/expired.' })
+  @ApiResponse({ status: 404, description: 'ACCOUNT_NOT_RECOVERABLE — past the 7-day window.' })
+  @Public()
+  @Post('reactivate')
+  @HttpCode(HttpStatus.OK)
+  async reactivate(
+    @Body(new ZodValidationPipe(ReactivateBodySchema)) body: ReactivateBody,
+  ): Promise<{ userId: string }> {
+    return this.reactivateUc.execute({ token: body.token });
   }
 }
 

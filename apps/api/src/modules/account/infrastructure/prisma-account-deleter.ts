@@ -23,13 +23,22 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../common/db/prisma.service';
-import type { AccountDeleter } from '../application/ports/account-deleter';
+import type { AccountDeleter, SoftDeleteResult } from '../application/ports/account-deleter';
 
 @Injectable()
 export class PrismaAccountDeleter implements AccountDeleter {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
-  async softDeleteAndRevokeSessions(userId: string, deletedAt: Date): Promise<boolean> {
+  async softDeleteAndRevokeSessions(userId: string, deletedAt: Date): Promise<SoftDeleteResult> {
+    // V.UX.33 — read the row first so we can return the plaintext
+    // email (utf8 decode of `emailEncrypted`) for the deletion-
+    // pending notification. The actual write is still gated by
+    // `updateMany ... where deletedAt: null` so a race-loser sees
+    // ok=false.
+    const existing = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { emailEncrypted: true, deletedAt: true },
+    });
     const [userUpdate] = await this.prisma.$transaction([
       this.prisma.user.updateMany({
         where: { id: userId, deletedAt: null },
@@ -40,7 +49,12 @@ export class PrismaAccountDeleter implements AccountDeleter {
         data: { revokedAt: deletedAt },
       }),
     ]);
-    return userUpdate.count === 1;
+    if (userUpdate.count !== 1) return { ok: false, email: null };
+    const email =
+      existing && existing.emailEncrypted.length > 0
+        ? Buffer.from(existing.emailEncrypted).toString('utf8')
+        : null;
+    return { ok: true, email };
   }
 
   async restoreUser(userId: string): Promise<boolean> {
