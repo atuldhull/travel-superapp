@@ -19,6 +19,7 @@ import { AppModule } from '../src/app.module';
 import { PostgresHealthIndicator } from '../src/health/indicators/postgres.indicator';
 import { RedisHealthIndicator } from '../src/health/indicators/redis.indicator';
 import { HttpPingIndicator } from '../src/health/indicators/http-ping.indicator';
+import { S3HealthIndicator } from '../src/health/indicators/s3.indicator';
 import { applyOfflineStubs } from './helpers/offline-stubs';
 
 type IndicatorDouble = {
@@ -40,10 +41,15 @@ async function bootApp(doubles: {
   postgres: IndicatorDouble;
   redis: IndicatorDouble;
   http: IndicatorDouble;
+  /** V.UX.38 — defaults to a reachable bucket if omitted. */
+  s3?: IndicatorDouble;
 }): Promise<NestFastifyApplication> {
   // Stub Postgres + Redis-backed throttler so the suite runs
   // without Docker — indicators are already mocked, and the
   // /health/* routes don't need real rate-limit accounting.
+  const s3Double: IndicatorDouble = doubles.s3 ?? {
+    isHealthy: jest.fn().mockResolvedValue(up('s3', { latencyMs: 3 })),
+  };
   const moduleRef = await applyOfflineStubs(Test.createTestingModule({ imports: [AppModule] }))
     .overrideProvider(PostgresHealthIndicator)
     .useValue(doubles.postgres)
@@ -51,6 +57,8 @@ async function bootApp(doubles: {
     .useValue(doubles.redis)
     .overrideProvider(HttpPingIndicator)
     .useValue(doubles.http)
+    .overrideProvider(S3HealthIndicator)
+    .useValue(s3Double)
     .compile();
 
   const app = moduleRef.createNestApplication<NestFastifyApplication>(
@@ -165,6 +173,45 @@ describe('health probes (e2e)', () => {
       expect(res.statusCode).toBe(503);
       const body = res.json() as { error: Record<string, { status: string }> };
       expect(body.error['meilisearch']?.status).toBe('down');
+    });
+
+    it('V.UX.38 — surfaces s3 in info on a successful ping', async () => {
+      app = await bootApp({
+        postgres: { isHealthy: jest.fn().mockResolvedValue(up('postgres')) },
+        redis: { isHealthy: jest.fn().mockResolvedValue(up('redis')) },
+        http: { isHealthy: jest.fn().mockResolvedValue(up('meilisearch')) },
+        s3: { isHealthy: jest.fn().mockResolvedValue(up('s3', { latencyMs: 12 })) },
+      });
+      const res = await app.inject({ method: 'GET', url: '/health/ready' });
+      expect(res.statusCode).toBe(200);
+      const body = res.json() as { status: string; info: Record<string, { status: string }> };
+      expect(body.status).toBe('ok');
+      expect(body.info['s3']?.status).toBe('up');
+    });
+
+    it('V.UX.38 — soft S3 down: info.s3.bucketStatus="down" but overall /ready still 200', async () => {
+      app = await bootApp({
+        postgres: { isHealthy: jest.fn().mockResolvedValue(up('postgres')) },
+        redis: { isHealthy: jest.fn().mockResolvedValue(up('redis')) },
+        http: { isHealthy: jest.fn().mockResolvedValue(up('meilisearch')) },
+        // The indicator's terminus status stays 'up' (probe ran);
+        // the actual bucket reachability lives in info.s3.bucketStatus.
+        s3: {
+          isHealthy: jest.fn().mockResolvedValue({
+            s3: { status: 'up', bucketStatus: 'down', latencyMs: 1500, error: 'HTTP 500' },
+          }),
+        },
+      });
+      const res = await app.inject({ method: 'GET', url: '/health/ready' });
+      // Soft: pods stay healthy even when S3 bucket ping failed.
+      expect(res.statusCode).toBe(200);
+      const body = res.json() as {
+        status: string;
+        info: Record<string, { status: string; bucketStatus?: string }>;
+      };
+      expect(body.status).toBe('ok');
+      expect(body.info['s3']?.status).toBe('up');
+      expect(body.info['s3']?.bucketStatus).toBe('down');
     });
 
     it('passes the Meili URL built from MEILI_HOST to the HTTP indicator', async () => {

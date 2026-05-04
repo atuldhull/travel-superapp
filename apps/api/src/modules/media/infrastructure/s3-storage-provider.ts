@@ -70,6 +70,34 @@ export class S3StorageProvider implements StorageProvider, OnModuleInit {
     await this.ensureBucket();
   }
 
+  /**
+   * V.UX.38 — soft S3 reachability probe. Issues a presigned
+   * HEAD against the bucket; reports OK on 2xx (or even 404 since
+   * "no such object" still proves the bucket connection is alive).
+   * Catches every error so the caller (S3HealthIndicator) never
+   * accidentally flips /health/ready to Unhealthy on a transient
+   * S3 hiccup.
+   */
+  async pingBucket(): Promise<{ ok: boolean; latencyMs: number; error?: string }> {
+    const startedAt = Date.now();
+    try {
+      const headCmd = new HeadBucketCommand({ Bucket: this.bucket });
+      const url = await getSignedUrl(this.client, headCmd, { expiresIn: INTERNAL_SIG_TTL_SEC });
+      const res = await fetch(url, { method: 'HEAD' });
+      const latencyMs = Date.now() - startedAt;
+      if (res.ok || res.status === 404) {
+        return { ok: true, latencyMs };
+      }
+      return { ok: false, latencyMs, error: `HTTP ${res.status}` };
+    } catch (err) {
+      return {
+        ok: false,
+        latencyMs: Date.now() - startedAt,
+        error: err instanceof Error ? err.message : String(err),
+      };
+    }
+  }
+
   async createPresignedUploadUrl(req: PresignedUploadRequest): Promise<string> {
     const cmd = new PutObjectCommand({
       Bucket: this.bucket,
