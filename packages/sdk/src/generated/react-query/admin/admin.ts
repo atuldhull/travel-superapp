@@ -42,184 +42,123 @@ import { apiFetch } from '../../../runtime/fetcher';
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 /**
- * @summary Rotate a JWT signing keyring (access | refresh). Returns new kid + previous-kid retirement list.
+ * @summary Cross-user list of media with optional ?ownerId, ?kind, ?status filters. Admin-only.
  */
-export type jwksAdminControllerRotateResponse200 = {
-  data: void;
+export type adminMediaControllerListResponse200 = {
+  data: AdminListMediaResponseDto;
   status: 200;
 };
 
-export type jwksAdminControllerRotateResponse403 = {
+export type adminMediaControllerListResponse400 = {
   data: void;
-  status: 403;
+  status: 400;
 };
 
-export type jwksAdminControllerRotateResponseSuccess = jwksAdminControllerRotateResponse200 & {
+export type adminMediaControllerListResponseSuccess = adminMediaControllerListResponse200 & {
   headers: Headers;
 };
-export type jwksAdminControllerRotateResponseError = jwksAdminControllerRotateResponse403 & {
+export type adminMediaControllerListResponseError = adminMediaControllerListResponse400 & {
   headers: Headers;
 };
 
-export type jwksAdminControllerRotateResponse =
-  | jwksAdminControllerRotateResponseSuccess
-  | jwksAdminControllerRotateResponseError;
+export type adminMediaControllerListResponse =
+  | adminMediaControllerListResponseSuccess
+  | adminMediaControllerListResponseError;
 
-export const getJwksAdminControllerRotateUrl = () => {
-  return `/api/v1/admin/identity/jwks/rotate`;
-};
+export const getAdminMediaControllerListUrl = (params: AdminMediaControllerListParams) => {
+  const normalizedParams = new URLSearchParams();
 
-export const jwksAdminControllerRotate = async (
-  options?: RequestInit,
-): Promise<jwksAdminControllerRotateResponse> => {
-  return apiFetch<jwksAdminControllerRotateResponse>(getJwksAdminControllerRotateUrl(), {
-    ...options,
-    method: 'POST',
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString());
+    }
   });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/admin/media?${stringifiedParams}`
+    : `/api/v1/admin/media`;
 };
 
-export const getJwksAdminControllerRotateMutationOptions = <
-  TError = void,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof jwksAdminControllerRotate>>,
-    TError,
-    void,
-    TContext
-  >;
-  request?: SecondParameter<typeof apiFetch>;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof jwksAdminControllerRotate>>,
-  TError,
-  void,
-  TContext
-> => {
-  const mutationKey = ['jwksAdminControllerRotate'];
-  const { mutation: mutationOptions, request: requestOptions } = options
-    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, request: undefined };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof jwksAdminControllerRotate>>,
-    void
-  > = () => {
-    return jwksAdminControllerRotate(requestOptions);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type JwksAdminControllerRotateMutationResult = NonNullable<
-  Awaited<ReturnType<typeof jwksAdminControllerRotate>>
->;
-
-export type JwksAdminControllerRotateMutationError = void;
-
-/**
- * @summary Rotate a JWT signing keyring (access | refresh). Returns new kid + previous-kid retirement list.
- */
-export const useJwksAdminControllerRotate = <TError = void, TContext = unknown>(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof jwksAdminControllerRotate>>,
-    TError,
-    void,
-    TContext
-  >;
-  request?: SecondParameter<typeof apiFetch>;
-}): UseMutationResult<
-  Awaited<ReturnType<typeof jwksAdminControllerRotate>>,
-  TError,
-  void,
-  TContext
-> => {
-  const mutationOptions = getJwksAdminControllerRotateMutationOptions(options);
-
-  return useMutation(mutationOptions);
-};
-/**
- * @summary List active kids across both keyrings (access + refresh). Used to confirm rotations + retirement windows.
- */
-export type jwksAdminControllerKidsResponse200 = {
-  data: void;
-  status: 200;
-};
-
-export type jwksAdminControllerKidsResponseSuccess = jwksAdminControllerKidsResponse200 & {
-  headers: Headers;
-};
-export type jwksAdminControllerKidsResponse = jwksAdminControllerKidsResponseSuccess;
-
-export const getJwksAdminControllerKidsUrl = () => {
-  return `/api/v1/admin/identity/jwks/kids`;
-};
-
-export const jwksAdminControllerKids = async (
+export const adminMediaControllerList = async (
+  params: AdminMediaControllerListParams,
   options?: RequestInit,
-): Promise<jwksAdminControllerKidsResponse> => {
-  return apiFetch<jwksAdminControllerKidsResponse>(getJwksAdminControllerKidsUrl(), {
+): Promise<adminMediaControllerListResponse> => {
+  return apiFetch<adminMediaControllerListResponse>(getAdminMediaControllerListUrl(params), {
     ...options,
     method: 'GET',
   });
 };
 
-export const getJwksAdminControllerKidsInfiniteQueryKey = () => {
-  return ['infinite', `/api/v1/admin/identity/jwks/kids`] as const;
+export const getAdminMediaControllerListInfiniteQueryKey = (
+  params?: AdminMediaControllerListParams,
+) => {
+  return ['infinite', `/api/v1/admin/media`, ...(params ? [params] : [])] as const;
 };
 
-export const getJwksAdminControllerKidsQueryKey = () => {
-  return [`/api/v1/admin/identity/jwks/kids`] as const;
+export const getAdminMediaControllerListQueryKey = (params?: AdminMediaControllerListParams) => {
+  return [`/api/v1/admin/media`, ...(params ? [params] : [])] as const;
 };
 
-export const getJwksAdminControllerKidsInfiniteQueryOptions = <
-  TData = Awaited<ReturnType<typeof jwksAdminControllerKids>>,
-  TError = unknown,
->(options?: {
-  query?: UseInfiniteQueryOptions<
-    Awaited<ReturnType<typeof jwksAdminControllerKids>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof apiFetch>;
-}) => {
+export const getAdminMediaControllerListInfiniteQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminMediaControllerList>>,
+  TError = void,
+>(
+  params: AdminMediaControllerListParams,
+  options?: {
+    query?: UseInfiniteQueryOptions<
+      Awaited<ReturnType<typeof adminMediaControllerList>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getJwksAdminControllerKidsInfiniteQueryKey();
+  const queryKey = queryOptions?.queryKey ?? getAdminMediaControllerListInfiniteQueryKey(params);
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof jwksAdminControllerKids>>> = ({
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof adminMediaControllerList>>> = ({
     signal,
-  }) => jwksAdminControllerKids({ signal, ...requestOptions });
+    pageParam,
+  }) =>
+    adminMediaControllerList(
+      { ...params, limit: pageParam || params?.['limit'] },
+      { signal, ...requestOptions },
+    );
 
   return { queryKey, queryFn, staleTime: 30000, ...queryOptions } as UseInfiniteQueryOptions<
-    Awaited<ReturnType<typeof jwksAdminControllerKids>>,
+    Awaited<ReturnType<typeof adminMediaControllerList>>,
     TError,
     TData
   > & { queryKey: QueryKey };
 };
 
-export type JwksAdminControllerKidsInfiniteQueryResult = NonNullable<
-  Awaited<ReturnType<typeof jwksAdminControllerKids>>
+export type AdminMediaControllerListInfiniteQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminMediaControllerList>>
 >;
-export type JwksAdminControllerKidsInfiniteQueryError = unknown;
+export type AdminMediaControllerListInfiniteQueryError = void;
 
 /**
- * @summary List active kids across both keyrings (access + refresh). Used to confirm rotations + retirement windows.
+ * @summary Cross-user list of media with optional ?ownerId, ?kind, ?status filters. Admin-only.
  */
 
-export function useJwksAdminControllerKidsInfinite<
-  TData = Awaited<ReturnType<typeof jwksAdminControllerKids>>,
-  TError = unknown,
->(options?: {
-  query?: UseInfiniteQueryOptions<
-    Awaited<ReturnType<typeof jwksAdminControllerKids>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof apiFetch>;
-}): UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getJwksAdminControllerKidsInfiniteQueryOptions(options);
+export function useAdminMediaControllerListInfinite<
+  TData = Awaited<ReturnType<typeof adminMediaControllerList>>,
+  TError = void,
+>(
+  params: AdminMediaControllerListParams,
+  options?: {
+    query?: UseInfiniteQueryOptions<
+      Awaited<ReturnType<typeof adminMediaControllerList>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+): UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminMediaControllerListInfiniteQueryOptions(params, options);
 
   const query = useInfiniteQuery(queryOptions) as UseInfiniteQueryResult<TData, TError> & {
     queryKey: QueryKey;
@@ -230,45 +169,51 @@ export function useJwksAdminControllerKidsInfinite<
   return query;
 }
 
-export const getJwksAdminControllerKidsQueryOptions = <
-  TData = Awaited<ReturnType<typeof jwksAdminControllerKids>>,
-  TError = unknown,
->(options?: {
-  query?: UseQueryOptions<Awaited<ReturnType<typeof jwksAdminControllerKids>>, TError, TData>;
-  request?: SecondParameter<typeof apiFetch>;
-}) => {
+export const getAdminMediaControllerListQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminMediaControllerList>>,
+  TError = void,
+>(
+  params: AdminMediaControllerListParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof adminMediaControllerList>>, TError, TData>;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getJwksAdminControllerKidsQueryKey();
+  const queryKey = queryOptions?.queryKey ?? getAdminMediaControllerListQueryKey(params);
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof jwksAdminControllerKids>>> = ({
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof adminMediaControllerList>>> = ({
     signal,
-  }) => jwksAdminControllerKids({ signal, ...requestOptions });
+  }) => adminMediaControllerList(params, { signal, ...requestOptions });
 
   return { queryKey, queryFn, staleTime: 30000, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof jwksAdminControllerKids>>,
+    Awaited<ReturnType<typeof adminMediaControllerList>>,
     TError,
     TData
   > & { queryKey: QueryKey };
 };
 
-export type JwksAdminControllerKidsQueryResult = NonNullable<
-  Awaited<ReturnType<typeof jwksAdminControllerKids>>
+export type AdminMediaControllerListQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminMediaControllerList>>
 >;
-export type JwksAdminControllerKidsQueryError = unknown;
+export type AdminMediaControllerListQueryError = void;
 
 /**
- * @summary List active kids across both keyrings (access + refresh). Used to confirm rotations + retirement windows.
+ * @summary Cross-user list of media with optional ?ownerId, ?kind, ?status filters. Admin-only.
  */
 
-export function useJwksAdminControllerKids<
-  TData = Awaited<ReturnType<typeof jwksAdminControllerKids>>,
-  TError = unknown,
->(options?: {
-  query?: UseQueryOptions<Awaited<ReturnType<typeof jwksAdminControllerKids>>, TError, TData>;
-  request?: SecondParameter<typeof apiFetch>;
-}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getJwksAdminControllerKidsQueryOptions(options);
+export function useAdminMediaControllerList<
+  TData = Awaited<ReturnType<typeof adminMediaControllerList>>,
+  TError = void,
+>(
+  params: AdminMediaControllerListParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof adminMediaControllerList>>, TError, TData>;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminMediaControllerListQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -277,6 +222,107 @@ export function useJwksAdminControllerKids<
   return query;
 }
 
+/**
+ * @summary Hard-delete media (takedown). Trip + memory book references SetNull-cascade.
+ */
+export type adminMediaControllerRemoveResponse204 = {
+  data: void;
+  status: 204;
+};
+
+export type adminMediaControllerRemoveResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type adminMediaControllerRemoveResponseSuccess = adminMediaControllerRemoveResponse204 & {
+  headers: Headers;
+};
+export type adminMediaControllerRemoveResponseError = adminMediaControllerRemoveResponse404 & {
+  headers: Headers;
+};
+
+export type adminMediaControllerRemoveResponse =
+  | adminMediaControllerRemoveResponseSuccess
+  | adminMediaControllerRemoveResponseError;
+
+export const getAdminMediaControllerRemoveUrl = (id: string) => {
+  return `/api/v1/admin/media/${id}`;
+};
+
+export const adminMediaControllerRemove = async (
+  id: string,
+  options?: RequestInit,
+): Promise<adminMediaControllerRemoveResponse> => {
+  return apiFetch<adminMediaControllerRemoveResponse>(getAdminMediaControllerRemoveUrl(id), {
+    ...options,
+    method: 'DELETE',
+  });
+};
+
+export const getAdminMediaControllerRemoveMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminMediaControllerRemove>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminMediaControllerRemove>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ['adminMediaControllerRemove'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminMediaControllerRemove>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return adminMediaControllerRemove(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminMediaControllerRemoveMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminMediaControllerRemove>>
+>;
+
+export type AdminMediaControllerRemoveMutationError = void;
+
+/**
+ * @summary Hard-delete media (takedown). Trip + memory book references SetNull-cascade.
+ */
+export const useAdminMediaControllerRemove = <TError = void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminMediaControllerRemove>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminMediaControllerRemove>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationOptions = getAdminMediaControllerRemoveMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
 /**
  * @summary List trips across all users with optional q + status filters. Admin-only.
  */
@@ -2108,123 +2154,184 @@ export const useAdminPurgeControllerForcePurge = <TError = unknown, TContext = u
   return useMutation(mutationOptions);
 };
 /**
- * @summary Cross-user list of media with optional ?ownerId, ?kind, ?status filters. Admin-only.
+ * @summary Rotate a JWT signing keyring (access | refresh). Returns new kid + previous-kid retirement list.
  */
-export type adminMediaControllerListResponse200 = {
-  data: AdminListMediaResponseDto;
+export type jwksAdminControllerRotateResponse200 = {
+  data: void;
   status: 200;
 };
 
-export type adminMediaControllerListResponse400 = {
+export type jwksAdminControllerRotateResponse403 = {
   data: void;
-  status: 400;
+  status: 403;
 };
 
-export type adminMediaControllerListResponseSuccess = adminMediaControllerListResponse200 & {
+export type jwksAdminControllerRotateResponseSuccess = jwksAdminControllerRotateResponse200 & {
   headers: Headers;
 };
-export type adminMediaControllerListResponseError = adminMediaControllerListResponse400 & {
+export type jwksAdminControllerRotateResponseError = jwksAdminControllerRotateResponse403 & {
   headers: Headers;
 };
 
-export type adminMediaControllerListResponse =
-  | adminMediaControllerListResponseSuccess
-  | adminMediaControllerListResponseError;
+export type jwksAdminControllerRotateResponse =
+  | jwksAdminControllerRotateResponseSuccess
+  | jwksAdminControllerRotateResponseError;
 
-export const getAdminMediaControllerListUrl = (params: AdminMediaControllerListParams) => {
-  const normalizedParams = new URLSearchParams();
-
-  Object.entries(params || {}).forEach(([key, value]) => {
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString());
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0
-    ? `/api/v1/admin/media?${stringifiedParams}`
-    : `/api/v1/admin/media`;
+export const getJwksAdminControllerRotateUrl = () => {
+  return `/api/v1/admin/identity/jwks/rotate`;
 };
 
-export const adminMediaControllerList = async (
-  params: AdminMediaControllerListParams,
+export const jwksAdminControllerRotate = async (
   options?: RequestInit,
-): Promise<adminMediaControllerListResponse> => {
-  return apiFetch<adminMediaControllerListResponse>(getAdminMediaControllerListUrl(params), {
+): Promise<jwksAdminControllerRotateResponse> => {
+  return apiFetch<jwksAdminControllerRotateResponse>(getJwksAdminControllerRotateUrl(), {
+    ...options,
+    method: 'POST',
+  });
+};
+
+export const getJwksAdminControllerRotateMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof jwksAdminControllerRotate>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof jwksAdminControllerRotate>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ['jwksAdminControllerRotate'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof jwksAdminControllerRotate>>,
+    void
+  > = () => {
+    return jwksAdminControllerRotate(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type JwksAdminControllerRotateMutationResult = NonNullable<
+  Awaited<ReturnType<typeof jwksAdminControllerRotate>>
+>;
+
+export type JwksAdminControllerRotateMutationError = void;
+
+/**
+ * @summary Rotate a JWT signing keyring (access | refresh). Returns new kid + previous-kid retirement list.
+ */
+export const useJwksAdminControllerRotate = <TError = void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof jwksAdminControllerRotate>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof jwksAdminControllerRotate>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationOptions = getJwksAdminControllerRotateMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary List active kids across both keyrings (access + refresh). Used to confirm rotations + retirement windows.
+ */
+export type jwksAdminControllerKidsResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type jwksAdminControllerKidsResponseSuccess = jwksAdminControllerKidsResponse200 & {
+  headers: Headers;
+};
+export type jwksAdminControllerKidsResponse = jwksAdminControllerKidsResponseSuccess;
+
+export const getJwksAdminControllerKidsUrl = () => {
+  return `/api/v1/admin/identity/jwks/kids`;
+};
+
+export const jwksAdminControllerKids = async (
+  options?: RequestInit,
+): Promise<jwksAdminControllerKidsResponse> => {
+  return apiFetch<jwksAdminControllerKidsResponse>(getJwksAdminControllerKidsUrl(), {
     ...options,
     method: 'GET',
   });
 };
 
-export const getAdminMediaControllerListInfiniteQueryKey = (
-  params?: AdminMediaControllerListParams,
-) => {
-  return ['infinite', `/api/v1/admin/media`, ...(params ? [params] : [])] as const;
+export const getJwksAdminControllerKidsInfiniteQueryKey = () => {
+  return ['infinite', `/api/v1/admin/identity/jwks/kids`] as const;
 };
 
-export const getAdminMediaControllerListQueryKey = (params?: AdminMediaControllerListParams) => {
-  return [`/api/v1/admin/media`, ...(params ? [params] : [])] as const;
+export const getJwksAdminControllerKidsQueryKey = () => {
+  return [`/api/v1/admin/identity/jwks/kids`] as const;
 };
 
-export const getAdminMediaControllerListInfiniteQueryOptions = <
-  TData = Awaited<ReturnType<typeof adminMediaControllerList>>,
-  TError = void,
->(
-  params: AdminMediaControllerListParams,
-  options?: {
-    query?: UseInfiniteQueryOptions<
-      Awaited<ReturnType<typeof adminMediaControllerList>>,
-      TError,
-      TData
-    >;
-    request?: SecondParameter<typeof apiFetch>;
-  },
-) => {
+export const getJwksAdminControllerKidsInfiniteQueryOptions = <
+  TData = Awaited<ReturnType<typeof jwksAdminControllerKids>>,
+  TError = unknown,
+>(options?: {
+  query?: UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof jwksAdminControllerKids>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}) => {
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getAdminMediaControllerListInfiniteQueryKey(params);
+  const queryKey = queryOptions?.queryKey ?? getJwksAdminControllerKidsInfiniteQueryKey();
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof adminMediaControllerList>>> = ({
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof jwksAdminControllerKids>>> = ({
     signal,
-    pageParam,
-  }) =>
-    adminMediaControllerList(
-      { ...params, limit: pageParam || params?.['limit'] },
-      { signal, ...requestOptions },
-    );
+  }) => jwksAdminControllerKids({ signal, ...requestOptions });
 
   return { queryKey, queryFn, staleTime: 30000, ...queryOptions } as UseInfiniteQueryOptions<
-    Awaited<ReturnType<typeof adminMediaControllerList>>,
+    Awaited<ReturnType<typeof jwksAdminControllerKids>>,
     TError,
     TData
   > & { queryKey: QueryKey };
 };
 
-export type AdminMediaControllerListInfiniteQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminMediaControllerList>>
+export type JwksAdminControllerKidsInfiniteQueryResult = NonNullable<
+  Awaited<ReturnType<typeof jwksAdminControllerKids>>
 >;
-export type AdminMediaControllerListInfiniteQueryError = void;
+export type JwksAdminControllerKidsInfiniteQueryError = unknown;
 
 /**
- * @summary Cross-user list of media with optional ?ownerId, ?kind, ?status filters. Admin-only.
+ * @summary List active kids across both keyrings (access + refresh). Used to confirm rotations + retirement windows.
  */
 
-export function useAdminMediaControllerListInfinite<
-  TData = Awaited<ReturnType<typeof adminMediaControllerList>>,
-  TError = void,
->(
-  params: AdminMediaControllerListParams,
-  options?: {
-    query?: UseInfiniteQueryOptions<
-      Awaited<ReturnType<typeof adminMediaControllerList>>,
-      TError,
-      TData
-    >;
-    request?: SecondParameter<typeof apiFetch>;
-  },
-): UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getAdminMediaControllerListInfiniteQueryOptions(params, options);
+export function useJwksAdminControllerKidsInfinite<
+  TData = Awaited<ReturnType<typeof jwksAdminControllerKids>>,
+  TError = unknown,
+>(options?: {
+  query?: UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof jwksAdminControllerKids>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getJwksAdminControllerKidsInfiniteQueryOptions(options);
 
   const query = useInfiniteQuery(queryOptions) as UseInfiniteQueryResult<TData, TError> & {
     queryKey: QueryKey;
@@ -2235,51 +2342,45 @@ export function useAdminMediaControllerListInfinite<
   return query;
 }
 
-export const getAdminMediaControllerListQueryOptions = <
-  TData = Awaited<ReturnType<typeof adminMediaControllerList>>,
-  TError = void,
->(
-  params: AdminMediaControllerListParams,
-  options?: {
-    query?: UseQueryOptions<Awaited<ReturnType<typeof adminMediaControllerList>>, TError, TData>;
-    request?: SecondParameter<typeof apiFetch>;
-  },
-) => {
+export const getJwksAdminControllerKidsQueryOptions = <
+  TData = Awaited<ReturnType<typeof jwksAdminControllerKids>>,
+  TError = unknown,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof jwksAdminControllerKids>>, TError, TData>;
+  request?: SecondParameter<typeof apiFetch>;
+}) => {
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getAdminMediaControllerListQueryKey(params);
+  const queryKey = queryOptions?.queryKey ?? getJwksAdminControllerKidsQueryKey();
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof adminMediaControllerList>>> = ({
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof jwksAdminControllerKids>>> = ({
     signal,
-  }) => adminMediaControllerList(params, { signal, ...requestOptions });
+  }) => jwksAdminControllerKids({ signal, ...requestOptions });
 
   return { queryKey, queryFn, staleTime: 30000, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof adminMediaControllerList>>,
+    Awaited<ReturnType<typeof jwksAdminControllerKids>>,
     TError,
     TData
   > & { queryKey: QueryKey };
 };
 
-export type AdminMediaControllerListQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminMediaControllerList>>
+export type JwksAdminControllerKidsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof jwksAdminControllerKids>>
 >;
-export type AdminMediaControllerListQueryError = void;
+export type JwksAdminControllerKidsQueryError = unknown;
 
 /**
- * @summary Cross-user list of media with optional ?ownerId, ?kind, ?status filters. Admin-only.
+ * @summary List active kids across both keyrings (access + refresh). Used to confirm rotations + retirement windows.
  */
 
-export function useAdminMediaControllerList<
-  TData = Awaited<ReturnType<typeof adminMediaControllerList>>,
-  TError = void,
->(
-  params: AdminMediaControllerListParams,
-  options?: {
-    query?: UseQueryOptions<Awaited<ReturnType<typeof adminMediaControllerList>>, TError, TData>;
-    request?: SecondParameter<typeof apiFetch>;
-  },
-): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getAdminMediaControllerListQueryOptions(params, options);
+export function useJwksAdminControllerKids<
+  TData = Awaited<ReturnType<typeof jwksAdminControllerKids>>,
+  TError = unknown,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof jwksAdminControllerKids>>, TError, TData>;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getJwksAdminControllerKidsQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -2288,107 +2389,6 @@ export function useAdminMediaControllerList<
   return query;
 }
 
-/**
- * @summary Hard-delete media (takedown). Trip + memory book references SetNull-cascade.
- */
-export type adminMediaControllerRemoveResponse204 = {
-  data: void;
-  status: 204;
-};
-
-export type adminMediaControllerRemoveResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type adminMediaControllerRemoveResponseSuccess = adminMediaControllerRemoveResponse204 & {
-  headers: Headers;
-};
-export type adminMediaControllerRemoveResponseError = adminMediaControllerRemoveResponse404 & {
-  headers: Headers;
-};
-
-export type adminMediaControllerRemoveResponse =
-  | adminMediaControllerRemoveResponseSuccess
-  | adminMediaControllerRemoveResponseError;
-
-export const getAdminMediaControllerRemoveUrl = (id: string) => {
-  return `/api/v1/admin/media/${id}`;
-};
-
-export const adminMediaControllerRemove = async (
-  id: string,
-  options?: RequestInit,
-): Promise<adminMediaControllerRemoveResponse> => {
-  return apiFetch<adminMediaControllerRemoveResponse>(getAdminMediaControllerRemoveUrl(id), {
-    ...options,
-    method: 'DELETE',
-  });
-};
-
-export const getAdminMediaControllerRemoveMutationOptions = <
-  TError = void,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof adminMediaControllerRemove>>,
-    TError,
-    { id: string },
-    TContext
-  >;
-  request?: SecondParameter<typeof apiFetch>;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof adminMediaControllerRemove>>,
-  TError,
-  { id: string },
-  TContext
-> => {
-  const mutationKey = ['adminMediaControllerRemove'];
-  const { mutation: mutationOptions, request: requestOptions } = options
-    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, request: undefined };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminMediaControllerRemove>>,
-    { id: string }
-  > = (props) => {
-    const { id } = props ?? {};
-
-    return adminMediaControllerRemove(id, requestOptions);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type AdminMediaControllerRemoveMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminMediaControllerRemove>>
->;
-
-export type AdminMediaControllerRemoveMutationError = void;
-
-/**
- * @summary Hard-delete media (takedown). Trip + memory book references SetNull-cascade.
- */
-export const useAdminMediaControllerRemove = <TError = void, TContext = unknown>(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof adminMediaControllerRemove>>,
-    TError,
-    { id: string },
-    TContext
-  >;
-  request?: SecondParameter<typeof apiFetch>;
-}): UseMutationResult<
-  Awaited<ReturnType<typeof adminMediaControllerRemove>>,
-  TError,
-  { id: string },
-  TContext
-> => {
-  const mutationOptions = getAdminMediaControllerRemoveMutationOptions(options);
-
-  return useMutation(mutationOptions);
-};
 /**
  * @summary Curate a new Place into the canonical catalog. Admin-only.
  */
