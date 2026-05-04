@@ -273,6 +273,11 @@ export type { PublicReviewerRecentReviewDto } from './generated/schemas/publicRe
 // Hook (useAccountControllerStorageStats) lives in the already-star-
 // exported `account` barrel.
 export type { StorageStatsResponseDto } from './generated/schemas/storageStatsResponseDto';
+// V.UX.33: account reactivation within the 7-day retention window.
+// Hook (useAccountControllerReactivate) lives in the already-star-
+// exported `account` barrel. The login `ACCOUNT_DELETION_PENDING`
+// error surfaces the reactivation token via ApiError.context (the
+// runtime fetcher now preserves the DomainError context object).
 // V.UX.31: locked-out persona — password-reset request + consume.
 // Hooks (useAuthControllerPasswordResetRequest, ...PasswordResetConsume)
 // land in the already-star-exported `identity` barrel. MFA backup-code

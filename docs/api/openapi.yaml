@@ -2072,6 +2072,31 @@ paths:
       summary: Soft-delete the caller's account + revoke all live sessions. GDPR Art.
         17 / DPDP §12 right-to-erasure.
       tags: *a34
+  /api/v1/account/reactivate:
+    post:
+      operationId: AccountController_reactivate
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReactivateRequestDto'
+      responses:
+        '200':
+          description: Account restored.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReactivateResponseDto'
+        '401':
+          description: REACTIVATION_INVALID — token bad/expired.
+        '404':
+          description: ACCOUNT_NOT_RECOVERABLE — past the 7-day window.
+      security: *a33
+      summary: V.UX.33 — restore a soft-deleted account within the 7-day window. Token
+        from deletion-pending email or login response.
+      tags: *a34
   /api/v1/admin/users:
     get:
       operationId: AdminUsersController_list
@@ -6557,6 +6582,24 @@ components:
         - commissions
         - agentProfile
         - liveEvents
+    ReactivateRequestDto:
+      type: object
+      properties:
+        token:
+          type: string
+          description: V.UX.33 — opaque base64url HMAC token from the deletion-pending
+            email or login response.
+      required:
+        - token
+    ReactivateResponseDto:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: cuid
+          description: Restored user id.
+      required:
+        - userId
     AdminUserDto:
       type: object
       properties:

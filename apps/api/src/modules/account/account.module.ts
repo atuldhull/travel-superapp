@@ -32,10 +32,13 @@ import { ExportUserDataUseCase } from './application/export-user-data.use-case';
 import { GetPreferencesUseCase } from './application/get-preferences.use-case';
 import { GetStorageStatsUseCase } from './application/get-storage-stats.use-case';
 import { ListTrustedContactsUseCase } from './application/list-trusted-contacts.use-case';
+import { ReactivateAccountUseCase } from './application/reactivate-account.use-case';
 import { StreamAccountExportUseCase } from './application/stream-account-export.use-case';
 import { UpdatePreferencesUseCase } from './application/update-preferences.use-case';
 import { ACCOUNT_DELETER } from './application/ports/account-deleter';
 import { ACCOUNT_PURGER } from './application/ports/account-purger';
+import { MAILER_PORT } from '../identity/application/ports/mailer.port';
+import { StubMailerAdapter } from '../identity/infrastructure/stub-mailer.adapter';
 import { ADMIN_USER_QUERY } from './application/ports/admin-user-query';
 import { PREFERENCES_REPOSITORY } from './application/ports/preferences.repository';
 import { TRUSTED_CONTACT_REPOSITORY } from './application/ports/trusted-contact.repository';
@@ -86,6 +89,12 @@ import { TrustedContactsController } from './interface/trusted-contacts.controll
     UpdatePreferencesUseCase,
     GetConnectivityInfoUseCase,
     GetStorageStatsUseCase,
+    ReactivateAccountUseCase,
+    // V.UX.33 — Account needs MAILER_PORT for the deletion-pending
+    // email. Identity also registers it; per-module providers are
+    // safe because StubMailerAdapter shares state via a module-level
+    // ring buffer.
+    { provide: MAILER_PORT, useClass: StubMailerAdapter },
   ],
   // V.UX.13 — TRUSTED_CONTACT_REPOSITORY is consumed by the Safety
   // module's TriggerSosUseCase to fan out an SOS to the caller's

@@ -26,6 +26,9 @@
  */
 
 export interface ApiError extends Error {
+  /** V.UX.33 — DomainError `context` preserved from the api error
+   *  envelope. Empty object when the api didn't surface one. */
+  readonly context: Readonly<Record<string, unknown>>;
   readonly code: string;
   readonly status: number;
   readonly traceId: string | null;
@@ -94,15 +97,21 @@ export async function apiFetch<
       code?: string;
       message?: string;
       traceId?: string;
+      context?: Readonly<Record<string, unknown>>;
     };
     const err = new Error(envelope.message ?? `HTTP ${res.status}`) as Error & {
       code: string;
       status: number;
       traceId: string | null;
+      // V.UX.33 — surface the DomainError `context` so callers like
+      // /login can extract `reactivationToken` without digging into
+      // a re-parse of the raw response body.
+      context: Readonly<Record<string, unknown>>;
     };
     err.code = envelope.code ?? `HTTP_${res.status}`;
     err.status = res.status;
     err.traceId = envelope.traceId ?? null;
+    err.context = envelope.context ?? {};
     throw err;
   }
 

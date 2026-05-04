@@ -10,6 +10,8 @@
  * Installed by prompt [III.13.2] part 2.
  */
 import { Inject, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import type { Env } from '@app/config';
 import { hashPassword, verifyPassword } from '@app/auth';
 import { RateLimitError, UnauthorizedError } from '@app/errors';
 import { createLogger } from '@app/logger';
@@ -24,6 +26,7 @@ import { BACKUP_CODE_REPOSITORY, type BackupCodeRepository } from './ports/backu
 import { FAILED_LOGIN_COUNTER, type FailedLoginCounter } from './ports/failed-login-counter';
 import { USER_REPOSITORY, type UserRepository } from './ports/user.repository';
 import { hashEmail } from '../infrastructure/email-hash';
+import { mintReactivationToken } from '../../account/infrastructure/reactivation-token';
 
 const log = createLogger('identity.login');
 
@@ -60,9 +63,36 @@ async function ensureDummyHash(): Promise<string> {
   return DUMMY_HASH;
 }
 
+/**
+ * V.UX.33 — when login finds a soft-deleted user inside the
+ * 7-day retention window AND the password matches, we throw
+ * `AccountDeletionPendingError` instead of issuing a session.
+ * The controller catches it + returns a 403-shaped response with
+ * the reactivation token so the web client can route to
+ * /account/reactivate.
+ */
+export class AccountDeletionPendingError extends UnauthorizedError {
+  constructor(
+    readonly reactivationToken: string,
+    readonly retentionExpiresAt: Date,
+  ) {
+    super(
+      'Account scheduled for deletion — restore within the retention window',
+      {
+        reactivationToken,
+        retentionExpiresAt: retentionExpiresAt.toISOString(),
+      },
+      'ACCOUNT_DELETION_PENDING',
+    );
+  }
+}
+
+const RETENTION_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
 @Injectable()
 export class LoginUseCase {
   constructor(
+    @Inject(ConfigService) private readonly config: ConfigService<Env, true>,
     @Inject(USER_REPOSITORY) private readonly users: UserRepository,
     @Inject(BACKUP_CODE_REPOSITORY)
     private readonly backupCodes: BackupCodeRepository,
@@ -93,22 +123,54 @@ export class LoginUseCase {
       );
     }
 
-    const user = await this.users.findByEmailHash(emailHash);
+    // V.UX.33 — fetch the row INCLUDING soft-deleted state so we can
+    // distinguish "wrong credentials" from "soft-deleted, still
+    // recoverable". The active-user lookup that follows still uses
+    // the deletedAt-filtered findByEmailHash so we don't accidentally
+    // issue a session for a deleted account.
+    const userIncludingDeleted = await this.users.findByEmailHashIncludingDeleted(emailHash);
 
-    // Missing user: verify dummy to equalize timing + increment
-    // counter anyway (we don't want "no such email" to be faster
-    // than "wrong password" — both paths burn a failure slot).
-    if (!user || user.passwordHash === null) {
+    // Missing user OR password-less account: verify dummy to equalize
+    // timing + increment counter (we don't want "no such email" to be
+    // faster than "wrong password").
+    if (!userIncludingDeleted || userIncludingDeleted.passwordHash === null) {
       await verifyPassword(cmd.password, await ensureDummyHash()).catch(() => false);
       await this.failCounter.increment(emailHash);
       throw new UnauthorizedError('Invalid credentials', {}, 'INVALID_CREDENTIALS');
     }
 
-    const ok = await verifyPassword(cmd.password, user.passwordHash);
+    const ok = await verifyPassword(cmd.password, userIncludingDeleted.passwordHash);
     if (!ok) {
       await this.failCounter.increment(emailHash);
       throw new UnauthorizedError('Invalid credentials', {}, 'INVALID_CREDENTIALS');
     }
+
+    // V.UX.33 — soft-deleted within the 7-day window: surface the
+    // reactivation challenge instead of issuing a session. We've
+    // already verified the password, so handing back a reactivation
+    // token is safe (proves possession of credentials).
+    if (userIncludingDeleted.deletedAt !== null) {
+      const ageMs = Date.now() - userIncludingDeleted.deletedAt.getTime();
+      if (ageMs < RETENTION_WINDOW_MS) {
+        const pepper = this.config.get('EMAIL_PEPPER', { infer: true }) as string;
+        const token = mintReactivationToken(userIncludingDeleted.id, pepper);
+        const retentionExpiresAt = new Date(
+          userIncludingDeleted.deletedAt.getTime() + RETENTION_WINDOW_MS,
+        );
+        // Don't increment the failure counter — the credentials WERE
+        // correct; only the account state blocks the sign-in.
+        await this.failCounter.reset(emailHash);
+        throw new AccountDeletionPendingError(token, retentionExpiresAt);
+      }
+      // Past 7 days: fall through to INVALID_CREDENTIALS so the row
+      // looks identical to a never-existed account. (In practice the
+      // AccountPurger should have hard-deleted by now; this is a
+      // belt-and-suspenders guard if the cron lagged.)
+      await this.failCounter.increment(emailHash);
+      throw new UnauthorizedError('Invalid credentials', {}, 'INVALID_CREDENTIALS');
+    }
+
+    const user = userIncludingDeleted;
 
     // MFA gate. Client flow:
     //   1. POST /login with just { email, password }. If the user

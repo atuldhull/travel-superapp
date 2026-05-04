@@ -46,6 +46,14 @@ export class PrismaUserRepository implements UserRepository {
     return toDomain(row);
   }
 
+  async findByEmailHashIncludingDeleted(
+    emailHash: string,
+  ): Promise<(UserRecord & { readonly deletedAt: Date | null }) | null> {
+    const row = await this.prisma.user.findUnique({ where: { emailHash } });
+    if (!row) return null;
+    return { ...toDomain(row), deletedAt: row.deletedAt };
+  }
+
   async setMfaSecret(userId: string, base32Secret: string): Promise<void> {
     await this.prisma.user.update({
       where: { id: userId },

@@ -19,6 +19,8 @@ import type {
   ConnectivityInfoDto,
   ListTrustedContactsResponseDto,
   PreferencesDto,
+  ReactivateRequestDto,
+  ReactivateResponseDto,
   StorageStatsResponseDto,
   TrustedContactDto,
   UpdatePreferencesRequestDto,
@@ -551,6 +553,117 @@ export const useAccountControllerDeleteMyAccount = <
   TContext
 > => {
   const mutationOptions = getAccountControllerDeleteMyAccountMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary V.UX.33 — restore a soft-deleted account within the 7-day window. Token from deletion-pending email or login response.
+ */
+export type accountControllerReactivateResponse200 = {
+  data: ReactivateResponseDto;
+  status: 200;
+};
+
+export type accountControllerReactivateResponse401 = {
+  data: void;
+  status: 401;
+};
+
+export type accountControllerReactivateResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type accountControllerReactivateResponseSuccess = accountControllerReactivateResponse200 & {
+  headers: Headers;
+};
+export type accountControllerReactivateResponseError = (
+  | accountControllerReactivateResponse401
+  | accountControllerReactivateResponse404
+) & {
+  headers: Headers;
+};
+
+export type accountControllerReactivateResponse =
+  | accountControllerReactivateResponseSuccess
+  | accountControllerReactivateResponseError;
+
+export const getAccountControllerReactivateUrl = () => {
+  return `/api/v1/account/reactivate`;
+};
+
+export const accountControllerReactivate = async (
+  reactivateRequestDto: ReactivateRequestDto,
+  options?: RequestInit,
+): Promise<accountControllerReactivateResponse> => {
+  return apiFetch<accountControllerReactivateResponse>(getAccountControllerReactivateUrl(), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(reactivateRequestDto),
+  });
+};
+
+export const getAccountControllerReactivateMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof accountControllerReactivate>>,
+    TError,
+    { data: ReactivateRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof accountControllerReactivate>>,
+  TError,
+  { data: ReactivateRequestDto },
+  TContext
+> => {
+  const mutationKey = ['accountControllerReactivate'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof accountControllerReactivate>>,
+    { data: ReactivateRequestDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return accountControllerReactivate(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AccountControllerReactivateMutationResult = NonNullable<
+  Awaited<ReturnType<typeof accountControllerReactivate>>
+>;
+export type AccountControllerReactivateMutationBody = ReactivateRequestDto;
+export type AccountControllerReactivateMutationError = void;
+
+/**
+ * @summary V.UX.33 — restore a soft-deleted account within the 7-day window. Token from deletion-pending email or login response.
+ */
+export const useAccountControllerReactivate = <TError = void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof accountControllerReactivate>>,
+    TError,
+    { data: ReactivateRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof accountControllerReactivate>>,
+  TError,
+  { data: ReactivateRequestDto },
+  TContext
+> => {
+  const mutationOptions = getAccountControllerReactivateMutationOptions(options);
 
   return useMutation(mutationOptions);
 };
