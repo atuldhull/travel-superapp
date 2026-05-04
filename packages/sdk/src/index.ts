@@ -56,6 +56,9 @@ export * from './generated/react-query/notifications/notifications';
 // `useAdminPlacesController*`, `useAdminPurgeController*`) is reachable
 // from `@app/sdk` without deep imports.
 export * from './generated/react-query/admin/admin';
+// V.UX.37 — compliance dashboard (read-only). Star-exports
+// `useComplianceControllerRetention` + `useComplianceControllerTakedowns`.
+export * from './generated/react-query/compliance/compliance';
 
 // Schema types from openapi.yaml's components/schemas. Re-exported so
 // consumers don't have to reach into deep generated paths. Add the
@@ -324,3 +327,12 @@ export type { AdminListAuditLogsResponseDto } from './generated/schemas/adminLis
 export type { AdminAuditLogsControllerListParams } from './generated/schemas/adminAuditLogsControllerListParams';
 export type { AdminBanAppealDto } from './generated/schemas/adminBanAppealDto';
 export type { AdminListBanAppealsResponseDto } from './generated/schemas/adminListBanAppealsResponseDto';
+// V.UX.37 — compliance retention + takedown.
+export type { RetentionStatsResponseDto } from './generated/schemas/retentionStatsResponseDto';
+export type { RetentionUsersDto } from './generated/schemas/retentionUsersDto';
+export type { RetentionTripsDto } from './generated/schemas/retentionTripsDto';
+export type { RetentionSafetyDto } from './generated/schemas/retentionSafetyDto';
+export type { RetentionInboxDto } from './generated/schemas/retentionInboxDto';
+export type { RetentionAppealsDto } from './generated/schemas/retentionAppealsDto';
+export type { TakedownListResponseDto } from './generated/schemas/takedownListResponseDto';
+export type { ComplianceControllerTakedownsParams } from './generated/schemas/complianceControllerTakedownsParams';

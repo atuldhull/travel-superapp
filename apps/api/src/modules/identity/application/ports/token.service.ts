@@ -18,7 +18,7 @@ import type { AccessTokenClaims, RefreshTokenClaims } from '@app/auth';
 export interface IssueAccessParams {
   readonly userId: string;
   readonly sessionId: string;
-  readonly role: 'user' | 'premium' | 'agent' | 'admin';
+  readonly role: 'user' | 'premium' | 'agent' | 'admin' | 'compliance';
 }
 
 export interface IssueRefreshParams {

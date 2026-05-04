@@ -40,6 +40,11 @@ enum UserRole {
   premium
   agent
   admin
+  // V.UX.37 — read-only audit/retention/takedown reporting role.
+  // Strictly weaker than `admin`: can read /compliance/* surfaces
+  // (retention dashboard + takedown list) but cannot ban / verify /
+  // resolve / delete. Promoted by an admin via a future tooling flow.
+  compliance
 }
 
 enum TripStatus {

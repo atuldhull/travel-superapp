@@ -14,4 +14,5 @@ export const WhoAmIResponseDtoRole = {
   premium: 'premium',
   agent: 'agent',
   admin: 'admin',
+  compliance: 'compliance',
 } as const;
