@@ -283,6 +283,7 @@ export * from './publicDownloadUrlResponseDto';
 export * from './publicMemoryBookDto';
 export * from './publicMemoryBookDtoCoverS3Key';
 export * from './publicMemoryBookWithAssetsResponseDto';
+export * from './publicMetricsResponseDto';
 export * from './publicReviewerProfileDto';
 export * from './publicReviewerRecentReviewDto';
 export * from './publicReviewerRecentReviewDtoTargetType';

@@ -59,6 +59,9 @@ export * from './generated/react-query/admin/admin';
 // V.UX.37 — compliance dashboard (read-only). Star-exports
 // `useComplianceControllerRetention` + `useComplianceControllerTakedowns`.
 export * from './generated/react-query/compliance/compliance';
+// V.UX.40 — public landing-page metrics strip. Single hook
+// `usePublicMetricsControllerGet`; @Public on the api side.
+export * from './generated/react-query/public/public';
 
 // Schema types from openapi.yaml's components/schemas. Re-exported so
 // consumers don't have to reach into deep generated paths. Add the
@@ -336,3 +339,5 @@ export type { RetentionInboxDto } from './generated/schemas/retentionInboxDto';
 export type { RetentionAppealsDto } from './generated/schemas/retentionAppealsDto';
 export type { TakedownListResponseDto } from './generated/schemas/takedownListResponseDto';
 export type { ComplianceControllerTakedownsParams } from './generated/schemas/complianceControllerTakedownsParams';
+// V.UX.40 — public landing metrics shape.
+export type { PublicMetricsResponseDto } from './generated/schemas/publicMetricsResponseDto';

@@ -21,6 +21,8 @@ import { SampleTripDemo } from '../components/landing/sample-trip-demo';
 import { ValuePillars } from '../components/landing/value-pillars';
 import { FeaturedStrip } from '../components/landing/featured-strip';
 import { WelcomeBackBanner } from '../components/landing/welcome-back-banner';
+import { LiveMetricsStrip } from '../components/landing/live-metrics';
+import { TrustStrip } from '../components/landing/trust-strip';
 
 export default function HomePage() {
   return (
@@ -29,7 +31,11 @@ export default function HomePage() {
       <LandingHero />
       <SampleTripDemo />
       <ValuePillars />
+      {/* V.UX.40 — live anonymized counts (5-min cached @Public). */}
+      <LiveMetricsStrip />
       <FeaturedStrip />
+      {/* V.UX.40 — security + open-source signals. */}
+      <TrustStrip />
     </main>
   );
 }
