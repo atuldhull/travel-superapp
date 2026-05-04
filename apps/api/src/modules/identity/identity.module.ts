@@ -17,13 +17,16 @@ import { ConfigService } from '@nestjs/config';
 import type { Env } from '@app/config';
 import { TripModule } from '../trip/trip.module';
 import { ConsumeMagicLinkUseCase } from './application/consume-magic-link.use-case';
+import { ConsumePasswordResetUseCase } from './application/consume-password-reset.use-case';
 import { IssueSessionUseCase } from './application/issue-session.use-case';
 import { JWT_KEYRING_STORE } from './application/ports/jwt-keyring.store';
 import { LoginUseCase } from './application/login.use-case';
 import { MarkOnboardingCompleteUseCase } from './application/mark-onboarding-complete.use-case';
 import { MAGIC_LINK_TOKEN_REPOSITORY } from './application/ports/magic-link-token.repository';
 import { MAILER_PORT } from './application/ports/mailer.port';
+import { PASSWORD_RESET_TOKEN_REPOSITORY } from './application/ports/password-reset-token.repository';
 import { RequestMagicLinkUseCase } from './application/request-magic-link.use-case';
+import { RequestPasswordResetUseCase } from './application/request-password-reset.use-case';
 import {
   DisableMfaUseCase,
   RegenerateBackupCodesUseCase,
@@ -52,6 +55,7 @@ import { JwtTokenService } from './infrastructure/jwt-token.service';
 import { MockOAuthProvider } from './infrastructure/mock-oauth-provider';
 import { PrismaBackupCodeRepository } from './infrastructure/prisma-backup-code.repository';
 import { PrismaMagicLinkTokenRepository } from './infrastructure/prisma-magic-link-token.repository';
+import { PrismaPasswordResetTokenRepository } from './infrastructure/prisma-password-reset-token.repository';
 import { PrismaSessionRepository } from './infrastructure/prisma-session.repository';
 import { PrismaUserOAuthIdentityRepository } from './infrastructure/prisma-user-oauth-identity.repository';
 import { PrismaUserRepository } from './infrastructure/prisma-user.repository';
@@ -118,6 +122,10 @@ const oauthProvidersFactory = {
       provide: MAGIC_LINK_TOKEN_REPOSITORY,
       useClass: PrismaMagicLinkTokenRepository,
     },
+    {
+      provide: PASSWORD_RESET_TOKEN_REPOSITORY,
+      useClass: PrismaPasswordResetTokenRepository,
+    },
     // Mailer port — stub adapter is the only adapter today. A
     // real-provider (Resend / SES) wires in via a useFactory once
     // RESEND_API_KEY is provisioned (CLAUDE rule 5: never commit
@@ -139,6 +147,8 @@ const oauthProvidersFactory = {
     SignInWithOAuthUseCase,
     RequestMagicLinkUseCase,
     ConsumeMagicLinkUseCase,
+    RequestPasswordResetUseCase,
+    ConsumePasswordResetUseCase,
     MarkOnboardingCompleteUseCase,
     RotateJwksUseCase,
   ],

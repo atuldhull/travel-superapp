@@ -74,6 +74,13 @@ export class PrismaUserRepository implements UserRepository {
     });
   }
 
+  async setPasswordHash(userId: string, newPasswordHash: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash: newPasswordHash },
+    });
+  }
+
   async stampSeen(userId: string, now: Date): Promise<{ previousSeenAt: Date | null }> {
     // V.UX.30 — only advance `previousSeenAt` when the gap from
     // current `lastSeenAt` is > 1 hour. Otherwise repeat /auth/me

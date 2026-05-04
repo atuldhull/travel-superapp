@@ -198,6 +198,14 @@ export default function LoginPage() {
               Create an account →
             </Link>
           </p>
+          <p className="text-sm">
+            <Link
+              href={'/login/forgot' as never}
+              className="text-muted underline-offset-2 hover:underline"
+            >
+              Trouble signing in?
+            </Link>
+          </p>
         </form>
       ) : (
         <form onSubmit={submitMfa} className="space-y-4">
@@ -229,6 +237,14 @@ export default function LoginPage() {
               Back
             </Button>
           </div>
+          <p className="text-sm">
+            <Link
+              href={'/login/mfa-recover' as never}
+              className="text-muted underline-offset-2 hover:underline"
+            >
+              Lost your authenticator? Use a backup code →
+            </Link>
+          </p>
         </form>
       )}
     </main>

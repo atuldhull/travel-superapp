@@ -317,6 +317,50 @@ paths:
       summary: 'Passwordless sign-in step 2: consume the magic-link token + issue a
         session. Single-use, 15-min TTL.'
       tags: *a8
+  /api/v1/auth/password-reset/request:
+    post:
+      operationId: AuthController_passwordResetRequest
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequestRequestDto'
+      responses:
+        '200':
+          description: Always ok. Email may or may not have been sent.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasswordResetRequestResponseDto'
+      summary: V.UX.31 — request a password-reset email. Always returns ok regardless
+        of registration state.
+      tags: *a8
+  /api/v1/auth/password-reset/consume:
+    post:
+      operationId: AuthController_passwordResetConsume
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConsumeRequestDto'
+      responses:
+        '200':
+          description: Password updated. User must sign in with the new password.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasswordResetConsumeResponseDto'
+        '401':
+          description: RESET_TOKEN_INVALID.
+        '422':
+          description: WEAK_PASSWORD or VALIDATION_FAILED.
+      summary: V.UX.31 — consume the password-reset token + set a new password.
+        Single-use, 15-min TTL.
+      tags: *a8
   /api/v1/auth/login:
     post:
       operationId: AuthController_login
@@ -3673,6 +3717,52 @@ components:
           maxLength: 64
       required:
         - token
+    PasswordResetRequestRequestDto:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+      required:
+        - email
+    PasswordResetRequestResponseDto:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+          description: Always 'ok'. Doesn't reveal whether the email is registered.
+      required:
+        - status
+    PasswordResetConsumeRequestDto:
+      type: object
+      properties:
+        token:
+          type: string
+          description: 64 lower-case hex characters (32 random bytes) from the email link
+            URL.
+          pattern: ^[0-9a-f]{64}$
+          minLength: 64
+          maxLength: 64
+        newPassword:
+          type: string
+          minLength: 12
+          maxLength: 128
+          description: New password (12..128 chars).
+      required:
+        - token
+        - newPassword
+    PasswordResetConsumeResponseDto:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+      required:
+        - status
     LoginRequestDto:
       type: object
       properties:
