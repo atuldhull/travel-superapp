@@ -6,12 +6,40 @@ import type {
   ConnectivityInfoDto,
   ListTrustedContactsResponseDto,
   PreferencesDto,
+  StorageStatsResponseDto,
   TrustedContactDto,
   UpdatePreferencesRequestDto,
   UserDataExportResponseDto,
 } from '../../schemas';
 
 import { apiFetch } from '../../../runtime/fetcher';
+
+/**
+ * @summary V.UX.32 — caller-scoped storage stats per category. Powers the /account/privacy hub's 'we store: 24 trips, 130 photos…' panel.
+ */
+export type accountControllerStorageStatsResponse200 = {
+  data: StorageStatsResponseDto;
+  status: 200;
+};
+
+export type accountControllerStorageStatsResponseSuccess =
+  accountControllerStorageStatsResponse200 & {
+    headers: Headers;
+  };
+export type accountControllerStorageStatsResponse = accountControllerStorageStatsResponseSuccess;
+
+export const getAccountControllerStorageStatsUrl = () => {
+  return `/api/v1/account/stats`;
+};
+
+export const accountControllerStorageStats = async (
+  options?: RequestInit,
+): Promise<accountControllerStorageStatsResponse> => {
+  return apiFetch<accountControllerStorageStatsResponse>(getAccountControllerStorageStatsUrl(), {
+    ...options,
+    method: 'GET',
+  });
+};
 
 /**
  * @summary Full GDPR/DPDP/COPPA self-export bundle as a single JSON object. ~30 sections; sensitive fields stripped.

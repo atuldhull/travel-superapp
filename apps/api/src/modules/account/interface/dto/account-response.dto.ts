@@ -127,3 +127,66 @@ export class UserDataExportResponseDto {
   @ApiProperty({ type: 'object', additionalProperties: true })
   declare liveEvents: Record<string, unknown>;
 }
+
+/**
+ * V.UX.32 — per-category storage stats for the /account/privacy hub.
+ * Each field is the row count of the named category for the caller.
+ */
+export class StorageStatsResponseDto {
+  @ApiProperty({ description: 'Active (non-archived) trips.' })
+  declare trips: number;
+
+  @ApiProperty({ description: 'Soft-archived trips (V.UX.30).' })
+  declare tripsArchived: number;
+
+  @ApiProperty()
+  declare itineraryDays: number;
+
+  @ApiProperty()
+  declare itineraryItems: number;
+
+  @ApiProperty({ description: 'Photos + videos uploaded by the caller.' })
+  declare mediaAssets: number;
+
+  @ApiProperty()
+  declare memoryBooks: number;
+
+  @ApiProperty()
+  declare reviews: number;
+
+  @ApiProperty()
+  declare votes: number;
+
+  @ApiProperty()
+  declare expenses: number;
+
+  @ApiProperty({ description: 'V.UX.13 trusted contacts.' })
+  declare trustedContacts: number;
+
+  @ApiProperty()
+  declare notifications: number;
+
+  @ApiProperty({ description: 'V.UX.26 Web Push subscriptions.' })
+  declare pushSubscriptions: number;
+
+  @ApiProperty()
+  declare sosEvents: number;
+
+  @ApiProperty()
+  declare scamReports: number;
+
+  @ApiProperty()
+  declare dishReports: number;
+
+  @ApiProperty({ description: 'Linked OAuth identities (Google, Apple, etc.).' })
+  declare oauthIdentities: number;
+
+  @ApiProperty({ description: 'V.UX.25 helpful votes the user has cast.' })
+  declare helpfulVotes: number;
+
+  @ApiProperty({
+    format: 'date-time',
+    description: 'ISO timestamp the stats were computed at.',
+  })
+  declare computedAt: string;
+}

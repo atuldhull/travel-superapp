@@ -269,6 +269,10 @@ export type { PublicReviewerRecentReviewDto } from './generated/schemas/publicRe
 // already-star-exported `trip` barrel. WhoAmIResponseDto already
 // exported above (line 73) so the new `previousSeenAt` field flows
 // through automatically once the SDK is regenerated.
+// V.UX.32: privacy-conscious persona — per-category storage stats.
+// Hook (useAccountControllerStorageStats) lives in the already-star-
+// exported `account` barrel.
+export type { StorageStatsResponseDto } from './generated/schemas/storageStatsResponseDto';
 // V.UX.31: locked-out persona — password-reset request + consume.
 // Hooks (useAuthControllerPasswordResetRequest, ...PasswordResetConsume)
 // land in the already-star-exported `identity` barrel. MFA backup-code

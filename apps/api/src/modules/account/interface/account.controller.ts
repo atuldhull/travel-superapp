@@ -27,9 +27,13 @@ import { Readable } from 'node:stream';
 import { type AuthenticatedUser, CurrentUser } from '../../../common/auth';
 import { DeleteAccountUseCase } from '../application/delete-account.use-case';
 import { ExportUserDataUseCase } from '../application/export-user-data.use-case';
+import {
+  GetStorageStatsUseCase,
+  type StorageStats,
+} from '../application/get-storage-stats.use-case';
 import { StreamAccountExportUseCase } from '../application/stream-account-export.use-case';
 import type { UserDataExport } from '../domain/user-data-export.entity';
-import { UserDataExportResponseDto } from './dto/account-response.dto';
+import { StorageStatsResponseDto, UserDataExportResponseDto } from './dto/account-response.dto';
 
 @ApiTags('account')
 @ApiBearerAuth()
@@ -39,7 +43,28 @@ export class AccountController {
     private readonly exportUc: ExportUserDataUseCase,
     private readonly streamExportUc: StreamAccountExportUseCase,
     private readonly deleteUc: DeleteAccountUseCase,
+    private readonly storageStatsUc: GetStorageStatsUseCase,
   ) {}
+
+  /**
+   * V.UX.32 — per-category storage stats. One round-trip per
+   * category via parallel `Promise.all` of indexed counts. Powers
+   * the `/account/privacy` dashboard.
+   */
+  @ApiOperation({
+    summary:
+      "V.UX.32 — caller-scoped storage stats per category. Powers the /account/privacy hub's 'we store: 24 trips, 130 photos…' panel.",
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Per-category row counts.',
+    type: StorageStatsResponseDto,
+  })
+  @Get('stats')
+  @HttpCode(HttpStatus.OK)
+  async storageStats(@CurrentUser() user: AuthenticatedUser): Promise<StorageStats> {
+    return this.storageStatsUc.execute(user.sub);
+  }
 
   @ApiOperation({
     summary:
