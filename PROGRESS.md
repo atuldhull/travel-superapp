@@ -21,6 +21,91 @@
 
 ---
 
+## POST log
+
+Post-V.UX gap closure work. See `docs/POST_VUX_GAPS.md` for the
+audit + drop-in execution prompts.
+
+### [POST.1] — Demo seed + real photo fixtures
+
+- **Date**: 2026-05-11
+- **Commit**: <pending — added at commit time>
+- **Files changed**: 9 created (7 fixtures + rewritten seed + package.json), 0 deleted
+- **Tests added**: 0 (seed is dev infra; verification by run + idempotency proof)
+- **Verification output**:
+  ```
+  reset: users +20, agents +4, trips +12, books +8 (assets +38),
+         reviews +30, sos +5, scams +10, appeals +6, audit +20
+  additive re-run: every counter +0 (idempotency proven)
+  /api/v1/metrics-public → tripsThisMonth=10, books=10, activeUsers=20
+  /api/v1/memory-books/featured → 8 books with real Unsplash CDN cover URLs
+  ```
+- **Lessons**:
+  - Direct PrismaClient writes (skipping AppModule boot) sidestep
+    the tsx-watch emitDecoratorMetadata DI bug AND run 10× faster.
+  - For idempotency on rows with timestamps, use a wide ±5min
+    window when the test query re-computes `daysAgo()` per run —
+    a tight ±1 sec window misses across runs.
+  - Unsplash CDN URLs work as direct `<img src>` for demo seeds;
+    no presigned-URL round trip needed when storing CDN URL on
+    `MediaAsset.s3KeyRaw` + persisting credit on `variants` JSON.
+
+---
+
+## V.UX log
+
+The V.UX series (`travel-app-user-prompts.md`) shipped 41 numbered prompts across the user-persona surface — each one targets a distinct user (first-time visitor, weekend traveler, agent, group organizer, accessibility user, family, budget backpacker, etc). The series is **complete**; commit hash + 1-line summary per row, newest first.
+
+| Prompt    | Commit    | One-liner                                                                                                                                                 |
+| --------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| V.UX.40   | `30612af` | /demo (6-scene auto-tour) + /press kit + landing TrustStrip + LiveMetricsStrip via @Public /metrics-public (5-min cached, fuzzed counts)                  |
+| V.UX.39   | `5d472ef` | sitemap.ts + robots.ts + co-located generateMetadata layouts for memory-books / shared / featured + dynamic OG image at /og/memory-book/[id]              |
+| V.UX.38   | `feaffa6` | /ops dashboard — health probes (/live + /ready + /startup, soft S3 indicator) + runbooks index (markdown render) + force-purge button; new `sre` UserRole |
+| V.UX.37   | `2f7c422` | /compliance dashboard — retention stats (16 indexed counts) + takedown CSV export; new `compliance` UserRole; AdminAuditLog `actions[]` IN-filter         |
+| V.UX.36   | `14d6f83` | /admin dashboard — 6 web admin pages (scam-reports, sos, users, media, audit, hub) + AdminAuditLog model + retrofit 8 admin use-cases to write audit rows |
+| V.UX.35   | `6a76868` | SOS hold-to-confirm (3s conic-gradient) + cancel + sticky ActiveSosBanner with 58-country local-911 lookup                                                |
+| V.UX.34   | `97e4680` | Banned-user persona — `bannedAt + banReason` distinct from `deletedAt`; BanAppeal queue + /appeal + /admin appeals list                                   |
+| V.UX.33   | `e864e71` | Account reactivation within 7-day retention window via stateless HMAC token + /account/reactivate + login redirect                                        |
+| V.UX.32   | `6e5b4c3` | /account/privacy hub — 17-counter storage stats + JSON/NDJSON export + 3-step delete confirm                                                              |
+| V.UX.31   | `b1199e5` | Password reset flow + MFA recovery surface (PasswordResetToken model, 2 routes, 3 web pages)                                                              |
+| V.UX.30   | `1dc44a5` | Returning-user — Trip.archivedAt + auto-archive sweep + welcome-back hero + suggestions + Active/Archived tabs                                            |
+| V.UX.29   | `093cf0b` | Power-keyboard — cmdk command palette (Cmd+K) + shortcut sheet (?) + vim j/k list nav                                                                     |
+| V.UX.28   | `9fa0fdf` | Accessibility — skip-to-main + ARIA live regions + keyboard reorder + /accessibility statement + axe-core dev                                             |
+| V.UX.27.3 | `9fa186b` | Mobile — lucide icons + deep-link helpers + share sheet                                                                                                   |
+| V.UX.27.2 | `adb2b71` | Mobile — auth flows + native swipe-to-archive + NetInfo                                                                                                   |
+| V.UX.27.1 | `f56cd8c` | Mobile — Expo 51 + Expo Router + Tamagui scaffold (9 screens)                                                                                             |
+| V.UX.26   | `fe9bdce` | Notifications — Web Push + per-category prefs + swipe-to-archive + weekly digest                                                                          |
+| V.UX.25   | `dba992f` | Reviewer karma + helpful votes + public profile (/users/[id])                                                                                             |
+| V.UX.24   | `665c61b` | Verified-agent dashboard + profile editor + review-response                                                                                               |
+| V.UX.23   | `307649d` | Digital-nomad — long-stay + wifi-speed filter + /connectivity/[country]                                                                                   |
+| V.UX.22   | `c19b17c` | Cultural — festival overlay + EtiquetteCard                                                                                                               |
+| V.UX.21   | `865cb39` | Adventure — hourly weather + AdventureWindow widget                                                                                                       |
+| V.UX.20   | `0a5d6fc` | Foodie — dish surfaces + photo-caption + /eateries/[id] + /trips/[id]/food-crawl                                                                          |
+| V.UX.19   | `2faf12d` | Hidden-gem discovery — /discover with 25..300km slider                                                                                                    |
+| V.UX.18   | `03001c3` | International first-timer — TranslateWidget + country primer (6-country seed)                                                                             |
+| V.UX.17   | `01cb5c9` | Premium concierge agent-match + curatedOnly places + PremiumGate                                                                                          |
+| V.UX.16   | `aeda81c` | Budget-backpacker — budgetMode + DailySpendBanner + free events + stayType filter                                                                         |
+| V.UX.15   | `ab69ee4` | Senior — comfort mode + audio readout + step-free routing                                                                                                 |
+| V.UX.14   | `0964f04` | Family — familyMode + kid-age prefs + PacingWarning + FamilyFilterChips                                                                                   |
+| V.UX.13   | `544f70e` | Safety-first — SOS FAB + trusted contacts + safety badges                                                                                                 |
+| V.UX.12   | `3975a95` | Memory-book editor pro — drag-reorder + theme picker + live preview iframe                                                                                |
+| V.UX.11   | `59197bd` | Memory-book story mode + captions + lightbox + social share                                                                                               |
+| V.UX.10   | `78de8b3` | Public shared-trip — clone-to-account + 🤍 hearts (Redis INCR, IP-throttled)                                                                              |
+| V.UX.9    | `7c135da` | Collaborator role surface + lock notifications                                                                                                            |
+| V.UX.8    | `b31a898` | Group organiser — share-list + vote buttons + settle-up + lock                                                                                            |
+| V.UX.7    | `ff92be5` | Spontaneous improviser — /near-me composite (places + weather + safety + routes)                                                                          |
+| V.UX.6    | `e21f784` | Power planner — DnD reorder + per-day route optimization + Leaflet polyline                                                                               |
+| V.UX.5    | `68fbbc3` | Frequent business traveler — duplicate trip + PDF export + frequent-locations cache                                                                       |
+| V.UX.4    | `fa1e446` | Weekend traveler — duration presets + place suggestion picker + open-on-mobile QR                                                                         |
+| V.UX.3    | `5179a45` | First-run onboarding + sample-trip seed + post-login routing                                                                                              |
+| V.UX.2    | `784c901` | Magic-link sign-in + visit-recall + welcome-back banner                                                                                                   |
+| V.UX.1    | `2936130` | Landing-page rebuild + @Public sample-plan                                                                                                                |
+| V.UX.0    | `830004a` | User-persona prompt archive (40 prompts)                                                                                                                  |
+
+**V.UX series final state (post V.UX.40):** 238 prompts shipped (196 api + 42 V.UX) · 125 e2e suites · 749 tests · 53 web routes · 13 mobile screens · UserRole enum: `user|premium|agent|admin|compliance|sre`.
+
+---
+
 ## Log (newest first)
 
 ---
