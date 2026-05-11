@@ -21,6 +21,7 @@
     "db:validate": "prisma validate",
     "admin:promote": "tsx scripts/promote-admin.ts",
     "db:seed:demo": "tsx scripts/seed-demo.ts",
+    "db:seed:demo:reset": "tsx scripts/seed-demo.ts --reset",
     "api:openapi": "ts-node --transpile-only scripts/export-openapi.ts"
   },
   "dependencies": {
