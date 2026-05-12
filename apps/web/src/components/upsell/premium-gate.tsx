@@ -16,6 +16,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuthControllerMe, type WhoAmIResponseDto } from '@app/sdk';
 import { useAuthToken } from '../../lib/use-auth-token';
 
@@ -30,6 +31,7 @@ export interface PremiumGateProps {
 
 export function PremiumGate({ children, compact, fallback }: PremiumGateProps) {
   const token = useAuthToken();
+  const router = useRouter();
   const { data, isLoading } = useAuthControllerMe({
     query: { enabled: token !== null },
   });
@@ -73,11 +75,10 @@ export function PremiumGate({ children, compact, fallback }: PremiumGateProps) {
         type="button"
         className="mt-3 inline-flex items-center gap-1 rounded-md bg-linear-to-br from-amber-500 to-amber-600 px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
         onClick={() => {
-          // Placeholder — Stripe / billing flow lands in a future
-          // slice. For now we surface a friendly message so the
-          // affordance works end-to-end in the demo.
-          // eslint-disable-next-line no-alert
-          window.alert('Premium upgrade is coming soon. We will notify you when checkout is live.');
+          // POST.9 — route to the real /pricing page; the Premium CTA
+          // there hits POST /payments/checkout when Stripe is configured
+          // and falls back to a "coming soon" alert otherwise.
+          router.push('/pricing');
         }}
       >
         Upgrade to Premium

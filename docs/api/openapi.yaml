@@ -3851,6 +3851,73 @@ paths:
         swap later.
       tags:
         - translation
+  /api/v1/payments/checkout:
+    post:
+      operationId: PaymentsController_checkout
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutSessionResponseDto'
+        '503':
+          description: PAYMENTS_DISABLED — no Stripe key in env.
+      security:
+        - bearer: []
+      summary: Create a Stripe Checkout session for the Premium tier. Auth-only.
+      tags: &a64
+        - payments
+  /api/v1/payments/webhook:
+    post:
+      operationId: PaymentsController_webhook
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookAckResponseDto'
+        '400':
+          description: WEBHOOK_SIGNATURE_INVALID.
+        '503':
+          description: PAYMENTS_DISABLED.
+      summary: Stripe webhook. Public + raw body (signature-verified).
+      tags: *a64
+  /api/v1/payments/me/subscription:
+    get:
+      operationId: PaymentsController_mySubscription
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentSubscriptionResponseDto'
+      security:
+        - bearer: []
+      summary: Current Premium subscription for the calling user (or null).
+      tags: *a64
+  /api/v1/payments/me/portal-url:
+    post:
+      operationId: PaymentsController_portalUrl
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortalUrlResponseDto'
+        '503':
+          description: PAYMENTS_DISABLED.
+      security:
+        - bearer: []
+      summary: Mint a one-time Stripe Customer Portal URL for the caller.
+      tags: *a64
 info:
   title: TravelSuperApp API
   description: OpenAPI export from the running NestJS app. Per-route schemas land
@@ -5883,7 +5950,7 @@ components:
           description: Filter to a subset of modes; empty/omitted means all available.
           items:
             type: string
-            enum: &a64
+            enum: &a65
               - walk
               - public_transit
               - bicycle
@@ -5903,7 +5970,7 @@ components:
       properties:
         mode:
           type: string
-          enum: *a64
+          enum: *a65
         distanceMeters:
           type: number
         durationSeconds:
@@ -5995,7 +6062,7 @@ components:
           type: string
         severity:
           type: string
-          enum: &a65
+          enum: &a66
             - low
             - medium
             - high
@@ -6064,7 +6131,7 @@ components:
           type: string
         severity:
           type: string
-          enum: *a65
+          enum: *a66
         description:
           type: string
         evidenceUrls:
@@ -7777,7 +7844,7 @@ components:
           type: array
           items:
             type: string
-            enum: &a66
+            enum: &a67
               - trip
               - safety
               - social
@@ -7816,7 +7883,7 @@ components:
             on (the default).
           items:
             type: string
-            enum: *a66
+            enum: *a67
     SubscribePushKeysDto:
       type: object
       properties:
@@ -8870,3 +8937,81 @@ components:
         - sourceLang
         - targetLang
         - provider
+    CheckoutSessionResponseDto:
+      type: object
+      properties:
+        sessionId:
+          type: string
+          description: Stripe Checkout session id (cs_test_… in test mode).
+        url:
+          type: string
+          description: Stripe-hosted URL the client redirects the browser to.
+      required:
+        - sessionId
+        - url
+    WebhookAckResponseDto:
+      type: object
+      properties:
+        received:
+          type: boolean
+          description: Always true on accepted webhooks; absent on 400/503.
+        eventId:
+          type: string
+          description: Stripe event id (evt_… ) for log correlation.
+      required:
+        - received
+        - eventId
+    CurrentSubscriptionDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        status:
+          type: string
+          enum:
+            - trialing
+            - active
+            - past_due
+            - canceled
+            - unpaid
+            - incomplete
+            - incomplete_expired
+            - paused
+        priceCents:
+          type: number
+          description: Price in the smallest currency unit (cents for USD).
+        currency:
+          type: string
+          description: ISO 4217 currency code (uppercase).
+        currentPeriodEnd:
+          type: string
+          format: date-time
+        cancelAtPeriodEnd:
+          type: boolean
+      required:
+        - id
+        - status
+        - priceCents
+        - currency
+        - currentPeriodEnd
+        - cancelAtPeriodEnd
+    CurrentSubscriptionResponseDto:
+      type: object
+      properties:
+        subscription:
+          nullable: true
+          description: '`null` when the caller has no Subscription row on file.'
+          type: object
+          allOf:
+            - $ref: '#/components/schemas/CurrentSubscriptionDto'
+      required:
+        - subscription
+    PortalUrlResponseDto:
+      type: object
+      properties:
+        url:
+          type: string
+          description: One-time Stripe Customer Portal URL.
+      required:
+        - url

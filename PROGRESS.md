@@ -26,6 +26,101 @@
 Post-V.UX gap closure work. See `docs/POST_VUX_GAPS.md` for the
 audit + drop-in execution prompts.
 
+### [POST.9] — Stripe scaffold — Premium checkout + webhook + subscription sync
+
+- **Date**: 2026-05-12
+- **Commit**: <pending>
+- **Files changed**: 17 (1 new module — `payments.module.ts`; 1 new
+  port — `payment-provider.port.ts` with `WebhookSignatureError`; 1
+  new adapter — `stripe-payment-provider.adapter.ts` (env-gated, ctor
+  throws on partial config); 3 new use-cases — CreateCheckoutSession,
+  SyncSubscription, HandleStripeWebhook; 1 new controller +
+  DTO file with 4 routes; 1 new e2e — `payments-stripe.e2e-spec.ts`;
+  3 modified — `app.module.ts` imports PaymentsModule, `main.ts`
+  custom JSON parser keeps raw bytes for /payments/webhook only,
+  `config/src/schema.ts` adds STRIPE_PRICE_PREMIUM; 1 new web page —
+  `/account/billing/page.tsx` (current plan + portal link); 2
+  modified web — `/pricing/page.tsx` Premium CTA hits real checkout,
+  `/account/page.tsx` adds Billing link; 1 modified —
+  `premium-gate.tsx` CTA now routes to /pricing; 2 env files updated;
+  `docs/external-apis.md` Stripe section)
+- **Deps added**: `stripe` to apps/api
+- **Schema change**: **none** — `Subscription` model already has every
+  field (`stripeCustomerId`, `stripeSubscriptionId`, `status`,
+  `currentPeriodEnd`, `cancelAtPeriodEnd`) from earlier scaffolding.
+- **Routes added** (4):
+  - `POST /payments/checkout` — auth-only; creates Stripe Checkout
+    session for Premium tier, returns redirect URL
+  - `POST /payments/webhook` — public, raw body, signature-verified;
+    dispatches `checkout.session.completed` +
+    `customer.subscription.{created,updated,deleted}` to
+    SyncSubscriptionUseCase
+  - `GET /payments/me/subscription` — auth; current plan (or null)
+    for /account/billing
+  - `POST /payments/me/portal-url` — auth; mints one-time Stripe
+    Customer Portal URL
+- **Behaviour:**
+  - `STRIPE_SECRET_KEY` absent → factory returns `null`, controller
+    503s `PAYMENTS_DISABLED` on every non-public route, /pricing CTA
+    falls back to "coming soon" alert (zero behaviour change vs
+    pre-POST.9 for these envs)
+  - `STRIPE_SECRET_KEY` set → all 4 routes operational; webhook
+    signature verified via `STRIPE_WEBHOOK_SECRET`; price comes from
+    `STRIPE_PRICE_PREMIUM`
+  - Webhook idempotent on `stripeSubscriptionId @unique` — duplicate
+    deliveries (which Stripe retries on any 5xx) upsert to the same
+    row
+  - User.role flipped in a `$transaction` alongside the Subscription
+    upsert; admin/compliance/sre roles are NEVER demoted —
+    subscription doesn't drive privileged roles
+- **Tests added**: 6 in `payments-stripe.e2e-spec.ts` (all skipped
+  when `STRIPE_SECRET_KEY` absent):
+  - Constructs cleanly with all 3 env vars
+  - Throws when STRIPE_WEBHOOK_SECRET missing
+  - Throws when STRIPE_PRICE_PREMIUM missing
+  - createCheckoutSession returns `cs_test_…` + Stripe-hosted URL
+  - verifyWebhook accepts a properly-signed payload (round-trip)
+  - verifyWebhook rejects an invalid signature with WebhookSignatureError
+- **Verification output**:
+  ```
+  pnpm --filter=api add stripe → installed
+  pnpm --filter=@app/config build → green
+  pnpm --filter=api run api:openapi → wrote docs/api/openapi.yaml
+    (4 new /api/v1/payments/* routes; AdminMediaDto unchanged)
+  pnpm --filter=@app/sdk run sdk:gen → orval regen ok
+  pnpm --filter=api --filter=web --filter=@app/sdk --filter=@app/config typecheck → green
+  pnpm --filter=api test -- --runInBand --testPathPattern="payments-stripe|trip-crud|magic-link"
+    → 6 skipped (no STRIPE key) + 17 passed in 8.5s — confirms the
+    custom JSON parser in main.ts hands parsed JSON to every non-
+    payments route, no regression on auth flows
+  ```
+- **Lessons**:
+  - Fastify's `addContentTypeParser` runs BEFORE routing, so the
+    selector must use `req.url` (the raw incoming URL string), not
+    `req.routerPath` (which is set post-routing). Tested by running
+    the magic-link suite — those routes still parse JSON correctly.
+  - The legacy default JSON parser must be removed via
+    `removeContentTypeParser('application/json')` before
+    `addContentTypeParser` for the same content type — otherwise
+    Fastify ignores the second registration. The `?.` guards against
+    older Fastify versions that don't expose the remover.
+  - Stripe TEST mode keys are free forever — same SDK, same wire
+    format, same webhook flow. Production swap is just changing
+    `sk_test_…` → `sk_live_…` + the Stripe Dashboard webhook
+    endpoint config. Documented in docs/external-apis.md so the
+    counsel-handoff path is obvious.
+  - `User.emailHash` is `String @unique` over `sha256(pepper+email)`;
+    plaintext only exists in `emailEncrypted Bytes` per Playbook
+    §13.11. CreateCheckoutSession reads `emailEncrypted` and decodes
+    via `Buffer.from(...).toString('utf8')` — same pattern as
+    `prisma-account-deleter.ts`.
+  - Subscription role-flip happens inside `prisma.$transaction` so a
+    partial write can't leave the user in a "row exists but role
+    unflipped" limbo. Admin/compliance/sre never get demoted by a
+    cancel webhook — subscription doesn't drive privileged roles.
+
+---
+
 ### [POST.6] — Marketing + legal surface (/pricing, /help, /status, /terms, /privacy, /cookies + footer)
 
 - **Date**: 2026-05-12

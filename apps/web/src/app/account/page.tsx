@@ -44,6 +44,12 @@ const LINKS: readonly HubLink[] = [
     title: 'Notifications',
     subtitle: 'Inbox + per-category preferences + Web Push subscription.',
   },
+  {
+    // POST.9 — Premium subscription + Stripe Customer Portal.
+    href: '/account/billing',
+    title: 'Billing',
+    subtitle: 'Manage your Premium subscription, payment method, and invoices.',
+  },
 ];
 
 export default function AccountHubPage() {

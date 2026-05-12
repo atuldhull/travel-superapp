@@ -25,6 +25,7 @@ import 'reflect-metadata';
 import fastifyCookie from '@fastify/cookie';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { EnvValidationError, validateEnv } from '@app/config';
 import { AppNestLoggerService, createLogger } from '@app/logger';
 import { AppModule } from './app.module';
@@ -75,6 +76,13 @@ async function bootstrap(): Promise<void> {
     exclude: ['health', 'health/(.*)', 'metrics'],
   });
 
+  // 5b. POST.9 — Stripe webhook needs the EXACT raw bytes Stripe
+  //     signed (not a re-serialised JSON). Replace Fastify's default
+  //     application/json parser with one that hands the controller
+  //     a Buffer for `/api/v1/payments/webhook` only; every other
+  //     route still gets parsed JSON.
+  registerStripeWebhookRawBody(app.getHttpAdapter().getInstance() as FastifyInstance);
+
   // 6. HTTP perimeter: helmet (CSP + COOP/COEP + HSTS + …) + CORS +
   //    Permissions-Policy. Registered before listen so every route —
   //    including /health/* — gets the same response-side hardening.
@@ -106,3 +114,31 @@ bootstrap().catch((err: unknown) => {
   bootLog.fatal({ err: err instanceof Error ? err.message : String(err) }, 'bootstrap_failed');
   process.exit(1);
 });
+
+const STRIPE_WEBHOOK_PATH = '/api/v1/payments/webhook';
+
+/**
+ * POST.9 — Custom Fastify content-type parser that yields a Buffer
+ * for the Stripe webhook route (so signature verification has the
+ * exact bytes Stripe signed) and parses JSON normally for every
+ * other route.
+ */
+function registerStripeWebhookRawBody(fastify: FastifyInstance): void {
+  fastify.removeContentTypeParser?.('application/json');
+  fastify.addContentTypeParser(
+    'application/json',
+    { parseAs: 'buffer' },
+    (req: FastifyRequest, body: Buffer, done) => {
+      if (req.url === STRIPE_WEBHOOK_PATH) {
+        done(null, body);
+        return;
+      }
+      try {
+        const parsed = body.length === 0 ? {} : JSON.parse(body.toString('utf8'));
+        done(null, parsed);
+      } catch (err) {
+        done(err as Error, undefined);
+      }
+    },
+  );
+}
