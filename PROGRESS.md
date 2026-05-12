@@ -26,6 +26,80 @@
 Post-V.UX gap closure work. See `docs/POST_VUX_GAPS.md` for the
 audit + drop-in execution prompts.
 
+### [POST.4] — Multi-provider AI trip planner (Anthropic + Gemini + Ollama + stub)
+
+- **Date**: 2026-05-12
+- **Commit**: <pending>
+- **Files changed**: 13 (2 new adapters — `gemini-trip-planner.adapter.ts`
+  - `ollama-trip-planner.adapter.ts`; 3 modified adapters —
+    `claude-trip-planner.adapter.ts` rewritten with env-driven model +
+    prompt caching + token logging, `stub-trip-planner.adapter.ts`
+    carries `provider:'stub'`, port `trip-planner.port.ts` adds
+    `provider` + optional `tokenUsage`; 1 modified factory —
+    `trip.module.ts` 4-tier priority chain; 1 modified controller +
+    DTO — `trip.controller.ts` JSDoc/return type, `trip-response.dto.ts`
+    adds `TripPlannerTokenUsageDto` + `provider` + `tokenUsage` on both
+    AI response DTOs; 1 modified web page — `apps/web/src/app/trips/[id]/page.tsx`
+    shows provider badge + loading shimmer + token tooltip;
+    1 modified web cache — `apps/web/src/lib/visit-recall.ts` +
+    `landing/sample-trip-demo.tsx` carry provider through localStorage;
+    1 modified config — `packages/config/src/schema.ts` drops
+    `CLAUDE_API_KEY`, adds 6 new vars; 3 env files —
+    `.env.example` + `apps/api/.env.example` + new defaults;
+    3 doc files — `docs/external-apis.md` AI section,
+    `docs/env.md` table refresh, `docs/runbooks/env-reference.md`
+    AI table refresh; 1 new e2e — `trip-planner-providers.e2e-spec.ts`)
+- **Deps added**: none (Anthropic SDK already installed; Gemini +
+  Ollama use native `fetch`)
+- **Tests added**: 3 (one integration smoke test per provider tier;
+  each skips when its key/URL absent — see
+  `apps/api/test/trip-planner-providers.e2e-spec.ts`)
+- **Verification output**:
+  ```
+  pnpm --filter=api run api:openapi → wrote docs/api/openapi.yaml
+  pnpm --filter=@app/sdk run sdk:gen → orval regen ok
+  pnpm --filter=@app/config --filter=api --filter=@app/sdk --filter=web typecheck → green
+  pnpm --filter=api --filter=@app/config lint → 0 errors on POST.4 files
+    (1 pre-existing error in events.e2e-spec.ts unrelated; 120 pre-
+    existing warnings about unused eslint-disable directives)
+  pnpm --filter=api test -- --runInBand --testPathPattern=trip-crud
+    → 10 pass / 10 total in 10s (validates module wiring)
+  pnpm --filter=api test -- --runInBand --testPathPattern=trip-share
+    → 16 pass / 16 total in 7.7s (validates module wiring)
+  pnpm --filter=api test -- --runInBand --testPathPattern=trip-planner-providers
+    → 3 skip / 3 total in 1.4s (no LLM keys set — expected)
+  ```
+- **Provider priority chain (boot-time, in `trip.module.ts`):**
+  1. Anthropic Claude — `ANTHROPIC_API_KEY` set (paid premium)
+  2. Google Gemini Flash — `GEMINI_API_KEY` set (free tier 1500/day)
+  3. Ollama (local) — `OLLAMA_URL` reachable (truly $0)
+  4. Built-in stub — always (no env vars needed)
+- **Lessons**:
+  - Free-tier matters: bundling Gemini Flash + Ollama means the
+    demo runs on real LLM output without a paid Anthropic key —
+    `OLLAMA_URL=http://localhost:11434` after `ollama pull llama3.1:8b`
+    is the truly $0 path.
+  - Used native `fetch` for Gemini + Ollama instead of SDKs. The
+    REST shapes are stable + tiny, and removing 2 SDK pins keeps
+    the dep surface clean. (Anthropic SDK kept because it's
+    already installed + has typed message-creation helpers.)
+  - All 4 adapters share the same SYSTEM_PROMPT shape — keeps
+    prose style consistent across providers so /trips/[id] looks
+    coherent regardless of who's serving.
+  - Result-shape change is additive: added `provider` (required)
+    - `tokenUsage` (optional). Made `RecalledSamplePlan.provider`
+      optional with `?? 'stub'` default at read-time so cached
+      localStorage entries from before POST.4 keep working.
+  - Don't list condition-throwing adapters in `providers: []`
+    (same lesson as POST.3's ResendMailerAdapter). The 3 LLM
+    adapters live ONLY in the factory's `useFactory`.
+  - `pnpm --filter=api run api:openapi` writes the file then
+    hangs on Redis client cleanup — fine to TaskStop after the
+    `[export-openapi] wrote …` log line, the file is already
+    written atomically.
+
+---
+
 ### [POST.3] — Resend mailer + Google OAuth (real adapters, stubs as fallback)
 
 - **Date**: 2026-05-12

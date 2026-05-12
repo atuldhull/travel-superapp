@@ -47,6 +47,7 @@ import {
 } from '../application/suggest-from-history.use-case';
 import { GeneratePlanWithAiUseCase } from '../application/generate-plan-with-ai.use-case';
 import { GenerateSamplePlanUseCase } from '../application/generate-sample-plan.use-case';
+import type { TripPlannerResult } from '../application/ports/trip-planner.port';
 import { CreateTripShareUseCase } from '../application/create-trip-share.use-case';
 import { ListTripSharesUseCase } from '../application/list-trip-shares.use-case';
 import { RevokeTripShareUseCase } from '../application/revoke-trip-share.use-case';
@@ -453,9 +454,10 @@ export class TripController {
 
   /**
    * Generate a free-form prose plan via the configured AI adapter.
-   * Returns the deterministic stub when CLAUDE_API_KEY is unset.
-   * The owner-gate runs once at the use-case boundary so non-owners
-   * see uniform 404 `TRIP_NOT_FOUND`.
+   * The TripModule factory picks an adapter at boot from the 4-tier
+   * chain (Anthropic → Gemini → Ollama → Stub) — see [POST.4]. The
+   * owner-gate runs once at the use-case boundary so non-owners see
+   * uniform 404 `TRIP_NOT_FOUND`.
    */
   /**
    * Public landing-page demo endpoint. NO auth, NO DB write — synthesizes
@@ -480,7 +482,7 @@ export class TripController {
   @HttpCode(HttpStatus.OK)
   async samplePlan(
     @Body(new ZodValidationPipe(GenerateSamplePlanBodySchema)) body: GenerateSamplePlanBody,
-  ): Promise<{ plan: string; model: string }> {
+  ): Promise<TripPlannerResult> {
     return this.generateSamplePlan.execute({
       title: body.title,
       center: body.center,
@@ -490,11 +492,11 @@ export class TripController {
 
   @ApiOperation({
     summary:
-      'Generate a free-form trip plan via the configured AI adapter (Claude / stub). Owner-only.',
+      'Generate a free-form trip plan via the configured AI adapter (Anthropic / Gemini / Ollama / stub — see [POST.4]). Owner-only.',
   })
   @ApiResponse({
     status: 200,
-    description: 'Free-form prose plan + provider model identifier.',
+    description: 'Free-form prose plan + provider identifier + optional token usage.',
     type: GeneratePlanWithAiResponseDto,
   })
   @ApiResponse({ status: 404, description: 'TRIP_NOT_FOUND.' })
@@ -503,7 +505,7 @@ export class TripController {
   async planWithAi(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-  ): Promise<{ plan: string; model: string }> {
+  ): Promise<TripPlannerResult> {
     return this.generatePlanWithAi.execute(id, user.sub);
   }
 

@@ -63,6 +63,8 @@ import { SuggestPlacesForTripUseCase } from './application/suggest-places-for-tr
 import { UpdateDayItemsUseCase } from './application/update-day-items.use-case';
 import { UpdateTripUseCase } from './application/update-trip.use-case';
 import { ClaudeTripPlannerAdapter } from './infrastructure/claude-trip-planner.adapter';
+import { GeminiTripPlannerAdapter } from './infrastructure/gemini-trip-planner.adapter';
+import { OllamaTripPlannerAdapter } from './infrastructure/ollama-trip-planner.adapter';
 import { PrismaItineraryRepository } from './infrastructure/prisma-itinerary.repository';
 import { PrismaTripRepository } from './infrastructure/prisma-trip.repository';
 import { PrismaTripShareRepository } from './infrastructure/prisma-trip-share.repository';
@@ -113,16 +115,38 @@ import { TripController } from './interface/trip.controller';
     GenerateSamplePlanUseCase,
     SeedSampleTripUseCase,
     {
-      // Conditional adapter pick: real Claude when CLAUDE_API_KEY is
-      // set, otherwise the deterministic stub. Either way, callers
-      // depend only on the TRIP_PLANNER_PORT symbol — see ADR (port +
-      // adapter pattern) — so adding more providers later is a one-
-      // file change here.
+      // POST.4 — 4-tier provider chain, evaluated at boot in priority
+      // order:
+      //   1. Anthropic Claude    (paid, premium)            → ANTHROPIC_API_KEY
+      //   2. Google Gemini Flash (free tier, 1500 req/day)  → GEMINI_API_KEY
+      //   3. Ollama (local LLM)  (truly $0, runs offline)   → OLLAMA_URL
+      //   4. StubTripPlannerAdapter                         (always)
+      //
+      // Callers depend only on the TRIP_PLANNER_PORT symbol — see
+      // ADR (port + adapter pattern) — so adding a fifth provider is
+      // a one-file change here. The condition-throwing adapters
+      // (Claude / Gemini / Ollama) are intentionally NOT in the
+      // providers[] array — Nest would eagerly instantiate them and
+      // their ctors require keys/URLs that may be absent.
       provide: TRIP_PLANNER_PORT,
       inject: [ConfigService],
       useFactory: (config: ConfigService<Env, true>) => {
-        const apiKey = config.get('CLAUDE_API_KEY', { infer: true }) as string | undefined;
-        return apiKey ? new ClaudeTripPlannerAdapter(apiKey) : new StubTripPlannerAdapter();
+        const anthropicKey = config.get('ANTHROPIC_API_KEY', { infer: true });
+        if (anthropicKey) {
+          const model = config.get('ANTHROPIC_MODEL', { infer: true });
+          return new ClaudeTripPlannerAdapter(anthropicKey, model);
+        }
+        const geminiKey = config.get('GEMINI_API_KEY', { infer: true });
+        if (geminiKey) {
+          const model = config.get('GEMINI_MODEL', { infer: true });
+          return new GeminiTripPlannerAdapter(geminiKey, model);
+        }
+        const ollamaUrl = config.get('OLLAMA_URL', { infer: true });
+        if (ollamaUrl) {
+          const model = config.get('OLLAMA_MODEL', { infer: true });
+          return new OllamaTripPlannerAdapter(ollamaUrl, model);
+        }
+        return new StubTripPlannerAdapter();
       },
     },
     ListItineraryUseCase,

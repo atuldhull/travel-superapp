@@ -59,7 +59,11 @@ export function SampleTripDemo() {
   useEffect(() => {
     const cached = getRecalledSamplePlan();
     if (!cached) return;
-    setPlanResult({ plan: cached.plan, model: cached.model });
+    setPlanResult({
+      plan: cached.plan,
+      model: cached.model,
+      provider: cached.provider ?? 'stub',
+    });
     setFromCache(true);
     const idx = CITY_PRESETS.findIndex((c) => c.title === cached.title);
     if (idx >= 0) setSelectedIdx(idx);
@@ -79,6 +83,7 @@ export function SampleTripDemo() {
           emoji: preset.emoji,
           plan: result.plan,
           model: result.model,
+          provider: result.provider,
           cachedAt: Date.now(),
         });
       },

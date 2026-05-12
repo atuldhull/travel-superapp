@@ -196,15 +196,41 @@ export class CreateTripShareRequestDto {
   declare expiresAt?: string;
 }
 
+/** Optional token-usage report — Anthropic + Gemini populate this;
+ *  Ollama + stub omit it. Surfaced so the UI / FinOps tooling can
+ *  aggregate cost per trip-plan generation. */
+export class TripPlannerTokenUsageDto {
+  @ApiProperty({ description: 'Tokens in the system + user prompt.' })
+  declare inputTokens: number;
+
+  @ApiProperty({ description: 'Tokens in the model output.' })
+  declare outputTokens: number;
+
+  @ApiProperty({
+    required: false,
+    description: 'Cached prompt tokens (Anthropic ephemeral cache, Gemini context cache).',
+  })
+  declare cachedTokens?: number;
+}
+
 export class GeneratePlanWithAiResponseDto {
   @ApiProperty({ description: 'Free-form prose plan from the AI provider.' })
   declare plan: string;
 
   @ApiProperty({
     description:
-      'Model identifier (e.g. "claude-sonnet-4-6" or "stub-trip-planner" when CLAUDE_API_KEY is unset).',
+      'Model identifier (e.g. "claude-opus-4-7", "gemini-2.0-flash-exp", "llama3.1:8b", or "stub-trip-planner" when no provider env var is set).',
   })
   declare model: string;
+
+  @ApiProperty({
+    enum: ['anthropic', 'gemini', 'ollama', 'stub'],
+    description: 'Stable provider identifier — drives the "powered by …" badge on /trips/[id].',
+  })
+  declare provider: 'anthropic' | 'gemini' | 'ollama' | 'stub';
+
+  @ApiProperty({ required: false, type: TripPlannerTokenUsageDto })
+  declare tokenUsage?: TripPlannerTokenUsageDto;
 }
 
 export class SamplePlanCenterDto {
@@ -236,9 +262,18 @@ export class GenerateSamplePlanResponseDto {
 
   @ApiProperty({
     description:
-      'Model identifier (e.g. "claude-sonnet-4-6" or "stub-trip-planner" when CLAUDE_API_KEY is unset).',
+      'Model identifier (e.g. "claude-opus-4-7", "gemini-2.0-flash-exp", "llama3.1:8b", or "stub-trip-planner" when no provider env var is set).',
   })
   declare model: string;
+
+  @ApiProperty({
+    enum: ['anthropic', 'gemini', 'ollama', 'stub'],
+    description: 'Stable provider identifier — drives the "powered by …" badge.',
+  })
+  declare provider: 'anthropic' | 'gemini' | 'ollama' | 'stub';
+
+  @ApiProperty({ required: false, type: TripPlannerTokenUsageDto })
+  declare tokenUsage?: TripPlannerTokenUsageDto;
 }
 
 /**

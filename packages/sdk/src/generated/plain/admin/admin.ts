@@ -27,90 +27,65 @@ import type {
 import { apiFetch } from '../../../runtime/fetcher';
 
 /**
- * @summary Cross-user list of media with optional ?ownerId, ?kind, ?status filters. Admin-only.
+ * @summary Rotate a JWT signing keyring (access | refresh). Returns new kid + previous-kid retirement list.
  */
-export type adminMediaControllerListResponse200 = {
-  data: AdminListMediaResponseDto;
+export type jwksAdminControllerRotateResponse200 = {
+  data: void;
   status: 200;
 };
 
-export type adminMediaControllerListResponse400 = {
+export type jwksAdminControllerRotateResponse403 = {
   data: void;
-  status: 400;
+  status: 403;
 };
 
-export type adminMediaControllerListResponseSuccess = adminMediaControllerListResponse200 & {
+export type jwksAdminControllerRotateResponseSuccess = jwksAdminControllerRotateResponse200 & {
   headers: Headers;
 };
-export type adminMediaControllerListResponseError = adminMediaControllerListResponse400 & {
+export type jwksAdminControllerRotateResponseError = jwksAdminControllerRotateResponse403 & {
   headers: Headers;
 };
 
-export type adminMediaControllerListResponse =
-  | adminMediaControllerListResponseSuccess
-  | adminMediaControllerListResponseError;
+export type jwksAdminControllerRotateResponse =
+  | jwksAdminControllerRotateResponseSuccess
+  | jwksAdminControllerRotateResponseError;
 
-export const getAdminMediaControllerListUrl = (params: AdminMediaControllerListParams) => {
-  const normalizedParams = new URLSearchParams();
-
-  Object.entries(params || {}).forEach(([key, value]) => {
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString());
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0
-    ? `/api/v1/admin/media?${stringifiedParams}`
-    : `/api/v1/admin/media`;
+export const getJwksAdminControllerRotateUrl = () => {
+  return `/api/v1/admin/identity/jwks/rotate`;
 };
 
-export const adminMediaControllerList = async (
-  params: AdminMediaControllerListParams,
+export const jwksAdminControllerRotate = async (
   options?: RequestInit,
-): Promise<adminMediaControllerListResponse> => {
-  return apiFetch<adminMediaControllerListResponse>(getAdminMediaControllerListUrl(params), {
+): Promise<jwksAdminControllerRotateResponse> => {
+  return apiFetch<jwksAdminControllerRotateResponse>(getJwksAdminControllerRotateUrl(), {
     ...options,
-    method: 'GET',
+    method: 'POST',
   });
 };
 
 /**
- * @summary Hard-delete media (takedown). Trip + memory book references SetNull-cascade.
+ * @summary List active kids across both keyrings (access + refresh). Used to confirm rotations + retirement windows.
  */
-export type adminMediaControllerRemoveResponse204 = {
+export type jwksAdminControllerKidsResponse200 = {
   data: void;
-  status: 204;
+  status: 200;
 };
 
-export type adminMediaControllerRemoveResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type adminMediaControllerRemoveResponseSuccess = adminMediaControllerRemoveResponse204 & {
+export type jwksAdminControllerKidsResponseSuccess = jwksAdminControllerKidsResponse200 & {
   headers: Headers;
 };
-export type adminMediaControllerRemoveResponseError = adminMediaControllerRemoveResponse404 & {
-  headers: Headers;
+export type jwksAdminControllerKidsResponse = jwksAdminControllerKidsResponseSuccess;
+
+export const getJwksAdminControllerKidsUrl = () => {
+  return `/api/v1/admin/identity/jwks/kids`;
 };
 
-export type adminMediaControllerRemoveResponse =
-  | adminMediaControllerRemoveResponseSuccess
-  | adminMediaControllerRemoveResponseError;
-
-export const getAdminMediaControllerRemoveUrl = (id: string) => {
-  return `/api/v1/admin/media/${id}`;
-};
-
-export const adminMediaControllerRemove = async (
-  id: string,
+export const jwksAdminControllerKids = async (
   options?: RequestInit,
-): Promise<adminMediaControllerRemoveResponse> => {
-  return apiFetch<adminMediaControllerRemoveResponse>(getAdminMediaControllerRemoveUrl(id), {
+): Promise<jwksAdminControllerKidsResponse> => {
+  return apiFetch<jwksAdminControllerKidsResponse>(getJwksAdminControllerKidsUrl(), {
     ...options,
-    method: 'DELETE',
+    method: 'GET',
   });
 };
 
@@ -695,65 +670,90 @@ export const adminPurgeControllerForcePurge = async (
 };
 
 /**
- * @summary Rotate a JWT signing keyring (access | refresh). Returns new kid + previous-kid retirement list.
+ * @summary Cross-user list of media with optional ?ownerId, ?kind, ?status filters. Admin-only.
  */
-export type jwksAdminControllerRotateResponse200 = {
-  data: void;
+export type adminMediaControllerListResponse200 = {
+  data: AdminListMediaResponseDto;
   status: 200;
 };
 
-export type jwksAdminControllerRotateResponse403 = {
+export type adminMediaControllerListResponse400 = {
   data: void;
-  status: 403;
+  status: 400;
 };
 
-export type jwksAdminControllerRotateResponseSuccess = jwksAdminControllerRotateResponse200 & {
+export type adminMediaControllerListResponseSuccess = adminMediaControllerListResponse200 & {
   headers: Headers;
 };
-export type jwksAdminControllerRotateResponseError = jwksAdminControllerRotateResponse403 & {
+export type adminMediaControllerListResponseError = adminMediaControllerListResponse400 & {
   headers: Headers;
 };
 
-export type jwksAdminControllerRotateResponse =
-  | jwksAdminControllerRotateResponseSuccess
-  | jwksAdminControllerRotateResponseError;
+export type adminMediaControllerListResponse =
+  | adminMediaControllerListResponseSuccess
+  | adminMediaControllerListResponseError;
 
-export const getJwksAdminControllerRotateUrl = () => {
-  return `/api/v1/admin/identity/jwks/rotate`;
+export const getAdminMediaControllerListUrl = (params: AdminMediaControllerListParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/admin/media?${stringifiedParams}`
+    : `/api/v1/admin/media`;
 };
 
-export const jwksAdminControllerRotate = async (
+export const adminMediaControllerList = async (
+  params: AdminMediaControllerListParams,
   options?: RequestInit,
-): Promise<jwksAdminControllerRotateResponse> => {
-  return apiFetch<jwksAdminControllerRotateResponse>(getJwksAdminControllerRotateUrl(), {
+): Promise<adminMediaControllerListResponse> => {
+  return apiFetch<adminMediaControllerListResponse>(getAdminMediaControllerListUrl(params), {
     ...options,
-    method: 'POST',
+    method: 'GET',
   });
 };
 
 /**
- * @summary List active kids across both keyrings (access + refresh). Used to confirm rotations + retirement windows.
+ * @summary Hard-delete media (takedown). Trip + memory book references SetNull-cascade.
  */
-export type jwksAdminControllerKidsResponse200 = {
+export type adminMediaControllerRemoveResponse204 = {
   data: void;
-  status: 200;
+  status: 204;
 };
 
-export type jwksAdminControllerKidsResponseSuccess = jwksAdminControllerKidsResponse200 & {
+export type adminMediaControllerRemoveResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type adminMediaControllerRemoveResponseSuccess = adminMediaControllerRemoveResponse204 & {
   headers: Headers;
 };
-export type jwksAdminControllerKidsResponse = jwksAdminControllerKidsResponseSuccess;
-
-export const getJwksAdminControllerKidsUrl = () => {
-  return `/api/v1/admin/identity/jwks/kids`;
+export type adminMediaControllerRemoveResponseError = adminMediaControllerRemoveResponse404 & {
+  headers: Headers;
 };
 
-export const jwksAdminControllerKids = async (
+export type adminMediaControllerRemoveResponse =
+  | adminMediaControllerRemoveResponseSuccess
+  | adminMediaControllerRemoveResponseError;
+
+export const getAdminMediaControllerRemoveUrl = (id: string) => {
+  return `/api/v1/admin/media/${id}`;
+};
+
+export const adminMediaControllerRemove = async (
+  id: string,
   options?: RequestInit,
-): Promise<jwksAdminControllerKidsResponse> => {
-  return apiFetch<jwksAdminControllerKidsResponse>(getJwksAdminControllerKidsUrl(), {
+): Promise<adminMediaControllerRemoveResponse> => {
+  return apiFetch<adminMediaControllerRemoveResponse>(getAdminMediaControllerRemoveUrl(id), {
     ...options,
-    method: 'GET',
+    method: 'DELETE',
   });
 };
 

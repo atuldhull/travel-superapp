@@ -1666,7 +1666,7 @@ export const useTripControllerSamplePlan = <TError = unknown, TContext = unknown
   return useMutation(mutationOptions);
 };
 /**
- * @summary Generate a free-form trip plan via the configured AI adapter (Claude / stub). Owner-only.
+ * @summary Generate a free-form trip plan via the configured AI adapter (Anthropic / Gemini / Ollama / stub — see [POST.4]). Owner-only.
  */
 export type tripControllerPlanWithAiResponse200 = {
   data: GeneratePlanWithAiResponseDto;
@@ -1746,7 +1746,7 @@ export type TripControllerPlanWithAiMutationResult = NonNullable<
 export type TripControllerPlanWithAiMutationError = void;
 
 /**
- * @summary Generate a free-form trip plan via the configured AI adapter (Claude / stub). Owner-only.
+ * @summary Generate a free-form trip plan via the configured AI adapter (Anthropic / Gemini / Ollama / stub — see [POST.4]). Owner-only.
  */
 export const useTripControllerPlanWithAi = <TError = void, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<

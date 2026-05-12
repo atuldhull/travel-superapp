@@ -26,6 +26,10 @@ export interface RecalledSamplePlan {
   readonly emoji: string;
   readonly plan: string;
   readonly model: string;
+  /** POST.4 — provider tier that produced the cached plan. Optional to
+   *  stay backwards-compatible with entries written before POST.4
+   *  shipped; readers default to 'stub' when missing. */
+  readonly provider?: 'anthropic' | 'gemini' | 'ollama' | 'stub';
   /** Epoch millis at which the plan was generated. Older than 24h → ignored. */
   readonly cachedAt: number;
 }

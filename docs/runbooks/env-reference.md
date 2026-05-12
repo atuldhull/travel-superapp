@@ -107,11 +107,16 @@ Set both or neither; partial config = boot succeeds, sign-in route 503s.
 
 ### AI
 
-| Var              | What                                                                                              |
-| ---------------- | ------------------------------------------------------------------------------------------------- |
-| `CLAUDE_API_KEY` | Anthropic API key — primary LLM. Used by `[IV.18.x]` itinerary generation when wired.             |
-| `OPENAI_API_KEY` | Fallback LLM.                                                                                     |
-| `AI_SERVICE_URL` | Python FastAPI sidecar (NLLB / Whisper / DistilBERT / crowd ML). Default `http://localhost:8001`. |
+| Var                 | What                                                                                              |
+| ------------------- | ------------------------------------------------------------------------------------------------- |
+| `ANTHROPIC_API_KEY` | POST.4 Tier 1 — Anthropic key. Activates `ClaudeTripPlannerAdapter` for /trips/[id]/plan-with-ai. |
+| `ANTHROPIC_MODEL`   | Claude model id; default `claude-opus-4-7`.                                                       |
+| `GEMINI_API_KEY`    | POST.4 Tier 2 — Google AI Studio key. Free 1500 req/day. Activates `GeminiTripPlannerAdapter`.    |
+| `GEMINI_MODEL`      | Gemini model id; default `gemini-2.5-flash`.                                                      |
+| `OLLAMA_URL`        | POST.4 Tier 3 — local Ollama base URL (default `http://localhost:11434`). Truly $0, runs offline. |
+| `OLLAMA_MODEL`      | Ollama model name; default `llama3.1:8b`. Pull first: `ollama pull llama3.1:8b`.                  |
+| `OPENAI_API_KEY`    | Reserved for future fallback. Not currently consumed.                                             |
+| `AI_SERVICE_URL`    | Python FastAPI sidecar (NLLB / Whisper / DistilBERT / crowd ML). Default `http://localhost:8001`. |
 
 ### Stripe
 
