@@ -106,6 +106,32 @@ export interface MediaAssetRepository {
    * Added by `[IV.18.12.14]`.
    */
   markExifStrippedForOwner(id: string, ownerId: string): Promise<MediaAsset | null>;
+
+  /**
+   * POST.5 — persist Sharp-generated variant metadata on the row.
+   * The shape mirrors the comment on `MediaAsset.variants`:
+   *   `[{ label, format, s3Key, width, height, bytes, sha256 }]`
+   *
+   * Atomically scoped to the owner so the variant pipeline can't
+   * accidentally write across users. Returns the updated row, or
+   * `null` if the row vanished mid-flight (treat as 404).
+   */
+  updateVariants(
+    id: string,
+    ownerId: string,
+    variants: readonly StoredVariant[],
+  ): Promise<MediaAsset | null>;
+}
+
+/** POST.5 — shape persisted in `MediaAsset.variants`. */
+export interface StoredVariant {
+  readonly label: string;
+  readonly format: string;
+  readonly s3Key: string;
+  readonly width: number;
+  readonly height: number;
+  readonly bytes: number;
+  readonly sha256: string;
 }
 
 export interface AdminMediaListInput {

@@ -39,6 +39,19 @@ export interface StorageProvider {
   listAllKeys(): Promise<readonly string[]>;
   deleteObject(key: string): Promise<void>;
   /**
+   * POST.5 — server-side put used by the Sharp variant pipeline.
+   * Uses a presigned PUT URL + native fetch (same `client.send()`-
+   * avoidance pattern as the rest of this adapter — see
+   * `s3-storage-provider.ts` ctor for the Jest-VM rationale).
+   */
+  putObject(key: string, body: Buffer, contentType: string): Promise<void>;
+  /**
+   * POST.5 — server-side get used by the Sharp variant pipeline to
+   * fetch the original upload before resizing. Returns the raw
+   * bytes. Uses presigned GET + native fetch.
+   */
+  getObject(key: string): Promise<Buffer>;
+  /**
    * V.UX.38 — bucket reachability probe used by `S3HealthIndicator`.
    * Resolves with `{ ok: false, error }` instead of throwing so the
    * /health/ready check stays soft on S3 (an S3 hiccup must NOT

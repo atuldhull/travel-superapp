@@ -26,6 +26,80 @@
 Post-V.UX gap closure work. See `docs/POST_VUX_GAPS.md` for the
 audit + drop-in execution prompts.
 
+### [POST.5] — Sharp image pipeline + WebP variants + admin thumbnails
+
+- **Date**: 2026-05-12
+- **Commit**: <pending>
+- **Files changed**: 13 (2 new adapters — `sharp-image-processor.ts` +
+  new `image-processor.port.ts`; 1 new web component —
+  `thumbnail.tsx`; 1 new e2e — `sharp-image-processor.e2e-spec.ts`;
+  5 modified core — `confirm-upload.use-case.ts` orchestrates the
+  pipeline, `storage-provider.ts` + `s3-storage-provider.ts` add
+  putObject + getObject, `media-asset.repository.ts` + Prisma impl
+  add updateVariants + StoredVariant shape, `media-asset.entity.ts`
+  carries variants array; 1 module rewire — `media.module.ts` wires
+  `IMAGE_PROCESSOR_PORT`; 2 admin surfaces —
+  `admin-media.controller.ts` injects storage + presigns thumb URLs,
+  `admin-response.dto.ts` adds `AdminMediaVariantDto` + variants +
+  `thumbDownloadUrl`; `/admin/media/page.tsx` renders 64px Thumbnail
+  tile per row)
+- **Deps added**: `sharp` to apps/api (ships native libvips binary
+  for Win/Linux/Mac; no env vars needed)
+- **Schema change**: **none** — existing `MediaAsset.variants Json?`
+  column accepts the new `{label, format, s3Key, width, height,
+bytes, sha256}` shape. POST.1 seed data with `{cdnUrl, credit,
+unsplashId}` entries is filtered out by `extractVariants()` at the
+  repo boundary so the typed domain entity only sees canonical-shape
+  rows.
+- **Tests added**: 4 unit tests in `sharp-image-processor.e2e-spec.ts`
+  — pure-Node, no S3 dependency:
+  - both variants emitted (thumb + medium)
+  - thumb 256w / medium 1024w with preserved aspect ratio
+  - WebP format with sha256 + RIFF header
+  - libvips decode error throws (corrupt bytes path)
+- **Verification output**:
+  ```
+  pnpm --filter=api add sharp → installed with libvips binary
+  pnpm --filter=@app/config build → green
+  pnpm --filter=api run api:openapi → wrote docs/api/openapi.yaml
+    (added AdminMediaVariantDto, AdminMediaDto.variants[], thumbDownloadUrl)
+  pnpm --filter=@app/sdk run sdk:gen → orval regen ok
+  pnpm --filter=api --filter=web --filter=@app/sdk typecheck → green
+  pnpm --filter=api run lint → 0 errors on POST.5 files
+    (1 pre-existing error in events.e2e-spec.ts; 120 pre-existing
+    warnings about unused eslint-disable directives — none mine)
+  pnpm --filter=api test -- --runInBand --testPathPattern=sharp
+    → 4 pass / 4 total in 1.1s
+  pnpm --filter=api test -- --runInBand --testPathPattern=media
+    → 30 pass / 30 total in 18s across 5 suites — confirms variant
+    pipeline gracefully degrades on S3 errors; existing confirm-upload
+    flow unaffected
+  ```
+- **Lessons**:
+  - The existing `MediaAsset.variants Json?` column was already
+    documented for `[{label, format, s3Key, ...}]` shape — POST.1
+    just happened to also stash Unsplash CDN data in it. No
+    migration needed; the repo's `extractVariants()` reads only
+    canonical-shape entries.
+  - `@nestjs/swagger` infers `type: 'string'` from `string`, but
+    `string | null` falls back to `type: 'object'` — must declare
+    `@ApiProperty({ type: 'string', nullable: true })` explicitly.
+    Caught it post-openapi-regen; saved an SDK round-trip on the fix.
+  - The S3 storage adapter must keep using the `getSignedUrl + native
+fetch` pattern (per `feedback_aws_sdk_jest_vm.md`) — added
+    `putObject` + `getObject` follow the same shape, never call
+    `client.send()`.
+  - Sharp's `clone()` on a decoded pipeline lets us emit N variants
+    from a single libvips decode — ~30% faster than re-decoding per
+    variant for typical mobile-camera JPEGs.
+  - The variant pipeline runs INSIDE `confirm-upload.use-case` but
+    in a try/catch — failure logs `media_variants_failed_nonfatal`
+    and the asset stays `ready`. A future reconciliation job can
+    backfill missing variants without affecting users. Same
+    defensive shape as the EXIF strip stub.
+
+---
+
 ### [POST.4] — Multi-provider AI trip planner (Anthropic + Gemini + Ollama + stub)
 
 - **Date**: 2026-05-12

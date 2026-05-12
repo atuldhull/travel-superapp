@@ -33,6 +33,7 @@ import { ListMemoryBooksUseCase } from './application/list-memory-books.use-case
 import { ListPublishedMemoryBooksUseCase } from './application/list-published-memory-books.use-case';
 import { ListTripMediaUseCase } from './application/list-trip-media.use-case';
 import { OrphanS3SweepUseCase } from './application/orphan-s3-sweep.use-case';
+import { IMAGE_PROCESSOR_PORT } from './application/ports/image-processor.port';
 import { MEDIA_ASSET_REPOSITORY } from './application/ports/media-asset.repository';
 import { MEMORY_BOOK_REPOSITORY } from './application/ports/memory-book.repository';
 import { STORAGE_PROVIDER } from './application/ports/storage-provider';
@@ -44,6 +45,7 @@ import { UpdateMemoryBookUseCase } from './application/update-memory-book.use-ca
 import { PrismaMediaAssetRepository } from './infrastructure/prisma-media-asset.repository';
 import { PrismaMemoryBookRepository } from './infrastructure/prisma-memory-book.repository';
 import { S3StorageProvider } from './infrastructure/s3-storage-provider';
+import { SharpImageProcessor } from './infrastructure/sharp-image-processor';
 import { TripMediaAdapter } from './infrastructure/trip-media.adapter';
 import { AdminMediaController } from './interface/admin-media.controller';
 import { MediaController } from './interface/media.controller';
@@ -62,6 +64,10 @@ import { OrphanS3SweepScheduler } from './interface/orphan-s3-sweep.scheduler';
     { provide: MEDIA_ASSET_REPOSITORY, useClass: PrismaMediaAssetRepository },
     { provide: MEMORY_BOOK_REPOSITORY, useClass: PrismaMemoryBookRepository },
     { provide: STORAGE_PROVIDER, useClass: S3StorageProvider },
+    // POST.5 — Sharp variant pipeline for confirm-upload. No env
+    // gate; libvips is a hard dep. Use-case swallows pipeline
+    // failures so a Sharp blow-up never breaks the upload flow.
+    { provide: IMAGE_PROCESSOR_PORT, useClass: SharpImageProcessor },
     CreateUploadUrlUseCase,
     ConfirmUploadUseCase,
     GetMediaDownloadUrlUseCase,

@@ -4,6 +4,7 @@
 import type { AdminMediaDtoTripId } from './adminMediaDtoTripId';
 import type { AdminMediaDtoKind } from './adminMediaDtoKind';
 import type { AdminMediaDtoStatus } from './adminMediaDtoStatus';
+import type { AdminMediaVariantDto } from './adminMediaVariantDto';
 
 export interface AdminMediaDto {
   id: string;
@@ -14,4 +15,10 @@ export interface AdminMediaDto {
   status: AdminMediaDtoStatus;
   s3KeyRaw: string;
   createdAt: string;
+  variants: AdminMediaVariantDto[];
+  /**
+   * Short-TTL presigned URL for the thumb variant.
+   * @nullable
+   */
+  thumbDownloadUrl: string | null;
 }

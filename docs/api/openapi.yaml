@@ -7592,6 +7592,31 @@ components:
             type: string
       required:
         - assetIds
+    AdminMediaVariantDto:
+      type: object
+      properties:
+        label:
+          type: string
+          description: 'Variant label: thumb | medium.'
+        format:
+          type: string
+          description: Output format (webp today).
+        s3Key:
+          type: string
+          description: S3 key of the variant object.
+        width:
+          type: number
+        height:
+          type: number
+        bytes:
+          type: number
+      required:
+        - label
+        - format
+        - s3Key
+        - width
+        - height
+        - bytes
     AdminMediaDto:
       type: object
       properties:
@@ -7621,6 +7646,14 @@ components:
         createdAt:
           type: string
           format: date-time
+        variants:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminMediaVariantDto'
+        thumbDownloadUrl:
+          type: string
+          nullable: true
+          description: Short-TTL presigned URL for the thumb variant.
       required:
         - id
         - ownerId
@@ -7629,6 +7662,8 @@ components:
         - status
         - s3KeyRaw
         - createdAt
+        - variants
+        - thumbDownloadUrl
     AdminListMediaResponseDto:
       type: object
       properties:

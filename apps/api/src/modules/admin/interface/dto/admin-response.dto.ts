@@ -120,6 +120,27 @@ export class AdminListUsersResponseDto {
 
 // ─── Admin media ─────────────────────────────────────────────────
 
+/** POST.5 — one Sharp-generated variant attached to a MediaAsset. */
+export class AdminMediaVariantDto {
+  @ApiProperty({ description: 'Variant label: thumb | medium.' })
+  declare label: string;
+
+  @ApiProperty({ description: 'Output format (webp today).' })
+  declare format: string;
+
+  @ApiProperty({ description: 'S3 key of the variant object.' })
+  declare s3Key: string;
+
+  @ApiProperty()
+  declare width: number;
+
+  @ApiProperty()
+  declare height: number;
+
+  @ApiProperty()
+  declare bytes: number;
+}
+
 export class AdminMediaDto {
   @ApiProperty({ format: 'cuid' })
   declare id: string;
@@ -141,6 +162,19 @@ export class AdminMediaDto {
 
   @ApiProperty({ format: 'date-time' })
   declare createdAt: string;
+
+  /** POST.5 — Sharp-generated alternates. Empty for legacy rows + videos. */
+  @ApiProperty({ type: [AdminMediaVariantDto] })
+  declare variants: AdminMediaVariantDto[];
+
+  /** POST.5 — short-TTL presigned URL for the thumb variant.
+   *  `null` when no thumb exists. */
+  @ApiProperty({
+    type: 'string',
+    nullable: true,
+    description: 'Short-TTL presigned URL for the thumb variant.',
+  })
+  declare thumbDownloadUrl: string | null;
 }
 
 export class AdminListMediaResponseDto {
