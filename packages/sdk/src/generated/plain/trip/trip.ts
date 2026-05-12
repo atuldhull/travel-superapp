@@ -536,7 +536,7 @@ export const tripControllerSamplePlan = async (
 };
 
 /**
- * @summary Generate a free-form trip plan via the configured AI adapter (Claude / stub). Owner-only.
+ * @summary Generate a free-form trip plan via the configured AI adapter (Anthropic / Gemini / Ollama / stub — see [POST.4]). Owner-only.
  */
 export type tripControllerPlanWithAiResponse200 = {
   data: GeneratePlanWithAiResponseDto;

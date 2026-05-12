@@ -59,9 +59,26 @@ const AppleOAuthSchema = z.object({
   APPLE_PRIVATE_KEY: z.string().optional(),
 });
 
-// ─── AI (Anthropic primary; OpenAI fallback; Python ai-service sidecar) ─
+// ─── AI / LLM providers (POST.4 — 4-tier fallback chain) ────────────────
+//
+// The TripPlannerPort factory in `apps/api/src/modules/trip/trip.module.ts`
+// resolves providers in priority order at boot:
+//   1. Anthropic Claude   — if ANTHROPIC_API_KEY set (paid, premium quality)
+//   2. Google Gemini Flash — if GEMINI_API_KEY set (free tier, 1500 req/day)
+//   3. Ollama (local)     — if OLLAMA_URL set (truly $0, runs on user's box)
+//   4. Stub               — always works (deterministic prose)
+//
+// Adding a key never breaks anything — strictly additive.
+//
+// `AI_SERVICE_URL` points at the Python FastAPI sidecar for embeddings /
+// vision tasks the Node API doesn't own (Playbook §6).
 const AiSchema = z.object({
-  CLAUDE_API_KEY: z.string().optional(),
+  ANTHROPIC_API_KEY: z.string().optional(),
+  ANTHROPIC_MODEL: z.string().default('claude-opus-4-7'),
+  GEMINI_API_KEY: z.string().optional(),
+  GEMINI_MODEL: z.string().default('gemini-2.5-flash'),
+  OLLAMA_URL: z.string().url().optional(),
+  OLLAMA_MODEL: z.string().default('llama3.1:8b'),
   OPENAI_API_KEY: z.string().optional(),
   AI_SERVICE_URL: z.string().url().default('http://localhost:8001'),
 });

@@ -1,11 +1,12 @@
 /**
  * Deterministic placeholder for the AI-trip-planner port. Returns a
  * prose plan that mentions the trip's title + dates + center; useful
- * for dev + CI + tests where we don't want to hit a real Claude API.
+ * for dev + CI + tests where we don't want any external LLM in the
+ * loop. Always registered as the floor of the 4-tier provider chain
+ * (see `trip.module.ts`) so the app boots clean even when no LLM
+ * env var is set.
  *
- * Registered when `CLAUDE_API_KEY` is missing.
- *
- * Installed by prompt [IV.18.19.44].
+ * Installed by prompt [IV.18.19.44]. Provider field added in [POST.4].
  */
 import { Injectable } from '@nestjs/common';
 import type {
@@ -26,12 +27,12 @@ export class StubTripPlannerAdapter implements TripPlannerPort {
       `Center: ${req.center.lat.toFixed(4)}, ${req.center.lng.toFixed(4)} (radius ${req.radiusKm}km).`,
       `Dates: ${dates}.`,
       '',
-      'Day 1 — Arrive, settle in, explore the immediate neighborhood.',
-      'Day 2 — Visit the headline attractions; try a local lunch spot.',
-      'Day 3 — Day trip to a nearby site; evening reflection.',
+      'Day 1 — Arrive, settle in, explore the immediate neighborhood on foot.',
+      'Day 2 — Visit the headline attractions; try a well-reviewed local lunch spot.',
+      'Day 3 — Day trip to a nearby site; evening reflection over dinner.',
       '',
-      'Set CLAUDE_API_KEY in the env to enable real AI-generated plans.',
+      'Set ANTHROPIC_API_KEY, GEMINI_API_KEY, or OLLAMA_URL to enable a real LLM.',
     ].join('\n');
-    return { plan, model: 'stub-trip-planner' };
+    return { plan, model: 'stub-trip-planner', provider: 'stub' };
   }
 }

@@ -224,77 +224,34 @@ paths:
                           type: string
                       additionalProperties: true
       tags: *a4
-  /api/v1/media/upload-url:
+  /api/v1/auth/register:
     post:
-      operationId: MediaController_createUploadUrl
+      operationId: AuthController_register
       parameters: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateUploadUrlRequestDto'
+              $ref: '#/components/schemas/RegisterRequestDto'
       responses:
         '201':
-          description: Presigned upload URL + initial asset row.
+          description: Account created; refresh-cookie set; access token returned.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CreateUploadUrlResponseDto'
-      security: &a8
-        - bearer: []
-      summary: Issue a presigned PUT URL for direct-to-S3 upload. Creates the
-        MediaAsset row in `processing` status.
-      tags: &a9
-        - media
-  /api/v1/media/{id}/confirm:
+                $ref: '#/components/schemas/AuthSuccessResponseDto'
+        '409':
+          description: EMAIL_TAKEN.
+      summary: Create a new account. Email + password + displayName. Sets the
+        refresh-cookie + returns access token.
+      tags: &a8
+        - identity
+  /api/v1/auth/oauth/{provider}:
     post:
-      operationId: MediaController_confirm
+      operationId: AuthController_oauth
       parameters:
-        - name: id
-          required: true
-          in: path
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Asset row in `ready` state.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MediaAssetDto'
-        '404':
-          description: MEDIA_NOT_FOUND.
-      security: *a8
-      summary: Confirm upload landed (HEAD verifies bytes). Flips status to `ready`.
-        Image kind also flips exifStripped.
-      tags: *a9
-  /api/v1/media/{id}/download-url:
-    get:
-      operationId: MediaController_downloadUrl
-      parameters:
-        - name: id
-          required: true
-          in: path
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Presigned GET URL + ISO expiry.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MediaDownloadUrlResponseDto'
-        '404':
-          description: MEDIA_NOT_FOUND.
-      security: *a8
-      summary: Short-lived presigned GET URL for the asset. Owner-gated.
-      tags: *a9
-  /api/v1/media/{id}/trip:
-    patch:
-      operationId: MediaController_attachToTrip
-      parameters:
-        - name: id
+        - name: provider
           required: true
           in: path
           schema:
@@ -304,408 +261,271 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AttachMediaToTripRequestDto'
+              $ref: '#/components/schemas/OAuthSignInRequestDto'
       responses:
         '200':
-          description: Updated asset row.
+          description: OAuth sign-in succeeded; refresh-cookie set; access token returned.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MediaAssetDto'
-        '404':
-          description: MEDIA_NOT_FOUND or TRIP_NOT_FOUND.
-      security: *a8
-      summary: Attach (`{tripId}`) or detach (`{tripId:null}`) the media to a trip.
-        Double owner-gated.
-      tags: *a9
-  /api/v1/media/trip/{tripId}:
-    get:
-      operationId: MediaController_listByTrip
-      parameters:
-        - name: tripId
-          required: true
-          in: path
-          schema:
-            type: string
-        - name: limit
-          required: true
-          in: query
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Caller-owned media for the given trip.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ListTripMediaResponseDto'
-      security: *a8
-      summary: List the caller's `ready` media attached to a trip. ?limit=N (1..200,
-        default 50).
-      tags: *a9
-  /api/v1/media/{id}/memory-book:
-    patch:
-      operationId: MediaController_attachToBook
-      parameters:
-        - name: id
-          required: true
-          in: path
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AttachMediaToBookRequestDto'
-      responses:
-        '200':
-          description: Updated asset row.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MediaAssetDto'
-        '404':
-          description: MEDIA_NOT_FOUND or BOOK_NOT_FOUND.
-      security: *a8
-      summary: Attach (`{memoryBookId}`) or detach (`{memoryBookId:null}`) the media
-        to a memory book. Double owner-gated.
-      tags: *a9
-  /api/v1/memory-books/featured:
-    get:
-      operationId: MemoryBookController_featured
-      parameters:
-        - name: limit
-          required: true
-          in: query
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Currently-published memory books, newest-first.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FeaturedMemoryBooksResponseDto'
-      security: &a10
-        - bearer: []
-      summary: Public discovery — currently-published memory books across all users,
-        ordered by publishedAt DESC.
-      tags: &a11
-        - media
-  /api/v1/memory-books/public/{id}:
-    get:
-      operationId: MemoryBookController_getPublic
-      parameters:
-        - name: id
-          required: true
-          in: path
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Published book metadata + ids of attached assets.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PublicMemoryBookWithAssetsResponseDto'
-        '404':
-          description: BOOK_NOT_PUBLISHED.
-      security: *a10
-      summary: Public read of a published memory book by id. The cuid is the
-        unguessable token.
-      tags: *a11
-  /api/v1/memory-books/public/{id}/assets/{assetId}/download-url:
-    get:
-      operationId: MemoryBookController_getPublicAssetDownloadUrl
-      parameters:
-        - name: id
-          required: true
-          in: path
-          schema:
-            type: string
-        - name: assetId
-          required: true
-          in: path
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Short-lived presigned GET URL + ISO expiry.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PublicDownloadUrlResponseDto'
-        '404':
-          description: BOOK_NOT_PUBLISHED, MEDIA_NOT_FOUND, or NOT_ATTACHED.
-      security: *a10
-      summary: 'Public presigned download URL for a memory-book asset. Three-clause
-        gate: book published + asset attached + asset ready.'
-      tags: *a11
-  /api/v1/memory-books:
+                $ref: '#/components/schemas/AuthSuccessResponseDto'
+        '401':
+          description: OAUTH_PROVIDER_UNKNOWN / OAUTH_INVALID_TOKEN /
+            OAUTH_EMAIL_UNVERIFIED.
+      summary: OAuth sign-in. Verifies a provider id token (Google / Apple / mock);
+        auto-links by email or creates a passwordless account.
+      tags: *a8
+  /api/v1/auth/magic-link/request:
     post:
-      operationId: MemoryBookController_create
+      operationId: AuthController_magicLinkRequest
       parameters: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateMemoryBookRequestDto'
-      responses:
-        '201':
-          description: Newly-created book row.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MemoryBookDto'
-      security: *a10
-      summary: Create a memory book (draft). Owner = caller.
-      tags: *a11
-    get:
-      operationId: MemoryBookController_list
-      parameters:
-        - name: limit
-          required: true
-          in: query
-          schema:
-            type: string
+              $ref: '#/components/schemas/MagicLinkRequestRequestDto'
       responses:
         '200':
-          description: Caller-owned memory books, newest first.
+          description: Always ok. Email may or may not have been sent.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ListMemoryBooksResponseDto'
-      security: *a10
-      summary: List the caller's memory books, newest first. ?limit=N (1..200, default
-        50). Owner-scoped.
-      tags: *a11
-  /api/v1/memory-books/{id}:
-    get:
-      operationId: MemoryBookController_getOne
-      parameters:
-        - name: id
-          required: true
-          in: path
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Book row + ids of attached assets (any status).
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MemoryBookWithAssetsResponseDto'
-        '404':
-          description: BOOK_NOT_FOUND.
-      security: *a10
-      summary: Get one of the caller-owned books + the attached asset ids.
-      tags: *a11
-    patch:
-      operationId: MemoryBookController_update
-      parameters:
-        - name: id
-          required: true
-          in: path
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateMemoryBookRequestDto'
-      responses:
-        '200':
-          description: Updated book row.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MemoryBookDto'
-        '404':
-          description: BOOK_NOT_FOUND.
-      security: *a10
-      summary: Update one of the caller-owned books. Partial update.
-      tags: *a11
-    delete:
-      operationId: MemoryBookController_remove
-      parameters:
-        - name: id
-          required: true
-          in: path
-          schema:
-            type: string
-      responses:
-        '204':
-          description: Deleted.
-        '404':
-          description: BOOK_NOT_FOUND.
-      security: *a10
-      summary: Delete one of the caller-owned books. SetNull on MediaAsset.memoryBookId.
-      tags: *a11
-  /api/v1/memory-books/{id}/publish:
+                $ref: '#/components/schemas/MagicLinkRequestResponseDto'
+      summary: "Passwordless sign-in step 1: email a magic link. Always returns 'ok' —
+        doesn't reveal whether the email is registered."
+      tags: *a8
+  /api/v1/auth/magic-link/consume:
     post:
-      operationId: MemoryBookController_publish
-      parameters:
-        - name: id
-          required: true
-          in: path
-          schema:
-            type: string
+      operationId: AuthController_magicLinkConsume
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MagicLinkConsumeRequestDto'
       responses:
         '200':
-          description: Published book row.
+          description: Sign-in succeeded; refresh-cookie set; access token returned.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MemoryBookDto'
-        '404':
-          description: BOOK_NOT_FOUND.
-      security: *a10
-      summary: Publish a book — flips publishedAt to now (idempotent).
-      tags: *a11
-  /api/v1/memory-books/{id}/unpublish:
+                $ref: '#/components/schemas/AuthSuccessResponseDto'
+        '401':
+          description: MAGIC_LINK_INVALID.
+      summary: 'Passwordless sign-in step 2: consume the magic-link token + issue a
+        session. Single-use, 15-min TTL.'
+      tags: *a8
+  /api/v1/auth/password-reset/request:
     post:
-      operationId: MemoryBookController_unpublish
-      parameters:
-        - name: id
-          required: true
-          in: path
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Updated book row.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MemoryBookDto'
-        '404':
-          description: BOOK_NOT_FOUND.
-      security: *a10
-      summary: Unpublish a book — clears publishedAt (idempotent).
-      tags: *a11
-  /api/v1/memory-books/{id}/assets/{assetId}/caption:
-    patch:
-      operationId: MemoryBookController_updateAssetCaption
-      parameters:
-        - name: id
-          required: true
-          in: path
-          schema:
-            type: string
-        - name: assetId
-          required: true
-          in: path
-          schema:
-            type: string
+      operationId: AuthController_passwordResetRequest
+      parameters: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateAssetCaptionRequestDto'
+              $ref: '#/components/schemas/PasswordResetRequestRequestDto'
       responses:
         '200':
-          description: Updated asset row.
+          description: Always ok. Email may or may not have been sent.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MediaAssetDto'
-        '404':
-          description: MEDIA_NOT_FOUND.
-      security: *a10
-      summary: Set or clear an asset's caption (story-mode narrative). Owner-only.
-      tags: *a11
-  /api/v1/memory-books/{id}/asset-order:
-    patch:
-      operationId: MemoryBookController_reorderAssets
-      parameters:
-        - name: id
-          required: true
-          in: path
-          schema:
-            type: string
+                $ref: '#/components/schemas/PasswordResetRequestResponseDto'
+      summary: V.UX.31 — request a password-reset email. Always returns ok regardless
+        of registration state.
+      tags: *a8
+  /api/v1/auth/password-reset/consume:
+    post:
+      operationId: AuthController_passwordResetConsume
+      parameters: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ReorderBookAssetsRequestDto'
+              $ref: '#/components/schemas/PasswordResetConsumeRequestDto'
       responses:
-        '204':
-          description: Reordering applied.
-        '404':
-          description: MEMORY_BOOK_NOT_FOUND.
+        '200':
+          description: Password updated. User must sign in with the new password.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasswordResetConsumeResponseDto'
+        '401':
+          description: RESET_TOKEN_INVALID.
         '422':
-          description: INVALID_ASSET_ORDER (duplicates, length mismatch, or unknown id).
-      security: *a10
-      summary: Persist asset ordering for the memory book. Body is the desired
-        permutation of attached asset ids.
-      tags: *a11
-  /api/v1/admin/media:
-    get:
-      operationId: AdminMediaController_list
-      parameters:
-        - name: ownerId
-          required: true
-          in: query
-          schema:
-            type: string
-        - name: kind
-          required: true
-          in: query
-          schema:
-            type: string
-        - name: status
-          required: true
-          in: query
-          schema:
-            type: string
-        - name: limit
-          required: true
-          in: query
-          schema:
-            type: string
-        - name: offset
-          required: true
-          in: query
-          schema:
-            type: string
+          description: WEAK_PASSWORD or VALIDATION_FAILED.
+      summary: V.UX.31 — consume the password-reset token + set a new password.
+        Single-use, 15-min TTL.
+      tags: *a8
+  /api/v1/auth/login:
+    post:
+      operationId: AuthController_login
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequestDto'
       responses:
         '200':
-          description: Matching media + total.
+          description: Login succeeded; refresh-cookie set; access token returned.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AdminListMediaResponseDto'
-        '400':
-          description: VALIDATION_FAILED — kind / status invalid.
-      security: &a12
+                $ref: '#/components/schemas/AuthSuccessResponseDto'
+        '401':
+          description: INVALID_CREDENTIALS / MFA_REQUIRED / MFA_INVALID.
+      summary: Email + password login. With MFA enabled, mfaCode is required on the
+        second call.
+      tags: *a8
+  /api/v1/auth/refresh:
+    post:
+      operationId: AuthController_refresh
+      parameters: []
+      responses:
+        '200':
+          description: New access token issued; new refresh cookie set.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshSuccessResponseDto'
+        '401':
+          description: REFRESH_MISSING / REFRESH_INVALID / REFRESH_REUSED.
+      summary: Rotate the access + refresh tokens. Reads the httpOnly refresh cookie;
+        rejects if missing or stolen-detected.
+      tags: *a8
+  /api/v1/auth/me:
+    get:
+      operationId: AuthController_me
+      parameters: []
+      responses:
+        '200':
+          description: Caller JWT claims (sub / sid / role) + hasSeenOnboarding.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WhoAmIResponseDto'
+        '401':
+          description: UNAUTHENTICATED — missing or invalid bearer.
+      security:
         - bearer: []
-      summary: Cross-user list of media with optional ?ownerId, ?kind, ?status
-        filters. Admin-only.
-      tags: &a13
-        - admin
-  /api/v1/admin/media/{id}:
-    delete:
-      operationId: AdminMediaController_remove
-      parameters:
-        - name: id
-          required: true
-          in: path
-          schema:
-            type: string
+      summary: Whoami probe — returns the authed user's JWT claims + lightweight
+        User-row state (hasSeenOnboarding).
+      tags: *a8
+  /api/v1/auth/onboarding/complete:
+    post:
+      operationId: AuthController_onboardingComplete
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OnboardingCompleteRequestDto'
+      responses:
+        '200':
+          description: Onboarding flag flipped (and Sample trip seeded if requested +
+            applicable).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OnboardingCompleteResponseDto'
+        '401':
+          description: UNAUTHENTICATED.
+      security:
+        - bearer: []
+      summary: Mark the caller as having completed the onboarding wizard; optionally
+        seed a Sample trip. Idempotent.
+      tags: *a8
+  /api/v1/auth/mfa/setup:
+    post:
+      operationId: AuthController_mfaSetup
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      security:
+        - bearer: []
+      summary: Begin MFA enrollment — returns base32 secret + otpauth:// URI for QR
+        rendering. Pending until /mfa/verify confirms.
+      tags: *a8
+  /api/v1/auth/mfa/verify:
+    post:
+      operationId: AuthController_mfaVerify
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      security:
+        - bearer: []
+      summary: Confirm MFA enrollment with a TOTP code. First-time enable returns 10
+        plaintext backup codes (shown ONCE).
+      tags: *a8
+  /api/v1/auth/mfa/backup-codes/regenerate:
+    post:
+      operationId: AuthController_regenerateBackupCodes
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      security:
+        - bearer: []
+      summary: Regenerate the 10 single-use MFA backup codes. Requires a valid current
+        TOTP. Returns plaintexts shown ONCE.
+      tags: *a8
+  /api/v1/auth/mfa/disable:
+    post:
+      operationId: AuthController_mfaDisable
+      parameters: []
       responses:
         '204':
-          description: Deleted.
-        '404':
-          description: MEDIA_NOT_FOUND.
-      security: *a12
-      summary: Hard-delete media (takedown). Trip + memory book references
-        SetNull-cascade.
-      tags: *a13
+          description: ''
+      security:
+        - bearer: []
+      summary: Disable MFA. Requires a valid TOTP — a hijacked session alone cannot
+        strip the second factor.
+      tags: *a8
+  /api/v1/auth/logout:
+    post:
+      operationId: AuthController_logout
+      parameters: []
+      responses:
+        '204':
+          description: ''
+      summary: Logout — revokes the refresh token + clears the cookie. Idempotent if
+        already logged out.
+      tags: *a8
+  /api/v1/admin/identity/jwks/rotate:
+    post:
+      operationId: JwksAdminController_rotate
+      parameters: []
+      responses:
+        '200':
+          description: New kid + previous kids.
+        '403':
+          description: Caller is not admin.
+      security: &a9
+        - bearer: []
+      summary: Rotate a JWT signing keyring (access | refresh). Returns new kid +
+        previous-kid retirement list.
+      tags: &a10
+        - admin
+  /api/v1/admin/identity/jwks/kids:
+    get:
+      operationId: JwksAdminController_kids
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      security: *a9
+      summary: List active kids across both keyrings (access + refresh). Used to
+        confirm rotations + retirement windows.
+      tags: *a10
   /api/v1/trips:
     post:
       operationId: TripController_create
@@ -723,10 +543,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TripDto'
-      security: &a14
+      security: &a11
         - bearer: []
       summary: Create a trip draft from { title, center, radiusKm, startsOn?, endsOn? }
-      tags: &a15
+      tags: &a12
         - trip
     get:
       operationId: TripController_list
@@ -748,9 +568,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListTripsResponseDto'
-      security: *a14
+      security: *a11
       summary: List the caller's trips, most-recent-first
-      tags: *a15
+      tags: *a12
   /api/v1/trips/suggestions:
     get:
       operationId: TripController_suggestions
@@ -758,10 +578,10 @@ paths:
       responses:
         '200':
           description: Up to 3 suggestions.
-      security: *a14
+      security: *a11
       summary: V.UX.30 — destination suggestions seeded from caller's past trips.
         Empty history → 3 globally popular picks.
-      tags: *a15
+      tags: *a12
   /api/v1/trips/{id}/archive:
     post:
       operationId: TripController_archive
@@ -781,10 +601,10 @@ paths:
                 $ref: '#/components/schemas/TripDto'
         '404':
           description: TRIP_NOT_FOUND.
-      security: *a14
+      security: *a11
       summary: V.UX.30 — archive a trip (soft). Idempotent. Owner-gated; 404 on
         cross-user.
-      tags: *a15
+      tags: *a12
   /api/v1/trips/{id}/unarchive:
     post:
       operationId: TripController_unarchive
@@ -804,9 +624,9 @@ paths:
                 $ref: '#/components/schemas/TripDto'
         '404':
           description: TRIP_NOT_FOUND.
-      security: *a14
+      security: *a11
       summary: V.UX.30 — unarchive a trip. Idempotent. Owner-gated; 404 on cross-user.
-      tags: *a15
+      tags: *a12
   /api/v1/trips/{id}:
     get:
       operationId: TripController_getOne
@@ -825,10 +645,10 @@ paths:
                 $ref: '#/components/schemas/TripWithRoleResponseDto'
         '404':
           description: TRIP_NOT_FOUND.
-      security: *a14
+      security: *a11
       summary: Fetch a single trip. Owner OR active collaborator (vote/expense). 404
         otherwise (IDOR-safe).
-      tags: *a15
+      tags: *a12
     patch:
       operationId: TripController_update
       parameters:
@@ -852,9 +672,9 @@ paths:
                 $ref: '#/components/schemas/TripDto'
         '404':
           description: TRIP_NOT_FOUND.
-      security: *a14
+      security: *a11
       summary: Update a trip the caller owns. Partial body; only provided fields change.
-      tags: *a15
+      tags: *a12
     delete:
       operationId: TripController_remove
       parameters:
@@ -868,9 +688,9 @@ paths:
           description: Trip deleted.
         '404':
           description: TRIP_NOT_FOUND.
-      security: *a14
+      security: *a11
       summary: Delete a trip the caller owns. Cascades to itinerary days, items, shares.
-      tags: *a15
+      tags: *a12
   /api/v1/trips/{id}/duplicate:
     post:
       operationId: TripController_duplicate
@@ -889,10 +709,10 @@ paths:
                 $ref: '#/components/schemas/TripDto'
         '404':
           description: TRIP_NOT_FOUND.
-      security: *a14
+      security: *a11
       summary: Duplicate a trip the caller owns. Deep-copies title (+" (copy)"),
         center, radius, dates, itinerary days/items. New trip is `draft`.
-      tags: *a15
+      tags: *a12
   /api/v1/trips/{id}/lock:
     post:
       operationId: TripController_lock
@@ -911,10 +731,10 @@ paths:
                 $ref: '#/components/schemas/TripDto'
         '404':
           description: TRIP_NOT_FOUND.
-      security: *a14
+      security: *a11
       summary: Lock the trip — freezes itinerary edits for share-collaborators;
         owner-only writes still work.
-      tags: *a15
+      tags: *a12
   /api/v1/trips/{id}/unlock:
     post:
       operationId: TripController_unlock
@@ -933,9 +753,9 @@ paths:
                 $ref: '#/components/schemas/TripDto'
         '404':
           description: TRIP_NOT_FOUND.
-      security: *a14
+      security: *a11
       summary: Unlock the trip — restores share-collaborator edit access.
-      tags: *a15
+      tags: *a12
   /api/v1/trips/{id}/itinerary:
     post:
       operationId: TripController_buildItinerary
@@ -954,10 +774,10 @@ paths:
                 $ref: '#/components/schemas/ItineraryListResponseDto'
         '422':
           description: TRIP_DATES_REQUIRED.
-      security: *a14
+      security: *a11
       summary: Generate itinerary stub for the trip (one ItineraryDay per date in the
         range).
-      tags: *a15
+      tags: *a12
     get:
       operationId: TripController_getItinerary
       parameters:
@@ -975,9 +795,9 @@ paths:
                 $ref: '#/components/schemas/ItineraryListResponseDto'
         '404':
           description: TRIP_NOT_FOUND.
-      security: *a14
+      security: *a11
       summary: List itinerary days + items for the trip the caller owns.
-      tags: *a15
+      tags: *a12
   /api/v1/trips/sample-plan:
     post:
       operationId: TripController_samplePlan
@@ -995,10 +815,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GenerateSamplePlanResponseDto'
-      security: *a14
+      security: *a11
       summary: Public sample-plan demo for the landing page. NO auth, NO trip
         persisted — feeds the AI port directly.
-      tags: *a15
+      tags: *a12
   /api/v1/trips/{id}/plan-with-ai:
     post:
       operationId: TripController_planWithAi
@@ -1010,17 +830,17 @@ paths:
             type: string
       responses:
         '200':
-          description: Free-form prose plan + provider model identifier.
+          description: Free-form prose plan + provider identifier + optional token usage.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/GeneratePlanWithAiResponseDto'
         '404':
           description: TRIP_NOT_FOUND.
-      security: *a14
-      summary: Generate a free-form trip plan via the configured AI adapter (Claude /
-        stub). Owner-only.
-      tags: *a15
+      security: *a11
+      summary: Generate a free-form trip plan via the configured AI adapter (Anthropic
+        / Gemini / Ollama / stub — see [POST.4]). Owner-only.
+      tags: *a12
   /api/v1/trips/{id}/share:
     post:
       operationId: TripController_share
@@ -1048,10 +868,10 @@ paths:
           description: TRIP_NOT_FOUND.
         '422':
           description: INVALID_EXPIRY (past timestamp).
-      security: *a14
+      security: *a11
       summary: Mint a share code so collaborators can view (or co-edit, if
         publicRead=false) the trip.
-      tags: *a15
+      tags: *a12
   /api/v1/trips/shared/{code}:
     get:
       operationId: TripController_getSharedTrip
@@ -1070,9 +890,9 @@ paths:
                 $ref: '#/components/schemas/SharedTripDto'
         '404':
           description: Share code not found, revoked, or expired.
-      security: *a14
+      security: *a11
       summary: Public read of a shared trip by code. No auth required.
-      tags: *a15
+      tags: *a12
   /api/v1/trips/shared/{code}/clone:
     post:
       operationId: TripController_cloneShared
@@ -1091,9 +911,9 @@ paths:
                 $ref: '#/components/schemas/TripDto'
         '404':
           description: SHARE_NOT_FOUND or SHARE_EXPIRED.
-      security: *a14
+      security: *a11
       summary: Clone a publicly-shared trip into the caller's account. Auth required.
-      tags: *a15
+      tags: *a12
   /api/v1/trips/{id}/overview:
     get:
       operationId: TripController_overview
@@ -1111,11 +931,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TripOverviewResponseDto'
-      security: *a14
+      security: *a11
       summary: Trip overview composite — 7 sections (itinerary, weather, stays,
         eateries, events, transport, media). Per-section graceful degradation.
         60s TTL cache.
-      tags: *a15
+      tags: *a12
   /api/v1/trips/{id}/eateries:
     get:
       operationId: TripController_eateries
@@ -1138,10 +958,10 @@ paths:
       responses:
         '200':
           description: ''
-      security: *a14
+      security: *a11
       summary: Eateries near the trip center. Optional cuisineTag + maxPriceTier
         filters.
-      tags: *a15
+      tags: *a12
   /api/v1/trips/{id}/events:
     get:
       operationId: TripController_events
@@ -1159,10 +979,10 @@ paths:
       responses:
         '422':
           description: TRIP_DATES_REQUIRED.
-      security: *a14
+      security: *a11
       summary: Events near the trip center during the trip date range. Requires
         startsOn + endsOn.
-      tags: *a15
+      tags: *a12
   /api/v1/trips/{id}/stays:
     get:
       operationId: TripController_stays
@@ -1180,10 +1000,10 @@ paths:
       responses:
         '200':
           description: ''
-      security: *a14
+      security: *a11
       summary: Stays near the trip center for the trip date range. Requires startsOn +
         endsOn.
-      tags: *a15
+      tags: *a12
   /api/v1/trips/{id}/weather:
     get:
       operationId: TripController_weather
@@ -1196,9 +1016,9 @@ paths:
       responses:
         '200':
           description: ''
-      security: *a14
+      security: *a11
       summary: Weather forecast for the trip center. Up to 16 days. TTL-cached.
-      tags: *a15
+      tags: *a12
   /api/v1/trips/{id}/shares:
     get:
       operationId: TripController_listShares
@@ -1215,9 +1035,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListTripSharesResponseDto'
-      security: *a14
+      security: *a11
       summary: List active share codes for the trip the caller owns.
-      tags: *a15
+      tags: *a12
   /api/v1/trips/{id}/share/{code}:
     delete:
       operationId: TripController_revokeShare
@@ -1236,9 +1056,9 @@ paths:
       responses:
         '204':
           description: ''
-      security: *a14
+      security: *a11
       summary: Revoke a share code. Owner-scoped.
-      tags: *a15
+      tags: *a12
   /api/v1/trips/{id}/transport-legs:
     get:
       operationId: TripController_transportLegs
@@ -1251,9 +1071,9 @@ paths:
       responses:
         '200':
           description: ''
-      security: *a14
+      security: *a11
       summary: Compute transport legs between consecutive itinerary items.
-      tags: *a15
+      tags: *a12
   /api/v1/trips/{id}/place-suggestions:
     post:
       operationId: TripController_placeSuggestions
@@ -1278,10 +1098,10 @@ paths:
                 $ref: '#/components/schemas/SuggestPlacesForTripResponseDto'
         '404':
           description: TRIP_NOT_FOUND.
-      security: *a14
+      security: *a11
       summary: Suggest up to 6 ranked places near the trip's center. Optional category
         filter. Persists candidates to Place.
-      tags: *a15
+      tags: *a12
   /api/v1/trips/{tripId}/itinerary/{dayId}:
     patch:
       operationId: TripController_updateDay
@@ -1311,9 +1131,9 @@ paths:
                 $ref: '#/components/schemas/UpdateDayItemsResponseDto'
         '404':
           description: TRIP_NOT_FOUND or PLACE_NOT_FOUND.
-      security: *a14
+      security: *a11
       summary: Replace items in an itinerary day. Owner OR active TripShare may write.
-      tags: *a15
+      tags: *a12
   /api/v1/trips/{tripId}/days/{dayId}/optimize:
     post:
       operationId: TripController_optimizeDay
@@ -1337,10 +1157,10 @@ paths:
                 $ref: '#/components/schemas/OptimizeDayRouteResponseDto'
         '404':
           description: TRIP_NOT_FOUND.
-      security: *a14
+      security: *a11
       summary: Reorder a day's items to minimise travel time (greedy NN over the
         routing provider). Owner OR active share.
-      tags: *a15
+      tags: *a12
   /api/v1/trips/{tripId}/days/{dayId}/route-coords:
     get:
       operationId: TripController_dayRouteCoords
@@ -1364,10 +1184,10 @@ paths:
                 $ref: '#/components/schemas/DayRouteCoordsResponseDto'
         '404':
           description: TRIP_NOT_FOUND.
-      security: *a14
+      security: *a11
       summary: Coords for a day's routable items, in current order. Powers the V.UX.6
         RouteMap.
-      tags: *a15
+      tags: *a12
   /api/v1/admin/trips:
     get:
       operationId: AdminTripsController_list
@@ -1397,10 +1217,10 @@ paths:
           description: Paginated trip rows.
         '403':
           description: Caller is not admin.
-      security: &a16
+      security: &a13
         - bearer: []
       summary: List trips across all users with optional q + status filters. Admin-only.
-      tags: &a17
+      tags: &a14
         - admin
   /api/v1/admin/trips/{id}/archive:
     post:
@@ -1414,10 +1234,10 @@ paths:
       responses:
         '204':
           description: Trip archived.
-      security: *a16
+      security: *a13
       summary: Soft-archive a trip (status = archived). Reversible by the owner via
         the standard CRUD path.
-      tags: *a17
+      tags: *a14
   /api/v1/admin/trips/{id}:
     delete:
       operationId: AdminTripsController_remove
@@ -1430,10 +1250,10 @@ paths:
       responses:
         '204':
           description: Trip deleted.
-      security: *a16
+      security: *a13
       summary: Hard-delete a trip + cascade itinerary. For takedowns of
         clearly-abusive content.
-      tags: *a17
+      tags: *a14
   /api/v1/near-me:
     post:
       operationId: NearMeController_nearMe
@@ -1474,11 +1294,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SearchPlacesResponseDto'
-      security: &a18
+      security: &a15
         - bearer: []
       summary: Search the canonical Place catalog within a radius. Optional category
         filter + limit.
-      tags: &a19
+      tags: &a16
         - places
   /api/v1/places/federated-search:
     post:
@@ -1498,10 +1318,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FederatedSearchPlacesResponseDto'
-      security: *a18
+      security: *a15
       summary: Federated search across external providers (Google/FSQ/OSM). Optional
         ingest=true write-through to the canonical catalog.
-      tags: *a19
+      tags: *a16
   /api/v1/places/hidden-gems:
     post:
       operationId: PlacesController_hiddenGems
@@ -1519,10 +1339,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DiscoverHiddenGemsResponseDto'
-      security: *a18
+      security: *a15
       summary: Hidden-gem discovery within a day-trip radius. Filters to places with
         5..50 reviews, sorts by average rating.
-      tags: *a19
+      tags: *a16
   /api/v1/weather/forecast:
     get:
       operationId: WeatherController_forecast
@@ -1538,10 +1358,10 @@ paths:
           description: INVALID_COORDINATES — lat/lng out of range.
         '502':
           description: WEATHER_PROVIDER_UNAVAILABLE — upstream fetch failed.
-      security: &a20
+      security: &a17
         - bearer: []
       summary: Daily forecast for the given coordinates. Powered by Open-Meteo.
-      tags: &a21
+      tags: &a18
         - weather
   /api/v1/weather/forecast/hourly:
     get:
@@ -1558,10 +1378,10 @@ paths:
           description: INVALID_COORDINATES — lat/lng out of range.
         '502':
           description: WEATHER_PROVIDER_UNAVAILABLE — upstream fetch failed.
-      security: *a20
+      security: *a17
       summary: Hourly forecast (precip + wind + temp) for the next 1..48 hours. Powers
         the adventure-window widget.
-      tags: *a21
+      tags: *a18
   /api/v1/stays/search:
     post:
       operationId: StaysController_search
@@ -1603,10 +1423,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SearchEateriesResponseDto'
-      security: &a22
+      security: &a19
         - bearer: []
       summary: Search eateries within a radius. Optional cuisine + price-tier filters.
-      tags: &a23
+      tags: &a20
         - food
   /api/v1/eateries/{eateryId}/dishes:
     get:
@@ -1625,9 +1445,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListDishesResponseDto'
-      security: *a22
+      security: *a19
       summary: List dishes reported on an eatery (newest first).
-      tags: *a23
+      tags: *a20
     post:
       operationId: FoodController_createDish
       parameters:
@@ -1650,9 +1470,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DishDto'
-      security: *a22
+      security: *a19
       summary: Report a dish on an eatery (auth required).
-      tags: *a23
+      tags: *a20
   /api/v1/trips/{tripId}/food-crawl:
     post:
       operationId: FoodCrawlController_build
@@ -1701,10 +1521,10 @@ paths:
                 $ref: '#/components/schemas/SearchEventsResponseDto'
         '422':
           description: INVALID_COORDINATES | INVALID_RADIUS | INVALID_DATE_RANGE.
-      security: &a24
+      security: &a21
         - bearer: []
       summary: Search events within a radius and date window.
-      tags: &a25
+      tags: &a22
         - events
   /api/v1/events/festivals:
     get:
@@ -1746,10 +1566,10 @@ paths:
                 $ref: '#/components/schemas/FestivalsDuringResponseDto'
         '422':
           description: INVALID_COORDINATES | INVALID_RADIUS | INVALID_DATE_RANGE.
-      security: *a24
+      security: *a21
       summary: List festival events overlapping [from, to] near a centre. Powers the
         day-card overlay on trip pages.
-      tags: *a25
+      tags: *a22
   /api/v1/transport/routes:
     post:
       operationId: TransportController_routes
@@ -1792,10 +1612,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ScamReportDto'
-      security: &a26
+      security: &a23
         - bearer: []
       summary: File a crowd-sourced scam report at the given coordinates.
-      tags: &a27
+      tags: &a24
         - safety
   /api/v1/safety/scam-reports/search:
     post:
@@ -1814,10 +1634,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FindNearbyScamsResponseDto'
-      security: *a26
+      security: *a23
       summary: Find scam reports within a radius. Optional filters by category /
         minSeverity / verifiedOnly.
-      tags: *a27
+      tags: *a24
   /api/v1/safety/sos:
     post:
       operationId: SosController_trigger
@@ -1835,10 +1655,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SosEventDto'
-      security: &a28
+      security: &a25
         - bearer: []
       summary: Trigger an SOS event at the given coordinates.
-      tags: &a29
+      tags: &a26
         - safety
     get:
       operationId: SosController_listMine
@@ -1855,10 +1675,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListSosEventsResponseDto'
-      security: *a28
+      security: *a25
       summary: List the caller's SOS events, most-recent-first. ?limit (1..200,
         default 50).
-      tags: *a29
+      tags: *a26
   /api/v1/safety/sos/{id}/resolve:
     post:
       operationId: SosController_resolve
@@ -1883,9 +1703,9 @@ paths:
                 $ref: '#/components/schemas/SosEventDto'
         '404':
           description: SOS_NOT_FOUND.
-      security: *a28
+      security: *a25
       summary: Mark an SOS event resolved (owner-only).
-      tags: *a29
+      tags: *a26
   /api/v1/safety/sos/{id}/cancel:
     post:
       operationId: SosController_cancel
@@ -1904,10 +1724,10 @@ paths:
                 $ref: '#/components/schemas/SosEventDto'
         '404':
           description: SOS_NOT_FOUND.
-      security: *a28
+      security: *a25
       summary: V.UX.35 — owner-scoped cancel of an active SOS (the 'I'm OK' button).
         404 on already-resolved or cross-user.
-      tags: *a29
+      tags: *a26
   /api/v1/safety/crimes/search:
     post:
       operationId: CrimeLayerController_search
@@ -1975,11 +1795,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AdminListScamReportsResponseDto'
-      security: &a30
+      security: &a27
         - bearer: []
       summary: List scam reports for moderation. Default = pending; ?verified=true for
         the verified pile.
-      tags: &a31
+      tags: &a28
         - admin
   /api/v1/admin/safety/scam-reports/{id}/verify:
     post:
@@ -1999,9 +1819,9 @@ paths:
                 $ref: '#/components/schemas/ScamReportDto'
         '404':
           description: SCAM_REPORT_NOT_FOUND.
-      security: *a30
+      security: *a27
       summary: Mark a scam report verified.
-      tags: *a31
+      tags: *a28
   /api/v1/admin/safety/scam-reports/{id}/unverify:
     post:
       operationId: AdminScamModerationController_unverify
@@ -2020,9 +1840,9 @@ paths:
                 $ref: '#/components/schemas/ScamReportDto'
         '404':
           description: SCAM_REPORT_NOT_FOUND.
-      security: *a30
+      security: *a27
       summary: Flip a verified report back to pending.
-      tags: *a31
+      tags: *a28
   /api/v1/admin/safety/scam-reports/{id}:
     delete:
       operationId: AdminScamModerationController_dismiss
@@ -2037,9 +1857,9 @@ paths:
           description: Dismissed.
         '404':
           description: SCAM_REPORT_NOT_FOUND.
-      security: *a30
+      security: *a27
       summary: Dismiss a scam report (hard-delete).
-      tags: *a31
+      tags: *a28
   /api/v1/admin/safety/sos-events:
     get:
       operationId: AdminSosController_list
@@ -2068,11 +1888,11 @@ paths:
                 $ref: '#/components/schemas/AdminListSosEventsResponseDto'
         '400':
           description: VALIDATION_FAILED — status not in active|resolved.
-      security: &a32
+      security: &a29
         - bearer: []
       summary: 'Triage list of SOS events. ?status=active|resolved (default: both).
         Offset pagination.'
-      tags: &a33
+      tags: &a30
         - admin
   /api/v1/admin/safety/sos-events/{id}/resolve:
     post:
@@ -2098,9 +1918,9 @@ paths:
                 $ref: '#/components/schemas/SosEventDto'
         '404':
           description: SOS_NOT_FOUND.
-      security: *a32
+      security: *a29
       summary: Admin-resolve an SOS event with an optional resolution note.
-      tags: *a33
+      tags: *a30
   /api/v1/agents/match-for-trip:
     post:
       operationId: AgentsController_matchForTrip
@@ -2141,10 +1961,10 @@ paths:
                 $ref: '#/components/schemas/AgentProfileDto'
         '404':
           description: AGENT_PROFILE_NOT_FOUND.
-      security: &a34
+      security: &a31
         - bearer: []
       summary: The caller's Agent profile (agent/admin role only).
-      tags: &a35
+      tags: &a32
         - agents
     patch:
       operationId: AgentSelfController_update
@@ -2166,9 +1986,9 @@ paths:
           description: AGENT_PROFILE_NOT_FOUND.
         '422':
           description: INVALID_AGENT_DISPLAY_NAME | INVALID_AGENT_BIO | INVALID_AGENT_LIST.
-      security: *a34
+      security: *a31
       summary: Partial update of the caller-owned Agent profile.
-      tags: *a35
+      tags: *a32
   /api/v1/agent/me/dashboard:
     get:
       operationId: AgentSelfController_dashboard
@@ -2189,10 +2009,10 @@ paths:
                 $ref: '#/components/schemas/AgentDashboardDto'
         '404':
           description: AGENT_PROFILE_NOT_FOUND.
-      security: *a34
+      security: *a31
       summary: 'Composite dashboard: profile + bookings + earnings + recent reviews.
         Window default 30 days.'
-      tags: *a35
+      tags: *a32
   /api/v1/safety/country-primer/{countryCode}:
     get:
       operationId: CountryPrimerController_get
@@ -2252,11 +2072,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StorageStatsResponseDto'
-      security: &a36
+      security: &a33
         - bearer: []
       summary: "V.UX.32 — caller-scoped storage stats per category. Powers the
         /account/privacy hub's 'we store: 24 trips, 130 photos…' panel."
-      tags: &a37
+      tags: &a34
         - account
   /api/v1/account/export:
     get:
@@ -2270,10 +2090,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserDataExportResponseDto'
-      security: *a36
+      security: *a33
       summary: Full GDPR/DPDP/COPPA self-export bundle as a single JSON object. ~30
         sections; sensitive fields stripped.
-      tags: *a37
+      tags: *a34
   /api/v1/account/export.ndjson:
     get:
       operationId: AccountController_exportMyDataNdjson
@@ -2282,10 +2102,10 @@ paths:
         '200':
           description: Streaming NDJSON. Each line is a `{type,data}` envelope; downstream
             tooling (jq -c, ndjson-cli) parses incrementally.
-      security: *a36
+      security: *a33
       summary: 'NDJSON variant of the export bundle — one `{type,data}` envelope per
         line. Content-Type: application/x-ndjson.'
-      tags: *a37
+      tags: *a34
   /api/v1/account:
     delete:
       operationId: AccountController_deleteMyAccount
@@ -2293,10 +2113,10 @@ paths:
       responses:
         '204':
           description: Account marked soft-deleted; sessions revoked.
-      security: *a36
+      security: *a33
       summary: Soft-delete the caller's account + revoke all live sessions. GDPR Art.
         17 / DPDP §12 right-to-erasure.
-      tags: *a37
+      tags: *a34
   /api/v1/account/reactivate:
     post:
       operationId: AccountController_reactivate
@@ -2318,10 +2138,10 @@ paths:
           description: REACTIVATION_INVALID — token bad/expired.
         '404':
           description: ACCOUNT_NOT_RECOVERABLE — past the 7-day window.
-      security: *a36
+      security: *a33
       summary: V.UX.33 — restore a soft-deleted account within the 7-day window. Token
         from deletion-pending email or login response.
-      tags: *a37
+      tags: *a34
   /api/v1/account/appeal:
     post:
       operationId: AccountController_appeal
@@ -2337,10 +2157,10 @@ paths:
           description: Always ok.
         '422':
           description: INVALID_APPEAL_BODY.
-      security: *a36
+      security: *a33
       summary: V.UX.34 — submit a ban appeal. Always returns 200 regardless of
         registration / ban state.
-      tags: *a37
+      tags: *a34
   /api/v1/admin/users:
     get:
       operationId: AdminUsersController_list
@@ -2379,11 +2199,11 @@ paths:
                 $ref: '#/components/schemas/AdminListUsersResponseDto'
         '400':
           description: VALIDATION_FAILED — role not in user|premium|agent|admin.
-      security: &a38
+      security: &a35
         - bearer: []
       summary: List users with optional ?role / ?deleted / ?q filters. Offset
         pagination via ?limit + ?offset. Admin-only.
-      tags: &a39
+      tags: &a36
         - admin
   /api/v1/admin/users/{id}/ban:
     post:
@@ -2407,10 +2227,10 @@ paths:
           description: USER_NOT_FOUND.
         '422':
           description: INVALID_BAN_REASON.
-      security: *a38
+      security: *a35
       summary: V.UX.34 — ban a user with a user-readable reason. Sets bannedAt +
         banReason + revokes sessions.
-      tags: *a39
+      tags: *a36
   /api/v1/admin/users/{id}/unban:
     post:
       operationId: AdminUsersController_unban
@@ -2425,9 +2245,9 @@ paths:
           description: Unbanned.
         '404':
           description: USER_NOT_FOUND.
-      security: *a38
+      security: *a35
       summary: V.UX.34 — unban a user (clears bannedAt + banReason). Admin-only.
-      tags: *a39
+      tags: *a36
   /api/v1/admin/users/appeals:
     get:
       operationId: AdminUsersController_listAppeals
@@ -2454,10 +2274,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AdminListBanAppealsResponseDto'
-      security: *a38
+      security: *a35
       summary: V.UX.34 — list ban appeals. Defaults to status=pending. Admin
         moderation queue.
-      tags: *a39
+      tags: *a36
   /api/v1/admin/account-purge:
     post:
       operationId: AdminPurgeController_forcePurge
@@ -2486,10 +2306,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListTrustedContactsResponseDto'
-      security: &a40
+      security: &a37
         - bearer: []
       summary: List the caller's pre-set safety contacts. Cap 3 per account.
-      tags: &a41
+      tags: &a38
         - account
     post:
       operationId: TrustedContactsController_add
@@ -2509,10 +2329,10 @@ paths:
                 $ref: '#/components/schemas/TrustedContactDto'
         '422':
           description: CONTACT_CHANNEL_REQUIRED or CONTACT_LIMIT_REACHED.
-      security: *a40
+      security: *a37
       summary: Add a trusted contact. Requires at least one of phone or email. 422
         CONTACT_LIMIT_REACHED past 3.
-      tags: *a41
+      tags: *a38
   /api/v1/account/trusted-contacts/{id}:
     delete:
       operationId: TrustedContactsController_remove
@@ -2527,9 +2347,9 @@ paths:
           description: Deleted.
         '404':
           description: CONTACT_NOT_FOUND.
-      security: *a40
+      security: *a37
       summary: Delete one of the caller-owned trusted contacts.
-      tags: *a41
+      tags: *a38
   /api/v1/account/preferences:
     get:
       operationId: PreferencesController_getMine
@@ -2541,11 +2361,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PreferencesDto'
-      security: &a42
+      security: &a39
         - bearer: []
       summary: Caller's preferences. Returns a synthetic default shape if the user has
         never written any.
-      tags: &a43
+      tags: &a40
         - account
     patch:
       operationId: PreferencesController_updateMine
@@ -2565,10 +2385,10 @@ paths:
                 $ref: '#/components/schemas/PreferencesDto'
         '422':
           description: INVALID_BUDGET_TIER, INVALID_KID_AGE, or TOO_MANY_KIDS.
-      security: *a42
+      security: *a39
       summary: Partial update of the caller-owned preferences. Idempotent upsert;
         empty body is a no-op.
-      tags: *a43
+      tags: *a40
   /api/v1/connectivity/{countryCode}:
     get:
       operationId: ConnectivityController_byCountry
@@ -2592,34 +2412,77 @@ paths:
         best carrier, power plugs). Public; seeded editorially.
       tags:
         - account
-  /api/v1/auth/register:
+  /api/v1/media/upload-url:
     post:
-      operationId: AuthController_register
+      operationId: MediaController_createUploadUrl
       parameters: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RegisterRequestDto'
+              $ref: '#/components/schemas/CreateUploadUrlRequestDto'
       responses:
         '201':
-          description: Account created; refresh-cookie set; access token returned.
+          description: Presigned upload URL + initial asset row.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthSuccessResponseDto'
-        '409':
-          description: EMAIL_TAKEN.
-      summary: Create a new account. Email + password + displayName. Sets the
-        refresh-cookie + returns access token.
-      tags: &a44
-        - identity
-  /api/v1/auth/oauth/{provider}:
+                $ref: '#/components/schemas/CreateUploadUrlResponseDto'
+      security: &a41
+        - bearer: []
+      summary: Issue a presigned PUT URL for direct-to-S3 upload. Creates the
+        MediaAsset row in `processing` status.
+      tags: &a42
+        - media
+  /api/v1/media/{id}/confirm:
     post:
-      operationId: AuthController_oauth
+      operationId: MediaController_confirm
       parameters:
-        - name: provider
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Asset row in `ready` state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaAssetDto'
+        '404':
+          description: MEDIA_NOT_FOUND.
+      security: *a41
+      summary: Confirm upload landed (HEAD verifies bytes). Flips status to `ready`.
+        Image kind also flips exifStripped.
+      tags: *a42
+  /api/v1/media/{id}/download-url:
+    get:
+      operationId: MediaController_downloadUrl
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Presigned GET URL + ISO expiry.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaDownloadUrlResponseDto'
+        '404':
+          description: MEDIA_NOT_FOUND.
+      security: *a41
+      summary: Short-lived presigned GET URL for the asset. Owner-gated.
+      tags: *a42
+  /api/v1/media/{id}/trip:
+    patch:
+      operationId: MediaController_attachToTrip
+      parameters:
+        - name: id
           required: true
           in: path
           schema:
@@ -2629,270 +2492,407 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/OAuthSignInRequestDto'
+              $ref: '#/components/schemas/AttachMediaToTripRequestDto'
       responses:
         '200':
-          description: OAuth sign-in succeeded; refresh-cookie set; access token returned.
+          description: Updated asset row.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthSuccessResponseDto'
-        '401':
-          description: OAUTH_PROVIDER_UNKNOWN / OAUTH_INVALID_TOKEN /
-            OAUTH_EMAIL_UNVERIFIED.
-      summary: OAuth sign-in. Verifies a provider id token (Google / Apple / mock);
-        auto-links by email or creates a passwordless account.
-      tags: *a44
-  /api/v1/auth/magic-link/request:
-    post:
-      operationId: AuthController_magicLinkRequest
-      parameters: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MagicLinkRequestRequestDto'
-      responses:
-        '200':
-          description: Always ok. Email may or may not have been sent.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MagicLinkRequestResponseDto'
-      summary: "Passwordless sign-in step 1: email a magic link. Always returns 'ok' —
-        doesn't reveal whether the email is registered."
-      tags: *a44
-  /api/v1/auth/magic-link/consume:
-    post:
-      operationId: AuthController_magicLinkConsume
-      parameters: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MagicLinkConsumeRequestDto'
-      responses:
-        '200':
-          description: Sign-in succeeded; refresh-cookie set; access token returned.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AuthSuccessResponseDto'
-        '401':
-          description: MAGIC_LINK_INVALID.
-      summary: 'Passwordless sign-in step 2: consume the magic-link token + issue a
-        session. Single-use, 15-min TTL.'
-      tags: *a44
-  /api/v1/auth/password-reset/request:
-    post:
-      operationId: AuthController_passwordResetRequest
-      parameters: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PasswordResetRequestRequestDto'
-      responses:
-        '200':
-          description: Always ok. Email may or may not have been sent.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PasswordResetRequestResponseDto'
-      summary: V.UX.31 — request a password-reset email. Always returns ok regardless
-        of registration state.
-      tags: *a44
-  /api/v1/auth/password-reset/consume:
-    post:
-      operationId: AuthController_passwordResetConsume
-      parameters: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PasswordResetConsumeRequestDto'
-      responses:
-        '200':
-          description: Password updated. User must sign in with the new password.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PasswordResetConsumeResponseDto'
-        '401':
-          description: RESET_TOKEN_INVALID.
-        '422':
-          description: WEAK_PASSWORD or VALIDATION_FAILED.
-      summary: V.UX.31 — consume the password-reset token + set a new password.
-        Single-use, 15-min TTL.
-      tags: *a44
-  /api/v1/auth/login:
-    post:
-      operationId: AuthController_login
-      parameters: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/LoginRequestDto'
-      responses:
-        '200':
-          description: Login succeeded; refresh-cookie set; access token returned.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AuthSuccessResponseDto'
-        '401':
-          description: INVALID_CREDENTIALS / MFA_REQUIRED / MFA_INVALID.
-      summary: Email + password login. With MFA enabled, mfaCode is required on the
-        second call.
-      tags: *a44
-  /api/v1/auth/refresh:
-    post:
-      operationId: AuthController_refresh
-      parameters: []
-      responses:
-        '200':
-          description: New access token issued; new refresh cookie set.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RefreshSuccessResponseDto'
-        '401':
-          description: REFRESH_MISSING / REFRESH_INVALID / REFRESH_REUSED.
-      summary: Rotate the access + refresh tokens. Reads the httpOnly refresh cookie;
-        rejects if missing or stolen-detected.
-      tags: *a44
-  /api/v1/auth/me:
+                $ref: '#/components/schemas/MediaAssetDto'
+        '404':
+          description: MEDIA_NOT_FOUND or TRIP_NOT_FOUND.
+      security: *a41
+      summary: Attach (`{tripId}`) or detach (`{tripId:null}`) the media to a trip.
+        Double owner-gated.
+      tags: *a42
+  /api/v1/media/trip/{tripId}:
     get:
-      operationId: AuthController_me
-      parameters: []
+      operationId: MediaController_listByTrip
+      parameters:
+        - name: tripId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
       responses:
         '200':
-          description: Caller JWT claims (sub / sid / role) + hasSeenOnboarding.
+          description: Caller-owned media for the given trip.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WhoAmIResponseDto'
-        '401':
-          description: UNAUTHENTICATED — missing or invalid bearer.
-      security:
+                $ref: '#/components/schemas/ListTripMediaResponseDto'
+      security: *a41
+      summary: List the caller's `ready` media attached to a trip. ?limit=N (1..200,
+        default 50).
+      tags: *a42
+  /api/v1/media/{id}/memory-book:
+    patch:
+      operationId: MediaController_attachToBook
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttachMediaToBookRequestDto'
+      responses:
+        '200':
+          description: Updated asset row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaAssetDto'
+        '404':
+          description: MEDIA_NOT_FOUND or BOOK_NOT_FOUND.
+      security: *a41
+      summary: Attach (`{memoryBookId}`) or detach (`{memoryBookId:null}`) the media
+        to a memory book. Double owner-gated.
+      tags: *a42
+  /api/v1/memory-books/featured:
+    get:
+      operationId: MemoryBookController_featured
+      parameters:
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Currently-published memory books, newest-first.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeaturedMemoryBooksResponseDto'
+      security: &a43
         - bearer: []
-      summary: Whoami probe — returns the authed user's JWT claims + lightweight
-        User-row state (hasSeenOnboarding).
+      summary: Public discovery — currently-published memory books across all users,
+        ordered by publishedAt DESC.
+      tags: &a44
+        - media
+  /api/v1/memory-books/public/{id}:
+    get:
+      operationId: MemoryBookController_getPublic
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Published book metadata + ids of attached assets.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicMemoryBookWithAssetsResponseDto'
+        '404':
+          description: BOOK_NOT_PUBLISHED.
+      security: *a43
+      summary: Public read of a published memory book by id. The cuid is the
+        unguessable token.
       tags: *a44
-  /api/v1/auth/onboarding/complete:
+  /api/v1/memory-books/public/{id}/assets/{assetId}/download-url:
+    get:
+      operationId: MemoryBookController_getPublicAssetDownloadUrl
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: assetId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Short-lived presigned GET URL + ISO expiry.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicDownloadUrlResponseDto'
+        '404':
+          description: BOOK_NOT_PUBLISHED, MEDIA_NOT_FOUND, or NOT_ATTACHED.
+      security: *a43
+      summary: 'Public presigned download URL for a memory-book asset. Three-clause
+        gate: book published + asset attached + asset ready.'
+      tags: *a44
+  /api/v1/memory-books:
     post:
-      operationId: AuthController_onboardingComplete
+      operationId: MemoryBookController_create
       parameters: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/OnboardingCompleteRequestDto'
+              $ref: '#/components/schemas/CreateMemoryBookRequestDto'
       responses:
-        '200':
-          description: Onboarding flag flipped (and Sample trip seeded if requested +
-            applicable).
+        '201':
+          description: Newly-created book row.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/OnboardingCompleteResponseDto'
-        '401':
-          description: UNAUTHENTICATED.
-      security:
-        - bearer: []
-      summary: Mark the caller as having completed the onboarding wizard; optionally
-        seed a Sample trip. Idempotent.
+                $ref: '#/components/schemas/MemoryBookDto'
+      security: *a43
+      summary: Create a memory book (draft). Owner = caller.
       tags: *a44
-  /api/v1/auth/mfa/setup:
-    post:
-      operationId: AuthController_mfaSetup
-      parameters: []
+    get:
+      operationId: MemoryBookController_list
+      parameters:
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
       responses:
         '200':
-          description: ''
-      security:
-        - bearer: []
-      summary: Begin MFA enrollment — returns base32 secret + otpauth:// URI for QR
-        rendering. Pending until /mfa/verify confirms.
+          description: Caller-owned memory books, newest first.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListMemoryBooksResponseDto'
+      security: *a43
+      summary: List the caller's memory books, newest first. ?limit=N (1..200, default
+        50). Owner-scoped.
       tags: *a44
-  /api/v1/auth/mfa/verify:
-    post:
-      operationId: AuthController_mfaVerify
-      parameters: []
+  /api/v1/memory-books/{id}:
+    get:
+      operationId: MemoryBookController_getOne
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
       responses:
         '200':
-          description: ''
-      security:
-        - bearer: []
-      summary: Confirm MFA enrollment with a TOTP code. First-time enable returns 10
-        plaintext backup codes (shown ONCE).
+          description: Book row + ids of attached assets (any status).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoryBookWithAssetsResponseDto'
+        '404':
+          description: BOOK_NOT_FOUND.
+      security: *a43
+      summary: Get one of the caller-owned books + the attached asset ids.
       tags: *a44
-  /api/v1/auth/mfa/backup-codes/regenerate:
-    post:
-      operationId: AuthController_regenerateBackupCodes
-      parameters: []
+    patch:
+      operationId: MemoryBookController_update
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMemoryBookRequestDto'
       responses:
         '200':
-          description: ''
-      security:
-        - bearer: []
-      summary: Regenerate the 10 single-use MFA backup codes. Requires a valid current
-        TOTP. Returns plaintexts shown ONCE.
+          description: Updated book row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoryBookDto'
+        '404':
+          description: BOOK_NOT_FOUND.
+      security: *a43
+      summary: Update one of the caller-owned books. Partial update.
       tags: *a44
-  /api/v1/auth/mfa/disable:
-    post:
-      operationId: AuthController_mfaDisable
-      parameters: []
+    delete:
+      operationId: MemoryBookController_remove
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
       responses:
         '204':
-          description: ''
-      security:
-        - bearer: []
-      summary: Disable MFA. Requires a valid TOTP — a hijacked session alone cannot
-        strip the second factor.
+          description: Deleted.
+        '404':
+          description: BOOK_NOT_FOUND.
+      security: *a43
+      summary: Delete one of the caller-owned books. SetNull on MediaAsset.memoryBookId.
       tags: *a44
-  /api/v1/auth/logout:
+  /api/v1/memory-books/{id}/publish:
     post:
-      operationId: AuthController_logout
-      parameters: []
-      responses:
-        '204':
-          description: ''
-      summary: Logout — revokes the refresh token + clears the cookie. Idempotent if
-        already logged out.
-      tags: *a44
-  /api/v1/admin/identity/jwks/rotate:
-    post:
-      operationId: JwksAdminController_rotate
-      parameters: []
+      operationId: MemoryBookController_publish
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
       responses:
         '200':
-          description: New kid + previous kids.
-        '403':
-          description: Caller is not admin.
+          description: Published book row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoryBookDto'
+        '404':
+          description: BOOK_NOT_FOUND.
+      security: *a43
+      summary: Publish a book — flips publishedAt to now (idempotent).
+      tags: *a44
+  /api/v1/memory-books/{id}/unpublish:
+    post:
+      operationId: MemoryBookController_unpublish
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Updated book row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoryBookDto'
+        '404':
+          description: BOOK_NOT_FOUND.
+      security: *a43
+      summary: Unpublish a book — clears publishedAt (idempotent).
+      tags: *a44
+  /api/v1/memory-books/{id}/assets/{assetId}/caption:
+    patch:
+      operationId: MemoryBookController_updateAssetCaption
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: assetId
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAssetCaptionRequestDto'
+      responses:
+        '200':
+          description: Updated asset row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaAssetDto'
+        '404':
+          description: MEDIA_NOT_FOUND.
+      security: *a43
+      summary: Set or clear an asset's caption (story-mode narrative). Owner-only.
+      tags: *a44
+  /api/v1/memory-books/{id}/asset-order:
+    patch:
+      operationId: MemoryBookController_reorderAssets
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReorderBookAssetsRequestDto'
+      responses:
+        '204':
+          description: Reordering applied.
+        '404':
+          description: MEMORY_BOOK_NOT_FOUND.
+        '422':
+          description: INVALID_ASSET_ORDER (duplicates, length mismatch, or unknown id).
+      security: *a43
+      summary: Persist asset ordering for the memory book. Body is the desired
+        permutation of attached asset ids.
+      tags: *a44
+  /api/v1/admin/media:
+    get:
+      operationId: AdminMediaController_list
+      parameters:
+        - name: ownerId
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: kind
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: status
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: offset
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Matching media + total.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminListMediaResponseDto'
+        '400':
+          description: VALIDATION_FAILED — kind / status invalid.
       security: &a45
         - bearer: []
-      summary: Rotate a JWT signing keyring (access | refresh). Returns new kid +
-        previous-kid retirement list.
+      summary: Cross-user list of media with optional ?ownerId, ?kind, ?status
+        filters. Admin-only.
       tags: &a46
         - admin
-  /api/v1/admin/identity/jwks/kids:
-    get:
-      operationId: JwksAdminController_kids
-      parameters: []
+  /api/v1/admin/media/{id}:
+    delete:
+      operationId: AdminMediaController_remove
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
       responses:
-        '200':
-          description: ''
+        '204':
+          description: Deleted.
+        '404':
+          description: MEDIA_NOT_FOUND.
       security: *a45
-      summary: List active kids across both keyrings (access + refresh). Used to
-        confirm rotations + retirement windows.
+      summary: Hard-delete media (takedown). Trip + memory book references
+        SetNull-cascade.
       tags: *a46
   /api/v1/notifications/me/unread-count:
     get:
@@ -3884,425 +3884,220 @@ components:
         /auth/refresh. Lifetime: 15 minutes (configurable via
         JWT_ACCESS_EXPIRY).'
   schemas:
-    CreateUploadUrlRequestDto:
+    RegisterRequestDto:
       type: object
       properties:
-        kind:
+        email:
           type: string
-          enum:
-            - image
-            - video
-        contentType:
+          format: email
+          maxLength: 254
+        password:
           type: string
-          description: MIME type (e.g. "image/jpeg").
+          minLength: 12
+          maxLength: 128
+          description: Min 12 chars, max 128.
+        displayName:
+          type: string
           minLength: 1
-          maxLength: 120
-        tripId:
-          type: string
-          format: cuid
-          description: Optional trip to attach to immediately.
+          maxLength: 60
       required:
-        - kind
-        - contentType
-    MediaAssetDto:
+        - email
+        - password
+        - displayName
+    AuthSuccessResponseDto:
       type: object
       properties:
-        id:
+        userId:
           type: string
           format: cuid
-        ownerId:
+          description: Authenticated user id.
+        accessToken:
           type: string
-          format: cuid
-          description: Owner's user id.
-        tripId:
-          type: object
-          nullable: true
-          format: cuid
-          description: Trip the asset is attached to, or null if free-floating.
-        memoryBookId:
-          type: object
-          nullable: true
-          format: cuid
-          description: Memory book the asset is attached to, or null if free-floating.
-        kind:
+          description: Bearer access token (JWT). Memory-only — never localStorage.
+        expiresAt:
           type: string
-          enum:
-            - image
-            - video
-          description: Media type discriminator.
+          format: date-time
+          description: ISO-8601 timestamp at which the access token expires.
+      required:
+        - userId
+        - accessToken
+        - expiresAt
+    OAuthSignInRequestDto:
+      type: object
+      properties:
+        idToken:
+          type: string
+          description: Provider-issued ID token (e.g. Google id_token, Apple
+            identityToken). Real Google tokens are ~1.2KB; max enforced at 8192.
+          minLength: 1
+          maxLength: 8192
+      required:
+        - idToken
+    MagicLinkRequestRequestDto:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+      required:
+        - email
+    MagicLinkRequestResponseDto:
+      type: object
+      properties:
         status:
           type: string
           enum:
-            - pending
-            - ready
-            - failed
-          description: Upload lifecycle status.
-        caption:
-          type: object
-          nullable: true
-          maxLength: 280
-          description: V.UX.11 — owner-authored caption shown in story mode. Null = blank.
-        position:
-          type: number
-          description: V.UX.11 — sort order within the memory book (0-based).
-        createdAt:
-          type: string
-          format: date-time
+            - ok
+          description: Always 'ok'. Doesn't reveal whether the email is registered.
       required:
-        - id
-        - ownerId
-        - tripId
-        - memoryBookId
-        - kind
         - status
-        - caption
-        - position
-        - createdAt
-    CreateUploadUrlResponseDto:
+    MagicLinkConsumeRequestDto:
       type: object
       properties:
-        mediaAssetId:
+        token:
           type: string
-          format: cuid
-        uploadUrl:
-          type: string
-          description: Presigned PUT URL. Body must be the raw file bytes.
-        key:
-          type: string
-          description: S3 object key, useful for diagnostics.
-        method:
-          type: string
-          enum:
-            - PUT
-        expiresAt:
-          type: string
-          format: date-time
-          description: When the presigned URL expires.
-        asset:
-          description: 'Initial asset row (status: pending).'
-          allOf:
-            - $ref: '#/components/schemas/MediaAssetDto'
+          description: 64 lower-case hex characters (32 random bytes) from the email link
+            URL.
+          pattern: ^[0-9a-f]{64}$
+          minLength: 64
+          maxLength: 64
       required:
-        - mediaAssetId
-        - uploadUrl
-        - key
-        - method
-        - expiresAt
-        - asset
-    MediaDownloadUrlResponseDto:
+        - token
+    PasswordResetRequestRequestDto:
       type: object
       properties:
-        url:
+        email:
           type: string
-          description: Short-lived presigned GET URL for the asset bytes. Owner-gated. TTL
-            ~5 min.
-        expiresAt:
-          type: string
-          format: date-time
-          description: ISO-8601 timestamp at which the presigned URL expires.
+          format: email
+          maxLength: 254
       required:
-        - url
-        - expiresAt
-    AttachMediaToTripRequestDto:
+        - email
+    PasswordResetRequestResponseDto:
       type: object
       properties:
-        tripId:
-          type: object
-          nullable: true
-          format: cuid
-          description: Trip id to attach the asset to. Pass null to detach.
-      required:
-        - tripId
-    ListTripMediaResponseDto:
-      type: object
-      properties:
-        media:
-          description: Caller-owned media attached to the given trip, most-recent-first.
-            Capped via ?limit (1..200, default 50).
-          type: array
-          items:
-            $ref: '#/components/schemas/MediaAssetDto'
-      required:
-        - media
-    AttachMediaToBookRequestDto:
-      type: object
-      properties:
-        memoryBookId:
-          type: object
-          nullable: true
-          format: cuid
-          description: Memory-book id to attach the asset to. Pass null to detach.
-      required:
-        - memoryBookId
-    PublicMemoryBookDto:
-      type: object
-      properties:
-        id:
-          type: string
-          format: cuid
-        title:
-          type: string
-          description: Public title chosen by the owner.
-        theme:
-          type: string
-          description: Theme slug (e.g. "minimal", "vintage").
-        coverS3Key:
-          type: object
-          nullable: true
-          description: S3 key of the cover image, or null if none was set.
-        publishedAt:
-          type: string
-          format: date-time
-          description: ISO-8601 timestamp at which the book was published.
-        createdAt:
-          type: string
-          format: date-time
-      required:
-        - id
-        - title
-        - theme
-        - coverS3Key
-        - publishedAt
-        - createdAt
-    FeaturedMemoryBooksResponseDto:
-      type: object
-      properties:
-        books:
-          description: Currently-published memory books, ordered by publishedAt DESC.
-          type: array
-          items:
-            $ref: '#/components/schemas/PublicMemoryBookDto'
-      required:
-        - books
-    MemoryBookAssetSummaryDto:
-      type: object
-      properties:
-        id:
-          type: string
-          format: cuid
-        kind:
-          type: string
-          enum:
-            - image
-            - video
-        caption:
-          type: object
-          nullable: true
-          maxLength: 280
-        position:
-          type: number
-          description: 0-based ordering within the book.
-      required:
-        - id
-        - kind
-        - caption
-        - position
-    PublicMemoryBookWithAssetsResponseDto:
-      type: object
-      properties:
-        book:
-          $ref: '#/components/schemas/PublicMemoryBookDto'
-        assetIds:
-          description: Asset ids attached to this published book. Use GET
-            /memory-books/public/:id/assets/:assetId/download-url to mint a
-            presigned URL per asset.
-          type: array
-          items:
-            type: string
-        assets:
-          description: V.UX.11 — same assets enriched with caption + position for story
-            mode.
-          type: array
-          items:
-            $ref: '#/components/schemas/MemoryBookAssetSummaryDto'
-      required:
-        - book
-        - assetIds
-        - assets
-    PublicDownloadUrlResponseDto:
-      type: object
-      properties:
-        url:
-          type: string
-          description: Short-lived presigned GET URL for the asset bytes. Tagged with the
-            bucket + a TTL ~5 min.
-        expiresAt:
-          type: string
-          format: date-time
-          description: ISO-8601 timestamp at which the presigned URL expires.
-      required:
-        - url
-        - expiresAt
-    CreateMemoryBookRequestDto:
-      type: object
-      properties:
-        title:
-          type: string
-          minLength: 1
-          maxLength: 120
-        theme:
-          type: string
-          maxLength: 32
-        coverS3Key:
-          type: object
-          nullable: true
-          maxLength: 512
-      required:
-        - title
-    MemoryBookDto:
-      type: object
-      properties:
-        id:
-          type: string
-          format: cuid
-        ownerId:
-          type: string
-          format: cuid
-          description: Owner of the book — caller-only on owner routes.
-        title:
-          type: string
-        theme:
-          type: string
-          description: Theme slug (e.g. "minimal", "vintage").
-        coverS3Key:
-          type: object
-          nullable: true
-        publishedAt:
-          type: object
-          nullable: true
-          format: date-time
-          description: ISO-8601 publish timestamp; null while the book is a draft.
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-      required:
-        - id
-        - ownerId
-        - title
-        - theme
-        - coverS3Key
-        - publishedAt
-        - createdAt
-        - updatedAt
-    ListMemoryBooksResponseDto:
-      type: object
-      properties:
-        books:
-          description: Caller-owned memory books, newest first. Default 50 / cap 200.
-          type: array
-          items:
-            $ref: '#/components/schemas/MemoryBookDto'
-      required:
-        - books
-    MemoryBookWithAssetsResponseDto:
-      type: object
-      properties:
-        book:
-          $ref: '#/components/schemas/MemoryBookDto'
-        assetIds:
-          description: Asset ids attached to this book (any status).
-          type: array
-          items:
-            type: string
-        assets:
-          description: V.UX.11 — same assets enriched with caption + position.
-          type: array
-          items:
-            $ref: '#/components/schemas/MemoryBookAssetSummaryDto'
-      required:
-        - book
-        - assetIds
-        - assets
-    UpdateMemoryBookRequestDto:
-      type: object
-      properties:
-        title:
-          type: string
-          minLength: 1
-          maxLength: 120
-        theme:
-          type: string
-          minLength: 1
-          maxLength: 32
-        coverS3Key:
-          type: object
-          nullable: true
-          maxLength: 512
-    UpdateAssetCaptionRequestDto:
-      type: object
-      properties:
-        caption:
-          type: object
-          nullable: true
-          maxLength: 280
-          description: New caption. Null or blank clears the field.
-      required:
-        - caption
-    ReorderBookAssetsRequestDto:
-      type: object
-      properties:
-        assetIds:
-          minItems: 1
-          maxItems: 500
-          description: Strict permutation of currently-attached asset ids. Order in this
-            array becomes the persisted MediaAsset.position.
-          type: array
-          items:
-            type: string
-      required:
-        - assetIds
-    AdminMediaDto:
-      type: object
-      properties:
-        id:
-          type: string
-          format: cuid
-        ownerId:
-          type: string
-          format: cuid
-        tripId:
-          type: object
-          nullable: true
-          format: cuid
-        kind:
-          type: string
-          enum:
-            - image
-            - video
         status:
           type: string
           enum:
-            - processing
-            - ready
-            - failed
-        s3KeyRaw:
-          type: string
-        createdAt:
-          type: string
-          format: date-time
+            - ok
+          description: Always 'ok'. Doesn't reveal whether the email is registered.
       required:
-        - id
-        - ownerId
-        - tripId
-        - kind
         - status
-        - s3KeyRaw
-        - createdAt
-    AdminListMediaResponseDto:
+    PasswordResetConsumeRequestDto:
       type: object
       properties:
-        media:
-          type: array
-          items:
-            $ref: '#/components/schemas/AdminMediaDto'
-        total:
-          type: number
+        token:
+          type: string
+          description: 64 lower-case hex characters (32 random bytes) from the email link
+            URL.
+          pattern: ^[0-9a-f]{64}$
+          minLength: 64
+          maxLength: 64
+        newPassword:
+          type: string
+          minLength: 12
+          maxLength: 128
+          description: New password (12..128 chars).
       required:
-        - media
-        - total
+        - token
+        - newPassword
+    PasswordResetConsumeResponseDto:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+      required:
+        - status
+    LoginRequestDto:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          minLength: 1
+          maxLength: 128
+        mfaCode:
+          type: string
+          description: 6-digit TOTP or 8-char backup code (only on the second call when
+            MFA is on).
+          pattern: ^(\d{6}|[A-Za-z0-9]{8})$
+      required:
+        - email
+        - password
+    RefreshSuccessResponseDto:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          description: New bearer access token (JWT). Refresh cookie is rotated server-side.
+        expiresAt:
+          type: string
+          format: date-time
+          description: ISO-8601 timestamp at which the new access token expires.
+      required:
+        - accessToken
+        - expiresAt
+    WhoAmIResponseDto:
+      type: object
+      properties:
+        sub:
+          type: string
+          format: cuid
+          description: User id (`sub` claim).
+        sid:
+          type: string
+          format: cuid
+          description: Session id (`sid` claim).
+        role:
+          type: string
+          enum:
+            - user
+            - premium
+            - agent
+            - admin
+            - compliance
+            - sre
+          description: Role assigned to the session.
+        hasSeenOnboarding:
+          type: boolean
+          description: True iff the user has completed (or skipped) the 3-step onboarding
+            wizard. Web client uses this to decide whether to bounce post-login
+            → /onboarding or → /trips. Installed by [V.UX.3].
+        previousSeenAt:
+          type: object
+          nullable: true
+          format: date-time
+          description: V.UX.30 — the visit BEFORE the current one. Web compares this
+            against now() to decide whether to render the welcome-back hero
+            (>30d gap fires it). Null on first sign-in.
+      required:
+        - sub
+        - sid
+        - role
+        - hasSeenOnboarding
+        - previousSeenAt
+    OnboardingCompleteRequestDto:
+      type: object
+      properties:
+        seedSample:
+          type: boolean
+          description: When true, also seed a read-only "Sample trip — Goa weekend" if the
+            user has zero trips. Sent from the Skip terminal of the onboarding
+            wizard. Idempotent.
+    OnboardingCompleteResponseDto:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+      required:
+        - status
     CreateTripRequestDto:
       type: object
       properties:
@@ -4553,6 +4348,22 @@ components:
         - title
         - center
         - radiusKm
+    TripPlannerTokenUsageDto:
+      type: object
+      properties:
+        inputTokens:
+          type: number
+          description: Tokens in the system + user prompt.
+        outputTokens:
+          type: number
+          description: Tokens in the model output.
+        cachedTokens:
+          type: number
+          description: Cached prompt tokens (Anthropic ephemeral cache, Gemini context
+            cache).
+      required:
+        - inputTokens
+        - outputTokens
     GenerateSamplePlanResponseDto:
       type: object
       properties:
@@ -4561,11 +4372,23 @@ components:
           description: Free-form prose plan from the AI provider.
         model:
           type: string
-          description: Model identifier (e.g. "claude-sonnet-4-6" or "stub-trip-planner"
-            when CLAUDE_API_KEY is unset).
+          description: Model identifier (e.g. "claude-opus-4-7", "gemini-2.0-flash-exp",
+            "llama3.1:8b", or "stub-trip-planner" when no provider env var is
+            set).
+        provider:
+          type: string
+          enum:
+            - anthropic
+            - gemini
+            - ollama
+            - stub
+          description: Stable provider identifier — drives the "powered by …" badge.
+        tokenUsage:
+          $ref: '#/components/schemas/TripPlannerTokenUsageDto'
       required:
         - plan
         - model
+        - provider
     GeneratePlanWithAiResponseDto:
       type: object
       properties:
@@ -4574,11 +4397,24 @@ components:
           description: Free-form prose plan from the AI provider.
         model:
           type: string
-          description: Model identifier (e.g. "claude-sonnet-4-6" or "stub-trip-planner"
-            when CLAUDE_API_KEY is unset).
+          description: Model identifier (e.g. "claude-opus-4-7", "gemini-2.0-flash-exp",
+            "llama3.1:8b", or "stub-trip-planner" when no provider env var is
+            set).
+        provider:
+          type: string
+          enum:
+            - anthropic
+            - gemini
+            - ollama
+            - stub
+          description: Stable provider identifier — drives the "powered by …" badge on
+            /trips/[id].
+        tokenUsage:
+          $ref: '#/components/schemas/TripPlannerTokenUsageDto'
       required:
         - plan
         - model
+        - provider
     CreateTripShareRequestDto:
       type: object
       properties:
@@ -7386,220 +7222,425 @@ components:
         - bestCarrier
         - powerPlugs
         - seededAt
-    RegisterRequestDto:
+    CreateUploadUrlRequestDto:
       type: object
       properties:
-        email:
+        kind:
           type: string
-          format: email
-          maxLength: 254
-        password:
+          enum:
+            - image
+            - video
+        contentType:
           type: string
-          minLength: 12
-          maxLength: 128
-          description: Min 12 chars, max 128.
-        displayName:
-          type: string
+          description: MIME type (e.g. "image/jpeg").
           minLength: 1
-          maxLength: 60
-      required:
-        - email
-        - password
-        - displayName
-    AuthSuccessResponseDto:
-      type: object
-      properties:
-        userId:
+          maxLength: 120
+        tripId:
           type: string
           format: cuid
-          description: Authenticated user id.
-        accessToken:
+          description: Optional trip to attach to immediately.
+      required:
+        - kind
+        - contentType
+    MediaAssetDto:
+      type: object
+      properties:
+        id:
           type: string
-          description: Bearer access token (JWT). Memory-only — never localStorage.
+          format: cuid
+        ownerId:
+          type: string
+          format: cuid
+          description: Owner's user id.
+        tripId:
+          type: object
+          nullable: true
+          format: cuid
+          description: Trip the asset is attached to, or null if free-floating.
+        memoryBookId:
+          type: object
+          nullable: true
+          format: cuid
+          description: Memory book the asset is attached to, or null if free-floating.
+        kind:
+          type: string
+          enum:
+            - image
+            - video
+          description: Media type discriminator.
+        status:
+          type: string
+          enum:
+            - pending
+            - ready
+            - failed
+          description: Upload lifecycle status.
+        caption:
+          type: object
+          nullable: true
+          maxLength: 280
+          description: V.UX.11 — owner-authored caption shown in story mode. Null = blank.
+        position:
+          type: number
+          description: V.UX.11 — sort order within the memory book (0-based).
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - ownerId
+        - tripId
+        - memoryBookId
+        - kind
+        - status
+        - caption
+        - position
+        - createdAt
+    CreateUploadUrlResponseDto:
+      type: object
+      properties:
+        mediaAssetId:
+          type: string
+          format: cuid
+        uploadUrl:
+          type: string
+          description: Presigned PUT URL. Body must be the raw file bytes.
+        key:
+          type: string
+          description: S3 object key, useful for diagnostics.
+        method:
+          type: string
+          enum:
+            - PUT
         expiresAt:
           type: string
           format: date-time
-          description: ISO-8601 timestamp at which the access token expires.
+          description: When the presigned URL expires.
+        asset:
+          description: 'Initial asset row (status: pending).'
+          allOf:
+            - $ref: '#/components/schemas/MediaAssetDto'
       required:
-        - userId
-        - accessToken
+        - mediaAssetId
+        - uploadUrl
+        - key
+        - method
         - expiresAt
-    OAuthSignInRequestDto:
+        - asset
+    MediaDownloadUrlResponseDto:
       type: object
       properties:
-        idToken:
+        url:
           type: string
-          description: Provider-issued ID token (e.g. Google id_token, Apple
-            identityToken). Real Google tokens are ~1.2KB; max enforced at 8192.
-          minLength: 1
-          maxLength: 8192
-      required:
-        - idToken
-    MagicLinkRequestRequestDto:
-      type: object
-      properties:
-        email:
-          type: string
-          format: email
-          maxLength: 254
-      required:
-        - email
-    MagicLinkRequestResponseDto:
-      type: object
-      properties:
-        status:
-          type: string
-          enum:
-            - ok
-          description: Always 'ok'. Doesn't reveal whether the email is registered.
-      required:
-        - status
-    MagicLinkConsumeRequestDto:
-      type: object
-      properties:
-        token:
-          type: string
-          description: 64 lower-case hex characters (32 random bytes) from the email link
-            URL.
-          pattern: ^[0-9a-f]{64}$
-          minLength: 64
-          maxLength: 64
-      required:
-        - token
-    PasswordResetRequestRequestDto:
-      type: object
-      properties:
-        email:
-          type: string
-          format: email
-          maxLength: 254
-      required:
-        - email
-    PasswordResetRequestResponseDto:
-      type: object
-      properties:
-        status:
-          type: string
-          enum:
-            - ok
-          description: Always 'ok'. Doesn't reveal whether the email is registered.
-      required:
-        - status
-    PasswordResetConsumeRequestDto:
-      type: object
-      properties:
-        token:
-          type: string
-          description: 64 lower-case hex characters (32 random bytes) from the email link
-            URL.
-          pattern: ^[0-9a-f]{64}$
-          minLength: 64
-          maxLength: 64
-        newPassword:
-          type: string
-          minLength: 12
-          maxLength: 128
-          description: New password (12..128 chars).
-      required:
-        - token
-        - newPassword
-    PasswordResetConsumeResponseDto:
-      type: object
-      properties:
-        status:
-          type: string
-          enum:
-            - ok
-      required:
-        - status
-    LoginRequestDto:
-      type: object
-      properties:
-        email:
-          type: string
-          format: email
-          maxLength: 254
-        password:
-          type: string
-          minLength: 1
-          maxLength: 128
-        mfaCode:
-          type: string
-          description: 6-digit TOTP or 8-char backup code (only on the second call when
-            MFA is on).
-          pattern: ^(\d{6}|[A-Za-z0-9]{8})$
-      required:
-        - email
-        - password
-    RefreshSuccessResponseDto:
-      type: object
-      properties:
-        accessToken:
-          type: string
-          description: New bearer access token (JWT). Refresh cookie is rotated server-side.
+          description: Short-lived presigned GET URL for the asset bytes. Owner-gated. TTL
+            ~5 min.
         expiresAt:
           type: string
           format: date-time
-          description: ISO-8601 timestamp at which the new access token expires.
+          description: ISO-8601 timestamp at which the presigned URL expires.
       required:
-        - accessToken
+        - url
         - expiresAt
-    WhoAmIResponseDto:
+    AttachMediaToTripRequestDto:
       type: object
       properties:
-        sub:
+        tripId:
+          type: object
+          nullable: true
+          format: cuid
+          description: Trip id to attach the asset to. Pass null to detach.
+      required:
+        - tripId
+    ListTripMediaResponseDto:
+      type: object
+      properties:
+        media:
+          description: Caller-owned media attached to the given trip, most-recent-first.
+            Capped via ?limit (1..200, default 50).
+          type: array
+          items:
+            $ref: '#/components/schemas/MediaAssetDto'
+      required:
+        - media
+    AttachMediaToBookRequestDto:
+      type: object
+      properties:
+        memoryBookId:
+          type: object
+          nullable: true
+          format: cuid
+          description: Memory-book id to attach the asset to. Pass null to detach.
+      required:
+        - memoryBookId
+    PublicMemoryBookDto:
+      type: object
+      properties:
+        id:
           type: string
           format: cuid
-          description: User id (`sub` claim).
-        sid:
+        title:
+          type: string
+          description: Public title chosen by the owner.
+        theme:
+          type: string
+          description: Theme slug (e.g. "minimal", "vintage").
+        coverS3Key:
+          type: object
+          nullable: true
+          description: S3 key of the cover image, or null if none was set.
+        publishedAt:
+          type: string
+          format: date-time
+          description: ISO-8601 timestamp at which the book was published.
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - theme
+        - coverS3Key
+        - publishedAt
+        - createdAt
+    FeaturedMemoryBooksResponseDto:
+      type: object
+      properties:
+        books:
+          description: Currently-published memory books, ordered by publishedAt DESC.
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicMemoryBookDto'
+      required:
+        - books
+    MemoryBookAssetSummaryDto:
+      type: object
+      properties:
+        id:
           type: string
           format: cuid
-          description: Session id (`sid` claim).
-        role:
+        kind:
           type: string
           enum:
-            - user
-            - premium
-            - agent
-            - admin
-            - compliance
-            - sre
-          description: Role assigned to the session.
-        hasSeenOnboarding:
-          type: boolean
-          description: True iff the user has completed (or skipped) the 3-step onboarding
-            wizard. Web client uses this to decide whether to bounce post-login
-            → /onboarding or → /trips. Installed by [V.UX.3].
-        previousSeenAt:
+            - image
+            - video
+        caption:
+          type: object
+          nullable: true
+          maxLength: 280
+        position:
+          type: number
+          description: 0-based ordering within the book.
+      required:
+        - id
+        - kind
+        - caption
+        - position
+    PublicMemoryBookWithAssetsResponseDto:
+      type: object
+      properties:
+        book:
+          $ref: '#/components/schemas/PublicMemoryBookDto'
+        assetIds:
+          description: Asset ids attached to this published book. Use GET
+            /memory-books/public/:id/assets/:assetId/download-url to mint a
+            presigned URL per asset.
+          type: array
+          items:
+            type: string
+        assets:
+          description: V.UX.11 — same assets enriched with caption + position for story
+            mode.
+          type: array
+          items:
+            $ref: '#/components/schemas/MemoryBookAssetSummaryDto'
+      required:
+        - book
+        - assetIds
+        - assets
+    PublicDownloadUrlResponseDto:
+      type: object
+      properties:
+        url:
+          type: string
+          description: Short-lived presigned GET URL for the asset bytes. Tagged with the
+            bucket + a TTL ~5 min.
+        expiresAt:
+          type: string
+          format: date-time
+          description: ISO-8601 timestamp at which the presigned URL expires.
+      required:
+        - url
+        - expiresAt
+    CreateMemoryBookRequestDto:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        theme:
+          type: string
+          maxLength: 32
+        coverS3Key:
+          type: object
+          nullable: true
+          maxLength: 512
+      required:
+        - title
+    MemoryBookDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        ownerId:
+          type: string
+          format: cuid
+          description: Owner of the book — caller-only on owner routes.
+        title:
+          type: string
+        theme:
+          type: string
+          description: Theme slug (e.g. "minimal", "vintage").
+        coverS3Key:
+          type: object
+          nullable: true
+        publishedAt:
           type: object
           nullable: true
           format: date-time
-          description: V.UX.30 — the visit BEFORE the current one. Web compares this
-            against now() to decide whether to render the welcome-back hero
-            (>30d gap fires it). Null on first sign-in.
+          description: ISO-8601 publish timestamp; null while the book is a draft.
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
       required:
-        - sub
-        - sid
-        - role
-        - hasSeenOnboarding
-        - previousSeenAt
-    OnboardingCompleteRequestDto:
+        - id
+        - ownerId
+        - title
+        - theme
+        - coverS3Key
+        - publishedAt
+        - createdAt
+        - updatedAt
+    ListMemoryBooksResponseDto:
       type: object
       properties:
-        seedSample:
-          type: boolean
-          description: When true, also seed a read-only "Sample trip — Goa weekend" if the
-            user has zero trips. Sent from the Skip terminal of the onboarding
-            wizard. Idempotent.
-    OnboardingCompleteResponseDto:
+        books:
+          description: Caller-owned memory books, newest first. Default 50 / cap 200.
+          type: array
+          items:
+            $ref: '#/components/schemas/MemoryBookDto'
+      required:
+        - books
+    MemoryBookWithAssetsResponseDto:
       type: object
       properties:
+        book:
+          $ref: '#/components/schemas/MemoryBookDto'
+        assetIds:
+          description: Asset ids attached to this book (any status).
+          type: array
+          items:
+            type: string
+        assets:
+          description: V.UX.11 — same assets enriched with caption + position.
+          type: array
+          items:
+            $ref: '#/components/schemas/MemoryBookAssetSummaryDto'
+      required:
+        - book
+        - assetIds
+        - assets
+    UpdateMemoryBookRequestDto:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        theme:
+          type: string
+          minLength: 1
+          maxLength: 32
+        coverS3Key:
+          type: object
+          nullable: true
+          maxLength: 512
+    UpdateAssetCaptionRequestDto:
+      type: object
+      properties:
+        caption:
+          type: object
+          nullable: true
+          maxLength: 280
+          description: New caption. Null or blank clears the field.
+      required:
+        - caption
+    ReorderBookAssetsRequestDto:
+      type: object
+      properties:
+        assetIds:
+          minItems: 1
+          maxItems: 500
+          description: Strict permutation of currently-attached asset ids. Order in this
+            array becomes the persisted MediaAsset.position.
+          type: array
+          items:
+            type: string
+      required:
+        - assetIds
+    AdminMediaDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+        ownerId:
+          type: string
+          format: cuid
+        tripId:
+          type: object
+          nullable: true
+          format: cuid
+        kind:
+          type: string
+          enum:
+            - image
+            - video
         status:
           type: string
           enum:
-            - ok
+            - processing
+            - ready
+            - failed
+        s3KeyRaw:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
       required:
+        - id
+        - ownerId
+        - tripId
+        - kind
         - status
+        - s3KeyRaw
+        - createdAt
+    AdminListMediaResponseDto:
+      type: object
+      properties:
+        media:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminMediaDto'
+        total:
+          type: number
+      required:
+        - media
+        - total
     UnreadCountResponseDto:
       type: object
       properties:

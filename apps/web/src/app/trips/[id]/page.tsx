@@ -962,6 +962,14 @@ function PlanWithAiSection({ tripId, enabled }: PlanWithAiSectionProps) {
 
   if (!enabled) return null;
 
+  // POST.4 — show a friendly "powered by …" label per provider tier.
+  const providerLabel: Record<string, string> = {
+    anthropic: 'Powered by Claude',
+    gemini: 'Powered by Gemini',
+    ollama: 'Powered by Ollama (local)',
+    stub: 'Built-in planner',
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -977,9 +985,8 @@ function PlanWithAiSection({ tripId, enabled }: PlanWithAiSectionProps) {
           </Button>
         </div>
         <CardSubtitle>
-          Free-form prose suggestions. Uses Claude when{' '}
-          <code className="text-[10px]">CLAUDE_API_KEY</code> is set, falls back to a deterministic
-          stub otherwise.
+          Free-form prose suggestions. Picks the best available LLM at boot (Anthropic → Gemini →
+          Ollama → built-in stub).
         </CardSubtitle>
       </CardHeader>
       {errMsg ? (
@@ -987,10 +994,29 @@ function PlanWithAiSection({ tripId, enabled }: PlanWithAiSectionProps) {
           {errMsg}
         </p>
       ) : null}
-      {plan ? (
+      {planMutation.isPending && !plan ? (
+        <div aria-busy="true" aria-label="Generating plan" className="space-y-2">
+          <div className="h-5 w-40 animate-pulse rounded bg-muted/20" />
+          <div className="space-y-2 rounded border border-muted/15 bg-muted/5 px-3 py-3">
+            <div className="h-3 w-full animate-pulse rounded bg-muted/20" />
+            <div className="h-3 w-11/12 animate-pulse rounded bg-muted/20" />
+            <div className="h-3 w-9/12 animate-pulse rounded bg-muted/20" />
+            <div className="h-3 w-10/12 animate-pulse rounded bg-muted/20" />
+          </div>
+        </div>
+      ) : plan ? (
         <div className="space-y-2">
-          <div>
-            <Badge variant="brand">{plan.model}</Badge>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="brand">{providerLabel[plan.provider] ?? plan.provider}</Badge>
+            <span className="text-[10px] text-muted">{plan.model}</span>
+            {plan.tokenUsage ? (
+              <span
+                className="text-[10px] text-muted"
+                title={`input ${plan.tokenUsage.inputTokens} · output ${plan.tokenUsage.outputTokens}${plan.tokenUsage.cachedTokens ? ` · cached ${plan.tokenUsage.cachedTokens}` : ''}`}
+              >
+                · {plan.tokenUsage.inputTokens + plan.tokenUsage.outputTokens} tokens
+              </span>
+            ) : null}
           </div>
           <pre className="whitespace-pre-wrap rounded border border-muted/15 bg-muted/5 px-3 py-2 font-sans text-sm leading-relaxed">
             {plan.plan}
