@@ -19,14 +19,39 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
+  /* Core semantic colors. */
   --color-brand: #2563eb;
   --color-brand-foreground: #ffffff;
   --color-surface: #ffffff;
   --color-surface-foreground: #0f172a;
   --color-muted: #64748b;
   --color-danger: #b91c1c;
+  --color-accent: #f59e0b; /* warm amber for highlights / hand-picked pills */
+
+  /* POST.2 — full brand palette (Tailwind 4 named colour scale). */
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-200: #bfdbfe;
+  --color-brand-300: #93c5fd;
+  --color-brand-400: #60a5fa;
+  --color-brand-500: #3b82f6;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+  --color-brand-800: #1e40af;
+  --color-brand-900: #1e3a8a;
+
+  /* POST.2 — depth shadows so cards / buttons can layer cleanly. */
+  --shadow-depth-1: 0 1px 2px 0 rgba(15, 23, 42, 0.06), 0 1px 3px 0 rgba(15, 23, 42, 0.04);
+  --shadow-depth-2: 0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.06);
+  --shadow-depth-3:
+    0 10px 15px -3px rgba(15, 23, 42, 0.1), 0 4px 6px -4px rgba(15, 23, 42, 0.08);
+
+  /* POST.2 — Inter loaded by next/font/google in layout.tsx is exposed
+   * as --font-inter; we plumb it into --font-sans so every Tailwind
+   * font-sans utility uses Inter, with system-ui as the fallback. */
   --font-sans:
-    system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    var(--font-inter), system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    sans-serif;
 }
 
 /*
@@ -43,6 +68,12 @@
   --color-danger: #f87171;
   --color-brand: #60a5fa;
   --color-brand-foreground: #0b1220;
+  --color-accent: #fbbf24;
+
+  /* POST.2 — slightly lifted shadows in dark mode (more black, more spread). */
+  --shadow-depth-1: 0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 1px 3px 0 rgba(0, 0, 0, 0.2);
+  --shadow-depth-2: 0 4px 6px -1px rgba(0, 0, 0, 0.35), 0 2px 4px -2px rgba(0, 0, 0, 0.25);
+  --shadow-depth-3: 0 10px 15px -3px rgba(0, 0, 0, 0.45), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
 }
 
 /*

@@ -57,3 +57,54 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
     </label>
   );
 });
+
+/**
+ * POST.2 — floating-label field. The label sits inside the input
+ * border; on focus or when the input has a value, the label
+ * shrinks + lifts above the top border into the gap.
+ *
+ * Pure CSS (`peer-placeholder-shown` + `peer-focus`) — no JS state
+ * needed. Requires the input to have `placeholder=" "` so the
+ * shrink-trigger fires correctly.
+ */
+export const FloatingField = forwardRef<HTMLInputElement, FieldProps>(function FloatingField(
+  { label, help, error, className, id, ...rest },
+  ref,
+) {
+  const inputId = id ?? `ffield-${label.replace(/\s+/g, '-').toLowerCase()}`;
+  return (
+    <div className="block space-y-1">
+      <div className="relative">
+        <input
+          ref={ref}
+          id={inputId}
+          placeholder=" "
+          className={cn(
+            'peer block w-full rounded-md border border-muted/30 bg-surface px-3 pt-5 pb-2 text-sm text-surface-foreground transition',
+            'focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand',
+            'disabled:opacity-50 disabled:bg-muted/5',
+            error && 'border-danger focus:border-danger focus:ring-danger',
+            className,
+          )}
+          {...rest}
+        />
+        <label
+          htmlFor={inputId}
+          className={cn(
+            'pointer-events-none absolute left-3 top-3.5 z-10 origin-left -translate-y-3 scale-75 transform bg-surface px-1 text-xs font-medium text-muted transition-all',
+            'peer-placeholder-shown:top-3.5 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:text-sm',
+            'peer-focus:top-0 peer-focus:-translate-y-1/2 peer-focus:scale-75 peer-focus:px-1 peer-focus:text-brand',
+            'top-0 -translate-y-1/2',
+          )}
+        >
+          {label}
+        </label>
+      </div>
+      {error ? (
+        <span className="block text-xs text-danger">{error}</span>
+      ) : help ? (
+        <span className="block text-xs text-muted">{help}</span>
+      ) : null}
+    </div>
+  );
+});

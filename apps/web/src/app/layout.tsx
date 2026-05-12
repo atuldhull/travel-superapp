@@ -11,6 +11,7 @@
  */
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import { Inter } from 'next/font/google';
 import Script from 'next/script';
 import './globals.css';
 import Link from 'next/link';
@@ -25,7 +26,18 @@ import { LiveRegion } from '../components/a11y/live-region';
 import { SkipToMain } from '../components/a11y/skip-to-main';
 import { CommandPalette } from '../components/cmdk/command-palette';
 import { ShortcutSheet } from '../components/cmdk/shortcut-sheet';
+import { Logo } from '../components/branding/logo';
 import { Providers } from './providers';
+
+// POST.2 — Inter as the brand typeface. `next/font/google` self-hosts
+// the file at build time, so no FCP regression and no CLS risk. We
+// expose the CSS variable globally and pipe it into --font-sans via
+// globals.css so every Tailwind `font-sans` utility uses Inter.
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'TravelSuperApp',
@@ -50,7 +62,7 @@ const themeBootScript = `
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={inter.variable} suppressHydrationWarning>
       <head>
         {/* `beforeInteractive` injects this synchronously into the
             head BEFORE the page renders, eliminating theme flash. */}
@@ -66,9 +78,15 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               active SOS; surfaces "I'm OK" cancel + local 911 when active. */}
           <ActiveSosBanner />
           <div className="mx-auto max-w-3xl px-6 py-10 space-y-6">
-            <header className="flex items-center justify-between gap-3" role="banner">
-              <WhoAmIBadge />
+            <header
+              className="flex items-center justify-between gap-3 border-b border-muted/10 pb-4"
+              role="banner"
+            >
+              {/* POST.2 — wordmark logo on the left; identity badge
+                  follows below the fold for the V.UX.30 welcome-back signal. */}
+              <Logo />
               <nav aria-label="Primary" className="flex items-center gap-2">
+                <WhoAmIBadge />
                 <InboxBadge />
                 <ThemeToggle />
               </nav>

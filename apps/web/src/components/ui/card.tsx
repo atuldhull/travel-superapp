@@ -1,34 +1,47 @@
 /**
- * Card primitive — themed surface for list items + grouped content.
+ * POST.2 — Card primitive with explicit depth levels.
  *
- *   <Card>
- *     <CardHeader>
- *       <CardTitle>Title</CardTitle>
- *       <CardSubtitle>Sub</CardSubtitle>
- *     </CardHeader>
- *     <CardBody>...</CardBody>
- *   </Card>
+ *   <Card>                       — flat (depth-0; old default)
+ *   <Card depth="raised">        — depth-2 shadow + hover lift to depth-3
+ *   <Card depth="floating">      — depth-3 shadow + hover lift further
+ *   <Card interactive>           — adds the cursor-pointer + lift physics
  *
- * `Card` defaults to a `<div>` with hover-shadow; pass `as="li"` (or
- * any tag) when rendering inside a `<ul>` so the semantics line up.
- *
- * Installed by prompt [IV.18.19.27].
+ * Composition unchanged (CardHeader / CardTitle / CardSubtitle /
+ * CardBody all keep the same surface). Backwards compatible — no
+ * existing call site needs to change because the default depth is
+ * "flat" which renders as the V.UX-era card shape.
  */
 import { type ElementType, type HTMLAttributes, type ReactNode } from 'react';
 import { cn } from '../../lib/cn';
 
+type CardDepth = 'flat' | 'raised' | 'floating';
+
 interface CardProps extends HTMLAttributes<HTMLElement> {
   readonly as?: ElementType;
+  readonly depth?: CardDepth;
+  /** Adds cursor-pointer + lift on hover. Default false. */
+  readonly interactive?: boolean;
   readonly children?: ReactNode;
 }
 
-export function Card({ as: Tag = 'div', className, children, ...rest }: CardProps) {
+const depthBase = 'rounded-lg border border-muted/20 bg-surface p-4 transition';
+const depthStyles: Record<CardDepth, string> = {
+  flat: 'shadow-sm hover:shadow',
+  raised: 'shadow-(--shadow-depth-2) hover:shadow-(--shadow-depth-3) hover:-translate-y-0.5',
+  floating: 'shadow-(--shadow-depth-3) hover:shadow-(--shadow-depth-3) hover:-translate-y-1',
+};
+
+export function Card({
+  as: Tag = 'div',
+  depth = 'flat',
+  interactive = false,
+  className,
+  children,
+  ...rest
+}: CardProps) {
   return (
     <Tag
-      className={cn(
-        'rounded-lg border border-muted/20 bg-surface p-4 shadow-sm transition hover:shadow',
-        className,
-      )}
+      className={cn(depthBase, depthStyles[depth], interactive && 'cursor-pointer', className)}
       {...rest}
     >
       {children}
