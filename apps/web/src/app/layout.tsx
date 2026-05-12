@@ -14,7 +14,6 @@ import type { ReactNode } from 'react';
 import { Inter } from 'next/font/google';
 import Script from 'next/script';
 import './globals.css';
-import Link from 'next/link';
 import { ActiveSosBanner } from '../components/safety/active-sos-banner';
 import { SosFab } from '../components/safety/sos-fab';
 import { TranslateWidget } from '../components/translation/translate-widget';
@@ -27,6 +26,7 @@ import { SkipToMain } from '../components/a11y/skip-to-main';
 import { CommandPalette } from '../components/cmdk/command-palette';
 import { ShortcutSheet } from '../components/cmdk/shortcut-sheet';
 import { Logo } from '../components/branding/logo';
+import { Footer } from '../components/landing/footer';
 import { Providers } from './providers';
 
 // POST.2 — Inter as the brand typeface. `next/font/google` self-hosts
@@ -94,18 +94,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <main id="main" tabIndex={-1} className="outline-none">
               {children}
             </main>
-            <footer
-              role="contentinfo"
-              className="mt-8 flex items-center justify-between gap-3 border-t border-muted/15 pt-4 text-xs text-muted"
-            >
-              <span>© TravelSuperApp</span>
-              <Link
-                href={'/accessibility' as never}
-                className="rounded underline-offset-2 hover:underline focus:outline-none focus:ring-2 focus:ring-brand"
-              >
-                Accessibility statement
-              </Link>
-            </footer>
+            <Footer />
           </div>
           {/* V.UX.13 — persistent SOS FAB. Renders disabled for
               anonymous callers; tap → confirm modal → POST /safety/sos
