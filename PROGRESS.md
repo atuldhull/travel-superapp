@@ -26,6 +26,65 @@
 Post-V.UX gap closure work. See `docs/POST_VUX_GAPS.md` for the
 audit + drop-in execution prompts.
 
+### [POST.6] — Marketing + legal surface (/pricing, /help, /status, /terms, /privacy, /cookies + footer)
+
+- **Date**: 2026-05-12
+- **Commit**: <pending>
+- **Files changed**: 15 (6 new pages — `/pricing`, `/help`, `/status`,
+  `/terms`, `/privacy`, `/cookies`; 1 new Footer component; 1 new
+  legal-page template; 1 new MD→HTML converter helper; 3 new legal MD
+  source files; 3 modified — `layout.tsx` mounts new Footer + drops
+  inline footer, `sitemap.ts` + `robots.ts` register the 6 URLs)
+- **Deps added**: none — wrote a tiny ~80-line MD→HTML converter inline
+  rather than pulling in a parser library
+- **Tests added**: 0 (pure UI; visual review covers it; legal MD files
+  have no executable logic)
+- **Verification output**:
+  ```
+  pnpm --filter=web run typecheck → green
+  All 6 new routes register in Next.js App Router
+  Sitemap entries: +6 (pricing, help, status, terms, privacy, cookies)
+  Robots allow-list: +6 same paths
+  Footer renders on every page (mounted once in layout.tsx)
+  ```
+- **Page-by-page summary**:
+  - `/pricing` — 3-tier card grid (Free / Premium $9 highlighted /
+    Agent contact). Premium CTA mirrors PremiumGate's "coming soon"
+    alert until [POST.9] wires Stripe.
+  - `/help` — client-side filter over a 20-entry FAQ across 5
+    categories (Account, Trips, Safety, Privacy, Billing). Accordion
+    items, search box, no API call.
+  - `/status` — polls `${NEXT_PUBLIC_API_URL}/health/ready` every 30s
+    via native fetch (no SDK — health endpoint is at root path, not
+    under /api/v1). Coloured dots per dependency (Postgres / Redis /
+    Meilisearch). 90-day uptime placeholder until [POST.10].
+  - `/terms`, `/privacy`, `/cookies` — server components reading
+    `docs/legal/*.md` via `fs.readFileSync` + `renderLegalMarkdown()`.
+    Each carries a `Last updated: 2026-05-12` line + amber "Counsel
+    review pending" badge.
+  - `<Footer>` — 3-column grid (Product / Legal / Connect), links to
+    every new page + Accessibility + GitHub + email contacts. Mounted
+    once in layout.tsx; replaces the prior inline 1-line footer.
+- **Lessons**:
+  - Hand-rolled MD→HTML converter (~80 LOC) is auditable, has zero
+    deps, ships zero JS to the client (server-rendered), and handles
+    every block type the legal copy needs. Pulling `marked` or
+    `react-markdown` for 3 pages was an obvious over-spend.
+  - Client components in Next.js 15 cannot export `metadata` —
+    initially exported `dynamicMetadata` from /pricing as a workaround;
+    Next.js silently ignores it. Removed; the parent layout's
+    metadata is sufficient until we want page-level SEO.
+  - Health endpoints are mounted at the root path (`/health/live`,
+    `/health/ready`) to follow the k8s probe convention, NOT under
+    `/api/v1/`. The /status page fetches them directly via native
+    fetch + `${NEXT_PUBLIC_API_URL}` rather than the SDK (which only
+    knows the /api/v1 prefix).
+  - The legal MD files live in `docs/legal/*.md` so they're discoverable
+    outside the web app (oncall runbook, counsel handoff). The web app
+    reads them at request time — no copy duplication.
+
+---
+
 ### [POST.5] — Sharp image pipeline + WebP variants + admin thumbnails
 
 - **Date**: 2026-05-12
