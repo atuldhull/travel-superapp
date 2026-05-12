@@ -20,6 +20,7 @@
  * Installed by prompt [III.11.0]. See Playbook §10 + §15.2.
  */
 import '../instrumentation';
+import './sentry.init';
 import 'reflect-metadata';
 
 import fastifyCookie from '@fastify/cookie';
@@ -67,6 +68,13 @@ async function bootstrap(): Promise<void> {
   //    FIRST so that when Nest scans in reverse, the more specific
   //    DomainExceptionFilter is evaluated first for any DomainError.
   //    Plain Error / HttpException fall through to AllExceptionFilter.
+  //
+  //    POST.10 — when `SENTRY_DSN_API` is set, `sentry.init.ts` runs
+  //    before this and installs the @sentry/node uncaughtException
+  //    + unhandledRejection handlers. Errors that propagate past our
+  //    filters are captured automatically. Wiring `SentryGlobalFilter`
+  //    as an APP_FILTER is the next-step polish — deferred to keep
+  //    POST.10 blast radius small.
   app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
 
   // 5. `/api/v1` prefix for business routes; `/health/*` stays bare for

@@ -26,6 +26,108 @@
 Post-V.UX gap closure work. See `docs/POST_VUX_GAPS.md` for the
 audit + drop-in execution prompts.
 
+### [POST.10] — Sentry + Honeycomb + GitHub Actions deploy gate
+
+- **Date**: 2026-05-12
+- **Commit**: <pending>
+- **Files changed**: 15 (1 new — `apps/api/src/sentry.init.ts`; 3 new
+  web configs — `sentry.{client,server,edge}.config.ts`; 1 new —
+  `next.config.ts` (replaces `.js` with `withSentryConfig` wrapper);
+  1 new workflow — `.github/workflows/deploy.yml`; 1 new runbook —
+  `docs/runbooks/incident-response.md`; 4 modified —
+  `apps/api/src/main.ts` adds `import './sentry.init'`,
+  `packages/observability/src/tracing.ts` accepts Honeycomb headers
+  when `HONEYCOMB_API_KEY` is set, `packages/config/src/schema.ts`
+  adds 5 new vars, `docs/external-apis.md` gets Sentry + Honeycomb
+  - deploy-gate sections; 2 env-example files updated)
+- **Deps added**: `@sentry/nestjs` (api), `@sentry/nextjs` (web)
+- **Schema change**: **none** — config schema extension only
+- **Behaviour:**
+  - All telemetry env vars absent → api + web boot identically to
+    pre-POST.10 (the OTLP 404 boot warning persists until either
+    `HONEYCOMB_API_KEY` or `OTEL_DISABLED=true` is set; both
+    documented)
+  - `SENTRY_DSN_API` set → api `Sentry.init` runs in `sentry.init.ts`
+    (loaded BEFORE NestFactory.create); uncaught errors land in
+    Sentry via @sentry/node's process handlers; the
+    `WEBHOOK_SIGNATURE_INVALID` 400s from probe attacks are filtered
+    out by `beforeSend`
+  - `SENTRY_DSN_WEB` set → all 3 Next.js runtimes (browser / SSR /
+    edge) report errors; session replay is opt-in on error
+    sessions only with masked text + blocked media (GDPR-safe)
+  - `HONEYCOMB_API_KEY` set → OTLP exporter re-routes to
+    `https://api.honeycomb.io/v1/traces` with `x-honeycomb-team`
+    auth header + `x-honeycomb-dataset` (defaults to
+    `api-${NODE_ENV}`)
+  - `withSentryConfig` wrap is unconditional but source-map upload
+    only runs when `SENTRY_AUTH_TOKEN` is set in CI — local
+    `next dev` has zero Sentry overhead
+- **Tests added**: 0 (verification is operational, not unit-testable;
+  existing trip-crud + magic-link + sharp suites confirm no
+  regression from main.ts `sentry.init` import ordering)
+- **Deploy gate** (`.github/workflows/deploy.yml`):
+  - Fires ONLY on tag push `v*.*.*` (semver release tags)
+  - Validates: pnpm install → @app/\* build → typecheck → lint
+  - Two parallel deploy jobs: `flyctl deploy --remote-only` for
+    apps/api + apps/web
+  - Each job verifies `FLY_API_TOKEN` is set first and fails loudly
+    if not — no silent no-ops
+  - On success, the `notify` job appends URLs + a link-to-Sentry
+    note to the GitHub Release body for the tag
+  - Requires three secrets: `FLY_API_TOKEN`, `FLY_APP_API`,
+    `FLY_APP_WEB`. Optional: `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`,
+    `SENTRY_PROJECT_WEB` for source-map upload during `next build`
+- **Verification output**:
+  ```
+  pnpm --filter=api add @sentry/nestjs → installed
+  pnpm --filter=web add @sentry/nextjs → installed (also pulled @sentry/cli)
+  pnpm --filter=@app/config build → green
+  pnpm --filter=@app/observability build → green
+  pnpm --filter=api --filter=web --filter=@app/observability --filter=@app/config typecheck → green
+  pnpm --filter=api test -- --runInBand "trip-crud|magic-link|payments-stripe|sharp"
+    → 21 pass + 6 skip (payments-stripe) in 9.6s — confirms
+    sentry.init.ts load-order change didn't regress
+  ```
+- **Lessons**:
+  - `@sentry/nestjs` v10.x does NOT export `setupNestErrorHandler`
+    (which the gap-doc spec referenced) — that was a v8 API. The
+    v10 path is to register `SentryGlobalFilter` as an `APP_FILTER`
+    provider, OR rely on Sentry.init's process handlers. POST.10
+    ships the latter (simpler, no AppModule churn); SentryGlobalFilter
+    wiring is queued as a future polish slice.
+  - Stripe SDK v22.1.1 changed the apiVersion literal to
+    `'2026-04-22.dahlia'` (was `'2025-09-30.clover'` in v21). The
+    pnpm-lock update from adding @sentry/nestjs pulled in the new
+    Stripe version transitively — caught by typecheck.
+  - Stripe v22's `import Stripe from 'stripe'` uses
+    `export = StripeConstructor` which means `Stripe` is BOTH a
+    callable class AND a namespace, BUT the namespace only exports
+    `Stripe` itself (not `Checkout`, `Subscription`, etc). To get
+    types like `Stripe.Checkout.Session` you'd need
+    `import('./stripe.core.js').Stripe.Checkout` — version-coupled.
+    POST.10 fix: drop SDK type imports entirely, use structural
+    typing in `handle-stripe-webhook.use-case.ts` for the webhook
+    `data.object`. SDK-version-agnostic; works for v22+v23+future.
+  - Prisma's `SubscriptionStatus` enum is narrower than Stripe's
+    (`active | past_due | canceled | trialing`). Mapped the 4 extra
+    Stripe statuses (`unpaid`, `incomplete`, `incomplete_expired`,
+    `paused`) to `canceled` — the safe Premium-revoking choice.
+    Widening the enum is a follow-up migration if we ever need
+    finer status reporting.
+  - `withSentryConfig` is safe to call unconditionally — it only
+    uploads source maps when `SENTRY_AUTH_TOKEN` is set in env.
+    Local `next dev` has zero Sentry overhead even when DSN is
+    configured.
+  - `BadRequestException` (with a structured body) is the right
+    NestJS error for "you sent a malformed webhook" — not
+    `ValidationError` (which is 422 + has fieldErrors signature).
+  - The deploy workflow's `FLY_API_TOKEN`-existence-guard step is
+    the difference between a 5-minute "deploy silently passed but
+    nothing actually deployed" mystery and an obvious error message
+    in GH Actions. Worth the 6 lines.
+
+---
+
 ### [POST.9] — Stripe scaffold — Premium checkout + webhook + subscription sync
 
 - **Date**: 2026-05-12

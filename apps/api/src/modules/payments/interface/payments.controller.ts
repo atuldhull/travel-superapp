@@ -18,6 +18,7 @@
  * Installed by prompt [POST.9].
  */
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -33,7 +34,6 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagg
 import { ConfigService } from '@nestjs/config';
 import type { FastifyRequest } from 'fastify';
 import type { Env } from '@app/config';
-import { ValidationError } from '@app/errors';
 import { CurrentUser, Public, type AuthenticatedUser } from '../../../common/auth';
 import { PrismaService } from '../../../common/db/prisma.service';
 import { CreateCheckoutSessionUseCase } from '../application/create-checkout-session.use-case';
@@ -118,17 +118,19 @@ export class PaymentsController {
     this.requireStripe();
     const signature = req.headers['stripe-signature'];
     if (typeof signature !== 'string' || signature.length === 0) {
-      throw new ValidationError('stripe-signature header missing', {}, 'WEBHOOK_SIGNATURE_MISSING');
+      throw new BadRequestException({
+        code: 'WEBHOOK_SIGNATURE_MISSING',
+        message: 'stripe-signature header missing',
+      });
     }
     // The custom JSON parser in main.ts hands us a Buffer body for this
     // route (so signature verification has the exact bytes Stripe signed).
     const rawBody = req.body as unknown as Buffer;
     if (!Buffer.isBuffer(rawBody)) {
-      throw new ValidationError(
-        'webhook body must be raw bytes',
-        { actualType: typeof rawBody },
-        'WEBHOOK_BODY_INVALID',
-      );
+      throw new BadRequestException({
+        code: 'WEBHOOK_BODY_INVALID',
+        message: 'webhook body must be raw bytes',
+      });
     }
     const { eventId } = await this.handleWebhook.execute(rawBody, signature);
     return { received: true, eventId };
