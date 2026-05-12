@@ -78,6 +78,38 @@
 | **Twilio**                 | SMS                       | `https://api.twilio.com/2010-04-01/` | api_key | Free trial credit                     | $0.0075/SMS in US; varies | `SmsPort`    | 3 failures / 60s / 120s. DLQ for retry. No channel failover (Playbook §13.2 — no silent reroute of PII).                 |
 | **Expo Push / FCM / APNs** | Mobile push notifications | Expo/FCM/APNs endpoints              | api_key | Free (Expo + FCM); APNs requires cert | Free for routine volumes  | `PushPort`   | 3 failures / 30s / 60s. DLQ; escalate to email if rule has that channel.                                                 |
 
+### Observability (POST.10 — Sentry + Honeycomb)
+
+Both providers have generous free tiers — same env-gated activation pattern as POST.3/4/9. No keys = no telemetry, current behaviour preserved.
+
+| Name          | Purpose                                           | Base URL                             | Auth    | Free tier                                    | Beyond free               | Activation                                         |
+| ------------- | ------------------------------------------------- | ------------------------------------ | ------- | -------------------------------------------- | ------------------------- | -------------------------------------------------- |
+| **Sentry**    | Error tracking + perf monitoring + session replay | `https://*.ingest.sentry.io/`        | api_key | 5,000 errors/mo + 100 perf txns/min; no card | $26/mo "Team" plan        | `SENTRY_DSN_API` (api), `SENTRY_DSN_WEB` (web)     |
+| **Honeycomb** | Distributed tracing (OTLP → Honeycomb)            | `https://api.honeycomb.io/v1/traces` | api_key | 20M events/mo; no card                       | Tiered (~$130/mo at 100M) | `HONEYCOMB_API_KEY` + optional `HONEYCOMB_DATASET` |
+
+**Sentry — local dev setup** (free, ~2 min):
+
+1. Sign up at https://sentry.io (no card required)
+2. **Create project → Node.js / NestJS** → copy the DSN (`https://xxx@oXXX.ingest.sentry.io/XXX`)
+3. **Create another project → Next.js** → copy that DSN
+4. Drop into `apps/api/.env`:
+   ```
+   SENTRY_DSN_API=https://xxx@…
+   SENTRY_DSN_WEB=https://yyy@…
+   NEXT_PUBLIC_SENTRY_DSN_WEB=https://yyy@…
+   ```
+5. Restart both api + web. The api's `sentry.init.ts` (loaded before NestFactory) calls `Sentry.init`; `Sentry.setupNestErrorHandler` in `main.ts` wires uncaught controller errors. Web's `sentry.{client,server,edge}.config.ts` are auto-discovered by Next.js.
+
+**Honeycomb — local dev setup** (free, ~2 min):
+
+1. Sign up at https://ui.honeycomb.io (no card)
+2. **Account → Environments and API Keys** → create a non-restricted key (`hcaik_…`)
+3. Drop `HONEYCOMB_API_KEY=hcaik_…` into `apps/api/.env`, restart api
+4. `tracing.ts` (in `@app/observability`) detects the key and re-routes the OTLP exporter to `https://api.honeycomb.io/v1/traces` with the `x-honeycomb-team` header. Dataset defaults to `api-${NODE_ENV}` — override via `HONEYCOMB_DATASET`.
+5. The OTLP 404 errors that previously logged on every boot stop the moment Honeycomb is configured. To skip tracing entirely (e.g. during unit-test runs that don't need traces): `OTEL_DISABLED=true`.
+
+**Deploy gate (POST.10):** GitHub Actions workflow at `.github/workflows/deploy.yml` runs on `v*.*.*` tag push only. Requires three repo secrets — `FLY_API_TOKEN`, `FLY_APP_API`, `FLY_APP_WEB` — before tagging actually deploys. Optional `SENTRY_AUTH_TOKEN` + `SENTRY_ORG` + `SENTRY_PROJECT_WEB` for source-map upload. Until those secrets are set, tag pushes fail loudly with a clear error rather than silently no-op'ing.
+
 ### Stripe Premium subscriptions (POST.9)
 
 The PaymentsModule wires Stripe Checkout for the Premium tier via the same env-gated factory pattern as POST.3/4 — when `STRIPE_SECRET_KEY` is absent, the api 503s `POST /payments/checkout` with `PAYMENTS_DISABLED` and the /pricing CTA falls back to a "coming soon" alert. TEST mode keys are free forever for development; you only pay Stripe's per-transaction fee once you switch to LIVE keys.

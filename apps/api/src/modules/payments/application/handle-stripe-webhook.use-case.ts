@@ -19,7 +19,6 @@
  * Installed by prompt [POST.9].
  */
 import { Inject, Injectable } from '@nestjs/common';
-import Stripe from 'stripe';
 import { createLogger, type AppLogger } from '@app/logger';
 import { PAYMENT_PROVIDER, type PaymentProviderPort } from './ports/payment-provider.port';
 import {
@@ -58,12 +57,25 @@ export class HandleStripeWebhookUseCase {
   }
 
   private async onCheckoutSessionCompleted(data: Record<string, unknown>): Promise<void> {
-    const session = data as unknown as Stripe.Checkout.Session;
+    // Structural typing instead of `Stripe.Checkout.Session` — the
+    // SDK exports the namespace via an `export = StripeConstructor`
+    // pattern that varies between v22 + v23 type layouts. Pinning to
+    // a literal shape here keeps us SDK-version-agnostic.
+    const session = data as {
+      readonly id?: string;
+      readonly subscription?: string | { readonly id?: string };
+      readonly customer?: string | { readonly id?: string };
+      readonly client_reference_id?: string | null;
+      readonly metadata?: Record<string, string | undefined>;
+      readonly amount_total?: number | null;
+      readonly currency?: string | null;
+    };
     const subscriptionId =
       typeof session.subscription === 'string' ? session.subscription : session.subscription?.id;
     const customerId =
       typeof session.customer === 'string' ? session.customer : session.customer?.id;
-    const internalUserId = session.client_reference_id ?? session.metadata?.['internalUserId'];
+    const internalUserId =
+      session.client_reference_id ?? session.metadata?.['internalUserId'] ?? null;
 
     if (!subscriptionId || !customerId || !internalUserId) {
       this.logger.warn(
@@ -90,23 +102,35 @@ export class HandleStripeWebhookUseCase {
   }
 
   private async onSubscription(data: Record<string, unknown>): Promise<void> {
-    const sub = data as unknown as Stripe.Subscription;
+    const sub = data as {
+      readonly id: string;
+      readonly status: string;
+      readonly customer: string | { readonly id?: string };
+      readonly cancel_at_period_end?: boolean;
+      readonly metadata?: Record<string, string | undefined>;
+      readonly current_period_end?: number;
+      readonly items?: {
+        readonly data?: ReadonlyArray<{
+          readonly price?: {
+            readonly unit_amount?: number | null;
+            readonly currency?: string;
+          };
+          readonly current_period_end?: number;
+        }>;
+      };
+    };
     const internalUserId = sub.metadata?.['internalUserId'];
     if (!internalUserId) {
       this.logger.warn({ subscriptionId: sub.id }, 'webhook_subscription_missing_internal_user_id');
       return;
     }
-    const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer.id;
-    const item = sub.items.data[0];
+    const customerId = typeof sub.customer === 'string' ? sub.customer : (sub.customer?.id ?? '');
+    const item = sub.items?.data?.[0];
     const priceCents = item?.price?.unit_amount ?? 0;
     const currency = (item?.price?.currency ?? 'usd').toUpperCase();
-    // Stripe.Subscription has `current_period_end` on each item in
-    // 2025+ API versions. Fall back to the legacy top-level field
-    // for older event payloads.
-    const periodEndSec =
-      item?.current_period_end ??
-      (sub as unknown as { current_period_end?: number }).current_period_end ??
-      0;
+    // In 2025+ API versions, `current_period_end` lives per-item.
+    // Fall back to the legacy top-level field for older payloads.
+    const periodEndSec = item?.current_period_end ?? sub.current_period_end ?? 0;
     await this.sync.execute({
       internalUserId,
       stripeCustomerId: customerId,
@@ -115,7 +139,7 @@ export class HandleStripeWebhookUseCase {
       priceCents,
       currency,
       currentPeriodEnd: new Date(periodEndSec * 1000),
-      cancelAtPeriodEnd: sub.cancel_at_period_end,
+      cancelAtPeriodEnd: sub.cancel_at_period_end ?? false,
     });
   }
 }

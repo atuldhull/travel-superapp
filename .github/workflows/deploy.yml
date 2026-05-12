@@ -1,0 +1,157 @@
+# POST.10 — Production deploy gate.
+#
+# Fires ONLY on tag push `v*.*.*` (semver release tags). Every regular
+# branch push and PR run is ignored — that keeps the deploy surface
+# small + obvious. The workflow needs three secrets in GitHub repo
+# settings before it can actually deploy:
+#
+#   - FLY_API_TOKEN          (Fly.io personal access token)
+#   - FLY_APP_API            (e.g. `travel-api-prod`)
+#   - FLY_APP_WEB            (e.g. `travel-web-prod`)
+#
+# Without those secrets the deploy steps fail loudly with a clear
+# message rather than silently no-op'ing. Add them via
+# Settings → Secrets and variables → Actions before the first
+# `git tag v0.1.0 && git push --tags`.
+#
+# Source-map upload to Sentry (when SENTRY_AUTH_TOKEN is set in the
+# workflow env) happens implicitly during `pnpm --filter=web build`
+# via withSentryConfig — no separate step here.
+
+name: deploy
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  validate:
+    name: 'Validate before deploy'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - name: Build internal packages
+        run: pnpm -r --filter='@app/*' build
+      - name: Typecheck
+        run: pnpm -r --filter='./apps/*' --filter='./packages/*' typecheck
+      - name: Lint
+        run: pnpm --filter=api --filter=@app/config run lint
+      # Tests run against the existing CI workflow's matrix — this
+      # job just verifies the headline-set is green before we burn
+      # a Fly deploy slot.
+
+  deploy-api:
+    name: 'Deploy api → Fly.io'
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: deploy-api-${{ github.ref }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify FLY_API_TOKEN is set
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          if [ -z "${FLY_API_TOKEN:-}" ]; then
+            echo "::error::FLY_API_TOKEN secret is not set. Configure it in repo Settings → Secrets before tagging." >&2
+            exit 1
+          fi
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: 'Fly deploy api'
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          FLY_APP_API: ${{ secrets.FLY_APP_API }}
+        run: |
+          flyctl deploy --remote-only \
+            --app "${FLY_APP_API}" \
+            --config apps/api/fly.toml \
+            --dockerfile apps/api/Dockerfile
+
+  deploy-web:
+    name: 'Deploy web → Fly.io'
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: deploy-web-${{ github.ref }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify FLY_API_TOKEN is set
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          if [ -z "${FLY_API_TOKEN:-}" ]; then
+            echo "::error::FLY_API_TOKEN secret is not set." >&2
+            exit 1
+          fi
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: 'Fly deploy web'
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          FLY_APP_WEB: ${{ secrets.FLY_APP_WEB }}
+          # Source-map upload to Sentry during `next build` — only
+          # runs when this token is set in repo secrets.
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT_WEB: ${{ secrets.SENTRY_PROJECT_WEB }}
+        run: |
+          flyctl deploy --remote-only \
+            --app "${FLY_APP_WEB}" \
+            --config apps/web/fly.toml \
+            --dockerfile apps/web/Dockerfile
+
+  notify:
+    name: 'Notify on success'
+    needs: [deploy-api, deploy-web]
+    runs-on: ubuntu-latest
+    if: success()
+    steps:
+      - uses: actions/checkout@v4
+      - name: 'Comment on release tag'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = context.ref.replace('refs/tags/', '');
+            const body = [
+              `🚀 **${tag}** deployed to Fly.io`,
+              ``,
+              `- api: https://${process.env.FLY_APP_API || 'travel-api-prod'}.fly.dev`,
+              `- web: https://${process.env.FLY_APP_WEB || 'travel-web-prod'}.fly.dev`,
+              ``,
+              `Watch errors in Sentry, traces in Honeycomb.`,
+            ].join('\n');
+            // The tag itself doesn't have a comments API, but the
+            // associated release does. Find or create the release
+            // and post the body there.
+            try {
+              const { data: release } = await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag,
+              });
+              await github.rest.repos.updateRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                release_id: release.id,
+                body: (release.body ?? '') + '\n\n' + body,
+              });
+            } catch {
+              // No release yet — log only.
+              console.log(body);
+            }
+        env:
+          FLY_APP_API: ${{ secrets.FLY_APP_API }}
+          FLY_APP_WEB: ${{ secrets.FLY_APP_WEB }}
