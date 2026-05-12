@@ -38,6 +38,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/accessibility`, changeFrequency: 'yearly', priority: 0.3 },
     { url: `${SITE_URL}/login`, changeFrequency: 'yearly', priority: 0.4 },
     { url: `${SITE_URL}/register`, changeFrequency: 'yearly', priority: 0.4 },
+    // POST.6 — marketing + legal surface.
+    { url: `${SITE_URL}/pricing`, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${SITE_URL}/help`, changeFrequency: 'weekly', priority: 0.6 },
+    { url: `${SITE_URL}/status`, changeFrequency: 'daily', priority: 0.5 },
+    { url: `${SITE_URL}/terms`, changeFrequency: 'yearly', priority: 0.3 },
+    { url: `${SITE_URL}/privacy`, changeFrequency: 'yearly', priority: 0.3 },
+    { url: `${SITE_URL}/cookies`, changeFrequency: 'yearly', priority: 0.3 },
   ];
   const books = await fetchFeaturedBooks();
   const bookEntries: MetadataRoute.Sitemap = books.map((b) => ({

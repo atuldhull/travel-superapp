@@ -13,7 +13,21 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: '*',
-        allow: ['/', '/featured', '/accessibility', '/memory-books/', '/shared/', '/users/'],
+        allow: [
+          '/',
+          '/featured',
+          '/accessibility',
+          '/memory-books/',
+          '/shared/',
+          '/users/',
+          // POST.6 — marketing + legal surface.
+          '/pricing',
+          '/help',
+          '/status',
+          '/terms',
+          '/privacy',
+          '/cookies',
+        ],
         disallow: [
           '/api/',
           '/account/',
