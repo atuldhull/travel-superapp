@@ -78,6 +78,26 @@
 | **Twilio**                 | SMS                       | `https://api.twilio.com/2010-04-01/` | api_key | Free trial credit                     | $0.0075/SMS in US; varies | `SmsPort`    | 3 failures / 60s / 120s. DLQ for retry. No channel failover (Playbook §13.2 — no silent reroute of PII).                 |
 | **Expo Push / FCM / APNs** | Mobile push notifications | Expo/FCM/APNs endpoints              | api_key | Free (Expo + FCM); APNs requires cert | Free for routine volumes  | `PushPort`   | 3 failures / 30s / 60s. DLQ; escalate to email if rule has that channel.                                                 |
 
+### Identity / OAuth (POST.3)
+
+| Name             | Purpose                               | Base URL                          | Auth | Free tier                                | Beyond free | Adapter port                                    | Circuit breaker                                           |
+| ---------------- | ------------------------------------- | --------------------------------- | ---- | ---------------------------------------- | ----------- | ----------------------------------------------- | --------------------------------------------------------- |
+| **Google OAuth** | Sign-in with Google (ID-token verify) | `https://accounts.google.com/`    | none | Unlimited (no per-call quota for verify) | n/a         | `OAuthProvider` → `GoogleOAuthProvider` adapter | n/a — JWKS is cached locally; verification is in-process. |
+| **Apple OAuth**  | Sign-in with Apple (ID-token verify)  | `https://appleid.apple.com/auth/` | mtls | Unlimited                                | n/a         | `OAuthProvider` → `AppleOAuthProvider` adapter  | n/a — same shape as Google.                               |
+
+**Env vars (POST.3 wired)**:
+
+| Var                            | Required                                       | Purpose                                                             |
+| ------------------------------ | ---------------------------------------------- | ------------------------------------------------------------------- |
+| `RESEND_API_KEY`               | optional (falls back to StubMailerAdapter)     | Activates `ResendMailerAdapter` for outbound email                  |
+| `EMAIL_FROM_NAME`              | optional (defaults to `TravelSuperApp`)        | Display name in `From:` header                                      |
+| `EMAIL_FROM_ADDRESS`           | optional (defaults to `no-reply@travel.local`) | Verified domain address                                             |
+| `GOOGLE_CLIENT_ID`             | optional                                       | Activates `GoogleOAuthProvider` + `<GoogleSignInButton>` on web     |
+| `GOOGLE_CLIENT_SECRET`         | optional                                       | Reserved for future server-side OAuth code exchange                 |
+| `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | optional                                       | Web side — same value as `GOOGLE_CLIENT_ID`, exposed to the browser |
+
+When any of the optional vars are absent, the corresponding adapter is silently swapped for its stub equivalent and the app keeps booting clean — no required-env-var enforcement at startup so dev / CI works without provisioning external accounts.
+
 ---
 
 ## Shared circuit-breaker policy
