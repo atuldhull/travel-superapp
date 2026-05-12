@@ -11,6 +11,10 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
+import { apiFetch } from '@app/sdk';
+import { useAuthToken } from '../../lib/use-auth-token';
+import { useRouter } from 'next/navigation';
 
 interface Tier {
   readonly id: 'free' | 'premium' | 'agent';
@@ -53,18 +57,11 @@ const TIERS: readonly Tier[] = [
       'Concierge agent matching for complex trips',
       'Priority email support',
     ],
-    cta: {
-      label: 'Upgrade to Premium',
-      onClick: () => {
-        // Stripe checkout lands in [POST.9]. Until then this matches
-        // the PremiumGate "coming soon" alert so users get a consistent
-        // message everywhere Premium is referenced.
-        // eslint-disable-next-line no-alert
-        window.alert(
-          'Premium upgrade is coming soon. We will notify you via the in-app inbox when checkout is live.',
-        );
-      },
-    },
+    // POST.9 — Premium CTA is wired by PricingPage itself (it needs
+    // hooks for the auth token + redirect). Falls back to the
+    // "coming soon" alert when the api 503s the checkout route
+    // (i.e. STRIPE_SECRET_KEY is unset for that environment).
+    cta: { label: 'Upgrade to Premium' },
     highlight: true,
   },
   {
@@ -87,7 +84,60 @@ const TIERS: readonly Tier[] = [
   },
 ];
 
+/** POST.9 — Premium upgrade flow. Calls POST /payments/checkout and
+ *  redirects to Stripe-hosted checkout on success. Falls back to a
+ *  "coming soon" alert when the api 503s (Stripe not configured for
+ *  this env) so the page stays useful even pre-Stripe-wiring. Bounces
+ *  to /login when the caller isn't signed in. */
+function useUpgradeToPremium() {
+  const token = useAuthToken();
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const handleUpgrade = async () => {
+    if (busy) return;
+    if (token === null) {
+      router.push('/login?next=/pricing');
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await apiFetch<{ data: { url?: string }; status: number; headers: Headers }>(
+        '/api/v1/payments/checkout',
+        {
+          method: 'POST',
+          body: JSON.stringify({}),
+          headers: { 'content-type': 'application/json' },
+        },
+      );
+      const url = res.data?.url;
+      if (url) {
+        window.location.href = url;
+        return;
+      }
+      // Defensive: 200 without a URL shouldn't happen, but don't hang.
+      // eslint-disable-next-line no-alert
+      window.alert('Checkout could not start. Please try again.');
+    } catch (err) {
+      const e = err as { status?: number; code?: string };
+      if (e.status === 503 || e.code === 'PAYMENTS_DISABLED') {
+        // eslint-disable-next-line no-alert
+        window.alert(
+          'Premium checkout is not configured in this environment yet. ' +
+            'We will notify you via the in-app inbox when it goes live.',
+        );
+      } else {
+        // eslint-disable-next-line no-alert
+        window.alert(`Could not start checkout: ${e.code ?? `HTTP_${e.status ?? '???'}`}.`);
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+  return { handleUpgrade, busy };
+}
+
 export default function PricingPage() {
+  const { handleUpgrade, busy } = useUpgradeToPremium();
   return (
     <section className="space-y-6" aria-labelledby="pricing-h1">
       <header className="space-y-2 text-center">
@@ -148,15 +198,16 @@ export default function PricingPage() {
               ) : (
                 <button
                   type="button"
-                  onClick={t.cta.onClick}
+                  onClick={t.id === 'premium' ? handleUpgrade : t.cta.onClick}
+                  disabled={t.id === 'premium' && busy}
                   className={
-                    'inline-flex w-full items-center justify-center rounded-md px-4 py-2 text-sm font-semibold ' +
+                    'inline-flex w-full items-center justify-center rounded-md px-4 py-2 text-sm font-semibold disabled:opacity-60 ' +
                     (t.highlight
                       ? 'bg-linear-to-br from-amber-500 to-amber-600 text-white shadow-sm hover:opacity-90'
                       : 'border border-muted/20 bg-surface hover:bg-muted/5')
                   }
                 >
-                  {t.cta.label}
+                  {t.id === 'premium' && busy ? 'Starting checkout…' : t.cta.label}
                 </button>
               )}
             </div>

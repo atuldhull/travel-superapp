@@ -31,6 +31,7 @@ import { FoodModule } from './modules/food/food.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { MediaModule } from './modules/media/media.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { PaymentsModule } from './modules/payments/payments.module';
 import { PlacesModule } from './modules/places/places.module';
 import { SafetyModule } from './modules/safety/safety.module';
 import { SocialModule } from './modules/social/social.module';
@@ -77,6 +78,10 @@ import { WeatherModule } from './modules/weather/weather.module';
     AccountModule,
     FeedModule,
     TranslationModule,
+    // POST.9 — Premium-tier checkout via Stripe. Boots no-op
+    // (controller 503s) when STRIPE_SECRET_KEY is absent, so this
+    // import is always safe to include.
+    PaymentsModule,
   ],
   providers: [
     AppNestLoggerService,
