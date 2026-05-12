@@ -33,7 +33,7 @@ import {
 
 @Injectable()
 export class StripePaymentProvider implements PaymentProviderPort {
-  private readonly client: Stripe;
+  private readonly client: InstanceType<typeof Stripe>;
   private readonly priceId: string;
   private readonly webhookSecret: string;
   private readonly logger: AppLogger = createLogger('payments.stripe');
@@ -55,8 +55,10 @@ export class StripePaymentProvider implements PaymentProviderPort {
     }
     this.client = new Stripe(apiKey, {
       // Pin the API version so a Stripe-side change can't silently
-      // shift behaviour. Bumps land in a deliberate PR.
-      apiVersion: '2025-09-30.clover',
+      // shift behaviour. Bumps land in a deliberate PR. Tracking the
+      // SDK's pinned latest so the type system catches a mismatch
+      // before the wire shape does.
+      apiVersion: '2026-04-22.dahlia',
       typescript: true,
     });
     this.priceId = priceId;

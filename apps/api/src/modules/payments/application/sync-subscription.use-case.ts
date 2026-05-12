@@ -46,6 +46,23 @@ export interface SyncSubscriptionCommand {
  *  unpaid, expired, paused) drops the user back to 'user'. */
 const PREMIUM_STATUSES: ReadonlySet<StripeSubscriptionStatus> = new Set(['trialing', 'active']);
 
+/** Prisma's SubscriptionStatus enum (`active | past_due | canceled |
+ *  trialing`) is narrower than Stripe's. Map every Stripe status that
+ *  has no Prisma counterpart to `canceled` — that's the safe
+ *  Premium-revoking choice. Widening the Prisma enum is a follow-up
+ *  schema migration if we ever need finer status reporting. */
+type PrismaSubscriptionStatus = 'active' | 'past_due' | 'canceled' | 'trialing';
+const PRISMA_STATUS_MAP: Record<StripeSubscriptionStatus, PrismaSubscriptionStatus> = {
+  active: 'active',
+  trialing: 'trialing',
+  past_due: 'past_due',
+  canceled: 'canceled',
+  unpaid: 'canceled',
+  incomplete: 'canceled',
+  incomplete_expired: 'canceled',
+  paused: 'canceled',
+};
+
 @Injectable()
 export class SyncSubscriptionUseCase {
   private readonly logger: AppLogger = createLogger('payments.sync-subscription');
@@ -54,6 +71,7 @@ export class SyncSubscriptionUseCase {
 
   async execute(cmd: SyncSubscriptionCommand): Promise<void> {
     const grantsPremium = PREMIUM_STATUSES.has(cmd.status);
+    const prismaStatus = PRISMA_STATUS_MAP[cmd.status];
     await this.prisma.$transaction(async (tx) => {
       // Upsert the Subscription row keyed by stripeSubscriptionId
       // (which has @unique in the schema).
@@ -63,14 +81,14 @@ export class SyncSubscriptionUseCase {
           userId: cmd.internalUserId,
           stripeCustomerId: cmd.stripeCustomerId,
           stripeSubscriptionId: cmd.stripeSubscriptionId,
-          status: cmd.status,
+          status: prismaStatus,
           priceCents: cmd.priceCents,
           currency: cmd.currency,
           currentPeriodEnd: cmd.currentPeriodEnd,
           cancelAtPeriodEnd: cmd.cancelAtPeriodEnd,
         },
         update: {
-          status: cmd.status,
+          status: prismaStatus,
           stripeCustomerId: cmd.stripeCustomerId,
           priceCents: cmd.priceCents,
           currency: cmd.currency,

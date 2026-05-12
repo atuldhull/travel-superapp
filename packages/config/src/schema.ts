@@ -155,10 +155,28 @@ const MeiliSchema = z.object({
   MEILI_MASTER_KEY: z.string().min(16),
 });
 
-// ─── Observability ──────────────────────────────────────────────────────
+// ─── Observability (POST.10 — Sentry + Honeycomb, all optional) ────────
+//
+// Activation pattern (mirrors POST.3/4/9): missing key = no-op,
+// existing logs/health-checks keep working. Set the appropriate
+// var and restart to wire telemetry.
+//
+//   - SENTRY_DSN_API:   apps/api uncaught errors → Sentry
+//   - SENTRY_DSN_WEB:   apps/web client + SSR errors → Sentry
+//   - HONEYCOMB_API_KEY: OTel traces → api.honeycomb.io (replaces
+//     the default Jaeger/Tempo endpoint that's pointed nowhere in
+//     local dev and was logging OTLPExporterError 404 every boot).
+//
+// `SENTRY_DSN` (legacy single-var) is kept for backwards compat
+// but new code reads SENTRY_DSN_API explicitly.
 const ObservabilitySchema = z.object({
   OTEL_EXPORTER_OTLP_ENDPOINT: z.string().url().optional(),
   SENTRY_DSN: z.string().url().optional(),
+  SENTRY_DSN_API: z.string().url().optional(),
+  SENTRY_DSN_WEB: z.string().url().optional(),
+  HONEYCOMB_API_KEY: z.string().optional(),
+  /** Honeycomb dataset name (defaults to NODE_ENV). */
+  HONEYCOMB_DATASET: z.string().optional(),
   POSTHOG_API_KEY: z.string().optional(),
 });
 

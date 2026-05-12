@@ -31,17 +31,45 @@ export interface CreateSdkOptions {
   readonly otlpEndpoint?: string;
   /** Surface OTel's internal diagnostics at this level. Default: WARN. */
   readonly diagLogLevel?: DiagLogLevel;
+  /**
+   * POST.10 — Honeycomb API key. When set, the exporter points at
+   * Honeycomb's hosted ingest with the `x-honeycomb-team` auth
+   * header (and `x-honeycomb-dataset` if configured). Overrides
+   * `otlpEndpoint` so the caller doesn't have to know
+   * Honeycomb's URL. Honeycomb's free tier covers 20M events/mo —
+   * comfortable for the entire demo + early launch traffic.
+   */
+  readonly honeycombApiKey?: string;
+  /** Honeycomb dataset name. Defaults to `${serviceName}-${environment}`. */
+  readonly honeycombDataset?: string;
 }
 
 export function createSdk(opts: CreateSdkOptions): NodeSDK {
   diag.setLogger(new DiagConsoleLogger(), opts.diagLogLevel ?? DiagLogLevel.WARN);
 
-  const endpoint = (
-    opts.otlpEndpoint ??
-    process.env['OTEL_EXPORTER_OTLP_ENDPOINT'] ??
-    'http://localhost:4318'
-  ).replace(/\/$/, '');
   const environment = opts.environment ?? process.env['NODE_ENV'] ?? 'development';
+
+  // POST.10 — Honeycomb wins over the default endpoint when its key
+  // is set. Otherwise fall through to the legacy OTLP_ENDPOINT
+  // (Jaeger in local dev, Grafana Tempo in prod).
+  const honeycombKey = opts.honeycombApiKey ?? process.env['HONEYCOMB_API_KEY'];
+  const useHoneycomb = honeycombKey !== undefined && honeycombKey.length > 0;
+  const endpoint = useHoneycomb
+    ? 'https://api.honeycomb.io'
+    : (
+        opts.otlpEndpoint ??
+        process.env['OTEL_EXPORTER_OTLP_ENDPOINT'] ??
+        'http://localhost:4318'
+      ).replace(/\/$/, '');
+  const dataset =
+    opts.honeycombDataset ??
+    process.env['HONEYCOMB_DATASET'] ??
+    `${opts.serviceName}-${environment}`;
+  const headers: Record<string, string> = {};
+  if (useHoneycomb) {
+    headers['x-honeycomb-team'] = honeycombKey;
+    headers['x-honeycomb-dataset'] = dataset;
+  }
 
   return new NodeSDK({
     resource: new Resource({
@@ -51,7 +79,10 @@ export function createSdk(opts: CreateSdkOptions): NodeSDK {
       // out of incubating yet. Use the canonical string literal.
       'deployment.environment': environment,
     }),
-    traceExporter: new OTLPTraceExporter({ url: `${endpoint}/v1/traces` }),
+    traceExporter: new OTLPTraceExporter({
+      url: `${endpoint}/v1/traces`,
+      ...(useHoneycomb ? { headers } : {}),
+    }),
     instrumentations: [
       getNodeAutoInstrumentations({
         // fs is extremely noisy and adds tracer overhead to every file
