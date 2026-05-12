@@ -178,6 +178,41 @@ export class S3StorageProvider implements StorageProvider, OnModuleInit {
     throw new Error(`DeleteObject status ${res.status}`);
   }
 
+  /**
+   * POST.5 — server-side PUT for Sharp variants. Presign + fetch so
+   * the AWS SDK's dynamic-import path never executes (same Jest-VM
+   * defense as the rest of this adapter). The signed `Content-Type`
+   * is echoed in the actual PUT header — S3 verifies an exact match.
+   */
+  async putObject(key: string, body: Buffer, contentType: string): Promise<void> {
+    const cmd = new PutObjectCommand({
+      Bucket: this.bucket,
+      Key: key,
+      ContentType: contentType,
+    });
+    const url = await getSignedUrl(this.client, cmd, { expiresIn: INTERNAL_SIG_TTL_SEC });
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: { 'Content-Type': contentType },
+      body,
+    });
+    if (!res.ok) throw new Error(`PutObject status ${res.status}`);
+  }
+
+  /**
+   * POST.5 — server-side GET. Presigned + native fetch; returns the
+   * full body as a `Buffer`. Caller is responsible for keeping the
+   * buffer size sane — the only on-path caller is the variant
+   * pipeline reading the freshly uploaded original.
+   */
+  async getObject(key: string): Promise<Buffer> {
+    const cmd = new GetObjectCommand({ Bucket: this.bucket, Key: key });
+    const url = await getSignedUrl(this.client, cmd, { expiresIn: INTERNAL_SIG_TTL_SEC });
+    const res = await fetch(url, { method: 'GET' });
+    if (!res.ok) throw new Error(`GetObject status ${res.status}`);
+    return Buffer.from(await res.arrayBuffer());
+  }
+
   private async ensureBucket(): Promise<void> {
     const headCmd = new HeadBucketCommand({ Bucket: this.bucket });
     let headUrl: string;

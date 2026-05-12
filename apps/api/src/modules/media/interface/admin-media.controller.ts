@@ -23,6 +23,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Inject,
   Param,
   Query,
 } from '@nestjs/common';
@@ -30,11 +31,31 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagg
 import { CurrentUser, Roles, type AuthenticatedUser } from '../../../common/auth';
 import { AdminDeleteMediaUseCase } from '../application/admin-delete-media.use-case';
 import { AdminListMediaUseCase } from '../application/admin-list-media.use-case';
-import type { MediaAsset, MediaKind, MediaStatus } from '../domain/media-asset.entity';
+import { STORAGE_PROVIDER, type StorageProvider } from '../application/ports/storage-provider';
+import type {
+  MediaAsset,
+  MediaAssetVariant,
+  MediaKind,
+  MediaStatus,
+} from '../domain/media-asset.entity';
 import { AdminListMediaResponseDto } from '../../admin/interface/dto/admin-response.dto';
 
 const VALID_KINDS: readonly MediaKind[] = ['image', 'video'];
 const VALID_STATUSES: readonly MediaStatus[] = ['processing', 'ready', 'failed'];
+
+/** POST.5 — short TTL on admin presigned thumb URLs. Long enough to
+ *  cover a comfortable session refresh; short enough that a leaked
+ *  list response can't be replayed cheaply. */
+const THUMB_PRESIGN_TTL_SEC = 15 * 60;
+
+interface AdminMediaVariantDto {
+  readonly label: string;
+  readonly format: string;
+  readonly s3Key: string;
+  readonly width: number;
+  readonly height: number;
+  readonly bytes: number;
+}
 
 interface AdminMediaDto {
   readonly id: string;
@@ -44,9 +65,31 @@ interface AdminMediaDto {
   readonly status: string;
   readonly s3KeyRaw: string;
   readonly createdAt: string;
+  /** POST.5 — Sharp-generated variants ([] for legacy / video). */
+  readonly variants: readonly AdminMediaVariantDto[];
+  /** POST.5 — presigned URL for the thumb variant, or `null` when
+   *  no thumb exists yet (video, legacy CDN-backed seed row, or a
+   *  fresh image whose pipeline hasn't completed). */
+  readonly thumbDownloadUrl: string | null;
 }
 
-function toDto(m: MediaAsset): AdminMediaDto {
+function variantToDto(v: MediaAssetVariant): AdminMediaVariantDto {
+  return {
+    label: v.label,
+    format: v.format,
+    s3Key: v.s3Key,
+    width: v.width,
+    height: v.height,
+    bytes: v.bytes,
+  };
+}
+
+async function toDto(m: MediaAsset, storage: StorageProvider): Promise<AdminMediaDto> {
+  const variants = m.variants ?? [];
+  const thumb = variants.find((v) => v.label === 'thumb');
+  const thumbDownloadUrl = thumb
+    ? await storage.createPresignedDownloadUrl(thumb.s3Key, THUMB_PRESIGN_TTL_SEC)
+    : null;
   return {
     id: m.id,
     ownerId: m.ownerId,
@@ -55,6 +98,8 @@ function toDto(m: MediaAsset): AdminMediaDto {
     status: m.status,
     s3KeyRaw: m.s3KeyRaw,
     createdAt: m.createdAt.toISOString(),
+    variants: variants.map(variantToDto),
+    thumbDownloadUrl,
   };
 }
 
@@ -66,6 +111,7 @@ export class AdminMediaController {
   constructor(
     private readonly listUc: AdminListMediaUseCase,
     private readonly deleteUc: AdminDeleteMediaUseCase,
+    @Inject(STORAGE_PROVIDER) private readonly storage: StorageProvider,
   ) {}
 
   @ApiOperation({
@@ -117,7 +163,8 @@ export class AdminMediaController {
       ...(parsedLimit !== undefined ? { limit: parsedLimit } : {}),
       ...(parsedOffset !== undefined ? { offset: parsedOffset } : {}),
     });
-    return { media: result.rows.map(toDto), total: result.total };
+    const media = await Promise.all(result.rows.map((m) => toDto(m, this.storage)));
+    return { media, total: result.total };
   }
 
   @ApiOperation({

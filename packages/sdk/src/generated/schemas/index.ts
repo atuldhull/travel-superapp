@@ -28,6 +28,7 @@ export * from './adminMediaDto';
 export * from './adminMediaDtoKind';
 export * from './adminMediaDtoStatus';
 export * from './adminMediaDtoTripId';
+export * from './adminMediaVariantDto';
 export * from './adminPlaceDto';
 export * from './adminPlaceDtoAddress';
 export * from './adminPlaceDtoCountryCode';

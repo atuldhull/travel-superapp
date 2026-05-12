@@ -15,12 +15,18 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { MediaAsset as PrismaMediaAsset, Prisma } from '@prisma/client';
 import { PrismaService } from '../../../common/db/prisma.service';
-import type { MediaAsset, MediaKind, MediaStatus } from '../domain/media-asset.entity';
+import type {
+  MediaAsset,
+  MediaAssetVariant,
+  MediaKind,
+  MediaStatus,
+} from '../domain/media-asset.entity';
 import type {
   AdminMediaListInput,
   AdminMediaListResult,
   CreateMediaAssetInput,
   MediaAssetRepository,
+  StoredVariant,
 } from '../application/ports/media-asset.repository';
 
 @Injectable()
@@ -150,6 +156,20 @@ export class PrismaMediaAssetRepository implements MediaAssetRepository {
     });
     return new Set(rows.map((r) => r.s3KeyRaw));
   }
+
+  async updateVariants(
+    id: string,
+    ownerId: string,
+    variants: readonly StoredVariant[],
+  ): Promise<MediaAsset | null> {
+    const result = await this.prisma.mediaAsset.updateMany({
+      where: { id, ownerId },
+      data: { variants: variants as unknown as Prisma.InputJsonValue },
+    });
+    if (result.count !== 1) return null;
+    const row = await this.prisma.mediaAsset.findUnique({ where: { id } });
+    return row ? toDomain(row) : null;
+  }
 }
 
 function toDomain(row: PrismaMediaAsset): MediaAsset {
@@ -164,6 +184,42 @@ function toDomain(row: PrismaMediaAsset): MediaAsset {
     exifStripped: row.exifStripped,
     caption: row.caption ?? null,
     position: row.position,
+    variants: extractVariants(row.variants),
     createdAt: row.createdAt,
   };
+}
+
+/** POST.5 — read `variants` JSON column and keep only entries that
+ *  match the canonical shape. POST.1 seed wrote Unsplash CDN entries
+ *  with `{ cdnUrl, credit, unsplashId }` in the same column; those
+ *  are silently filtered out so legacy seed data doesn't poison the
+ *  typed entity. */
+function extractVariants(raw: Prisma.JsonValue | null): readonly MediaAssetVariant[] | null {
+  if (!Array.isArray(raw)) return null;
+  const out: MediaAssetVariant[] = [];
+  for (const entry of raw) {
+    if (entry && typeof entry === 'object' && !Array.isArray(entry)) {
+      const e = entry as Record<string, unknown>;
+      if (
+        typeof e['label'] === 'string' &&
+        typeof e['format'] === 'string' &&
+        typeof e['s3Key'] === 'string' &&
+        typeof e['width'] === 'number' &&
+        typeof e['height'] === 'number' &&
+        typeof e['bytes'] === 'number' &&
+        typeof e['sha256'] === 'string'
+      ) {
+        out.push({
+          label: e['label'],
+          format: e['format'],
+          s3Key: e['s3Key'],
+          width: e['width'],
+          height: e['height'],
+          bytes: e['bytes'],
+          sha256: e['sha256'],
+        });
+      }
+    }
+  }
+  return out.length > 0 ? out : null;
 }
