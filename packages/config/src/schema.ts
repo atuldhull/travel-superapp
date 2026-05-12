@@ -83,10 +83,20 @@ const AiSchema = z.object({
   AI_SERVICE_URL: z.string().url().default('http://localhost:8001'),
 });
 
-// ─── Stripe (subs + Connect escrow + webhooks) ──────────────────────────
+// ─── Stripe (POST.9 — Premium subs; Connect escrow lands later) ────────
+//
+// TEST mode is free for development forever. Get keys at
+// https://dashboard.stripe.com (no card required for signup, no charges
+// until you swap to LIVE keys). The PaymentsModule factory follows the
+// same env-gated pattern as POST.3/4 — when STRIPE_SECRET_KEY is absent,
+// the /payments/checkout route returns 503 SERVICE_UNAVAILABLE and the
+// /pricing CTA falls back to "coming soon".
 const StripeSchema = z.object({
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  /** Stripe Price id for the recurring Premium tier ($9 / mo).
+   *  Required only when STRIPE_SECRET_KEY is set. */
+  STRIPE_PRICE_PREMIUM: z.string().optional(),
   STRIPE_CONNECT_CLIENT_ID: z.string().optional(),
 });
 

@@ -78,6 +78,35 @@
 | **Twilio**                 | SMS                       | `https://api.twilio.com/2010-04-01/` | api_key | Free trial credit                     | $0.0075/SMS in US; varies | `SmsPort`    | 3 failures / 60s / 120s. DLQ for retry. No channel failover (Playbook §13.2 — no silent reroute of PII).                 |
 | **Expo Push / FCM / APNs** | Mobile push notifications | Expo/FCM/APNs endpoints              | api_key | Free (Expo + FCM); APNs requires cert | Free for routine volumes  | `PushPort`   | 3 failures / 30s / 60s. DLQ; escalate to email if rule has that channel.                                                 |
 
+### Stripe Premium subscriptions (POST.9)
+
+The PaymentsModule wires Stripe Checkout for the Premium tier via the same env-gated factory pattern as POST.3/4 — when `STRIPE_SECRET_KEY` is absent, the api 503s `POST /payments/checkout` with `PAYMENTS_DISABLED` and the /pricing CTA falls back to a "coming soon" alert. TEST mode keys are free forever for development; you only pay Stripe's per-transaction fee once you switch to LIVE keys.
+
+| Var                        | Required (when wiring)                  | Purpose                                                                             |
+| -------------------------- | --------------------------------------- | ----------------------------------------------------------------------------------- |
+| `STRIPE_SECRET_KEY`        | optional (skip → 503 PAYMENTS_DISABLED) | Activates `StripePaymentProvider`. `sk_test_…` for dev, `sk_live_…` for production. |
+| `STRIPE_WEBHOOK_SECRET`    | required when SECRET_KEY is set         | `whsec_…` — verifies the `Stripe-Signature` header on every webhook delivery.       |
+| `STRIPE_PRICE_PREMIUM`     | required when SECRET_KEY is set         | `price_…` of a recurring $9 USD/mo price you create once in the Stripe Dashboard.   |
+| `STRIPE_CONNECT_CLIENT_ID` | reserved                                | Agent escrow lands in a later slice — not consumed today.                           |
+
+**Local dev setup** (free, ~3 minutes):
+
+1. Sign up at https://dashboard.stripe.com (no card required for TEST mode)
+2. **Developers → API keys** → copy the **Secret key** (starts `sk_test_`)
+3. **Products → Add product** → name "Premium", price $9 USD recurring monthly → copy the resulting `price_…` id
+4. Install the Stripe CLI: https://stripe.com/docs/stripe-cli
+5. `stripe listen --forward-to http://localhost:3000/api/v1/payments/webhook` → copy the `whsec_…` line it prints
+6. Drop all 3 values into `apps/api/.env` and restart the api
+7. Test card: `4242 4242 4242 4242`, any future expiry, any 3-digit CVC
+
+**Webhook events handled today:**
+
+- `checkout.session.completed` → grants Premium (writes Subscription row + flips `User.role` to `'premium'`)
+- `customer.subscription.created` / `updated` → keeps the Subscription row + role in sync with status changes
+- `customer.subscription.deleted` → flips role back to `'user'` (admin/compliance/sre roles are NEVER demoted — subscription doesn't drive privileged roles)
+
+Idempotency: `Subscription.stripeSubscriptionId` has `@unique` in Prisma; duplicate webhooks (which Stripe retries on any 5xx) upsert to the same row.
+
 ### AI / LLM providers (POST.4)
 
 The trip planner uses a 4-tier fallback chain. The first provider whose env var is set wins at boot — see [`apps/api/src/modules/trip/trip.module.ts`](../apps/api/src/modules/trip/trip.module.ts).
