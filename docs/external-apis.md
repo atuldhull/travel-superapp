@@ -78,6 +78,37 @@
 | **Twilio**                 | SMS                       | `https://api.twilio.com/2010-04-01/` | api_key | Free trial credit                     | $0.0075/SMS in US; varies | `SmsPort`    | 3 failures / 60s / 120s. DLQ for retry. No channel failover (Playbook §13.2 — no silent reroute of PII).                 |
 | **Expo Push / FCM / APNs** | Mobile push notifications | Expo/FCM/APNs endpoints              | api_key | Free (Expo + FCM); APNs requires cert | Free for routine volumes  | `PushPort`   | 3 failures / 30s / 60s. DLQ; escalate to email if rule has that channel.                                                 |
 
+### AI / LLM providers (POST.4)
+
+The trip planner uses a 4-tier fallback chain. The first provider whose env var is set wins at boot — see [`apps/api/src/modules/trip/trip.module.ts`](../apps/api/src/modules/trip/trip.module.ts).
+
+| Name                    | Purpose                                    | Base URL                                                    | Auth    | Free tier                            | Beyond free                                           | Adapter port                                   | Circuit breaker                                                                                                 |
+| ----------------------- | ------------------------------------------ | ----------------------------------------------------------- | ------- | ------------------------------------ | ----------------------------------------------------- | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| **Anthropic Claude**    | Tier 1 — premium trip-plan generation      | `https://api.anthropic.com/v1/messages`                     | api_key | $5 free credit on signup             | $3 / 1M input tokens (Opus); cheaper for Sonnet/Haiku | `TripPlannerPort` → `ClaudeTripPlannerAdapter` | No CB — graceful prose fallback when the SDK throws (returns `provider:'anthropic', plan: '<short fallback>'`). |
+| **Google Gemini Flash** | Tier 2 — free-tier trip-plan generation    | `https://generativelanguage.googleapis.com/v1beta/`         | api_key | 1500 req/day, 1M TPM, no credit card | $0.075 / 1M input tokens                              | `TripPlannerPort` → `GeminiTripPlannerAdapter` | No CB — same graceful prose fallback shape as Claude.                                                           |
+| **Ollama (local)**      | Tier 3 — local LLM, truly $0, runs offline | `${OLLAMA_URL}/api/chat` (default `http://localhost:11434`) | none    | Unlimited (uses local CPU/GPU)       | n/a                                                   | `TripPlannerPort` → `OllamaTripPlannerAdapter` | No CB — falls back when the HTTP call fails (server not running, model not pulled).                             |
+
+**Env vars (POST.4 wired):**
+
+| Var                 | Required                              | Purpose                                                    |
+| ------------------- | ------------------------------------- | ---------------------------------------------------------- |
+| `ANTHROPIC_API_KEY` | optional (skip → Gemini next)         | Activates `ClaudeTripPlannerAdapter` (Tier 1)              |
+| `ANTHROPIC_MODEL`   | optional (default `claude-opus-4-7`)  | Override the Claude model id                               |
+| `GEMINI_API_KEY`    | optional (skip → Ollama next)         | Activates `GeminiTripPlannerAdapter` (Tier 2)              |
+| `GEMINI_MODEL`      | optional (default `gemini-2.5-flash`) | Override the Gemini model id                               |
+| `OLLAMA_URL`        | optional (skip → stub)                | Activates `OllamaTripPlannerAdapter` (Tier 3)              |
+| `OLLAMA_MODEL`      | optional (default `llama3.1:8b`)      | Model name to request from Ollama (`ollama pull` it first) |
+
+**Local Ollama setup** (truly $0 path for demos / dev / offline work):
+
+1. Install Ollama: https://ollama.com (Mac/Win/Linux native installers)
+2. Pull a model: `ollama pull llama3.1:8b` (~4.7 GB; first time only)
+3. Start the server: `ollama serve` — or just run the desktop app
+4. Set `OLLAMA_URL=http://localhost:11434` in `apps/api/.env.local`
+5. Restart the api — the boot factory picks up Ollama automatically
+
+When all three tiers are absent, `StubTripPlannerAdapter` wins and returns a deterministic 3-day prose plan referencing the trip's title, dates, and center coords.
+
 ### Identity / OAuth (POST.3)
 
 | Name             | Purpose                               | Base URL                          | Auth | Free tier                                | Beyond free | Adapter port                                    | Circuit breaker                                           |
