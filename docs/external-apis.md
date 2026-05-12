@@ -110,6 +110,48 @@ Both providers have generous free tiers — same env-gated activation pattern as
 
 **Deploy gate (POST.10):** GitHub Actions workflow at `.github/workflows/deploy.yml` runs on `v*.*.*` tag push only. Requires three repo secrets — `FLY_API_TOKEN`, `FLY_APP_API`, `FLY_APP_WEB` — before tagging actually deploys. Optional `SENTRY_AUTH_TOKEN` + `SENTRY_ORG` + `SENTRY_PROJECT_WEB` for source-map upload. Until those secrets are set, tag pushes fail loudly with a clear error rather than silently no-op'ing.
 
+### Twilio SOS SMS + VAPID Web Push (POST.7)
+
+Two distinct surfaces wired in this slice. Twilio is paid (no free tier — but TEST credentials are free for dev). VAPID is fully free (self-generated keys, free protocol).
+
+**Twilio — TwilioContactNotifierAdapter**
+
+| Env var              | Required (when wiring)              | Purpose                                                                       |
+| -------------------- | ----------------------------------- | ----------------------------------------------------------------------------- |
+| `TWILIO_ACCOUNT_SID` | optional (skip → stub adapter wins) | Activates `TwilioContactNotifierAdapter`. `AC…` for both test + live.         |
+| `TWILIO_AUTH_TOKEN`  | required when SID set               | Auth token paired with the SID (same secret for both API + signature verify). |
+| `TWILIO_FROM_NUMBER` | required when SID set               | E.164 phone number SMS originates from. Test mode: `+15005550006` (magic).    |
+
+**Cost guard:** the adapter caps SMS at **50 / day per api instance** — beyond cap, sends are logged + dropped. Cheapest possible "stop bleeding money if SOS is somehow looped" rail. Multi-instance Redis-backed cap lands when scale demands.
+
+**Local dev setup** (free, ~2 min):
+
+1. Sign up at https://console.twilio.com (no card needed for TEST credentials)
+2. **Settings → General → API Credentials → Test credentials** → copy the test SID + token
+3. Use `+15005550006` as the test FROM number (Twilio's "valid mobile" magic)
+4. Drop into `apps/api/.env`, restart api
+5. Trigger SOS → check api logs for `sos_twilio_sms_sent` (test mode logs success without delivering)
+6. For real delivery: switch to LIVE credentials + buy a phone number (~$1/mo + ~$0.0079/SMS in US)
+
+**VAPID Web Push — WebPushDispatcher (already wired in V.UX.26)**
+
+VAPID keys are self-generated. No service, no signup, no fee. The Mozilla / Google / Apple push services accept any well-formed P-256 keypair — the public key identifies your server, the private key signs the JWT every push fan-out carries.
+
+```
+pnpm --filter=api vapid:generate
+# → prints VAPID_PUBLIC_KEY=… VAPID_PRIVATE_KEY=… block
+# → also prints NEXT_PUBLIC_VAPID_PUBLIC_KEY for the web service worker
+```
+
+| Env var                        | Required (when wiring)                              | Purpose                                 |
+| ------------------------------ | --------------------------------------------------- | --------------------------------------- |
+| `VAPID_PUBLIC_KEY`             | optional (skip → no-op dispatcher)                  | Self-generated P-256 public key         |
+| `VAPID_PRIVATE_KEY`            | required when public set                            | Self-generated P-256 private key        |
+| `VAPID_SUBJECT`                | optional (default `mailto:no-reply@travel.local`)   | Identifies your server to push services |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | optional (web side, same value as VAPID_PUBLIC_KEY) | Inlined into the service worker bundle  |
+
+Rotation: re-run `vapid:generate` and replace the env vars. Every active subscription is invalidated — browsers re-subscribe on next visit, and the dead endpoints flag 410 Gone (the dispatcher reaps them automatically via `PushSubscriptionRepository.deleteExpiredEndpoint`).
+
 ### Stripe Premium subscriptions (POST.9)
 
 The PaymentsModule wires Stripe Checkout for the Premium tier via the same env-gated factory pattern as POST.3/4 — when `STRIPE_SECRET_KEY` is absent, the api 503s `POST /payments/checkout` with `PAYMENTS_DISABLED` and the /pricing CTA falls back to a "coming soon" alert. TEST mode keys are free forever for development; you only pay Stripe's per-transaction fee once you switch to LIVE keys.

@@ -26,6 +26,84 @@
 Post-V.UX gap closure work. See `docs/POST_VUX_GAPS.md` for the
 audit + drop-in execution prompts.
 
+### [POST.7] — Twilio SMS for SOS + VAPID Web Push (CLI helper)
+
+- **Date**: 2026-05-12
+- **Commit**: <pending>
+- **Files changed**: 8 (1 new adapter — `twilio-contact-notifier.adapter.ts`
+  with 50/day cost guard; 1 new CLI — `scripts/generate-vapid.ts`;
+  1 new e2e — `test/twilio-contact-notifier.e2e-spec.ts`; 1 modified
+  module — `safety.module.ts` env-gated factory; 1 modified —
+  `apps/api/package.json` adds `vapid:generate` script; 1 modified —
+  `apps/api/.env.example` documents Twilio TEST credentials + VAPID
+  block; 1 modified — `docs/external-apis.md` Twilio + VAPID
+  sections; pnpm-lock for new dep)
+- **Deps added**: `twilio` to apps/api
+- **Schema change**: **none** — Twilio + VAPID env vars already in the
+  schema from prior scaffolding. Just enabled by the new wiring.
+- **Behaviour change vs pre-POST.7:**
+  - Twilio creds absent → identical to today (StubContactNotifierAdapter
+    keeps logging to ring buffer)
+  - All 3 Twilio creds set → real SMS sent on SOS via
+    `TwilioContactNotifierAdapter` with cost guard
+  - VAPID keys absent → identical to today (WebPushDispatcher no-ops
+    cleanly — was already real from V.UX.26, just needed an easy way
+    to generate keys)
+- **TwilioContactNotifierAdapter shape:**
+  - SMS body: `🆘 SOS from your contact (Alice): manual at 38.7223,-9.1393 Cancel if false alarm via the in-app banner.`
+  - Email-only contacts (no phone) → log + skip (no thrown error
+    so other contacts still get notified via Promise.allSettled)
+  - 50 SMS/day per api instance cost cap; rolling daily window;
+    over-cap deliveries logged + dropped (no thrown error)
+  - Throws on Twilio API errors so the use-case's
+    `Promise.allSettled` records each failure independently
+- **Discovery during slice planning:**
+  - WebPushDispatcher was ALREADY real (wired in V.UX.26) — the
+    gap doc had outdated info. POST.7 reduced from "wire 2 stubs"
+    to "wire 1 stub + add VAPID gen helper". Saved ~3 files.
+- **Tests added**: 3 in `twilio-contact-notifier.e2e-spec.ts` (all
+  skipped when `TWILIO_ACCOUNT_SID` absent):
+  - Constructs cleanly with all 3 env vars
+  - Throws when TWILIO_FROM_NUMBER missing
+  - Skips silently for email-only contacts (verifies no Twilio
+    network call; the no-phone branch is the most-likely real-world
+    case and we never want it to bring down the SOS fan-out)
+- **Verification output**:
+  ```
+  pnpm --filter=api add twilio → installed
+  pnpm --filter=api typecheck → green
+  pnpm --filter=api exec tsx scripts/generate-vapid.ts
+    → printed valid VAPID keypair (P-256, base64url)
+  pnpm --filter=api test -- --runInBand --testPathPattern="sos|twilio|trip-crud"
+    → 30 pass + 3 skip in 15.5s — confirms factory swap didn't
+    regress any of the 3 SOS suites or trip-crud baseline
+  ```
+- **Lessons**:
+  - Twilio's TEST credentials are the right cost-control answer
+    for "no paid sources" — same SDK, same wire format, zero charges,
+    only accepts magic numbers (`+15005550006` etc.). Production
+    swap is just changing the SID + token + buying a real FROM number.
+  - VAPID keys require zero service signup or fee — pure crypto.
+    `web-push` library bundles the keypair generator; the new CLI
+    is a 30-line wrapper that prints the keys + the matching
+    `NEXT_PUBLIC_*` line for the web service worker.
+  - Used `require('twilio')` dynamically inside the adapter ctor
+    so the SDK never enters the require graph when the adapter is
+    never instantiated. Same pattern as conditional Sharp/Stripe
+    initialization. Keeps cold-start tight when the adapter is
+    unused.
+  - Cost guard is in-memory (per api instance) for v1. A
+    multi-instance Redis-backed counter is the right answer at
+    scale — added a comment in the adapter pointing to it.
+  - `Promise.allSettled` at the SOS use-case caller is the
+    critical safety rail: a single Twilio failure (bad number,
+    SMS provider 5xx, daily-cap-exceeded) MUST NOT stop the other
+    contacts from being notified. The adapter cooperates by
+    throwing on real errors but returning normally for the
+    no-phone skip.
+
+---
+
 ### [POST.10] — Sentry + Honeycomb + GitHub Actions deploy gate
 
 - **Date**: 2026-05-12
