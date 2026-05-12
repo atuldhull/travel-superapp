@@ -10,6 +10,9 @@
 
 import { useState } from 'react';
 import { useAdminAuditLogsControllerList } from '@app/sdk';
+import { EmptyState } from '../../../components/ui/empty-state';
+import { RelativeTime } from '../../../components/ui/relative-time';
+import { SkeletonList } from '../../../components/ui/skeleton';
 
 interface AuditRow {
   readonly id: string;
@@ -144,11 +147,13 @@ export default function AdminAuditLogPage() {
       </div>
 
       {list.isLoading ? (
-        <p className="text-sm text-muted">Loading…</p>
+        <SkeletonList rows={5} />
       ) : rows.length === 0 ? (
-        <p className="rounded-md border border-muted/15 p-3 text-sm text-muted">
-          No audit rows match these filters.
-        </p>
+        <EmptyState
+          emoji="🔍"
+          title="No audit rows match these filters"
+          body="Try clearing the filters above or expanding the date range."
+        />
       ) : (
         <div className="overflow-x-auto rounded-md border border-muted/15">
           <table className="w-full text-left text-xs">
@@ -164,8 +169,8 @@ export default function AdminAuditLogPage() {
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id} className="border-t border-muted/10">
-                  <td className="px-2 py-2 font-mono text-[10px]">
-                    {new Date(r.createdAt).toLocaleString()}
+                  <td className="px-2 py-2 text-[10px]">
+                    <RelativeTime at={r.createdAt} />
                   </td>
                   <td className="px-2 py-2 font-mono text-[10px]">
                     {r.actorId ? `${r.actorId.slice(0, 12)}…` : <em>(deleted)</em>}

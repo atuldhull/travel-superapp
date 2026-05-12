@@ -33,11 +33,11 @@ import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card, CardHeader, CardSubtitle, CardTitle } from '../../components/ui/card';
 import { Skeleton } from '../../components/ui/skeleton';
+import { toast } from '../../components/ui/toast';
 import { clearAccessToken } from '../../lib/auth-store';
 import { useAuthBootComplete, useAuthToken } from '../../lib/use-auth-token';
 import { useShortcut } from '../../lib/use-shortcuts';
 import { useVimListNav } from '../../lib/use-vim-list-nav';
-import { announce } from '../../lib/announce';
 
 type TabKey = 'active' | 'archived';
 
@@ -109,26 +109,22 @@ export default function TripsPage() {
     try {
       await archive.mutateAsync({ id });
       await refreshLists();
-      announce('Trip archived');
+      // POST.8 — toast() also calls announce() internally so the
+      // ARIA live region still fires for screen-reader users.
+      toast.success('Trip archived');
     } catch (err) {
       const e = err as { code?: string; message?: string; status?: number };
-      announce(
-        `${e.code ?? `HTTP_${e.status ?? '???'}`} — ${e.message ?? 'Archive failed.'}`,
-        'assertive',
-      );
+      toast.error(`${e.code ?? `HTTP_${e.status ?? '???'}`} — ${e.message ?? 'Archive failed.'}`);
     }
   }
   async function handleUnarchive(id: string) {
     try {
       await unarchive.mutateAsync({ id });
       await refreshLists();
-      announce('Trip restored to active');
+      toast.success('Trip restored to active');
     } catch (err) {
       const e = err as { code?: string; message?: string; status?: number };
-      announce(
-        `${e.code ?? `HTTP_${e.status ?? '???'}`} — ${e.message ?? 'Unarchive failed.'}`,
-        'assertive',
-      );
+      toast.error(`${e.code ?? `HTTP_${e.status ?? '???'}`} — ${e.message ?? 'Unarchive failed.'}`);
     }
   }
 

@@ -64,6 +64,7 @@ import { Button } from '../../../../components/ui/button';
 import { Card, CardHeader, CardSubtitle, CardTitle } from '../../../../components/ui/card';
 import { Field } from '../../../../components/ui/input';
 import { Skeleton } from '../../../../components/ui/skeleton';
+import { toast } from '../../../../components/ui/toast';
 import { useAuthBootComplete, useAuthToken } from '../../../../lib/use-auth-token';
 import { PreviewPane } from '../../../../components/memory-book/preview-pane';
 import { MEMORY_BOOK_THEMES, ThemePicker } from '../../../../components/memory-book/theme-picker';
@@ -123,6 +124,7 @@ export default function MemoryBookEditPage() {
         setEditing(false);
         setErrorMsg(null);
         setPreviewKey((k) => k + 1);
+        toast.success('Memory book saved');
       },
       onError: (err: unknown) => onMutateError(err, 'Update failed.'),
     },
@@ -134,6 +136,7 @@ export default function MemoryBookEditPage() {
         await invalidateBookCaches();
         setErrorMsg(null);
         setPreviewKey((k) => k + 1);
+        toast.success('Memory book published');
       },
       onError: (err: unknown) => onMutateError(err, 'Publish failed.'),
     },
@@ -145,6 +148,7 @@ export default function MemoryBookEditPage() {
         await invalidateBookCaches();
         setErrorMsg(null);
         setPreviewKey((k) => k + 1);
+        toast.success('Memory book unpublished');
       },
       onError: (err: unknown) => onMutateError(err, 'Unpublish failed.'),
     },

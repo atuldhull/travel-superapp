@@ -26,6 +26,74 @@
 Post-V.UX gap closure work. See `docs/POST_VUX_GAPS.md` for the
 audit + drop-in execution prompts.
 
+### [POST.8] — Toast system + EmptyState + Skeleton variants + RelativeTime
+
+- **Date**: 2026-05-12
+- **Commit**: <pending>
+- **Files changed**: 10 (4 new components/lib — `ui/toast.tsx`,
+  `ui/empty-state.tsx`, `ui/relative-time.tsx`, `lib/relative-time.ts`;
+  1 modified — `ui/skeleton.tsx` adds SkeletonList + SkeletonCard
+  variants; 1 modified — `app/providers.tsx` mounts ToastProvider;
+  4 modified surfaces — `/trips`, `/inbox` + `notification-row`,
+  `/admin/audit`, `/memory-books/[id]/edit`)
+- **Deps added**: **none** — hand-rolled toast + relative-time
+  formatter instead of `sonner` (~30 KB) + `date-fns` (~30 KB).
+  Saved 60 KB of client JS.
+- **The 4 new primitives:**
+  - **`toast`** (imperative API, top-right viewport) — 3 variants
+    (success / error / info), 4-second auto-dismiss, max 5 stacked,
+    Escape dismisses latest. Calls `announce()` internally so screen
+    readers hear the message via the existing ARIA live region —
+    one call site covers both visual + AT feedback.
+  - **`<EmptyState>`** — emoji / icon + title + body + optional CTA
+    Link. Replaces "No items." paragraphs with a friendly card.
+  - **`<SkeletonList>`** + **`<SkeletonCard>`** — pre-styled
+    placeholders for `<ul>` and grid-of-cards loading states. Use
+    `aria-busy="true"` on the parent for AT users.
+  - **`<RelativeTime at={...}>`** — semantic `<time>` element
+    rendering "3 hours ago" with the full ISO in `title` (browser
+    tooltip) + `dateTime` (machine-readable). Re-renders every
+    minute so "just now" rolls to "1 minute ago" without page
+    reload. Falls back to absolute date beyond 30 days.
+- **Surfaces wired** (4):
+  - `/trips` — `toast.success('Trip archived')` / `toast.success('Trip restored to active')` (replaces `announce()`); errors → `toast.error()`
+  - `/inbox` — same toast wiring on archive + delete; SkeletonList
+    on loading; EmptyState replaces "No notifications yet."
+  - `/inbox` row — `<RelativeTime at={n.createdAt}>` replaces
+    `new Date(...).toLocaleString()`
+  - `/admin/audit` — SkeletonList on loading; EmptyState on empty
+    filter result; `<RelativeTime>` in the When column
+  - `/memory-books/[id]/edit` — `toast.success` on update + publish
+    - unpublish mutations
+- **Verification output**:
+  ```
+  pnpm --filter=web typecheck → green
+  No new deps; bundle size unchanged (no sonner/date-fns added)
+  ```
+- **Lessons**:
+  - Hand-rolled toast (~200 LOC) + hand-rolled relative-time
+    formatter (~40 LOC) ship 60 KB less JS than the spec's
+    suggested combo (sonner + date-fns). Worth it — neither
+    library buys us anything we don't already have access to via
+    Tailwind + native `<time>`.
+  - Toast queue lives at module scope (not React Context) so the
+    imperative `toast.success(...)` API works without threading
+    a hook through every caller. Listeners pattern mirrors
+    Zustand's vanilla store — minimal + obvious.
+  - Always pair toast with `announce()` (the existing ARIA live
+    region helper) so the screen-reader pathway doesn't drift
+    out of sync. Toast does this automatically in `push()`.
+  - The local `EmptyState` function in `/trips/page.tsx` shadows
+    my new component — left it alone (it has a richer shape
+    specific to the empty-trips-list scenario). The new shared
+    `<EmptyState>` is for everywhere else.
+  - `<RelativeTime>` re-renders every 60s via a simple
+    `setInterval` per instance. For very-large lists (1000+ rows)
+    a single shared interval would be more efficient — current
+    surfaces have ≤50 rows, so per-instance is fine for v1.
+
+---
+
 ### [POST.7] — Twilio SMS for SOS + VAPID Web Push (CLI helper)
 
 - **Date**: 2026-05-12

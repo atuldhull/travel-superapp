@@ -14,6 +14,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { RelativeTime } from '../ui/relative-time';
 
 interface NotificationRowProps {
   readonly id: string;
@@ -54,7 +55,7 @@ export function NotificationRow(props: NotificationRowProps): ReactNode {
       />
       <button type="button" onClick={onOpen} className="flex-1 min-w-0 text-left">
         <p className="text-xs text-muted">
-          {humaniseTemplateId(templateId)} · {status} · {new Date(createdAt).toLocaleString()}
+          {humaniseTemplateId(templateId)} · {status} · <RelativeTime at={createdAt} />
         </p>
         {subject ? <p className="mt-1 font-medium leading-snug">{subject}</p> : null}
         {body ? <p className="mt-1 text-xs text-muted line-clamp-2">{body}</p> : null}
