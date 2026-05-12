@@ -22,7 +22,8 @@
     "admin:promote": "tsx scripts/promote-admin.ts",
     "db:seed:demo": "tsx scripts/seed-demo.ts",
     "db:seed:demo:reset": "tsx scripts/seed-demo.ts --reset",
-    "api:openapi": "ts-node --transpile-only scripts/export-openapi.ts"
+    "api:openapi": "ts-node --transpile-only scripts/export-openapi.ts",
+    "vapid:generate": "tsx scripts/generate-vapid.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.91.1",
@@ -56,6 +57,7 @@
     "sharp": "0.34.5",
     "speakeasy": "2.0.0",
     "stripe": "22.1.1",
+    "twilio": "6.0.2",
     "web-push": "^3.6.7",
     "yaml": "^2.7.0",
     "zod": "^3.24.1"

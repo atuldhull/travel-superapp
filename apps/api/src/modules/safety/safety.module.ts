@@ -15,6 +15,8 @@
  * Installed by prompt [IV.18.11.1].
  */
 import { Module, forwardRef } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import type { Env } from '@app/config';
 import { AccountModule } from '../account/account.module';
 import { TripModule } from '../trip/trip.module';
 import { AdminListSosEventsUseCase } from './application/admin-list-sos-events.use-case';
@@ -30,7 +32,10 @@ import { ListMySosEventsUseCase } from './application/list-my-sos-events.use-cas
 import { ListScamReportsForModerationUseCase } from './application/list-scam-reports-for-moderation.use-case';
 import { MatchAgentForTripUseCase } from './application/match-agent-for-trip.use-case';
 import { AGENT_REPOSITORY } from './application/ports/agent.repository';
-import { CONTACT_NOTIFIER_PORT } from './application/ports/contact-notifier.port';
+import {
+  CONTACT_NOTIFIER_PORT,
+  type ContactNotifier,
+} from './application/ports/contact-notifier.port';
 import { CRIME_INCIDENT_REPOSITORY } from './application/ports/crime-incident.repository';
 import { SCAM_REPORT_REPOSITORY } from './application/ports/scam-report.repository';
 import { SOS_EVENT_REPOSITORY } from './application/ports/sos-event.repository';
@@ -46,6 +51,7 @@ import { PrismaCrimeIncidentRepository } from './infrastructure/prisma-crime-inc
 import { PrismaScamReportRepository } from './infrastructure/prisma-scam-report.repository';
 import { PrismaSosEventRepository } from './infrastructure/prisma-sos-event.repository';
 import { StubContactNotifierAdapter } from './infrastructure/stub-contact-notifier.adapter';
+import { TwilioContactNotifierAdapter } from './infrastructure/twilio-contact-notifier.adapter';
 import { AdminScamModerationController } from './interface/admin-scam-moderation.controller';
 import { AdminSosController } from './interface/admin-sos.controller';
 import { AgentSelfController } from './interface/agent-self.controller';
@@ -84,11 +90,35 @@ import { SosController } from './interface/sos.controller';
     { provide: SOS_EVENT_REPOSITORY, useClass: PrismaSosEventRepository },
     { provide: CRIME_INCIDENT_REPOSITORY, useClass: PrismaCrimeIncidentRepository },
     { provide: AGENT_REPOSITORY, useClass: PrismaAgentRepository },
-    // V.UX.13 — stub SMS adapter; real Twilio swaps via the same
-    // port without touching the SOS use-case. Bound twice so e2e
-    // tests can resolve the concrete class to drain the ring.
+    // V.UX.13 — stub SMS adapter for dev/test. POST.7 — Twilio
+    // adapter activates when all 3 TWILIO_* env vars are set
+    // (partial config falls back to stub). The stub stays
+    // registered as a class provider so e2e tests can resolve it
+    // directly to drain the ring buffer — the factory below decides
+    // which one wins behind the port.
+    //
+    // TwilioContactNotifierAdapter is intentionally NOT in
+    // providers[] — its ctor throws when any of the 3 keys is
+    // absent and Nest would eagerly instantiate it. Same pattern
+    // as POST.3 (Resend), POST.4 (Anthropic/Gemini/Ollama), and
+    // POST.9 (Stripe).
     StubContactNotifierAdapter,
-    { provide: CONTACT_NOTIFIER_PORT, useExisting: StubContactNotifierAdapter },
+    {
+      provide: CONTACT_NOTIFIER_PORT,
+      inject: [ConfigService, StubContactNotifierAdapter],
+      useFactory: (
+        config: ConfigService<Env, true>,
+        stub: StubContactNotifierAdapter,
+      ): ContactNotifier => {
+        const sid = config.get('TWILIO_ACCOUNT_SID', { infer: true });
+        const token = config.get('TWILIO_AUTH_TOKEN', { infer: true });
+        const from = config.get('TWILIO_FROM_NUMBER', { infer: true });
+        if (sid && token && from) {
+          return new TwilioContactNotifierAdapter(config);
+        }
+        return stub;
+      },
+    },
     ReportScamUseCase,
     FindNearbyScamsUseCase,
     TriggerSosUseCase,
