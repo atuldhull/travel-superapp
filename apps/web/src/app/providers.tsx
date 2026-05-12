@@ -18,6 +18,7 @@ import { configureSdk } from '@app/sdk';
 import { useState, type ReactNode } from 'react';
 import { getAccessToken } from '../lib/auth-store';
 import { SilentRefreshOnMount } from '../lib/silent-refresh';
+import { ToastProvider } from '../components/ui/toast';
 
 configureSdk({
   baseUrl: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000',
@@ -43,7 +44,10 @@ export function Providers({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <SilentRefreshOnMount />
-      {children}
+      {/* POST.8 — toast viewport. Renders top-right + auto-dismisses
+          after 4s. Imperative API: `import { toast } from
+          '../components/ui/toast'` then `toast.success(...)`. */}
+      <ToastProvider>{children}</ToastProvider>
     </QueryClientProvider>
   );
 }

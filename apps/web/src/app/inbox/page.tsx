@@ -28,10 +28,11 @@ import {
   type NotificationPreferencesDto,
 } from '@app/sdk';
 import { Card, CardHeader, CardSubtitle, CardTitle } from '../../components/ui/card';
-import { Skeleton } from '../../components/ui/skeleton';
+import { EmptyState } from '../../components/ui/empty-state';
+import { Skeleton, SkeletonList } from '../../components/ui/skeleton';
+import { toast } from '../../components/ui/toast';
 import { NotificationRow } from '../../components/inbox/notification-row';
 import { useAuthToken } from '../../lib/use-auth-token';
-import { announce } from '../../lib/announce';
 import {
   ensureWebPushSubscription,
   type WebPushSubscribeResult,
@@ -119,11 +120,11 @@ export default function InboxPage() {
     try {
       await archive.mutateAsync({ id });
       await refreshList();
-      announce('Notification archived');
+      toast.success('Notification archived');
     } catch (err) {
       const e = err as ApiError;
       setErrMsg(`${e.code ?? `HTTP_${e.status ?? '???'}`} — ${e.message ?? 'Archive failed.'}`);
-      announce(`Archive failed: ${e.message ?? 'Try again.'}`, 'assertive');
+      toast.error(`Archive failed: ${e.message ?? 'Try again.'}`);
     } finally {
       setActiveArchiveId(null);
     }
@@ -134,11 +135,11 @@ export default function InboxPage() {
     try {
       await remove.mutateAsync({ id });
       await refreshList();
-      announce('Notification deleted');
+      toast.success('Notification deleted');
     } catch (err) {
       const e = err as ApiError;
       setErrMsg(`${e.code ?? `HTTP_${e.status ?? '???'}`} — ${e.message ?? 'Delete failed.'}`);
-      announce(`Delete failed: ${e.message ?? 'Try again.'}`, 'assertive');
+      toast.error(`Delete failed: ${e.message ?? 'Try again.'}`);
     } finally {
       setActiveDeleteId(null);
     }
@@ -265,7 +266,7 @@ export default function InboxPage() {
           <CardSubtitle>Tap a row to mark read + open the linked surface.</CardSubtitle>
         </CardHeader>
         {list.isLoading ? (
-          <Skeleton className="h-24 w-full" />
+          <SkeletonList rows={4} />
         ) : list.isError ? (
           <p className="text-sm text-danger">Couldn&apos;t load inbox.</p>
         ) : items && items.notifications.length > 0 ? (
@@ -294,7 +295,11 @@ export default function InboxPage() {
             })}
           </ul>
         ) : (
-          <p className="text-sm text-muted">No notifications yet.</p>
+          <EmptyState
+            emoji="📭"
+            title="Inbox empty"
+            body="When something needs your attention — a trip lock, a shared itinerary, an SOS update — it'll show up here."
+          />
         )}
       </Card>
     </main>
