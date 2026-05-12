@@ -26,6 +26,45 @@
 Post-V.UX gap closure work. See `docs/POST_VUX_GAPS.md` for the
 audit + drop-in execution prompts.
 
+### [POST.2] — Design pass on landing + /trips + /demo
+
+- **Date**: 2026-05-12
+- **Commit**: <pending>
+- **Files changed**: 12 (3 new components: branding/logo, ui/select,
+  POST.2 additions to ui/input; 4 rewritten: ui/button, ui/card,
+  landing/hero, landing/value-pillars; 4 assets: hero.svg + 3
+  screenshot SVGs; 4 surface edits: layout.tsx, globals.css,
+  trips/page.tsx, demo/page.tsx)
+- **Bundle deltas**: `/` 4.92 KB (with new font chunk First Load
+  162 → 178 KB = +16 KB, well under the 30 KB budget); `/trips`
+  +0.44 KB; `/demo` +0.6 KB (with 3 SVG assets loaded on demand,
+  not in JS bundle).
+- **Tests added**: 0 (pure UI; visual review covers it)
+- **Verification output**:
+  ```
+  pnpm --filter=web typecheck → green
+  pnpm --filter=web build → green; 53 routes; First Load shared 104 KB
+  curl /illustrations/hero.svg → 200 OK
+  curl /screenshots/itinerary.svg → 200 OK
+  curl /screenshots/memory-book.svg → 200 OK
+  curl /screenshots/sos.svg → 200 OK
+  ```
+- **Lessons**:
+  - Tailwind 4 prefers `shadow-(--var)` over `shadow-[var(--var)]`
+    for CSS-variable utilities; same for `drop-shadow-(--var)`,
+    `bg-(--var)`, etc. The `[]` arbitrary-value syntax still
+    compiles but emits a `suggestCanonicalClasses` warning.
+  - `next/font/google` self-hosts the woff2; the `--font-inter`
+    CSS variable feeds into `--font-sans` (set in `@theme`) so
+    every existing `font-sans` utility automatically picks up Inter
+    without a global className change.
+  - SVG screenshots authored as static `.svg` files in `/public`
+    are loadable via `<Image>` and serve as drop-in replacements
+    for emoji placeholders. `next/image` skips bitmap optimisation
+    on `.svg` so file size = wire size; ours are ~2-3 KB each.
+
+---
+
 ### [POST.1] — Demo seed + real photo fixtures
 
 - **Date**: 2026-05-11

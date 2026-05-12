@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 380" role="img" aria-label="Mock screenshot of a memory book story-mode page">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0f172a"/>
+      <stop offset="1" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="photo1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f59e0b"/>
+      <stop offset="0.5" stop-color="#ef4444"/>
+      <stop offset="1" stop-color="#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="photo2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3b82f6"/>
+      <stop offset="1" stop-color="#1e40af"/>
+    </linearGradient>
+    <linearGradient id="photo3" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#22c55e"/>
+      <stop offset="1" stop-color="#0f766e"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="380" rx="14" fill="url(#bg2)"/>
+
+  <!-- Wordmark top-left -->
+  <g transform="translate(20,28)">
+    <rect width="22" height="22" rx="6" fill="#3b82f6"/>
+    <path d="M5 16 C 8 13, 12 10, 17 7" stroke="white" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+    <text x="30" y="16" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="700" fill="#ffffff">TravelSuperApp</text>
+  </g>
+
+  <!-- Story mode hero photo -->
+  <rect x="40" y="68" width="520" height="220" rx="12" fill="url(#photo1)"/>
+  <!-- silhouette mountains -->
+  <path d="M 40 230 L 120 180 L 180 210 L 260 160 L 340 220 L 420 180 L 500 215 L 560 200 L 560 288 L 40 288 Z" fill="#0f172a" opacity="0.55"/>
+  <!-- story text overlay -->
+  <text x="60" y="278" font-family="Inter, system-ui, sans-serif" font-size="22" font-weight="700" fill="#ffffff" opacity="0.95">Lisbon yellow trams</text>
+
+  <!-- Caption row -->
+  <g transform="translate(40,300)">
+    <text font-family="Inter, system-ui, sans-serif" font-size="11" fill="#cbd5e1">A long weekend in tile and pastel.</text>
+    <text x="0" y="14" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#94a3b8">Photo by Aayush Gupta · Tram 28 weaving through Alfama</text>
+  </g>
+
+  <!-- Filmstrip thumbnails bottom-right -->
+  <rect x="240" y="320" width="60" height="40" rx="4" fill="url(#photo1)"/>
+  <rect x="306" y="320" width="60" height="40" rx="4" fill="url(#photo2)"/>
+  <rect x="372" y="320" width="60" height="40" rx="4" fill="url(#photo3)"/>
+  <rect x="438" y="320" width="60" height="40" rx="4" fill="url(#photo1)" opacity="0.7"/>
+  <rect x="504" y="320" width="56" height="40" rx="4" fill="url(#photo2)" opacity="0.5"/>
+
+  <!-- Active dot indicator -->
+  <circle cx="270" cy="312" r="3" fill="#ffffff"/>
+  <circle cx="284" cy="312" r="3" fill="#475569"/>
+  <circle cx="298" cy="312" r="3" fill="#475569"/>
+  <circle cx="312" cy="312" r="3" fill="#475569"/>
+  <circle cx="326" cy="312" r="3" fill="#475569"/>
+</svg>
