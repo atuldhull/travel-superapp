@@ -61,6 +61,7 @@ import { PrismaUserOAuthIdentityRepository } from './infrastructure/prisma-user-
 import { PrismaUserRepository } from './infrastructure/prisma-user.repository';
 import { RedisFailedLoginCounter } from './infrastructure/redis-failed-login-counter';
 import { RedisJwtKeyringStore } from './infrastructure/redis-jwt-keyring.store';
+import { ResendMailerAdapter } from './infrastructure/resend-mailer.adapter';
 import { StubMailerAdapter } from './infrastructure/stub-mailer.adapter';
 import { TotpService } from './infrastructure/totp.service';
 import { AuthController } from './interface/auth.controller';
@@ -126,11 +127,21 @@ const oauthProvidersFactory = {
       provide: PASSWORD_RESET_TOKEN_REPOSITORY,
       useClass: PrismaPasswordResetTokenRepository,
     },
-    // Mailer port — stub adapter is the only adapter today. A
-    // real-provider (Resend / SES) wires in via a useFactory once
-    // RESEND_API_KEY is provisioned (CLAUDE rule 5: never commit
-    // real keys; gated on env).
-    { provide: MAILER_PORT, useClass: StubMailerAdapter },
+    // Mailer port — POST.3 wires Resend when RESEND_API_KEY is set;
+    // otherwise falls back to the stub. ResendMailerAdapter is NOT
+    // a registered provider — its constructor throws when the key
+    // is absent and Nest would eagerly instantiate it. The factory
+    // `new`s it directly so construction is gated on env presence.
+    StubMailerAdapter,
+    {
+      provide: MAILER_PORT,
+      inject: [ConfigService, StubMailerAdapter],
+      useFactory: (config: ConfigService<Env, true>, stub: StubMailerAdapter) => {
+        const apiKey = config.get('RESEND_API_KEY', { infer: true });
+        if (apiKey) return new ResendMailerAdapter(config);
+        return stub;
+      },
+    },
     MockOAuthProvider,
     oauthProvidersFactory,
     TotpService,

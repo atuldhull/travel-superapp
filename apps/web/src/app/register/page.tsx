@@ -33,6 +33,7 @@ import {
   type MagicLinkRequestRequestDto,
   type RegisterRequestDto,
 } from '@app/sdk';
+import { GoogleSignInButton } from '../../components/google-sign-in-button';
 import { Button } from '../../components/ui/button';
 import { Field } from '../../components/ui/input';
 import { setAccessToken } from '../../lib/auth-store';
@@ -115,6 +116,24 @@ export default function RegisterPage() {
         </Link>
       </p>
       <h1 className="text-3xl font-bold tracking-tight">Create your account</h1>
+
+      {/* POST.3 — Google OAuth path. Renders nothing when
+          NEXT_PUBLIC_GOOGLE_CLIENT_ID is absent (dev fallback). */}
+      <section className="rounded-xl border border-muted/15 bg-surface p-5">
+        <header className="mb-3 flex items-center gap-2">
+          <span aria-hidden className="text-xl">
+            🌐
+          </span>
+          <h2 className="text-lg font-semibold">Continue with Google</h2>
+        </header>
+        <p className="mb-4 text-sm text-muted">
+          Faster — no password to remember. We&apos;ll create your account on first sign-in.
+        </p>
+        <GoogleSignInButton
+          onSignedIn={() => router.push('/onboarding' as never)}
+          onError={(msg) => setErrorMsg(msg)}
+        />
+      </section>
 
       {/* ───── Magic-link path ───────────────────────────────────────── */}
       <section className="rounded-xl border border-brand/30 bg-brand/5 p-5">

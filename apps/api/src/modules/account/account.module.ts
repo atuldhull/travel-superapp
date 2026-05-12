@@ -21,6 +21,8 @@
  * [IV.18.16.2]. Hard-delete cron added in [IV.18.16.3].
  */
 import { Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import type { Env } from '@app/config';
 import { AddTrustedContactUseCase } from './application/add-trusted-contact.use-case';
 import { GetConnectivityInfoUseCase } from './application/get-connectivity-info.use-case';
 import { AdminBanUserUseCase } from './application/admin-ban-user.use-case';
@@ -40,6 +42,7 @@ import { UpdatePreferencesUseCase } from './application/update-preferences.use-c
 import { ACCOUNT_DELETER } from './application/ports/account-deleter';
 import { ACCOUNT_PURGER } from './application/ports/account-purger';
 import { MAILER_PORT } from '../identity/application/ports/mailer.port';
+import { ResendMailerAdapter } from '../identity/infrastructure/resend-mailer.adapter';
 import { StubMailerAdapter } from '../identity/infrastructure/stub-mailer.adapter';
 import { ADMIN_USER_QUERY } from './application/ports/admin-user-query';
 import { PREFERENCES_REPOSITORY } from './application/ports/preferences.repository';
@@ -97,8 +100,20 @@ import { TrustedContactsController } from './interface/trusted-contacts.controll
     // V.UX.33 — Account needs MAILER_PORT for the deletion-pending
     // email. Identity also registers it; per-module providers are
     // safe because StubMailerAdapter shares state via a module-level
-    // ring buffer.
-    { provide: MAILER_PORT, useClass: StubMailerAdapter },
+    // ring buffer. POST.3 — same Resend-when-key-present factory as
+    // IdentityModule. ResendMailerAdapter is intentionally NOT in
+    // providers — its ctor throws when the key is absent and Nest
+    // would eagerly instantiate it.
+    StubMailerAdapter,
+    {
+      provide: MAILER_PORT,
+      inject: [ConfigService, StubMailerAdapter],
+      useFactory: (config: ConfigService<Env, true>, stub: StubMailerAdapter) => {
+        const apiKey = config.get('RESEND_API_KEY', { infer: true });
+        if (apiKey) return new ResendMailerAdapter(config);
+        return stub;
+      },
+    },
   ],
   // V.UX.13 — TRUSTED_CONTACT_REPOSITORY is consumed by the Safety
   // module's TriggerSosUseCase to fan out an SOS to the caller's
