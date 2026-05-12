@@ -361,7 +361,11 @@ function TripCard({
   const sample = isSampleTrip(trip);
   const statusVariant: 'neutral' | 'brand' = trip.status === 'draft' ? 'neutral' : 'brand';
   return (
-    <Card as="li" className={role === 'collaborator' ? 'border-emerald-500/40' : undefined}>
+    <Card
+      as="li"
+      depth="raised"
+      className={role === 'collaborator' ? 'border-emerald-500/40' : undefined}
+    >
       <CardHeader>
         <CardTitle>
           <Link
