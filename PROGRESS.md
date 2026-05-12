@@ -26,6 +26,43 @@
 Post-V.UX gap closure work. See `docs/POST_VUX_GAPS.md` for the
 audit + drop-in execution prompts.
 
+### [POST.3] — Resend mailer + Google OAuth (real adapters, stubs as fallback)
+
+- **Date**: 2026-05-12
+- **Commit**: <pending>
+- **Files changed**: 7 (1 new — ResendMailerAdapter; 2 modified —
+  IdentityModule + AccountModule wire factory; 1 modified —
+  /register page mounts GoogleSignInButton; 1 new e2e —
+  resend-mailer.e2e-spec.ts; 1 new — apps/api/.env.example;
+  1 modified — docs/external-apis.md)
+- **Deps added**: `resend@6.12.3` to apps/api
+- **Tests added**: 4 (resend-mailer.e2e-spec.ts; skipped without
+  `RESEND_API_KEY`)
+- **Verification output**:
+  ```
+  pnpm --filter=api typecheck → green
+  pnpm --filter=web typecheck → green
+  pnpm --filter=api test -- "magic-link|reactivation|password-reset|ban-and-appeal|resend-mailer" --runInBand
+    → 4 suites pass, 24 tests pass, 4 tests skipped (resend-mailer
+      gracefully skips without RESEND_API_KEY)
+  curl /health/live (with rebuilt dist) → 200 ok
+  ```
+- **Lessons**:
+  - Recon revealed most of POST.3 was already wired (Google OAuth
+    adapter + GoogleSignInButton component + env-gated registry).
+    Only ResendMailerAdapter was net-new + the /register Google
+    button mount.
+  - Don't list a class provider in `providers: []` if its
+    constructor throws when env vars are absent — Nest eagerly
+    instantiates every class provider. Use a `useFactory` that
+    `new`s it only when the env is present.
+  - `next/font/google` already wires Inter (POST.2); for SSO
+    branding the GIS script (`accounts.google.com/gsi/client`)
+    self-renders Google's stock button — no need to ship a custom
+    Google logo.
+
+---
+
 ### [POST.2] — Design pass on landing + /trips + /demo
 
 - **Date**: 2026-05-12
