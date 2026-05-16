@@ -47,6 +47,35 @@ keystone) land well:
 
 ## POST-2.0 Phase B — Social substrate
 
+### [POST.2B.3] — Pull feed + creator profile (✅ api core; web deferred)
+
+- **Date**: 2026-05-16
+- **Status**: ✅ api core DONE; web `/feed` + `/users/[id]` + SDK regen
+  = documented deferred glue (openapi-emission pipeline + the
+  pre-existing `~/.eslintrc.js` web-lint friction — 2A.5 precedent).
+- **Commit**: `feat(POST.2B.3)` (see git log)
+- **What**: `TripPublicationRepository` grew feed-query methods
+  (`listFeed`, `listByAuthorVisibleTo`, `countPublishedByAuthor`,
+  `countFollowers`) — implemented as **ONE indexed raw-SQL query
+  each**; the `before` cursor is **branched**, not a flaky
+  `$before IS NULL OR` filter (per [[prisma-raw-boolean]]). Visibility
+  - block filtering is entirely in the SQL: excludes PRIVATE, the
+    viewer's own, blocked pairs (either direction), and FOLLOWERS posts
+    unless the viewer follows the author. `GetFeedUseCase`
+    (reverse-chron, cursor, limit cap 50) + `GetCreatorProfileUseCase`
+    (visible trips + follower/published counts). `feed.controller`:
+    `GET /api/v1/feed` (social pull feed) + `GET /api/v1/feed/creators/:id`.
+- **Verify**: `feed-visibility.e2e-spec.ts` (real DB, skips if down,
+  runs in the Phase B gate) proves all three filter cases
+  (non-follower→PUBLIC only; follower→+FOLLOWERS; block→author
+  hidden). typecheck/lint/build EXIT 0; trip-publication +
+  social-graph specs 15/15; boot smoke (:3023) → FeedModule deps
+  initialized, `/feed` + `/feed/creators/:id` mapped, no DI error.
+  Zero new deps.
+- **Deferred (documented)**: web `/feed` page, `/users/[id]` creator-
+  profile upgrade, `pnpm --filter=@app/sdk gen` + openapi.yaml — the
+  openapi-emission pipeline (same deferral as POST.2A.5).
+
 ### [POST.2B.2] — TripPublication + privacy-fenced publish (✅ COMPLETE)
 
 - **Date**: 2026-05-16

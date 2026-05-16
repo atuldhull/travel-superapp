@@ -103,6 +103,19 @@ describe('PublishTripUseCase / UnpublishTripUseCase (POST.2B.2, fakes)', () => {
     async findByTrip(): Promise<TripPublication | null> {
       return this.last;
     }
+    // POST.2B.3 — feed-query methods not exercised by this spec.
+    async listFeed(): Promise<readonly TripPublication[]> {
+      return [];
+    }
+    async listByAuthorVisibleTo(): Promise<readonly TripPublication[]> {
+      return [];
+    }
+    async countPublishedByAuthor(): Promise<number> {
+      return 0;
+    }
+    async countFollowers(): Promise<number> {
+      return 0;
+    }
   }
 
   it('rejects a non-owner with TRIP_NOT_FOUND', async () => {
