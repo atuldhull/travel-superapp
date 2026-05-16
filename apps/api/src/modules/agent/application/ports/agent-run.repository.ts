@@ -32,6 +32,10 @@ export interface AgentRunRepository {
   /** POST.2A.4 — bump on an accepted re-plan. NOT a step mutation
    *  (the audit log stays append-only); this is run state. */
   bumpPlanVersion(agentRunId: string): Promise<void>;
+  /** Agent↔trip real triggers — flip run status → 'closed' when the
+   *  watched trip has ended (the Memory Book has been drafted). Run
+   *  STATE only; the append-only step log is untouched. Idempotent. */
+  markClosed(agentRunId: string): Promise<void>;
 }
 
 export const AGENT_RUN_REPOSITORY = Symbol('AgentRunRepository');

@@ -26,6 +26,11 @@ export interface TripWatchRepository {
    *  thresholds (+0.1, capped) so the agent stops re-proposing the
    *  same thing. No-op if no active watch / no thresholds. */
   raiseThreshold(tripId: string): Promise<void>;
+  /** Agent↔trip real triggers — when a trip has definitively ended
+   *  the scheduler deactivates its watch so `listActive` stops
+   *  returning it (the run is drained / Memory Book drafted exactly
+   *  once). Idempotent: no-op if there is no active watch. */
+  deactivate(tripId: string): Promise<void>;
 }
 
 export const TRIP_WATCH_REPOSITORY = Symbol('TripWatchRepository');

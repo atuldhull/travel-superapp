@@ -45,6 +45,47 @@ keystone) land well:
 | D7  | Agent loop cadence         | fixed `setInterval`                         | verified: no cron infra exists             |
 | D8  | Agent scope                | during-trip only                            | tightest, highest-value scope              |
 
+## POST-2.0 — Agent↔trip real triggers (post-2.0 enhancement)
+
+### [P1] — The deferred scheduler↔trip glue is now wired (✅ COMPLETE)
+
+- **Date**: 2026-05-16
+- **Status**: ✅ DONE. Every Phase-A/C prompt deferred "the
+  scheduler↔trip glue that supplies real context"; the agentic
+  flywheel was fully built but **inert**. It now FIRES on real trips.
+- **Commit**: `feat(agent): wire agent↔trip real triggers` (see git log)
+- **What**:
+  - **Watch START** — `TripItineraryWatchHandler` subscribes
+    `Trip.ItineraryGenerated` (trip → event bus → agent; Trip module
+    stays unaware, no cycle) and opens a weather TripWatch via
+    `StartTripWatchUseCase`. Flag-gated (NO-OP unless
+    `FEATURE_AGENT_ENABLED` — ships dark), idempotent
+    (`TRIP_WATCH_ALREADY_ACTIVE` swallowed), never throws into the bus.
+  - **The cycle** — `RunWatchCycleUseCase` (the keystone; thin
+    scheduler now just locks+calls it): resolves REAL context
+    (`TripRepository` + `GeoQueries` center — CLAUDE.md #11), then:
+    trip ENDED → the **2C.1 seam fires for real** (PRIVATE Memory
+    Book drafted, idempotent; watch deactivated; run closed) ·
+    orphan trip → watch drained · material weather change →
+    `ProposeReplanUseCase` (propose-and-confirm only — LAW 2;
+    grounded via 2C.3) · debounced via the persisted previous
+    snapshot.
+  - **Signal** — `CompositeSignalSource` routes `weather` → the free
+    keyless `WeatherSignalAdapter` (Open-Meteo; degrades to
+    "no-change" offline so the zero-key gate stays green — LAW 1),
+    everything else → safe stub (flight/geofence stay opt-in — LAW 2).
+  - Additive repo verbs: `TripWatchRepository.deactivate`,
+    `AgentRunRepository.markClosed` (run STATE only — the append-only
+    step log is untouched). Scope: only `modules/agent` + its tests.
+- **Verify**: typecheck green; lint 0 errors; 7 agent suites / 40
+  tests green incl. 2 new pure specs (`agent-run-watch-cycle` 7,
+  `agent-trip-itinerary-watch` 5 — end⇒draft+close, orphan/​no-center
+  guards, material⇒propose, debounce, flag-off NO-OP, idempotent
+  conflict swallow). **Full `--runInBand --forceExit` gate (clean
+  machine, zero keys): 840 passed · 0 failed · 18 skipped** (= 828
+  2.0 baseline + 12 new). Zero regressions; agent↔feed↔trip DI
+  acyclic (proven by every e2e booting AppModule).
+
 ## POST-2.0 Phase C — The fusion
 
 > ### ✅ PHASE C GATE — RUN 2026-05-16, GREEN → **2.0 COMPLETE**

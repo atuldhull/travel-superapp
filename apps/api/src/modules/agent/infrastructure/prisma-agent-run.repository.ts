@@ -90,4 +90,13 @@ export class PrismaAgentRunRepository implements AgentRunRepository {
       data: { planVersion: { increment: 1 } },
     });
   }
+
+  async markClosed(agentRunId: string): Promise<void> {
+    // Run STATE only — the append-only step log is never mutated.
+    // Idempotent: re-closing an already-closed run is a no-op write.
+    await this.prisma.agentRun.update({
+      where: { id: agentRunId },
+      data: { status: 'closed' },
+    });
+  }
 }

@@ -71,6 +71,8 @@ class FakeRuns implements AgentRunRepository {
   async bumpPlanVersion(runId: string): Promise<void> {
     this.bumped.push(runId);
   }
+  // port grew (agent↔trip real triggers); not exercised here.
+  async markClosed(): Promise<void> {}
 }
 
 class FakeWatches implements TripWatchRepository {
@@ -87,6 +89,8 @@ class FakeWatches implements TripWatchRepository {
   async raiseThreshold(tripId: string): Promise<void> {
     this.raised.push(tripId);
   }
+  // port grew (agent↔trip real triggers); not exercised here.
+  async deactivate(): Promise<void> {}
 }
 
 class FakeBus implements EventBus {
