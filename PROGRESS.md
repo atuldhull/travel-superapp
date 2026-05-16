@@ -45,6 +45,38 @@ keystone) land well:
 | D7  | Agent loop cadence         | fixed `setInterval`                         | verified: no cron infra exists             |
 | D8  | Agent scope                | during-trip only                            | tightest, highest-value scope              |
 
+### [POST.2A.1] — Agent module skeleton + ports (inert, flag-gated)
+
+- **Date**: 2026-05-16
+- **Status**: DONE
+- **Commit**: `feat(POST.2A.1)` (see git log)
+- **What**: new `apps/api/src/modules/agent` hex skeleton — domain
+  (`agent-run.entity`, `trip-watch.entity`, `plan-diff.vo`), application ports
+  (`signal-source`, `agent-memory`, `plan-tool`), `StubSignalAdapter`
+  (deterministic "no change"), `AgentController` (`GET /api/v1/agent/status`,
+  503 `AGENT_DISABLED` when off), `agent.module.ts`. Added
+  `FEATURE_AGENT_ENABLED` (`z.coerce.boolean().default(false)`) to
+  `FeaturesSchema`. Wired `AgentModule` into `app.module.ts`.
+- **Design note**: used the **PaymentsModule env-gated pattern** (always
+  import + controller 503 guard), NOT conditional `app.module` import —
+  Nest eagerly instantiates providers and conditional imports risk the DI
+  boot hazards documented for this codebase. (Prompt wording said
+  "conditionally import"; verified-codebase-facts override per the prompt
+  book's own rule.)
+- **Verification**: `@app/config` rebuilt; `typecheck` config+api → Done;
+  `pnpm --filter=api lint` → **EXIT=0** (0 errors; new files added zero
+  problems; 120 pre-existing warnings unchanged); `apps/api/test/agent-skeleton.spec.ts`
+  → **7/7 pass** (1.2s, no infra); `pnpm --filter=api build` → EXIT 0;
+  **boot smoke** (built dist, flag off, port 3017, 127.0.0.1 db/redis):
+  `Nest application successfully started`, `AgentController {/api/v1/agent}`
+  - `/api/v1/agent/status` route mapped, `/health/live` 200, agent route
+    401 unauth (inert — behind global auth, no behaviour leak), schedulers
+    tick normally (no regression).
+- **Not run**: full `--runInBand` e2e (~5min, deep gate). Slice is additive
+  - inert + flag-off; build + boot + unit prove no regression. Flagged for
+    the user's confirmation per LAW 1's full-suite criterion.
+- **Next**: POST.2A.2 — append-only run log + TripWatch (additive schema).
+
 ### [POST.2.0.0] — Clean baseline + lock 2.0 decisions
 
 - **Date**: 2026-05-16
