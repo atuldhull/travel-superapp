@@ -78,4 +78,16 @@ export class PrismaAgentRunRepository implements AgentRunRepository {
     });
     return rows.map(stepToDomain);
   }
+
+  async getStep(stepId: string): Promise<AgentStep | null> {
+    const row = await this.prisma.agentStep.findUnique({ where: { id: stepId } });
+    return row ? stepToDomain(row) : null;
+  }
+
+  async bumpPlanVersion(agentRunId: string): Promise<void> {
+    await this.prisma.agentRun.update({
+      where: { id: agentRunId },
+      data: { planVersion: { increment: 1 } },
+    });
+  }
 }

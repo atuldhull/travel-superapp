@@ -27,6 +27,11 @@ export interface AgentRunRepository {
   /** Append-only — the only write verb for steps. */
   appendStep(input: AppendAgentStepInput): Promise<AgentStep>;
   listSteps(agentRunId: string): Promise<readonly AgentStep[]>;
+  /** Read a single step (the proposal the user accepts/declines). */
+  getStep(stepId: string): Promise<AgentStep | null>;
+  /** POST.2A.4 — bump on an accepted re-plan. NOT a step mutation
+   *  (the audit log stays append-only); this is run state. */
+  bumpPlanVersion(agentRunId: string): Promise<void>;
 }
 
 export const AGENT_RUN_REPOSITORY = Symbol('AgentRunRepository');
