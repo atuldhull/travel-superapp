@@ -134,6 +134,37 @@ keystone) land well:
   the new routes + deep-link from the `trip_agent_replan_proposed`
   notification cover the flow).
 
+### [P3] — Supervised Supabase deploy: PREPARED + GATED (not executed)
+
+- **Date**: 2026-05-16
+- **Status**: ⏸️ PREPARED, awaiting operator. Everything that is
+  safe without touching a remote DB is done; the actual
+  `prisma migrate deploy` against Supabase is intentionally NOT run
+  (possibly-production, hard-to-reverse, operator flagged it
+  uncertain — durable rule: never migrate Supabase unattended).
+- **Commit**: `docs(runbook): supabase deploy runbook (prepared, gated)`
+- **What**:
+  - `docs/runbooks/supabase-deploy.md` — the missing DB-deploy
+    runbook: the pooler(6543)-vs-direct(5432) split + the
+    `directUrl` schema change required ONLY at deploy time (kept out
+    of the committed schema so it can't break the local single-URL
+    Docker loop); extension preflight (postgis · vector · pg_trgm ·
+    pgcrypto); `migrate deploy` (NEVER `migrate dev`) procedure; the
+    gist=14/ivfflat=2 survival check; 2.0-surface spot-checks;
+    backup-before + rollback; RLS posture (authz is app/domain, not
+    Supabase RLS — no anon key to clients); the explicit operator
+    STOP gate.
+  - Deploy-artifact verification (mirrors `deploy.yml` validate):
+    `pnpm -r --filter=@app/* build` + `pnpm --filter=api build`
+    → **exit 0**, `apps/api/dist/src/main.js` emitted. The
+    compiled, deployable artifact is clean.
+- **Why gated, not done**: deploying to a possibly-production DB is
+  outward-facing + hard to reverse. Needs, from the operator: (1)
+  confirmation of the target project (prod?), (2) DIRECT_URL +
+  pooler DATABASE_URL (or confirmation they're in Doppler/Fly
+  secrets), (3) explicit go with the operator present. Until then
+  the step stays prepared.
+
 ## POST-2.0 Phase C — The fusion
 
 > ### ✅ PHASE C GATE — RUN 2026-05-16, GREEN → **2.0 COMPLETE**
