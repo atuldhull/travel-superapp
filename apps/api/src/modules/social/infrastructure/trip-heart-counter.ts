@@ -9,6 +9,12 @@
  *
  * No TTL — hearts are durable counts.
  *
+ * POST.2B.1 note: the block guard is intentionally NOT applied here.
+ * Hearts are ANONYMOUS — `HeartSharedTripUseCase.execute(shareCode)`
+ * carries no actor identity, so there is no "blocked pair" to gate
+ * (verified-reality-overrides-prompt-wording; the block guard lives
+ * on the actor-bearing paths: follow / vote / review).
+ *
  * Installed by prompt [V.UX.10].
  */
 import { Inject, Injectable, OnModuleDestroy } from '@nestjs/common';

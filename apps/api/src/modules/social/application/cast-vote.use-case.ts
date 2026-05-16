@@ -28,6 +28,8 @@ import {
 } from '../../trip/application/ports/trip-share.repository';
 import type { Vote, VoteTargetType, VoteValue } from '../domain/vote.entity';
 import { VOTE_REPOSITORY, type VoteRepository } from './ports/vote.repository';
+import { BLOCK_REPOSITORY, type BlockRepository } from './ports/block.repository';
+import { assertNotBlocked } from './block-user.use-case';
 
 export interface CastVoteCommand {
   readonly tripId: string;
@@ -43,10 +45,18 @@ export class CastVoteUseCase {
     @Inject(VOTE_REPOSITORY) private readonly votes: VoteRepository,
     @Inject(TRIP_REPOSITORY) private readonly trips: TripRepository,
     @Inject(TRIP_SHARE_REPOSITORY) private readonly shares: TripShareRepository,
+    @Inject(BLOCK_REPOSITORY) private readonly blocks: BlockRepository,
   ) {}
 
   async execute(cmd: CastVoteCommand): Promise<Vote> {
     await assertCanVote(this.trips, this.shares, cmd.tripId, cmd.userId);
+    // POST.2B.1 — a block in either direction between the voter and
+    // the trip owner refuses the interaction (alongside the existing
+    // access gate, not a new layer).
+    const trip = await this.trips.findById(cmd.tripId);
+    if (trip && trip.userId !== cmd.userId) {
+      await assertNotBlocked(this.blocks, cmd.userId, trip.userId);
+    }
     return this.votes.upsert({
       tripId: cmd.tripId,
       userId: cmd.userId,
