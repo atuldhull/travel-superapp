@@ -22,8 +22,18 @@ export interface UpsertPublishInput {
 export interface TripPublicationRepository {
   upsertPublish(input: UpsertPublishInput): Promise<TripPublication>;
   /** Idempotent unpublish (owner-scoped): visibility → PRIVATE,
-   *  exposed geo + publishedAt cleared. No-op if no row. */
+   *  exposed geo + publishedAt cleared. POST.2C.2 — this ALSO NULLs
+   *  the pgvector `embedding` in the SAME single SQL statement as the
+   *  visibility flip (de-index on unpublish — no ghost can linger in
+   *  discovery / grounding). No-op if no row. */
   setPrivate(tripId: string, authorId: string): Promise<void>;
+  /** POST.2C.2 — best-effort embed-on-publish. Writes the 1024-dim
+   *  vector via raw SQL (`Unsupported("vector(1024)")` is invisible to
+   *  the typed client). `null` → no-op (skip-index: keep any prior
+   *  embedding, never wipe on a transient Ollama outage). A non-1024
+   *  vector is REJECTED (`assertEmbeddingDimension`) BEFORE any DB
+   *  write. Owner-scoped. */
+  setEmbedding(tripId: string, authorId: string, embedding: number[] | null): Promise<void>;
   findByTrip(tripId: string): Promise<TripPublication | null>;
   /** POST.2B.3 — the pull feed: ONE indexed query, reverse-chron,
    *  cursor-paginated. Excludes PRIVATE, excludes the viewer's own,

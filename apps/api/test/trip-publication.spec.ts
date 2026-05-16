@@ -20,6 +20,7 @@ import {
 import { PublishTripUseCase } from '../src/modules/feed/application/publish-trip.use-case';
 import { UnpublishTripUseCase } from '../src/modules/feed/application/unpublish-trip.use-case';
 import type { TripPublicationRepository } from '../src/modules/feed/application/ports/trip-publication.repository';
+import type { EmbeddingPort } from '../src/modules/feed/application/ports/embedding.port';
 import type { TripRepository } from '../src/modules/trip/application/ports/trip.repository';
 import type { GeoQueries } from '../src/common/db/geo-queries';
 
@@ -69,6 +70,10 @@ describe('PublishTripUseCase / UnpublishTripUseCase (POST.2B.2, fakes)', () => {
   const geo = {
     findTripCenter: async () => ({ lat: 48.8566, lng: 2.3522 }),
   } as unknown as GeoQueries;
+  // POST.2C.2 — embed-on-publish is best-effort; these pre-2C.2 cases
+  // only assert publish/unpublish semantics, so a null (skip-index)
+  // embedder keeps them behaviourally identical.
+  const noEmbed: EmbeddingPort = { embed: async () => null };
 
   function tripsWith(endsOn: Date | null): TripRepository {
     return {
@@ -100,6 +105,8 @@ describe('PublishTripUseCase / UnpublishTripUseCase (POST.2B.2, fakes)', () => {
     async setPrivate(tripId: string, authorId: string): Promise<void> {
       this.setPrivateCalls.push([tripId, authorId]);
     }
+    // POST.2C.2 — port grew (embed-on-publish); not exercised here.
+    async setEmbedding(): Promise<void> {}
     async findByTrip(): Promise<TripPublication | null> {
       return this.last;
     }
@@ -119,14 +126,14 @@ describe('PublishTripUseCase / UnpublishTripUseCase (POST.2B.2, fakes)', () => {
   }
 
   it('rejects a non-owner with TRIP_NOT_FOUND', async () => {
-    const uc = new PublishTripUseCase(tripsWith(YESTERDAY), geo, new FakePubs());
+    const uc = new PublishTripUseCase(tripsWith(YESTERDAY), geo, new FakePubs(), noEmbed);
     await expect(uc.execute({ tripId: 't1', userId: 'someone-else' })).rejects.toBeInstanceOf(
       NotFoundError,
     );
   });
 
   it('rejects publishing a not-yet-ended trip (INVARIANT A, no HTTP)', async () => {
-    const uc = new PublishTripUseCase(tripsWith(TOMORROW), geo, new FakePubs());
+    const uc = new PublishTripUseCase(tripsWith(TOMORROW), geo, new FakePubs(), noEmbed);
     await expect(uc.execute({ tripId: 't1', userId: 'owner' })).rejects.toMatchObject({
       code: 'TRIP_NOT_ENDED',
     });
@@ -134,7 +141,7 @@ describe('PublishTripUseCase / UnpublishTripUseCase (POST.2B.2, fakes)', () => {
 
   it('defaults to FOLLOWERS (D2) and coarsens its geo without opt-in', async () => {
     const pubs = new FakePubs();
-    const uc = new PublishTripUseCase(tripsWith(YESTERDAY), geo, pubs);
+    const uc = new PublishTripUseCase(tripsWith(YESTERDAY), geo, pubs, noEmbed);
     const out = await uc.execute({ tripId: 't1', userId: 'owner' });
     expect(out.visibility).toBe('FOLLOWERS');
     expect(out.exposedLat).toBe(coarsenCoord(48.8566));
@@ -142,7 +149,7 @@ describe('PublishTripUseCase / UnpublishTripUseCase (POST.2B.2, fakes)', () => {
 
   it('PUBLIC coarsens; unpublish calls setPrivate (owner-scoped)', async () => {
     const pubs = new FakePubs();
-    const pub = new PublishTripUseCase(tripsWith(YESTERDAY), geo, pubs);
+    const pub = new PublishTripUseCase(tripsWith(YESTERDAY), geo, pubs, noEmbed);
     const out = await pub.execute({ tripId: 't1', userId: 'owner', visibility: 'PUBLIC' });
     expect(out.exposedLat).toBe(coarsenCoord(48.8566));
     expect(out.exposedLat).not.toBe(48.8566);
