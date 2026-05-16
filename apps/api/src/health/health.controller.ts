@@ -28,7 +28,6 @@ import { Public } from '../common/auth';
 import { HttpPingIndicator } from './indicators/http-ping.indicator';
 import { PostgresHealthIndicator } from './indicators/postgres.indicator';
 import { RedisHealthIndicator } from './indicators/redis.indicator';
-import { S3HealthIndicator } from './indicators/s3.indicator';
 
 // Health probes (k8s / Fly.io / LB) MUST NOT be rate-limited — they
 // probe every second or so; a rate limit would flip pods to Unhealthy
@@ -43,7 +42,6 @@ export class HealthController {
     @Inject(PostgresHealthIndicator) private readonly postgres: PostgresHealthIndicator,
     @Inject(RedisHealthIndicator) private readonly redis: RedisHealthIndicator,
     @Inject(HttpPingIndicator) private readonly http: HttpPingIndicator,
-    @Inject(S3HealthIndicator) private readonly s3: S3HealthIndicator,
     @Inject(ConfigService) private readonly config: ConfigService<Env, true>,
   ) {}
 
@@ -65,12 +63,6 @@ export class HealthController {
       () => this.postgres.isHealthy(),
       () => this.redis.isHealthy(),
       () => this.http.isHealthy('meilisearch', `${meiliHost.replace(/\/$/, '')}/health`),
-      // V.UX.38 — S3 is a SOFT signal. The indicator always returns
-      // status='up' (the probe ran); actual bucket reachability lives
-      // in `info.s3.bucketStatus`. This keeps S3 hiccups off the LB
-      // health-flap path while still surfacing the real status to
-      // the /ops dashboard.
-      () => this.s3.isHealthy(),
     ]);
   }
 

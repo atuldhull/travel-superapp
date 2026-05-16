@@ -21,6 +21,50 @@
 
 ---
 
+## POST-2.0 series — Agentic + Social upgrade
+
+> Strategy: `docs/APP_VISION_2.0.html` (§1–24). Execution prompt book:
+> `docs/POST_2.0_PROMPTS.md` (deep-verified against source 2026-05-16).
+> Pre-flight report: `docs/POST_2.0_PREFLIGHT.md`.
+
+### 2.0 decisions — locked 2026-05-16
+
+User delegated the call ("run whatever suits u like the recommendation …
+dont wait for my decisions") and flagged the travel-memory experience as a
+priority. Locked to the §22 recommendations, tuned so memories (the flywheel
+keystone) land well:
+
+| #   | Decision                   | Locked value                                | Rationale                                  |
+| --- | -------------------------- | ------------------------------------------- | ------------------------------------------ |
+| D1  | Agent autonomy default     | notify-only                                 | value with zero surprise; user opts up     |
+| D2  | Default publish visibility | FOLLOWERS (PUBLIC needs 2nd confirm)        | safest default for sharing travel memories |
+| D3  | Flight signal              | OpenSky best-effort, labelled               | no free SLA; paid provider deferred        |
+| D4  | Embedding model            | local Ollama `mxbai-embed-large` (1024-dim) | $0; matches PlaceEmbedding dimension       |
+| D5  | Build order                | A → B → C                                   | C only cheap this way (verified deps)      |
+| D6  | Graph / feed home          | extend both (graph→social, pub→feed)        | no new module                              |
+| D7  | Agent loop cadence         | fixed `setInterval`                         | verified: no cron infra exists             |
+| D8  | Agent scope                | during-trip only                            | tightest, highest-value scope              |
+
+### [POST.2.0.0] — Clean baseline + lock 2.0 decisions
+
+- **Date**: 2026-05-16
+- **Status**: DONE
+- **Commits**: `ed934de` (atomic pre-existing lint fix — unused `EVENT_BUS`
+  import) then `chore(POST.2.0.0)` baseline (see git log).
+- **What**: committed the previously-uncommitted baseline —
+  `packages/config/src/schema.ts` (`optionalUrl` helper),
+  `apps/api/src/main.ts` (Stripe-webhook raw-body parser env-gated +
+  `removeAllContentTypeParsers()`), `apps/api/src/health/health.{controller,module}.ts`
+  (V.UX.38 revert) — plus the five strategy/2.0 docs, as ONE chore. D1–D8
+  locked above.
+- **Verification**: `pnpm --filter=@app/config --filter=api typecheck` → Done
+  (both). `pnpm --filter=api lint` → **EXIT=0** (0 errors; 120 pre-existing
+  `no-console` directive warnings in test files, out of scope). Hygiene +
+  docs only — no behaviour change.
+- **Next**: POST.2A.1 — agent module skeleton (inert, flag-gated).
+
+---
+
 ## POST log
 
 Post-V.UX gap closure work. See `docs/POST_VUX_GAPS.md` for the

@@ -88,8 +88,14 @@ async function bootstrap(): Promise<void> {
   //     signed (not a re-serialised JSON). Replace Fastify's default
   //     application/json parser with one that hands the controller
   //     a Buffer for `/api/v1/payments/webhook` only; every other
-  //     route still gets parsed JSON.
-  registerStripeWebhookRawBody(app.getHttpAdapter().getInstance() as FastifyInstance);
+  //     route still gets parsed JSON. Only register when Stripe is
+  //     actually wired — when STRIPE_SECRET_KEY is unset, the webhook
+  //     route 503s anyway and we shouldn't replace the parser
+  //     (collides with @sentry/nestjs OpenTelemetry auto-
+  //     instrumentation patches when those are loaded).
+  if (env.STRIPE_SECRET_KEY) {
+    registerStripeWebhookRawBody(app.getHttpAdapter().getInstance() as FastifyInstance);
+  }
 
   // 6. HTTP perimeter: helmet (CSP + COOP/COEP + HSTS + …) + CORS +
   //    Permissions-Policy. Registered before listen so every route —
@@ -132,7 +138,12 @@ const STRIPE_WEBHOOK_PATH = '/api/v1/payments/webhook';
  * other route.
  */
 function registerStripeWebhookRawBody(fastify: FastifyInstance): void {
-  fastify.removeContentTypeParser?.('application/json');
+  // `removeContentTypeParser` only removes user-added parsers, NOT
+  // Fastify's built-in JSON parser. Use `removeAllContentTypeParsers`
+  // to wipe the slate (including built-ins) so our replacement
+  // doesn't collide with "Content type parser 'application/json'
+  // already present.".
+  fastify.removeAllContentTypeParsers();
   fastify.addContentTypeParser(
     'application/json',
     { parseAs: 'buffer' },
