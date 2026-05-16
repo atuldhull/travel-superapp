@@ -11,6 +11,7 @@ import type { TripPublication, Visibility } from '../domain/trip-publication.ent
 import type {
   TripPublicationRepository,
   UpsertPublishInput,
+  SimilarTrip,
 } from '../application/ports/trip-publication.repository';
 import { assertEmbeddingDimension } from '../application/ports/embedding.port';
 
@@ -179,5 +180,75 @@ export class PrismaTripPublicationRepository implements TripPublicationRepositor
     const rows = await this.prisma.$queryRaw<Array<{ n: bigint }>>(Prisma.sql`
       SELECT COUNT(*)::bigint AS n FROM "Follow" WHERE "followeeId" = ${authorId}`);
     return Number(rows[0]?.n ?? 0);
+  }
+
+  // ── POST.2C.3 — pgvector "trips like this" / agent grounding.
+  //    The visibility + block predicate is the SAME security model as
+  //    listFeed (PRIVATE never; FOLLOWERS only if followed; either-
+  //    direction block excluded; viewer's own excluded) — LAW 2 says
+  //    these reads must NEVER surface content the viewer can't see.
+  //    Built once here so the rail and the grounding cannot drift.
+
+  private similarSecurityPredicate(viewerId: string): Prisma.Sql {
+    return Prisma.sql`
+      tp."publishedAt" IS NOT NULL
+      AND tp.visibility <> 'PRIVATE'
+      AND tp.embedding IS NOT NULL
+      AND tp."authorId" <> ${viewerId}
+      AND (
+        tp.visibility = 'PUBLIC'
+        OR (tp.visibility = 'FOLLOWERS'
+            AND tp."authorId" IN (SELECT "followeeId" FROM "Follow" WHERE "followerId" = ${viewerId}))
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM "UserBlock" b
+        WHERE (b."blockerId" = ${viewerId} AND b."blockedId" = tp."authorId")
+           OR (b."blockerId" = tp."authorId" AND b."blockedId" = ${viewerId})
+      )`;
+  }
+
+  async findSimilarByVector(
+    embedding: number[],
+    viewerId: string,
+    limit: number,
+  ): Promise<readonly SimilarTrip[]> {
+    // Guard BEFORE the DB (a non-1024 query vector is a hard bug —
+    // same rule as the write path; would also misuse the ivfflat op).
+    assertEmbeddingDimension(embedding);
+    const vec = toVectorLiteral(embedding);
+    const rows = await this.prisma.$queryRaw<SimilarTrip[]>(Prisma.sql`
+      SELECT tp."tripId", t."title", tp."authorId",
+             (tp.embedding <-> ${vec}::vector)::double precision AS distance
+      FROM "TripPublication" tp
+      JOIN "Trip" t ON t.id = tp."tripId"
+      WHERE ${this.similarSecurityPredicate(viewerId)}
+      ORDER BY tp.embedding <-> ${vec}::vector
+      LIMIT ${limit}`);
+    return rows;
+  }
+
+  async findSimilarToPublication(
+    sourceTripId: string,
+    viewerId: string,
+    limit: number,
+  ): Promise<readonly SimilarTrip[]> {
+    // The query vector is the source trip's own embedding, fetched in
+    // SQL (no JS round-trip). If it's NULL (or the trip doesn't
+    // exist) `src.e IS NOT NULL` zeroes the result → empty rail, no
+    // crash (LAW 1). Source trip itself is excluded.
+    const rows = await this.prisma.$queryRaw<SimilarTrip[]>(Prisma.sql`
+      SELECT tp."tripId", t."title", tp."authorId",
+             (tp.embedding <-> src.e)::double precision AS distance
+      FROM "TripPublication" tp
+      JOIN "Trip" t ON t.id = tp."tripId"
+      CROSS JOIN (
+        SELECT embedding AS e FROM "TripPublication" WHERE "tripId" = ${sourceTripId}
+      ) src
+      WHERE src.e IS NOT NULL
+        AND tp."tripId" <> ${sourceTripId}
+        AND ${this.similarSecurityPredicate(viewerId)}
+      ORDER BY tp.embedding <-> src.e
+      LIMIT ${limit}`);
+    return rows;
   }
 }

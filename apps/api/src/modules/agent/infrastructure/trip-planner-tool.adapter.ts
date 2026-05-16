@@ -42,6 +42,11 @@ export class TripPlannerToolAdapter implements PlanTool {
       radiusKm: trip.radiusKm,
       startsOn: trip.startsOn,
       endsOn: trip.endsOn,
+      // POST.2C.3 — pass grounding straight through (optional; the
+      // Gemini/Ollama adapters fold it, Anthropic/stub ignore it).
+      ...(input.groundingContext && input.groundingContext.length > 0
+        ? { groundingContext: input.groundingContext }
+        : {}),
     });
     return { summary: firstLine(result.plan), provider: result.provider };
   }

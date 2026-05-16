@@ -107,6 +107,13 @@ describe('PublishTripUseCase / UnpublishTripUseCase (POST.2B.2, fakes)', () => {
     }
     // POST.2C.2 — port grew (embed-on-publish); not exercised here.
     async setEmbedding(): Promise<void> {}
+    // POST.2C.3 — port grew again (similarity reads); not exercised here.
+    async findSimilarByVector(): Promise<readonly never[]> {
+      return [];
+    }
+    async findSimilarToPublication(): Promise<readonly never[]> {
+      return [];
+    }
     async findByTrip(): Promise<TripPublication | null> {
       return this.last;
     }
