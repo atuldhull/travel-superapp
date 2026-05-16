@@ -23,6 +23,8 @@ import { AttachMediaToBookUseCase } from './application/attach-media-to-book.use
 import { AttachMediaToTripUseCase } from './application/attach-media-to-trip.use-case';
 import { ConfirmUploadUseCase } from './application/confirm-upload.use-case';
 import { CreateMemoryBookUseCase } from './application/create-memory-book.use-case';
+import { DraftBookFromTripUseCase } from './application/draft-book-from-trip.use-case';
+import { TRIP_BOOK_DRAFTER_PORT } from './application/ports/trip-book-drafter.port';
 import { CreateUploadUrlUseCase } from './application/create-upload-url.use-case';
 import { DeleteMemoryBookUseCase } from './application/delete-memory-book.use-case';
 import { GetMediaDownloadUrlUseCase } from './application/get-media-download-url.use-case';
@@ -74,6 +76,8 @@ import { OrphanS3SweepScheduler } from './interface/orphan-s3-sweep.scheduler';
     AttachMediaToTripUseCase,
     ListTripMediaUseCase,
     CreateMemoryBookUseCase,
+    DraftBookFromTripUseCase,
+    { provide: TRIP_BOOK_DRAFTER_PORT, useClass: DraftBookFromTripUseCase },
     GetMemoryBookUseCase,
     ListMemoryBooksUseCase,
     UpdateMemoryBookUseCase,
@@ -94,6 +98,12 @@ import { OrphanS3SweepScheduler } from './interface/orphan-s3-sweep.scheduler';
     OrphanS3SweepUseCase,
     OrphanS3SweepScheduler,
   ],
-  exports: [MEDIA_ASSET_REPOSITORY, MEMORY_BOOK_REPOSITORY, STORAGE_PROVIDER, TRIP_MEDIA_PORT],
+  exports: [
+    MEDIA_ASSET_REPOSITORY,
+    MEMORY_BOOK_REPOSITORY,
+    STORAGE_PROVIDER,
+    TRIP_MEDIA_PORT,
+    TRIP_BOOK_DRAFTER_PORT,
+  ],
 })
 export class MediaModule {}
