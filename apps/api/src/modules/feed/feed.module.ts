@@ -26,8 +26,14 @@
  * sources.
  */
 import { Module } from '@nestjs/common';
+import { TripModule } from '../trip/trip.module';
 import { GetMyFeedUseCase } from './application/get-my-feed.use-case';
 import { FEED_SOURCES } from './application/ports/feed-source';
+// POST.2B.2 — trip publication
+import { TRIP_PUBLICATION_REPOSITORY } from './application/ports/trip-publication.repository';
+import { PrismaTripPublicationRepository } from './infrastructure/prisma-trip-publication.repository';
+import { PublishTripUseCase } from './application/publish-trip.use-case';
+import { UnpublishTripUseCase } from './application/unpublish-trip.use-case';
 import { ExpenseAddedFeedSource } from './infrastructure/expense-added-feed-source';
 import { MemoryBookPublishedFeedSource } from './infrastructure/memory-book-published-feed-source';
 import { ReviewFeedSource } from './infrastructure/review-feed-source';
@@ -38,8 +44,12 @@ import { VoteCastFeedSource } from './infrastructure/vote-cast-feed-source';
 import { FeedController } from './interface/feed.controller';
 
 @Module({
+  imports: [TripModule],
   controllers: [FeedController],
   providers: [
+    { provide: TRIP_PUBLICATION_REPOSITORY, useClass: PrismaTripPublicationRepository },
+    PublishTripUseCase,
+    UnpublishTripUseCase,
     // Concrete sources — exported as themselves too in case a
     // future use-case wants to query a single source directly.
     TripFeedSource,
