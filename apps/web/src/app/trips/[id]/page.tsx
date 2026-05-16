@@ -51,6 +51,7 @@ import { Button } from '../../../components/ui/button';
 import { Card, CardHeader, CardSubtitle, CardTitle } from '../../../components/ui/card';
 import { Field } from '../../../components/ui/input';
 import { Skeleton } from '../../../components/ui/skeleton';
+import { AgentWatchCard } from '../../../components/agent/agent-watch-card';
 import { MediaUploader } from '../../../components/media-uploader';
 import { ExportPdfButton } from '../../../components/trip/export-pdf-button';
 import { EmailItineraryButton } from '../../../components/trip/email-itinerary-button';
@@ -226,6 +227,8 @@ export default function TripDetailPage() {
           ← Back to trips
         </Link>
       </p>
+      {/* POST.2A.5 — renders null unless NEXT_PUBLIC_FEATURE_AGENT_ENABLED=true */}
+      <AgentWatchCard tripId={id} />
       {isCollaborator ? (
         <p className="rounded-md border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-400">
           👥 Collaborator on{' '}
