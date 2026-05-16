@@ -156,6 +156,13 @@ describe('PublishTripUseCase embed-on-publish is BEST-EFFORT', () => {
     async countFollowers(): Promise<number> {
       return 0;
     }
+    // POST.2C.3 — port grew (similarity reads); not exercised here.
+    async findSimilarByVector(): Promise<readonly never[]> {
+      return [];
+    }
+    async findSimilarToPublication(): Promise<readonly never[]> {
+      return [];
+    }
   }
 
   it('Ollama unavailable (embed→null): publish STILL succeeds, skip-index', async () => {

@@ -53,6 +53,35 @@ export interface TripPublicationRepository {
   ): Promise<readonly TripPublication[]>;
   countPublishedByAuthor(authorId: string): Promise<number>;
   countFollowers(authorId: string): Promise<number>;
+  /** POST.2C.3 — pgvector nearest PUBLISHED trips to `embedding`
+   *  (L2 `<->` via the `TripPublication_embedding_ivfflat` index,
+   *  `vector_l2_ops` — consistent with VectorQueries). Visibility +
+   *  block filtered AS `viewerId` and the viewer's own trips
+   *  excluded; only rows with a non-null embedding. NON-NEGOTIABLE
+   *  security: PRIVATE + blocked never returned (LAW 2). */
+  findSimilarByVector(
+    embedding: number[],
+    viewerId: string,
+    limit: number,
+  ): Promise<readonly SimilarTrip[]>;
+  /** Same, but the query vector is the embedding of an already-
+   *  PUBLISHED `sourceTripId` (the "trips like this" rail). The
+   *  source trip is excluded; if it has no embedding → `[]` (the
+   *  rail renders EmptyState — no crash). */
+  findSimilarToPublication(
+    sourceTripId: string,
+    viewerId: string,
+    limit: number,
+  ): Promise<readonly SimilarTrip[]>;
+}
+
+/** A nearest published-trip hit (title joined from `Trip`). */
+export interface SimilarTrip {
+  readonly tripId: string;
+  readonly title: string;
+  readonly authorId: string;
+  /** L2 distance — smaller = closer. */
+  readonly distance: number;
 }
 
 export const TRIP_PUBLICATION_REPOSITORY = Symbol('TripPublicationRepository');

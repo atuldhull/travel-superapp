@@ -29,6 +29,9 @@ import type { Env } from '@app/config';
 import { WeatherModule } from '../weather/weather.module';
 import { TripModule } from '../trip/trip.module';
 import { MediaModule } from '../media/media.module';
+// POST.2C.3 — exports TRIP_GROUNDING_PORT (agent → feed inbound seam,
+// hex direction preserved; feed never imports agent → no cycle).
+import { FeedModule } from '../feed/feed.module';
 import { AGENT_RUN_REPOSITORY } from './application/ports/agent-run.repository';
 import { PLAN_TOOL_PORT } from './application/ports/plan-tool.port';
 import { SIGNAL_SOURCE_PORT } from './application/ports/signal-source.port';
@@ -48,7 +51,7 @@ import { AgentController } from './interface/agent.controller';
 import { AgentScheduler } from './interface/agent.scheduler';
 
 @Module({
-  imports: [WeatherModule, TripModule, MediaModule],
+  imports: [WeatherModule, TripModule, MediaModule, FeedModule],
   controllers: [AgentController],
   providers: [
     { provide: SIGNAL_SOURCE_PORT, useClass: StubSignalAdapter },

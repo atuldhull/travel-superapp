@@ -26,6 +26,7 @@
  */
 import { Injectable } from '@nestjs/common';
 import { createLogger, type AppLogger } from '@app/logger';
+import { groundingPreamble } from '../application/ports/trip-planner.port';
 import type {
   TripPlannerPort,
   TripPlannerRequest,
@@ -136,12 +137,16 @@ export class GeminiTripPlannerAdapter implements TripPlannerPort {
       req.startsOn && req.endsOn
         ? `${req.startsOn.toISOString().slice(0, 10)} to ${req.endsOn.toISOString().slice(0, 10)}`
         : 'flexible dates';
-    return [
-      `Plan a trip titled "${req.title}".`,
-      `Center coordinates (lat,lng): ${req.center.lat.toFixed(4)}, ${req.center.lng.toFixed(4)}.`,
-      `Search radius: ${req.radiusKm}km.`,
-      `Dates: ${dates}.`,
-    ].join('\n');
+    return (
+      // POST.2C.3 — '' when ungrounded → byte-identical to pre-2C.3.
+      groundingPreamble(req.groundingContext) +
+      [
+        `Plan a trip titled "${req.title}".`,
+        `Center coordinates (lat,lng): ${req.center.lat.toFixed(4)}, ${req.center.lng.toFixed(4)}.`,
+        `Search radius: ${req.radiusKm}km.`,
+        `Dates: ${dates}.`,
+      ].join('\n')
+    );
   }
 
   private fallback(): TripPlannerResult {
