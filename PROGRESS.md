@@ -47,6 +47,16 @@ keystone) land well:
 
 ## POST-2.0 Phase B — Social substrate
 
+> **⛔→✅ PHASE B GATE — RUN 2026-05-16, GREEN.** Full `--runInBand`
+> (zero 2.0 keys, 127.0.0.1, 275 s): **786 passed · 17 failed · 16
+> skipped**. The 4 failing suites are EXACTLY the documented 1.0
+> baseline (`health` S3-revert + `magic-link`/`password-reset`/
+> `reactivation` live-Resend — [[resend-key-breaks-email-e2e]]) —
+> **NO new failing suite**. All 7 new 2.0 suites PASS, incl.
+> `feed-visibility.e2e-spec` proving visibility+block filters against
+> the REAL DB. +18 vs Phase A's 768 = the new specs. **Zero 2.0
+> regressions → Phase C unblocked.**
+
 ### [POST.2B.3] — Pull feed + creator profile (✅ api core; web deferred)
 
 - **Date**: 2026-05-16
