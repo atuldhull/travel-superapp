@@ -41,10 +41,13 @@ import { EvaluateSignalsUseCase } from './application/evaluate-signals.use-case'
 import { ProposeReplanUseCase } from './application/propose-replan.use-case';
 import { DraftMemoryBookUseCase } from './application/draft-memory-book.use-case';
 import { StartTripWatchUseCase } from './application/start-trip-watch.use-case';
+import { RunWatchCycleUseCase } from './application/run-watch-cycle.use-case';
+import { TripItineraryWatchHandler } from './application/handlers/trip-itinerary-watch.handler';
 import { PrismaAgentRunRepository } from './infrastructure/prisma-agent-run.repository';
 import { PrismaTripWatchRepository } from './infrastructure/prisma-trip-watch.repository';
 import { OpenSkyFlightAdapter } from './infrastructure/opensky-flight.adapter';
 import { StubSignalAdapter } from './infrastructure/stub-signal.adapter';
+import { CompositeSignalSource } from './infrastructure/composite-signal-source.adapter';
 import { TripPlannerToolAdapter } from './infrastructure/trip-planner-tool.adapter';
 import { WeatherSignalAdapter } from './infrastructure/weather-signal.adapter';
 import { AgentController } from './interface/agent.controller';
@@ -54,7 +57,11 @@ import { AgentScheduler } from './interface/agent.scheduler';
   imports: [WeatherModule, TripModule, MediaModule, FeedModule],
   controllers: [AgentController],
   providers: [
-    { provide: SIGNAL_SOURCE_PORT, useClass: StubSignalAdapter },
+    // Agent↔trip real triggers — the live loop routes weather to the
+    // free WEATHER_PROVIDER and everything else to the safe stub
+    // (degrades to "no change" offline → zero-key gate stays green).
+    StubSignalAdapter,
+    { provide: SIGNAL_SOURCE_PORT, useClass: CompositeSignalSource },
     { provide: AGENT_RUN_REPOSITORY, useClass: PrismaAgentRunRepository },
     { provide: TRIP_WATCH_REPOSITORY, useClass: PrismaTripWatchRepository },
     { provide: PLAN_TOOL_PORT, useClass: TripPlannerToolAdapter },
@@ -63,6 +70,8 @@ import { AgentScheduler } from './interface/agent.scheduler';
     ProposeReplanUseCase,
     ConfirmReplanUseCase,
     DraftMemoryBookUseCase,
+    RunWatchCycleUseCase,
+    TripItineraryWatchHandler,
     WeatherSignalAdapter,
     {
       // OpenSky base URL has a safe default; the adapter itself

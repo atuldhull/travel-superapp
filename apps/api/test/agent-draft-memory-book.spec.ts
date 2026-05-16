@@ -58,6 +58,8 @@ class FakeRuns implements AgentRunRepository {
   async bumpPlanVersion(): Promise<void> {
     /* unused here */
   }
+  // port grew (agent↔trip real triggers); not exercised here.
+  async markClosed(): Promise<void> {}
 }
 
 describe('DraftMemoryBookUseCase (POST.2C.1, idempotent + private)', () => {

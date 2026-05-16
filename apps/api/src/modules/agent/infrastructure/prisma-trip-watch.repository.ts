@@ -62,6 +62,15 @@ export class PrismaTripWatchRepository implements TripWatchRepository {
     return rows.map(toDomain);
   }
 
+  async deactivate(tripId: string): Promise<void> {
+    // Idempotent: only flips currently-active rows; an ended-trip
+    // tick that recurs before the next listActive updates 0 rows.
+    await this.prisma.tripWatch.updateMany({
+      where: { tripId, active: true },
+      data: { active: false },
+    });
+  }
+
   async raiseThreshold(tripId: string): Promise<void> {
     const row = await this.prisma.tripWatch.findFirst({ where: { tripId, active: true } });
     if (!row || row.thresholds === null || row.thresholds === undefined) return;

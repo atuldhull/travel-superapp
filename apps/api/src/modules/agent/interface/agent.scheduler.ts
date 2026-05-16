@@ -4,15 +4,16 @@
  * Plain `setInterval` (no @nestjs/schedule — not in deps; verified
  * codebase convention, copies AccountPurgeScheduler exactly). Each
  * tick lists active watches and, under a per-watch Redis lock
- * (`SET … NX EX`), records a `signal_seen` step. The lock makes the
- * loop safe if the deploy ever goes multi-instance (no two ticks
- * double-handle one watch).
+ * (`SET … NX EX`), runs RunWatchCycleUseCase for that watch. The
+ * lock makes the loop safe if the deploy ever goes multi-instance
+ * (no two ticks double-handle one watch).
  *
- * Scope note: coordinate-driven snapshot → EvaluateSignalsUseCase →
- * proposal is wired in POST.2A.4 (it integrates the trip + planner).
- * The pure evaluator, the signal adapters, and the lock/snapshot
- * helpers here are unit-tested independently and are the building
- * blocks 2A.4 composes. This slice = cadence + lock + audit.
+ * This file is intentionally a THIN cadence+lock shell: all the
+ * real agent↔trip wiring (resolve context → trip-end ⇒ draft the
+ * Memory Book + close, or signal ⇒ propose) lives in
+ * RunWatchCycleUseCase and is unit-tested with fakes (no Redis, no
+ * interval, no DB). A per-watch cycle failure is isolated so one bad
+ * trip never stalls the loop.
  *
  * LAW 1: skipped entirely in tests + degrades silently; no external
  * call here. Installed by prompt [POST.2A.3].
@@ -23,13 +24,10 @@ import type { Env } from '@app/config';
 import { createLogger, type AppLogger } from '@app/logger';
 import Redis from 'ioredis';
 import {
-  AGENT_RUN_REPOSITORY,
-  type AgentRunRepository,
-} from '../application/ports/agent-run.repository';
-import {
   TRIP_WATCH_REPOSITORY,
   type TripWatchRepository,
 } from '../application/ports/trip-watch.repository';
+import { RunWatchCycleUseCase } from '../application/run-watch-cycle.use-case';
 
 const LOCK_TTL_SECONDS = 60;
 
@@ -68,7 +66,7 @@ export class AgentScheduler implements OnModuleInit, OnModuleDestroy {
   constructor(
     @Inject(ConfigService) config: ConfigService<Env, true>,
     @Inject(TRIP_WATCH_REPOSITORY) private readonly watches: TripWatchRepository,
-    @Inject(AGENT_RUN_REPOSITORY) private readonly runs: AgentRunRepository,
+    @Inject(RunWatchCycleUseCase) private readonly cycle: RunWatchCycleUseCase,
   ) {
     this.redis = new Redis(config.get('REDIS_URL', { infer: true }), {
       lazyConnect: true,
@@ -121,15 +119,25 @@ export class AgentScheduler implements OnModuleInit, OnModuleDestroy {
       for (const watch of active) {
         const locked = await acquireWatchLock(this.redis, watch.id);
         if (!locked) continue;
-        await this.runs.appendStep({
-          agentRunId: watch.agentRunId,
-          kind: 'signal_seen',
-          detail: {
-            tick: true,
-            subscribedSignals: watch.subscribedSignals,
-            note: 'loop skeleton — coord-driven snapshot lands in POST.2A.4',
-          },
-        });
+        // The real cycle: resolve trip context → end⇒draft+close, or
+        // signal⇒propose. Per-watch failures are isolated so one bad
+        // trip can't stall the rest of the loop (LAW 1).
+        try {
+          const res = await this.cycle.execute(watch);
+          this.logger.info(
+            { watchId: watch.id, tripId: watch.tripId, outcome: res.outcome },
+            'agent_watch_cycle_done',
+          );
+        } catch (err) {
+          this.logger.error(
+            {
+              watchId: watch.id,
+              tripId: watch.tripId,
+              err: err instanceof Error ? err.message : String(err),
+            },
+            'agent_watch_cycle_failed',
+          );
+        }
         handled += 1;
       }
       this.logger.info({ active: active.length, handled }, 'agent_tick_done');
