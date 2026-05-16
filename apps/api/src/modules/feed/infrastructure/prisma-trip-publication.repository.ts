@@ -12,6 +12,24 @@ import type {
   TripPublicationRepository,
   UpsertPublishInput,
 } from '../application/ports/trip-publication.repository';
+import { assertEmbeddingDimension } from '../application/ports/embedding.port';
+
+/** pgvector accepts `[v1,v2,...]::vector`. Mirrors
+ *  `VectorQueries.toVectorLiteral` for index/op-class consistency. */
+function toVectorLiteral(vec: readonly number[]): string {
+  return `[${vec.join(',')}]`;
+}
+
+/**
+ * POST.2C.2 — explicit projection. NEVER `SELECT tp.*` on
+ * "TripPublication": the additive `embedding vector(1024)` column is
+ * `Unsupported()` and `$queryRaw` cannot deserialize the pgvector
+ * `vector` type ("Failed to deserialize column of type 'vector'"),
+ * so `tp.*` throws. These are exactly the columns `toDomain` maps —
+ * embedding is intentionally excluded (read it via VectorQueries-style
+ * raw casts only, never through the row mapper).
+ */
+const TP_COLS = Prisma.sql`tp."id", tp."tripId", tp."authorId", tp."memoryBookId", tp."visibility", tp."exposedLat", tp."exposedLng", tp."publishedAt", tp."createdAt", tp."updatedAt"`;
 
 function toDomain(row: PrismaTripPublication): TripPublication {
   return {
@@ -50,10 +68,38 @@ export class PrismaTripPublicationRepository implements TripPublicationRepositor
   }
 
   async setPrivate(tripId: string, authorId: string): Promise<void> {
-    await this.prisma.tripPublication.updateMany({
-      where: { tripId, authorId },
-      data: { visibility: 'PRIVATE', exposedLat: null, exposedLng: null, publishedAt: null },
-    });
+    // POST.2C.2 — ONE statement: the visibility flip AND the embedding
+    // de-index are atomic by construction (a single UPDATE is its own
+    // implicit transaction). `embedding = NULL` lives here — not a
+    // second call — so discovery / agent grounding can never read a
+    // ghost vector for an unpublished trip. Raw SQL because the typed
+    // client cannot express the `Unsupported("vector(1024)")` column.
+    await this.prisma.$executeRaw`
+      UPDATE "TripPublication"
+      SET visibility = 'PRIVATE',
+          "exposedLat" = NULL,
+          "exposedLng" = NULL,
+          "publishedAt" = NULL,
+          embedding = NULL,
+          "updatedAt" = NOW()
+      WHERE "tripId" = ${tripId} AND "authorId" = ${authorId}`;
+  }
+
+  async setEmbedding(tripId: string, authorId: string, embedding: number[] | null): Promise<void> {
+    // Best-effort skip-index: a transient Ollama outage must NOT wipe a
+    // previously-good vector, so `null` is a deliberate no-op.
+    if (embedding === null) {
+      return;
+    }
+    // Hard guard BEFORE any DB write — a non-1024 vector is a model
+    // misconfig defect, never silently written (it would corrupt the
+    // ivfflat index / break L2 search). Throws loudly.
+    assertEmbeddingDimension(embedding);
+    const vecLiteral = toVectorLiteral(embedding);
+    await this.prisma.$executeRaw`
+      UPDATE "TripPublication"
+      SET embedding = ${vecLiteral}::vector, "updatedAt" = NOW()
+      WHERE "tripId" = ${tripId} AND "authorId" = ${authorId}`;
   }
 
   async findByTrip(tripId: string): Promise<TripPublication | null> {
@@ -87,11 +133,11 @@ export class PrismaTripPublicationRepository implements TripPublicationRepositor
     const rows =
       before === null
         ? await this.prisma.$queryRaw<PrismaTripPublication[]>(Prisma.sql`
-            SELECT tp.* FROM "TripPublication" tp
+            SELECT ${TP_COLS} FROM "TripPublication" tp
             WHERE ${visible}
             ORDER BY tp."publishedAt" DESC LIMIT ${limit}`)
         : await this.prisma.$queryRaw<PrismaTripPublication[]>(Prisma.sql`
-            SELECT tp.* FROM "TripPublication" tp
+            SELECT ${TP_COLS} FROM "TripPublication" tp
             WHERE ${visible} AND tp."publishedAt" < ${before}
             ORDER BY tp."publishedAt" DESC LIMIT ${limit}`);
     return rows.map(toDomain);
@@ -103,7 +149,7 @@ export class PrismaTripPublicationRepository implements TripPublicationRepositor
     limit: number,
   ): Promise<readonly TripPublication[]> {
     const rows = await this.prisma.$queryRaw<PrismaTripPublication[]>(Prisma.sql`
-      SELECT tp.* FROM "TripPublication" tp
+      SELECT ${TP_COLS} FROM "TripPublication" tp
       WHERE tp."authorId" = ${authorId}
         AND tp."publishedAt" IS NOT NULL
         AND tp.visibility <> 'PRIVATE'

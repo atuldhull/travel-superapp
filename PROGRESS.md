@@ -78,6 +78,53 @@ keystone) land well:
   AgentModule deps initialized (agent→media port resolved, **NO
   circular dependency**), Nest started, health 200. Zero new deps.
 
+### [POST.2C.2] — Trip embeddings via local Ollama + pgvector (✅ COMPLETE)
+
+- **Date**: 2026-05-16
+- **Status**: ✅ DONE. Published trips are embedded into pgvector so
+  Seam 2 (2C.3) can ground the agent + power discovery. $0, zero new
+  deps, native `fetch` only.
+- **Commit**: `feat(POST.2C.2)` (see git log)
+- **What**: additive nullable `TripPublication.embedding
+Unsupported("vector(1024)")?` (matches `PlaceEmbedding`;
+  hand-curated migration `20260516090000_trip_pub_embedding` — ONE
+  `ADD COLUMN` + ONE `CREATE INDEX … ivfflat (vector_l2_ops) lists=100`,
+  applied via `migrate deploy` @127.0.0.1; **gist=14 + ivfflat=2
+  survived** — drift hazard avoided per [[prisma-migrate-drops-postgis-indexes]]).
+  New outbound `EMBEDDING_PORT` + `assertEmbeddingDimension` (1024
+  guard); `OllamaEmbeddingAdapter` (POST `{OLLAMA_URL}/api/embeddings`
+  model `mxbai-embed-large`, never throws → degrades to null) +
+  `StubEmbeddingAdapter` (null = skip-index); `feed.module`
+  env-gated factory (real only if `OLLAMA_URL` set, else stub —
+  never class-registered). `publish-trip` embeds **best-effort**
+  (Ollama failure never fails publish; only the visibility-COARSENED
+  geo is embedded — LAW 2, no precise geo leaves the fence).
+  `setPrivate` (unpublish) now NULLs `embedding` in the **SAME single
+  UPDATE** as the visibility flip (atomic de-index — no discovery
+  ghost). `EMBEDDING_MODEL` added to config (default
+  `mxbai-embed-large`; distinct from the `OLLAMA_MODEL` chat model).
+- **Regression caught + fixed (the resolved-baseline rule working as
+  intended)**: adding the `vector` column broke the pre-existing
+  `SELECT tp.*` feed queries (`$queryRaw` can't deserialize pgvector
+  `vector`) → 2 `feed-visibility` e2e fails on the first gate. Fixed:
+  `listFeed` / `listByAuthorVisibleTo` now use an explicit `TP_COLS`
+  projection excluding `embedding`. No other module does raw
+  `SELECT *` on TripPublication (verified by grep).
+- **LAW 2 / safety**: best-effort embed (publish never fails on
+  Ollama), dimension guard rejects non-1024 **before any DB write**,
+  unpublish de-indexes atomically, only coarsened geo embedded.
+- **Verify**: LAW 3 grep — executable migration SQL has ZERO
+  `drop|not null|backfill|alter…drop` (only the additive ADD COLUMN +
+  CREATE INDEX). typecheck/lint (0 errors) green. Pure specs 19/19
+  (`trip-embedding` + `trip-publication`): guard-before-write,
+  single-statement de-index atomicity, best-effort publish, stub
+  skip-index. **Full `--runInBand` gate (zero 2.0 keys, 127.0.0.1,
+  359 s): 814 passed · 0 failed · 18 skipped** (= the 804 resolved
+  baseline + 10 new 2C.2 tests; the 2 feed-visibility regressions
+  fixed). Zero regressions. `prisma generate` is a verified no-op
+  here (Unsupported() columns are omitted from the typed client;
+  embedding is touched via raw `::vector` only).
+
 ## POST-2.0 Phase B — Social substrate
 
 > **⛔→✅ PHASE B GATE — RUN 2026-05-16, GREEN.** Full `--runInBand`

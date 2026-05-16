@@ -1313,6 +1313,13 @@ model TripPublication {
   exposedLat   Float?
   exposedLng   Float?
   publishedAt  DateTime?
+  // POST.2C.2 — pgvector trip embedding for discovery + agent
+  // grounding. NULLABLE + additive only: absent Ollama → stays NULL
+  // (publication still works, just unindexed); unpublish NULLs it in
+  // the same statement as the visibility flip. vector(1024) matches
+  // PlaceEmbedding; written via raw SQL (Unsupported() is invisible
+  // to the typed client) — see PrismaTripPublicationRepository.
+  embedding    Unsupported("vector(1024)")?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
