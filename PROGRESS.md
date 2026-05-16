@@ -47,6 +47,35 @@ keystone) land well:
 
 ## POST-2.0 Phase B — Social substrate
 
+### [POST.2B.2] — TripPublication + privacy-fenced publish (✅ COMPLETE)
+
+- **Date**: 2026-05-16
+- **Status**: ✅ DONE
+- **Commit**: `feat(POST.2B.2)` (see git log)
+- **What**: additive `Visibility` enum + `TripPublication` (tripId
+  @unique, FK-less, +exposedLat/Lng for INVARIANT B). Migration
+  hand-curated AGAIN (same PostGIS-DROP drift; stripped) + applied to
+  local Docker pinned 127.0.0.1; **non-destruction proven** (1 table,
+  14 GiST + ivfflat survived). Domain `trip-publication.entity` holds
+  both invariants PURE: **INVARIANT A** `assertPublishable` (null OR
+  future endsOn → 422 TRIP_NOT_ENDED), **INVARIANT B** `exposeGeo`
+  (PRIVATE→none; PUBLIC→coarsen ~0.1°; FOLLOWERS→precise only if
+  opt-in else coarsen). `Publish/UnpublishTripUseCase` (owner-gate via
+  TRIP_REPOSITORY; trip center via GeoQueries.findTripCenter per
+  CLAUDE #11; default visibility FOLLOWERS = D2; unpublish→setPrivate
+  flips PRIVATE + clears geo — the seam 2C.2 extends to de-index).
+  `feed.controller` + `POST/DELETE /api/v1/feed/trips/:tripId/publish`.
+  feed.module imports TripModule. Distinct from 1.0 media memory-book
+  publish (only references memoryBookId; untouched).
+- **Verify**: migration CREATE-only (grep clean); `trip-publication.spec`
+  - regression → **19/19** (INVARIANT A null/future/past, INVARIANT B
+    all visibilities, owner-gate 404, default FOLLOWERS, idempotent
+    unpublish — all no-HTTP). typecheck/lint/build EXIT 0; boot smoke
+    (:3022) → `FeedModule dependencies initialized` (GeoQueries +
+    TripModule cross-import resolved, no DI error / no circular),
+    publish/unpublish routes mapped, Nest started, health 200. Zero
+    new deps.
+
 ### [POST.2B.1] — Follow graph + UserBlock (✅ COMPLETE)
 
 - **Date**: 2026-05-16
