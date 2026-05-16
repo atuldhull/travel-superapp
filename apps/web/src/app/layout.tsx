@@ -13,6 +13,7 @@ import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { Inter } from 'next/font/google';
 import Script from 'next/script';
+import Link from 'next/link';
 import './globals.css';
 import { ActiveSosBanner } from '../components/safety/active-sos-banner';
 import { SosFab } from '../components/safety/sos-fab';
@@ -86,6 +87,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                   follows below the fold for the V.UX.30 welcome-back signal. */}
               <Logo />
               <nav aria-label="Primary" className="flex items-center gap-2">
+                <Link
+                  href="/feed"
+                  className="rounded-md px-2 py-1 text-sm text-muted hover:text-foreground hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                >
+                  Feed
+                </Link>
                 <WhoAmIBadge />
                 <InboxBadge />
                 <ThemeToggle />

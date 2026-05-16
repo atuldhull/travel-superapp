@@ -86,6 +86,54 @@ keystone) land well:
   2.0 baseline + 12 new). Zero regressions; agent↔feed↔trip DI
   acyclic (proven by every e2e booting AppModule).
 
+### [P2] — 2.0 web surfaces (deferred UI seam, now shipped) (✅ COMPLETE)
+
+- **Date**: 2026-05-16
+- **Status**: ✅ DONE. The whole 2.0 social/agent API shipped
+  API-only (2A.5/2B.3/2C.1/2C.3 web were a documented deferred
+  seam); the customer-facing screens now exist.
+- **Commit**: `feat(web): 2.0 surfaces — feed, agent run, creator` (git log)
+- **Approach**: `SwaggerModule.createDocument` only schematizes
+  `@ApiProperty` DTO **classes**; the 2.0 controllers use TS
+  interface DTOs (erased at runtime), so an openapi→orval SDK regen
+  would emit untyped routes OR require `@ApiProperty` classes across
+  every 2.0 controller (a separate prompt's churn + a ~9k-line
+  generated diff). Shipped the screens on the **established
+  `apiFetch`-direct pattern** (precedent: app/account/billing,
+  app/featured; durable memory `orval-zod-query-params`) with a
+  single typed seam `lib/two-oh-api.ts`. Full openapi/SDK regen
+  stays the consistently-documented deferred seam.
+- **What**:
+  - `lib/two-oh-api.ts` — typed `apiFetch` wrappers + DTOs mirroring
+    the agent/feed/social controllers 1:1; `isAgentDisabled()` so a
+    503 `AGENT_DISABLED` is a first-class UI state, never an error.
+  - `/feed` (NEW) — reverse-chron social pull feed, cursor "load
+    more", 1.0 `EmptyState`/`SkeletonList`/`RelativeTime`; **"Trips
+    like this"** pgvector rail (POST.2C.3) seeded from the top item,
+    silently empty when no embeddings (LAW 1).
+  - `/agent/runs/[id]` (NEW) — append-only step timeline + the
+    human-in-the-loop **Accept/Decline** on pending proposals
+    (POST.2A.4/2A.5); flag-off → calm "agent not enabled" state
+    (503-graceful), never a crash.
+  - `/users/[id]` — additive `CreatorPanel` (POST.2B.3): follower /
+    published counts + Follow / Block + visible published trips;
+    self/blocked rejections are server-side, surfaced as a toast.
+  - Root `/feed` nav link.
+- **Verify**: `pnpm --filter=web typecheck` GREEN (the web
+  verification bar in this repo — no web tests exist). `next lint`
+  fails ONLY on the pre-existing external `~/.eslintrc.js`
+  `@strapi/eslint-config` break (a user home-dir config, not this
+  repo; documented; breaks web lint repo-wide regardless of
+  changes) — NOT a P2 regression. API untouched (zero api files in
+  the diff) so the 840/0/18 gate is unaffected.
+- **Still deferred (consistent, documented)**: full openapi.yaml
+  emission + `@app/sdk` orval regen for the 2.0 surface (needs
+  `@ApiProperty` DTO classes on agent/feed/social controllers);
+  deeper agent integration into the large existing `/trips/[id]` +
+  `/inbox` client pages (avoided to protect un-test-covered files —
+  the new routes + deep-link from the `trip_agent_replan_proposed`
+  notification cover the flow).
+
 ## POST-2.0 Phase C — The fusion
 
 > ### ✅ PHASE C GATE — RUN 2026-05-16, GREEN → **2.0 COMPLETE**
