@@ -1,0 +1,176 @@
+/**
+ * Typed client for the 2.0 surface (agent · social feed · graph).
+ *
+ * These controllers use TS-interface DTOs (erased at runtime), so
+ * the Nest-swagger → orval SDK pipeline can't schematize them yet —
+ * regenerating the SDK is a separately-tracked deferred seam. Until
+ * then the established codebase pattern (see app/account/billing,
+ * app/featured) is to call the exported `apiFetch` runtime directly
+ * with locally-declared response types that mirror the controllers
+ * 1:1. This module is the single typed seam so pages/components
+ * never hand-roll a fetch.
+ *
+ * Auth + the httpOnly-refresh cookie are handled inside `apiFetch`
+ * (CLAUDE.md rule 12). Feature-disabled (`FEATURE_AGENT_ENABLED`
+ * off) surfaces as a 503 `AGENT_DISABLED` — callers treat that as
+ * "no agent here", never an error.
+ */
+import { apiFetch } from '@app/sdk';
+
+export type Visibility = 'PRIVATE' | 'FOLLOWERS' | 'PUBLIC';
+
+export interface TripPublicationDto {
+  readonly tripId: string;
+  readonly visibility: Visibility;
+  readonly exposedLat: number | null;
+  readonly exposedLng: number | null;
+  readonly publishedAt: string | null;
+}
+
+export interface SimilarTrip {
+  readonly tripId: string;
+  readonly title: string;
+  readonly authorId: string;
+  readonly distance: number;
+}
+
+export interface CreatorProfile {
+  readonly authorId: string;
+  readonly followerCount: number;
+  readonly publishedCount: number;
+  readonly trips: readonly TripPublicationDto[];
+}
+
+export type AgentRunStatus = 'watching' | 'closed';
+
+export interface AgentRun {
+  readonly id: string;
+  readonly tripId: string;
+  readonly status: AgentRunStatus;
+  readonly planVersion: number;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
+export type AgentStepKind =
+  | 'watch_started'
+  | 'signal_seen'
+  | 'proposal'
+  | 'accepted'
+  | 'declined'
+  | 'watch_closed';
+
+export interface AgentStep {
+  readonly id: string;
+  readonly agentRunId: string;
+  readonly kind: AgentStepKind;
+  readonly detail: Readonly<Record<string, unknown>> | null;
+  readonly createdAt: string;
+}
+
+export interface AgentRunView {
+  readonly run: AgentRun;
+  readonly steps: readonly AgentStep[];
+}
+
+export interface ConfirmReplanResult {
+  readonly status: 'accepted' | 'declined';
+  readonly agentRunId: string;
+}
+
+export interface ApiErrorLike {
+  readonly code?: string;
+  readonly status?: number;
+}
+
+/** True when the error means "the agent feature is off here" — a
+ *  first-class UI state, never a failure toast. */
+export function isAgentDisabled(err: unknown): boolean {
+  const e = err as ApiErrorLike;
+  return e?.status === 503 || e?.code === 'AGENT_DISABLED';
+}
+
+type Envelope<T> = { data: T; status: number; headers: Headers };
+
+async function get<T>(path: string): Promise<T> {
+  const res = await apiFetch<Envelope<T>>(path, { method: 'GET' });
+  return res.data;
+}
+async function send<T>(path: string, method: 'POST' | 'DELETE'): Promise<T> {
+  const res = await apiFetch<Envelope<T>>(path, {
+    method,
+    body: JSON.stringify({}),
+    headers: { 'content-type': 'application/json' },
+  });
+  return res.data;
+}
+
+function qs(params: Record<string, string | number | undefined>): string {
+  const p = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v !== undefined && v !== '') p.set(k, String(v));
+  }
+  const s = p.toString();
+  return s ? `?${s}` : '';
+}
+
+// ─── Social feed ────────────────────────────────────────────────────────
+export function getSocialFeed(opts: { limit?: number; before?: string } = {}): Promise<{
+  items: readonly TripPublicationDto[];
+  nextBefore: string | null;
+}> {
+  return get(`/api/v1/feed${qs({ limit: opts.limit, before: opts.before })}`);
+}
+
+export function getCreatorProfile(userId: string): Promise<CreatorProfile> {
+  return get(`/api/v1/feed/creators/${encodeURIComponent(userId)}`);
+}
+
+export function getSimilarTrips(
+  tripId: string,
+  limit = 6,
+): Promise<{ items: readonly SimilarTrip[] }> {
+  return get(`/api/v1/feed/trips/${encodeURIComponent(tripId)}/similar${qs({ limit })}`);
+}
+
+export function publishTrip(
+  tripId: string,
+  body: { visibility?: Visibility; preciseGeoOptIn?: boolean } = {},
+): Promise<TripPublicationDto> {
+  return apiFetch<Envelope<TripPublicationDto>>(
+    `/api/v1/feed/trips/${encodeURIComponent(tripId)}/publish`,
+    { method: 'POST', body: JSON.stringify(body), headers: { 'content-type': 'application/json' } },
+  ).then((r) => r.data);
+}
+
+export function unpublishTrip(tripId: string): Promise<{ unpublished: true }> {
+  return send(`/api/v1/feed/trips/${encodeURIComponent(tripId)}/publish`, 'DELETE');
+}
+
+// ─── Social graph ───────────────────────────────────────────────────────
+export function followUser(userId: string): Promise<{ following: true }> {
+  return send(`/api/v1/users/${encodeURIComponent(userId)}/follow`, 'POST');
+}
+export function unfollowUser(userId: string): Promise<{ following: false }> {
+  return send(`/api/v1/users/${encodeURIComponent(userId)}/follow`, 'DELETE');
+}
+export function blockUser(userId: string): Promise<{ blocked: true }> {
+  return send(`/api/v1/users/${encodeURIComponent(userId)}/block`, 'POST');
+}
+export function unblockUser(userId: string): Promise<{ blocked: false }> {
+  return send(`/api/v1/users/${encodeURIComponent(userId)}/block`, 'DELETE');
+}
+
+// ─── Agent ──────────────────────────────────────────────────────────────
+export function getAgentStatus(): Promise<{ enabled: true; phase: string }> {
+  return get(`/api/v1/agent/status`);
+}
+export function getAgentRun(runId: string): Promise<AgentRunView> {
+  return get(`/api/v1/agent/runs/${encodeURIComponent(runId)}`);
+}
+export function acceptProposal(proposalId: string): Promise<ConfirmReplanResult> {
+  return send(`/api/v1/agent/proposals/${encodeURIComponent(proposalId)}/accept`, 'POST');
+}
+export function declineProposal(proposalId: string): Promise<ConfirmReplanResult> {
+  return send(`/api/v1/agent/proposals/${encodeURIComponent(proposalId)}/decline`, 'POST');
+}
