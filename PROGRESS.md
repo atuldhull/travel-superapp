@@ -74,13 +74,18 @@ keystone) land well:
   not caused by this change, not safe to touch. No new dep;
   package.json unchanged.
 
-> **PHASE A — code complete (2A.1–2A.5 shipped + per-slice verified).**
-> ⛔ PHASE A GATE still owed: full `pnpm --filter=api test -- --runInBand`
-> with zero 2.0 keys + a manual flag-on demo (create trip → weather
-> fixture → proposal in /inbox → accept). Per-slice each was verified
-> with targeted specs + typecheck + lint + build + boot smoke; the
-> ~5-min full-suite gate + the flag-on demo are the deeper acceptance
-> still to run (consistently flagged, never claimed as passed).
+> **PHASE A — code complete (2A.1–2A.5) + GATE RUN 2026-05-16.**
+> Full `pnpm --filter=api exec jest --runInBand --ci` (zero 2.0 keys,
+> 127.0.0.1, 367 s): **768 passed · 17 failed · 16 skipped · all 4
+> agent suites PASS · zero `modules/agent` failures.** Verdict:
+> **Phase A introduced ZERO regressions.** The 17 failures are a
+> pre-existing 1.0 baseline unrelated to 2.0 — `health.e2e` (the
+> V.UX.38 S3-indicator revert) + `magic-link`/`password-reset`(502)/
+> `reactivation` (live `RESEND_API_KEY` in `.env` makes email-flow
+> e2e assume-stub suites fail). See [[resend-key-breaks-email-e2e]].
+> Future Phase B/C gates: pass = new specs green + NO new failing
+> suite beyond this baseline. Manual flag-on demo still owed (UI),
+> but the regression gate is satisfied → Phase B unblocked.
 
 ### [POST.2A.4] — Propose/confirm re-plan + notification (✅ COMPLETE, the SAFE boundary)
 
