@@ -1,0 +1,1833 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TravelSuperApp 2.0 — Agentic + Social Strategy</title>
+    <style>
+      :root {
+        --bg: #0b0f17;
+        --bg-2: #111824;
+        --bg-3: #1a2332;
+        --fg: #e6eaf2;
+        --fg-2: #aab4c5;
+        --fg-3: #6b7588;
+        --accent: #6ea8fe;
+        --accent-2: #4d8fea;
+        --green: #4ade80;
+        --yellow: #facc15;
+        --orange: #fb923c;
+        --red: #f87171;
+        --pink: #f472b6;
+        --purple: #a78bfa;
+        --border: #1f2a3a;
+        --border-strong: #2a3a52;
+        --code-bg: #0a0e15;
+      }
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #fafbfd;
+          --bg-2: #ffffff;
+          --bg-3: #f1f4f9;
+          --fg: #0f172a;
+          --fg-2: #475569;
+          --fg-3: #94a3b8;
+          --accent: #2563eb;
+          --accent-2: #1d4ed8;
+          --border: #e2e8f0;
+          --border-strong: #cbd5e1;
+          --code-bg: #f1f5f9;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+        scroll-padding-top: 16px;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          Roboto,
+          'Helvetica Neue',
+          sans-serif;
+        font-size: 15px;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+      .page {
+        display: grid;
+        grid-template-columns: 280px minmax(0, 1fr);
+        max-width: 1320px;
+        margin: 0 auto;
+        gap: 0;
+      }
+      aside.toc {
+        position: sticky;
+        top: 0;
+        align-self: start;
+        height: 100vh;
+        overflow-y: auto;
+        padding: 24px 16px 24px 24px;
+        border-right: 1px solid var(--border);
+        background: var(--bg-2);
+      }
+      aside.toc h1 {
+        font-size: 14px;
+        margin: 0 0 4px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--fg-3);
+      }
+      aside.toc .brand {
+        font-size: 20px;
+        font-weight: 700;
+        margin-bottom: 24px;
+        letter-spacing: -0.01em;
+      }
+      aside.toc ol {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 24px;
+        font-size: 13px;
+      }
+      aside.toc ol li {
+        padding: 4px 0;
+      }
+      aside.toc ol li a {
+        color: var(--fg-2);
+        text-decoration: none;
+        display: block;
+        padding: 4px 8px;
+        border-radius: 6px;
+      }
+      aside.toc ol li a:hover {
+        background: var(--bg-3);
+        color: var(--fg);
+      }
+      aside.toc .toc-section {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--fg-3);
+        margin: 16px 8px 4px;
+        font-weight: 600;
+      }
+      main {
+        padding: 32px 48px 96px;
+        min-width: 0;
+      }
+      h1.cover-title {
+        font-size: 40px;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+        margin: 0 0 8px;
+        font-weight: 800;
+      }
+      .cover-subtitle {
+        font-size: 17px;
+        color: var(--fg-2);
+        margin: 0 0 24px;
+        max-width: 760px;
+      }
+      h2 {
+        font-size: 28px;
+        letter-spacing: -0.015em;
+        margin: 64px 0 8px;
+        font-weight: 700;
+        padding-top: 16px;
+        border-top: 1px solid var(--border);
+      }
+      h2:first-of-type {
+        margin-top: 32px;
+      }
+      h3 {
+        font-size: 20px;
+        margin: 32px 0 8px;
+        font-weight: 600;
+      }
+      h4 {
+        font-size: 15px;
+        margin: 16px 0 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--fg-3);
+        font-weight: 700;
+      }
+      p {
+        margin: 0 0 14px;
+      }
+      .lead {
+        font-size: 17px;
+        color: var(--fg-2);
+        max-width: 720px;
+      }
+      ul,
+      ol {
+        margin: 0 0 14px;
+        padding-left: 22px;
+      }
+      ul li,
+      ol li {
+        margin: 4px 0;
+      }
+      code,
+      kbd {
+        font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+        font-size: 13px;
+        background: var(--code-bg);
+        padding: 2px 6px;
+        border-radius: 4px;
+        border: 1px solid var(--border);
+      }
+      kbd {
+        font-size: 12px;
+      }
+      pre {
+        background: var(--code-bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 14px 16px;
+        overflow-x: auto;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+      pre code {
+        background: transparent;
+        padding: 0;
+        border: 0;
+      }
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 8px 0 20px;
+        font-size: 14px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: top;
+      }
+      th {
+        font-weight: 600;
+        color: var(--fg-2);
+        background: var(--bg-2);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      tr:hover td {
+        background: var(--bg-2);
+      }
+      .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      .grid-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 16px;
+      }
+      @media (max-width: 900px) {
+        .page {
+          grid-template-columns: 1fr;
+        }
+        aside.toc {
+          position: static;
+          height: auto;
+          border-right: 0;
+          border-bottom: 1px solid var(--border);
+        }
+        main {
+          padding: 24px 20px 80px;
+        }
+        .grid-2,
+        .grid-3 {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* badges */
+      .badge {
+        display: inline-block;
+        padding: 2px 8px;
+        font-size: 11px;
+        font-weight: 600;
+        border-radius: 999px;
+        line-height: 1.6;
+        margin-right: 4px;
+        border: 1px solid transparent;
+      }
+      .b-done {
+        background: rgba(74, 222, 128, 0.12);
+        color: var(--green);
+        border-color: rgba(74, 222, 128, 0.3);
+      }
+      .b-partial {
+        background: rgba(250, 204, 21, 0.12);
+        color: var(--yellow);
+        border-color: rgba(250, 204, 21, 0.3);
+      }
+      .b-stub {
+        background: rgba(251, 146, 60, 0.12);
+        color: var(--orange);
+        border-color: rgba(251, 146, 60, 0.3);
+      }
+      .b-cut {
+        background: rgba(248, 113, 113, 0.1);
+        color: var(--red);
+        border-color: rgba(248, 113, 113, 0.3);
+      }
+      .b-keep {
+        background: rgba(74, 222, 128, 0.1);
+        color: var(--green);
+        border-color: rgba(74, 222, 128, 0.3);
+      }
+      .b-rethink {
+        background: rgba(167, 139, 250, 0.12);
+        color: var(--purple);
+        border-color: rgba(167, 139, 250, 0.3);
+      }
+      .b-defer {
+        background: rgba(244, 114, 182, 0.12);
+        color: var(--pink);
+        border-color: rgba(244, 114, 182, 0.3);
+      }
+      .b-public {
+        background: var(--bg-3);
+        color: var(--fg-2);
+      }
+      .b-auth {
+        background: rgba(110, 168, 254, 0.1);
+        color: var(--accent);
+        border-color: rgba(110, 168, 254, 0.3);
+      }
+      .b-admin {
+        background: rgba(248, 113, 113, 0.1);
+        color: var(--red);
+        border-color: rgba(248, 113, 113, 0.3);
+      }
+      .b-premium {
+        background: rgba(250, 204, 21, 0.1);
+        color: var(--yellow);
+        border-color: rgba(250, 204, 21, 0.3);
+      }
+
+      /* feature card */
+      .feature {
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 18px 20px;
+        margin: 14px 0;
+      }
+      .feature .feature-head {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 4px;
+      }
+      .feature .feature-name {
+        font-weight: 700;
+        font-size: 16px;
+      }
+      .feature .feature-route {
+        font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+        font-size: 12px;
+        color: var(--fg-3);
+        background: var(--code-bg);
+        padding: 1px 6px;
+        border-radius: 4px;
+      }
+      .feature .feature-desc {
+        color: var(--fg-2);
+        margin-bottom: 8px;
+      }
+      .feature dl {
+        display: grid;
+        grid-template-columns: max-content 1fr;
+        gap: 4px 14px;
+        font-size: 13px;
+        margin: 8px 0;
+      }
+      .feature dt {
+        color: var(--fg-3);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        font-size: 11px;
+        font-weight: 600;
+        padding-top: 1px;
+      }
+      .feature dd {
+        margin: 0;
+        color: var(--fg-2);
+      }
+
+      /* callouts */
+      .callout {
+        border-left: 3px solid var(--accent);
+        background: var(--bg-3);
+        padding: 12px 16px;
+        margin: 12px 0;
+        border-radius: 0 8px 8px 0;
+        font-size: 14px;
+      }
+      .callout.suggest {
+        border-color: var(--purple);
+      }
+      .callout.decide {
+        border-color: var(--yellow);
+      }
+      .callout.warn {
+        border-color: var(--red);
+      }
+      .callout .callout-title {
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        margin-bottom: 4px;
+        color: var(--fg-3);
+      }
+      .callout.suggest .callout-title {
+        color: var(--purple);
+      }
+      .callout.decide .callout-title {
+        color: var(--yellow);
+      }
+      .callout.warn .callout-title {
+        color: var(--red);
+      }
+
+      /* journey diagram */
+      .journey {
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 20px;
+        margin: 16px 0 24px;
+      }
+      .journey-title {
+        font-weight: 700;
+        margin-bottom: 12px;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--fg-3);
+      }
+      .journey ol {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        counter-reset: step;
+      }
+      .journey ol li {
+        position: relative;
+        padding-left: 44px;
+        padding-bottom: 16px;
+        counter-increment: step;
+      }
+      .journey ol li::before {
+        content: counter(step);
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 13px;
+        background: var(--accent);
+        color: white;
+        border-radius: 999px;
+      }
+      .journey ol li:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        left: 13px;
+        top: 28px;
+        bottom: 4px;
+        width: 2px;
+        background: var(--border-strong);
+      }
+      .journey ol li strong {
+        display: block;
+        margin-bottom: 2px;
+      }
+      .journey ol li small {
+        display: block;
+        color: var(--fg-3);
+        font-size: 12px;
+      }
+
+      /* sitemap / flow tree */
+      .sitemap {
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px 20px;
+        font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+        font-size: 13px;
+        line-height: 1.8;
+        white-space: pre;
+        overflow-x: auto;
+      }
+
+      /* phase strip */
+      .phase {
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--accent);
+        border-radius: 0 12px 12px 0;
+        padding: 16px 20px;
+        margin: 14px 0;
+      }
+      .phase.b {
+        border-left-color: var(--purple);
+      }
+      .phase.c {
+        border-left-color: var(--green);
+      }
+      .phase .phase-tag {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--fg-3);
+        margin-bottom: 4px;
+      }
+      .phase .phase-name {
+        font-size: 17px;
+        font-weight: 700;
+        margin-bottom: 6px;
+      }
+
+      /* prompt-book card */
+      .prompt {
+        background: var(--bg-2);
+        border: 1px solid var(--border-strong);
+        border-radius: 12px;
+        padding: 18px 20px;
+        margin: 16px 0;
+      }
+      .prompt .prompt-id {
+        font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--accent);
+      }
+      .prompt .prompt-title {
+        font-weight: 700;
+        font-size: 16px;
+        margin: 2px 0 8px;
+      }
+      .prompt dl {
+        display: grid;
+        grid-template-columns: max-content 1fr;
+        gap: 6px 14px;
+        font-size: 13px;
+        margin: 8px 0 0;
+      }
+      .prompt dt {
+        color: var(--fg-3);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        font-size: 11px;
+        font-weight: 700;
+        padding-top: 2px;
+      }
+      .prompt dd {
+        margin: 0;
+        color: var(--fg-2);
+      }
+      .prompt dd code {
+        font-size: 12px;
+      }
+
+      .footer-note {
+        margin-top: 64px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border);
+        color: var(--fg-3);
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <aside class="toc">
+        <h1>2.0 strategy</h1>
+        <div class="brand">TravelSuperApp&nbsp;2.0</div>
+        <div class="toc-section">Foundation</div>
+        <ol>
+          <li><a href="#thesis">1 · The 2.0 thesis</a></li>
+          <li><a href="#inventory">2 · What 1.0 already gave us</a></li>
+          <li><a href="#flywheel">3 · The flywheel</a></li>
+          <li><a href="#nonrewrite">4 · Why this is not a rewrite</a></li>
+        </ol>
+        <div class="toc-section">Track A · Agentic</div>
+        <ol>
+          <li><a href="#a-shift">5 · Planner → agent</a></li>
+          <li><a href="#a-loop">6 · The agent loop</a></li>
+          <li><a href="#a-adapters">7 · New (free) signal sources</a></li>
+          <li><a href="#a-state">8 · State &amp; memory</a></li>
+          <li><a href="#a-acts">9 · The "acts" boundary</a></li>
+          <li><a href="#a-surface">10 · Agent surfaces (UI)</a></li>
+        </ol>
+        <div class="toc-section">Track B · Social</div>
+        <ol>
+          <li><a href="#b-shift">11 · Hearts → a network</a></li>
+          <li><a href="#b-graph">12 · The follow graph</a></li>
+          <li><a href="#b-feed">13 · The feed</a></li>
+          <li><a href="#b-publish">14 · Publishing model</a></li>
+          <li><a href="#b-discovery">15 · Discovery (pgvector)</a></li>
+          <li><a href="#b-privacy">16 · Privacy &amp; safety</a></li>
+        </ol>
+        <div class="toc-section">The Fusion</div>
+        <ol>
+          <li><a href="#f-join">17 · Where A meets B</a></li>
+          <li><a href="#f-data">18 · Data model deltas</a></li>
+          <li><a href="#f-free">19 · Free-source discipline</a></li>
+        </ol>
+        <div class="toc-section">Execution</div>
+        <ol>
+          <li><a href="#x-phases">20 · Phase A / B / C</a></li>
+          <li><a href="#x-promptbook">21 · POST-2.0 prompt book</a></li>
+          <li><a href="#x-decisions">22 · Decisions you must make</a></li>
+          <li><a href="#x-priority">23 · Build / cut matrix</a></li>
+          <li><a href="#x-runsheet">24 · The execution order ★</a></li>
+        </ol>
+      </aside>
+
+      <main>
+        <!-- §1 Thesis -->
+        <section id="thesis">
+          <h1 class="cover-title">TravelSuperApp 2.0 — agentic + social</h1>
+          <p class="cover-subtitle">
+            1.0 is a complete, env-gated backend with a clumsy face. 2.0 is not "more features" — it is one
+            thesis: an agent that travels with you, and a network that makes every agent smarter. This is the
+            blueprint and the drop-in prompt book to build it without a rewrite.
+          </p>
+
+          <h2 style="margin-top: 24px; border-top: 0; padding-top: 0">1 · The 2.0 thesis</h2>
+          <p class="lead">
+            Agentic and social only <em>look</em> like two upgrades. Wired together they are a single flywheel
+            where each side feeds the other. That coupling — not either feature alone — is the entire 2.0.
+          </p>
+
+          <div class="grid-3" style="margin-top: 16px">
+            <div class="feature">
+              <div class="feature-head">
+                <span class="feature-name">The agent makes content</span>
+              </div>
+              <p class="feature-desc">
+                It watched your flight, re-planned when the museum closed, you actually went. That is
+                <strong>authentic lived trip data</strong> — the one thing every social travel app fails to
+                get. Everyone else has stale influencer junk.
+              </p>
+            </div>
+            <div class="feature">
+              <div class="feature-head">
+                <span class="feature-name">The network grounds the agent</span>
+              </div>
+              <p class="feature-desc">
+                What real travelers did when plans broke, which itineraries performed, who you trust. That is
+                RAG over <strong>outcomes</strong>, not marketing copy. <code>pgvector</code> is already in
+                Postgres for exactly this.
+              </p>
+            </div>
+            <div class="feature">
+              <div class="feature-head">
+                <span class="feature-name">Memory Books are the join</span>
+              </div>
+              <p class="feature-desc">
+                The agent auto-drafts one from the trip it ran; you publish; its embedding indexes into
+                discovery <em>and</em> becomes context for the next person's agent. The artifact already
+                exists in 1.0.
+              </p>
+            </div>
+          </div>
+
+          <div class="callout suggest">
+            <div class="callout-title">The one sentence</div>
+            <strong>Agent run → auto-drafted Memory Book → publish → embedded → grounds the next agent.</strong>
+            Everything else in this document is plumbing for that loop. If a 2.0 task does not eventually serve
+            this sentence, defer it.
+          </div>
+        </section>
+
+        <!-- §2 Inventory -->
+        <section id="inventory">
+          <h2>2 · What 1.0 already gave us (the unfair advantage)</h2>
+          <p class="lead">
+            The 2.0-enabling decisions were made in 1.0, mostly without framing them that way. This is the
+            substrate the two tracks graft onto — verified against the real module tree.
+          </p>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Already built (1.0)</th>
+                <th>What 2.0 does with it</th>
+                <th>Reuse</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Env-gated adapter + factory pattern</strong> (POST.3/4/7/9/10)</td>
+                <td>Every new 2.0 signal source (weather, flight, transit) and the agent itself ships
+                  <em>dark</em> behind a key/flag. No big-bang.</td>
+                <td><span class="badge b-keep">as-is</span></td>
+              </tr>
+              <tr>
+                <td><strong>Clean/hex modular monolith</strong> — 17 api modules</td>
+                <td>Agent + graph slot in as new <code>application/</code> + adapters; domain logic untouched.</td>
+                <td><span class="badge b-keep">as-is</span></td>
+              </tr>
+              <tr>
+                <td><code>modules/trip</code> — 4-tier planner (Anthropic→Gemini→Ollama→stub)</td>
+                <td>The agent calls the existing planner port as a <em>tool</em>. No new LLM plumbing.</td>
+                <td><span class="badge b-keep">extend</span></td>
+              </tr>
+              <tr>
+                <td><code>modules/notifications</code> — VAPID push + inbox + per-category prefs</td>
+                <td>The agent's "I re-planned your day" message rides existing push fan-out.</td>
+                <td><span class="badge b-keep">extend</span></td>
+              </tr>
+              <tr>
+                <td><code>modules/safety</code> — SOS, geofence, crime/scam layer</td>
+                <td>Agent escalation path + the privacy primitives the social layer needs.</td>
+                <td><span class="badge b-keep">extend</span></td>
+              </tr>
+              <tr>
+                <td><code>modules/social</code> + <code>modules/feed</code> — hearts, votes, reviews, karma</td>
+                <td>Track B is <strong>not greenfield</strong> — the follow graph + feed extend these.</td>
+                <td><span class="badge b-keep">extend</span></td>
+              </tr>
+              <tr>
+                <td>Memory Books + <code>modules/media</code> (Sharp WebP variants, presigned S3)</td>
+                <td>The publishable creator artifact + its thumbnails already exist.</td>
+                <td><span class="badge b-keep">extend</span></td>
+              </tr>
+              <tr>
+                <td>Postgres 16 with <strong>PostGIS + pgvector</strong></td>
+                <td>Semantic "trips like this", episodic agent memory, RAG grounding — code, not a migration.</td>
+                <td><span class="badge b-keep">as-is</span></td>
+              </tr>
+              <tr>
+                <td>Local <strong>Ollama</strong> (already wired, $0) + Translation module (stub today; <code>apps/ai-service</code> is README-only)</td>
+                <td>2.0 embeddings run through local Ollama (mxbai-embed-large) via native fetch — no Python service stood up.</td>
+                <td><span class="badge b-rethink">use Ollama, not ai-service</span></td>
+              </tr>
+              <tr>
+                <td>Redis 7 + existing cron/scheduler infra (karma, purge, digest)</td>
+                <td>The agent's live re-plan loop + feed fan-out reuse this, no new infra.</td>
+                <td><span class="badge b-keep">as-is</span></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="callout">
+            <div class="callout-title">Read this twice</div>
+            There is <strong>no row that says "rewrite"</strong>. 2.0 is three new module surfaces
+            (<code>agent</code>, graph extensions to <code>social</code>/<code>feed</code>, discovery) plus
+            free data sources — all on the patterns 1.0 already proved.
+          </div>
+        </section>
+
+        <!-- §3 Flywheel -->
+        <section id="flywheel">
+          <h2>3 · The flywheel</h2>
+          <p class="lead">
+            The single diagram that matters. Each arrow is cheap because the node it points at already exists
+            in 1.0.
+          </p>
+
+          <div class="journey">
+            <div class="journey-title">The 2.0 loop</div>
+            <ol>
+              <li>
+                <strong>You create a trip (1.0 surface, unchanged)</strong>
+                <small><code>/trips/new</code> → POST <code>/trips</code> → AI plan via existing 4-tier chain</small>
+              </li>
+              <li>
+                <strong>The agent attaches and watches</strong>
+                <small>Subscribes to weather + flight + your edits. Free signal adapters. Ships dark behind a flag.</small>
+              </li>
+              <li>
+                <strong>Something changes → the agent re-plans</strong>
+                <small>Museum closed / storm / flight delay → it drafts a new day, asks you to confirm (never auto-spends).</small>
+              </li>
+              <li>
+                <strong>The trip ends → the agent auto-drafts a Memory Book</strong>
+                <small>It already knows what you did and what changed. The Memory Book artifact exists in 1.0 — it fills it in.</small>
+              </li>
+              <li>
+                <strong>You publish (default private; you opt in)</strong>
+                <small>Memory Book → public artifact on the existing <code>/featured</code> + a new feed. Privacy-fenced.</small>
+              </li>
+              <li>
+                <strong>The published trip is embedded into pgvector</strong>
+                <small>Becomes (a) discovery — "trips like this", (b) grounding context for the next traveler's agent.</small>
+              </li>
+              <li>
+                <strong>Someone else's agent retrieves your real outcome</strong>
+                <small>Their re-plan is now grounded in what actually happened, not generic LLM guesswork. Loop closes.</small>
+              </li>
+            </ol>
+          </div>
+
+          <div class="callout suggest">
+            <div class="callout-title">Why the coupling is the moat</div>
+            A pure travel agent is a thin wrapper over an LLM — anyone ships that in a weekend. A pure social
+            travel app has a cold-start content problem nobody solves. <strong>Fused</strong>, the agent
+            solves the network's content problem and the network solves the agent's grounding problem. The
+            data accrues; the wrapper does not.
+          </div>
+        </section>
+
+        <!-- §4 Not a rewrite -->
+        <section id="nonrewrite">
+          <h2>4 · Why this is not a rewrite (and the one hard scope cut)</h2>
+          <p class="lead">
+            The biggest risk in any "2.0" is that "upgrade" silently means "rebuild". Here is what explicitly
+            stays, what is added, and the one capability we deliberately do not build.
+          </p>
+
+          <div class="grid-2">
+            <div class="feature">
+              <div class="feature-head">
+                <span class="feature-name">Stays exactly as-is</span><span class="badge b-keep">no churn</span>
+              </div>
+              <ul style="font-size: 14px; color: var(--fg-2)">
+                <li>All 17 api modules, hex boundaries, Prisma schema (append-only)</li>
+                <li>The 4-tier AI chain + every existing adapter</li>
+                <li>Auth, payments scaffold, safety, admin, observability</li>
+                <li>All 58 web pages (they get the agent/feed <em>added</em>, not replaced)</li>
+              </ul>
+            </div>
+            <div class="feature">
+              <div class="feature-head">
+                <span class="feature-name">Added (new surfaces)</span><span class="badge b-rethink">net-new</span>
+              </div>
+              <ul style="font-size: 14px; color: var(--fg-2)">
+                <li><code>modules/agent</code> — event-driven loop + tool registry</li>
+                <li>Graph + feed extensions to <code>social</code>/<code>feed</code></li>
+                <li>Discovery service (pgvector over trip embeddings)</li>
+                <li>~3 free signal adapters + ~5 append-only Prisma tables</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="callout warn">
+            <div class="callout-title">The one hard cut — read carefully</div>
+            Stripe is <strong>stub mode</strong> (you're a student; live keys blocked) and the project's
+            durable rule is no paid external sources. Therefore the agent <strong>does not autonomously
+            spend money or make real bookings</strong>. "Acts" = re-plans, notifies, and drafts a booking for
+            <em>you</em> to confirm. This is also the safer product: an agent that books a non-refundable
+            hotel on a bad signal is a lawsuit, not a feature. Human-in-the-loop is the design, not a
+            limitation.
+          </div>
+        </section>
+
+        <!-- ======================= TRACK A ======================= -->
+
+        <!-- §5 -->
+        <section id="a-shift">
+          <h2>5 · Track A — from planner to agent</h2>
+          <p class="lead">
+            1.0's trip planner is a <em>function</em>: prompt in, itinerary out, done. A 2.0 agent is a
+            <em>process</em>: it persists, subscribes to the world, and acts over the life of the trip.
+          </p>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Dimension</th>
+                <th>1.0 planner</th>
+                <th>2.0 agent</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Lifetime</td><td>One request</td><td>Trip start → trip end</td></tr>
+              <tr><td>Trigger</td><td>User clicks "Generate"</td><td>World events: weather, flight, geofence, user edit, cron tick</td></tr>
+              <tr><td>Memory</td><td>None (stateless)</td><td>Append-only run log + episodic pgvector recall</td></tr>
+              <tr><td>Output</td><td>Prose itinerary</td><td>A proposed <em>diff</em> to the plan + a notification + a draft Memory Book</td></tr>
+              <tr><td>Authority</td><td>n/a</td><td>Propose-and-confirm. Never autonomous spend.</td></tr>
+            </tbody>
+          </table>
+
+          <div class="callout suggest">
+            <div class="callout-title">Design stance</div>
+            Keep the LLM on the <strong>edges</strong> (summarise the change, draft the new day, write the
+            Memory Book) and keep the <strong>loop deterministic</strong> (poll → diff → decide → enqueue). On
+            the free tier (Gemini Flash / Ollama qwen2.5:7b) long autonomous tool-use is unreliable — a short
+            deterministic loop with LLM leaf-calls is robust where a "let the LLM drive everything" agent is
+            not.
+          </div>
+        </section>
+
+        <!-- §6 -->
+        <section id="a-loop">
+          <h2>6 · The agent loop architecture</h2>
+          <p class="lead">
+            A new <code>modules/agent</code> following the exact hex pattern of every other module. The loop
+            is a small state machine; the LLM is one tool among several.
+          </p>
+
+          <div class="sitemap">modules/agent/
+├── domain/
+│   ├── agent-run.entity.ts          ← aggregate: status, plan-version, step log
+│   ├── trip-watch.entity.ts         ← what signals this run subscribes to
+│   └── plan-diff.vo.ts              ← a proposed change (add/move/drop a stop)
+├── application/
+│   ├── ports/
+│   │   ├── signal-source.port.ts    ← weather | flight | transit | geofence
+│   │   ├── agent-memory.port.ts     ← episodic recall (pgvector)
+│   │   └── plan-tool.port.ts        ← wraps the existing 1.0 trip-planner
+│   ├── start-trip-watch.use-case.ts
+│   ├── evaluate-signals.use-case.ts ← the deterministic core: poll → diff → decide
+│   ├── propose-replan.use-case.ts   ← LLM leaf-call: draft the new day + summary
+│   └── confirm-replan.use-case.ts   ← user accepted → apply diff to trip
+├── infrastructure/
+│   ├── open-meteo-weather.adapter.ts        ← FREE, no key
+│   ├── opensky-flight.adapter.ts            ← FREE, anonymous tier
+│   ├── stub-signal.adapter.ts               ← always present (env-gated default)
+│   └── pgvector-agent-memory.adapter.ts
+└── interface/
+    ├── agent.controller.ts          ← REST: status, accept/decline a proposal
+    └── agent.scheduler.ts           ← cron tick drives evaluate-signals</div>
+
+          <div class="journey">
+            <div class="journey-title">One tick of the loop (deterministic core)</div>
+            <ol>
+              <li><strong>Scheduler fires</strong><small>Reuses existing cron infra; one tick per active <code>trip-watch</code>.</small></li>
+              <li><strong>Pull signals</strong><small>Each <code>signal-source.port</code> adapter returns a typed snapshot (weather, flight state).</small></li>
+              <li><strong>Diff against last snapshot</strong><small>Pure function. No LLM. "Rain 80% on the day you planned the rooftop walk."</small></li>
+              <li><strong>Decision gate</strong><small>Threshold rules decide if the change is material. Below threshold → log + sleep.</small></li>
+              <li><strong>LLM leaf-call (only if material)</strong><small><code>propose-replan</code> calls the 1.0 planner tool to draft a swapped day + a one-line "why".</small></li>
+              <li><strong>Enqueue a proposal, not an action</strong><small>Writes a <code>plan-diff</code> + pushes a notification via the existing notifications module.</small></li>
+              <li><strong>User confirms (or auto-applies trivial)</strong><small>Confirm → apply diff to the trip. Decline → record, raise threshold.</small></li>
+            </ol>
+          </div>
+        </section>
+
+        <!-- §7 -->
+        <section id="a-adapters">
+          <h2>7 · New signal sources — all free, per the durable constraint</h2>
+          <p class="lead">
+            Your standing rule from 1.0: <em>no paid sources; always a free alternative; stub fallback
+            always present.</em> Every 2.0 adapter obeys it and follows the env-gated factory pattern.
+          </p>
+
+          <table>
+            <thead>
+              <tr><th>Signal</th><th>Free source</th><th>Cost / key</th><th>Stub fallback</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Weather (re-plan trigger)</td>
+                <td><strong>Open-Meteo</strong> — already wired in 1.0 (§3.4 of FEATURE_CATALOG)</td>
+                <td>$0, no key</td>
+                <td>Reuse existing weather adapter; no stub needed</td>
+              </tr>
+              <tr>
+                <td>Flight state (delay / airborne)</td>
+                <td><strong>OpenSky Network</strong> — live state vectors, anonymous tier</td>
+                <td>$0, no key (anon rate-limited)</td>
+                <td><code>stub-signal.adapter</code> returns "on time"</td>
+              </tr>
+              <tr>
+                <td>Transit / closures</td>
+                <td><strong>OSM Overpass</strong> — already a 1.0 discovery source; query opening_hours</td>
+                <td>$0, no key</td>
+                <td>Skip closure check; degrade gracefully</td>
+              </tr>
+              <tr>
+                <td>Geofence boundary</td>
+                <td><strong>Internal</strong> — reuse <code>modules/safety</code> geofence primitive</td>
+                <td>$0, in-house</td>
+                <td>n/a (always available)</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="callout warn">
+            <div class="callout-title">Honest gap</div>
+            There is <strong>no good free scheduled-flight-status SLA</strong> (FlightAware/AviationStack
+            free tiers are too thin for production). OpenSky gives live position, not scheduled-vs-actual gate
+            times. 2.0 ships flight-watch as <em>best-effort + clearly labelled</em>; a paid flight provider
+            is an explicit deferred decision in §22, not a silent assumption.
+          </div>
+        </section>
+
+        <!-- §8 -->
+        <section id="a-state">
+          <h2>8 · Agent state &amp; memory</h2>
+          <p class="lead">
+            An agent needs durable state. Three stores, each one the project already runs — nothing new to
+            operate.
+          </p>
+
+          <div class="grid-3">
+            <div class="feature">
+              <div class="feature-head"><span class="feature-name">Postgres — run log</span></div>
+              <p class="feature-desc">
+                <code>agent_run</code> + <code>agent_step</code>, <strong>append-only</strong> (honors the
+                Prisma append-only constraint). Full audit of every signal seen and every proposal made.
+              </p>
+            </div>
+            <div class="feature">
+              <div class="feature-head"><span class="feature-name">Redis — live loop</span></div>
+              <p class="feature-desc">
+                Last-snapshot cache + per-watch lock so two scheduler ticks can't double-propose. Reuses the
+                existing Redis 7 instance.
+              </p>
+            </div>
+            <div class="feature">
+              <div class="feature-head"><span class="feature-name">pgvector — episodic</span></div>
+              <p class="feature-desc">
+                Embeddings of "what happened when plans changed" — the agent recalls similar past situations
+                <em>and</em> retrieves grounded outcomes from the social network (§17).
+              </p>
+            </div>
+          </div>
+
+          <div class="callout">
+            <div class="callout-title">Schema rule reminder</div>
+            CLAUDE.md hard-constraint #8: Prisma schema is append-only unless a prompt explicitly permits
+            edits. Every 2.0 table is <strong>additive</strong> — new models, no column drops, no destructive
+            migrations. Each POST-2.0 prompt that touches the schema states this explicitly.
+          </div>
+        </section>
+
+        <!-- §9 -->
+        <section id="a-acts">
+          <h2>9 · The "acts" boundary — what the agent may and may not do</h2>
+          <p class="lead">
+            The single most important product decision in Track A. Get this wrong and the agent is a
+            liability; get it right and it is trustworthy.
+          </p>
+
+          <table>
+            <thead>
+              <tr><th>Action</th><th>Authority</th><th>Why</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Re-order / swap stops within the existing plan</td>
+                <td><span class="badge b-keep">auto, reversible</span></td>
+                <td>Cheap, undoable, low-stakes. Notify after.</td>
+              </tr>
+              <tr>
+                <td>Surface a weather/closure warning</td>
+                <td><span class="badge b-keep">auto</span></td>
+                <td>Pure information; never harmful.</td>
+              </tr>
+              <tr>
+                <td>Propose a materially different day</td>
+                <td><span class="badge b-partial">propose → confirm</span></td>
+                <td>Changes the trip shape; user owns the call.</td>
+              </tr>
+              <tr>
+                <td>Draft a Memory Book</td>
+                <td><span class="badge b-partial">draft → user publishes</span></td>
+                <td>It's the user's story; they edit and decide to share.</td>
+              </tr>
+              <tr>
+                <td>Spend money / confirm a booking</td>
+                <td><span class="badge b-cut">never (2.0)</span></td>
+                <td>Stripe stubbed + durable no-paid rule + liability. Agent prepares; human commits.</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="callout suggest">
+            <div class="callout-title">Trust UX</div>
+            Every autonomous action gets an undo affordance and a one-line "why I did this". Every proposal
+            shows the signal that triggered it. The agent's credibility is the product — surface its
+            reasoning, never hide it.
+          </div>
+        </section>
+
+        <!-- §10 -->
+        <section id="a-surface">
+          <h2>10 · Agent surfaces (where it lives in the UI)</h2>
+          <p class="lead">
+            No new top-level nav item. The agent inhabits surfaces that already exist — that is what "ships
+            dark, then lights up" means.
+          </p>
+
+          <table>
+            <thead>
+              <tr><th>Surface</th><th>What appears</th><th>1.0 status</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>/trips/[id]</code></td><td>"Agent watching" pill + a timeline of proposals/changes</td><td><span class="badge b-partial">add a card</span></td></tr>
+              <tr><td><code>/inbox</code></td><td>"I re-planned Tuesday — rain. Accept?" actionable notification</td><td><span class="badge b-keep">reuse</span></td></tr>
+              <tr><td>Push (VAPID)</td><td>Same proposal, off-app</td><td><span class="badge b-keep">reuse</span></td></tr>
+              <tr><td><code>/trips/[id]</code> end-of-trip</td><td>"Your Memory Book is drafted — review &amp; publish"</td><td><span class="badge b-rethink">new CTA</span></td></tr>
+              <tr><td><code>/account/preferences</code></td><td>Agent autonomy slider: off / notify-only / auto-trivial</td><td><span class="badge b-partial">add toggle</span></td></tr>
+            </tbody>
+          </table>
+
+          <div class="callout decide">
+            <div class="callout-title">Decision needed</div>
+            Default agent autonomy for a new trip: <strong>off</strong>, <strong>notify-only</strong>, or
+            <strong>auto-trivial</strong>? My recommendation: <strong>notify-only</strong> by default — high
+            trust, zero surprise, and it still demonstrates value. Power users opt up. Logged in §22.
+          </div>
+        </section>
+
+        <!-- ======================= TRACK B ======================= -->
+
+        <!-- §11 -->
+        <section id="b-shift">
+          <h2>11 · Track B — from hearts to a network</h2>
+          <p class="lead">
+            1.0 already has a <code>social</code> module (hearts, votes, reviews, karma, public profiles) and
+            a <code>feed</code> module. Track B is <strong>not greenfield</strong> — it is a graph + a feed +
+            a publishing model layered on top of what exists.
+          </p>
+
+          <table>
+            <thead>
+              <tr><th>1.0 social</th><th>2.0 network</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Anonymous hearts on shared trips</td><td>Identified reactions tied to a follow graph</td></tr>
+              <tr><td>Public profile = bare list of reviews</td><td>Creator profile = published trips + Memory Books + followers</td></tr>
+              <tr><td>No relationship between users</td><td>Follow graph → personalised feed + discovery signal</td></tr>
+              <tr><td>Content = whatever users manually share</td><td>Content = agent-drafted, real, lived trips (the flywheel)</td></tr>
+            </tbody>
+          </table>
+
+          <div class="callout suggest">
+            <div class="callout-title">Sequencing insight</div>
+            Do <strong>not</strong> build the network before the agent. Without the agent, the network has
+            the same cold-start content problem as every competitor. Build Track A first so that when the
+            network opens, it opens onto real, auto-generated content. Phase order in §20 reflects this.
+          </div>
+        </section>
+
+        <!-- §12 -->
+        <section id="b-graph">
+          <h2>12 · The follow graph</h2>
+          <p class="lead">
+            The smallest graph that works. Resist building Twitter. At zero scale, simple beats clever.
+          </p>
+
+          <div class="sitemap">// additive Prisma models (append-only)
+model Follow {
+  followerId  String
+  followeeId  String
+  createdAt   DateTime @default(now())
+  @@id([followerId, followeeId])
+  @@index([followeeId])      // "who follows X"
+}
+
+model TripPublication {
+  id           String   @id @default(cuid())
+  tripId       String   @unique
+  authorId     String
+  memoryBookId String?               // the agent-drafted artifact
+  visibility   Visibility            // PRIVATE | FOLLOWERS | PUBLIC
+  publishedAt  DateTime?
+  embedding    Unsupported("vector(1024)")?  // pgvector, §15 (1024 = PlaceEmbedding precedent)
+}</div>
+
+          <div class="callout">
+            <div class="callout-title">Why a join table, not arrays</div>
+            <code>Follow</code> as a composite-key table indexes both directions and stays correct under
+            concurrency. No follower-count denormalisation in 2.0 — compute it; optimise only if a real
+            dashboard says to.
+          </div>
+        </section>
+
+        <!-- §13 -->
+        <section id="b-feed">
+          <h2>13 · The feed</h2>
+          <p class="lead">
+            The single place teams over-engineer. At your scale the correct architecture is the boring one.
+          </p>
+
+          <div class="grid-2">
+            <div class="feature">
+              <div class="feature-head">
+                <span class="feature-name">Phase B: pull / fan-out-on-read</span><span class="badge b-keep">correct now</span>
+              </div>
+              <p class="feature-desc">
+                On feed load: query <code>TripPublication</code> where author ∈ (who I follow) ∪ public,
+                order by recency, paginate. One indexed query. Zero precompute. Correct until tens of
+                thousands of DAU.
+              </p>
+            </div>
+            <div class="feature">
+              <div class="feature-head">
+                <span class="feature-name">Later: fan-out-on-write</span><span class="badge b-defer">only if needed</span>
+              </div>
+              <p class="feature-desc">
+                Precomputed per-user timeline in Redis. Only when read latency on the pull query is measured
+                to be a problem. Premature here = wasted weeks.
+              </p>
+            </div>
+          </div>
+
+          <div class="callout suggest">
+            <div class="callout-title">Ranking</div>
+            v1 feed = reverse-chronological. No engagement ranking. It is honest, debuggable, and removes a
+            whole ML surface from the critical path. Add pgvector "similar to trips you saved" as a
+            <em>separate</em> discovery rail (§15), not as feed ranking.
+          </div>
+        </section>
+
+        <!-- §14 -->
+        <section id="b-publish">
+          <h2>14 · Publishing model</h2>
+          <p class="lead">
+            Travel content is uniquely sensitive: it broadcasts that your home is empty and where you
+            physically are. The publishing model is a <strong>safety feature</strong>, not a sharing
+            convenience.
+          </p>
+
+          <div class="journey">
+            <div class="journey-title">Publish flow (privacy-fenced by default)</div>
+            <ol>
+              <li><strong>Default = PRIVATE</strong><small>Every trip and agent-drafted Memory Book starts private. No accidental broadcast.</small></li>
+              <li><strong>Publish is opt-in and trip-end-gated</strong><small>You cannot publish a live, in-progress trip's location. Publish unlocks after the trip's end date.</small></li>
+              <li><strong>Location fuzzing on public</strong><small>PUBLIC visibility coarsens precise geo (city-level), keeps it exact for FOLLOWERS if the user allows.</small></li>
+              <li><strong>Followers vs public split</strong><small>Three-state <code>Visibility</code> enum lets the cautious share with a trusted circle only.</small></li>
+              <li><strong>Unpublish is instant + de-indexes</strong><small>Sets visibility PRIVATE and removes the embedding from discovery in the same transaction.</small></li>
+            </ol>
+          </div>
+
+          <div class="callout warn">
+            <div class="callout-title">Non-negotiable</div>
+            No code path may publish a trip whose end date is in the future. This intersects
+            <code>modules/safety</code> and must be enforced in the domain layer (a <code>TripPublication</code>
+            invariant), not just the UI.
+          </div>
+        </section>
+
+        <!-- §15 -->
+        <section id="b-discovery">
+          <h2>15 · Discovery (pgvector — the part 1.0 pre-provisioned)</h2>
+          <p class="lead">
+            pgvector has been in Postgres since 1.0 with nothing using it. Discovery is where it finally
+            earns its place.
+          </p>
+
+          <div class="journey">
+            <div class="journey-title">Discovery pipeline</div>
+            <ol>
+              <li><strong>On publish, embed the trip</strong><small>Destination + vibe + the agent's narrative → embedding via the already-running local <code>Ollama</code> (mxbai-embed-large, free, $0).</small></li>
+              <li><strong>Store on <code>TripPublication.embedding</code></strong><small><code>vector(1024)</code>, ivfflat <code>vector_l2_ops</code> lists=100 — matches the existing PlaceEmbedding. No new datastore.</small></li>
+              <li><strong>"Trips like this" rail</strong><small>Cosine-nearest published trips, filtered by visibility the viewer may see.</small></li>
+              <li><strong>Feeds back into the agent (§17)</strong><small>Same index is the agent's grounding retrieval. One embedding, two consumers.</small></li>
+            </ol>
+          </div>
+
+          <div class="callout suggest">
+            <div class="callout-title">Embedding model — free path</div>
+            Use the <strong>already-running local Ollama</strong> (model <code>mxbai-embed-large</code>,
+            1024-dim) via native fetch so embeddings cost $0 and need no external key — consistent with the
+            durable no-paid-source rule. <strong>Verified:</strong> <code>apps/ai-service</code> is a README
+            only (no Python service) — do not stand one up. Gemini's embedding endpoint is the env-gated
+            upgrade if quality demands it later.
+          </div>
+        </section>
+
+        <!-- §16 -->
+        <section id="b-privacy">
+          <h2>16 · Privacy &amp; safety model</h2>
+          <p class="lead">
+            The features that make a travel network trustworthy. Treat these as acceptance criteria, not
+            nice-to-haves.
+          </p>
+          <ul>
+            <li><strong>Private by default</strong> — every new artifact; sharing is always an explicit action.</li>
+            <li><strong>No live-location publishing</strong> — enforced as a domain invariant (§14).</li>
+            <li><strong>Geo coarsening on PUBLIC</strong> — exact coordinates never leave the followers tier without opt-in.</li>
+            <li><strong>Block / mute</strong> — a blocked user cannot see, follow, or react; reuses moderation patterns from <code>modules/admin</code>.</li>
+            <li><strong>De-index on unpublish</strong> — embedding removal is in the same transaction as the visibility flip; no ghost in discovery.</li>
+            <li><strong>Report → existing moderation</strong> — published trips flow into the 1.0 scam/abuse report + admin triage surfaces, not a new pipeline.</li>
+          </ul>
+
+          <div class="callout decide">
+            <div class="callout-title">Decision needed</div>
+            Is the default sharing tier <strong>FOLLOWERS</strong> or <strong>PUBLIC</strong> when a user
+            does choose to publish? Recommendation: <strong>FOLLOWERS</strong> first; PUBLIC requires a
+            second explicit confirm. Errs toward safety for a travel dataset. Logged in §22.
+          </div>
+        </section>
+
+        <!-- ======================= FUSION ======================= -->
+
+        <!-- §17 -->
+        <section id="f-join">
+          <h2>17 · Where A meets B (the actual 2.0 moment)</h2>
+          <p class="lead">
+            Tracks A and B are individually useful but ordinary. These two seams are what make the product a
+            2.0 rather than two bolt-ons.
+          </p>
+
+          <div class="grid-2">
+            <div class="feature">
+              <div class="feature-head">
+                <span class="feature-name">Seam 1 · Agent → content</span>
+              </div>
+              <p class="feature-desc">
+                When a <code>trip-watch</code> closes, <code>confirm-replan</code>'s sibling use-case
+                <code>draft-memory-book</code> fires: it composes the real itinerary + what changed + the
+                user's photos (1.0 media variants) into a Memory Book draft. The network's content problem is
+                solved by a byproduct of Track A.
+              </p>
+            </div>
+            <div class="feature">
+              <div class="feature-head">
+                <span class="feature-name">Seam 2 · Network → grounding</span>
+              </div>
+              <p class="feature-desc">
+                <code>propose-replan</code> queries the pgvector index for <em>published, real outcomes</em>
+                near this destination/situation and injects the top-k as grounding into the LLM leaf-call.
+                The agent's quality problem is solved by a byproduct of Track B.
+              </p>
+            </div>
+          </div>
+
+          <div class="callout suggest">
+            <div class="callout-title">Build-order consequence</div>
+            Seam 1 needs Track A done. Seam 2 needs Track B done. That is exactly why §20 sequences A → B →
+            (A∩B). Phase C is small precisely because A and B already exist when you reach it.
+          </div>
+        </section>
+
+        <!-- §18 -->
+        <section id="f-data">
+          <h2>18 · Data model deltas (all additive)</h2>
+          <p class="lead">
+            The complete set of new Prisma models. Every one is additive; none alters or drops an existing
+            column. This is the entire schema surface of 2.0.
+          </p>
+
+          <table>
+            <thead>
+              <tr><th>Model</th><th>Track</th><th>Purpose</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>AgentRun</code></td><td>A</td><td>One supervised lifetime per trip-watch; status + plan version</td></tr>
+              <tr><td><code>AgentStep</code></td><td>A</td><td>Append-only log: signal seen, decision, proposal, outcome</td></tr>
+              <tr><td><code>TripWatch</code></td><td>A</td><td>Which signals a run subscribes to + thresholds</td></tr>
+              <tr><td><code>Follow</code></td><td>B</td><td>Directed follow edge (composite key)</td></tr>
+              <tr><td><code>TripPublication</code></td><td>B + Fusion</td><td>Publish state + visibility + <code>vector(1024)</code> embedding</td></tr>
+              <tr><td><code>UserBlock</code></td><td>B</td><td>Block/mute edge; gates feed + graph + reactions</td></tr>
+            </tbody>
+          </table>
+
+          <div class="callout">
+            <div class="callout-title">Six tables. That is the whole 2.0 schema.</div>
+            No existing model is modified beyond <em>optional</em> relation back-references (which Prisma
+            treats as non-destructive). Each POST-2.0 prompt that adds a model restates the append-only
+            constraint and runs the migration in isolation.
+          </div>
+        </section>
+
+        <!-- §19 -->
+        <section id="f-free">
+          <h2>19 · Free-source discipline (the durable constraint, carried into 2.0)</h2>
+          <p class="lead">
+            Your standing rule from the 1.0 work: <em>"I don't think we will use any paid sources — do the
+            integration but make sure there's a free alternative."</em> 2.0 inherits it verbatim.
+          </p>
+
+          <table>
+            <thead>
+              <tr><th>2.0 capability</th><th>Free path (default)</th><th>Env-gated paid upgrade</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Re-plan LLM call</td><td>Gemini Flash → Ollama → stub (existing 4-tier)</td><td>Anthropic (key absent → never used)</td></tr>
+              <tr><td>Weather signal</td><td>Open-Meteo (no key)</td><td>—</td></tr>
+              <tr><td>Flight signal</td><td>OpenSky anonymous</td><td>FlightAware/AviationStack (deferred, §22)</td></tr>
+              <tr><td>Trip embeddings</td><td>Local Ollama (mxbai-embed-large, $0)</td><td>Gemini embeddings (key-gated)</td></tr>
+              <tr><td>Object storage for media</td><td>MinIO (dev) — existing</td><td>Cloudflare R2 free tier (prod)</td></tr>
+            </tbody>
+          </table>
+
+          <div class="callout suggest">
+            <div class="callout-title">Architectural consequence</div>
+            Because every paid path is env-gated behind an absent key, <strong>the entire 2.0 runs at $0
+            with full behaviour</strong> (degraded quality, not degraded features) — exactly like 1.0's
+            9-adapter stub system. The e2e suite must pass with zero 2.0 keys set.
+          </div>
+        </section>
+
+        <!-- ======================= EXECUTION ======================= -->
+
+        <!-- §20 -->
+        <section id="x-phases">
+          <h2>20 · Phase A / B / C sequencing</h2>
+          <p class="lead">
+            You are on a tight timeline and the workflow rule is small, sequential, confirmed slices. This is
+            the honest order — and why Phase C is cheap.
+          </p>
+
+          <div class="phase">
+            <div class="phase-tag">Phase A — ships dark, zero front-end change</div>
+            <div class="phase-name">Agent core</div>
+            <p style="margin: 0; color: var(--fg-2); font-size: 14px">
+              <code>modules/agent</code> + signal ports + Open-Meteo/OpenSky/stub adapters + deterministic
+              loop + propose/confirm + append-only run log. Notify via existing notifications module. Behind a
+              feature flag — no UI risk. <strong>Self-contained and demoable on its own.</strong>
+            </p>
+          </div>
+          <div class="phase b">
+            <div class="phase-tag">Phase B — extends existing social/feed modules</div>
+            <div class="phase-name">Social substrate</div>
+            <p style="margin: 0; color: var(--fg-2); font-size: 14px">
+              <code>Follow</code> + <code>TripPublication</code> + <code>UserBlock</code> + pull feed +
+              privacy-fenced publish + creator profile. Extends <code>modules/social</code>/<code>feed</code>;
+              does not touch Phase A.
+            </p>
+          </div>
+          <div class="phase c">
+            <div class="phase-tag">Phase C — the 2.0 moment, small because A+B exist</div>
+            <div class="phase-name">The fusion</div>
+            <p style="margin: 0; color: var(--fg-2); font-size: 14px">
+              Seam 1 (<code>draft-memory-book</code> on trip-watch close) + Seam 2 (pgvector grounding
+              injected into <code>propose-replan</code>) + the "trips like this" discovery rail. ~3 prompts,
+              because every dependency already shipped.
+            </p>
+          </div>
+
+          <div class="callout suggest">
+            <div class="callout-title">If you only ship one phase</div>
+            Ship <strong>Phase A</strong>. A travel agent that watches your trip and re-plans for free is a
+            complete, demoable product on its own. Phase B without A is just another social app; Phase C
+            without both is nothing. A is the keystone.
+          </div>
+        </section>
+
+        <!-- §21 -->
+        <section id="x-promptbook">
+          <h2>21 · POST-2.0 prompt book (drop-in execution prompts)</h2>
+          <p class="lead">
+            One prompt per session, same shape as the 1.0 POST series, same workflow (plan → execute scoped →
+            test → confirm → PROGRESS.md). Scope-locked and dependency-locked. Run them in order.
+          </p>
+
+          <div class="prompt">
+            <div class="prompt-id">POST.2A.1</div>
+            <div class="prompt-title">Agent module skeleton + ports (no behaviour yet)</div>
+            <dl>
+              <dt>Goal</dt><dd>Create <code>modules/agent</code> hex skeleton: domain entities, the three application ports, stub signal adapter, empty controller. Wired into <code>app.module.ts</code> behind <code>FEATURE_AGENT_ENABLED</code> (default false).</dd>
+              <dt>Touch</dt><dd><code>modules/agent/**</code>, <code>app.module.ts</code>, <code>packages/config/src/schema.ts</code></dd>
+              <dt>Deps</dt><dd>none</dd>
+              <dt>AC</dt><dd>typecheck + lint green; module loads with flag off and is inert; stub adapter unit-tested</dd>
+            </dl>
+          </div>
+
+          <div class="prompt">
+            <div class="prompt-id">POST.2A.2</div>
+            <div class="prompt-title">Append-only run log + TripWatch (schema slice)</div>
+            <dl>
+              <dt>Goal</dt><dd>Add <code>AgentRun</code>, <code>AgentStep</code>, <code>TripWatch</code> Prisma models (additive); repository adapters; start-trip-watch use-case.</dd>
+              <dt>Touch</dt><dd><code>prisma/schema.prisma</code> (append-only — explicitly permitted by this prompt), <code>modules/agent/**</code></dd>
+              <dt>Deps</dt><dd>none</dd>
+              <dt>AC</dt><dd>migration is additive only; repo specs ≥ 80%; a watch can be created + listed</dd>
+            </dl>
+          </div>
+
+          <div class="prompt">
+            <div class="prompt-id">POST.2A.3</div>
+            <div class="prompt-title">Deterministic evaluate-signals loop + Open-Meteo/OpenSky adapters</div>
+            <dl>
+              <dt>Goal</dt><dd>Implement <code>evaluate-signals</code> (poll → diff → threshold gate), Open-Meteo + OpenSky signal adapters (free, env-gated, stub fallback), scheduler tick.</dd>
+              <dt>Touch</dt><dd><code>modules/agent/**</code>, <code>packages/config/src/schema.ts</code></dd>
+              <dt>Deps</dt><dd>none (native fetch, per the 1.0 no-SDK pattern)</dd>
+              <dt>AC</dt><dd>loop is pure + unit-tested with fixture snapshots; runs with no keys (stub); no double-propose under concurrent ticks</dd>
+            </dl>
+          </div>
+
+          <div class="prompt">
+            <div class="prompt-id">POST.2A.4</div>
+            <div class="prompt-title">propose-replan (LLM leaf-call) + confirm-replan + notifications wiring</div>
+            <dl>
+              <dt>Goal</dt><dd><code>propose-replan</code> calls the existing 1.0 trip-planner port as a tool; writes a <code>plan-diff</code>; pushes an actionable notification. <code>confirm-replan</code> applies the diff.</dd>
+              <dt>Touch</dt><dd><code>modules/agent/**</code>, <code>modules/notifications</code> (add event type only)</dd>
+              <dt>Deps</dt><dd>none</dd>
+              <dt>AC</dt><dd>e2e: weather-change fixture → proposal notification → confirm applies diff → decline raises threshold; passes with zero AI keys (stub planner)</dd>
+            </dl>
+          </div>
+
+          <div class="prompt">
+            <div class="prompt-id">POST.2A.5</div>
+            <div class="prompt-title">Agent surfaces (web) — trip card, inbox action, autonomy toggle</div>
+            <dl>
+              <dt>Goal</dt><dd>Add the "Agent watching" card + proposal timeline to <code>/trips/[id]</code>, actionable accept/decline in <code>/inbox</code>, autonomy slider in <code>/account/preferences</code>. Behind the same flag.</dd>
+              <dt>Touch</dt><dd><code>apps/web</code> (those 3 pages + new components), regenerate SDK if new routes</dd>
+              <dt>Deps</dt><dd>none</dd>
+              <dt>AC</dt><dd>typecheck green; flag-off renders nothing new; flag-on shows card; a11y + dark/comfort modes pass per the 1.0 checklist</dd>
+            </dl>
+          </div>
+
+          <div class="prompt">
+            <div class="prompt-id">POST.2B.1</div>
+            <div class="prompt-title">Follow graph + UserBlock (schema + social module extension)</div>
+            <dl>
+              <dt>Goal</dt><dd>Add <code>Follow</code> + <code>UserBlock</code> models; follow/unfollow/block use-cases in <code>modules/social</code>; block gates reactions.</dd>
+              <dt>Touch</dt><dd><code>prisma/schema.prisma</code> (additive, permitted), <code>modules/social/**</code></dd>
+              <dt>Deps</dt><dd>none</dd>
+              <dt>AC</dt><dd>additive migration; blocked user cannot follow/react (domain-enforced); specs ≥ 80%</dd>
+            </dl>
+          </div>
+
+          <div class="prompt">
+            <div class="prompt-id">POST.2B.2</div>
+            <div class="prompt-title">TripPublication + privacy-fenced publish (domain invariant)</div>
+            <dl>
+              <dt>Goal</dt><dd>Add <code>TripPublication</code> (no embedding column yet); publish/unpublish use-cases; the "no future-end-date publish" + geo-coarsening invariants in the domain layer.</dd>
+              <dt>Touch</dt><dd><code>prisma/schema.prisma</code> (additive, permitted), <code>modules/social/**</code> or <code>modules/feed/**</code></dd>
+              <dt>Deps</dt><dd>none</dd>
+              <dt>AC</dt><dd>domain rejects publishing a live trip; unpublish flips to PRIVATE; invariant unit-tested independent of the controller</dd>
+            </dl>
+          </div>
+
+          <div class="prompt">
+            <div class="prompt-id">POST.2B.3</div>
+            <div class="prompt-title">Pull feed + creator profile (web + feed module)</div>
+            <dl>
+              <dt>Goal</dt><dd>Reverse-chronological pull feed (one indexed query) in <code>modules/feed</code>; upgrade <code>/users/[id]</code> to a creator profile (published trips + followers); a <code>/feed</code> page.</dd>
+              <dt>Touch</dt><dd><code>modules/feed/**</code>, <code>apps/web</code> (<code>/feed</code>, <code>/users/[id]</code>), SDK regen</dd>
+              <dt>Deps</dt><dd>none</dd>
+              <dt>AC</dt><dd>feed excludes blocked + respects visibility; pagination; empty/loading states use the 1.0 EmptyState/Skeleton components</dd>
+            </dl>
+          </div>
+
+          <div class="prompt">
+            <div class="prompt-id">POST.2C.1</div>
+            <div class="prompt-title">Seam 1 — draft-memory-book on trip-watch close</div>
+            <dl>
+              <dt>Goal</dt><dd>When a <code>TripWatch</code> closes, compose the real itinerary + change log + media into a Memory Book draft; surface the end-of-trip "review &amp; publish" CTA.</dd>
+              <dt>Touch</dt><dd><code>modules/agent/**</code>, Memory Book use-case, <code>apps/web</code> trip-detail CTA</dd>
+              <dt>Deps</dt><dd>none</dd>
+              <dt>AC</dt><dd>e2e: closing a watch produces a private draft Memory Book linked to the trip; nothing auto-publishes</dd>
+            </dl>
+          </div>
+
+          <div class="prompt">
+            <div class="prompt-id">POST.2C.2</div>
+            <div class="prompt-title">Trip embeddings via local Ollama + pgvector index</div>
+            <dl>
+              <dt>Goal</dt><dd>Add <code>embedding vector(1024)</code> to <code>TripPublication</code> (additive, nullable); embed via the already-running local Ollama (<code>mxbai-embed-large</code>) with a stub skip-index fallback; embed-on-publish + de-index-on-unpublish in the same transaction.</dd>
+              <dt>Touch</dt><dd><code>prisma/schema.prisma</code> (additive, permitted), <code>modules/feed</code> embedding adapter, publish/unpublish use-cases, <code>packages/config/src/schema.ts</code></dd>
+              <dt>Deps</dt><dd>none — native fetch (no Python, no new dep; <code>apps/ai-service</code> is README-only — do not use)</dd>
+              <dt>AC</dt><dd>ivfflat index created; unpublish removes the vector in the same tx; runs with no external key</dd>
+            </dl>
+          </div>
+
+          <div class="prompt">
+            <div class="prompt-id">POST.2C.3</div>
+            <div class="prompt-title">Seam 2 + discovery rail — grounding injection + "trips like this"</div>
+            <dl>
+              <dt>Goal</dt><dd><code>propose-replan</code> retrieves top-k published outcomes from pgvector (visibility-filtered) and injects them as grounding; add the "trips like this" rail to the publish/feed surface.</dd>
+              <dt>Touch</dt><dd><code>modules/agent/**</code>, <code>modules/feed/**</code>, <code>apps/web</code></dd>
+              <dt>Deps</dt><dd>none</dd>
+              <dt>AC</dt><dd>grounded vs ungrounded proposal differs on a seeded fixture; rail never shows content the viewer can't see; full e2e green with zero keys</dd>
+            </dl>
+          </div>
+
+          <div class="callout suggest">
+            <div class="callout-title">How to run these</div>
+            12 prompts, ~3–6 files each, matching the 1.0 slice size. State the prompt ID at session start,
+            plan, execute scope-locked, run typecheck + lint + the relevant suite (<code>--runInBand</code>
+            for the full api suite per the known Postgres connection limit), update PROGRESS.md, then stop and
+            ask. Never auto-advance. Bundle two adjacent small prompts per "proceed" only when both genuinely
+            qualify.
+          </div>
+        </section>
+
+        <!-- §22 -->
+        <section id="x-decisions">
+          <h2>22 · Decisions you must make before POST.2A.1</h2>
+          <p class="lead">
+            Same as the 1.0 §25 pattern — lock these before code, because each one changes the prompt
+            contents. My recommendation is bolded; override freely.
+          </p>
+
+          <table>
+            <thead>
+              <tr><th>#</th><th>Decision</th><th>Options</th><th>My pick</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>D1</td>
+                <td>Default agent autonomy on a new trip</td>
+                <td>off / notify-only / auto-trivial</td>
+                <td><strong>notify-only</strong> — value with zero surprise</td>
+              </tr>
+              <tr>
+                <td>D2</td>
+                <td>Default publish visibility</td>
+                <td>FOLLOWERS / PUBLIC</td>
+                <td><strong>FOLLOWERS</strong>; PUBLIC needs a 2nd confirm</td>
+              </tr>
+              <tr>
+                <td>D3</td>
+                <td>Flight signal in 2.0 scope?</td>
+                <td>OpenSky best-effort / defer flight entirely / paid provider</td>
+                <td><strong>OpenSky best-effort, labelled</strong>; paid deferred</td>
+              </tr>
+              <tr>
+                <td>D4</td>
+                <td>Embedding model</td>
+                <td>local Ollama (mxbai-embed-large) / Gemini embeddings (key-gated)</td>
+                <td><strong>local</strong> — honors the no-paid rule</td>
+              </tr>
+              <tr>
+                <td>D5</td>
+                <td>Build order</td>
+                <td>A→B→C / B→A→C / interleave</td>
+                <td><strong>A→B→C</strong> — C is only cheap this way</td>
+              </tr>
+              <tr>
+                <td>D6</td>
+                <td>Where the graph/feed lives</td>
+                <td>extend <code>modules/social</code> / extend <code>modules/feed</code> / new module</td>
+                <td><strong>extend both</strong> — graph in social, timeline in feed; no new module</td>
+              </tr>
+              <tr>
+                <td>D7</td>
+                <td>Agent loop cadence</td>
+                <td>fixed cron (e.g. 30 min) / signal-webhook-driven / hybrid</td>
+                <td><strong>fixed cron</strong> for 2.0 — webhooks need paid providers</td>
+              </tr>
+              <tr>
+                <td>D8</td>
+                <td>Does the agent touch live trips only, or also pre-trip planning?</td>
+                <td>during-trip only / pre-trip + during</td>
+                <td><strong>during-trip only</strong> for 2.0 — tightest, highest-value scope</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <!-- §23 -->
+        <section id="x-priority">
+          <h2>23 · Build / cut priority matrix</h2>
+          <p class="lead">
+            Same matrix shape as 1.0 §26. If timeline compresses, cut from the bottom up.
+          </p>
+
+          <table>
+            <thead>
+              <tr><th>Capability</th><th>Phase</th><th>Effort</th><th>Verdict</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Agent module + deterministic loop</td><td>A</td><td>M</td><td><span class="badge b-keep">core — keep</span></td></tr>
+              <tr><td>Open-Meteo weather watch + re-plan</td><td>A</td><td>S</td><td><span class="badge b-keep">core — keep</span></td></tr>
+              <tr><td>Propose/confirm + notifications</td><td>A</td><td>M</td><td><span class="badge b-keep">core — keep</span></td></tr>
+              <tr><td>Agent UI surfaces</td><td>A</td><td>S</td><td><span class="badge b-keep">keep</span></td></tr>
+              <tr><td>Follow graph + block</td><td>B</td><td>S</td><td><span class="badge b-keep">keep</span></td></tr>
+              <tr><td>Privacy-fenced publish</td><td>B</td><td>M</td><td><span class="badge b-keep">keep — safety-critical</span></td></tr>
+              <tr><td>Pull feed + creator profile</td><td>B</td><td>M</td><td><span class="badge b-keep">keep</span></td></tr>
+              <tr><td>Seam 1 — auto-draft Memory Book</td><td>C</td><td>S</td><td><span class="badge b-keep">the 2.0 moment</span></td></tr>
+              <tr><td>Seam 2 — pgvector grounding</td><td>C</td><td>M</td><td><span class="badge b-keep">the 2.0 moment</span></td></tr>
+              <tr><td>"Trips like this" discovery rail</td><td>C</td><td>S</td><td><span class="badge b-rethink">keep if time</span></td></tr>
+              <tr><td>OpenSky flight watch</td><td>A</td><td>S</td><td><span class="badge b-rethink">best-effort; cut if flaky</span></td></tr>
+              <tr><td>Fan-out-on-write feed</td><td>—</td><td>L</td><td><span class="badge b-cut">defer — premature</span></td></tr>
+              <tr><td>Engagement-ranked feed / ML</td><td>—</td><td>L</td><td><span class="badge b-cut">defer — out of scope</span></td></tr>
+              <tr><td>Autonomous booking / spend</td><td>—</td><td>L</td><td><span class="badge b-cut">never in 2.0 — liability</span></td></tr>
+              <tr><td>Paid flight-status provider</td><td>—</td><td>S</td><td><span class="badge b-defer">deferred decision (D3)</span></td></tr>
+            </tbody>
+          </table>
+
+          <div class="callout suggest">
+            <div class="callout-title">Bottom line</div>
+            2.0 is <strong>12 scoped prompts, 6 additive tables, 3 free adapters, zero rewrites, $0 to
+            run.</strong> It is the 1.0 architecture finally being used for what it was over-built to do. Lock
+            the §22 decisions, then say "start POST.2A.1".
+          </div>
+        </section>
+
+        <!-- §24 Run sheet -->
+        <section id="x-runsheet">
+          <h2>24 · The execution order — the run sheet ★</h2>
+          <p class="lead">
+            §20–23 are the strategy. This is the single ordered list you execute from, top to bottom. It is
+            dependency-justified: nothing here is reorderable without breaking a downstream prompt. One prompt
+            per session; a phase gate is a hard checkpoint, not a suggestion.
+          </p>
+
+          <div class="phase">
+            <div class="phase-tag">Phase 0 — gate · no code · do this first</div>
+            <div class="phase-name">Clean baseline + locked decisions</div>
+            <ol style="margin: 6px 0 0; color: var(--fg-2); font-size: 14px">
+              <li><strong>Lock decisions D1–D8 (§22).</strong> Each one changes the contents of a prompt
+                below — you cannot start blind. Record the picks in PROGRESS.md.</li>
+              <li><strong>Commit the uncommitted baseline as one <code>chore:</code></strong> —
+                <code>schema.ts</code> (optionalUrl), <code>main.ts</code> (Fastify env-gate), the health
+                revert, and the three docs. <em>Why mandatory here:</em> POST.2A.1 re-edits
+                <code>schema.ts</code>; starting on top of an uncommitted diff muddies scope-lock and the
+                review surface. Begin 2.0 from a known-good commit.</li>
+            </ol>
+            <p style="margin: 8px 0 0; font-size: 13px; color: var(--fg-3)">
+              <strong>Gate:</strong> <code>git status</code> clean · D1–D8 written down · last commit is the
+              chore baseline.
+            </p>
+          </div>
+
+          <div class="phase">
+            <div class="phase-tag">Phase A — agent core · 5 prompts · strict order</div>
+            <div class="phase-name">Build the agent (highest value, highest risk → first)</div>
+          </div>
+          <table>
+            <thead>
+              <tr><th>#</th><th>Prompt</th><th>Needs</th><th>Why it sits exactly here</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>A1</td><td><code>POST.2A.1</code> skeleton + ports</td><td>—</td>
+                <td>The foundation every later agent prompt imports. Inert behind a flag — zero risk.</td>
+              </tr>
+              <tr>
+                <td>A2</td><td><code>POST.2A.2</code> run log + TripWatch</td><td>A1</td>
+                <td>Needs the module to hang the append-only models on.</td>
+              </tr>
+              <tr>
+                <td>A3</td><td><code>POST.2A.3</code> deterministic loop + free adapters</td><td>A1, A2</td>
+                <td>The loop evaluates signals against a persisted <code>TripWatch</code> — must exist first.</td>
+              </tr>
+              <tr>
+                <td>A4</td><td><code>POST.2A.4</code> propose/confirm + notify</td><td>A3</td>
+                <td>Needs the loop to emit a material change for propose-replan to react to.</td>
+              </tr>
+              <tr>
+                <td>A5</td><td><code>POST.2A.5</code> web surfaces</td><td>A4</td>
+                <td>Needs proposal/confirm endpoints before there is anything to render.</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="callout">
+            <div class="callout-title">Phase A gate (do not enter Phase B until green)</div>
+            Full api e2e <strong>green with zero 2.0 keys set</strong> (<code>--runInBand</code> per the known
+            Postgres connection limit). Manual demo: create a trip → inject a weather-change fixture → a
+            proposal appears in <code>/inbox</code> → confirm applies the diff. This deliberately de-risks the
+            single hardest part of all of 2.0 (agentic loop on the free LLM tier) <em>before</em> any B/C
+            investment. If A is unviable, you learn it here for the cost of 5 prompts, not 12.
+          </div>
+
+          <div class="phase b">
+            <div class="phase-tag">Phase B — social substrate · 3 prompts</div>
+            <div class="phase-name">Open the network onto agent-generated content</div>
+          </div>
+          <table>
+            <thead>
+              <tr><th>#</th><th>Prompt</th><th>Needs</th><th>Why it sits exactly here</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>B1</td><td><code>POST.2B.1</code> Follow + UserBlock</td><td>(independent of A)</td>
+                <td>The graph foundation; block must exist before anything reads visibility.</td>
+              </tr>
+              <tr>
+                <td>B2</td><td><code>POST.2B.2</code> TripPublication + publish invariant</td><td>B1</td>
+                <td>The privacy core. Block gates visibility; the "no live-trip publish" invariant lives here.</td>
+              </tr>
+              <tr>
+                <td>B3</td><td><code>POST.2B.3</code> pull feed + creator profile</td><td>B1, B2</td>
+                <td>The feed query needs both the follow graph and publications to list.</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="callout">
+            <div class="callout-title">Phase B gate</div>
+            Follow a user · publish a trip privately · confirm a future-end-date trip is
+            <strong>rejected by the domain</strong> (not just the UI) · see it in the feed · blocked user is
+            excluded everywhere. e2e green with zero keys.
+          </div>
+
+          <div class="phase c">
+            <div class="phase-tag">Phase C — the fusion · 3 prompts · small because A+B exist</div>
+            <div class="phase-name">Close the flywheel</div>
+          </div>
+          <table>
+            <thead>
+              <tr><th>#</th><th>Prompt</th><th>Needs</th><th>Why it sits exactly here</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>C1</td><td><code>POST.2C.1</code> Seam 1 — draft Memory Book</td><td>Phase A done + 1.0 Memory Book</td>
+                <td>Fires on <code>TripWatch</code> close — that event only exists once A is complete.</td>
+              </tr>
+              <tr>
+                <td>C2</td><td><code>POST.2C.2</code> embeddings + pgvector</td><td>B2</td>
+                <td>Adds the <code>vector(1024)</code> column to <code>TripPublication</code> — the model must exist.</td>
+              </tr>
+              <tr>
+                <td>C3</td><td><code>POST.2C.3</code> Seam 2 grounding + discovery rail</td><td>C2, A4, B3</td>
+                <td>Injects retrieved outcomes into propose-replan and needs the feed surface for the rail.</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="callout">
+            <div class="callout-title">Phase C gate — the whole-product demo</div>
+            One seeded trip, end to end: agent re-plans → trip ends → Memory Book auto-drafts → user publishes
+            → it embeds → a <em>second</em> trip's proposal is visibly grounded by the first. If this demo
+            works, 2.0 is done.
+          </div>
+
+          <h3>Bundling (per your "two small slices per proceed" rule)</h3>
+          <p>
+            Most prompts ship solo, but where two adjacent prompts are both genuinely small and touch related
+            surfaces, bundle them under one "proceed":
+          </p>
+          <table>
+            <thead>
+              <tr><th>Bundle</th><th>Rationale</th><th>Ship solo</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>2A.1 + 2A.2</code></td><td>Skeleton + its schema — both small, same module</td><td>—</td></tr>
+              <tr><td><code>2B.1 + 2B.2</code></td><td>The two Phase-B schema slices, one migration pass</td><td>—</td></tr>
+              <tr><td><code>2C.2 + 2C.3</code></td><td>Only if 2C.2 stays small (embedding endpoint is the risk)</td><td>—</td></tr>
+              <tr><td>—</td><td>A3, A4, A5, B3, C1 are each meaty</td><td><span class="badge b-keep">solo</span></td></tr>
+            </tbody>
+          </table>
+
+          <div class="callout suggest">
+            <div class="callout-title">The whole order in one line</div>
+            <strong>Phase 0 (lock D1–D8 + commit baseline) → A1·A2 → A3 → A4 → A5 → [Phase A gate] → B1·B2 →
+            B3 → [Phase B gate] → C1 → C2·C3 → [Phase C gate].</strong> Eight "proceeds", three gates, one
+            shipped 2.0.
+          </div>
+        </section>
+
+        <div class="footer-note">
+          TravelSuperApp 2.0 strategy · companion to <code>docs/APP_VISION.html</code> (1.0) and
+          <code>docs/FEATURE_CATALOG.md</code> · grounded against the real 17-module api tree
+          (<code>modules/{trip,social,feed,notifications,safety,media,…}</code>) · honors CLAUDE.md hard
+          constraints (append-only schema, no paid sources, scope-lock, no auto-advance) · not yet committed.
+        </div>
+      </main>
+    </div>
+  </body>
+</html>
