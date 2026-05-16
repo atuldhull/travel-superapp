@@ -37,3 +37,16 @@ for (const [key, value] of Object.entries(TEST_ENV)) {
     process.env[key] = value;
   }
 }
+
+// ─── Hermetic external integrations ─────────────────────────────────────
+// `@nestjs/config` loads `apps/api/.env` (no envFilePath override). That
+// file carries a REAL `RESEND_API_KEY`, which flips the mailer to the
+// live ResendMailerAdapter during tests → real sends to `@example.com`
+// fixtures fail (502) and stub-mailer-dependent flows (magic-link,
+// password-reset, reactivation) can't see their emails. Tests MUST be
+// hermetic: force the mailer to its stub. Set BEFORE the app boots so
+// dotenv (which never overrides an existing process.env key) leaves it.
+// Only the mailer key is neutralised — the proven culprit; AI/storage
+// keys are intentionally left as-is so currently-green suites are
+// unaffected. Installed alongside [POST.2B.* gate hardening].
+process.env['RESEND_API_KEY'] = '';
