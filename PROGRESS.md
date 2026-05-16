@@ -45,12 +45,23 @@ keystone) land well:
 | D7  | Agent loop cadence         | fixed `setInterval`                         | verified: no cron infra exists             |
 | D8  | Agent scope                | during-trip only                            | tightest, highest-value scope              |
 
-### [POST.2A.2] — Append-only run log + TripWatch (PARTIAL — DB step blocked)
+### [POST.2A.2] — Append-only run log + TripWatch (✅ COMPLETE)
 
 - **Date**: 2026-05-16
-- **Status**: PARTIAL (code + schema + migration authored & verified;
-  migration NOT applied; Prisma adapters + module wiring deferred)
-- **Commit**: `feat(POST.2A.2)` (see git log)
+- **Status**: ✅ DONE. Was PARTIAL (DB blocked); user chose Docker-for-dev
+  - authorized stopping the lock process. Resolution: stopped leftover
+    boot-smoke PID 10116 (freed the Prisma engine-DLL lock) → `prisma
+generate` ✓ → applied the curated migration to **local Docker, target
+    pinned `127.0.0.1:5432`** via `prisma migrate deploy` (NOT Supabase).
+    **Proved non-destruction**: 3 new tables created; **all 14 PostGIS
+    GiST + the pgvector ivfflat index SURVIVED** (`gist=14, ivfflat=1`).
+    Then wrote PrismaAgentRunRepository + PrismaTripWatchRepository, wired
+    agent.module.ts. Verify: typecheck EXIT 0 · lint EXIT 0 · agent specs
+    **11/11** · build EXIT 0 · boot smoke (:3018) → `AgentModule
+dependencies initialized`, Nest started, no DI error, inert. Supabase
+    stays a deliberate supervised deploy target (NOT used in the dev loop).
+- **Commits**: `feat(POST.2A.2)` partial `79eef65` + `068cfca`; completion
+  commit (adapters + wiring) — see git log.
 - **🛑 CRITICAL SAFETY CATCH**: `prisma migrate dev` auto-generated a
   migration that tried to **`DROP` 15 PostGIS GiST spatial indexes + the
   `PlaceEmbedding` pgvector ivfflat index** + 2 `ALTER … DROP DEFAULT`.
