@@ -48,6 +48,16 @@ import { RevokeVoteUseCase } from './application/revoke-vote.use-case';
 import { PrismaExpenseRepository } from './infrastructure/prisma-expense.repository';
 import { PrismaHelpfulVoteRepository } from './infrastructure/prisma-helpful-vote.repository';
 import { PrismaKarmaRepository } from './infrastructure/prisma-karma.repository';
+// POST.2B.1 — social graph (follow + block)
+import { FOLLOW_REPOSITORY } from './application/ports/follow.repository';
+import { BLOCK_REPOSITORY } from './application/ports/block.repository';
+import { PrismaFollowRepository } from './infrastructure/prisma-follow.repository';
+import { PrismaBlockRepository } from './infrastructure/prisma-block.repository';
+import { FollowUseCase } from './application/follow.use-case';
+import { UnfollowUseCase } from './application/unfollow.use-case';
+import { BlockUserUseCase } from './application/block-user.use-case';
+import { UnblockUserUseCase } from './application/unblock-user.use-case';
+import { FollowController } from './interface/follow.controller';
 import { PrismaReviewRepository } from './infrastructure/prisma-review.repository';
 import { PrismaVoteRepository } from './infrastructure/prisma-vote.repository';
 import { TripBalancesCache } from './infrastructure/trip-balances-cache';
@@ -79,6 +89,7 @@ import { VotesController } from './interface/votes.controller';
     AgentReviewSummaryController,
     SharedTripReactController,
     PublicUserProfileController,
+    FollowController,
   ],
   providers: [
     { provide: VOTE_REPOSITORY, useClass: PrismaVoteRepository },
@@ -86,6 +97,12 @@ import { VotesController } from './interface/votes.controller';
     { provide: REVIEW_REPOSITORY, useClass: PrismaReviewRepository },
     { provide: HELPFUL_VOTE_REPOSITORY, useClass: PrismaHelpfulVoteRepository },
     { provide: KARMA_REPOSITORY, useClass: PrismaKarmaRepository },
+    { provide: FOLLOW_REPOSITORY, useClass: PrismaFollowRepository },
+    { provide: BLOCK_REPOSITORY, useClass: PrismaBlockRepository },
+    FollowUseCase,
+    UnfollowUseCase,
+    BlockUserUseCase,
+    UnblockUserUseCase,
     CastVoteUseCase,
     RevokeVoteUseCase,
     ListTripVotesUseCase,
