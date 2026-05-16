@@ -179,6 +179,15 @@ import { TripController } from './interface/trip.controller';
     SuggestFromHistoryUseCase,
     AutoArchiveTripsScheduler,
   ],
-  exports: [TRIP_REPOSITORY, ITINERARY_REPOSITORY, TRIP_SHARE_REPOSITORY, SeedSampleTripUseCase],
+  // POST.2A.4 — TRIP_PLANNER_PORT exported so the 2.0 agent can
+  // reuse the existing 4-tier planner as a tool (no new LLM
+  // plumbing). Additive, non-breaking.
+  exports: [
+    TRIP_REPOSITORY,
+    ITINERARY_REPOSITORY,
+    TRIP_SHARE_REPOSITORY,
+    SeedSampleTripUseCase,
+    TRIP_PLANNER_PORT,
+  ],
 })
 export class TripModule {}

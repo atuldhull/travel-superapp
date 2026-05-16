@@ -61,6 +61,13 @@ class FakeAgentRunRepository implements AgentRunRepository {
   async listSteps(agentRunId: string): Promise<readonly AgentStep[]> {
     return this.steps.filter((s) => s.agentRunId === agentRunId);
   }
+  async getStep(stepId: string): Promise<AgentStep | null> {
+    return this.steps.find((s) => s.id === stepId) ?? null;
+  }
+  async bumpPlanVersion(agentRunId: string): Promise<void> {
+    const r = this.runs.get(agentRunId);
+    if (r) this.runs.set(agentRunId, { ...r, planVersion: r.planVersion + 1 });
+  }
 }
 
 class FakeTripWatchRepository implements TripWatchRepository {
@@ -86,6 +93,9 @@ class FakeTripWatchRepository implements TripWatchRepository {
   }
   async listActive(): Promise<readonly TripWatch[]> {
     return this.watches.filter((w) => w.active);
+  }
+  async raiseThreshold(_tripId: string): Promise<void> {
+    /* not exercised by the start-watch spec */
   }
 }
 

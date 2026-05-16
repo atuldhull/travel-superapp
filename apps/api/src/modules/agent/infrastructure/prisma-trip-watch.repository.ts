@@ -61,4 +61,18 @@ export class PrismaTripWatchRepository implements TripWatchRepository {
     const rows = await this.prisma.tripWatch.findMany({ where: { active: true } });
     return rows.map(toDomain);
   }
+
+  async raiseThreshold(tripId: string): Promise<void> {
+    const row = await this.prisma.tripWatch.findFirst({ where: { tripId, active: true } });
+    if (!row || row.thresholds === null || row.thresholds === undefined) return;
+    const current = row.thresholds as Record<string, number>;
+    const next: Record<string, number> = {};
+    for (const [k, v] of Object.entries(current)) {
+      next[k] = Math.min(0.95, v + 0.1);
+    }
+    await this.prisma.tripWatch.update({
+      where: { id: row.id },
+      data: { thresholds: next as Prisma.InputJsonValue },
+    });
+  }
 }
