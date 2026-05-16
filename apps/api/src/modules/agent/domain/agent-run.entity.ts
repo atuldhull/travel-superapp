@@ -23,4 +23,5 @@ export interface AgentRun {
    */
   readonly planVersion: number;
   readonly createdAt: Date;
+  readonly updatedAt: Date;
 }
