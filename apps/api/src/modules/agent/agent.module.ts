@@ -28,6 +28,7 @@ import { ConfigService } from '@nestjs/config';
 import type { Env } from '@app/config';
 import { WeatherModule } from '../weather/weather.module';
 import { TripModule } from '../trip/trip.module';
+import { MediaModule } from '../media/media.module';
 import { AGENT_RUN_REPOSITORY } from './application/ports/agent-run.repository';
 import { PLAN_TOOL_PORT } from './application/ports/plan-tool.port';
 import { SIGNAL_SOURCE_PORT } from './application/ports/signal-source.port';
@@ -35,6 +36,7 @@ import { TRIP_WATCH_REPOSITORY } from './application/ports/trip-watch.repository
 import { ConfirmReplanUseCase } from './application/confirm-replan.use-case';
 import { EvaluateSignalsUseCase } from './application/evaluate-signals.use-case';
 import { ProposeReplanUseCase } from './application/propose-replan.use-case';
+import { DraftMemoryBookUseCase } from './application/draft-memory-book.use-case';
 import { StartTripWatchUseCase } from './application/start-trip-watch.use-case';
 import { PrismaAgentRunRepository } from './infrastructure/prisma-agent-run.repository';
 import { PrismaTripWatchRepository } from './infrastructure/prisma-trip-watch.repository';
@@ -46,7 +48,7 @@ import { AgentController } from './interface/agent.controller';
 import { AgentScheduler } from './interface/agent.scheduler';
 
 @Module({
-  imports: [WeatherModule, TripModule],
+  imports: [WeatherModule, TripModule, MediaModule],
   controllers: [AgentController],
   providers: [
     { provide: SIGNAL_SOURCE_PORT, useClass: StubSignalAdapter },
@@ -57,6 +59,7 @@ import { AgentScheduler } from './interface/agent.scheduler';
     EvaluateSignalsUseCase,
     ProposeReplanUseCase,
     ConfirmReplanUseCase,
+    DraftMemoryBookUseCase,
     WeatherSignalAdapter,
     {
       // OpenSky base URL has a safe default; the adapter itself

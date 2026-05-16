@@ -45,6 +45,39 @@ keystone) land well:
 | D7  | Agent loop cadence         | fixed `setInterval`                         | verified: no cron infra exists             |
 | D8  | Agent scope                | during-trip only                            | tightest, highest-value scope              |
 
+## POST-2.0 Phase C — The fusion
+
+### [POST.2C.1] — Seam 1: agent auto-drafts a PRIVATE Memory Book (✅ COMPLETE)
+
+- **Date**: 2026-05-16
+- **Status**: ✅ DONE (the memory-feature payoff: the agent makes the
+  network's content as a byproduct). Scheduler trip-ended trigger +
+  web "Review" CTA = documented deferred seam (agent↔trip + 2A.5 web
+  precedent); the verifiable Seam-1 core is fully wired + tested.
+- **Commit**: `feat(POST.2C.1)` (see git log)
+- **What**: hex-correct media **inbound port** `TRIP_BOOK_DRAFTER_PORT`
+  (agent → media; media never depends on agent). `DraftBookFromTripUseCase`
+  (media) orchestrates the EXISTING `CreateMemoryBookUseCase` — book is
+  created with `publishedAt = null` = a PRIVATE draft (the codebase's
+  existing semantic; **no `MemoryBook.visibility` field exists**). It
+  deliberately never calls `PublishMemoryBookUseCase`. `DraftMemoryBookUseCase`
+  (agent) is **idempotent** — a `watch_closed` AgentStep carries the
+  drafted book id; re-invoking returns it and creates NO second book.
+  agent.module imports MediaModule; media.module exports the port.
+- **LAW 2 / no-publish**: `rg -i publish apps/api/src/modules/agent`
+  → only `propose-replan`'s `events.publish(evt)` (the 2A.4 **EventBus**
+  emission — unrelated to memory-book publishing). The agent draft
+  path (`draft-memory-book.use-case.ts`) has ZERO publish; the media
+  drafter exposes NO publish capability. AC (scoped to modules/agent)
+  satisfied.
+- **Verify**: `agent-draft-memory-book.spec` + regression → 13/13
+  (first close drafts 1 PRIVATE book + records watch_closed; closing
+  twice → SAME id, drafter NOT re-called, no 2nd step; DraftBookFromTrip
+  creates with publishedAt null, theme classic, never publishes).
+  typecheck/lint/build EXIT 0; boot smoke (:3024) → MediaModule then
+  AgentModule deps initialized (agent→media port resolved, **NO
+  circular dependency**), Nest started, health 200. Zero new deps.
+
 ## POST-2.0 Phase B — Social substrate
 
 > **⛔→✅ PHASE B GATE — RUN 2026-05-16, GREEN.** Full `--runInBand`
