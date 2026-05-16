@@ -206,6 +206,14 @@ const FeaturesSchema = z.object({
   FEATURE_AGENT_ENABLED: z.coerce.boolean().default(false),
 });
 
+// ─── 2.0 Agent loop (POST.2A.3 — both optional, free, $0) ───────────────
+// OpenSky anonymous tier (no key). Tick is a setInterval (ms) — there
+// is no cron-string infra in this codebase.
+const AgentSchema = z.object({
+  OPENSKY_BASE_URL: z.string().url().default('https://opensky-network.org/api'),
+  AGENT_TICK_INTERVAL_MS: z.coerce.number().int().positive().default(900_000),
+});
+
 // ─── Security (peppers, keys, HTTP perimeter) ───────────────────────────
 const SecuritySchema = z.object({
   RATE_LIMIT_PEPPER: z.string().min(32),
@@ -245,6 +253,7 @@ export const EnvSchema = RuntimeSchema.merge(DatabaseSchema)
   .merge(MeiliSchema)
   .merge(ObservabilitySchema)
   .merge(FeaturesSchema)
+  .merge(AgentSchema)
   .merge(SecuritySchema);
 
 /** Fully-typed, validated environment. */

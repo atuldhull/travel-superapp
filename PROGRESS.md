@@ -45,6 +45,39 @@ keystone) land well:
 | D7  | Agent loop cadence         | fixed `setInterval`                         | verified: no cron infra exists             |
 | D8  | Agent scope                | during-trip only                            | tightest, highest-value scope              |
 
+### [POST.2A.3] — Deterministic loop + signal adapters + scheduler (✅ COMPLETE)
+
+- **Date**: 2026-05-16
+- **Status**: ✅ DONE
+- **Commit**: `feat(POST.2A.3)` (see git log)
+- **What**: `EvaluateSignalsUseCase` — PURE, sync, no I/O: weather
+  precip vs 0..1 threshold with **debounce** (no repeat proposals once
+  over the gate) + flight `delayed` rule. `WeatherSignalAdapter` reuses
+  the existing `WEATHER_PROVIDER` port (NO new HTTP; WeatherModule
+  imported into AgentModule) → degrades to a null snapshot on upstream
+  failure (LAW 1). `OpenSkyFlightAdapter` — native fetch, anonymous,
+  bbox-only, 4 s timeout, always degrades to "no change" (D3
+  best-effort, no flight number yet). `AgentScheduler` — copies the
+  `AccountPurgeScheduler` shape exactly (setInterval, re-entrant guard,
+  `unref`, skip in `NODE_ENV==='test'`), own ioredis (lazyConnect,
+  `redis-throttler.storage` pattern), per-watch lock
+  `SET lock:agent:watch:<id> 1 EX 60 NX`, appends a `signal_seen`
+  AgentStep per active watch. `OPENSKY_BASE_URL` + `AGENT_TICK_INTERVAL_MS`
+  added to a new `AgentSchema` (both optional, safe defaults, $0).
+- **Scope note**: coordinate-driven snapshot → evaluate → propose is
+  POST.2A.4 (needs trip/planner integration). 2A.3 = the pure
+  evaluator + adapters + cadence/lock skeleton + audit, each unit-tested
+  in isolation (no coords needed).
+- **Verify**: `agent-evaluate-signals.spec.ts` (+ skeleton + trip-watch)
+  → **21/21** pure/fake (threshold, debounce, flight, PII: weather
+  sends only {lat,lng,days}, OpenSky URL is numeric-bbox-only, lock
+  race refuses the 2nd tick). typecheck EXIT 0 · lint EXIT 0 (0 err) ·
+  build EXIT 0 · boot smoke (:3019) → `agent_scheduler_started`,
+  `AgentModule dependencies initialized` (WeatherModule cross-import +
+  ioredis + factory resolved, no DI error), Nest started, health 200.
+  Zero new deps (native fetch + existing ioredis). LAW 2 grep on
+  modules/agent → no stripe/payment/booking/charge/checkout.
+
 ### [POST.2A.2] — Append-only run log + TripWatch (✅ COMPLETE)
 
 - **Date**: 2026-05-16
