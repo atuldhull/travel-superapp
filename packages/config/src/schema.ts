@@ -200,6 +200,10 @@ const ObservabilitySchema = z.object({
 const FeaturesSchema = z.object({
   FEATURE_3D_ENABLED: z.coerce.boolean().default(false),
   FEATURE_SATELLITE_CROWD: z.coerce.boolean().default(false),
+  // POST.2A.1 — gates the 2.0 trip-agent (Track A). Default off:
+  // the AgentModule is always imported but inert until this is set,
+  // mirroring the PaymentsModule env-gated pattern.
+  FEATURE_AGENT_ENABLED: z.coerce.boolean().default(false),
 });
 
 // ─── Security (peppers, keys, HTTP perimeter) ───────────────────────────
