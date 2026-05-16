@@ -26,12 +26,18 @@
  * sources.
  */
 import { Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import type { Env } from '@app/config';
 import { TripModule } from '../trip/trip.module';
 import { GetMyFeedUseCase } from './application/get-my-feed.use-case';
 import { FEED_SOURCES } from './application/ports/feed-source';
 // POST.2B.2 — trip publication
 import { TRIP_PUBLICATION_REPOSITORY } from './application/ports/trip-publication.repository';
 import { PrismaTripPublicationRepository } from './infrastructure/prisma-trip-publication.repository';
+// POST.2C.2 — trip embeddings (local Ollama; stub when absent)
+import { EMBEDDING_PORT } from './application/ports/embedding.port';
+import { OllamaEmbeddingAdapter } from './infrastructure/ollama-embedding.adapter';
+import { StubEmbeddingAdapter } from './infrastructure/stub-embedding.adapter';
 import { PublishTripUseCase } from './application/publish-trip.use-case';
 import { UnpublishTripUseCase } from './application/unpublish-trip.use-case';
 import { GetFeedUseCase } from './application/get-feed.use-case';
@@ -50,6 +56,22 @@ import { FeedController } from './interface/feed.controller';
   controllers: [FeedController],
   providers: [
     { provide: TRIP_PUBLICATION_REPOSITORY, useClass: PrismaTripPublicationRepository },
+    // POST.2C.2 — env-gated, never class-registered (the Ollama ctor
+    // needs a URL; eager instantiation of a class provider would risk
+    // boot if absent). Real adapter ONLY when OLLAMA_URL is set; else
+    // the stub (skip-index). $0, zero-key e2e stays green.
+    {
+      provide: EMBEDDING_PORT,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService<Env, true>) => {
+        const ollamaUrl = config.get('OLLAMA_URL', { infer: true });
+        if (ollamaUrl) {
+          const model = config.get('EMBEDDING_MODEL', { infer: true });
+          return new OllamaEmbeddingAdapter(ollamaUrl, model);
+        }
+        return new StubEmbeddingAdapter();
+      },
+    },
     PublishTripUseCase,
     UnpublishTripUseCase,
     GetFeedUseCase,

@@ -83,6 +83,12 @@ const AiSchema = z.object({
     .transform((v) => (v === undefined || v === '' ? undefined : v))
     .pipe(z.string().url().optional()),
   OLLAMA_MODEL: z.string().default('llama3.1:8b'),
+  // POST.2C.2 — embeddings model for the local Ollama embeddings
+  // endpoint (POST {OLLAMA_URL}/api/embeddings). DISTINCT from
+  // OLLAMA_MODEL (the CHAT model, default llama3.1:8b).
+  // `mxbai-embed-large` emits exactly 1024 dims to match
+  // PlaceEmbedding / TripPublication.embedding. No key, $0, local.
+  EMBEDDING_MODEL: z.string().default('mxbai-embed-large'),
   OPENAI_API_KEY: z.string().optional(),
   AI_SERVICE_URL: z.string().url().default('http://localhost:8001'),
 });
