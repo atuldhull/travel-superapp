@@ -1,0 +1,2072 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TravelSuperApp — Design Strategy</title>
+    <style>
+      :root {
+        --bg: #0b0f17;
+        --bg-2: #111824;
+        --bg-3: #1a2332;
+        --fg: #e6eaf2;
+        --fg-2: #aab4c5;
+        --fg-3: #6b7588;
+        --accent: #6ea8fe;
+        --accent-2: #4d8fea;
+        --green: #4ade80;
+        --yellow: #facc15;
+        --orange: #fb923c;
+        --red: #f87171;
+        --pink: #f472b6;
+        --purple: #a78bfa;
+        --border: #1f2a3a;
+        --border-strong: #2a3a52;
+        --code-bg: #0a0e15;
+      }
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #fafbfd;
+          --bg-2: #ffffff;
+          --bg-3: #f1f4f9;
+          --fg: #0f172a;
+          --fg-2: #475569;
+          --fg-3: #94a3b8;
+          --accent: #2563eb;
+          --accent-2: #1d4ed8;
+          --border: #e2e8f0;
+          --border-strong: #cbd5e1;
+          --code-bg: #f1f5f9;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+        scroll-padding-top: 16px;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          Roboto,
+          'Helvetica Neue',
+          sans-serif;
+        font-size: 15px;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+      .page {
+        display: grid;
+        grid-template-columns: 280px minmax(0, 1fr);
+        max-width: 1320px;
+        margin: 0 auto;
+        gap: 0;
+      }
+      aside.toc {
+        position: sticky;
+        top: 0;
+        align-self: start;
+        height: 100vh;
+        overflow-y: auto;
+        padding: 24px 16px 24px 24px;
+        border-right: 1px solid var(--border);
+        background: var(--bg-2);
+      }
+      aside.toc h1 {
+        font-size: 14px;
+        margin: 0 0 4px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--fg-3);
+      }
+      aside.toc .brand {
+        font-size: 20px;
+        font-weight: 700;
+        margin-bottom: 24px;
+        letter-spacing: -0.01em;
+      }
+      aside.toc ol {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 24px;
+        font-size: 13px;
+      }
+      aside.toc ol li {
+        padding: 4px 0;
+      }
+      aside.toc ol li a {
+        color: var(--fg-2);
+        text-decoration: none;
+        display: block;
+        padding: 4px 8px;
+        border-radius: 6px;
+      }
+      aside.toc ol li a:hover {
+        background: var(--bg-3);
+        color: var(--fg);
+      }
+      aside.toc .toc-section {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--fg-3);
+        margin: 16px 8px 4px;
+        font-weight: 600;
+      }
+      main {
+        padding: 32px 48px 96px;
+        min-width: 0;
+      }
+      h1.cover-title {
+        font-size: 40px;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+        margin: 0 0 8px;
+        font-weight: 800;
+      }
+      .cover-subtitle {
+        font-size: 17px;
+        color: var(--fg-2);
+        margin: 0 0 24px;
+        max-width: 760px;
+      }
+      h2 {
+        font-size: 28px;
+        letter-spacing: -0.015em;
+        margin: 64px 0 8px;
+        font-weight: 700;
+        padding-top: 16px;
+        border-top: 1px solid var(--border);
+      }
+      h2:first-of-type {
+        margin-top: 32px;
+      }
+      h3 {
+        font-size: 20px;
+        margin: 32px 0 8px;
+        font-weight: 600;
+      }
+      h4 {
+        font-size: 15px;
+        margin: 16px 0 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--fg-3);
+        font-weight: 700;
+      }
+      p {
+        margin: 0 0 14px;
+      }
+      .lead {
+        font-size: 17px;
+        color: var(--fg-2);
+        max-width: 720px;
+      }
+      ul,
+      ol {
+        margin: 0 0 14px;
+        padding-left: 22px;
+      }
+      ul li,
+      ol li {
+        margin: 4px 0;
+      }
+      code,
+      kbd {
+        font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+        font-size: 13px;
+        background: var(--code-bg);
+        padding: 2px 6px;
+        border-radius: 4px;
+        border: 1px solid var(--border);
+      }
+      kbd {
+        font-size: 12px;
+      }
+      pre {
+        background: var(--code-bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 14px 16px;
+        overflow-x: auto;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+      pre code {
+        background: transparent;
+        padding: 0;
+        border: 0;
+      }
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 8px 0 20px;
+        font-size: 14px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: top;
+      }
+      th {
+        font-weight: 600;
+        color: var(--fg-2);
+        background: var(--bg-2);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      tr:hover td {
+        background: var(--bg-2);
+      }
+      .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      .grid-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 16px;
+      }
+      @media (max-width: 900px) {
+        .page {
+          grid-template-columns: 1fr;
+        }
+        aside.toc {
+          position: static;
+          height: auto;
+          border-right: 0;
+          border-bottom: 1px solid var(--border);
+        }
+        main {
+          padding: 24px 20px 80px;
+        }
+        .grid-2,
+        .grid-3 {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* badges */
+      .badge {
+        display: inline-block;
+        padding: 2px 8px;
+        font-size: 11px;
+        font-weight: 600;
+        border-radius: 999px;
+        line-height: 1.6;
+        margin-right: 4px;
+        border: 1px solid transparent;
+      }
+      .b-done {
+        background: rgba(74, 222, 128, 0.12);
+        color: var(--green);
+        border-color: rgba(74, 222, 128, 0.3);
+      }
+      .b-partial {
+        background: rgba(250, 204, 21, 0.12);
+        color: var(--yellow);
+        border-color: rgba(250, 204, 21, 0.3);
+      }
+      .b-stub {
+        background: rgba(251, 146, 60, 0.12);
+        color: var(--orange);
+        border-color: rgba(251, 146, 60, 0.3);
+      }
+      .b-cut {
+        background: rgba(248, 113, 113, 0.1);
+        color: var(--red);
+        border-color: rgba(248, 113, 113, 0.3);
+      }
+      .b-keep {
+        background: rgba(74, 222, 128, 0.1);
+        color: var(--green);
+        border-color: rgba(74, 222, 128, 0.3);
+      }
+      .b-rethink {
+        background: rgba(167, 139, 250, 0.12);
+        color: var(--purple);
+        border-color: rgba(167, 139, 250, 0.3);
+      }
+      .b-defer {
+        background: rgba(244, 114, 182, 0.12);
+        color: var(--pink);
+        border-color: rgba(244, 114, 182, 0.3);
+      }
+      .b-public {
+        background: var(--bg-3);
+        color: var(--fg-2);
+      }
+      .b-auth {
+        background: rgba(110, 168, 254, 0.1);
+        color: var(--accent);
+        border-color: rgba(110, 168, 254, 0.3);
+      }
+      .b-admin {
+        background: rgba(248, 113, 113, 0.1);
+        color: var(--red);
+        border-color: rgba(248, 113, 113, 0.3);
+      }
+      .b-premium {
+        background: rgba(250, 204, 21, 0.1);
+        color: var(--yellow);
+        border-color: rgba(250, 204, 21, 0.3);
+      }
+
+      /* feature card */
+      .feature {
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 18px 20px;
+        margin: 14px 0;
+      }
+      .feature .feature-head {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 4px;
+      }
+      .feature .feature-name {
+        font-weight: 700;
+        font-size: 16px;
+      }
+      .feature .feature-route {
+        font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+        font-size: 12px;
+        color: var(--fg-3);
+        background: var(--code-bg);
+        padding: 1px 6px;
+        border-radius: 4px;
+      }
+      .feature .feature-desc {
+        color: var(--fg-2);
+        margin-bottom: 8px;
+      }
+      .feature dl {
+        display: grid;
+        grid-template-columns: max-content 1fr;
+        gap: 4px 14px;
+        font-size: 13px;
+        margin: 8px 0;
+      }
+      .feature dt {
+        color: var(--fg-3);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        font-size: 11px;
+        font-weight: 600;
+        padding-top: 1px;
+      }
+      .feature dd {
+        margin: 0;
+        color: var(--fg-2);
+      }
+
+      /* callouts */
+      .callout {
+        border-left: 3px solid var(--accent);
+        background: var(--bg-3);
+        padding: 12px 16px;
+        margin: 12px 0;
+        border-radius: 0 8px 8px 0;
+        font-size: 14px;
+      }
+      .callout.suggest {
+        border-color: var(--purple);
+      }
+      .callout.decide {
+        border-color: var(--yellow);
+      }
+      .callout.warn {
+        border-color: var(--red);
+      }
+      .callout .callout-title {
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        margin-bottom: 4px;
+        color: var(--fg-3);
+      }
+      .callout.suggest .callout-title {
+        color: var(--purple);
+      }
+      .callout.decide .callout-title {
+        color: var(--yellow);
+      }
+      .callout.warn .callout-title {
+        color: var(--red);
+      }
+
+      /* journey diagram */
+      .journey {
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 20px;
+        margin: 16px 0 24px;
+      }
+      .journey-title {
+        font-weight: 700;
+        margin-bottom: 12px;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--fg-3);
+      }
+      .journey ol {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        counter-reset: step;
+      }
+      .journey ol li {
+        position: relative;
+        padding-left: 44px;
+        padding-bottom: 16px;
+        counter-increment: step;
+      }
+      .journey ol li::before {
+        content: counter(step);
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 13px;
+        background: var(--accent);
+        color: white;
+        border-radius: 999px;
+      }
+      .journey ol li:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        left: 13px;
+        top: 28px;
+        bottom: 4px;
+        width: 2px;
+        background: var(--border-strong);
+      }
+      .journey ol li strong {
+        display: block;
+        margin-bottom: 2px;
+      }
+      .journey ol li small {
+        display: block;
+        color: var(--fg-3);
+        font-size: 12px;
+      }
+
+      /* sitemap tree */
+      .sitemap {
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px 20px;
+        font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+        font-size: 13px;
+        line-height: 1.8;
+        white-space: pre;
+        overflow-x: auto;
+      }
+
+      .footer-note {
+        margin-top: 64px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border);
+        color: var(--fg-3);
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <aside class="toc">
+        <h1>Design strategy</h1>
+        <div class="brand">TravelSuperApp</div>
+        <div class="toc-section">Foundation</div>
+        <ol>
+          <li><a href="#vision">1 · Vision &amp; promise</a></li>
+          <li><a href="#personas">2 · Who uses it</a></li>
+          <li><a href="#jobs">3 · The 5 core jobs</a></li>
+          <li><a href="#sitemap">4 · App information architecture</a></li>
+        </ol>
+        <div class="toc-section">User journeys</div>
+        <ol>
+          <li><a href="#j-newcomer">5 · First-time visitor → first trip</a></li>
+          <li><a href="#j-returning">6 · Returning user → continue trip</a></li>
+          <li><a href="#j-premium">7 · Free → Premium upgrade</a></li>
+          <li><a href="#j-share">8 · Plan → memory book → share</a></li>
+          <li><a href="#j-sos">9 · Safety / SOS in the wild</a></li>
+        </ol>
+        <div class="toc-section">Surfaces</div>
+        <ol>
+          <li><a href="#s-shell">10 · App shell &amp; chrome</a></li>
+          <li><a href="#s-landing">11 · Landing &amp; marketing</a></li>
+          <li><a href="#s-auth">12 · Auth flow</a></li>
+          <li><a href="#s-trips">13 · Trip planning hub</a></li>
+          <li><a href="#s-trip-detail">14 · Trip detail</a></li>
+          <li><a href="#s-discovery">15 · Discovery</a></li>
+          <li><a href="#s-memory-books">16 · Memory books</a></li>
+          <li><a href="#s-social">17 · Social &amp; community</a></li>
+          <li><a href="#s-safety">18 · Safety surface</a></li>
+          <li><a href="#s-account">19 · Account &amp; settings</a></li>
+          <li><a href="#s-premium">20 · Premium &amp; billing</a></li>
+          <li><a href="#s-agent">21 · Agent / concierge</a></li>
+          <li><a href="#s-admin">22 · Admin / moderation</a></li>
+          <li><a href="#s-legal">23 · Legal &amp; help</a></li>
+        </ol>
+        <div class="toc-section">System</div>
+        <ol>
+          <li><a href="#design-system">24 · Design system</a></li>
+          <li><a href="#decisions">25 · Decisions you need to make</a></li>
+          <li><a href="#priority">26 · Build / cut priority matrix</a></li>
+        </ol>
+      </aside>
+
+      <main>
+        <!-- §1 Vision -->
+        <section id="vision">
+          <h1 class="cover-title">TravelSuperApp — design strategy</h1>
+          <p class="cover-subtitle">
+            A working blueprint of every page, every flow, and every decision that's still open.
+            Use this as the source of truth when you sit down to redesign the front end.
+          </p>
+
+          <h2 style="margin-top: 24px; border-top: 0; padding-top: 0">1 · Vision &amp; promise</h2>
+          <p class="lead">
+            <strong>What it is:</strong> a mobile-first, AI-powered super-app that turns a destination + radius into a full
+            paced trip — places, stays, food, events, transport, weather, safety, language — and stays with you
+            through the trip with live re-planning, photo memory books, and a panic button that fans out to your
+            people.
+          </p>
+
+          <div class="grid-3" style="margin-top: 16px">
+            <div class="feature">
+              <div class="feature-head"><span class="feature-name">Plan smarter</span></div>
+              <p class="feature-desc">
+                Drop a pin + a radius + dates. AI drafts a paced day-by-day plan in seconds. Tweak, vote, share.
+              </p>
+            </div>
+            <div class="feature">
+              <div class="feature-head"><span class="feature-name">Travel safer</span></div>
+              <p class="feature-desc">
+                One-tap SOS to trusted contacts via SMS + push. Crime + scam layer. Country primer for plugs,
+                visa, currency, e-sim.
+              </p>
+            </div>
+            <div class="feature">
+              <div class="feature-head"><span class="feature-name">Remember it</span></div>
+              <p class="feature-desc">
+                Drop photos as you go. They auto-organise into themed memory books you can publish or keep
+                private.
+              </p>
+            </div>
+          </div>
+
+          <div class="callout suggest">
+            <div class="callout-title">Suggestion</div>
+            Pick <strong>one</strong> of those three as the "lead promise" on the landing page hero. Currently
+            the landing tries to sell all three at once which dilutes the pitch. My recommendation:
+            <strong>Plan smarter</strong> as the hero, with Safety + Memory as supporting pillars below.
+          </div>
+        </section>
+
+        <!-- §2 Personas -->
+        <section id="personas">
+          <h2>2 · Who uses it</h2>
+          <p class="lead">
+            Three primary actors — design every screen with the right one in mind.
+          </p>
+
+          <div class="grid-3">
+            <div class="feature">
+              <div class="feature-head">
+                <span class="feature-name">🧳 Traveler</span><span class="badge b-keep">core</span>
+              </div>
+              <p class="feature-desc">
+                Plans + takes a trip. Casual to power user. Uses 95% of the surface area.
+              </p>
+              <h4>What they care about</h4>
+              <ul>
+                <li>Time to first plan (&lt; 30 sec)</li>
+                <li>Plans that actually work day-of</li>
+                <li>Photos that come out as memories, not a folder of JPEGs</li>
+                <li>Feeling safe in unfamiliar places</li>
+              </ul>
+            </div>
+            <div class="feature">
+              <div class="feature-head">
+                <span class="feature-name">🎫 Local agent</span
+                ><span class="badge b-defer">defer to v2</span>
+              </div>
+              <p class="feature-desc">
+                Verified local who bids on Premium-tier trips that need a human (visa-heavy, group, accessibility).
+              </p>
+              <h4>Decision</h4>
+              <p style="font-size: 13px; color: var(--fg-2); margin: 0">
+                Agent surface exists in code (3 pages) but feels like marketplace v2. Suggest cutting from
+                main nav and putting behind a "Become a guide" footer link until you have demand.
+              </p>
+            </div>
+            <div class="feature">
+              <div class="feature-head">
+                <span class="feature-name">⚙️ Admin / SRE</span><span class="badge b-keep">required</span>
+              </div>
+              <p class="feature-desc">
+                Internal-only. Moderates content, reviews ban appeals, watches dashboards.
+              </p>
+              <h4>Design tradeoff</h4>
+              <p style="font-size: 13px; color: var(--fg-2); margin: 0">
+                Spend the minimum visual effort here — it's internal. Functional &gt; pretty. Same admin
+                shell, dense data tables.
+              </p>
+            </div>
+          </div>
+
+          <div class="callout decide">
+            <div class="callout-title">Decision needed</div>
+            Should <strong>Local agent</strong> be in the main product or deferred to v2? My recommendation:
+            <strong>defer</strong>. Concierge feature can ship as "talk to a real planner" Premium perk that
+            emails our team — no marketplace required. Saves 3 pages + 1 onboarding flow.
+          </div>
+        </section>
+
+        <!-- §3 Jobs to be done -->
+        <section id="jobs">
+          <h2>3 · The 5 core jobs to be done</h2>
+          <p class="lead">
+            Every page in the app should serve at least one of these. If a page doesn't, ask: cut it.
+          </p>
+
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Job</th>
+                <th>Pages that serve it</th>
+                <th>Frequency</th>
+                <th>Suggestion</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>J1</td>
+                <td><strong>Plan a trip</strong> — turn a destination into an itinerary</td>
+                <td><code>/trips/new</code> · <code>/trips/[id]</code> · <code>/trips/[id]/overview</code></td>
+                <td>Often (start of every trip)</td>
+                <td><span class="badge b-keep">keep, polish</span></td>
+              </tr>
+              <tr>
+                <td>J2</td>
+                <td><strong>Use the plan day-of</strong> — open phone, follow the day</td>
+                <td>
+                  <code>/trips/[id]</code> · <code>/near-me</code> · <code>/eateries/[id]</code> ·
+                  <code>/trips/[id]/food-crawl</code>
+                </td>
+                <td>Multiple times per day during trip</td>
+                <td>
+                  <span class="badge b-rethink">rethink as mobile</span>
+                </td>
+              </tr>
+              <tr>
+                <td>J3</td>
+                <td><strong>Capture &amp; remember</strong> — photos, captions, story</td>
+                <td><code>/memory-books</code> · <code>/memory-books/[id]/edit</code></td>
+                <td>During + after trip</td>
+                <td><span class="badge b-keep">keep, simplify edit</span></td>
+              </tr>
+              <tr>
+                <td>J4</td>
+                <td><strong>Stay safe</strong> — SOS, scam awareness, country primer</td>
+                <td>SOS FAB (global) · <code>/account/trusted-contacts</code> · trip overview</td>
+                <td>Rare but high stakes</td>
+                <td><span class="badge b-keep">keep, never compromise</span></td>
+              </tr>
+              <tr>
+                <td>J5</td>
+                <td><strong>Share &amp; brag</strong> — post a trip, get hearts, hand out memory books</td>
+                <td><code>/featured</code> · <code>/shared/[code]</code> · <code>/users/[id]</code></td>
+                <td>End of trip + social moments</td>
+                <td><span class="badge b-rethink">simplify; defer creator stuff</span></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="callout suggest">
+            <div class="callout-title">Suggestion</div>
+            J1 + J2 + J4 are the "must work in v1". J3 is high-emotion and worth full polish. <strong>J5
+            (social/sharing)</strong> can ship as "share via link" only — drop hearts, votes, karma, public
+            profiles for v1. Makes the social surface ~5x simpler.
+          </div>
+        </section>
+
+        <!-- §4 Sitemap / IA -->
+        <section id="sitemap">
+          <h2>4 · App information architecture</h2>
+          <p class="lead">
+            Visual map of every reachable surface. Bold = primary nav. Indent = nested under parent.
+          </p>
+
+          <div class="sitemap">/                                  ← landing (J1, J5)
+├── /demo                          ← narrated walkthrough
+├── /press                         ← press kit (cut?)
+├── /pricing                       ← 3-tier pricing
+├── /help                          ← FAQ
+├── /status                        ← health probe
+├── /terms · /privacy · /cookies   ← legal
+├── /featured                      ← public memory books grid (J5)
+├── /shared/[code]                 ← shared trip view (J5)
+├── /users/[id]                    ← public profile (J5, defer?)
+├── /connectivity/[country]        ← country primer (J4)
+├── /accessibility                 ← a11y statement
+├── /appeal                        ← banned-user appeal
+│
+├── auth/
+│   ├── /login + /login/forgot + /login/reset/[token] + /login/mfa-recover
+│   ├── /register
+│   ├── /auth/magic-link/[token]
+│   └── /onboarding                ← 3-step wizard, post-register
+│
+├── 🔒 /trips                      ← HUB — primary surface (J1)
+│   └── /trips/new                 ← create trip (J1)
+│   └── /trips/[id]                ← trip detail (J1, J2)
+│       ├── /overview              ← weather + places + food + events + transport
+│       ├── /concierge             ← 💎 Premium agent matching
+│       ├── /expenses              ← group split + balances
+│       ├── /food-crawl            ← day-of food walking tour
+│       └── /primer                ← country primer for this trip
+│
+├── 🔒 /memory-books               ← HUB (J3)
+│   ├── /new
+│   └── /[id] · /[id]/edit
+│
+├── 🔒 /discover                   ← search places (J1, J2)
+├── 🔒 /near-me                    ← geo-aware "what's around" (J2)
+├── 🔒 /eateries/[id]              ← place detail
+│
+├── 🔒 /inbox                      ← notifications + push prefs
+│
+├── 🔒 /account                    ← HUB
+│   ├── /billing                   ← 💎 Stripe portal
+│   ├── /preferences
+│   ├── /privacy                   ← export + delete
+│   ├── /reactivate                ← within 7-day grace
+│   └── /trusted-contacts          ← SOS recipients (J4)
+│
+├── 👮 /admin                      ← internal hub
+│   ├── /audit
+│   ├── /media · /scam-reports · /sos · /users
+│
+├── 👮 /compliance + /compliance/takedowns
+├── 👮 /ops + /ops/runbooks
+│
+└── (defer) /agent/profile · /dashboard · /bookings</div>
+
+          <div class="callout suggest">
+            <div class="callout-title">Suggestion — primary navigation</div>
+            Top-nav (signed in): <code>Trips</code> · <code>Discover</code> · <code>Memory books</code> ·
+            <code>Inbox</code> · avatar dropdown → <em>Account · Billing · Sign out</em>.
+            <br /><br />
+            Drop from primary nav: Featured (move to landing), Press (footer), Connectivity (under Trip
+            detail), Agent (cut), Admin (URL-only access).
+          </div>
+
+          <div class="callout decide">
+            <div class="callout-title">Decision needed</div>
+            <strong>Bottom mobile nav</strong> — yes/no? Mobile-first means probably yes. My pick: 4 icons
+            (Trips · Discover · Memory · Inbox) + a center FAB for "New trip" (subsumes the SOS FAB? Or keep
+            SOS separate as red FAB). Need to decide.
+          </div>
+        </section>
+
+        <!-- §5 First-time journey -->
+        <section id="j-newcomer">
+          <h2>5 · Journey — first-time visitor → first trip</h2>
+          <p class="lead">
+            The single most important flow. Every percentage point of friction here costs you a user.
+            Target: <strong>under 90 seconds</strong> from landing to seeing a real AI plan.
+          </p>
+
+          <div class="journey">
+            <div class="journey-title">First-time visitor flow</div>
+            <ol>
+              <li>
+                <strong>Lands on /</strong>
+                <small>Hero pitch · Sample trip demo (works WITHOUT signup) · Trust strip · Pricing CTA</small>
+              </li>
+              <li>
+                <strong>Tries the sample</strong>
+                <small>
+                  Pick a city pill ("Goa", "Tokyo") → "Generate 3-day plan" → AI prose appears in ~5 sec → "Save
+                  this trip" CTA appears
+                </small>
+              </li>
+              <li>
+                <strong>Hits the conversion wall</strong>
+                <small>Save → "Sign up to save your plans" modal → email + password + Google OAuth + magic link</small>
+              </li>
+              <li>
+                <strong>Confirms email (if magic-link)</strong>
+                <small>Resend delivers · /auth/magic-link/[token] auto-logs in</small>
+              </li>
+              <li>
+                <strong>3-step onboarding wizard</strong>
+                <small>
+                  Interests (food / culture / nature / nightlife) · Comfort mode (default / family / accessible /
+                  budget / nomad) · "Start your first trip"
+                </small>
+              </li>
+              <li>
+                <strong>Lands on /trips/new with the sample pre-filled</strong>
+                <small>Tweak, save, get the AI plan they already saw, now persisted</small>
+              </li>
+              <li>
+                <strong>Lands on /trips/[id]</strong>
+                <small>Empty state with clear CTAs: "Add photos · Find places · Share · Generate plan"</small>
+              </li>
+            </ol>
+          </div>
+
+          <div class="callout suggest">
+            <div class="callout-title">Suggestion</div>
+            The current sample-trip-demo on the landing page <strong>works without signup</strong>. Lean into
+            that. Make it the hero interaction — not just a value pillar below the fold. Try-before-you-buy
+            converts way better than "Sign up to start".
+          </div>
+
+          <div class="callout decide">
+            <div class="callout-title">Decision needed</div>
+            <strong>Onboarding wizard</strong> — keep, simplify, or kill?
+            <ul style="margin: 8px 0 0">
+              <li><strong>Keep all 3 steps:</strong> better personalization, more friction</li>
+              <li><strong>Simplify to 1 step:</strong> just comfort mode (highest signal)</li>
+              <li><strong>Kill it entirely:</strong> straight to /trips/new with smart defaults</li>
+            </ul>
+            My pick: <strong>Simplify to 1 step</strong> + a "later" link.
+          </div>
+        </section>
+
+        <!-- §6 Returning user -->
+        <section id="j-returning">
+          <h2>6 · Journey — returning user → continue trip</h2>
+
+          <div class="journey">
+            <div class="journey-title">Returning visitor (gap &gt; 30 days OR &lt; 30 days)</div>
+            <ol>
+              <li>
+                <strong>Lands on /</strong>
+                <small>
+                  Welcome-back banner appears (V.UX.30) if last seen &gt; 30 days ago. References cached last
+                  sample plan if &lt; 24 h.
+                </small>
+              </li>
+              <li>
+                <strong>Auto-redirects to /trips</strong>
+                <small>If cookie still has refresh token. Otherwise lands on /login (auto-fills email).</small>
+              </li>
+              <li>
+                <strong>/trips landing</strong>
+                <small>
+                  Hero: in-progress trip card · "Plan something new" suggestions strip (curated based on history) ·
+                  Active tab + Archived tab
+                </small>
+              </li>
+              <li>
+                <strong>Continues editing</strong>
+                <small>One-tap into the most-recent draft → resume where left off</small>
+              </li>
+            </ol>
+          </div>
+
+          <div class="callout suggest">
+            <div class="callout-title">Suggestion — /trips redesign</div>
+            Currently <code>/trips</code> is a flat grid of cards. Reshape it as a <strong>three-region
+            layout</strong>:
+            <ol>
+              <li><strong>Hero:</strong> "Active trip" card if one is in-progress (today's date inside trip dates)</li>
+              <li><strong>Suggestions strip:</strong> 3 curated city cards based on recent activity</li>
+              <li><strong>Archive:</strong> collapsed list, "Show 5 more" pattern</li>
+            </ol>
+          </div>
+        </section>
+
+        <!-- §7 Premium -->
+        <section id="j-premium">
+          <h2>7 · Journey — Free → Premium upgrade</h2>
+
+          <div class="journey">
+            <div class="journey-title">Premium upgrade flow (Stripe TEST or LIVE)</div>
+            <ol>
+              <li>
+                <strong>Hits a Premium gate</strong>
+                <small>
+                  Tries "Match a concierge" on /trips/[id]/concierge OR clicks "Upgrade" anywhere → routes to
+                  /pricing
+                </small>
+              </li>
+              <li>
+                <strong>/pricing page</strong>
+                <small>3 tiers (Free / Premium $9/mo / Agent contact). "Upgrade to Premium" CTA</small>
+              </li>
+              <li>
+                <strong>POST /payments/checkout</strong>
+                <small>Server creates Stripe Checkout session → redirect to checkout.stripe.com</small>
+              </li>
+              <li>
+                <strong>Pays with test card</strong>
+                <small>4242 4242 4242 4242 / any future expiry / any CVC</small>
+              </li>
+              <li>
+                <strong>Stripe redirects → /account/billing</strong>
+                <small>Shows "Premium · Active · renews on …"</small>
+              </li>
+              <li>
+                <strong>Webhook flips role</strong>
+                <small>checkout.session.completed → SyncSubscription → User.role = 'premium'</small>
+              </li>
+              <li>
+                <strong>Re-login required (one-time)</strong>
+                <small>JWT carries role; new role lands on next refresh cycle. Surface a "Sign out + back in to unlock" toast</small>
+              </li>
+            </ol>
+          </div>
+
+          <div class="callout decide">
+            <div class="callout-title">Decision needed — what's gated as Premium?</div>
+            Currently gated:
+            <ul>
+              <li><code>/trips/[id]/concierge</code> — agent matching</li>
+              <li>Hand-picked stays + curated-only place filters</li>
+              <li>Premium AI providers (Claude/Gemini vs stub)</li>
+              <li>50 GB photo storage (vs 1 GB free)</li>
+            </ul>
+            <strong>Suggestions to add:</strong>
+            <ul>
+              <li>Unlimited memory books (free = 3) — high-value, low-cost gate</li>
+              <li>Custom themes / branded sharing — vanity gate</li>
+              <li>Offline pack generation — operationally cheap, perceived high value</li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- §8 Memory book share -->
+        <section id="j-share">
+          <h2>8 · Journey — Plan → memory book → share</h2>
+
+          <div class="journey">
+            <div class="journey-title">End-of-trip flow</div>
+            <ol>
+              <li>
+                <strong>Returns from trip</strong>
+                <small>App detects trip endsOn &lt; today via the auto-archive scheduler</small>
+              </li>
+              <li>
+                <strong>"Make a memory book?" prompt on /trips/[id]</strong>
+                <small>Auto-creates a draft book with all photos uploaded during trip dates</small>
+              </li>
+              <li>
+                <strong>/memory-books/[id]/edit</strong>
+                <small>Drag-reorder, captions auto-suggested from EXIF + place data, theme picker</small>
+              </li>
+              <li>
+                <strong>Publish</strong>
+                <small>Permalink /memory-books/[id] · optional /featured submission · WhatsApp/email share</small>
+              </li>
+              <li>
+                <strong>Friends view at /memory-books/[id]</strong>
+                <small>No-account-needed view · "Plan your own" CTA</small>
+              </li>
+            </ol>
+          </div>
+
+          <div class="callout suggest">
+            <div class="callout-title">Suggestion</div>
+            The auto-prompt step (#2) doesn't exist yet — currently users have to know to navigate to
+            /memory-books/new. Build the prompt as a <strong>persistent banner on /trips/[id]</strong> when
+            the trip is in the past + has &gt; 5 photos. High-emotion, high-share moment.
+          </div>
+        </section>
+
+        <!-- §9 SOS -->
+        <section id="j-sos">
+          <h2>9 · Journey — Safety / SOS in the wild</h2>
+
+          <div class="journey">
+            <div class="journey-title">SOS trigger (the most important UX in the app)</div>
+            <ol>
+              <li>
+                <strong>Setup (once, before trip)</strong>
+                <small>/account/trusted-contacts → add up to 3 numbers + emails. Verify via test ping.</small>
+              </li>
+              <li>
+                <strong>In trouble — taps red SOS FAB</strong>
+                <small>Bottom-right, persistent on every page. Always &gt; 56px touch target.</small>
+              </li>
+              <li>
+                <strong>Big confirm modal</strong>
+                <small>"HOLD 3 SECONDS" pattern (no accidental triggers). Cancel button huge. Dark theme.</small>
+              </li>
+              <li>
+                <strong>POST /safety/sos</strong>
+                <small>Sends lat/lng, trigger type, traveler name. Promise.allSettled fan-out.</small>
+              </li>
+              <li>
+                <strong>SMS lands at all 3 contacts (if Twilio wired)</strong>
+                <small>"🆘 SOS from Atul: manual at 38.72,-9.14. Cancel link if false alarm: …"</small>
+              </li>
+              <li>
+                <strong>Persistent banner on every page</strong>
+                <small>"SOS active — last sent 2 min ago" with Cancel button. Doesn't go away until resolved.</small>
+              </li>
+              <li>
+                <strong>User cancels OR admin resolves</strong>
+                <small>
+                  Banner disappears. Audit log entry written. Optional follow-up SMS to contacts: "All clear."
+                </small>
+              </li>
+            </ol>
+          </div>
+
+          <div class="callout warn">
+            <div class="callout-title">Critical UX rule</div>
+            SOS must work even if the user has <strong>1 bar of signal</strong>, the screen is wet, or they're
+            shaking. Test specifically: dark mode, glove touch, lock-screen access, low battery.
+          </div>
+
+          <div class="callout decide">
+            <div class="callout-title">Decision needed</div>
+            <strong>Lock-screen SOS shortcut?</strong> iOS/Android both support PWA shortcuts. Worth wiring as
+            v1.5.
+          </div>
+        </section>
+
+        <!-- §10 App shell -->
+        <section id="s-shell">
+          <h2>10 · Surface — app shell &amp; chrome</h2>
+
+          <div class="feature">
+            <div class="feature-head">
+              <span class="feature-name">Top header (every signed-in page)</span>
+              <span class="badge b-done">designed</span>
+              <span class="badge b-rethink">simplify</span>
+            </div>
+            <p class="feature-desc">
+              Currently: Logo · primary nav · WhoAmI badge · theme toggle · sign-out.
+            </p>
+            <h4>Suggestion</h4>
+            <ul>
+              <li>Strip primary nav to 4 items max (Trips, Discover, Memory, Inbox)</li>
+              <li>Move theme toggle + comfort mode + sign-out into avatar dropdown</li>
+              <li>Add a global search input in the center (Cmd+K opens command palette)</li>
+            </ul>
+          </div>
+
+          <div class="feature">
+            <div class="feature-head">
+              <span class="feature-name">SOS FAB (global, bottom-right)</span>
+              <span class="badge b-done">designed</span>
+              <span class="badge b-keep">keep</span>
+            </div>
+            <p class="feature-desc">Persistent red FAB. Disabled state for anonymous viewers.</p>
+            <h4>Decision</h4>
+            <p style="margin: 0">
+              Keep where it is. Don't merge with bottom nav (too much risk of accidental triggers).
+            </p>
+          </div>
+
+          <div class="feature">
+            <div class="feature-head">
+              <span class="feature-name">Translate widget (global, bottom-left)</span>
+              <span class="badge b-partial">partial</span>
+              <span class="badge b-rethink">defer</span>
+            </div>
+            <p class="feature-desc">
+              Bottom-left translate icon → opens modal with source/target language picker.
+            </p>
+            <h4>Suggestion</h4>
+            <p style="margin: 0">
+              <strong>Defer to v1.5</strong>. Heavy widget for an edge-case use. Replace with a "Translate
+              this page" link in footer for now.
+            </p>
+          </div>
+
+          <div class="feature">
+            <div class="feature-head">
+              <span class="feature-name">Command palette (Cmd+K)</span>
+              <span class="badge b-done">designed</span>
+              <span class="badge b-keep">keep</span>
+            </div>
+            <p class="feature-desc">Power user shortcut to navigate + search + actions.</p>
+          </div>
+
+          <div class="feature">
+            <div class="feature-head">
+              <span class="feature-name">Toast system + ARIA live region</span>
+              <span class="badge b-done">designed</span>
+              <span class="badge b-keep">keep</span>
+            </div>
+            <p class="feature-desc">Top-right toasts for action feedback. Hand-rolled, no deps.</p>
+          </div>
+
+          <div class="feature">
+            <div class="feature-head">
+              <span class="feature-name">Footer (POST.6)</span>
+              <span class="badge b-done">designed</span>
+              <span class="badge b-keep">keep</span>
+            </div>
+            <p class="feature-desc">3-column footer · Product / Legal / Connect.</p>
+          </div>
+        </section>
+
+        <!-- §11 Landing -->
+        <section id="s-landing">
+          <h2>11 · Surface — landing &amp; marketing</h2>
+
+          <h3>Landing page <code>/</code></h3>
+          <dl style="display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; font-size: 13px">
+            <dt style="color: var(--fg-3); font-weight: 600">Sections (top→bottom)</dt>
+            <dd>
+              Header → Hero (eyebrow + headline + dual CTA + illustration) → Live metrics ribbon → Sample
+              trip demo widget → 3 value pillars (Plan / Safe / Remember) → Trust strip → /demo CTA → Footer
+            </dd>
+            <dt style="color: var(--fg-3); font-weight: 600">Suggestions</dt>
+            <dd>
+              <ul>
+                <li>Promote sample-trip demo above the fold (it's currently below pillars)</li>
+                <li>Trust strip → swap brand logos for "as featured in" or testimonials when you have them</li>
+                <li>/press kit is over-engineered — can wait for actual press demand</li>
+              </ul>
+            </dd>
+          </dl>
+
+          <div class="callout decide">
+            <div class="callout-title">Decision needed</div>
+            <strong>One clear CTA</strong> vs current dual CTA ("Try the demo" + "Sign up free"). My pick:
+            single CTA = "Try a sample plan" (anchors to demo widget). Sign-up happens after they're hooked.
+          </div>
+
+          <div class="grid-3" style="margin-top: 16px">
+            <div class="feature">
+              <div class="feature-head">
+                <span class="feature-name">/demo</span>
+                <span class="badge b-done">designed</span>
+                <span class="badge b-keep">keep</span>
+              </div>
+              <p class="feature-desc">6-scene narrated walkthrough.</p>
+            </div>
+            <div class="feature">
+              <div class="feature-head">
+                <span class="feature-name">/press</span>
+                <span class="badge b-stub">stub</span>
+                <span class="badge b-cut">cut</span>
+              </div>
+              <p class="feature-desc">Premature for a pre-launch app. Re-add when you have real press.</p>
+            </div>
+            <div class="feature">
+              <div class="feature-head">
+                <span class="feature-name">/featured</span>
+                <span class="badge b-partial">partial</span>
+                <span class="badge b-keep">keep</span>
+              </div>
+              <p class="feature-desc">Public memory book grid. Acts as proof + inspiration.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- §12 Auth -->
+        <section id="s-auth">
+          <h2>12 · Surface — auth flow</h2>
+
+          <div class="grid-2">
+            <div class="feature">
+              <div class="feature-head">
+                <span class="feature-name">/login</span>
+                <span class="badge b-done">designed</span>
+              </div>
+              <p class="feature-desc">
+                Magic link + password + Google OAuth + mock-dev. 4 sign-in paths is too many.
+              </p>
+              <h4>Suggestion</h4>
+              <ul>
+                <li>Default UI: magic link (1 input)</li>
+                <li>"Use password instead" toggle</li>
+                <li>Google OAuth as secondary button</li>
+                <li>Mock-dev: hidden behind <code>?dev=1</code> query param (not visible by default)</li>
+              </ul>
+            </div>
+            <div class="feature">
+              <div class="feature-head">
+                <span class="feature-name">/register</span>
+                <span class="badge b-done">designed</span>
+              </div>
+              <p class="feature-desc">Email + password + display name. Google sign-in button on top.</p>
+              <h4>Decision</h4>
+              <p style="margin: 0">
+                Should we drop password registration entirely + ship magic-link only? Less friction, less
+                support burden. Cost: requires email delivery to actually work (Resend wired).
+              </p>
+            </div>
+            <div class="feature">
+              <div class="feature-head">
+                <span class="feature-name">/onboarding</span>
+                <span class="badge b-done">designed</span>
+                <span class="badge b-rethink">simplify</span>
+              </div>
+              <p class="feature-desc">3-step wizard. See §5 — recommend simplifying to 1 step.</p>
+            </div>
+            <div class="feature">
+              <div class="feature-head">
+                <span class="feature-name">/login/forgot · /reset/[token] · /mfa-recover</span>
+                <span class="badge b-stub">stub</span>
+              </div>
+              <p class="feature-desc">Recovery flows. Currently visually basic.</p>
+              <h4>Suggestion</h4>
+              <p style="margin: 0">
+                Light design pass — same shape as /login (centered card, single-column), branded confirmation
+                state.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- §13 Trips hub -->
+        <section id="s-trips">
+          <h2>13 · Surface — trip planning hub <code>/trips</code></h2>
+
+          <div class="callout suggest">
+            <div class="callout-title">Suggestion — full redesign</div>
+            This is the most-used page. Consider this layout:
+            <ol>
+              <li>
+                <strong>Top:</strong> "Continue your trip" hero card if there's an in-progress trip (today
+                inside trip date range). Big, photo-backed, one-tap to resume.
+              </li>
+              <li>
+                <strong>Mid:</strong> "Plan something new" — 3 curated suggestion cards (based on history) +
+                "+ New trip" CTA
+              </li>
+              <li>
+                <strong>Bottom:</strong> "Your trips" — grid (active default, archived tab). 4-up on
+                desktop, 1-up on mobile. Each card: cover photo · title · date range · status badge.
+              </li>
+            </ol>
+          </div>
+
+          <h3>Page archetype: Hub (mixed content + entry points)</h3>
+          <dl style="display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; font-size: 13px">
+            <dt style="color: var(--fg-3); font-weight: 600">Empty state</dt>
+            <dd>"No trips yet — plan your first one in 30 seconds" + big illustration + "+ New trip" CTA</dd>
+            <dt style="color: var(--fg-3); font-weight: 600">Loading state</dt>
+            <dd>4 SkeletonCard placeholders</dd>
+            <dt style="color: var(--fg-3); font-weight: 600">Keyboard shortcuts</dt>
+            <dd>j/k to navigate cards (Vim-style nav already wired) · Enter to open</dd>
+          </dl>
+        </section>
+
+        <!-- §14 Trip detail -->
+        <section id="s-trip-detail">
+          <h2>14 · Surface — trip detail <code>/trips/[id]</code></h2>
+
+          <div class="callout warn">
+            <div class="callout-title">Highest-priority redesign</div>
+            Currently a <strong>wall of cards</strong> stacked vertically. Maybe 12+ sections on one page.
+            Overwhelming.
+          </div>
+
+          <div class="callout suggest">
+            <div class="callout-title">Two layout options</div>
+            <strong>Option A — Tabs:</strong> primary tabs across the top: Plan · Days · Places · Stays · Eat
+            · Events · Photos · Share. Each tab a focused view.
+            <br /><br />
+            <strong>Option B — Left rail:</strong> sticky left sidebar with sections; main pane is the active
+            section. Better for desktop, clunkier on mobile.
+            <br /><br />
+            My pick: <strong>Option A</strong>. Tabs translate well to mobile (horizontal scroll-snap), keep
+            depth shallow.
+          </div>
+
+          <h3>Sections (current — what's on the page today)</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Section</th>
+                <th>Lives in tab</th>
+                <th>Suggestion</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Trip metadata header (title, dates, radius, locked-by)</td>
+                <td>Always visible (above tabs)</td>
+                <td><span class="badge b-keep">keep</span></td>
+              </tr>
+              <tr>
+                <td>AI plan card</td>
+                <td>Plan</td>
+                <td><span class="badge b-keep">make hero of Plan tab</span></td>
+              </tr>
+              <tr>
+                <td>Itinerary editor (day-by-day)</td>
+                <td>Days</td>
+                <td><span class="badge b-keep">primary view</span></td>
+              </tr>
+              <tr>
+                <td>Day route + optimize</td>
+                <td>Days</td>
+                <td><span class="badge b-keep">inline per-day</span></td>
+              </tr>
+              <tr>
+                <td>Place suggestions</td>
+                <td>Places</td>
+                <td><span class="badge b-keep">keep</span></td>
+              </tr>
+              <tr>
+                <td>Stays / Eateries / Events / Transport / Weather</td>
+                <td>Discover sub-tabs</td>
+                <td><span class="badge b-keep">consolidate under "Discover" tab</span></td>
+              </tr>
+              <tr>
+                <td>Memory section (photos)</td>
+                <td>Photos</td>
+                <td><span class="badge b-keep">link to /memory-books</span></td>
+              </tr>
+              <tr>
+                <td>Share link section</td>
+                <td>Share</td>
+                <td><span class="badge b-keep">keep</span></td>
+              </tr>
+              <tr>
+                <td>Lock / collaborate</td>
+                <td>Share tab</td>
+                <td><span class="badge b-rethink">rethink — lock UX is confusing</span></td>
+              </tr>
+              <tr>
+                <td>Concierge (Premium)</td>
+                <td>Plan tab (gate)</td>
+                <td><span class="badge b-defer">defer or simplify</span></td>
+              </tr>
+              <tr>
+                <td>Expenses (split + balance)</td>
+                <td>Separate route OR Days tab</td>
+                <td><span class="badge b-rethink">decide: standalone or inline?</span></td>
+              </tr>
+              <tr>
+                <td>Country primer</td>
+                <td>Plan tab callout</td>
+                <td><span class="badge b-keep">collapse + link</span></td>
+              </tr>
+              <tr>
+                <td>Food crawl</td>
+                <td>Eat tab CTA</td>
+                <td><span class="badge b-rethink">demote or kill</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <!-- §15 Discovery -->
+        <section id="s-discovery">
+          <h2>15 · Surface — discovery</h2>
+
+          <div class="grid-2">
+            <div class="feature">
+              <div class="feature-head">
+                <span class="feature-name">/discover</span>
+                <span class="badge b-stub">stub</span>
+                <span class="badge b-rethink">rethink</span>
+              </div>
+              <p class="feature-desc">Generic place search. Currently a bare form.</p>
+              <h4>Decision</h4>
+              <p style="margin: 0">
+                Is /discover useful when /trips/[id] already has place search scoped to your current trip?
+                Maybe cut and route generic search via the global Cmd+K palette.
+              </p>
+            </div>
+            <div class="feature">
+              <div class="feature-head">
+                <span class="feature-name">/near-me</span>
+                <span class="badge b-stub">stub</span>
+                <span class="badge b-keep">keep</span>
+              </div>
+              <p class="feature-desc">Live "what's around me right now" — most-used during trip.</p>
+              <h4>Suggestion</h4>
+              <ul>
+                <li>Big map first, list second</li>
+                <li>Filter chips: Eat · Drink · See · Sleep · Open now</li>
+                <li>One-tap "Add to today's itinerary"</li>
+              </ul>
+            </div>
+            <div class="feature">
+              <div class="feature-head">
+                <span class="feature-name">/eateries/[id]</span>
+                <span class="badge b-stub">stub</span>
+                <span class="badge b-keep">keep but generalise</span>
+              </div>
+              <p class="feature-desc">Eatery detail. Eatery-specific instead of place-generic.</p>
+              <h4>Decision</h4>
+              <p style="margin: 0">
+                Should we have one generic /places/[id] route instead? Or per-category? My pick: generic
+                /places/[id] with a category badge, faster to build, simpler IA.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- §16 Memory books -->
+        <section id="s-memory-books">
+          <h2>16 · Surface — memory books</h2>
+
+          <div class="grid-2">
+            <div class="feature">
+              <div class="feature-head">
+                <span class="feature-name">/memory-books</span>
+                <span class="badge b-partial">partial</span>
+              </div>
+              <p class="feature-desc">List of mine. Cards with cover photo + title + asset count.</p>
+              <h4>Suggestion</h4>
+              <ul>
+                <li>Visual-first grid (3-up desktop, 1-up mobile, big cover photos)</li>
+                <li>Sort: most-recent, alphabetical, most-photos</li>
+                <li>Bulk actions: archive, delete, publish</li>
+              </ul>
+            </div>
+            <div class="feature">
+              <div class="feature-head">
+                <span class="feature-name">/memory-books/[id]/edit</span>
+                <span class="badge b-partial">partial</span>
+              </div>
+              <p class="feature-desc">Drag-reorder, captions, theme picker, publish toggle. Split-pane preview.</p>
+              <h4>Suggestion</h4>
+              <ul>
+                <li>Replace split-pane preview with a "Preview" toggle (more screen real estate when editing)</li>
+                <li>Caption editor: inline tap-to-edit, not a modal</li>
+                <li>Theme picker: visual swatches, not dropdown</li>
+              </ul>
+            </div>
+            <div class="feature">
+              <div class="feature-head">
+                <span class="feature-name">/memory-books/[id]</span>
+                <span class="badge b-partial">partial</span>
+              </div>
+              <p class="feature-desc">Public read-only view. The "share this with friends" surface.</p>
+              <h4>Suggestion</h4>
+              <p style="margin: 0">
+                Treat this like a magazine spread. Big photos, generous whitespace, captions in serif. Should
+                feel like a finished thing — high-emotion moment.
+              </p>
+            </div>
+            <div class="feature">
+              <div class="feature-head">
+                <span class="feature-name">/featured</span>
+                <span class="badge b-partial">partial</span>
+              </div>
+              <p class="feature-desc">Public grid of all published books. Inspiration for new users.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- §17 Social -->
+        <section id="s-social">
+          <h2>17 · Surface — social &amp; community</h2>
+
+          <div class="callout decide">
+            <div class="callout-title">Decision needed — biggest open question</div>
+            How much social do we want in v1? Current code includes: hearts on shared trips, votes on places,
+            5-star reviews with helpful counts, public user profiles, karma scheduler, public feed.
+            <br /><br />
+            <strong>My recommendation: cut everything except "share via link"</strong> for v1.
+            <ul>
+              <li>Hearts → keep (one-tap, anonymous OK)</li>
+              <li>Votes → cut (low signal, complex moderation)</li>
+              <li>Reviews → defer (huge moderation burden)</li>
+              <li>Public profiles → defer (privacy + moderation)</li>
+              <li>Karma → cut (engineering for ghost feature)</li>
+              <li>Feed → cut (we're not a social network)</li>
+            </ul>
+            <strong>Lighter v1 = faster ship + clearer pitch.</strong>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Feature</th>
+                <th>Built?</th>
+                <th>Recommendation</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Hearts on shared trips</td>
+                <td>✅ yes</td>
+                <td><span class="badge b-keep">keep</span></td>
+              </tr>
+              <tr>
+                <td>Votes on places (up/down)</td>
+                <td>✅ yes</td>
+                <td><span class="badge b-cut">cut for v1</span></td>
+              </tr>
+              <tr>
+                <td>5-star reviews with text</td>
+                <td>✅ yes</td>
+                <td><span class="badge b-defer">defer to v2</span></td>
+              </tr>
+              <tr>
+                <td>"Helpful" votes on reviews</td>
+                <td>✅ yes</td>
+                <td><span class="badge b-defer">defer</span></td>
+              </tr>
+              <tr>
+                <td>Public user profile</td>
+                <td>✅ yes</td>
+                <td><span class="badge b-defer">defer</span></td>
+              </tr>
+              <tr>
+                <td>Karma scheduler</td>
+                <td>✅ yes</td>
+                <td><span class="badge b-cut">cut</span></td>
+              </tr>
+              <tr>
+                <td>Personal feed</td>
+                <td>✅ yes</td>
+                <td><span class="badge b-cut">cut for v1</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <!-- §18 Safety -->
+        <section id="s-safety">
+          <h2>18 · Surface — safety surface</h2>
+
+          <div class="grid-2">
+            <div class="feature">
+              <div class="feature-head">
+                <span class="feature-name">SOS FAB + modal</span>
+                <span class="badge b-done">designed</span>
+                <span class="badge b-keep">core</span>
+              </div>
+              <p class="feature-desc">Global FAB. See §9 for full flow.</p>
+            </div>
+            <div class="feature">
+              <div class="feature-head">
+                <span class="feature-name">/account/trusted-contacts</span>
+                <span class="badge b-partial">partial</span>
+                <span class="badge b-keep">core</span>
+              </div>
+              <p class="feature-desc">CRUD up to 3 emergency contacts.</p>
+              <h4>Suggestion</h4>
+              <ul>
+                <li>Onboarding nudge: "You haven't added emergency contacts" banner on /trips</li>
+                <li>Test-ping button per contact (sends a "test" SMS)</li>
+              </ul>
+            </div>
+            <div class="feature">
+              <div class="feature-head">
+                <span class="feature-name">Crime layer (in trip overview)</span>
+                <span class="badge b-stub">stub</span>
+                <span class="badge b-keep">keep</span>
+              </div>
+              <p class="feature-desc">Numbeo-backed crime index per location.</p>
+            </div>
+            <div class="feature">
+              <div class="feature-head">
+                <span class="feature-name">Scam reports</span>
+                <span class="badge b-stub">stub</span>
+                <span class="badge b-rethink">rethink</span>
+              </div>
+              <p class="feature-desc">User-submitted scam locations + admin verify.</p>
+              <h4>Decision</h4>
+              <p style="margin: 0">
+                Cool feature, complex moderation. Defer or partner with an existing source like
+                StateDept.gov / TripAdvisor scam reports.
+              </p>
+            </div>
+            <div class="feature">
+              <div class="feature-head">
+                <span class="feature-name">Country primer</span>
+                <span class="badge b-stub">stub</span>
+                <span class="badge b-keep">keep</span>
+              </div>
+              <p class="feature-desc">Visa, e-sim, plugs, currency, emergency numbers per country.</p>
+              <h4>Suggestion</h4>
+              <p style="margin: 0">
+                Auto-show on first /trips/[id] view based on trip's center country. Don't make user navigate
+                to /connectivity/[country].
+              </p>
+            </div>
+            <div class="feature">
+              <div class="feature-head">
+                <span class="feature-name">Safety score</span>
+                <span class="badge b-stub">stub</span>
+                <span class="badge b-defer">defer</span>
+              </div>
+              <p class="feature-desc">Computed score per location. Single number from many inputs.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- §19 Account -->
+        <section id="s-account">
+          <h2>19 · Surface — account &amp; settings</h2>
+
+          <div class="callout suggest">
+            <div class="callout-title">Suggestion</div>
+            Currently <code>/account</code> is a flat list of links. Reshape as <strong>3 sections</strong>:
+            <ol>
+              <li><strong>You</strong> — display name, avatar, password, MFA</li>
+              <li><strong>Trip preferences</strong> — comfort mode, family/budget/nomad, default radius</li>
+              <li><strong>Privacy &amp; data</strong> — export, delete, data sharing toggles</li>
+            </ol>
+            <strong>Billing</strong> + <strong>Trusted contacts</strong> + <strong>Notifications</strong>
+            stay as separate top-level entries (high-frequency).
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Sub-page</th>
+                <th>Status</th>
+                <th>Recommendation</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>/account (hub)</td>
+                <td><span class="badge b-partial">partial</span></td>
+                <td>Reshape as 3-section grouping</td>
+              </tr>
+              <tr>
+                <td>/account/preferences</td>
+                <td><span class="badge b-partial">partial</span></td>
+                <td>Visual toggles, not dropdowns</td>
+              </tr>
+              <tr>
+                <td>/account/privacy</td>
+                <td><span class="badge b-done">designed</span></td>
+                <td>Keep as-is</td>
+              </tr>
+              <tr>
+                <td>/account/trusted-contacts</td>
+                <td><span class="badge b-partial">partial</span></td>
+                <td>Add test-ping</td>
+              </tr>
+              <tr>
+                <td>/account/billing</td>
+                <td><span class="badge b-stub">stub</span></td>
+                <td>Full design pass — see §20</td>
+              </tr>
+              <tr>
+                <td>/account/reactivate</td>
+                <td><span class="badge b-stub">stub</span></td>
+                <td>Light pass — error/empty/success states</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <!-- §20 Premium -->
+        <section id="s-premium">
+          <h2>20 · Surface — premium &amp; billing</h2>
+
+          <div class="grid-2">
+            <div class="feature">
+              <div class="feature-head">
+                <span class="feature-name">/pricing</span>
+                <span class="badge b-done">designed</span>
+                <span class="badge b-keep">keep</span>
+              </div>
+              <p class="feature-desc">3-tier card grid: Free / Premium $9/mo / Agent.</p>
+              <h4>Suggestion</h4>
+              <ul>
+                <li>If you cut Agent (per §2 recommendation): drop to 2 cards (Free + Premium)</li>
+                <li>Add a comparison checkmark table below the cards</li>
+                <li>FAQ accordion at bottom (cancel anytime, refund policy, etc)</li>
+              </ul>
+            </div>
+            <div class="feature">
+              <div class="feature-head">
+                <span class="feature-name">/account/billing</span>
+                <span class="badge b-stub">stub</span>
+              </div>
+              <p class="feature-desc">Current plan card + Stripe Customer Portal link.</p>
+              <h4>Suggestion</h4>
+              <ul>
+                <li>States: free / trialing / active / past_due / canceled — distinct visual</li>
+                <li>Show next billing date prominently</li>
+                <li>"Manage in Stripe" button → opens portal in new tab</li>
+                <li>"Cancel" inline option (vs forcing portal)</li>
+              </ul>
+            </div>
+            <div class="feature">
+              <div class="feature-head">
+                <span class="feature-name">PremiumGate component</span>
+                <span class="badge b-done">designed</span>
+                <span class="badge b-keep">keep</span>
+              </div>
+              <p class="feature-desc">Wraps premium-only features. Shows upgrade CTA + routes to /pricing.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- §21 Agent -->
+        <section id="s-agent">
+          <h2>21 · Surface — agent / concierge</h2>
+
+          <div class="callout decide">
+            <div class="callout-title">Decision needed</div>
+            See §2 — recommend <strong>cut entire surface for v1</strong>. Replace with simpler "Talk to a
+            real planner" CTA on /trips/[id]/concierge that emails your team.
+            <br /><br />
+            If you keep it: 3 pages need design pass (/agent/profile, /agent/dashboard, /agent/bookings) +
+            agent-onboarding flow + KYC + payouts. Easily 1-2 weeks of work.
+          </div>
+        </section>
+
+        <!-- §22 Admin -->
+        <section id="s-admin">
+          <h2>22 · Surface — admin / moderation (👮 admin-only)</h2>
+
+          <div class="callout suggest">
+            <div class="callout-title">Suggestion</div>
+            Don't visually polish admin. <strong>Functional &gt; pretty</strong>. Use a different visual
+            language: dense data tables, monospace IDs, sparse hierarchy. Different from user-facing.
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Page</th>
+                <th>Status</th>
+                <th>Recommendation</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>/admin (hub)</td>
+                <td><span class="badge b-stub">stub</span></td>
+                <td>Card grid linking to each tool</td>
+              </tr>
+              <tr>
+                <td>/admin/users</td>
+                <td><span class="badge b-partial">partial</span></td>
+                <td>Add bulk select + bulk ban</td>
+              </tr>
+              <tr>
+                <td>/admin/media</td>
+                <td><span class="badge b-done">designed</span></td>
+                <td>Keep — already has thumbnails (POST.5)</td>
+              </tr>
+              <tr>
+                <td>/admin/scam-reports</td>
+                <td><span class="badge b-partial">partial</span></td>
+                <td>Map view + verify/dismiss CTAs</td>
+              </tr>
+              <tr>
+                <td>/admin/sos</td>
+                <td><span class="badge b-partial">partial</span></td>
+                <td>Real-time list (poll every 30 sec)</td>
+              </tr>
+              <tr>
+                <td>/admin/audit</td>
+                <td><span class="badge b-done">designed</span></td>
+                <td>Keep — POST.8 polished it</td>
+              </tr>
+              <tr>
+                <td>/compliance + /compliance/takedowns</td>
+                <td><span class="badge b-stub">stub</span></td>
+                <td>Defer — only matters at scale</td>
+              </tr>
+              <tr>
+                <td>/ops + /ops/runbooks</td>
+                <td><span class="badge b-partial">partial</span></td>
+                <td>Defer to internal dashboard tools (Grafana?)</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <!-- §23 Legal -->
+        <section id="s-legal">
+          <h2>23 · Surface — legal &amp; help</h2>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Page</th>
+                <th>Status</th>
+                <th>Recommendation</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>/help</td>
+                <td><span class="badge b-done">designed</span></td>
+                <td>Keep — POST.6 has accordion + search</td>
+              </tr>
+              <tr>
+                <td>/status</td>
+                <td><span class="badge b-done">designed</span></td>
+                <td>Keep — auto-refreshes from /health/ready</td>
+              </tr>
+              <tr>
+                <td>/terms /privacy /cookies</td>
+                <td><span class="badge b-done">designed</span></td>
+                <td>Keep — content is placeholder pending counsel review</td>
+              </tr>
+              <tr>
+                <td>/accessibility</td>
+                <td><span class="badge b-stub">stub</span></td>
+                <td>Fill in WCAG 2.1 conformance statement</td>
+              </tr>
+              <tr>
+                <td>/appeal</td>
+                <td><span class="badge b-stub">stub</span></td>
+                <td>Light pass — confirmation + tracking number</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <!-- §24 Design system -->
+        <section id="design-system">
+          <h2>24 · Design system summary</h2>
+
+          <div class="grid-2">
+            <div class="feature">
+              <div class="feature-head"><span class="feature-name">Type</span></div>
+              <ul>
+                <li>Sans: <strong>Inter</strong> (next/font/google) — already wired</li>
+                <li>Mono: ui-monospace, Menlo, Consolas (system stack — fast)</li>
+                <li>Serif (suggested): Playfair Display for /memory-books read view (magazine vibe)</li>
+              </ul>
+            </div>
+            <div class="feature">
+              <div class="feature-head"><span class="feature-name">Color</span></div>
+              <ul>
+                <li>Brand: deep blue scale (brand-50..900) — already in globals.css</li>
+                <li>Accent: amber #f59e0b (Premium tier, attention)</li>
+                <li>Semantic: emerald (success), rose (danger), amber (warn), sky (info)</li>
+                <li>Dark + light + comfort modes — all wired</li>
+              </ul>
+            </div>
+            <div class="feature">
+              <div class="feature-head"><span class="feature-name">Spacing &amp; depth</span></div>
+              <ul>
+                <li>4px grid (Tailwind default)</li>
+                <li>3 elevation levels (--shadow-depth-1/2/3) — POST.2</li>
+                <li>Borders: muted/15 default, muted/30 strong, brand for active</li>
+              </ul>
+            </div>
+            <div class="feature">
+              <div class="feature-head"><span class="feature-name">Components (shipped)</span></div>
+              <ul>
+                <li>Button (5 variants × 3 sizes), Card (3 depths), Input + FloatingField, Select, Badge</li>
+                <li>Toast, EmptyState, SkeletonList, SkeletonCard, RelativeTime (POST.8)</li>
+                <li>Thumbnail (POST.5)</li>
+                <li>Logo (wordmark + mark)</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="callout suggest">
+            <div class="callout-title">Suggestion — components to add</div>
+            <ul>
+              <li><strong>Tabs</strong> (for /trips/[id] redesign)</li>
+              <li><strong>Tooltip</strong> (currently using <code>title=</code> attr)</li>
+              <li><strong>Dropdown menu</strong> (avatar dropdown, bulk actions)</li>
+              <li><strong>Modal / Dialog</strong> (SOS confirm, image preview, share dialog)</li>
+              <li><strong>Map</strong> wrapper (consistent Leaflet config across pages)</li>
+              <li><strong>FilterChip</strong> set (Discover, Near-me, Admin filters)</li>
+              <li><strong>Avatar</strong> (with fallback to initials)</li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- §25 Decisions -->
+        <section id="decisions">
+          <h2>25 · Decisions you need to make (master list)</h2>
+
+          <p class="lead">
+            These are the open product decisions that will shape the redesign. Pick your answer for each
+            before you start designing.
+          </p>
+
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Decision</th>
+                <th>My pick</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>D1</td>
+                <td>Keep Agent / concierge marketplace, or cut and replace with "talk to a real planner"
+                email CTA?</td>
+                <td><strong>Cut</strong></td>
+              </tr>
+              <tr>
+                <td>D2</td>
+                <td>Onboarding wizard: 3 steps, 1 step, or kill?</td>
+                <td><strong>1 step</strong></td>
+              </tr>
+              <tr>
+                <td>D3</td>
+                <td>How much social do we want in v1?</td>
+                <td><strong>Hearts only; defer everything else</strong></td>
+              </tr>
+              <tr>
+                <td>D4</td>
+                <td>Trip detail page: tabs or left rail?</td>
+                <td><strong>Tabs</strong> (mobile-friendly)</td>
+              </tr>
+              <tr>
+                <td>D5</td>
+                <td>Mobile bottom nav: yes/no?</td>
+                <td><strong>Yes</strong> (4 icons + center FAB)</td>
+              </tr>
+              <tr>
+                <td>D6</td>
+                <td>Single landing CTA or dual?</td>
+                <td><strong>Single</strong> ("Try a sample plan")</td>
+              </tr>
+              <tr>
+                <td>D7</td>
+                <td>Generic <code>/places/[id]</code> or per-category routes?</td>
+                <td><strong>Generic</strong> with category badge</td>
+              </tr>
+              <tr>
+                <td>D8</td>
+                <td>Email-only sign-up or keep password?</td>
+                <td><strong>Magic link primary, password as toggle</strong></td>
+              </tr>
+              <tr>
+                <td>D9</td>
+                <td>Translate widget — keep, defer, or kill?</td>
+                <td><strong>Defer</strong> to v1.5</td>
+              </tr>
+              <tr>
+                <td>D10</td>
+                <td>What gets gated as Premium? See §7 for current + suggested additions</td>
+                <td>Add: unlimited memory books, custom themes, offline pack</td>
+              </tr>
+              <tr>
+                <td>D11</td>
+                <td>Auto memory-book prompt at end of trip?</td>
+                <td><strong>Yes</strong>, build it</td>
+              </tr>
+              <tr>
+                <td>D12</td>
+                <td>Country primer auto-show on /trips/[id]?</td>
+                <td><strong>Yes</strong>, collapsed-by-default callout</td>
+              </tr>
+              <tr>
+                <td>D13</td>
+                <td>Cut /press for now?</td>
+                <td><strong>Yes</strong>, re-add when you have real press</td>
+              </tr>
+              <tr>
+                <td>D14</td>
+                <td>/discover or just Cmd+K palette?</td>
+                <td><strong>Cmd+K only</strong>, drop /discover</td>
+              </tr>
+              <tr>
+                <td>D15</td>
+                <td>Lock-screen SOS shortcut as PWA shortcut?</td>
+                <td><strong>v1.5</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <!-- §26 Build / cut priority matrix -->
+        <section id="priority">
+          <h2>26 · Build / cut priority matrix</h2>
+
+          <p class="lead">
+            Final scorecard. Use this to decide what to design first, what to cut, what to defer.
+          </p>
+
+          <h3>Must-design first (3 pages)</h3>
+          <ol>
+            <li><strong><code>/</code> landing</strong> — single-CTA hero, sample-trip-demo above the fold</li>
+            <li><strong><code>/trips/[id]</code> trip detail</strong> — tabbed redesign per §14</li>
+            <li><strong><code>/memory-books/[id]</code> read view</strong> — magazine-style hero</li>
+          </ol>
+
+          <h3>Polish next (5 pages)</h3>
+          <ol>
+            <li><code>/login</code> + <code>/register</code> — magic-link primary</li>
+            <li><code>/trips</code> hub — 3-region layout (active hero / suggestions / archive)</li>
+            <li><code>/pricing</code> — 2 tiers (cut Agent), comparison table</li>
+            <li><code>/account/billing</code> — full state matrix (free/trialing/active/past_due/canceled)</li>
+            <li><code>/inbox</code> — already POST.8-polished, light final pass</li>
+          </ol>
+
+          <h3>Cut for v1 (saves you time)</h3>
+          <ol>
+            <li>Agent surfaces (<code>/agent/*</code>) — 3 pages</li>
+            <li>Most social (votes, reviews, public profiles, karma, feed)</li>
+            <li><code>/press</code></li>
+            <li><code>/discover</code> (subsume into Cmd+K)</li>
+            <li>Standalone <code>/eateries/[id]</code> (replace with generic <code>/places/[id]</code>)</li>
+            <li>Translate widget (defer, keep code)</li>
+          </ol>
+
+          <h3>Defer to v2 (already coded, ship without)</h3>
+          <ol>
+            <li>5-star reviews + helpful votes</li>
+            <li>Public user profiles</li>
+            <li>Compliance dashboard</li>
+            <li>Lock / collaborate (not core to single-user trips)</li>
+            <li>Food crawl page (rolls into /trips/[id] Eat tab)</li>
+            <li>Concierge agent matching</li>
+          </ol>
+
+          <h3>Keep + use as-is (8 pages already-good)</h3>
+          <ol>
+            <li><code>/help</code>, <code>/status</code>, <code>/terms</code>, <code>/privacy</code>,
+            <code>/cookies</code> (POST.6)</li>
+            <li><code>/admin/audit</code>, <code>/admin/media</code> (POST.5/8)</li>
+            <li><code>/inbox</code> (POST.8)</li>
+          </ol>
+        </section>
+
+        <p class="footer-note">
+          This is a strategic design brief — not a feature spec. For technical detail, routes, and per-page
+          implementation notes, see <a href="FEATURE_CATALOG.md">docs/FEATURE_CATALOG.md</a>. For chronological
+          ship history, see <a href="../PROGRESS.md">PROGRESS.md</a>. For the gap audit that drove POST.1–10,
+          see <a href="POST_VUX_GAPS.md">docs/POST_VUX_GAPS.md</a>.
+          <br /><br />
+          Generated 2026-05-13 after the POST.10 series shipped. Update §1 stats and §25 decisions as the
+          product evolves.
+        </p>
+      </main>
+    </div>
+  </body>
+</html>

@@ -77,7 +77,11 @@ const AiSchema = z.object({
   ANTHROPIC_MODEL: z.string().default('claude-opus-4-7'),
   GEMINI_API_KEY: z.string().optional(),
   GEMINI_MODEL: z.string().default('gemini-2.5-flash'),
-  OLLAMA_URL: z.string().url().optional(),
+  OLLAMA_URL: z
+    .string()
+    .optional()
+    .transform((v) => (v === undefined || v === '' ? undefined : v))
+    .pipe(z.string().url().optional()),
   OLLAMA_MODEL: z.string().default('llama3.1:8b'),
   OPENAI_API_KEY: z.string().optional(),
   AI_SERVICE_URL: z.string().url().default('http://localhost:8001'),
@@ -169,11 +173,23 @@ const MeiliSchema = z.object({
 //
 // `SENTRY_DSN` (legacy single-var) is kept for backwards compat
 // but new code reads SENTRY_DSN_API explicitly.
+// `optionalUrl` accepts a valid URL OR an empty string OR undefined.
+// Empty string maps to undefined so the rest of the app sees a clean
+// "not configured" signal. Required because dev-bootstrap-generated
+// `.env` files declare every var with `KEY=` (empty value) — a plain
+// `z.string().url().optional()` would reject the empty string and
+// fail-fast at boot.
+const optionalUrl = z
+  .string()
+  .optional()
+  .transform((v) => (v === undefined || v === '' ? undefined : v))
+  .pipe(z.string().url().optional());
+
 const ObservabilitySchema = z.object({
-  OTEL_EXPORTER_OTLP_ENDPOINT: z.string().url().optional(),
-  SENTRY_DSN: z.string().url().optional(),
-  SENTRY_DSN_API: z.string().url().optional(),
-  SENTRY_DSN_WEB: z.string().url().optional(),
+  OTEL_EXPORTER_OTLP_ENDPOINT: optionalUrl,
+  SENTRY_DSN: optionalUrl,
+  SENTRY_DSN_API: optionalUrl,
+  SENTRY_DSN_WEB: optionalUrl,
   HONEYCOMB_API_KEY: z.string().optional(),
   /** Honeycomb dataset name (defaults to NODE_ENV). */
   HONEYCOMB_DATASET: z.string().optional(),
