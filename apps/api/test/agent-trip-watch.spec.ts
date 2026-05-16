@@ -68,6 +68,8 @@ class FakeAgentRunRepository implements AgentRunRepository {
     const r = this.runs.get(agentRunId);
     if (r) this.runs.set(agentRunId, { ...r, planVersion: r.planVersion + 1 });
   }
+  // port grew (agent↔trip real triggers); not exercised here.
+  async markClosed(): Promise<void> {}
 }
 
 class FakeTripWatchRepository implements TripWatchRepository {
@@ -95,6 +97,10 @@ class FakeTripWatchRepository implements TripWatchRepository {
     return this.watches.filter((w) => w.active);
   }
   async raiseThreshold(_tripId: string): Promise<void> {
+    /* not exercised by the start-watch spec */
+  }
+  // port grew (agent↔trip real triggers); not exercised here.
+  async deactivate(_tripId: string): Promise<void> {
     /* not exercised by the start-watch spec */
   }
 }
