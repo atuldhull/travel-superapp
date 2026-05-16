@@ -45,6 +45,51 @@ keystone) land well:
 | D7  | Agent loop cadence         | fixed `setInterval`                         | verified: no cron infra exists             |
 | D8  | Agent scope                | during-trip only                            | tightest, highest-value scope              |
 
+### [POST.2A.2] — Append-only run log + TripWatch (PARTIAL — DB step blocked)
+
+- **Date**: 2026-05-16
+- **Status**: PARTIAL (code + schema + migration authored & verified;
+  migration NOT applied; Prisma adapters + module wiring deferred)
+- **Commit**: `feat(POST.2A.2)` (see git log)
+- **🛑 CRITICAL SAFETY CATCH**: `prisma migrate dev` auto-generated a
+  migration that tried to **`DROP` 15 PostGIS GiST spatial indexes + the
+  `PlaceEmbedding` pgvector ivfflat index** + 2 `ALTER … DROP DEFAULT`.
+  This is Prisma's well-known `Unsupported()`-type drift (those indexes
+  are created via raw SQL in earlier migrations and are invisible to
+  Prisma). Applying it would have destroyed the geo + vector query layer
+  app-wide. The hardened prompt's "grep the migration for DROP" AC caught
+  it. The migration was **hand-curated to additive-only** (CreateEnum + 3
+  CreateTable + 6 CreateIndex) — see the header comment in
+  `prisma/migrations/20260516052830_agent_run_log/migration.sql`.
+- **Done & verified**: `schema.prisma` +3 models (AgentRun, AgentStep
+  append-only, TripWatch) — `prisma validate` ✓; curated additive-only
+  migration file; `domain/agent-step.entity.ts`; ports
+  `agent-run.repository.ts` (append+read-ONLY step contract, no
+  update/delete by type) + `trip-watch.repository.ts`;
+  `StartTripWatchUseCase` (the one-active-watch invariant →
+  `ConflictError TRIP_WATCH_ALREADY_ACTIVE`). Verify: api typecheck
+  EXIT 0 · lint EXIT 0 (0 errors) · `agent-trip-watch.spec.ts` **4/4**
+  (+ 2A.1 skeleton 7/7 = 11/11) · api build EXIT 0. Module unchanged →
+  boot identical to `e1f1aad` (already proven).
+- **🚧 BLOCKED — deferred (needs the user)**:
+  1. **Migration apply**: `prisma migrate deploy` was denied by the
+     harness — per memory, DATABASE_URL can resolve to the Supabase
+     **production** DB and the broad delegation doesn't authorize a
+     prod/shared migration. (Locally `migrate status` showed
+     `localhost:5432` dev, but the safe default is to STOP.) Needs the
+     user to confirm the target DB and authorize the apply.
+  2. **`prisma generate`**: blocked by a Windows file lock (EPERM on the
+     query-engine DLL — a node process holds it; not killed unattended).
+     Until it regenerates, the Prisma client lacks AgentRun/etc., so the
+     Prisma repo adapters can't typecheck/run.
+     → Therefore `prisma-agent-run.repository.ts`,
+     `prisma-trip-watch.repository.ts`, and the `agent.module.ts` wiring
+     were intentionally NOT written (they need both unblocked; the
+     fake-repo unit test proves the invariant without them).
+- **Next**: user unblocks the DB (confirm dev target + authorize
+  `migrate deploy`; free the engine-DLL lock) → finish 2A.2 (prisma
+  adapters + module wiring + an e2e) → POST.2A.3.
+
 ### [POST.2A.1] — Agent module skeleton + ports (inert, flag-gated)
 
 - **Date**: 2026-05-16
