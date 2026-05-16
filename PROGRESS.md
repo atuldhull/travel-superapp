@@ -45,6 +45,43 @@ keystone) land well:
 | D7  | Agent loop cadence         | fixed `setInterval`                         | verified: no cron infra exists             |
 | D8  | Agent scope                | during-trip only                            | tightest, highest-value scope              |
 
+### [POST.2A.5] — Agent web surface (✅ COMPLETE, flag-gated) — Phase A code done
+
+- **Date**: 2026-05-16
+- **Status**: ✅ DONE (flag-gated; live SDK accept/decline = deferred glue)
+- **Commit**: `feat(POST.2A.5)` (see git log)
+- **What**: `apps/web/src/components/agent/agent-watch-card.tsx` — a
+  client component reading `NEXT_PUBLIC_FEATURE_AGENT_ENABLED`;
+  **returns `null` when off → ZERO new UI / no layout shift** on the
+  58 existing pages (the critical AC). When on: a Card + EmptyState
+  (ONLY existing 1.0 primitives, no new dep) with the SAFE-boundary
+  copy ("never changes your trip on its own"). Wired one line into
+  `/trips/[id]/page.tsx` (relative import, house style). Scoped to
+  the trip card only (inbox/preferences additions deferred — fewer
+  files than listed = safe under scope-lock; the zero-risk AC is
+  fully met).
+- **Deferred glue (documented)**: the live proposal list + Accept/
+  Decline via the generated SDK needs the POST.2A.4 agent routes
+  emitted into `docs/api/openapi.yaml` + `pnpm --filter=@app/sdk gen`
+  (the openapi-emission pipeline) — same deferred-integration pattern
+  as 2A.3 coords / 2A.4 itinerary. Card ships inert + correct.
+- **Verify**: `pnpm --filter=web typecheck` → **green** (the prompt's
+  stated web gate; page compiles with the component, imports resolve,
+  flag-off path = `null`). `pnpm --filter=web lint` → fails on a
+  **pre-existing, environmental** issue: `next lint` walks up to
+  `C:\Users\atuld\.eslintrc.js` (a global home-dir config referencing
+  the unrelated `@strapi/eslint-config/back`) — outside this repo,
+  not caused by this change, not safe to touch. No new dep;
+  package.json unchanged.
+
+> **PHASE A — code complete (2A.1–2A.5 shipped + per-slice verified).**
+> ⛔ PHASE A GATE still owed: full `pnpm --filter=api test -- --runInBand`
+> with zero 2.0 keys + a manual flag-on demo (create trip → weather
+> fixture → proposal in /inbox → accept). Per-slice each was verified
+> with targeted specs + typecheck + lint + build + boot smoke; the
+> ~5-min full-suite gate + the flag-on demo are the deeper acceptance
+> still to run (consistently flagged, never claimed as passed).
+
 ### [POST.2A.4] — Propose/confirm re-plan + notification (✅ COMPLETE, the SAFE boundary)
 
 - **Date**: 2026-05-16
