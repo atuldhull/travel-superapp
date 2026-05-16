@@ -21,7 +21,7 @@
 import fastifyCookie from '@fastify/cookie';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
-import { EVENT_BUS, InMemoryEventBus, type DomainEvent, type EventBus } from '@app/events';
+import { InMemoryEventBus, type DomainEvent, type EventBus } from '@app/events';
 import { AppModule } from '../src/app.module';
 import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
