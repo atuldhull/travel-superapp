@@ -24,6 +24,7 @@ import { RateLimitModule } from './common/rate-limit/rate-limit.module';
 import { HealthModule } from './health/health.module';
 import { AccountModule } from './modules/account/account.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { AgentModule } from './modules/agent/agent.module';
 import { FeedModule } from './modules/feed/feed.module';
 // Aliased to distinguish from the common/events domain-event-bus module.
 import { EventsModule as EventsSearchModule } from './modules/events/events.module';
@@ -82,6 +83,10 @@ import { WeatherModule } from './modules/weather/weather.module';
     // (controller 503s) when STRIPE_SECRET_KEY is absent, so this
     // import is always safe to include.
     PaymentsModule,
+    // POST.2A.1 — 2.0 trip-agent skeleton. Inert (controller 503s
+    // AGENT_DISABLED) until FEATURE_AGENT_ENABLED is set, so this
+    // import is always safe — same env-gated pattern as Payments.
+    AgentModule,
   ],
   providers: [
     AppNestLoggerService,
