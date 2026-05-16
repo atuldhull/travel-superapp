@@ -1,4 +1,4 @@
-// Prisma schema for TravelSuperApp — 43 models across 15 stateful bounded
+// Prisma schema for TravelSuperApp — 46 models across 15 stateful bounded
 // contexts from `docs/architecture/context-map.md`. Translation and
 // Analytics contexts own no models (by design). Any drift between this
 // file and the context-map is a PR-blocker.
@@ -130,75 +130,75 @@ enum TransportMode {
 // ─── 1. Identity ────────────────────────────────────────────────────────
 
 model User {
-  id              String    @id @default(cuid())
+  id                String    @id @default(cuid())
   // Equality-lookup hash over pepper + email (Playbook §13.11). Never store
   // raw email in plaintext; the encrypted form lives in `emailEncrypted`.
-  emailHash       String    @unique
-  emailEncrypted  Bytes
-  passwordHash    String? // argon2id; null for OAuth-only users
-  role            UserRole  @default(user)
-  displayName     String
-  avatarUrl       String?
-  locale          String    @default("en")
-  timezone        String    @default("UTC")
-  mfaEnabled      Boolean   @default(false)
-  mfaSecret       String? // TOTP secret; null when mfaEnabled=false
+  emailHash         String    @unique
+  emailEncrypted    Bytes
+  passwordHash      String? // argon2id; null for OAuth-only users
+  role              UserRole  @default(user)
+  displayName       String
+  avatarUrl         String?
+  locale            String    @default("en")
+  timezone          String    @default("UTC")
+  mfaEnabled        Boolean   @default(false)
+  mfaSecret         String? // TOTP secret; null when mfaEnabled=false
   // Flips to true the first time the user completes (or skips) the
   // 3-step onboarding wizard. Used by the web client to decide whether
   // to bounce post-login → /onboarding or → /trips.
   // Installed by prompt [V.UX.3].
-  hasSeenOnboarding Boolean @default(false)
+  hasSeenOnboarding Boolean   @default(false)
   // V.UX.30 — last sign-in / /auth/me hit timestamps. The welcome-back
   // hero compares `previousSeenAt` (the visit BEFORE the current one)
   // against now() — gap > 30 days fires the hero. /auth/me swaps
   // lastSeenAt → previousSeenAt on every hit.
-  lastSeenAt       DateTime?
-  previousSeenAt   DateTime?
+  lastSeenAt        DateTime?
+  previousSeenAt    DateTime?
   // V.UX.34 — admin-driven ban. Distinct from `deletedAt` so a user
   // who reactivates via the V.UX.33 link still can't log in if they
   // remain banned. `banReason` is shown to the user on the banned-
   // login page.
-  bannedAt         DateTime?
-  banReason        String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  bannedAt          DateTime?
+  banReason         String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
   // Soft-delete: GDPR erasure marks this, purger sweeps later.
-  deletedAt       DateTime?
+  deletedAt         DateTime?
 
-  preferences        Preferences?
-  sessions           Session[]
-  mfaBackupCodes     MfaBackupCode[]
-  devices            Device[]
-  trips              Trip[]
-  tripVersions       TripVersion[]
-  tripShares         TripShare[]
-  votes              Vote[]
-  expenses           Expense[]
-  reviews            Review[]
-  mediaAssets        MediaAsset[]
-  memoryBooks        MemoryBook[]
-  subscriptions      Subscription[]
-  escrowHolds        EscrowHold[]
-  commissions        Commission[]
-  scamReports        ScamReport[]
-  sosEvents          SosEvent[]
-  trustedContacts    TrustedContact[]
-  stayBookings       StayBooking[]
-  notificationPrefs  NotificationPreference?
-  notificationLogs   NotificationLog[]
-  pushSubscriptions  PushSubscription[]
-  liveEvents         LiveEvent[]
-  agent              Agent?
-  dishReports        Dish[]
-  moderationActions  ModerationItem[] @relation("ModerationActor")
+  preferences       Preferences?
+  sessions          Session[]
+  mfaBackupCodes    MfaBackupCode[]
+  devices           Device[]
+  trips             Trip[]
+  tripVersions      TripVersion[]
+  tripShares        TripShare[]
+  votes             Vote[]
+  expenses          Expense[]
+  reviews           Review[]
+  mediaAssets       MediaAsset[]
+  memoryBooks       MemoryBook[]
+  subscriptions     Subscription[]
+  escrowHolds       EscrowHold[]
+  commissions       Commission[]
+  scamReports       ScamReport[]
+  sosEvents         SosEvent[]
+  trustedContacts   TrustedContact[]
+  stayBookings      StayBooking[]
+  notificationPrefs NotificationPreference?
+  notificationLogs  NotificationLog[]
+  pushSubscriptions PushSubscription[]
+  liveEvents        LiveEvent[]
+  agent             Agent?
+  dishReports       Dish[]
+  moderationActions ModerationItem[]        @relation("ModerationActor")
   // V.UX.36 — admin audit log (admin actions performed by this user).
-  adminAuditLogs     AdminAuditLog[]  @relation("AdminAuditActor")
-  oauthIdentities    UserOAuthIdentity[]
+  adminAuditLogs    AdminAuditLog[]         @relation("AdminAuditActor")
+  oauthIdentities   UserOAuthIdentity[]
   // V.UX.25 — reviewer karma + helpful-vote relations.
-  karma              UserKarma?
-  helpfulVotes       HelpfulVote[]
+  karma             UserKarma?
+  helpfulVotes      HelpfulVote[]
   // V.UX.34 — ban-appeal queue.
-  banAppeals         BanAppeal[]
+  banAppeals        BanAppeal[]
 
   @@index([role])
   @@index([deletedAt])
@@ -249,22 +249,22 @@ model UserOAuthIdentity {
 }
 
 model Session {
-  id                 String    @id @default(cuid())
-  userId             String
-  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  refreshTokenH      String    @unique // sha256(refresh_token) — never store raw
-  deviceId           String?
-  device             Device?   @relation(fields: [deviceId], references: [id], onDelete: SetNull)
-  userAgent          String?
-  ipHash             String? // sha256(ip + pepper) — Playbook §13.4
+  id                String    @id @default(cuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokenH     String    @unique // sha256(refresh_token) — never store raw
+  deviceId          String?
+  device            Device?   @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  userAgent         String?
+  ipHash            String? // sha256(ip + pepper) — Playbook §13.4
   // sha256(pepper + userAgent) at issuance time. Compared against a
   // freshly-computed fingerprint on every /refresh. Nullable only so
   // rows inserted before this column existed don't break the schema.
   // New rows always populate it. Added by [III.13.2] part 3.
-  deviceFingerprint  String?
-  issuedAt           DateTime  @default(now())
-  expiresAt          DateTime
-  revokedAt          DateTime?
+  deviceFingerprint String?
+  issuedAt          DateTime  @default(now())
+  expiresAt         DateTime
+  revokedAt         DateTime?
 
   @@index([userId, revokedAt])
   @@index([expiresAt])
@@ -280,16 +280,16 @@ model Session {
 //
 // Installed by prompt [V.UX.2].
 model MagicLinkToken {
-  id          String    @id @default(cuid())
+  id         String    @id @default(cuid())
   // Hash of the email so repeat requests against the same address
   // can be quickly counted for rate-limiting + GDPR-friendly
   // (no plaintext addresses sitting around).
-  emailHash   String
+  emailHash  String
   // sha256(token + pepper) — never store raw token.
-  tokenHash   String    @unique
-  expiresAt   DateTime
-  consumedAt  DateTime?
-  createdAt   DateTime  @default(now())
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
 
   @@index([emailHash, createdAt])
   @@index([expiresAt])
@@ -300,12 +300,12 @@ model MagicLinkToken {
 // → atomic `updateMany` consume claims it. The plaintext is sent in
 // the email link only; we store sha256(EMAIL_PEPPER + token).
 model PasswordResetToken {
-  id          String    @id @default(cuid())
-  emailHash   String
-  tokenHash   String    @unique
-  expiresAt   DateTime
-  consumedAt  DateTime?
-  createdAt   DateTime  @default(now())
+  id         String    @id @default(cuid())
+  emailHash  String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
 
   @@index([emailHash, createdAt])
   @@index([expiresAt])
@@ -317,12 +317,12 @@ model PasswordResetToken {
 // ONCE at generation and never stored.
 // Installed by [III.13.2] part 5.
 model MfaBackupCode {
-  id         String    @id @default(cuid())
-  userId     String
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  codeHash   String
-  usedAt     DateTime?
-  createdAt  DateTime  @default(now())
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codeHash  String
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
 
   @@unique([userId, codeHash])
   @@index([userId, usedAt])
@@ -342,7 +342,7 @@ model Preferences {
   // high_chair, crib) and the trip detail page surfaces a pacing
   // warning when a day has > 4 items.
   familyMode     Boolean  @default(false)
-  kidAges        Int[]    // ages of any travelling children, 0..17
+  kidAges        Int[] // ages of any travelling children, 0..17
   // V.UX.15 — accessibility / senior persona. When enabled, the web
   // client applies a `.comfort` class on `<html>` that bumps font
   // size + line-height + tap-target padding, and transport searches
@@ -354,27 +354,27 @@ model Preferences {
   // banner that pulls from the existing Expense rows. `dailyBudgetUsd`
   // is the daily target in USD (null = no target set yet but mode
   // can still be on).
-  budgetMode      Boolean  @default(false)
-  dailyBudgetUsd  Decimal? @db.Decimal(10, 2)
+  budgetMode     Boolean  @default(false)
+  dailyBudgetUsd Decimal? @db.Decimal(10, 2)
   // V.UX.23 — digital-nomad persona. When enabled, the stays search
   // form defaults to a 4-week window + the wifi-speed slider, and
   // the home page surfaces the connectivity-info link.
-  nomadMode       Boolean  @default(false)
+  nomadMode      Boolean  @default(false)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }
 
 model Device {
-  id              String    @id @default(cuid())
-  userId          String
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  platform        String // ios | android | web
-  pushToken       String?
-  fingerprint     String // client-derived hash; used for refresh-token binding
-  lastSeenAt      DateTime  @default(now())
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  sessions        Session[]
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform    String // ios | android | web
+  pushToken   String?
+  fingerprint String // client-derived hash; used for refresh-token binding
+  lastSeenAt  DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  sessions    Session[]
 
   @@unique([userId, fingerprint])
   @@index([pushToken])
@@ -383,31 +383,31 @@ model Device {
 // ─── 2. Trip Planning ───────────────────────────────────────────────────
 
 model Trip {
-  id        String     @id @default(cuid())
-  userId    String
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title     String
-  status    TripStatus @default(draft)
+  id         String                                @id @default(cuid())
+  userId     String
+  user       User                                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title      String
+  status     TripStatus                            @default(draft)
   // Domain center (PostGIS). Insert/update via GeoQueries ONLY.
-  center    Unsupported("geography(Point, 4326)")
-  radiusKm  Float
-  startsOn  DateTime?
-  endsOn    DateTime?
-  version   Int        @default(1)
+  center     Unsupported("geography(Point, 4326)")
+  radiusKm   Float
+  startsOn   DateTime?
+  endsOn     DateTime?
+  version    Int                                   @default(1)
   // V.UX.30 — soft-archive. Auto-stamped by the daily sweep when
   // createdAt > 365 days; manual via POST /trips/:id/archive. Default
   // lister filters `archivedAt IS NULL`.
   archivedAt DateTime?
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  createdAt  DateTime                              @default(now())
+  updatedAt  DateTime                              @updatedAt
 
-  days     ItineraryDay[]
-  versions TripVersion[]
-  shares   TripShare[]
-  votes    Vote[]
-  expenses Expense[]
-  reviews  Review[]
-  media    MediaAsset[]
+  days       ItineraryDay[]
+  versions   TripVersion[]
+  shares     TripShare[]
+  votes      Vote[]
+  expenses   Expense[]
+  reviews    Review[]
+  media      MediaAsset[]
   liveEvents LiveEvent[]
 
   @@index([userId, status, createdAt])
@@ -430,34 +430,34 @@ model ItineraryDay {
 }
 
 model ItineraryItem {
-  id              String       @id @default(cuid())
-  dayId           String
-  day             ItineraryDay @relation(fields: [dayId], references: [id], onDelete: Cascade)
-  position        Int
-  placeId         String?
-  place           Place?       @relation(fields: [placeId], references: [id], onDelete: SetNull)
-  startTime       DateTime?
-  endTime         DateTime?
-  notes           String?
-  transportMode   TransportMode?
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  id            String         @id @default(cuid())
+  dayId         String
+  day           ItineraryDay   @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  position      Int
+  placeId       String?
+  place         Place?         @relation(fields: [placeId], references: [id], onDelete: SetNull)
+  startTime     DateTime?
+  endTime       DateTime?
+  notes         String?
+  transportMode TransportMode?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
   @@unique([dayId, position])
   @@index([placeId])
 }
 
 model TripVersion {
-  id         String   @id @default(cuid())
-  tripId     String
-  trip       Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  versionNo  Int
-  authorId   String
-  author     User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  snapshot   Json // full trip shape at that version
-  diff       Json? // optional diff vs. previous version
-  note       String?
-  createdAt  DateTime @default(now())
+  id        String   @id @default(cuid())
+  tripId    String
+  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  versionNo Int
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  snapshot  Json // full trip shape at that version
+  diff      Json? // optional diff vs. previous version
+  note      String?
+  createdAt DateTime @default(now())
 
   @@unique([tripId, versionNo])
 }
@@ -465,15 +465,15 @@ model TripVersion {
 // ─── 3. Places Catalog ──────────────────────────────────────────────────
 
 model Place {
-  id             String   @id @default(cuid())
-  sourceKey      String   @unique // sha256(provider + providerId) — dedup anchor
-  name           String
-  category       String
-  coordinates    Unsupported("geography(Point, 4326)")
+  id              String                                @id @default(cuid())
+  sourceKey       String                                @unique // sha256(provider + providerId) — dedup anchor
+  name            String
+  category        String
+  coordinates     Unsupported("geography(Point, 4326)")
   // `ST_DWithin` + GiST index on `coordinates`; managed in raw SQL migration.
-  address        String?
-  countryCode    String?
-  relaxationScore Float   @default(0) // 0..1
+  address         String?
+  countryCode     String?
+  relaxationScore Float                                 @default(0) // 0..1
   // V.UX.21 — provider-specific extras. Adventure persona conventions
   // (no schema migration needed; metadata is free-form JSON):
   //   - difficulty: 'easy' | 'moderate' | 'hard' | 'expert'
@@ -486,18 +486,18 @@ model Place {
   // V.UX.23 — digital-nomad persona: `category = 'coworking'` is the
   // canonical slug for co-working venues; metadata may carry
   // `wifiSpeedMbps: number` + `desksAvailable: number` extras.
-  metadata       Json? // provider-specific extras
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  metadata        Json? // provider-specific extras
+  createdAt       DateTime                              @default(now())
+  updatedAt       DateTime                              @updatedAt
 
-  tags       PlaceTag[]
-  embedding  PlaceEmbedding?
-  items      ItineraryItem[]
-  eateries   Eatery[]
-  stays      Stay[]
-  weather    WeatherForecast[]
-  events     Event[]
-  geofences  Geofence[]
+  tags      PlaceTag[]
+  embedding PlaceEmbedding?
+  items     ItineraryItem[]
+  eateries  Eatery[]
+  stays     Stay[]
+  weather   WeatherForecast[]
+  events    Event[]
+  geofences Geofence[]
 
   @@index([category])
   @@index([countryCode])
@@ -515,29 +515,29 @@ model PlaceTag {
 }
 
 model PlaceEmbedding {
-  placeId   String @id
-  place     Place  @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  placeId   String                      @id
+  place     Place                       @relation(fields: [placeId], references: [id], onDelete: Cascade)
   model     String // e.g. "voyage-large-2-instruct@2026-02"
   embedding Unsupported("vector(1024)")
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime                    @updatedAt
 }
 
 // ─── 4. Stays ───────────────────────────────────────────────────────────
 
 model Stay {
-  id           String   @id @default(cuid())
-  placeId      String?
-  place        Place?   @relation(fields: [placeId], references: [id], onDelete: SetNull)
-  name         String
-  starRating   Float?
-  amenities    String[]
+  id            String                                @id @default(cuid())
+  placeId       String?
+  place         Place?                                @relation(fields: [placeId], references: [id], onDelete: SetNull)
+  name          String
+  starRating    Float?
+  amenities     String[]
   // V.UX.23 — digital-nomad persona: posted average wifi speed (Mbps).
   // Surfaced alongside other listing fields so the nomad-mode UI can
   // filter / sort. Null when the provider doesn't report it.
   wifiSpeedMbps Int?
-  coordinates  Unsupported("geography(Point, 4326)")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  coordinates   Unsupported("geography(Point, 4326)")
+  createdAt     DateTime                              @default(now())
+  updatedAt     DateTime                              @updatedAt
 
   prices   StayPrice[]
   bookings StayBooking[]
@@ -546,35 +546,35 @@ model Stay {
 }
 
 model StayPrice {
-  id         String   @id @default(cuid())
-  stayId     String
-  stay       Stay     @relation(fields: [stayId], references: [id], onDelete: Cascade)
-  provider   String // booking | amadeus | airbnb-public | ...
-  priceUsd   Decimal  @db.Decimal(10, 2)
-  currency   String   @db.VarChar(3)
-  checkIn    DateTime
-  checkOut   DateTime
-  scrapedAt  DateTime @default(now())
-  sourceUrl  String
+  id        String   @id @default(cuid())
+  stayId    String
+  stay      Stay     @relation(fields: [stayId], references: [id], onDelete: Cascade)
+  provider  String // booking | amadeus | airbnb-public | ...
+  priceUsd  Decimal  @db.Decimal(10, 2)
+  currency  String   @db.VarChar(3)
+  checkIn   DateTime
+  checkOut  DateTime
+  scrapedAt DateTime @default(now())
+  sourceUrl String
 
   @@index([stayId, scrapedAt])
   @@index([checkIn, checkOut])
 }
 
 model StayBooking {
-  id               String   @id @default(cuid())
-  userId           String
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  stayId           String
-  stay             Stay     @relation(fields: [stayId], references: [id], onDelete: Restrict)
-  provider         String
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stayId            String
+  stay              Stay     @relation(fields: [stayId], references: [id], onDelete: Restrict)
+  provider          String
   providerBookingId String
-  checkIn          DateTime
-  checkOut         DateTime
-  totalPriceUsd    Decimal  @db.Decimal(10, 2)
-  commissionUsd    Decimal? @db.Decimal(10, 2)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  checkIn           DateTime
+  checkOut          DateTime
+  totalPriceUsd     Decimal  @db.Decimal(10, 2)
+  commissionUsd     Decimal? @db.Decimal(10, 2)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   @@unique([provider, providerBookingId])
   @@index([userId, createdAt])
@@ -583,15 +583,15 @@ model StayBooking {
 // ─── 5. Food & Tryouts ──────────────────────────────────────────────────
 
 model Eatery {
-  id           String   @id @default(cuid())
-  placeId      String?
-  place        Place?   @relation(fields: [placeId], references: [id], onDelete: SetNull)
-  name         String
-  cuisineTags  String[]
-  priceTier    Int      @default(2) // 1..5
-  coordinates  Unsupported("geography(Point, 4326)")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          String                                @id @default(cuid())
+  placeId     String?
+  place       Place?                                @relation(fields: [placeId], references: [id], onDelete: SetNull)
+  name        String
+  cuisineTags String[]
+  priceTier   Int                                   @default(2) // 1..5
+  coordinates Unsupported("geography(Point, 4326)")
+  createdAt   DateTime                              @default(now())
+  updatedAt   DateTime                              @updatedAt
 
   dishes Dish[]
 
@@ -634,27 +634,27 @@ model DishTag {
 // ─── 6. Transport & Routing ─────────────────────────────────────────────
 
 model RouteLeg {
-  id             String        @id @default(cuid())
+  id             String                                @id @default(cuid())
   origin         Unsupported("geography(Point, 4326)")
   destination    Unsupported("geography(Point, 4326)")
   mode           TransportMode
   distanceMeters Int
   durationSec    Int
   polyline       String? // encoded polyline for rendering
-  computedAt     DateTime      @default(now())
+  computedAt     DateTime                              @default(now())
 
   @@index([mode])
 }
 
 model TransitSchedule {
-  id           String   @id @default(cuid())
-  routeName    String
-  mode         TransportMode
-  operator     String?
-  validFrom    DateTime
-  validTo      DateTime?
-  payload      Json // GTFS-like structure
-  updatedAt    DateTime @updatedAt
+  id        String        @id @default(cuid())
+  routeName String
+  mode      TransportMode
+  operator  String?
+  validFrom DateTime
+  validTo   DateTime?
+  payload   Json // GTFS-like structure
+  updatedAt DateTime      @updatedAt
 
   @@index([routeName])
 }
@@ -662,50 +662,50 @@ model TransitSchedule {
 // ─── 7. Safety ──────────────────────────────────────────────────────────
 
 model CrimeIncident {
-  id           String   @id @default(cuid())
-  source       String // numbeo | gov-<country> | user-report
-  category     String
-  severity     ScamSeverity @default(medium)
-  coordinates  Unsupported("geography(Point, 4326)")
-  reportedAt   DateTime
-  createdAt    DateTime @default(now())
+  id          String                                @id @default(cuid())
+  source      String // numbeo | gov-<country> | user-report
+  category    String
+  severity    ScamSeverity                          @default(medium)
+  coordinates Unsupported("geography(Point, 4326)")
+  reportedAt  DateTime
+  createdAt   DateTime                              @default(now())
 
   @@index([source])
   @@index([reportedAt])
 }
 
 model ScamReport {
-  id            String   @id @default(cuid())
-  reporterId    String
-  reporter      User     @relation(fields: [reporterId], references: [id], onDelete: Cascade)
-  category      String // fake-taxi | overcharge | pickpocket | ...
-  severity      ScamSeverity @default(medium)
-  coordinates   Unsupported("geography(Point, 4326)")
-  description   String
-  evidenceUrls  String[]
-  verified      Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String                                @id @default(cuid())
+  reporterId   String
+  reporter     User                                  @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  category     String // fake-taxi | overcharge | pickpocket | ...
+  severity     ScamSeverity                          @default(medium)
+  coordinates  Unsupported("geography(Point, 4326)")
+  description  String
+  evidenceUrls String[]
+  verified     Boolean                               @default(false)
+  createdAt    DateTime                              @default(now())
+  updatedAt    DateTime                              @updatedAt
 
   @@index([reporterId, createdAt])
   @@index([category])
 }
 
 model Agent {
-  id              String         @id @default(cuid())
-  userId          String         @unique
-  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  displayName     String
-  bio             String?
-  kycStatus       AgentKycStatus @default(pending)
-  kycProviderRef  String? // Sumsub / Persona reference
-  verifiedAt      DateTime?
-  languages       String[]
-  regions         String[]
-  ratingAverage   Float          @default(0)
-  ratingCount     Int            @default(0)
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  id             String         @id @default(cuid())
+  userId         String         @unique
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  displayName    String
+  bio            String?
+  kycStatus      AgentKycStatus @default(pending)
+  kycProviderRef String? // Sumsub / Persona reference
+  verifiedAt     DateTime?
+  languages      String[]
+  regions        String[]
+  ratingAverage  Float          @default(0)
+  ratingCount    Int            @default(0)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
   escrowHolds EscrowHold[]
 
@@ -713,14 +713,14 @@ model Agent {
 }
 
 model SosEvent {
-  id            String   @id @default(cuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  coordinates   Unsupported("geography(Point, 4326)")
-  trigger       String // user_tap | fall_detected | geofence_exit | ...
-  resolvedAt    DateTime?
+  id             String                                @id @default(cuid())
+  userId         String
+  user           User                                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coordinates    Unsupported("geography(Point, 4326)")
+  trigger        String // user_tap | fall_detected | geofence_exit | ...
+  resolvedAt     DateTime?
   resolutionNote String?
-  createdAt     DateTime @default(now())
+  createdAt      DateTime                              @default(now())
 
   @@index([userId, createdAt])
   @@index([resolvedAt])
@@ -746,29 +746,29 @@ model TrustedContact {
 // ─── 8. Weather & Environment ───────────────────────────────────────────
 
 model WeatherForecast {
-  id           String   @id @default(cuid())
-  placeId      String?
-  place        Place?   @relation(fields: [placeId], references: [id], onDelete: SetNull)
-  coordinates  Unsupported("geography(Point, 4326)")
-  forecastFor  DateTime
-  source       String // open-meteo | owm | waqi
-  payload      Json // temperature, uv, aqi, etc.
-  fetchedAt    DateTime @default(now())
+  id          String                                @id @default(cuid())
+  placeId     String?
+  place       Place?                                @relation(fields: [placeId], references: [id], onDelete: SetNull)
+  coordinates Unsupported("geography(Point, 4326)")
+  forecastFor DateTime
+  source      String // open-meteo | owm | waqi
+  payload     Json // temperature, uv, aqi, etc.
+  fetchedAt   DateTime                              @default(now())
 
   @@index([placeId, forecastFor])
   @@index([forecastFor])
 }
 
 model Alert {
-  id           String   @id @default(cuid())
-  source       String
-  severity     ScamSeverity @default(medium) // reuse scale
-  title        String
-  body         String
-  coordinates  Unsupported("geography(Point, 4326)")
-  validFrom    DateTime
-  validTo      DateTime?
-  createdAt    DateTime @default(now())
+  id          String                                @id @default(cuid())
+  source      String
+  severity    ScamSeverity                          @default(medium) // reuse scale
+  title       String
+  body        String
+  coordinates Unsupported("geography(Point, 4326)")
+  validFrom   DateTime
+  validTo     DateTime?
+  createdAt   DateTime                              @default(now())
 
   @@index([validFrom, validTo])
 }
@@ -779,36 +779,36 @@ model Alert {
 // it collides with domain-event terminology in prose. The context-map
 // calls these "CulturalEvent" when ambiguity would bite.
 model Event {
-  id            String   @id @default(cuid())
-  sourceKey     String   @unique // sha256(source + sourceId)
+  id            String                                @id @default(cuid())
+  sourceKey     String                                @unique // sha256(source + sourceId)
   placeId       String?
-  place         Place?   @relation(fields: [placeId], references: [id], onDelete: SetNull)
+  place         Place?                                @relation(fields: [placeId], references: [id], onDelete: SetNull)
   title         String
   description   String?
   startsAt      DateTime
   endsAt        DateTime
   venueName     String?
   coordinates   Unsupported("geography(Point, 4326)")
-  priceMin      Decimal? @db.Decimal(10, 2)
-  priceMax      Decimal? @db.Decimal(10, 2)
-  priceCurrency String?  @db.VarChar(3)
+  priceMin      Decimal?                              @db.Decimal(10, 2)
+  priceMax      Decimal?                              @db.Decimal(10, 2)
+  priceCurrency String?                               @db.VarChar(3)
   sourceId      String
-  source        EventSource @relation(fields: [sourceId], references: [id], onDelete: Restrict)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  source        EventSource                           @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+  createdAt     DateTime                              @default(now())
+  updatedAt     DateTime                              @updatedAt
 
   @@index([startsAt])
   @@index([placeId])
 }
 
 model EventSource {
-  id          String   @id @default(cuid())
-  name        String   @unique // meetup | eventbrite-public | local-<slug>
-  baseUrl     String
-  robotsOk    Boolean  @default(true)
-  enabled     Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  name      String   @unique // meetup | eventbrite-public | local-<slug>
+  baseUrl   String
+  robotsOk  Boolean  @default(true)
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   events Event[]
 }
@@ -816,30 +816,30 @@ model EventSource {
 // ─── 11. Live Companion ─────────────────────────────────────────────────
 
 model Geofence {
-  id            String   @id @default(cuid())
-  placeId       String?
-  place         Place?   @relation(fields: [placeId], references: [id], onDelete: SetNull)
-  center        Unsupported("geography(Point, 4326)")
-  radiusMeters  Int
-  label         String
-  activeFrom    DateTime @default(now())
-  activeUntil   DateTime?
-  createdAt     DateTime @default(now())
+  id           String                                @id @default(cuid())
+  placeId      String?
+  place        Place?                                @relation(fields: [placeId], references: [id], onDelete: SetNull)
+  center       Unsupported("geography(Point, 4326)")
+  radiusMeters Int
+  label        String
+  activeFrom   DateTime                              @default(now())
+  activeUntil  DateTime?
+  createdAt    DateTime                              @default(now())
 
   liveEvents LiveEvent[]
 }
 
 model LiveEvent {
-  id          String        @id @default(cuid())
-  userId      String
-  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tripId      String?
-  trip        Trip?         @relation(fields: [tripId], references: [id], onDelete: SetNull)
-  geofenceId  String?
-  geofence    Geofence?     @relation(fields: [geofenceId], references: [id], onDelete: SetNull)
-  kind        LiveEventKind
-  payload     Json?
-  createdAt   DateTime      @default(now())
+  id         String        @id @default(cuid())
+  userId     String
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tripId     String?
+  trip       Trip?         @relation(fields: [tripId], references: [id], onDelete: SetNull)
+  geofenceId String?
+  geofence   Geofence?     @relation(fields: [geofenceId], references: [id], onDelete: SetNull)
+  kind       LiveEventKind
+  payload    Json?
+  createdAt  DateTime      @default(now())
 
   @@index([userId, createdAt])
   @@index([tripId, createdAt])
@@ -848,25 +848,25 @@ model LiveEvent {
 // ─── 12. Social & Groups ────────────────────────────────────────────────
 
 model TripShare {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   tripId     String
-  trip       Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  trip       Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
   ownerId    String
-  owner      User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  shareCode  String   @unique
-  publicRead Boolean  @default(false)
+  owner      User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  shareCode  String    @unique
+  publicRead Boolean   @default(false)
   expiresAt  DateTime?
-  createdAt  DateTime @default(now())
+  createdAt  DateTime  @default(now())
 
   @@index([ownerId])
 }
 
 model Vote {
-  id        String   @id @default(cuid())
-  tripId    String
-  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  tripId     String
+  trip       Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   targetType String // itinerary_item | place | restaurant
   targetId   String
   value      Int // -1, 0, +1
@@ -893,25 +893,25 @@ model Expense {
 }
 
 model Review {
-  id          String   @id @default(cuid())
-  authorId    String
-  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  tripId      String?
-  trip        Trip?    @relation(fields: [tripId], references: [id], onDelete: SetNull)
-  targetType  String // place | stay | eatery | agent
-  targetId    String
-  rating      Int // 1..5
-  body        String
-  language    String   @default("en")
-  verifiedBooking Boolean @default(false)
+  id              String    @id @default(cuid())
+  authorId        String
+  author          User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  tripId          String?
+  trip            Trip?     @relation(fields: [tripId], references: [id], onDelete: SetNull)
+  targetType      String // place | stay | eatery | agent
+  targetId        String
+  rating          Int // 1..5
+  body            String
+  language        String    @default("en")
+  verifiedBooking Boolean   @default(false)
   // V.UX.24 — agent (or other target owner) reply. Stamped at most
   // once per review (the use-case rejects re-submissions). The
   // V.UX.24 surface is agent-only; later slices may broaden to
   // place/stay/eatery owners.
-  responseBody String?
-  responseAt   DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  responseBody    String?
+  responseAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   // V.UX.25 — community "this review was helpful" upvotes. Distinct
   // from Vote (which is itinerary-item polling). One row per
@@ -930,16 +930,16 @@ model Review {
 // `['contributor_10','helpful_100']`) so new badges land without a
 // schema change.
 model UserKarma {
-  id                    String   @id @default(cuid())
-  userId                String   @unique
-  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  score                 Int      @default(0)
-  reviewCount           Int      @default(0)
-  helpfulVotesReceived  Int      @default(0)
-  badges                String[]
-  recomputedAt          DateTime @default(now())
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  score                Int      @default(0)
+  reviewCount          Int      @default(0)
+  helpfulVotesReceived Int      @default(0)
+  badges               String[]
+  recomputedAt         DateTime @default(now())
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   @@index([score])
 }
@@ -962,25 +962,25 @@ model HelpfulVote {
 // ─── 13. Media & Memory ─────────────────────────────────────────────────
 
 model MediaAsset {
-  id           String      @id @default(cuid())
+  id           String                                 @id @default(cuid())
   ownerId      String
-  owner        User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  owner        User                                   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   tripId       String?
-  trip         Trip?       @relation(fields: [tripId], references: [id], onDelete: SetNull)
+  trip         Trip?                                  @relation(fields: [tripId], references: [id], onDelete: SetNull)
   memoryBookId String?
-  memoryBook   MemoryBook? @relation(fields: [memoryBookId], references: [id], onDelete: SetNull)
+  memoryBook   MemoryBook?                            @relation(fields: [memoryBookId], references: [id], onDelete: SetNull)
   kind         String // image | video
-  status       MediaStatus @default(processing)
-  s3KeyRaw     String      @unique
+  status       MediaStatus                            @default(processing)
+  s3KeyRaw     String                                 @unique
   variants     Json? // [{ label, format, s3Key, width, height, bytes, sha256 }]
-  exifStripped Boolean     @default(false)
+  exifStripped Boolean                                @default(false)
   coordinates  Unsupported("geography(Point, 4326)")?
   takenAt      DateTime?
   // V.UX.11 — per-asset narrative + ordering for memory-book story mode.
   caption      String?
-  position     Int         @default(0)
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  position     Int                                    @default(0)
+  createdAt    DateTime                               @default(now())
+  updatedAt    DateTime                               @updatedAt
 
   @@index([ownerId, createdAt])
   @@index([tripId, createdAt])
@@ -989,15 +989,15 @@ model MediaAsset {
 }
 
 model MemoryBook {
-  id         String   @id @default(cuid())
-  ownerId    String
-  owner      User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  title      String
-  coverS3Key String?
-  theme      String   @default("classic")
+  id          String    @id @default(cuid())
+  ownerId     String
+  owner       User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  title       String
+  coverS3Key  String?
+  theme       String    @default("classic")
   publishedAt DateTime?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   assets MediaAsset[]
 
@@ -1042,15 +1042,15 @@ model EscrowHold {
 }
 
 model Commission {
-  id                String   @id @default(cuid())
-  userId            String
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sourceType        String // stay_booking | agent_service
-  sourceId          String
-  amountUsd         Decimal  @db.Decimal(10, 2)
-  currency          String   @db.VarChar(3)
-  paidAt            DateTime?
-  createdAt         DateTime @default(now())
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceType String // stay_booking | agent_service
+  sourceId   String
+  amountUsd  Decimal   @db.Decimal(10, 2)
+  currency   String    @db.VarChar(3)
+  paidAt     DateTime?
+  createdAt  DateTime  @default(now())
 
   @@index([userId, createdAt])
 }
@@ -1058,26 +1058,26 @@ model Commission {
 // ─── 15. Notifications ──────────────────────────────────────────────────
 
 model NotificationPreference {
-  id                  String   @id @default(cuid())
-  userId              String   @unique
-  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  push                Boolean  @default(true)
-  email               Boolean  @default(true)
-  sms                 Boolean  @default(false)
-  quietHours          Json? // { start: "22:00", end: "07:00", tz }
+  id                 String    @id @default(cuid())
+  userId             String    @unique
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  push               Boolean   @default(true)
+  email              Boolean   @default(true)
+  sms                Boolean   @default(false)
+  quietHours         Json? // { start: "22:00", end: "07:00", tz }
   // V.UX.26 — per-category opt-out. Categories are derived from
   // the `templateId` prefix at dispatch time (trip / safety /
   // social / digest / account). Storing them as a string array
   // keeps the schema flexible — new categories don't need a
   // migration. Empty array = all categories on (the default).
-  categoriesDisabled  String[] @default([])
+  categoriesDisabled String[]  @default([])
   // V.UX.26 — last weekly-digest tick that fired for this user. The
   // scheduler uses this to enforce a "Sunday 8am LOCAL, once per
   // week" cadence without an external cron table. Null = never
   // received one yet.
-  lastDigestSentAt    DateTime?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  lastDigestSentAt   DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 }
 
 // V.UX.26 — Web Push API subscription. One row per browser
@@ -1099,23 +1099,23 @@ model PushSubscription {
 }
 
 model NotificationLog {
-  id                 String                     @id @default(cuid())
-  userId             String
-  user               User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  channel            NotificationChannel
-  templateId         String
-  status             NotificationDeliveryStatus @default(queued)
-  providerMessageId  String?
-  payload            Json
-  errorMessage       String?
-  attempts           Int                        @default(0)
-  read               Boolean                    @default(false)
+  id                String                     @id @default(cuid())
+  userId            String
+  user              User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel           NotificationChannel
+  templateId        String
+  status            NotificationDeliveryStatus @default(queued)
+  providerMessageId String?
+  payload           Json
+  errorMessage      String?
+  attempts          Int                        @default(0)
+  read              Boolean                    @default(false)
   // V.UX.26 — inbox archive. Set when the user swipes-to-archive
   // a row; the inbox lister filters out non-null. Hard-delete is
   // still available via DELETE /notifications/:id.
-  archivedAt         DateTime?
-  createdAt          DateTime                   @default(now())
-  deliveredAt        DateTime?
+  archivedAt        DateTime?
+  createdAt         DateTime                   @default(now())
+  deliveredAt       DateTime?
 
   @@index([userId, read, createdAt])
   @@index([userId, archivedAt, createdAt])
@@ -1125,28 +1125,28 @@ model NotificationLog {
 // ─── 17. Admin & Ops ────────────────────────────────────────────────────
 
 model AdminUser {
-  id           String   @id @default(cuid())
-  email        String   @unique
+  id           String    @id @default(cuid())
+  email        String    @unique
   passwordHash String
-  role         UserRole @default(admin)
-  mfaEnabled   Boolean  @default(true)
+  role         UserRole  @default(admin)
+  mfaEnabled   Boolean   @default(true)
   mfaSecret    String?
   lastLoginAt  DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 }
 
 model ModerationItem {
-  id             String           @id @default(cuid())
-  targetType     String // review | scam_report | media_asset | agent
-  targetId       String
-  reason         String
-  status         ModerationStatus @default(pending)
-  actorId        String? // admin who resolved
-  actor          User?            @relation("ModerationActor", fields: [actorId], references: [id], onDelete: SetNull)
-  decisionNote   String?
-  createdAt      DateTime         @default(now())
-  decidedAt      DateTime?
+  id           String           @id @default(cuid())
+  targetType   String // review | scam_report | media_asset | agent
+  targetId     String
+  reason       String
+  status       ModerationStatus @default(pending)
+  actorId      String? // admin who resolved
+  actor        User?            @relation("ModerationActor", fields: [actorId], references: [id], onDelete: SetNull)
+  decisionNote String?
+  createdAt    DateTime         @default(now())
+  decidedAt    DateTime?
 
   @@unique([targetType, targetId])
   @@index([status, createdAt])
@@ -1192,4 +1192,69 @@ model AdminAuditLog {
   @@index([targetType, targetId, createdAt])
   @@index([action, createdAt])
   @@index([createdAt])
+}
+
+// ─── 2.0 Agent (Track A) — POST.2A.2 ────────────────────────────────────
+//
+// Operational tables for the trip agent. Deliberately FK-less on
+// `tripId` / `agentRunId` (plain indexed strings, exactly like
+// AdminAuditLog.targetId): the agent is an additive operational
+// concern, so it never ALTERs the Trip/User tables and an orphan row
+// after a trip hard-delete is harmless (the loop just closes it).
+// Installed by prompt [POST.2A.2].
+
+enum AgentRunStatus {
+  watching
+  closed
+}
+
+// One supervised agent lifetime over a single trip. Mutable state
+// (status flips watching->closed; planVersion bumps on accepted
+// re-plans) so it carries createdAt + updatedAt.
+model AgentRun {
+  id          String         @id @default(cuid())
+  tripId      String
+  status      AgentRunStatus @default(watching)
+  planVersion Int            @default(1)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([tripId])
+  @@index([status, createdAt])
+}
+
+// Append-only audit log of everything the agent observed or proposed
+// for a run. Read-only by design — there is NO "edit step" or
+// "delete step" verb (the repository port exposes append + read
+// only). `kind` is free-form so new step types land without a
+// migration (same rationale as AdminAuditLog.action). `detail`
+// carries a small per-step payload (< 1 KB) — never secrets / PII.
+model AgentStep {
+  id         String   @id @default(cuid())
+  agentRunId String
+  kind       String // watch_started | signal_seen | proposal | accepted | declined | watch_closed
+  detail     Json? // small per-step payload, optional
+  createdAt  DateTime @default(now())
+
+  @@index([agentRunId, createdAt])
+  @@index([kind, createdAt])
+}
+
+// What an agent run subscribes a trip to. At most one ACTIVE watch
+// per trip is a domain invariant enforced by StartTripWatchUseCase
+// (not a DB constraint — a trip accumulates closed watches over
+// time). Mutable (active flips; thresholds rise on a decline) so it
+// carries createdAt + updatedAt.
+model TripWatch {
+  id                String   @id @default(cuid())
+  tripId            String
+  agentRunId        String
+  subscribedSignals String[] // weather | flight | geofence
+  thresholds        Json? // { weather: 0.7, ... } materiality gates
+  active            Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([tripId, active])
+  @@index([agentRunId])
 }

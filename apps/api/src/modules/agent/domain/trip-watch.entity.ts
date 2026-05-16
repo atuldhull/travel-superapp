@@ -25,4 +25,6 @@ export interface TripWatch {
    */
   readonly thresholds: Readonly<Record<string, number>>;
   readonly active: boolean;
+  readonly createdAt: Date;
+  readonly updatedAt: Date;
 }
