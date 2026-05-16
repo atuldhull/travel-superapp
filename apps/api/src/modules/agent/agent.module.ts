@@ -8,35 +8,59 @@
  *     → AGENT_MEMORY_PORT      (port declared; bound in POST.2C.2)
  *     → PLAN_TOOL_PORT         (port declared; bound in POST.2A.4)
  *
- *   StartTripWatchUseCase enforces the one-active-watch-per-trip
- *   invariant. The deterministic loop / scheduler that drives it
- *   lands in POST.2A.3. DbModule is @Global so PrismaService needs
- *   no explicit import.
+ *   POST.2A.3 — the loop: EvaluateSignalsUseCase (pure), the signal
+ *   adapters (WeatherSignalAdapter reuses WEATHER_PROVIDER →
+ *   WeatherModule import; OpenSkyFlightAdapter free/anonymous), and
+ *   AgentScheduler (setInterval + per-watch Redis lock). Coordinate-
+ *   driven snapshot→propose lands in POST.2A.4.
+ *
+ *   DbModule is @Global so PrismaService needs no explicit import.
  *
  * Always safe to import (mirrors the env-gated PaymentsModule
  * pattern) — the conditional-import route was deliberately NOT taken
  * because Nest eagerly instantiates providers and that risks the DI
  * boot hazards documented for this codebase.
  *
- * Installed by prompt [POST.2A.1]; persistence wired by [POST.2A.2].
+ * Installed by [POST.2A.1]; persistence [POST.2A.2]; loop [POST.2A.3].
  */
 import { Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import type { Env } from '@app/config';
+import { WeatherModule } from '../weather/weather.module';
 import { AGENT_RUN_REPOSITORY } from './application/ports/agent-run.repository';
 import { SIGNAL_SOURCE_PORT } from './application/ports/signal-source.port';
 import { TRIP_WATCH_REPOSITORY } from './application/ports/trip-watch.repository';
+import { EvaluateSignalsUseCase } from './application/evaluate-signals.use-case';
 import { StartTripWatchUseCase } from './application/start-trip-watch.use-case';
 import { PrismaAgentRunRepository } from './infrastructure/prisma-agent-run.repository';
 import { PrismaTripWatchRepository } from './infrastructure/prisma-trip-watch.repository';
+import { OpenSkyFlightAdapter } from './infrastructure/opensky-flight.adapter';
 import { StubSignalAdapter } from './infrastructure/stub-signal.adapter';
+import { WeatherSignalAdapter } from './infrastructure/weather-signal.adapter';
 import { AgentController } from './interface/agent.controller';
+import { AgentScheduler } from './interface/agent.scheduler';
 
 @Module({
+  imports: [WeatherModule],
   controllers: [AgentController],
   providers: [
     { provide: SIGNAL_SOURCE_PORT, useClass: StubSignalAdapter },
     { provide: AGENT_RUN_REPOSITORY, useClass: PrismaAgentRunRepository },
     { provide: TRIP_WATCH_REPOSITORY, useClass: PrismaTripWatchRepository },
     StartTripWatchUseCase,
+    EvaluateSignalsUseCase,
+    WeatherSignalAdapter,
+    {
+      // OpenSky base URL has a safe default; the adapter itself
+      // degrades to "no change" on any failure (LAW 1) — no boot-time
+      // reachability probe is possible, so graceful runtime fallback
+      // is the correct interpretation of "real if reachable, else stub".
+      provide: OpenSkyFlightAdapter,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService<Env, true>) =>
+        new OpenSkyFlightAdapter(config.get('OPENSKY_BASE_URL', { infer: true })),
+    },
+    AgentScheduler,
   ],
   exports: [AGENT_RUN_REPOSITORY, TRIP_WATCH_REPOSITORY, StartTripWatchUseCase],
 })
