@@ -1,4 +1,4 @@
-// Prisma schema for TravelSuperApp — 48 models across 15 stateful bounded
+// Prisma schema for TravelSuperApp — 49 models across 15 stateful bounded
 // contexts from `docs/architecture/context-map.md`. Translation and
 // Analytics contexts own no models (by design). Any drift between this
 // file and the context-map is a PR-blocker.
@@ -1285,4 +1285,37 @@ model UserBlock {
 
   @@id([blockerId, blockedId])
   @@index([blockedId]) // "who has blocked X"
+}
+
+// ─── 2.0 Trip publication (Track B) — POST.2B.2 ─────────────────────────
+//
+// Publishing is privacy-first BY THE DOMAIN (see TripPublication
+// invariants): a trip can only be published once it has definitively
+// ENDED, and PUBLIC visibility coarsens the exposed location to
+// city-level. FK-less on tripId/authorId (AdminAuditLog precedent).
+// Distinct from the 1.0 media publish-memory-book path — this only
+// REFERENCES memoryBookId. Embedding column lands in POST.2C.2.
+// Installed by prompt [POST.2B.2].
+
+enum Visibility {
+  PRIVATE
+  FOLLOWERS
+  PUBLIC
+}
+
+model TripPublication {
+  id           String     @id @default(cuid())
+  tripId       String     @unique
+  authorId     String
+  memoryBookId String?
+  visibility   Visibility @default(PRIVATE)
+  // Coarsened per visibility (INVARIANT B); null when PRIVATE.
+  exposedLat   Float?
+  exposedLng   Float?
+  publishedAt  DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([authorId])
+  @@index([visibility, publishedAt])
 }

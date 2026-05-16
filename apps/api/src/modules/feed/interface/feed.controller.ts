@@ -13,11 +13,50 @@
  *
  * Installed by prompt [IV.18.17.1].
  */
-import { BadRequestException, Controller, Get, HttpCode, HttpStatus, Query } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { type AuthenticatedUser, CurrentUser } from '../../../common/auth';
 import { GetMyFeedUseCase, type GetMyFeedResult } from '../application/get-my-feed.use-case';
+import { PublishTripUseCase } from '../application/publish-trip.use-case';
+import { UnpublishTripUseCase } from '../application/unpublish-trip.use-case';
+import type { TripPublication, Visibility } from '../domain/trip-publication.entity';
 import type { FeedItem } from '../domain/feed-item.entity';
+
+const VISIBILITIES: readonly Visibility[] = ['PRIVATE', 'FOLLOWERS', 'PUBLIC'];
+
+interface PublishBody {
+  readonly visibility?: Visibility;
+  readonly preciseGeoOptIn?: boolean;
+}
+
+interface TripPublicationDto {
+  readonly tripId: string;
+  readonly visibility: Visibility;
+  readonly exposedLat: number | null;
+  readonly exposedLng: number | null;
+  readonly publishedAt: string | null;
+}
+
+function pubToDto(p: TripPublication): TripPublicationDto {
+  return {
+    tripId: p.tripId,
+    visibility: p.visibility,
+    exposedLat: p.exposedLat,
+    exposedLng: p.exposedLng,
+    publishedAt: p.publishedAt ? p.publishedAt.toISOString() : null,
+  };
+}
 import { FeedResponseDto as FeedResponseDtoSwagger } from './dto/feed-response.dto';
 
 interface FeedItemDto {
@@ -43,7 +82,54 @@ function toDto(item: FeedItem): FeedItemDto {
 @ApiBearerAuth()
 @Controller('feed')
 export class FeedController {
-  constructor(private readonly getMyFeed: GetMyFeedUseCase) {}
+  constructor(
+    private readonly getMyFeed: GetMyFeedUseCase,
+    private readonly publishTrip: PublishTripUseCase,
+    private readonly unpublishTrip: UnpublishTripUseCase,
+  ) {}
+
+  @ApiOperation({
+    summary:
+      'Publish a trip (owner-only). Privacy-fenced: trip must have ENDED; PUBLIC coarsens geo. Default visibility FOLLOWERS.',
+  })
+  @ApiParam({ name: 'tripId', description: 'Trip to publish' })
+  @ApiResponse({ status: 200, description: 'The publication.' })
+  @ApiResponse({ status: 404, description: 'TRIP_NOT_FOUND' })
+  @ApiResponse({ status: 422, description: 'TRIP_NOT_ENDED' })
+  @Post('trips/:tripId/publish')
+  @HttpCode(HttpStatus.OK)
+  async publish(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('tripId') tripId: string,
+    @Body() body: PublishBody,
+  ): Promise<TripPublicationDto> {
+    if (body.visibility !== undefined && !VISIBILITIES.includes(body.visibility)) {
+      throw new BadRequestException({
+        code: 'VALIDATION_FAILED',
+        message: `visibility must be one of ${VISIBILITIES.join(', ')}`,
+      });
+    }
+    const pub = await this.publishTrip.execute({
+      tripId,
+      userId: user.sub,
+      ...(body.visibility !== undefined ? { visibility: body.visibility } : {}),
+      ...(body.preciseGeoOptIn !== undefined ? { preciseGeoOptIn: body.preciseGeoOptIn } : {}),
+    });
+    return pubToDto(pub);
+  }
+
+  @ApiOperation({ summary: 'Unpublish a trip (owner-only; idempotent; visibility → PRIVATE).' })
+  @ApiParam({ name: 'tripId', description: 'Trip to unpublish' })
+  @ApiResponse({ status: 200, description: 'Unpublished (idempotent).' })
+  @Delete('trips/:tripId/publish')
+  @HttpCode(HttpStatus.OK)
+  async unpublish(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('tripId') tripId: string,
+  ): Promise<{ unpublished: true }> {
+    await this.unpublishTrip.execute({ tripId, userId: user.sub });
+    return { unpublished: true };
+  }
 
   @ApiOperation({
     summary:
