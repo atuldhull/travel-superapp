@@ -1,26 +1,37 @@
 /**
- * POST.2A.1 — port the agent uses to draft a re-plan.
+ * POST.2A.1/2A.4 — port the agent uses to draft a re-plan.
  *
- * Declared here; bound in POST.2A.4 to an adapter that delegates to
- * the EXISTING 1.0 trip planner (TRIP_PLANNER_PORT / generatePlan)
- * — no new LLM plumbing. Grounding (POST.2C.3) flows in via an
- * additive optional field on the planner request. No implementation
- * is registered in this skeleton slice.
+ * Bound to an adapter that delegates to the EXISTING 1.0 trip
+ * planner (TRIP_PLANNER_PORT / generatePlan) — no new LLM plumbing.
+ * The agent passes the trip context IN (it does not fetch it; the
+ * scheduler↔trip glue that supplies real context is the deferred
+ * integration seam, same as POST.2A.3's coord resolution).
  *
- * Installed by prompt [POST.2A.1].
+ * LAW 2: the planner only ever receives trip planning fields — never
+ * anything money-related. Installed by [POST.2A.1]; finalised [POST.2A.4].
  */
-import type { PlanDiff } from '../../domain/plan-diff.vo';
+
+/** Minimal trip context the planner needs (mirrors TripPlannerRequest). */
+export interface PlanTripContext {
+  readonly title: string;
+  readonly lat: number;
+  readonly lng: number;
+  readonly radiusKm: number;
+  readonly startsOn: Date | null;
+  readonly endsOn: Date | null;
+}
 
 export interface DraftReplanInput {
-  readonly tripId: string;
-  /** Why the loop thinks a re-plan is warranted. */
+  readonly trip: PlanTripContext;
+  /** Why the loop thinks a re-plan is warranted (user-facing). */
   readonly reason: string;
 }
 
 export interface DraftReplanResult {
-  readonly diffs: readonly PlanDiff[];
   /** One-line summary surfaced in the user notification. */
   readonly summary: string;
+  /** Which 4-tier provider produced it (badge / audit). */
+  readonly provider: string;
 }
 
 export interface PlanTool {

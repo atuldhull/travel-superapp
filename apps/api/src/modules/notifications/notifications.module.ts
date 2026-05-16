@@ -31,6 +31,7 @@ import { ItineraryReadyHandler } from './application/handlers/itinerary-ready.ha
 import { TripLockedHandler } from './application/handlers/trip-locked.handler';
 import { SessionIssuedHandler } from './application/handlers/session-issued.handler';
 import { SosTriggeredHandler } from './application/handlers/sos-triggered.handler';
+import { AgentReplanProposedHandler } from './application/handlers/agent-replan-proposed.handler';
 import { GetUnreadCountUseCase } from './application/get-unread-count.use-case';
 import { ListMyNotificationsUseCase } from './application/list-my-notifications.use-case';
 import { MarkAllNotificationsReadUseCase } from './application/mark-all-notifications-read.use-case';
@@ -76,6 +77,7 @@ import { WeeklyDigestScheduler } from './interface/weekly-digest.scheduler';
     ItineraryReadyHandler,
     TripLockedHandler,
     SosTriggeredHandler,
+    AgentReplanProposedHandler,
     ListMyNotificationsUseCase,
     MarkNotificationReadUseCase,
     MarkAllNotificationsReadUseCase,

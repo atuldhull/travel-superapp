@@ -45,6 +45,42 @@ keystone) land well:
 | D7  | Agent loop cadence         | fixed `setInterval`                         | verified: no cron infra exists             |
 | D8  | Agent scope                | during-trip only                            | tightest, highest-value scope              |
 
+### [POST.2A.4] — Propose/confirm re-plan + notification (✅ COMPLETE, the SAFE boundary)
+
+- **Date**: 2026-05-16
+- **Status**: ✅ DONE
+- **Commit**: `feat(POST.2A.4)` (see git log)
+- **What**: `ProposeReplanUseCase` drafts via the existing 4-tier
+  planner (TripPlannerToolAdapter → `TRIP_PLANNER_PORT`; $0/stub with
+  no keys), records an append-only `proposal` AgentStep, emits
+  `Trip.ReplanProposed` — and **does NOT mutate the trip** (no trip /
+  itinerary / money dependency is injectable, so autonomy is
+  structurally impossible). `ConfirmReplanUseCase`: accept → append
+  `accepted` + bump planVersion; decline → append `declined` +
+  `raiseThreshold` (+0.1 cap 0.95). New agent.events (`Trip.ReplanProposed`,
+  `Trip.` prefix → existing 'trip' category, NO schema edit).
+  `AgentReplanProposedHandler` (mirrors ItineraryReadyHandler) pushes
+  to the owner via NOTIFICATION_SENDER. Controller: `GET /agent/runs/:id`,
+  `POST /agent/proposals/:id/{accept,decline}` (auth-gated +
+  requireAgent 503; accept/decline are the ONLY way a proposal takes
+  effect). Ports grew: `getStep`, `bumpPlanVersion`, `raiseThreshold`
+  (+ prisma impls; existing fakes updated).
+- **Scope deviation (documented)**: `TRIP_PLANNER_PORT` was NOT in
+  TripModule's `exports` — added it (one-line, additive, non-breaking)
+  so the agent can reuse the planner as a tool. Itinerary mutation on
+  accept needs trip's `ITINERARY_REPOSITORY.replaceDays` — that
+  agent↔trip glue is the deferred integration seam (same as 2A.3
+  coords); accept records the decision + run state, never auto-applies.
+- **Verify**: **LAW 2 grep `rg -i "stripe|payment|booking|charge|
+checkout|spend" modules/agent` → CLEAN (returns nothing)** — comments
+  reworded so the automated safety check is literally green. 25/25
+  agent specs (propose emits event + no trip mutation; accept bumps
+  version; decline raises threshold; unknown proposal 404). typecheck
+  EXIT 0 · lint EXIT 0 · build EXIT 0 · boot smoke (:3020) →
+  `notifications_handler_subscribed`, `AgentModule dependencies
+initialized` (TripModule cross-import + PLAN_TOOL + propose/confirm,
+  no circular dep), Nest started, health 200. Zero new deps.
+
 ### [POST.2A.3] — Deterministic loop + signal adapters + scheduler (✅ COMPLETE)
 
 - **Date**: 2026-05-16

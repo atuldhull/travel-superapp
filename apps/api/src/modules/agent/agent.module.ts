@@ -16,8 +16,8 @@
  *
  *   DbModule is @Global so PrismaService needs no explicit import.
  *
- * Always safe to import (mirrors the env-gated PaymentsModule
- * pattern) — the conditional-import route was deliberately NOT taken
+ * Always safe to import (mirrors the env-gated optional-provider
+ * pattern used elsewhere) — the conditional-import route was NOT taken
  * because Nest eagerly instantiates providers and that risks the DI
  * boot hazards documented for this codebase.
  *
@@ -27,28 +27,36 @@ import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Env } from '@app/config';
 import { WeatherModule } from '../weather/weather.module';
+import { TripModule } from '../trip/trip.module';
 import { AGENT_RUN_REPOSITORY } from './application/ports/agent-run.repository';
+import { PLAN_TOOL_PORT } from './application/ports/plan-tool.port';
 import { SIGNAL_SOURCE_PORT } from './application/ports/signal-source.port';
 import { TRIP_WATCH_REPOSITORY } from './application/ports/trip-watch.repository';
+import { ConfirmReplanUseCase } from './application/confirm-replan.use-case';
 import { EvaluateSignalsUseCase } from './application/evaluate-signals.use-case';
+import { ProposeReplanUseCase } from './application/propose-replan.use-case';
 import { StartTripWatchUseCase } from './application/start-trip-watch.use-case';
 import { PrismaAgentRunRepository } from './infrastructure/prisma-agent-run.repository';
 import { PrismaTripWatchRepository } from './infrastructure/prisma-trip-watch.repository';
 import { OpenSkyFlightAdapter } from './infrastructure/opensky-flight.adapter';
 import { StubSignalAdapter } from './infrastructure/stub-signal.adapter';
+import { TripPlannerToolAdapter } from './infrastructure/trip-planner-tool.adapter';
 import { WeatherSignalAdapter } from './infrastructure/weather-signal.adapter';
 import { AgentController } from './interface/agent.controller';
 import { AgentScheduler } from './interface/agent.scheduler';
 
 @Module({
-  imports: [WeatherModule],
+  imports: [WeatherModule, TripModule],
   controllers: [AgentController],
   providers: [
     { provide: SIGNAL_SOURCE_PORT, useClass: StubSignalAdapter },
     { provide: AGENT_RUN_REPOSITORY, useClass: PrismaAgentRunRepository },
     { provide: TRIP_WATCH_REPOSITORY, useClass: PrismaTripWatchRepository },
+    { provide: PLAN_TOOL_PORT, useClass: TripPlannerToolAdapter },
     StartTripWatchUseCase,
     EvaluateSignalsUseCase,
+    ProposeReplanUseCase,
+    ConfirmReplanUseCase,
     WeatherSignalAdapter,
     {
       // OpenSky base URL has a safe default; the adapter itself
