@@ -34,6 +34,8 @@ import { TRIP_PUBLICATION_REPOSITORY } from './application/ports/trip-publicatio
 import { PrismaTripPublicationRepository } from './infrastructure/prisma-trip-publication.repository';
 import { PublishTripUseCase } from './application/publish-trip.use-case';
 import { UnpublishTripUseCase } from './application/unpublish-trip.use-case';
+import { GetFeedUseCase } from './application/get-feed.use-case';
+import { GetCreatorProfileUseCase } from './application/get-creator-profile.use-case';
 import { ExpenseAddedFeedSource } from './infrastructure/expense-added-feed-source';
 import { MemoryBookPublishedFeedSource } from './infrastructure/memory-book-published-feed-source';
 import { ReviewFeedSource } from './infrastructure/review-feed-source';
@@ -50,6 +52,8 @@ import { FeedController } from './interface/feed.controller';
     { provide: TRIP_PUBLICATION_REPOSITORY, useClass: PrismaTripPublicationRepository },
     PublishTripUseCase,
     UnpublishTripUseCase,
+    GetFeedUseCase,
+    GetCreatorProfileUseCase,
     // Concrete sources — exported as themselves too in case a
     // future use-case wants to query a single source directly.
     TripFeedSource,

@@ -30,6 +30,8 @@ import { type AuthenticatedUser, CurrentUser } from '../../../common/auth';
 import { GetMyFeedUseCase, type GetMyFeedResult } from '../application/get-my-feed.use-case';
 import { PublishTripUseCase } from '../application/publish-trip.use-case';
 import { UnpublishTripUseCase } from '../application/unpublish-trip.use-case';
+import { GetFeedUseCase } from '../application/get-feed.use-case';
+import { GetCreatorProfileUseCase } from '../application/get-creator-profile.use-case';
 import type { TripPublication, Visibility } from '../domain/trip-publication.entity';
 import type { FeedItem } from '../domain/feed-item.entity';
 
@@ -86,7 +88,73 @@ export class FeedController {
     private readonly getMyFeed: GetMyFeedUseCase,
     private readonly publishTrip: PublishTripUseCase,
     private readonly unpublishTrip: UnpublishTripUseCase,
+    private readonly getFeed: GetFeedUseCase,
+    private readonly getCreatorProfile: GetCreatorProfileUseCase,
   ) {}
+
+  @ApiOperation({
+    summary:
+      'The social pull feed — published trips from people you follow + public, reverse-chron, cursor (?before, ?limit). Visibility + block filtered.',
+  })
+  @ApiResponse({ status: 200, description: 'Feed page + nextBefore cursor.' })
+  @Get()
+  @HttpCode(HttpStatus.OK)
+  async socialFeed(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('limit') limit?: string,
+    @Query('before') before?: string,
+  ): Promise<{ items: readonly TripPublicationDto[]; nextBefore: string | null }> {
+    let parsedBefore: Date | undefined;
+    if (before !== undefined) {
+      const d = new Date(before);
+      if (Number.isNaN(d.getTime())) {
+        throw new BadRequestException({
+          code: 'VALIDATION_FAILED',
+          message: 'before must be a valid ISO timestamp',
+        });
+      }
+      parsedBefore = d;
+    }
+    const parsedLimit = limit ? Number(limit) : undefined;
+    if (limit !== undefined && (Number.isNaN(parsedLimit!) || parsedLimit! < 1)) {
+      throw new BadRequestException({
+        code: 'VALIDATION_FAILED',
+        message: 'limit must be a positive integer',
+      });
+    }
+    const result = await this.getFeed.execute({
+      viewerId: user.sub,
+      ...(parsedBefore ? { before: parsedBefore } : {}),
+      ...(parsedLimit !== undefined ? { limit: parsedLimit } : {}),
+    });
+    return {
+      items: result.items.map(pubToDto),
+      nextBefore: result.nextBefore ? result.nextBefore.toISOString() : null,
+    };
+  }
+
+  @ApiOperation({ summary: "A creator's profile — their visible published trips + counts." })
+  @ApiParam({ name: 'id', description: 'Creator (user) id' })
+  @ApiResponse({ status: 200, description: 'Creator profile.' })
+  @Get('creators/:id')
+  @HttpCode(HttpStatus.OK)
+  async creator(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ): Promise<{
+    authorId: string;
+    followerCount: number;
+    publishedCount: number;
+    trips: readonly TripPublicationDto[];
+  }> {
+    const p = await this.getCreatorProfile.execute({ authorId: id, viewerId: user.sub });
+    return {
+      authorId: p.authorId,
+      followerCount: p.followerCount,
+      publishedCount: p.publishedCount,
+      trips: p.trips.map(pubToDto),
+    };
+  }
 
   @ApiOperation({
     summary:
