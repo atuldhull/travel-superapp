@@ -32,6 +32,8 @@ import { PublishTripUseCase } from '../application/publish-trip.use-case';
 import { UnpublishTripUseCase } from '../application/unpublish-trip.use-case';
 import { GetFeedUseCase } from '../application/get-feed.use-case';
 import { GetCreatorProfileUseCase } from '../application/get-creator-profile.use-case';
+import { SimilarTripsUseCase } from '../application/similar-trips.use-case';
+import type { SimilarTrip } from '../application/ports/trip-publication.repository';
 import type { TripPublication, Visibility } from '../domain/trip-publication.entity';
 import type { FeedItem } from '../domain/feed-item.entity';
 
@@ -90,6 +92,7 @@ export class FeedController {
     private readonly unpublishTrip: UnpublishTripUseCase,
     private readonly getFeed: GetFeedUseCase,
     private readonly getCreatorProfile: GetCreatorProfileUseCase,
+    private readonly similarTrips: SimilarTripsUseCase,
   ) {}
 
   @ApiOperation({
@@ -154,6 +157,34 @@ export class FeedController {
       publishedCount: p.publishedCount,
       trips: p.trips.map(pubToDto),
     };
+  }
+
+  @ApiOperation({
+    summary:
+      '"Trips like this" — pgvector-nearest PUBLISHED trips to a given trip. Visibility + block filtered AS the caller; empty when the trip has no embedding (EmptyState). Optional ?limit.',
+  })
+  @ApiParam({ name: 'tripId', description: 'Source (published) trip id' })
+  @ApiResponse({ status: 200, description: 'Nearest visible published trips.' })
+  @Get('trips/:tripId/similar')
+  @HttpCode(HttpStatus.OK)
+  async similar(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('tripId') tripId: string,
+    @Query('limit') limit?: string,
+  ): Promise<{ items: readonly SimilarTrip[] }> {
+    const parsedLimit = limit ? Number(limit) : undefined;
+    if (limit !== undefined && (Number.isNaN(parsedLimit!) || parsedLimit! < 1)) {
+      throw new BadRequestException({
+        code: 'VALIDATION_FAILED',
+        message: 'limit must be a positive integer',
+      });
+    }
+    const items = await this.similarTrips.execute({
+      sourceTripId: tripId,
+      viewerId: user.sub,
+      ...(parsedLimit !== undefined ? { limit: parsedLimit } : {}),
+    });
+    return { items };
   }
 
   @ApiOperation({

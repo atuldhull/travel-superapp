@@ -38,6 +38,10 @@ import { PrismaTripPublicationRepository } from './infrastructure/prisma-trip-pu
 import { EMBEDDING_PORT } from './application/ports/embedding.port';
 import { OllamaEmbeddingAdapter } from './infrastructure/ollama-embedding.adapter';
 import { StubEmbeddingAdapter } from './infrastructure/stub-embedding.adapter';
+// POST.2C.3 — Seam 2: discovery rail + agent grounding (both pgvector)
+import { SimilarTripsUseCase } from './application/similar-trips.use-case';
+import { TRIP_GROUNDING_PORT } from './application/ports/trip-grounding.port';
+import { TripGroundingAdapter } from './infrastructure/trip-grounding.adapter';
 import { PublishTripUseCase } from './application/publish-trip.use-case';
 import { UnpublishTripUseCase } from './application/unpublish-trip.use-case';
 import { GetFeedUseCase } from './application/get-feed.use-case';
@@ -107,6 +111,12 @@ import { FeedController } from './interface/feed.controller';
       ],
     },
     GetMyFeedUseCase,
+    // POST.2C.3 — discovery rail + the agent-grounding inbound port.
+    SimilarTripsUseCase,
+    { provide: TRIP_GROUNDING_PORT, useClass: TripGroundingAdapter },
   ],
+  // POST.2C.3 — agent injects TRIP_GROUNDING_PORT (best-effort,
+  // @Optional). Hex direction stays agent → feed.
+  exports: [TRIP_GROUNDING_PORT],
 })
 export class FeedModule {}

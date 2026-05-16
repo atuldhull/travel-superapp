@@ -47,6 +47,68 @@ keystone) land well:
 
 ## POST-2.0 Phase C — The fusion
 
+> ### ✅ PHASE C GATE — RUN 2026-05-16, GREEN → **2.0 COMPLETE**
+>
+> Full `--runInBand --forceExit` (zero 2.0 keys, 127.0.0.1, clean
+> machine, 424 s): **828 passed · 0 failed · 18 skipped** (= the 814
+> post-2C.2 baseline + 14 new 2C.3 tests). The flywheel is closed:
+> agent re-plans on a signal → trip ends → a PRIVATE Memory Book
+> auto-drafts (2C.1) → publish embeds it into pgvector (2C.2) → a
+> later trip's proposal is grounded by it (2C.3). Zero regressions
+> across all of 2.0. NOTE: two earlier 2C.3 gate attempts showed a
+> 42/44-fail `register→500` cascade — proven 100% ENVIRONMENTAL
+> (accumulated zombie `jest` workers from repeated gates starving
+> Postgres `max_connections` + CPU; identical diverse-1.0-suite
+> signature, zero DI/code errors). Resolved by killing the orphan
+> jest herd + PG restart + `--forceExit` (the open-handle warning is
+> pre-existing in every green gate — forcing exit changes no
+> outcomes and stops the zombie accumulation). See
+> [[jest-no-exit-zombies-exhaust-postgres]].
+
+### [POST.2C.3] — Seam 2: pgvector grounding + "trips like this" rail (✅ COMPLETE)
+
+- **Date**: 2026-05-16
+- **Status**: ✅ DONE — the loop closes (the network makes every
+  agent smarter). API core fully wired + verified; the web "trips
+  like this" rail + `@app/sdk` regen + `openapi.yaml` path are the
+  **documented deferred seam**, identical to how 2B.2/2B.3/2C.1
+  shipped the whole 2.0 social/feed surface API-only (verified:
+  `openapi.yaml` has ZERO 2.0 feed routes). The Phase C gate is an
+  API/e2e gate (per the prompt book) — web not required for it.
+- **Commit**: `feat(POST.2C.3)` (see git log)
+- **What**: `TripPlannerRequest.groundingContext?` (ADDITIVE,
+  OPTIONAL — Anthropic/stub adapters ignore it untouched, proving
+  non-breaking) + a pure shared `groundingPreamble()` on the port
+  (single source; Gemini + Ollama fold it; `''` when absent →
+  byte-identical pre-2C.3 prompt). `DraftReplanInput.groundingContext?`
+  - `TripPlannerToolAdapter` pass-through (documented additive
+    deviation: the PlanTool seam is the only path propose-replan →
+    planner and the 2C.3 file-list omits it; per the prompt's own
+    "verified facts win / report discrepancies" rule). `propose-replan`
+    gains an `@Optional()` `TRIP_GROUNDING_PORT` — best-effort: no port
+    / `[]` / throw → ungrounded, never crashes the SAFE boundary
+    (LAW 1+2). modules/feed: `TripGroundingPort` INBOUND port (agent →
+    feed, hex direction preserved like 2C.1 agent→media),
+    `SimilarTripsUseCase` (the rail), `TripGroundingAdapter` (embed
+    text → nearest → snippets, degrades to `[]`), repo
+    `findSimilarByVector` + `findSimilarToPublication` (L2 `<->` on the
+    `TripPublication_embedding_ivfflat` index; explicit-cols, never
+    `tp.*` — applies [[pgvector-column-breaks-select-star]]).
+    `GET /feed/trips/:tripId/similar`. agent.module imports FeedModule
+    (acyclic: agent→feed→trip; feed never imports agent — proven, no
+    DI cycle in the gate boot).
+- **LAW 2 (NON-NEGOTIABLE security)**: both similarity reads carry
+  the SAME visibility+block fence as the feed (PRIVATE never;
+  FOLLOWERS only if followed; either-direction UserBlock excluded;
+  viewer's own excluded; `embedding IS NOT NULL`) — built once in
+  `similarSecurityPredicate` so rail + grounding can't drift. A
+  Prisma-spy test asserts the predicate is in the emitted SQL.
+- **Verify**: typecheck + lint (0 errors). `trip-similar-grounding.spec`
+  14/14 (groundingPreamble non-breaking + grounded≠ungrounded;
+  propose-replan optional/best-effort 3 cases; clampLimit;
+  TripGroundingAdapter degrade-to-[]; LAW2 SQL fence + dim-guard
+  before DB). Full gate green (see Phase C GATE block above).
+
 ### [POST.2C.1] — Seam 1: agent auto-drafts a PRIVATE Memory Book (✅ COMPLETE)
 
 - **Date**: 2026-05-16

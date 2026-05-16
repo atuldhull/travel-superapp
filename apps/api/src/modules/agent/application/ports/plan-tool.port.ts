@@ -25,6 +25,18 @@ export interface DraftReplanInput {
   readonly trip: PlanTripContext;
   /** Why the loop thinks a re-plan is warranted (user-facing). */
   readonly reason: string;
+  /**
+   * POST.2C.3 — Seam 2. Optional, ADDITIVE, non-breaking grounding
+   * snippets from real published trips (pgvector, visibility+block
+   * filtered upstream in modules/feed). Passed straight through to
+   * TripPlannerRequest.groundingContext. Absent → ungrounded, exactly
+   * as before 2C.3. (Scope note: this PlanTool seam is the only path
+   * from propose-replan to the 1.0 planner — the 2C.3 prompt's
+   * Files-to-touch omits it; per the prompt's own "Verified facts
+   * wins / report discrepancies" rule this is a documented, purely
+   * additive deviation.)
+   */
+  readonly groundingContext?: readonly string[];
 }
 
 export interface DraftReplanResult {

@@ -26,6 +26,44 @@ export interface TripPlannerRequest {
   readonly radiusKm: number;
   readonly startsOn: Date | null;
   readonly endsOn: Date | null;
+  /**
+   * POST.2C.3 — Seam 2. Optional, ADDITIVE, non-breaking: short
+   * grounding snippets retrieved from real PUBLISHED trips near this
+   * destination (pgvector, visibility+block filtered upstream). The
+   * Gemini + Ollama adapters fold these into the prompt; the
+   * Anthropic + stub adapters simply ignore the field (structural
+   * typing — no code change, fully back-compat). Absent / empty →
+   * the planner behaves exactly as before 2C.3.
+   */
+  readonly groundingContext?: readonly string[];
+}
+
+/**
+ * POST.2C.3 — pure, shared prompt-fold for grounding. Lives on the
+ * port (single source of truth) so the Gemini + Ollama infra
+ * adapters stay byte-identical in how they inject grounding, and so
+ * "grounded vs ungrounded differs" is unit-provable with ZERO API
+ * keys (LAW 1). Empty/absent → '' (the prompt is unchanged → the
+ * non-breaking guarantee). Capped so a long index can't blow the
+ * context window.
+ */
+export function groundingPreamble(ctx?: readonly string[]): string {
+  if (!ctx || ctx.length === 0) {
+    return '';
+  }
+  const lines = ctx
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0)
+    .slice(0, 5)
+    .map((s) => `- ${s}`);
+  if (lines.length === 0) {
+    return '';
+  }
+  return (
+    `Ground your plan in these real, recently-published trips near ` +
+    `this destination (do not quote them verbatim; use them only to ` +
+    `improve realism):\n${lines.join('\n')}\n\n`
+  );
 }
 
 /** Token-usage report. Anthropic + Gemini return precise counts;
