@@ -1,4 +1,4 @@
-// Prisma schema for TravelSuperApp — 46 models across 15 stateful bounded
+// Prisma schema for TravelSuperApp — 48 models across 15 stateful bounded
 // contexts from `docs/architecture/context-map.md`. Translation and
 // Analytics contexts own no models (by design). Any drift between this
 // file and the context-map is a PR-blocker.
@@ -1257,4 +1257,32 @@ model TripWatch {
 
   @@index([tripId, active])
   @@index([agentRunId])
+}
+
+// ─── 2.0 Social graph (Track B) — POST.2B.1 ─────────────────────────────
+//
+// Directed edges, FK-less on the user ids (plain composite keys +
+// indexes, same precedent as AdminAuditLog.targetId / AgentRun): the
+// graph is an additive social concern, never ALTERs the User table,
+// and an orphan edge after a user hard-delete is harmless (filtered
+// out on read). Edges are immutable — unfollow/unblock = row delete,
+// not a mutation (so no updatedAt; this is NOT an append-only log).
+// Installed by prompt [POST.2B.1].
+
+model Follow {
+  followerId String
+  followeeId String
+  createdAt  DateTime @default(now())
+
+  @@id([followerId, followeeId])
+  @@index([followeeId]) // "who follows X"
+}
+
+model UserBlock {
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+
+  @@id([blockerId, blockedId])
+  @@index([blockedId]) // "who has blocked X"
 }

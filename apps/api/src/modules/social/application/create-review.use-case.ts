@@ -28,6 +28,8 @@ import {
 import type { Review, ReviewTargetType } from '../domain/review.entity';
 import { assertCanVote as assertTripAccess } from './cast-vote.use-case';
 import { REVIEW_REPOSITORY, type ReviewRepository } from './ports/review.repository';
+import { BLOCK_REPOSITORY, type BlockRepository } from './ports/block.repository';
+import { assertNotBlocked } from './block-user.use-case';
 
 const LANGUAGE_REGEX = /^[a-z]{2}$/;
 
@@ -47,6 +49,7 @@ export class CreateReviewUseCase {
     @Inject(REVIEW_REPOSITORY) private readonly reviews: ReviewRepository,
     @Inject(TRIP_REPOSITORY) private readonly trips: TripRepository,
     @Inject(TRIP_SHARE_REPOSITORY) private readonly shares: TripShareRepository,
+    @Inject(BLOCK_REPOSITORY) private readonly blocks: BlockRepository,
   ) {}
 
   async execute(cmd: CreateReviewCommand): Promise<Review> {
@@ -55,6 +58,13 @@ export class CreateReviewUseCase {
       // Trip-attached reviews need the same collab access as
       // voting / expenses.
       await assertTripAccess(this.trips, this.shares, cmd.tripId, cmd.authorId);
+      // POST.2B.1 — block gate alongside the access gate (the
+      // trip-attached path; non-trip review targets are a later
+      // refinement, same scope call as the anonymous-hearts N/A).
+      const trip = await this.trips.findById(cmd.tripId);
+      if (trip && trip.userId !== cmd.authorId) {
+        await assertNotBlocked(this.blocks, cmd.authorId, trip.userId);
+      }
     }
     return this.reviews.create({
       authorId: cmd.authorId,

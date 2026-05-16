@@ -45,6 +45,39 @@ keystone) land well:
 | D7  | Agent loop cadence         | fixed `setInterval`                         | verified: no cron infra exists             |
 | D8  | Agent scope                | during-trip only                            | tightest, highest-value scope              |
 
+## POST-2.0 Phase B — Social substrate
+
+### [POST.2B.1] — Follow graph + UserBlock (✅ COMPLETE)
+
+- **Date**: 2026-05-16
+- **Status**: ✅ DONE
+- **Commit**: `feat(POST.2B.1)` (see git log)
+- **What**: additive `Follow` + `UserBlock` (composite-key, FK-less,
+  AdminAuditLog precedent) — **migration hand-curated** (Prisma again
+  auto-emitted the 15 PostGIS + ivfflat DROPs; stripped) + applied to
+  local Docker (pinned 127.0.0.1); **proven non-destructive: 2 tables
+  created, 14 GiST + ivfflat survived**. Domain (Follow/UserBlock),
+  ports (FOLLOW/BLOCK_REPOSITORY), prisma adapters (idempotent upsert/
+  deleteMany), 4 use-cases (follow/unfollow/block/unblock; self-action
+  → 422; blocked pair → 403 via shared `assertNotBlocked`). Block gate
+  wired alongside the EXISTING `assertCanVote`/`assertTripAccess` in
+  cast-vote + create-review (inject BLOCK_REPOSITORY; check actor vs
+  trip owner). New `FollowController` (`/api/v1/users/:id/{follow,block}`).
+- **Verified deviations (documented)**: (1) hearts are ANONYMOUS
+  (`HeartSharedTripUseCase.execute(shareCode)` — no actor) → block-on-
+  heart N/A by design (doc note in trip-heart-counter, no nonsensical
+  guard); (2) `social.controller.ts` is `@Controller('trips/:tripId/
+votes')` (mis-scoped) → added a properly-scoped `follow.controller.ts`
+  instead of cramming user-graph routes there. Both = verified-reality-
+  over-prompt-wording, flagged.
+- **Verify**: migration grep CREATE-only; `social-graph.spec.ts` +
+  agent specs → **31/31** (self-follow 422, blocked pair refuses
+  follow AND vote via the gate, idempotency, symmetric block).
+  typecheck EXIT 0 · lint EXIT 0 · build EXIT 0 · boot smoke (:3021)
+  → `SocialModule dependencies initialized` (CastVote/CreateReview
+  with BLOCK_REPOSITORY + FollowController resolved, no DI error),
+  routes mapped, Nest started, health 200. Zero new deps.
+
 ### [POST.2A.5] — Agent web surface (✅ COMPLETE, flag-gated) — Phase A code done
 
 - **Date**: 2026-05-16
