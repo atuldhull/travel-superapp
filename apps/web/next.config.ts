@@ -25,6 +25,10 @@ const nextConfig: NextConfig = {
   typedRoutes: true,
   output: 'standalone',
   outputFileTracingRoot: path.join(__dirname, '..', '..'),
+  // react-globe.gl + three ship untranspiled ESM; Next's bundler
+  // needs them in transpilePackages or the cinematic globe (loaded
+  // ssr:false on the landing demo) fails to chunk/parse.
+  transpilePackages: ['react-globe.gl', 'three'],
 };
 
 // `withSentryConfig` is safe to call unconditionally — it only

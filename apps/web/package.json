@@ -29,7 +29,9 @@
     "qrcode.react": "^4.2.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-globe.gl": "2.38.0",
     "tailwind-merge": "^2.5.5",
+    "three": "0.184.0",
     "yet-another-react-lightbox": "^3.21.0"
   },
   "devDependencies": {
@@ -39,6 +41,7 @@
     "@types/node": "^22.10.5",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@types/three": "0.184.1",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.17.0",
     "eslint-config-next": "^15.1.0",
