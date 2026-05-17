@@ -29,17 +29,20 @@ export function FeaturedStrip() {
   return (
     <section className="space-y-5">
       <header className="flex items-end justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
-            Real travelers, real memories
+        <div className="space-y-2">
+          <p className="inline-flex items-center gap-2 rounded-full border border-gold-600/25 bg-gold-500/8 px-3 py-1 text-xs font-medium tracking-wide text-gold-700 dark:text-gold-300">
+            Social proof
+          </p>
+          <h2 className="font-display text-3xl font-semibold tracking-tight text-surface-foreground sm:text-4xl">
+            Real travellers, real memories
           </h2>
-          <p className="mt-1 text-sm text-muted sm:text-base">
-            A taste of what other travelers have published. Tap any card to read.
+          <p className="text-sm leading-relaxed text-muted sm:text-base">
+            A taste of what other travellers have published. Tap any card to read.
           </p>
         </div>
         <Link
           href="/featured"
-          className="hidden text-sm font-semibold text-brand hover:underline sm:inline"
+          className="hidden text-sm font-semibold text-gold-600 transition hover:text-gold-700 hover:underline sm:inline dark:hover:text-gold-300"
         >
           See all →
         </Link>
@@ -55,17 +58,17 @@ export function FeaturedStrip() {
           ))}
         </ul>
       ) : isError ? (
-        <p className="rounded-md border border-muted/20 bg-muted/5 px-4 py-3 text-sm text-muted">
-          Couldn't load featured books right now. Try the{' '}
-          <Link href="/featured" className="text-brand hover:underline">
+        <p className="rounded-2xl border border-gold-600/15 bg-surface px-5 py-4 text-sm text-muted shadow-(--shadow-depth-1)">
+          Couldn&apos;t load featured books right now. Try the{' '}
+          <Link href="/featured" className="text-gold-600 hover:underline">
             full Featured page
           </Link>
           .
         </p>
       ) : books.length === 0 ? (
-        <p className="rounded-md border border-muted/20 bg-muted/5 px-4 py-3 text-sm text-muted">
+        <p className="rounded-2xl border border-gold-600/15 bg-surface px-5 py-4 text-sm text-muted shadow-(--shadow-depth-1)">
           No published memory books yet — be the first to{' '}
-          <Link href="/register" className="text-brand hover:underline">
+          <Link href="/register" className="text-gold-600 hover:underline">
             sign up and publish
           </Link>{' '}
           one.
@@ -90,7 +93,10 @@ export function FeaturedStrip() {
         </ul>
       )}
       <p className="text-center sm:hidden">
-        <Link href="/featured" className="text-sm font-semibold text-brand hover:underline">
+        <Link
+          href="/featured"
+          className="text-sm font-semibold text-gold-600 transition hover:text-gold-700 hover:underline dark:hover:text-gold-300"
+        >
           See all featured books →
         </Link>
       </p>
