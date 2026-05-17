@@ -16,9 +16,10 @@
 
 import { useEffect, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { BedDouble, ExternalLink, MapPin, Sparkles, Star } from 'lucide-react';
+import { BedDouble, Clock, ExternalLink, MapPin, Signal, Sparkles, Star } from 'lucide-react';
 import { extractPlaces } from '../../lib/extract-places';
 import { geocodeOne } from '../../lib/geocode';
+import { insightFor, CROWD_UI } from '../../lib/itinerary-insights';
 import { nearbyHotels, type NearbyHotel } from '../../lib/nearby-hotels';
 import { DestinationImage } from '../ui/destination-image';
 import { cn } from '../../lib/cn';
@@ -129,9 +130,43 @@ export function ItineraryStoryboard({ plan, city, center, className }: Itinerary
                   <p className="font-display text-sm font-semibold leading-snug tracking-tight text-white">
                     {s.name}
                   </p>
-                  <p className="text-[11px] text-white/70">
-                    {s.start ? 'Trip base' : `Stop ${i} · ${city}`}
-                  </p>
+                  {s.start ? (
+                    <p className="text-[11px] text-white/70">Trip base</p>
+                  ) : (
+                    (() => {
+                      const ins = insightFor(s.name, plan, i - 1);
+                      const c = CROWD_UI[ins.crowd];
+                      return (
+                        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-white/80">
+                          <span className="inline-flex items-center gap-1">
+                            <Clock aria-hidden className="h-3 w-3 text-gold-300" />
+                            {ins.time}
+                          </span>
+                          <span
+                            className="inline-flex items-center gap-1"
+                            title={`${ins.tip}${ins.fromPlan ? '' : ' (estimate)'}`}
+                          >
+                            <Signal aria-hidden className={cn('h-3 w-3', c.cls)} />
+                            <span className="inline-flex items-end gap-0.5">
+                              {[0, 1, 2].map((b) => (
+                                <span
+                                  key={b}
+                                  className={cn(
+                                    'w-0.5 rounded-sm',
+                                    b === 0 ? 'h-1.5' : b === 1 ? 'h-2' : 'h-2.5',
+                                    b < c.bars ? c.cls : 'text-white/25',
+                                  )}
+                                  style={{ backgroundColor: 'currentColor' }}
+                                />
+                              ))}
+                            </span>
+                            {c.label}
+                            {!ins.fromPlan && <span className="text-white/40">·est</span>}
+                          </span>
+                        </div>
+                      );
+                    })()
+                  )}
                 </div>
               </div>
             </motion.li>

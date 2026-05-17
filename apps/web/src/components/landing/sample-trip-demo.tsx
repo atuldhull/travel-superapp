@@ -15,7 +15,7 @@
 
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   useTripControllerSamplePlan,
   type GenerateSamplePlanRequestDto,
@@ -74,6 +74,10 @@ export function SampleTripDemo() {
   // plan; places stay distinct); 'map' = accurate street geo;
   // 'globe' = the cinematic 3D flex. Same geocoded journey.
   const [view, setView] = useState<'story' | 'map' | 'globe'>('story');
+  // Radius the *visible* plan was generated with — so we can show it
+  // and nudge "regenerate" when the slider no longer matches.
+  const [planRadius, setPlanRadius] = useState<number | null>(null);
+  const sentRadiusRef = useRef(radiusKm);
 
   // Hydrate from localStorage on mount — returning visitors see their
   // last plan instantly without re-generation. The matching city is
@@ -96,6 +100,7 @@ export function SampleTripDemo() {
       onSuccess: (response: { data?: unknown }) => {
         const result = response.data as GenerateSamplePlanResponseDto;
         setPlanResult(result);
+        setPlanRadius(sentRadiusRef.current);
         setFromCache(false);
         setErrorMsg(null);
         // Persist for the next visit (24h TTL via getRecalledSamplePlan).
@@ -121,6 +126,7 @@ export function SampleTripDemo() {
   function generate() {
     setPlanResult(null);
     setErrorMsg(null);
+    sentRadiusRef.current = radiusKm;
     const preset = CITY_PRESETS[selectedIdx]!;
     const data: GenerateSamplePlanRequestDto = {
       title: preset.title,
@@ -229,12 +235,18 @@ export function SampleTripDemo() {
                 </CardTitle>
                 <CardSubtitle>
                   Powered by <code className="font-mono text-[11px]">{planResult.model}</code> ·{' '}
+                  Within {planRadius ?? radiusKm} km of {selected.title} ·{' '}
                   {fromCache ? (
                     <span className="text-gold-700 dark:text-gold-300">From your last visit</span>
                   ) : (
                     <span>No account needed</span>
                   )}
                 </CardSubtitle>
+                {planRadius !== null && planRadius !== radiusKm ? (
+                  <p className="mt-2 inline-flex items-center gap-2 rounded-full border border-gold-600/30 bg-gold-500/10 px-3 py-1 text-xs font-medium text-gold-700 dark:text-gold-300">
+                    ↻ Radius now {radiusKm} km — Regenerate to re-plan the itinerary&apos;s reach
+                  </p>
+                ) : null}
               </CardHeader>
               <div className="mt-3 inline-flex rounded-full border border-gold-600/20 bg-surface p-0.5 text-xs">
                 {(
