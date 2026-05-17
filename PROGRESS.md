@@ -134,14 +134,43 @@ keystone) land well:
   the new routes + deep-link from the `trip_agent_replan_proposed`
   notification cover the flow).
 
-### [P3] — Supervised Supabase deploy: PREPARED + GATED (not executed)
+### [P3] — Supervised Supabase deploy: ✅ EXECUTED & VERIFIED
 
-- **Date**: 2026-05-16
-- **Status**: ⏸️ PREPARED, awaiting operator. Everything that is
-  safe without touching a remote DB is done; the actual
-  `prisma migrate deploy` against Supabase is intentionally NOT run
-  (possibly-production, hard-to-reverse, operator flagged it
-  uncertain — durable rule: never migrate Supabase unattended).
+- **Date**: prepared 2026-05-16; executed (operator-present) 2026-05-17
+- **Status**: ✅ DONE. The full 1.0+2.0 schema is live on the
+  production Supabase Postgres (org "Atul Org", project
+  `navbrexnzzyizqdezrhr`, region ap-south-1). Operator-driven:
+  operator ran the commands in their shell, agent guided + verified
+  each step (the credentialed remote command is correctly blocked
+  for the agent's own shell by the safety classifier — the
+  supervised-deploy boundary held at the tooling layer too).
+- **Execution**:
+  - Connection: **session pooler** `…pooler.supabase.com:5432`
+    (NOT 6543 transaction pooler — Prisma migrations need a session
+    connection; NOT `db.<ref>` direct — IPv6-only on new projects).
+    DB password URL-encoded (`@`→`%40`). Pinned local Prisma 5.22.0
+    via `npx --no-install` (a stray `npx prisma` had fetched
+    prisma@7 — wrong major; avoided).
+  - `prisma migrate status` → 28 pending on a fresh/empty DB (so the
+    deploy was create-only, zero data at risk — backup moot).
+  - `prisma migrate deploy` → **all 28 applied, "successfully
+    applied"**, NEVER `migrate dev`.
+  - Verified via one Supabase SQL-editor row: **gist_count=14 ·
+    ivfflat_count=2 · TripPublication/AgentRun/TripWatch/Follow all
+    present · TripPublication.embedding present · applied=28** — the
+    curated PostGIS/pgvector hazard did NOT bite (matches the
+    locally-proven state exactly).
+- **Commit**: `docs(runbook): supabase deploy runbook` + this entry.
+- **Secrets**: the DB password passed through chat → operator must
+  ROTATE it (Supabase → Settings → Database) and store the new one
+  only in Doppler/Fly secrets. No credential is written to the repo.
+- **Remaining for a full production launch (NOT a DB action)**: the
+  app runtime — deploy api+web to Fly per `fly-deploy.md` with the
+  full secret set + `DATABASE_URL` = the `6543?pgbouncer=true`
+  transaction-pooler URL (runtime) while migrations keep using the
+  5432 session pooler. That is the separate, already-documented
+  Fly step.
+- **(Original prepared-state note retained below for history.)**
 - **Commit**: `docs(runbook): supabase deploy runbook (prepared, gated)`
 - **What**:
   - `docs/runbooks/supabase-deploy.md` — the missing DB-deploy
