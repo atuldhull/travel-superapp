@@ -24,11 +24,13 @@ import {
   type SimilarTrip,
   type TripPublicationDto,
 } from '../../lib/two-oh-api';
-import { Card, CardHeader, CardSubtitle, CardTitle } from '../../components/ui/card';
+import { motion, useReducedMotion } from 'framer-motion';
+import { ArrowUpRight, Compass, MapPin, Sparkles } from 'lucide-react';
 import { EmptyState } from '../../components/ui/empty-state';
 import { SkeletonList } from '../../components/ui/skeleton';
 import { RelativeTime } from '../../components/ui/relative-time';
 import { Button } from '../../components/ui/button';
+import { Badge } from '../../components/ui/badge';
 
 const VIS_LABEL: Record<string, string> = {
   PUBLIC: 'Public',
@@ -37,17 +39,15 @@ const VIS_LABEL: Record<string, string> = {
 };
 
 function VisibilityBadge({ v }: { v: string }) {
-  return (
-    <span className="rounded-full border border-muted/30 bg-muted/10 px-2 py-0.5 text-xs text-muted">
-      {VIS_LABEL[v] ?? v}
-    </span>
-  );
+  const variant = v === 'PUBLIC' ? 'gold' : v === 'FOLLOWERS' ? 'brand' : 'neutral';
+  return <Badge variant={variant}>{VIS_LABEL[v] ?? v}</Badge>;
 }
 
 export default function FeedPage() {
   const router = useRouter();
   const token = useAuthToken();
   const bootComplete = useAuthBootComplete();
+  const reduce = useReducedMotion();
 
   const [items, setItems] = useState<readonly TripPublicationDto[]>([]);
   const [nextBefore, setNextBefore] = useState<string | null>(null);
@@ -106,10 +106,25 @@ export default function FeedPage() {
   };
 
   return (
-    <main className="space-y-6">
-      <header className="space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight">Feed</h1>
-        <p className="text-sm text-muted">Published trips from people you follow, newest first.</p>
+    <main className="space-y-10">
+      {/* Cinematic header band. */}
+      <header
+        className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-10 shadow-(--shadow-depth-2) sm:px-10"
+        style={{ backgroundImage: 'var(--gradient-royal)' }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-gold-500/20 blur-[110px]"
+        />
+        <p className="relative inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+          <Compass aria-hidden className="h-3.5 w-3.5" /> Discover
+        </p>
+        <h1 className="relative mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+          The Feed
+        </h1>
+        <p className="relative mt-2 max-w-md text-sm text-white/65">
+          Published journeys from the travellers you follow — newest first.
+        </p>
       </header>
 
       {loading ? (
@@ -117,7 +132,7 @@ export default function FeedPage() {
       ) : error ? (
         <p
           role="alert"
-          className="rounded-md border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger"
+          className="rounded-2xl border border-danger/30 bg-danger/5 px-5 py-4 text-sm text-danger shadow-(--shadow-depth-1)"
         >
           Couldn&apos;t load the feed ({error}).
         </p>
@@ -125,49 +140,81 @@ export default function FeedPage() {
         <EmptyState
           emoji="🧭"
           title="Your feed is quiet"
-          body="Follow a few travelers, or publish one of your own ended trips, and their journeys show up here."
+          body="Follow a few travellers, or publish one of your own ended trips, and their journeys appear here."
           cta={{ href: '/trips', label: 'Go to your trips' }}
         />
       ) : (
         <>
-          <ul className="grid gap-4">
+          <motion.ul
+            className="grid gap-5"
+            initial="hidden"
+            animate="show"
+            variants={{ show: { transition: { staggerChildren: reduce ? 0 : 0.06 } } }}
+          >
             {items.map((p) => (
-              <Card as="li" key={p.tripId}>
-                <CardHeader>
-                  <div className="flex items-center justify-between gap-3">
-                    <CardTitle>
-                      <Link
-                        href={`/trips/${p.tripId}` as Route}
-                        className="hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                      >
+              <motion.li
+                key={p.tripId}
+                variants={{
+                  hidden: reduce ? { opacity: 0 } : { opacity: 0, y: 16 },
+                  show: {
+                    opacity: 1,
+                    y: 0,
+                    transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] },
+                  },
+                }}
+              >
+                <Link
+                  href={`/trips/${p.tripId}` as Route}
+                  className="group relative flex items-center gap-4 overflow-hidden rounded-2xl border border-gold-600/12 bg-surface p-5 shadow-(--shadow-depth-1) transition duration-200 hover:-translate-y-1 hover:border-gold-600/30 hover:shadow-(--shadow-depth-3) focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                >
+                  <span
+                    aria-hidden
+                    className="absolute inset-y-0 left-0 w-1"
+                    style={{ backgroundImage: 'var(--gradient-gold)' }}
+                  />
+                  <span
+                    aria-hidden
+                    className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-white shadow-(--shadow-depth-2)"
+                    style={{ backgroundImage: 'var(--gradient-royal)' }}
+                  >
+                    <Compass className="h-5 w-5" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center justify-between gap-3">
+                      <span className="font-display text-lg font-semibold tracking-tight text-surface-foreground">
                         Trip {p.tripId.slice(0, 8)}
-                      </Link>
-                    </CardTitle>
-                    <VisibilityBadge v={p.visibility} />
-                  </div>
-                  <CardSubtitle>
-                    {p.publishedAt ? (
-                      <>
-                        Published <RelativeTime at={p.publishedAt} />
-                      </>
-                    ) : (
-                      'Unpublished'
-                    )}
-                    {p.exposedLat !== null && p.exposedLng !== null ? (
-                      <>
-                        {' · ~'}
-                        {p.exposedLat.toFixed(1)},{p.exposedLng.toFixed(1)}
-                      </>
-                    ) : null}
-                  </CardSubtitle>
-                </CardHeader>
-              </Card>
+                      </span>
+                      <VisibilityBadge v={p.visibility} />
+                    </span>
+                    <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-muted">
+                      {p.publishedAt ? (
+                        <>
+                          Published&nbsp;
+                          <RelativeTime at={p.publishedAt} />
+                        </>
+                      ) : (
+                        'Unpublished'
+                      )}
+                      {p.exposedLat !== null && p.exposedLng !== null ? (
+                        <span className="inline-flex items-center gap-1 text-muted/80">
+                          <MapPin aria-hidden className="h-3.5 w-3.5" />~{p.exposedLat.toFixed(1)},
+                          {p.exposedLng.toFixed(1)}
+                        </span>
+                      ) : null}
+                    </span>
+                  </span>
+                  <ArrowUpRight
+                    aria-hidden
+                    className="h-5 w-5 shrink-0 text-muted transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-gold-600"
+                  />
+                </Link>
+              </motion.li>
             ))}
-          </ul>
+          </motion.ul>
           {nextBefore ? (
             <div className="flex justify-center">
               <Button variant="secondary" onClick={loadMore} disabled={loadingMore}>
-                {loadingMore ? 'Loading…' : 'Load more'}
+                {loadingMore ? 'Loading…' : 'Load more journeys'}
               </Button>
             </div>
           ) : null}
@@ -175,21 +222,38 @@ export default function FeedPage() {
       )}
 
       {!loading && similar.length > 0 ? (
-        <section aria-labelledby="similar-h" className="space-y-3 border-t border-muted/10 pt-6">
-          <h2 id="similar-h" className="text-lg font-semibold">
-            Trips like this
-          </h2>
+        <section aria-labelledby="similar-h" className="space-y-4">
+          <div className="flex items-center gap-3">
+            <h2
+              id="similar-h"
+              className="inline-flex items-center gap-2 font-display text-2xl font-semibold tracking-tight"
+            >
+              <Sparkles aria-hidden className="h-5 w-5 text-gold-600" /> Trips like this
+            </h2>
+            <span aria-hidden className="h-px flex-1 bg-gold-600/20" />
+          </div>
           <p className="text-sm text-muted">
-            Real published trips near the top of your feed (pgvector discovery).
+            Real published trips near the top of your feed — pgvector discovery.
           </p>
-          <ul className="grid gap-2 sm:grid-cols-2">
+          <ul className="-mx-1 flex snap-x gap-4 overflow-x-auto px-1 pb-2">
             {similar.map((s) => (
-              <li key={s.tripId}>
+              <li key={s.tripId} className="min-w-60 shrink-0 snap-start">
                 <Link
                   href={`/trips/${s.tripId}` as Route}
-                  className="block rounded-md border border-muted/15 bg-surface px-3 py-2 text-sm hover:border-accent/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  className="group relative flex h-full flex-col justify-between overflow-hidden rounded-2xl border border-gold-500/25 p-5 text-white shadow-(--shadow-depth-2) transition duration-200 hover:-translate-y-1 hover:shadow-(--shadow-glow) focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-300"
+                  style={{ backgroundImage: 'var(--gradient-royal)' }}
                 >
-                  <span className="font-medium">{s.title}</span>
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-gold-500/20 blur-2xl"
+                  />
+                  <span className="relative font-display text-lg font-semibold leading-snug">
+                    {s.title}
+                  </span>
+                  <span className="relative mt-6 inline-flex items-center gap-1 text-xs text-gold-300">
+                    Explore
+                    <ArrowUpRight className="h-3.5 w-3.5 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                  </span>
                 </Link>
               </li>
             ))}
