@@ -14,7 +14,7 @@ import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://travelsuperapp.local';
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:3000';
 
 interface PublicMemoryBook {
   readonly id: string;
