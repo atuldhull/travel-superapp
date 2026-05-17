@@ -26,6 +26,7 @@ import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { useShortcut } from '../../lib/use-shortcuts';
 import { useAuthToken } from '../../lib/use-auth-token';
+import { clearAccessToken } from '../../lib/auth-store';
 import { announce } from '../../lib/announce';
 
 interface NavItem {
@@ -84,6 +85,7 @@ export function CommandPalette() {
     } catch {
       /* best-effort */
     }
+    clearAccessToken(); // drop the in-memory token (was the lingering-session bug)
     queryClient.clear();
     announce('Signed out');
     router.replace('/login' as never);
