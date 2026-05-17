@@ -110,6 +110,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                 >
                   Navigate
                 </Link>
+                <Link
+                  href="/diary"
+                  className="hidden rounded-full px-3 py-1.5 text-sm font-medium text-muted transition hover:bg-gold-500/10 hover:text-surface-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:inline-block"
+                >
+                  Diary
+                </Link>
                 <InboxBadge />
                 <ThemeToggle />
                 <UserMenu />
