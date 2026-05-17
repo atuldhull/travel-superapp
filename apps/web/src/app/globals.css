@@ -19,39 +19,58 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  /* Core semantic colors. */
-  --color-brand: #2563eb;
+  /* ─── Premium identity ("cinematic editorial" luxe) ───────────────
+   * Warm ivory paper in light, deep ink in dark; a royal-indigo
+   * brand; a champagne-gold accent for hand-picked / premium
+   * moments. The SEMANTIC NAMES ARE UNCHANGED, so every existing
+   * component inherits this uplift with zero edits — only the
+   * values + a few additive premium tokens change. */
+  --color-brand: #2a3a73;
   --color-brand-foreground: #ffffff;
-  --color-surface: #ffffff;
-  --color-surface-foreground: #0f172a;
-  --color-muted: #64748b;
-  --color-danger: #b91c1c;
-  --color-accent: #f59e0b; /* warm amber for highlights / hand-picked pills */
+  --color-surface: #fdfcf9; /* warm ivory paper, not stark white */
+  --color-surface-foreground: #161310; /* near-black ink */
+  --color-muted: #6c6557; /* warm taupe-grey secondary text */
+  --color-danger: #b02a25;
+  --color-accent: #b3873b; /* champagne gold — highlights / hand-picked */
 
-  /* POST.2 — full brand palette (Tailwind 4 named colour scale). */
-  --color-brand-50: #eff6ff;
-  --color-brand-100: #dbeafe;
-  --color-brand-200: #bfdbfe;
-  --color-brand-300: #93c5fd;
-  --color-brand-400: #60a5fa;
-  --color-brand-500: #3b82f6;
-  --color-brand-600: #2563eb;
-  --color-brand-700: #1d4ed8;
-  --color-brand-800: #1e40af;
-  --color-brand-900: #1e3a8a;
+  /* Royal-indigo brand scale. */
+  --color-brand-50: #f2f4fb;
+  --color-brand-100: #e3e8f6;
+  --color-brand-200: #c7d0ec;
+  --color-brand-300: #a3b2dd;
+  --color-brand-400: #7088c7;
+  --color-brand-500: #4d63ab;
+  --color-brand-600: #38498a;
+  --color-brand-700: #2a3a73;
+  --color-brand-800: #233060;
+  --color-brand-900: #1d2850;
 
-  /* POST.2 — depth shadows so cards / buttons can layer cleanly. */
-  --shadow-depth-1: 0 1px 2px 0 rgba(15, 23, 42, 0.06), 0 1px 3px 0 rgba(15, 23, 42, 0.04);
-  --shadow-depth-2: 0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.06);
+  /* Champagne-gold accent scale (premium pills, hairlines, glows). */
+  --color-gold-300: #ecd9a8;
+  --color-gold-400: #e0c483;
+  --color-gold-500: #cdab63;
+  --color-gold-600: #b3873b;
+  --color-gold-700: #8f6a2c;
+
+  /* Soft, deep, faintly-warm elevation. */
+  --shadow-depth-1: 0 1px 2px 0 rgba(22, 19, 16, 0.05), 0 1px 3px 0 rgba(22, 19, 16, 0.04);
+  --shadow-depth-2:
+    0 4px 16px -4px rgba(22, 19, 16, 0.1), 0 2px 6px -2px rgba(22, 19, 16, 0.06);
   --shadow-depth-3:
-    0 10px 15px -3px rgba(15, 23, 42, 0.1), 0 4px 6px -4px rgba(15, 23, 42, 0.08);
+    0 24px 48px -14px rgba(22, 19, 16, 0.2), 0 8px 18px -8px rgba(22, 19, 16, 0.1);
+  --shadow-glow: 0 0 0 1px rgba(205, 171, 99, 0.3), 0 12px 40px -12px rgba(205, 171, 99, 0.28);
 
-  /* POST.2 — Inter loaded by next/font/google in layout.tsx is exposed
-   * as --font-inter; we plumb it into --font-sans so every Tailwind
-   * font-sans utility uses Inter, with system-ui as the fallback. */
+  /* Editorial gradients for hero / premium panels. */
+  --gradient-royal: linear-gradient(135deg, #1d2850 0%, #2a3a73 45%, #3a2d57 100%);
+  --gradient-gold: linear-gradient(135deg, #cdab63 0%, #e0c483 50%, #b3873b 100%);
+
+  /* Fonts: Inter (UI sans) + Playfair Display (luxury display serif,
+   * exposed as --font-playfair by next/font in layout.tsx). */
   --font-sans:
     var(--font-inter), system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
     sans-serif;
+  --font-display:
+    var(--font-playfair), 'Playfair Display', Georgia, 'Times New Roman', serif;
 }
 
 /*
@@ -62,18 +81,21 @@
  * shifts to a lighter slate for readable secondary text.
  */
 .dark {
-  --color-surface: #0f172a;
-  --color-surface-foreground: #f1f5f9;
-  --color-muted: #94a3b8;
-  --color-danger: #f87171;
-  --color-brand: #60a5fa;
-  --color-brand-foreground: #0b1220;
-  --color-accent: #fbbf24;
+  --color-surface: #0c0d12; /* rich, faintly-blue near-black */
+  --color-surface-foreground: #f2efe8; /* warm off-white */
+  --color-muted: #9b9588;
+  --color-danger: #ef8d86;
+  --color-brand: #93a6df; /* lifted royal-indigo for dark ground */
+  --color-brand-foreground: #0a0b10;
+  --color-accent: #e3c98c; /* brighter champagne on ink */
 
-  /* POST.2 — slightly lifted shadows in dark mode (more black, more spread). */
-  --shadow-depth-1: 0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 1px 3px 0 rgba(0, 0, 0, 0.2);
-  --shadow-depth-2: 0 4px 6px -1px rgba(0, 0, 0, 0.35), 0 2px 4px -2px rgba(0, 0, 0, 0.25);
-  --shadow-depth-3: 0 10px 15px -3px rgba(0, 0, 0, 0.45), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
+  /* Deeper, cinematic elevation on the dark ground. */
+  --shadow-depth-1: 0 1px 2px 0 rgba(0, 0, 0, 0.4), 0 1px 3px 0 rgba(0, 0, 0, 0.3);
+  --shadow-depth-2: 0 4px 16px -4px rgba(0, 0, 0, 0.5), 0 2px 6px -2px rgba(0, 0, 0, 0.35);
+  --shadow-depth-3: 0 24px 48px -14px rgba(0, 0, 0, 0.6), 0 8px 18px -8px rgba(0, 0, 0, 0.4);
+  --shadow-glow: 0 0 0 1px rgba(227, 201, 140, 0.35), 0 12px 40px -12px rgba(227, 201, 140, 0.3);
+
+  --gradient-royal: linear-gradient(135deg, #11142a 0%, #1b2347 45%, #241a39 100%);
 }
 
 /*
