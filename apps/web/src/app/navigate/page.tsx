@@ -119,7 +119,11 @@ export default function NavigatePage() {
   const [data, setData] = useState<NavRouteSet | null>(null);
   const [selectedId, setSelectedId] = useState<string>('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{
+    kind: 'auth' | 'route' | 'offline';
+    title: string;
+    body: string;
+  } | null>(null);
   const [liveLoc, setLiveLoc] = useState(false);
   const [gpsBusy, setGpsBusy] = useState(false);
   const [fromSel, setFromSel] = useState<GeoPlace | null>(null);
@@ -133,11 +137,47 @@ export default function NavigatePage() {
       setData(res);
       setSelectedId(res.recommendedRouteId);
     } catch (err) {
-      // Tell the truth: an expired/invalid session (401) is NOT an
-      // API outage. Mislabelling it "offline" sent people chasing a
-      // non-existent server problem.
-      const e = err as { status?: number; code?: string };
-      setError(e?.status === 401 || e?.code === 'UNAUTHENTICATED' ? 'auth' : 'offline');
+      // Tell the TRUTH per error code. A too-long / unroutable / auth
+      // failure is NOT "the API is offline" — mislabelling those is
+      // what made navigation look permanently broken.
+      const e = err as { status?: number; code?: string; message?: string };
+      if (e?.status === 401 || e?.code === 'UNAUTHENTICATED') {
+        setError({ kind: 'auth', title: 'Your session expired', body: 'Your sign-in lapsed.' });
+      } else if (e?.code === 'ROUTE_TOO_LONG') {
+        setError({
+          kind: 'route',
+          title: 'That route is too far for live nav',
+          body: 'Live navigation covers up to ~1500 km point-to-point (e.g. Yelahanka → New Delhi is ~1,740 km). Pick closer places, or use the trip planner for cross-country journeys.',
+        });
+      } else if (e?.code === 'NO_ROUTE_FOUND') {
+        setError({
+          kind: 'route',
+          title: 'No drivable route found',
+          body: 'We couldn’t find a road route between those points. Try different spots.',
+        });
+      } else if (e?.code === 'SAME_ORIGIN_DESTINATION') {
+        setError({
+          kind: 'route',
+          title: 'Start and destination are the same',
+          body: 'Pick two different places to plot a route.',
+        });
+      } else if (
+        e?.code === 'INVALID_COORDINATES' ||
+        e?.code === 'TOO_MANY_WAYPOINTS' ||
+        e?.code === 'VALIDATION_FAILED'
+      ) {
+        setError({
+          kind: 'route',
+          title: 'Couldn’t plot that route',
+          body: e?.message ?? 'Check the points and try again.',
+        });
+      } else {
+        setError({
+          kind: 'offline',
+          title: 'The navigator is offline',
+          body: 'We couldn’t reach the routing API. Once it’s running, the map and live routes appear here.',
+        });
+      }
       setData(null);
     } finally {
       setLoading(false);
@@ -331,37 +371,44 @@ export default function NavigatePage() {
 
       {!bootComplete || (loading && !data) ? (
         <SkeletonCard count={1} />
-      ) : !token || error === 'auth' ? (
+      ) : !token || error?.kind === 'auth' ? (
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-gold-600/15 bg-surface px-6 py-14 text-center shadow-(--shadow-depth-1)">
           <span className="grid h-16 w-16 place-items-center rounded-2xl border border-gold-500/25 bg-gold-500/8 text-gold-600 shadow-(--shadow-depth-1)">
             <ShieldAlert aria-hidden className="h-7 w-7" />
           </span>
           <h2 className="font-display text-xl font-semibold tracking-tight text-surface-foreground">
-            {error === 'auth' ? 'Your session expired' : 'Sign in to navigate'}
+            {error?.kind === 'auth' ? 'Your session expired' : 'Sign in to navigate'}
           </h2>
           <p className="max-w-sm text-sm leading-relaxed text-muted">
-            {error === 'auth' ? 'Your sign-in lapsed. ' : 'Live navigation is a member surface. '}
+            {error?.kind === 'auth'
+              ? 'Your sign-in lapsed. '
+              : 'Live navigation is a member surface. '}
             <Link href="/login" className="text-gold-600 underline-offset-4 hover:underline">
               Sign in
             </Link>{' '}
-            {error === 'auth' ? 'again to plot a route.' : 'to plot a route.'}
+            {error?.kind === 'auth' ? 'again to plot a route.' : 'to plot a route.'}
           </p>
         </div>
       ) : error ? (
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-gold-600/15 bg-surface px-6 py-14 text-center shadow-(--shadow-depth-1)">
           <span className="grid h-16 w-16 place-items-center rounded-2xl border border-gold-500/25 bg-gold-500/8 text-gold-600 shadow-(--shadow-depth-1)">
-            <CloudOff aria-hidden className="h-7 w-7" />
+            {error.kind === 'route' ? (
+              <TriangleAlert aria-hidden className="h-7 w-7" />
+            ) : (
+              <CloudOff aria-hidden className="h-7 w-7" />
+            )}
           </span>
           <h2 className="font-display text-xl font-semibold tracking-tight text-surface-foreground">
-            The navigator is offline
+            {error.title}
           </h2>
-          <p className="max-w-sm text-sm leading-relaxed text-muted">
-            We couldn&apos;t reach the routing API. Once it&apos;s running the map and live routes
-            appear here.
-          </p>
-          <Button variant="royal" onClick={() => load(origin, destination)} className="mt-1">
-            Try again
-          </Button>
+          <p className="max-w-sm text-sm leading-relaxed text-muted">{error.body}</p>
+          {error.kind === 'offline' ? (
+            <Button variant="royal" onClick={() => load(origin, destination)} className="mt-1">
+              Try again
+            </Button>
+          ) : (
+            <p className="mt-1 text-xs text-muted">Adjust “From / To” above and Plot again.</p>
+          )}
         </div>
       ) : data && selected ? (
         <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
