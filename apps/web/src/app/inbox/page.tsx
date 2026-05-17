@@ -27,6 +27,7 @@ import {
   type NotificationLogDto,
   type NotificationPreferencesDto,
 } from '@app/sdk';
+import { Bell } from 'lucide-react';
 import { Card, CardHeader, CardSubtitle, CardTitle } from '../../components/ui/card';
 import { EmptyState } from '../../components/ui/empty-state';
 import { Skeleton, SkeletonList } from '../../components/ui/skeleton';
@@ -94,9 +95,17 @@ export default function InboxPage() {
   if (token === null) {
     return (
       <main>
-        <Card>
-          <p className="text-sm text-muted">Sign in to see your inbox.</p>
-        </Card>
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-gold-600/15 bg-surface px-6 py-14 text-center shadow-(--shadow-depth-1)">
+          <span className="grid h-16 w-16 place-items-center rounded-2xl border border-gold-500/25 bg-gold-500/8 text-gold-600 shadow-(--shadow-depth-1)">
+            <Bell aria-hidden className="h-7 w-7" />
+          </span>
+          <h2 className="font-display text-xl font-semibold tracking-tight text-surface-foreground">
+            Sign in to see your inbox
+          </h2>
+          <p className="max-w-sm text-sm leading-relaxed text-muted">
+            Trip locks, shared itineraries, and safety updates land here.
+          </p>
+        </div>
       </main>
     );
   }
@@ -192,28 +201,38 @@ export default function InboxPage() {
 
   return (
     <main className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Inbox</CardTitle>
-          <CardSubtitle>
-            Your notifications, newest first. Swipe-to-archive trims the list; delete is permanent.
-          </CardSubtitle>
-        </CardHeader>
-        <div className="mt-3">
+      <header
+        className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-10 shadow-(--shadow-depth-2) sm:px-10"
+        style={{ backgroundImage: 'var(--gradient-royal)' }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/20 blur-[110px]"
+        />
+        <p className="relative inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+          <Bell aria-hidden className="h-3.5 w-3.5" /> Inbox
+        </p>
+        <h1 className="relative mt-3 font-display text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+          What needs your attention
+        </h1>
+        <p className="relative mt-2 max-w-md text-sm text-white/65">
+          Notifications newest first. Swipe-to-archive trims the list; delete is permanent.
+        </p>
+        <div className="relative mt-5 flex flex-wrap items-center gap-3">
           <button
             type="button"
             onClick={handleEnablePush}
             disabled={pushBusy}
-            className="rounded-md border border-brand/40 px-3 py-1.5 text-xs hover:bg-brand/10 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-full border border-gold-500/40 bg-white/5 px-3.5 py-1.5 text-xs font-medium text-gold-200 backdrop-blur-sm transition hover:bg-white/10 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
-            🔔 Enable browser push
+            <Bell aria-hidden className="h-3.5 w-3.5" /> Enable browser push
           </button>
           {pushResult ? (
-            <span className="ml-3 text-xs text-muted">{renderPushResult(pushResult)}</span>
+            <span className="text-xs text-white/65">{renderPushResult(pushResult)}</span>
           ) : null}
         </div>
-        {errMsg ? <p className="mt-2 text-xs text-danger">{errMsg}</p> : null}
-      </Card>
+        {errMsg ? <p className="relative mt-2 text-xs text-red-300">{errMsg}</p> : null}
+      </header>
 
       <Card>
         <CardHeader>
@@ -268,7 +287,7 @@ export default function InboxPage() {
         {list.isLoading ? (
           <SkeletonList rows={4} />
         ) : list.isError ? (
-          <p className="text-sm text-danger">Couldn&apos;t load inbox.</p>
+          <p className="text-sm text-red-600 dark:text-red-400">Couldn&apos;t load inbox.</p>
         ) : items && items.notifications.length > 0 ? (
           <ul className="space-y-2">
             {items.notifications.map((n) => {
