@@ -43,12 +43,16 @@ import { Button } from '../../components/ui/button';
 import { SkeletonCard } from '../../components/ui/skeleton';
 import { DestinationImage } from '../../components/ui/destination-image';
 
+const navMapLoading = () => (
+  <div className="h-115 w-full animate-pulse rounded-2xl bg-gold-500/5" />
+);
 const LiveNavMap = dynamic(
   () => import('../../components/nav/live-nav-map').then((m) => m.LiveNavMap),
-  {
-    ssr: false,
-    loading: () => <div className="h-[460px] w-full animate-pulse rounded-2xl bg-gold-500/5" />,
-  },
+  { ssr: false, loading: navMapLoading },
+);
+const OfflineVectorMap = dynamic(
+  () => import('../../components/nav/offline-vector-map').then((m) => m.OfflineVectorMap),
+  { ssr: false, loading: navMapLoading },
 );
 
 interface Preset {
@@ -128,6 +132,9 @@ export default function NavigatePage() {
   const [gpsBusy, setGpsBusy] = useState(false);
   const [fromSel, setFromSel] = useState<GeoPlace | null>(null);
   const [toSel, setToSel] = useState<GeoPlace | null>(null);
+  // 'raster' = reliable Leaflet/OSM (default + fallback); 'vector' =
+  // MapLibre + Protomaps PMTiles (offline-capable, Organic-Maps-class).
+  const [renderer, setRenderer] = useState<'raster' | 'vector'>('raster');
 
   const load = useCallback(async (o: NavPoint, d: NavPoint) => {
     setLoading(true);
@@ -417,14 +424,49 @@ export default function NavigatePage() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, ease: 'easeOut' }}
           >
-            <LiveNavMap
-              routes={data.routes}
-              selectedRouteId={selected.id}
-              recommendedRouteId={data.recommendedRouteId}
-              onSelectRoute={setSelectedId}
-              showLiveLocation={liveLoc}
-              className="h-[460px] w-full"
-            />
+            <div className="mb-3 inline-flex rounded-full border border-gold-600/20 bg-surface p-0.5 text-xs">
+              {(
+                [
+                  ['raster', '🗺️ Raster'],
+                  ['vector', '🛰️ Vector · offline'],
+                ] as const
+              ).map(([v, label]) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setRenderer(v)}
+                  aria-pressed={renderer === v}
+                  className={
+                    'rounded-full px-3 py-1 font-medium transition ' +
+                    (renderer === v
+                      ? 'text-brand-900 shadow-(--shadow-depth-1)'
+                      : 'text-muted hover:text-surface-foreground')
+                  }
+                  style={renderer === v ? { backgroundImage: 'var(--gradient-gold)' } : undefined}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {renderer === 'vector' ? (
+              <OfflineVectorMap
+                routes={data.routes}
+                selectedRouteId={selected.id}
+                recommendedRouteId={data.recommendedRouteId}
+                onSelectRoute={setSelectedId}
+                showLiveLocation={liveLoc}
+                className="h-115 w-full"
+              />
+            ) : (
+              <LiveNavMap
+                routes={data.routes}
+                selectedRouteId={selected.id}
+                recommendedRouteId={data.recommendedRouteId}
+                onSelectRoute={setSelectedId}
+                showLiveLocation={liveLoc}
+                className="h-115 w-full"
+              />
+            )}
             {/* Traffic legend */}
             <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted">
               {(
