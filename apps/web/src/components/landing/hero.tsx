@@ -13,10 +13,11 @@
  */
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { motion, useReducedMotion, type Variants } from 'framer-motion';
 import { ArrowRight, MoveDown, Sparkles } from 'lucide-react';
+import { DestinationImage } from '../ui/destination-image';
+import { HERO_DEFAULT_PLACE } from '../../lib/destination-image';
 
 const GOLD_TEXT: React.CSSProperties = {
   backgroundImage: 'var(--gradient-gold)',
@@ -132,15 +133,18 @@ export function LandingHero() {
           animate={reduce ? undefined : { y: [0, -12, 0] }}
           transition={reduce ? undefined : { duration: 7, repeat: Infinity, ease: 'easeInOut' }}
         >
-          <div className="rounded-3xl border border-gold-500/25 bg-white/5 p-4 shadow-(--shadow-depth-3) backdrop-blur-md">
-            <Image
-              src="/illustrations/hero.svg"
-              alt="Stylised travel scene — mountains, a route arc, a paper plane, and an itinerary card"
-              width={480}
-              height={360}
+          <div className="rounded-3xl border border-gold-500/25 bg-white/5 p-3 shadow-(--shadow-depth-3) backdrop-blur-md">
+            <DestinationImage
+              place={HERO_DEFAULT_PLACE}
+              alt="A breathtaking destination awaiting you"
               priority
-              className="h-auto w-full"
+              scrim
+              rounded="rounded-2xl"
+              className="aspect-[4/3] w-full"
             />
+            <p className="px-1 pb-1 pt-3 text-center text-xs font-medium tracking-wide text-white/55">
+              Real places. Real journeys. Yours to plan.
+            </p>
           </div>
         </motion.div>
       </motion.div>
