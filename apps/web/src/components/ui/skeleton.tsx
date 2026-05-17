@@ -25,7 +25,7 @@ export function Skeleton({ className, count = 1 }: SkeletonProps) {
   return (
     <div className="space-y-2" aria-hidden="true">
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className={cn('h-4 w-full animate-pulse rounded bg-muted/15', className)} />
+        <div key={i} className={cn('shimmer h-4 w-full rounded-lg', className)} />
       ))}
     </div>
   );
@@ -42,9 +42,12 @@ export function SkeletonList({ rows = 3, className }: SkeletonListProps) {
   return (
     <ul aria-hidden="true" className={cn('space-y-2', className)}>
       {Array.from({ length: rows }).map((_, i) => (
-        <li key={i} className="space-y-2 rounded-md border border-muted/15 bg-surface px-3 py-2">
-          <div className="h-4 w-2/3 animate-pulse rounded bg-muted/20" />
-          <div className="h-3 w-1/2 animate-pulse rounded bg-muted/15" />
+        <li
+          key={i}
+          className="space-y-2.5 rounded-2xl border border-gold-600/12 bg-surface px-4 py-3.5 shadow-(--shadow-depth-1)"
+        >
+          <div className="shimmer h-4 w-2/3 rounded-lg" />
+          <div className="shimmer h-3 w-1/2 rounded-lg" />
         </li>
       ))}
     </ul>
@@ -61,14 +64,17 @@ export function SkeletonCard({ count = 1, className }: SkeletonCardProps) {
   return (
     <div aria-hidden="true" className={cn('grid gap-3', className)}>
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="space-y-3 rounded-md border border-muted/15 bg-surface p-4">
-          <div className="h-5 w-3/4 animate-pulse rounded bg-muted/20" />
+        <div
+          key={i}
+          className="space-y-3.5 rounded-2xl border border-gold-600/12 bg-surface p-5 shadow-(--shadow-depth-1)"
+        >
+          <div className="shimmer h-5 w-3/4 rounded-lg" />
           <div className="space-y-2">
-            <div className="h-3 w-full animate-pulse rounded bg-muted/15" />
-            <div className="h-3 w-11/12 animate-pulse rounded bg-muted/15" />
-            <div className="h-3 w-9/12 animate-pulse rounded bg-muted/15" />
+            <div className="shimmer h-3 w-full rounded-lg" />
+            <div className="shimmer h-3 w-11/12 rounded-lg" />
+            <div className="shimmer h-3 w-9/12 rounded-lg" />
           </div>
-          <div className="h-7 w-28 animate-pulse rounded bg-muted/15" />
+          <div className="shimmer h-9 w-32 rounded-full" />
         </div>
       ))}
     </div>

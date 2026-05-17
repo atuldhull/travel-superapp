@@ -129,3 +129,42 @@ html.comfort :is(
   padding-top: 0.6rem;
   padding-bottom: 0.6rem;
 }
+
+/* ─── Premium motion + surface helpers ──────────────────────────────
+ * Used by the elevated UI primitives. `.shimmer` is a couture
+ * loading sweep (replaces the flat pulse); `.glass` is the frosted
+ * panel used by cards / menus / the header. Both honour
+ * prefers-reduced-motion. Installed with the premium frontend pass. */
+@keyframes shimmer-sweep {
+  100% {
+    transform: translateX(100%);
+  }
+}
+.shimmer {
+  position: relative;
+  overflow: hidden;
+  background: color-mix(in oklab, var(--color-muted) 14%, transparent);
+}
+.shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklab, var(--color-surface) 60%, transparent),
+    transparent
+  );
+  animation: shimmer-sweep 1.6s infinite;
+}
+.glass {
+  background: color-mix(in oklab, var(--color-surface) 72%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .shimmer::after {
+    animation: none;
+  }
+}

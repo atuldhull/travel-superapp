@@ -29,7 +29,7 @@ import { cn } from '../../lib/cn';
 
 /** Public variant names. `outline` is a backwards-compat alias for
  *  `secondary` so V.UX-era call sites don't break. */
-type Variant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+type Variant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'royal';
 type Size = 'sm' | 'md' | 'lg';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -39,25 +39,31 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const base =
-  'inline-flex items-center justify-center gap-1.5 rounded-md font-semibold ' +
-  'transition-[transform,box-shadow,background-color,color] duration-150 ' +
+  'inline-flex items-center justify-center gap-2 rounded-full font-semibold ' +
+  'transition-[transform,box-shadow,background-color,border-color,color] duration-200 ease-out ' +
   'select-none whitespace-nowrap ' +
-  'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-surface ' +
+  'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface ' +
   'disabled:opacity-50 disabled:pointer-events-none ' +
-  'active:translate-y-0';
+  'active:translate-y-0 active:scale-[0.98]';
 
 const SECONDARY =
-  'border border-brand/40 text-brand bg-transparent ' +
-  'hover:-translate-y-0.5 hover:bg-brand/5 hover:border-brand/70';
+  'border border-brand/35 text-brand bg-transparent ' +
+  'hover:-translate-y-0.5 hover:bg-brand/8 hover:border-brand/60';
 
 const variantStyles: Record<Variant, string> = {
   primary:
     'bg-brand text-brand-foreground shadow-(--shadow-depth-2) ' +
-    'hover:-translate-y-0.5 hover:shadow-(--shadow-depth-3) hover:bg-brand-700 ' +
+    'hover:-translate-y-0.5 hover:shadow-(--shadow-depth-3) hover:bg-brand-600 ' +
     'active:shadow-(--shadow-depth-1)',
+  // Champagne-gold gradient — the couture CTA (premium moments).
+  royal:
+    'text-brand-900 shadow-(--shadow-glow) bg-[image:var(--gradient-gold)] ' +
+    'hover:-translate-y-0.5 active:shadow-(--shadow-depth-1)',
   secondary: SECONDARY,
   outline: SECONDARY, // alias for V.UX-era call sites
-  ghost: 'border border-muted/15 text-surface-foreground bg-transparent ' + 'hover:bg-muted/10',
+  ghost:
+    'border border-muted/15 text-surface-foreground bg-transparent ' +
+    'hover:bg-gold-500/10 hover:border-gold-600/30',
   danger:
     'bg-danger text-white shadow-(--shadow-depth-2) ' +
     'hover:-translate-y-0.5 hover:shadow-(--shadow-depth-3) hover:opacity-90 ' +
@@ -65,9 +71,9 @@ const variantStyles: Record<Variant, string> = {
 };
 
 const sizeStyles: Record<Size, string> = {
-  sm: 'px-3 py-1.5 text-xs',
-  md: 'px-4 py-2 text-sm',
-  lg: 'px-5 py-2.5 text-base',
+  sm: 'px-3.5 py-1.5 text-xs',
+  md: 'px-5 py-2.5 text-sm',
+  lg: 'px-7 py-3 text-base',
 };
 
 function Spinner({ className }: { className?: string }) {
