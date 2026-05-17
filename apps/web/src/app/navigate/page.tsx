@@ -21,7 +21,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useAuthBootComplete, useAuthToken } from '../../lib/use-auth-token';
 import { getNavigation, type NavPoint, type NavRouteSet } from '../../lib/two-oh-api';
-import type { GeoPlace } from '../../lib/geocode';
+import { searchPlaces, type GeoPlace } from '../../lib/geocode';
 import { PlaceSearch } from '../../components/nav/place-search';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
@@ -145,7 +145,34 @@ export default function NavigatePage() {
   }, []);
 
   useEffect(() => {
-    if (bootComplete && token) void load(origin, destination);
+    if (!bootComplete || !token) return;
+    const q = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    // Pillar link: arriving from a trip with ?from/?to place names —
+    // geocode them and auto-plot. Otherwise load the default preset.
+    const fromQ = q?.get('from');
+    const toQ = q?.get('to');
+    if (fromQ || toQ) {
+      void (async () => {
+        const [fr, to] = await Promise.all([
+          fromQ ? searchPlaces(fromQ) : Promise.resolve([] as readonly GeoPlace[]),
+          toQ ? searchPlaces(toQ) : Promise.resolve([] as readonly GeoPlace[]),
+        ]);
+        const f = fr[0] ?? null;
+        const t = to[0] ?? null;
+        if (f) setFromSel(f);
+        if (t) setToSel(t);
+        if (f && t) {
+          setPresetIdx(-1);
+          const o: NavPoint = { lat: f.lat, lng: f.lng };
+          const d: NavPoint = { lat: t.lat, lng: t.lng };
+          setOrigin(o);
+          setDestination(d);
+          void load(o, d);
+        }
+      })();
+      return;
+    }
+    void load(origin, destination);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bootComplete, token]);
 

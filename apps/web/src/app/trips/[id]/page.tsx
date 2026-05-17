@@ -364,6 +364,21 @@ function ReadView({
           </div>
           <div className="flex flex-wrap gap-2">
             <Link
+              href={`/navigate?to=${encodeURIComponent(trip.title)}` as never}
+              className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm font-semibold text-brand-900 shadow-(--shadow-depth-1) transition hover:opacity-90"
+              style={{ backgroundImage: 'var(--gradient-gold)' }}
+            >
+              🧭 Navigate
+            </Link>
+            <Link
+              href={
+                `/diary?tripId=${encodeURIComponent(trip.id)}&title=${encodeURIComponent(`Day in ${trip.title}`)}` as never
+              }
+              className="inline-flex items-center gap-1 rounded-md border border-gold-600/25 px-3 py-1.5 text-sm font-medium text-gold-700 transition hover:bg-gold-500/10 dark:text-gold-300"
+            >
+              ✍️ Write diary
+            </Link>
+            <Link
               href={`/trips/${trip.id}/overview` as never}
               className="inline-flex items-center gap-1 rounded-md border border-gold-600/25 px-3 py-1.5 text-sm font-medium text-gold-700 transition hover:bg-gold-500/10 dark:text-gold-300"
             >
