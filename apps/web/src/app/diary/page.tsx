@@ -36,6 +36,7 @@ import {
   Gem,
   Library,
   Lock,
+  MapPinned,
   NotebookPen,
   Sparkles,
   ShieldAlert,
@@ -82,6 +83,18 @@ export default function DiaryPage() {
   const [aiAssisted, setAiAssisted] = useState(false);
   const [busy, setBusy] = useState<null | 'save' | 'prompt' | 'polish' | 'title'>(null);
   const [prompts, setPrompts] = useState<readonly string[]>([]);
+  // Pillar link: arriving from a trip pre-fills the composer + links
+  // the entry to that trip (+10 pts). Read once on mount (client-only,
+  // no Suspense needed vs. useSearchParams).
+  const [linkedTripId, setLinkedTripId] = useState<string | null>(null);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const q = new URLSearchParams(window.location.search);
+    const tid = q.get('tripId');
+    const t = q.get('title');
+    if (tid) setLinkedTripId(tid);
+    if (t) setTitle(t);
+  }, []);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -142,6 +155,7 @@ export default function DiaryPage() {
         title: title.trim(),
         body: body.trim(),
         ...(mood ? { mood } : {}),
+        ...(linkedTripId ? { tripId: linkedTripId } : {}),
         aiAssisted,
       });
       setEntries((prev) => [res.entry, ...prev]);
@@ -157,6 +171,7 @@ export default function DiaryPage() {
       setMood('');
       setPrompts([]);
       setAiAssisted(false);
+      setLinkedTripId(null);
     } catch {
       toast.error('Could not save — try again');
     } finally {
@@ -236,6 +251,12 @@ export default function DiaryPage() {
             <h2 className="font-display text-xl font-semibold tracking-tight text-surface-foreground">
               New entry
             </h2>
+            {linkedTripId ? (
+              <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-gold-600/30 bg-gold-500/10 px-3 py-1.5 text-xs font-medium text-gold-700 dark:text-gold-300">
+                <MapPinned aria-hidden className="h-3.5 w-3.5" />
+                Writing for your trip · this entry earns +10 bonus points
+              </p>
+            ) : null}
             <div className="mt-4 space-y-3">
               <input
                 value={title}
@@ -352,6 +373,7 @@ export default function DiaryPage() {
                           {e.title}
                         </h3>
                         <div className="flex shrink-0 items-center gap-2">
+                          {e.tripId && <Badge variant="success">Trip</Badge>}
                           {e.mood && <Badge variant="brand">{e.mood}</Badge>}
                           {e.aiAssisted && <Badge variant="gold">Assisted</Badge>}
                         </div>
