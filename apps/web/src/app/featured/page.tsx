@@ -29,6 +29,7 @@ import {
 import { ArrowLeft, BookOpen, CloudOff, Sparkles } from 'lucide-react';
 import { Badge } from '../../components/ui/badge';
 import { SkeletonCard } from '../../components/ui/skeleton';
+import { DestinationImage } from '../../components/ui/destination-image';
 
 export default function FeaturedPage() {
   const { data, isLoading, isError } = useMemoryBookControllerFeatured({ limit: '20' });
@@ -106,21 +107,26 @@ export default function FeaturedPage() {
             <li key={b.id}>
               <Link
                 href={`/memory-books/${b.id}` as never}
-                className="group relative flex h-full flex-col gap-3 overflow-hidden rounded-2xl border border-gold-600/12 bg-surface p-5 shadow-(--shadow-depth-1) transition duration-200 hover:-translate-y-1 hover:border-gold-600/30 hover:shadow-(--shadow-depth-3) focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-gold-600/12 bg-surface shadow-(--shadow-depth-1) transition duration-200 hover:-translate-y-1 hover:border-gold-600/30 hover:shadow-(--shadow-depth-3) focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >
-                <span
-                  aria-hidden
-                  className="pointer-events-none absolute -right-12 -top-12 h-28 w-28 rounded-full bg-gold-500/10 blur-2xl transition group-hover:bg-gold-500/20"
+                <DestinationImage
+                  place={b.title}
+                  alt={b.title}
+                  scrim
+                  rounded="rounded-none"
+                  className="aspect-video w-full transition duration-300 group-hover:scale-[1.03]"
                 />
-                <div className="flex items-start justify-between gap-3">
-                  <h2 className="font-display text-xl font-semibold leading-snug tracking-tight text-surface-foreground">
-                    {b.title}
-                  </h2>
-                  <Badge variant="gold">{b.theme}</Badge>
+                <div className="flex flex-1 flex-col gap-3 p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <h2 className="font-display text-xl font-semibold leading-snug tracking-tight text-surface-foreground">
+                      {b.title}
+                    </h2>
+                    <Badge variant="gold">{b.theme}</Badge>
+                  </div>
+                  <p className="mt-auto text-sm text-muted">
+                    Published {new Date(b.publishedAt).toLocaleDateString()}
+                  </p>
                 </div>
-                <p className="mt-auto text-sm text-muted">
-                  Published {new Date(b.publishedAt).toLocaleDateString()}
-                </p>
               </Link>
             </li>
           ))}
