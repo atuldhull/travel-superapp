@@ -73,7 +73,13 @@ export function ItineraryGlobe({ plan, city, center, className }: ItineraryGlobe
 
   // A royal, texture-less globe material — zero external assets.
   const globeMaterial = useMemo(
-    () => new MeshPhongMaterial({ color: '#161d3f', emissive: '#0a0e24', shininess: 8 }),
+    () =>
+      new MeshPhongMaterial({
+        color: '#1b2150',
+        emissive: '#10184a',
+        emissiveIntensity: 0.9,
+        shininess: 22,
+      }),
     [],
   );
 
@@ -99,13 +105,14 @@ export function ItineraryGlobe({ plan, city, center, className }: ItineraryGlobe
       const acc: Stop[] = [start];
       for (const c of candidates) {
         if (!alive) return;
-        const g = await geocodeOne(c.name, city);
+        const g = await geocodeOne(c.name, city, center);
         if (!alive) return;
         if (g && haversineKm({ lat: g.lat, lng: g.lng }, center) <= MAX_KM_FROM_CITY) {
           acc.push({ name: c.name, lat: g.lat, lng: g.lng });
           setStops(acc.slice());
         }
-        await new Promise((r) => setTimeout(r, 420));
+        // Photon is lenient — keep it snappy so the journey fills in.
+        await new Promise((r) => setTimeout(r, 220));
       }
       if (alive) setStatus('done');
     })();
@@ -155,7 +162,7 @@ export function ItineraryGlobe({ plan, city, center, className }: ItineraryGlobe
         backgroundColor="rgba(0,0,0,0)"
         globeMaterial={globeMaterial}
         atmosphereColor={GOLD}
-        atmosphereAltitude={0.18}
+        atmosphereAltitude={0.28}
         showGraticules
         arcsData={arcs as object[]}
         arcStartLat="startLat"
@@ -163,34 +170,34 @@ export function ItineraryGlobe({ plan, city, center, className }: ItineraryGlobe
         arcEndLat="endLat"
         arcEndLng="endLng"
         arcColor={() => [GOLD_HOT, GOLD]}
-        arcAltitudeAutoScale={0.5}
-        arcStroke={0.6}
-        arcDashLength={0.45}
-        arcDashGap={0.25}
+        arcAltitudeAutoScale={0.62}
+        arcStroke={1.1}
+        arcDashLength={0.4}
+        arcDashGap={0.16}
         arcDashInitialGap={1}
-        arcDashAnimateTime={reduce ? 0 : 2200}
-        arcsTransitionDuration={600}
+        arcDashAnimateTime={reduce ? 0 : 1600}
+        arcsTransitionDuration={500}
         pointsData={stops as object[]}
         pointLat="lat"
         pointLng="lng"
         pointColor={(d) => ((d as Stop).start ? GOLD_HOT : GOLD)}
-        pointAltitude={0.012}
-        pointRadius={0.32}
-        pointsTransitionDuration={500}
-        ringsData={(reduce ? [] : stops.slice(-1)) as object[]}
+        pointAltitude={0.02}
+        pointRadius={(d) => ((d as Stop).start ? 0.7 : 0.5)}
+        pointsTransitionDuration={400}
+        ringsData={(reduce ? stops.slice(-1) : stops) as object[]}
         ringLat="lat"
         ringLng="lng"
-        ringColor={() => (t: number) => `rgba(205,171,99,${Math.max(0, 1 - t)})`}
-        ringMaxRadius={3.5}
-        ringPropagationSpeed={2}
-        ringRepeatPeriod={900}
+        ringColor={() => (t: number) => `rgba(240,217,154,${Math.max(0, 1 - t)})`}
+        ringMaxRadius={4}
+        ringPropagationSpeed={2.4}
+        ringRepeatPeriod={reduce ? 0 : 1100}
         labelsData={stops as object[]}
         labelLat="lat"
         labelLng="lng"
         labelText={(d) => (d as Stop).name}
-        labelSize={0.9}
-        labelDotRadius={0.28}
-        labelColor={() => 'rgba(240,217,154,0.9)'}
+        labelSize={1.15}
+        labelDotRadius={0.38}
+        labelColor={() => 'rgba(243,224,166,0.95)'}
         labelResolution={2}
         onGlobeReady={() => {
           const g = globeRef.current;
@@ -201,9 +208,12 @@ export function ItineraryGlobe({ plan, city, center, className }: ItineraryGlobe
             enableZoom: boolean;
           };
           controls.autoRotate = !reduce;
-          controls.autoRotateSpeed = 0.55;
-          controls.enableZoom = false;
-          g.pointOfView({ lat: center.lat, lng: center.lng, altitude: 2.3 }, 0);
+          controls.autoRotateSpeed = 0.7;
+          controls.enableZoom = true;
+          // Cinematic approach: start far in space, glide down to the
+          // trip city.
+          g.pointOfView({ lat: center.lat, lng: center.lng, altitude: 3.4 }, 0);
+          g.pointOfView({ lat: center.lat, lng: center.lng, altitude: 2.2 }, reduce ? 0 : 1600);
         }}
       />
       <div className="pointer-events-none absolute left-3 top-3 z-10 rounded-full border border-gold-500/40 bg-black/45 px-3 py-1 text-xs font-medium text-gold-200 backdrop-blur-sm">
