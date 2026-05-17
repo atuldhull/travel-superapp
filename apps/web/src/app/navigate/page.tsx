@@ -127,8 +127,12 @@ export default function NavigatePage() {
       const res = await getNavigation({ origin: o, destination: d });
       setData(res);
       setSelectedId(res.recommendedRouteId);
-    } catch {
-      setError('offline');
+    } catch (err) {
+      // Tell the truth: an expired/invalid session (401) is NOT an
+      // API outage. Mislabelling it "offline" sent people chasing a
+      // non-existent server problem.
+      const e = err as { status?: number; code?: string };
+      setError(e?.status === 401 || e?.code === 'UNAUTHENTICATED' ? 'auth' : 'offline');
       setData(null);
     } finally {
       setLoading(false);
@@ -234,20 +238,20 @@ export default function NavigatePage() {
 
       {!bootComplete || (loading && !data) ? (
         <SkeletonCard count={1} />
-      ) : !token ? (
+      ) : !token || error === 'auth' ? (
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-gold-600/15 bg-surface px-6 py-14 text-center shadow-(--shadow-depth-1)">
           <span className="grid h-16 w-16 place-items-center rounded-2xl border border-gold-500/25 bg-gold-500/8 text-gold-600 shadow-(--shadow-depth-1)">
             <ShieldAlert aria-hidden className="h-7 w-7" />
           </span>
           <h2 className="font-display text-xl font-semibold tracking-tight text-surface-foreground">
-            Sign in to navigate
+            {error === 'auth' ? 'Your session expired' : 'Sign in to navigate'}
           </h2>
           <p className="max-w-sm text-sm leading-relaxed text-muted">
-            Live navigation is a member surface.{' '}
+            {error === 'auth' ? 'Your sign-in lapsed. ' : 'Live navigation is a member surface. '}
             <Link href="/login" className="text-gold-600 underline-offset-4 hover:underline">
               Sign in
             </Link>{' '}
-            to plot a route.
+            {error === 'auth' ? 'again to plot a route.' : 'to plot a route.'}
           </p>
         </div>
       ) : error ? (
