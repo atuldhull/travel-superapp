@@ -201,7 +201,7 @@ export default function TripDetailPage() {
     const e = error as ApiError;
     return (
       <main className="space-y-4">
-        <p className="rounded-md border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
+        <p className="rounded-md border border-red-500/30 bg-red-500/5 px-4 py-3 text-sm text-red-600 dark:text-red-400">
           Couldn't load trip ({e.code ?? `HTTP_${e.status ?? '???'}`}). {e.message ?? ''}
         </p>
         <p>
@@ -297,7 +297,7 @@ export default function TripDetailPage() {
             </CardSubtitle>
           </CardHeader>
           {errorMsg ? (
-            <p className="mb-3 rounded-md border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">
+            <p className="mb-3 rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-sm text-red-600 dark:text-red-400">
               {errorMsg}
             </p>
           ) : null}
@@ -306,7 +306,7 @@ export default function TripDetailPage() {
               variant="primary"
               onClick={() => deleteMutation.mutate({ id })}
               disabled={deleteMutation.isPending}
-              className="bg-danger text-white hover:opacity-90"
+              className="bg-red-600 text-white hover:opacity-90"
             >
               {deleteMutation.isPending ? 'Deleting…' : 'Delete'}
             </Button>
@@ -365,13 +365,13 @@ function ReadView({
           <div className="flex flex-wrap gap-2">
             <Link
               href={`/trips/${trip.id}/overview` as never}
-              className="inline-flex items-center gap-1 rounded-md border border-brand/30 px-3 py-1.5 text-sm font-medium text-brand transition hover:bg-brand/5"
+              className="inline-flex items-center gap-1 rounded-md border border-gold-600/25 px-3 py-1.5 text-sm font-medium text-gold-700 transition hover:bg-gold-500/10 dark:text-gold-300"
             >
               Overview
             </Link>
             <Link
               href={`/trips/${trip.id}/expenses` as never}
-              className="inline-flex items-center gap-1 rounded-md border border-brand/30 px-3 py-1.5 text-sm font-medium text-brand transition hover:bg-brand/5"
+              className="inline-flex items-center gap-1 rounded-md border border-gold-600/25 px-3 py-1.5 text-sm font-medium text-gold-700 transition hover:bg-gold-500/10 dark:text-gold-300"
             >
               Expenses
             </Link>
@@ -393,7 +393,7 @@ function ReadView({
                 phrases). Editorial seed; auth-gated. */}
             <Link
               href={`/trips/${trip.id}/primer` as never}
-              className="inline-flex items-center gap-1 rounded-md border border-brand/30 px-3 py-1.5 text-sm font-medium text-brand transition hover:bg-brand/5"
+              className="inline-flex items-center gap-1 rounded-md border border-gold-600/25 px-3 py-1.5 text-sm font-medium text-gold-700 transition hover:bg-gold-500/10 dark:text-gold-300"
             >
               🌐 Primer
             </Link>
@@ -433,7 +433,7 @@ function ReadView({
           </p>
         ) : null}
         {duplicateErrorMsg ? (
-          <p className="mt-2 rounded-md border border-danger/30 bg-danger/5 px-3 py-2 text-xs text-danger">
+          <p className="mt-2 rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-600 dark:text-red-400">
             {duplicateErrorMsg}
           </p>
         ) : null}
@@ -541,7 +541,7 @@ function EditForm({ trip, onSubmit, onCancel, isPending, errorMsg }: EditFormPro
           />
         </div>
         {errorMsg ? (
-          <p className="rounded-md border border-danger/30 bg-danger/5 px-4 py-2 text-sm text-danger">
+          <p className="rounded-md border border-red-500/30 bg-red-500/5 px-4 py-2 text-sm text-red-600 dark:text-red-400">
             {errorMsg}
           </p>
         ) : null}
@@ -630,14 +630,14 @@ function ItinerarySection({ tripId, enabled }: ItinerarySectionProps) {
         </div>
       </CardHeader>
       {genErr ? (
-        <p className="mb-2 rounded-md border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">
+        <p className="mb-2 rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-sm text-red-600 dark:text-red-400">
           {genErr}
         </p>
       ) : null}
       {isLoading ? (
         <Skeleton className="h-4 w-2/3" count={3} />
       ) : isError ? (
-        <p className="text-sm text-danger">Couldn't load itinerary.</p>
+        <p className="text-sm text-red-600 dark:text-red-400">Couldn't load itinerary.</p>
       ) : days.length === 0 ? (
         <p className="text-sm text-muted">
           No itinerary yet. Click <strong>Generate</strong> to create one day per date in the trip's
@@ -847,7 +847,7 @@ function DayItemsEditor({ day, onClose }: DayItemsEditorProps) {
               <button
                 type="button"
                 onClick={() => removeItem(idx)}
-                className="text-xs text-danger hover:underline"
+                className="text-xs text-red-600 dark:text-red-400 hover:underline"
                 aria-label="Remove item"
               >
                 ✕
@@ -857,7 +857,7 @@ function DayItemsEditor({ day, onClose }: DayItemsEditorProps) {
         </ul>
       )}
       {errMsg ? (
-        <p className="rounded border border-danger/30 bg-danger/5 px-2 py-1 text-xs text-danger">
+        <p className="rounded border border-red-500/30 bg-red-500/5 px-2 py-1 text-xs text-red-600 dark:text-red-400">
           {errMsg}
         </p>
       ) : null}
@@ -907,7 +907,7 @@ function MediaSection({ tripId, enabled }: MediaSectionProps) {
       {isLoading ? (
         <Skeleton className="h-4 w-2/3" count={2} />
       ) : isError ? (
-        <p className="text-sm text-danger">Couldn't load media.</p>
+        <p className="text-sm text-red-600 dark:text-red-400">Couldn't load media.</p>
       ) : ready.length === 0 ? (
         <p className="text-sm text-muted">No media attached yet. Use the uploader below.</p>
       ) : (
@@ -993,7 +993,7 @@ function PlanWithAiSection({ tripId, enabled }: PlanWithAiSectionProps) {
         </CardSubtitle>
       </CardHeader>
       {errMsg ? (
-        <p className="mb-2 rounded-md border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">
+        <p className="mb-2 rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-sm text-red-600 dark:text-red-400">
           {errMsg}
         </p>
       ) : null}
@@ -1099,7 +1099,7 @@ function ShareSection({ tripId, enabled }: ShareSectionProps) {
         </CardSubtitle>
       </CardHeader>
       {errMsg ? (
-        <p className="mb-2 rounded-md border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">
+        <p className="mb-2 rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-sm text-red-600 dark:text-red-400">
           {errMsg}
         </p>
       ) : null}
