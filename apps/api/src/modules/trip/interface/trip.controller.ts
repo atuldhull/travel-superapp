@@ -487,6 +487,8 @@ export class TripController {
       title: body.title,
       center: body.center,
       radiusKm: body.radiusKm,
+      ...(body.instruction ? { instruction: body.instruction } : {}),
+      ...(body.priorPlan ? { priorPlan: body.priorPlan } : {}),
     });
   }
 

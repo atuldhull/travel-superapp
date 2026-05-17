@@ -17,6 +17,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  apiFetch,
   useTripControllerSamplePlan,
   type GenerateSamplePlanRequestDto,
   type GenerateSamplePlanResponseDto,
@@ -78,6 +79,10 @@ export function SampleTripDemo() {
   // and nudge "regenerate" when the slider no longer matches.
   const [planRadius, setPlanRadius] = useState<number | null>(null);
   const sentRadiusRef = useRef(radiusKm);
+  // Planner chatbot.
+  const [chat, setChat] = useState<ReadonlyArray<{ role: 'you' | 'ai'; text: string }>>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatBusy, setChatBusy] = useState(false);
 
   // Hydrate from localStorage on mount — returning visitors see their
   // last plan instantly without re-generation. The matching city is
@@ -134,6 +139,47 @@ export function SampleTripDemo() {
       radiusKm,
     };
     mutation.mutate({ data });
+  }
+
+  // Conversational refine — re-plans the SAME trip per a free-text
+  // request, feeding the current plan back as context. Public
+  // endpoint (no auth); apiFetch-direct (deferred-SDK seam) so we can
+  // send the optional instruction/priorPlan fields.
+  async function refine(message: string) {
+    const msg = message.trim();
+    if (!msg || chatBusy || !planResult) return;
+    setChatBusy(true);
+    setChatInput('');
+    setChat((c) => [...c, { role: 'you', text: msg }]);
+    const preset = CITY_PRESETS[selectedIdx]!;
+    try {
+      const res = await apiFetch<{
+        data: GenerateSamplePlanResponseDto;
+        status: number;
+        headers: Headers;
+      }>('/api/v1/trips/sample-plan', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          title: preset.title,
+          center: preset.center,
+          radiusKm,
+          instruction: msg,
+          priorPlan: planResult.plan,
+        }),
+      });
+      setPlanResult(res.data);
+      setPlanRadius(radiusKm);
+      setFromCache(false);
+      setChat((c) => [...c, { role: 'ai', text: 'Updated your itinerary ✓' }]);
+    } catch {
+      setChat((c) => [
+        ...c,
+        { role: 'ai', text: 'Could not update — try rephrasing or Regenerate.' },
+      ]);
+    } finally {
+      setChatBusy(false);
+    }
   }
 
   const selected = CITY_PRESETS[selectedIdx]!;
@@ -295,6 +341,78 @@ export function SampleTripDemo() {
                   className="mt-3 h-110 w-full sm:h-130"
                 />
               )}
+
+              {/* Planner chatbot — refine the SAME trip by talking. */}
+              <div className="mt-4 rounded-xl border border-gold-600/15 bg-surface p-4 shadow-(--shadow-depth-1)">
+                <p className="inline-flex items-center gap-2 font-display text-sm font-semibold tracking-tight text-surface-foreground">
+                  <span aria-hidden>✨</span> Tweak it with the assistant
+                </p>
+                <p className="mt-0.5 text-xs text-muted">
+                  Tell it what to change — it re-plans this {selected.title} trip.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {[
+                    '🍜 More food',
+                    '🚶 Less walking',
+                    '🧗 More adventurous',
+                    '🏖 Add a beach day',
+                    '⏱ Just 1 day',
+                    '💸 Budget-friendly',
+                  ].map((q) => (
+                    <button
+                      key={q}
+                      type="button"
+                      disabled={chatBusy}
+                      onClick={() => void refine(q.replace(/^\S+\s/, ''))}
+                      className="rounded-full border border-gold-600/25 px-3 py-1 text-xs font-medium text-surface-foreground transition hover:bg-gold-500/10 disabled:opacity-50"
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+                {chat.length > 0 ? (
+                  <ul className="mt-3 space-y-1.5">
+                    {chat.map((m, i) => (
+                      <li
+                        key={i}
+                        className={
+                          'text-xs ' +
+                          (m.role === 'you'
+                            ? 'text-surface-foreground'
+                            : 'text-gold-700 dark:text-gold-300')
+                        }
+                      >
+                        <span className="font-semibold">
+                          {m.role === 'you' ? 'You' : 'Assistant'}:
+                        </span>{' '}
+                        {m.text}
+                      </li>
+                    ))}
+                    {chatBusy ? (
+                      <li className="text-xs text-muted">Assistant is re-planning…</li>
+                    ) : null}
+                  </ul>
+                ) : null}
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    void refine(chatInput);
+                  }}
+                  className="mt-3 flex gap-2"
+                >
+                  <input
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    placeholder="e.g. swap day 2 for a food crawl, add a sunrise hike…"
+                    disabled={chatBusy}
+                    className="min-w-0 flex-1 rounded-xl border border-gold-600/20 bg-surface px-3.5 py-2 text-sm text-surface-foreground outline-none transition placeholder:text-muted/70 focus-visible:border-gold-600/50 focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50"
+                  />
+                  <Button type="submit" variant="royal" disabled={chatBusy || !chatInput.trim()}>
+                    {chatBusy ? '…' : 'Send'}
+                  </Button>
+                </form>
+              </div>
+
               <details className="mt-3 rounded-xl border border-gold-600/12 bg-gold-500/5">
                 <summary className="cursor-pointer px-4 py-2.5 text-sm font-medium text-surface-foreground transition hover:text-gold-700 dark:hover:text-gold-300">
                   📖 Read the written plan

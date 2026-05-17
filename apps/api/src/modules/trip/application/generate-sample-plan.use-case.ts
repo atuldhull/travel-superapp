@@ -22,6 +22,9 @@ export interface GenerateSamplePlanCommand {
   readonly title: string;
   readonly center: { readonly lat: number; readonly lng: number };
   readonly radiusKm: number;
+  /** Planner chatbot: revise the prior plan per this instruction. */
+  readonly instruction?: string;
+  readonly priorPlan?: string;
 }
 
 @Injectable()
@@ -37,6 +40,8 @@ export class GenerateSamplePlanUseCase {
       // null start/end and produce a generic 3-day plan.
       startsOn: null,
       endsOn: null,
+      ...(command.instruction ? { instruction: command.instruction } : {}),
+      ...(command.priorPlan ? { priorPlan: command.priorPlan } : {}),
     });
   }
 }

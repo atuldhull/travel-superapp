@@ -146,7 +146,13 @@ export class OllamaTripPlannerAdapter implements TripPlannerPort {
         `Center coordinates (lat,lng): ${req.center.lat.toFixed(4)}, ${req.center.lng.toFixed(4)}.`,
         `Search radius: ${req.radiusKm}km.`,
         `Dates: ${dates}.`,
-      ].join('\n')
+      ].join('\n') +
+      (req.instruction
+        ? `\n\n${req.priorPlan ? `Current itinerary:\n${req.priorPlan}\n\n` : ''}` +
+          `The traveller now asks: "${req.instruction}". Rewrite the FULL ` +
+          `itinerary applying this request, keeping every output rule and ` +
+          `the "Day 1 — …" format.`
+        : '')
     );
   }
 
