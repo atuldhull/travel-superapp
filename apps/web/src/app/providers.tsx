@@ -21,7 +21,7 @@ import { SilentRefreshOnMount } from '../lib/silent-refresh';
 import { ToastProvider } from '../components/ui/toast';
 
 configureSdk({
-  baseUrl: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000',
+  baseUrl: process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:3000',
   // Reads the in-memory token store on every request — keeps us
   // off localStorage (CLAUDE rule 12) while still surviving
   // navigation between client routes.

@@ -28,6 +28,7 @@ import {
   type MagicLinkTokenRepository,
 } from './ports/magic-link-token.repository';
 import { MAILER_PORT, type MailerPort } from './ports/mailer.port';
+import { magicLinkEmail } from './email-templates';
 
 const TOKEN_TTL_MS = 15 * 60 * 1000; // 15 minutes
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
@@ -63,23 +64,26 @@ export class RequestMagicLinkUseCase {
     const expiresAt = new Date(Date.now() + TOKEN_TTL_MS);
     await this.tokens.create({ emailHash, tokenHash, expiresAt });
 
+    // Default to the web dev port (:3002). The schema default is
+    // :3001, which on this stack is the Docker observability stack
+    // (Grafana) — an unset WEB_BASE_URL there made sign-in emails
+    // open Grafana. .env now sets this explicitly; the fallback is
+    // also corrected for safety.
     const webBaseUrl =
       (this.config.get('WEB_BASE_URL', { infer: true }) as string | undefined) ??
-      'http://localhost:3001';
+      'http://localhost:3002';
     const fromName =
       (this.config.get('EMAIL_FROM_NAME', { infer: true }) as string | undefined) ??
       'TravelSuperApp';
 
     const magicUrl = `${webBaseUrl.replace(/\/$/, '')}/auth/magic-link/${token}`;
+    const ttlMinutes = Math.round(TOKEN_TTL_MS / 60000);
+    const email = magicLinkEmail({ appName: fromName, magicUrl, ttlMinutes });
     await this.mailer.send({
       to: emailNormalized,
-      subject: `Your sign-in link for ${fromName}`,
-      textBody:
-        `Hi,\n\n` +
-        `Click the link below to sign in to ${fromName}. ` +
-        `It expires in 15 minutes and can only be used once.\n\n` +
-        `${magicUrl}\n\n` +
-        `If you didn't ask for this, you can safely ignore this email.\n`,
+      subject: email.subject,
+      textBody: email.textBody,
+      htmlBody: email.htmlBody,
     });
   }
 }
