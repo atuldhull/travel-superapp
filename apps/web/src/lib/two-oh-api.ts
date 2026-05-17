@@ -161,6 +161,59 @@ export function unblockUser(userId: string): Promise<{ blocked: false }> {
   return send(`/api/v1/users/${encodeURIComponent(userId)}/block`, 'DELETE');
 }
 
+// ─── Live navigation ────────────────────────────────────────────────────
+// Mirrors apps/api transport NavRoute domain 1:1 (TS-interface DTOs,
+// not in the orval SDK yet — same deferred-seam reason as above).
+export type NavRouteFlavor = 'fastest' | 'scenic' | 'avoid_traffic';
+export type TrafficLevel = 'free' | 'moderate' | 'heavy' | 'blocked';
+export type TrafficSource = 'live' | 'mock' | 'none';
+export type RouteSource = 'osrm' | 'mock';
+
+export interface NavPoint {
+  readonly lat: number;
+  readonly lng: number;
+}
+export interface TrafficSegment {
+  readonly fromIndex: number;
+  readonly toIndex: number;
+  readonly level: TrafficLevel;
+}
+export interface NavAdvisory {
+  readonly kind: 'blockage' | 'heavy_traffic' | 'reroute' | 'scenic_tip';
+  readonly message: string;
+  readonly atLat?: number;
+  readonly atLng?: number;
+}
+export interface NavRoute {
+  readonly id: string;
+  readonly flavor: NavRouteFlavor;
+  readonly label: string;
+  readonly distanceMeters: number;
+  readonly durationSeconds: number;
+  readonly durationInTrafficSeconds: number;
+  readonly geometry: readonly NavPoint[];
+  readonly trafficSegments: readonly TrafficSegment[];
+  readonly advisories: readonly NavAdvisory[];
+  readonly trafficSource: TrafficSource;
+}
+export interface NavRouteSet {
+  readonly routes: readonly NavRoute[];
+  readonly recommendedRouteId: string;
+  readonly routeSource: RouteSource;
+}
+
+export function getNavigation(body: {
+  origin: NavPoint;
+  destination: NavPoint;
+  waypoints?: readonly NavPoint[];
+}): Promise<NavRouteSet> {
+  return apiFetch<Envelope<NavRouteSet>>(`/api/v1/transport/navigation`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+    headers: { 'content-type': 'application/json' },
+  }).then((r) => r.data);
+}
+
 // ─── Agent ──────────────────────────────────────────────────────────────
 export function getAgentStatus(): Promise<{ enabled: true; phase: string }> {
   return get(`/api/v1/agent/status`);
