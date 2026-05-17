@@ -1,85 +1,149 @@
 /**
- * POST.2 — landing hero (rewrite).
+ * Landing hero — premium "cinematic editorial" rebuild.
  *
- * Two-column layout (collapses to single on mobile):
- *   left  — eyebrow pill + 3-line headline + 1-line elaboration
- *           + dual CTA + trust line
- *   right — /illustrations/hero.svg (mountains + route arc + paper
- *           plane + an itinerary card overlay)
+ * Deep royal-indigo ground, a champagne-gold aura, Playfair display
+ * headline with a gold-foil accent line, glass CTAs, and a floating
+ * glass-framed illustration. Motion via framer-motion with a staggered
+ * reveal that fully respects `prefers-reduced-motion` (the entire
+ * fold is readable without JS — content is in the markup, motion is
+ * progressive enhancement only).
  *
- * Server Component. No client interactivity. Tailwind only — no
- * keyframe animation, so the entire fold renders before hydration.
- *
- * Replaces V.UX.1's CSS-skyline + dummy-itinerary-card. The new
- * SVG is exported from /public/illustrations/hero.svg (~6 KB) and
- * loaded as <Image>; this keeps brand consistency on every reload
- * and improves LCP (decoded image vs CSS gradient + JS).
+ * Client component (motion); copy stays in the DOM so it's SSR-
+ * visible + crawlable. Reuses the existing /illustrations/hero.svg.
  */
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
+import { motion, useReducedMotion, type Variants } from 'framer-motion';
+import { ArrowRight, MoveDown, Sparkles } from 'lucide-react';
+
+const GOLD_TEXT: React.CSSProperties = {
+  backgroundImage: 'var(--gradient-gold)',
+  WebkitBackgroundClip: 'text',
+  backgroundClip: 'text',
+  color: 'transparent',
+};
 
 export function LandingHero() {
+  const reduce = useReducedMotion();
+
+  const container: Variants = {
+    hidden: {},
+    show: { transition: { staggerChildren: reduce ? 0 : 0.09, delayChildren: 0.05 } },
+  };
+  const rise: Variants = {
+    hidden: reduce ? { opacity: 0 } : { opacity: 0, y: 22 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } },
+  };
+
   return (
     <section
       aria-labelledby="hero-heading"
-      className="relative overflow-hidden rounded-2xl border border-muted/15 bg-linear-to-br from-brand-50 via-surface to-amber-50 px-6 py-12 shadow-(--shadow-depth-2) dark:from-brand-900/30 dark:via-surface dark:to-amber-900/10 sm:px-10 sm:py-16"
+      className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-16 shadow-(--shadow-depth-3) sm:px-12 sm:py-20"
+      style={{ backgroundImage: 'var(--gradient-royal)' }}
     >
-      <div className="relative z-10 grid items-center gap-10 sm:grid-cols-[1.1fr_1fr]">
-        {/* Left: copy + CTAs */}
-        <div className="space-y-5">
-          <p className="inline-flex items-center gap-2 rounded-full border border-brand/30 bg-brand/10 px-3 py-1 text-xs font-medium text-brand">
-            <span aria-hidden>✦</span>
-            <span>AI-powered travel companion</span>
-          </p>
-          <h1
+      {/* Champagne aura + vignette (decorative). */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-gold-500/25 blur-[120px]"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -bottom-32 -left-20 h-80 w-80 rounded-full bg-brand-400/20 blur-[120px]"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,transparent_40%,rgba(0,0,0,0.35)_100%)]"
+      />
+
+      <motion.div
+        variants={container}
+        initial="hidden"
+        animate="show"
+        className="relative z-10 grid items-center gap-12 sm:grid-cols-[1.15fr_1fr]"
+      >
+        <div className="space-y-6">
+          <motion.p
+            variants={rise}
+            className="inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3.5 py-1.5 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm"
+          >
+            <Sparkles aria-hidden className="h-3.5 w-3.5" />
+            Your intelligent travel companion
+          </motion.p>
+
+          <motion.h1
             id="hero-heading"
-            className="text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl"
+            variants={rise}
+            className="font-display text-5xl font-semibold leading-[1.05] tracking-tight text-white sm:text-6xl lg:text-7xl"
           >
             Plan, explore,
             <br />
-            stay safe — <span className="text-brand">anywhere you go.</span>
-          </h1>
-          <p className="max-w-md text-base leading-relaxed text-muted sm:text-lg">
-            Type a city. Get a full itinerary in seconds. Live safety, weather, and crowd data built
-            in. No spreadsheets. No 40 tabs.
-          </p>
-          <div className="flex flex-wrap gap-3 pt-1">
+            stay safe —{' '}
+            <span style={GOLD_TEXT} className="italic">
+              anywhere you wander.
+            </span>
+          </motion.h1>
+
+          <motion.p
+            variants={rise}
+            className="max-w-md text-base leading-relaxed text-white/70 sm:text-lg"
+          >
+            Name a place. Your companion crafts the itinerary, watches the weather and crowds while
+            you travel, and turns the journey into a Memory Book — automatically.
+          </motion.p>
+
+          <motion.div variants={rise} className="flex flex-wrap gap-3 pt-1">
             <a
               href="#sample-trip"
-              className="inline-flex items-center gap-1.5 rounded-md bg-brand px-5 py-2.5 text-sm font-semibold text-brand-foreground shadow-(--shadow-depth-2) transition hover:-translate-y-0.5 hover:bg-brand-700 hover:shadow-(--shadow-depth-3) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+              className="group inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-brand-900 shadow-(--shadow-glow) transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-300 focus-visible:ring-offset-2 focus-visible:ring-offset-brand-900"
+              style={{ backgroundImage: 'var(--gradient-gold)' }}
             >
-              See a sample trip <span aria-hidden>↓</span>
+              See a sample trip
+              <MoveDown aria-hidden className="h-4 w-4 transition group-hover:translate-y-0.5" />
             </a>
             <Link
               href="/register"
-              className="inline-flex items-center gap-1.5 rounded-md border border-brand/40 px-5 py-2.5 text-sm font-semibold text-brand transition hover:-translate-y-0.5 hover:border-brand/70 hover:bg-brand/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+              className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/5 px-6 py-3 text-sm font-semibold text-white backdrop-blur-sm transition hover:-translate-y-0.5 hover:border-white/50 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
             >
-              Sign up free
+              Start free
+              <ArrowRight aria-hidden className="h-4 w-4" />
             </Link>
-          </div>
-          <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
+          </motion.div>
+
+          <motion.p
+            variants={rise}
+            className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-white/55"
+          >
             <span className="inline-flex items-center gap-1.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Open-source
+              <span className="h-1.5 w-1.5 rounded-full bg-gold-400" /> Agentic &amp; private
             </span>
-            <span className="text-muted/40">·</span>
+            <span className="text-white/25">·</span>
             <span>GDPR / DPDP compliant</span>
-            <span className="text-muted/40">·</span>
+            <span className="text-white/25">·</span>
             <span>No card to try</span>
-          </p>
+          </motion.p>
         </div>
 
-        {/* Right: illustration */}
-        <div className="relative mx-auto w-full max-w-md">
-          <Image
-            src="/illustrations/hero.svg"
-            alt="Stylised travel scene with mountains, route arc, paper plane, and an itinerary card"
-            width={480}
-            height={360}
-            priority
-            className="h-auto w-full drop-shadow-(--shadow-depth-3)"
-          />
-        </div>
-      </div>
+        {/* Floating glass-framed illustration. */}
+        <motion.div
+          variants={rise}
+          className="relative mx-auto w-full max-w-md"
+          animate={reduce ? undefined : { y: [0, -12, 0] }}
+          transition={reduce ? undefined : { duration: 7, repeat: Infinity, ease: 'easeInOut' }}
+        >
+          <div className="rounded-3xl border border-gold-500/25 bg-white/5 p-4 shadow-(--shadow-depth-3) backdrop-blur-md">
+            <Image
+              src="/illustrations/hero.svg"
+              alt="Stylised travel scene — mountains, a route arc, a paper plane, and an itinerary card"
+              width={480}
+              height={360}
+              priority
+              className="h-auto w-full"
+            />
+          </div>
+        </motion.div>
+      </motion.div>
     </section>
   );
 }
