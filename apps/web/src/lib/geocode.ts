@@ -23,8 +23,13 @@ interface PhotonResp {
     readonly geometry?: { readonly coordinates?: readonly [number, number] };
     readonly properties?: {
       readonly name?: string;
+      readonly housenumber?: string;
+      readonly street?: string;
+      readonly district?: string;
       readonly city?: string;
+      readonly county?: string;
       readonly state?: string;
+      readonly postcode?: string;
       readonly country?: string;
     };
   }>;
@@ -48,9 +53,24 @@ async function timedFetch(url: string, ms: number): Promise<Response | null> {
   }
 }
 
+// Google-Maps-style precise label: house+street (or POI name), then
+// area → city → state → postcode → country, de-duped so distinct
+// matches read distinctly instead of "New Delhi, Delhi, India" ×5.
 function photonLabel(p: NonNullable<PhotonResp['features']>[number]['properties']): string {
   if (!p) return '';
-  return [p.name, p.city, p.state, p.country].filter(Boolean).join(', ');
+  const head =
+    p.housenumber && p.street ? `${p.housenumber} ${p.street}` : (p.name ?? p.street ?? '');
+  const parts = [head, p.district, p.city, p.county, p.state, p.postcode, p.country];
+  const seen = new Set<string>();
+  return parts
+    .map((s) => (s ?? '').trim())
+    .filter((s) => {
+      const k = s.toLowerCase();
+      if (!s || seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    })
+    .join(', ');
 }
 
 /**
@@ -65,21 +85,30 @@ export async function searchPlaces(
   const q = query.trim();
   if (q.length < 3) return [];
 
+  // Over-fetch then de-dupe so the user sees `limit` DISTINCT places,
+  // not the same city repeated. `lang=en` keeps labels readable.
   const biasQs = bias ? `&lat=${bias.lat}&lon=${bias.lng}` : '';
   const pRes = await timedFetch(
-    `${PHOTON}?q=${encodeURIComponent(q)}&limit=${limit}${biasQs}`,
+    `${PHOTON}?q=${encodeURIComponent(q)}&limit=${limit * 3}&lang=en${biasQs}`,
     6000,
   );
   if (pRes) {
     try {
       const j = (await pRes.json()) as PhotonResp;
-      const out = (j.features ?? [])
-        .map((f) => ({
-          label: photonLabel(f.properties),
-          lat: f.geometry?.coordinates?.[1] ?? NaN,
-          lng: f.geometry?.coordinates?.[0] ?? NaN,
-        }))
-        .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng));
+      const seen = new Set<string>();
+      const out: GeoPlace[] = [];
+      for (const f of j.features ?? []) {
+        const lat = f.geometry?.coordinates?.[1] ?? NaN;
+        const lng = f.geometry?.coordinates?.[0] ?? NaN;
+        const label = photonLabel(f.properties);
+        if (!label || !Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+        // Dedupe on label + ~100m coord bucket.
+        const key = `${label.toLowerCase()}|${lat.toFixed(3)},${lng.toFixed(3)}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push({ label, lat, lng });
+        if (out.length >= limit) break;
+      }
       if (out.length > 0) return out;
     } catch {
       /* fall through to Nominatim */

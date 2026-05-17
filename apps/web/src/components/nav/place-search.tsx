@@ -60,7 +60,7 @@ export function PlaceSearch({ label, placeholder, selected, onSelect }: PlaceSea
   }, []);
 
   return (
-    <div ref={boxRef} className="relative">
+    <div ref={boxRef} className="relative z-1100">
       <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted">
         {label}
       </label>
@@ -100,7 +100,7 @@ export function PlaceSearch({ label, placeholder, selected, onSelect }: PlaceSea
         </div>
       )}
       {open && !selected && sug.length > 0 && (
-        <ul className="absolute z-30 mt-1.5 max-h-64 w-full overflow-auto rounded-xl border border-gold-600/20 bg-surface p-1 shadow-(--shadow-depth-3)">
+        <ul className="absolute z-1200 mt-1.5 max-h-64 w-full overflow-auto rounded-xl border border-gold-600/20 bg-surface p-1 shadow-(--shadow-depth-3)">
           {sug.map((p, i) => (
             <li key={`${p.lat},${p.lng},${i}`}>
               <button
