@@ -30,6 +30,10 @@ import { getRecalledSamplePlan, rememberSamplePlan } from '../../lib/visit-recal
 const loadingBox = (
   <div className="mt-2 h-72 w-full animate-pulse rounded-2xl border border-gold-600/15 bg-gold-500/5" />
 );
+const JourneyStory = dynamic(
+  () => import('./itinerary-storyboard').then((m) => m.ItineraryStoryboard),
+  { ssr: false, loading: () => loadingBox },
+);
 const JourneyGlobe = dynamic(() => import('./itinerary-globe').then((m) => m.ItineraryGlobe), {
   ssr: false,
   loading: () => loadingBox,
@@ -66,9 +70,10 @@ export function SampleTripDemo() {
   const [planResult, setPlanResult] = useState<GenerateSamplePlanResponseDto | null>(null);
   /** True when the visible plan was hydrated from localStorage rather than freshly generated. */
   const [fromCache, setFromCache] = useState(false);
-  // 'globe' = the cinematic 3D view (default — the wow); 'map' = the
-  // detailed street view. Both render the same geocoded journey.
-  const [view, setView] = useState<'globe' | 'map'>('globe');
+  // 'story' = image-led cards + hotels (default — best for a one-city
+  // plan; places stay distinct); 'map' = accurate street geo;
+  // 'globe' = the cinematic 3D flex. Same geocoded journey.
+  const [view, setView] = useState<'story' | 'map' | 'globe'>('story');
 
   // Hydrate from localStorage on mount — returning visitors see their
   // last plan instantly without re-generation. The matching city is
@@ -232,7 +237,13 @@ export function SampleTripDemo() {
                 </CardSubtitle>
               </CardHeader>
               <div className="mt-3 inline-flex rounded-full border border-gold-600/20 bg-surface p-0.5 text-xs">
-                {(['globe', 'map'] as const).map((v) => (
+                {(
+                  [
+                    ['story', '✨ Story'],
+                    ['map', '🗺️ Map'],
+                    ['globe', '🌍 Globe'],
+                  ] as const
+                ).map(([v, label]) => (
                   <button
                     key={v}
                     type="button"
@@ -246,11 +257,18 @@ export function SampleTripDemo() {
                     }
                     style={view === v ? { backgroundImage: 'var(--gradient-gold)' } : undefined}
                   >
-                    {v === 'globe' ? '🌍 Globe' : '🗺️ Map'}
+                    {label}
                   </button>
                 ))}
               </div>
-              {view === 'globe' ? (
+              {view === 'story' ? (
+                <JourneyStory
+                  plan={planResult.plan}
+                  city={selected.title}
+                  center={selected.center}
+                  className="mt-4"
+                />
+              ) : view === 'globe' ? (
                 <JourneyGlobe
                   plan={planResult.plan}
                   city={selected.title}
