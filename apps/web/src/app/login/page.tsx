@@ -33,6 +33,7 @@ import {
 } from '@app/sdk';
 import { Button } from '../../components/ui/button';
 import { Field } from '../../components/ui/input';
+import { AuthError, AuthShell } from '../../components/auth/auth-shell';
 import { GoogleSignInButton } from '../../components/google-sign-in-button';
 import { setAccessToken } from '../../lib/auth-store';
 import { decidePostAuthDestination } from '../../lib/post-auth-redirect';
@@ -158,23 +159,23 @@ export default function LoginPage() {
     setErrorMsg(null);
   }
 
+  const eyebrow = banState ? 'Account' : step === 'credentials' ? 'Welcome back' : 'Security';
+  const title = banState
+    ? 'Account suspended'
+    : step === 'credentials'
+      ? 'Sign in'
+      : 'Two-factor authentication';
+  const subtitle = banState
+    ? undefined
+    : step === 'credentials'
+      ? 'Pick up your journeys exactly where you left off.'
+      : 'One more step to keep your account safe.';
+
   return (
-    <main className="space-y-6">
-      <p>
-        <Link href="/" className="text-sm text-muted hover:underline">
-          ← Back
-        </Link>
-      </p>
-      <h1 className="text-3xl font-bold tracking-tight">
-        {banState
-          ? 'Account suspended'
-          : step === 'credentials'
-            ? 'Sign in'
-            : 'Two-factor authentication'}
-      </h1>
+    <AuthShell eyebrow={eyebrow} title={title} subtitle={subtitle}>
       {banState ? (
         <div className="space-y-4">
-          <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-4 text-sm">
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 text-sm">
             <p className="font-medium text-amber-700 dark:text-amber-400">
               Your account has been suspended.
             </p>
@@ -194,14 +195,15 @@ export default function LoginPage() {
           <div className="flex flex-wrap gap-3">
             <Link
               href={`/appeal?email=${encodeURIComponent(banState.email)}` as never}
-              className="inline-flex items-center gap-1 rounded-md bg-brand px-3 py-1.5 text-sm font-medium text-brand-foreground transition hover:opacity-90"
+              className="inline-flex items-center gap-1 rounded-xl px-4 py-2 text-sm font-semibold text-brand-900 shadow-(--shadow-depth-1) transition hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              style={{ backgroundImage: 'var(--gradient-gold)' }}
             >
               File an appeal →
             </Link>
             <button
               type="button"
               onClick={() => setBanState(null)}
-              className="inline-flex items-center gap-1 rounded-md border border-muted/30 px-3 py-1.5 text-sm transition hover:bg-muted/10"
+              className="inline-flex items-center gap-1 rounded-xl border border-gold-600/25 px-4 py-2 text-sm transition hover:bg-gold-500/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             >
               Try again
             </button>
@@ -225,18 +227,14 @@ export default function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-          {errorMsg ? (
-            <p className="rounded-md border border-danger/30 bg-danger/5 px-4 py-2 text-sm text-danger">
-              {errorMsg}
-            </p>
-          ) : null}
-          <Button type="submit" disabled={loginMutation.isPending}>
+          {errorMsg ? <AuthError>{errorMsg}</AuthError> : null}
+          <Button type="submit" variant="royal" disabled={loginMutation.isPending}>
             {loginMutation.isPending ? 'Signing in…' : 'Sign in'}
           </Button>
           <div className="flex items-center gap-3 py-2">
-            <hr className="flex-1 border-t border-muted/20" />
+            <hr className="flex-1 border-t border-gold-600/20" />
             <span className="text-xs uppercase tracking-wide text-muted">or</span>
-            <hr className="flex-1 border-t border-muted/20" />
+            <hr className="flex-1 border-t border-gold-600/20" />
           </div>
           <GoogleSignInButton
             onSignedIn={async () => {
@@ -261,14 +259,17 @@ export default function LoginPage() {
           </Button>
           <p className="text-sm text-muted">
             New here?{' '}
-            <Link href="/register" className="text-brand hover:underline">
+            <Link
+              href="/register"
+              className="font-medium text-gold-600 transition hover:text-gold-700 hover:underline dark:hover:text-gold-300"
+            >
               Create an account →
             </Link>
           </p>
           <p className="text-sm">
             <Link
               href={'/login/forgot' as never}
-              className="text-muted underline-offset-2 hover:underline"
+              className="text-muted underline-offset-2 transition hover:text-gold-600 hover:underline"
             >
               Trouble signing in?
             </Link>
@@ -291,13 +292,9 @@ export default function LoginPage() {
             pattern="\d{6}|[A-Za-z0-9]{8}"
             help="6-digit TOTP or 8-character backup code."
           />
-          {errorMsg ? (
-            <p className="rounded-md border border-danger/30 bg-danger/5 px-4 py-2 text-sm text-danger">
-              {errorMsg}
-            </p>
-          ) : null}
+          {errorMsg ? <AuthError>{errorMsg}</AuthError> : null}
           <div className="flex gap-3">
-            <Button type="submit" disabled={loginMutation.isPending}>
+            <Button type="submit" variant="royal" disabled={loginMutation.isPending}>
               {loginMutation.isPending ? 'Verifying…' : 'Verify'}
             </Button>
             <Button type="button" variant="ghost" onClick={backToCredentials}>
@@ -307,13 +304,13 @@ export default function LoginPage() {
           <p className="text-sm">
             <Link
               href={'/login/mfa-recover' as never}
-              className="text-muted underline-offset-2 hover:underline"
+              className="text-muted underline-offset-2 transition hover:text-gold-600 hover:underline"
             >
               Lost your authenticator? Use a backup code →
             </Link>
           </p>
         </form>
       )}
-    </main>
+    </AuthShell>
   );
 }
