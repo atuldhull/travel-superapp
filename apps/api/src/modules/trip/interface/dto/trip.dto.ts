@@ -37,6 +37,9 @@ export const GenerateSamplePlanBodySchema = z.object({
   title: z.string().trim().min(1).max(120),
   center: Coord,
   radiusKm: z.number().positive().max(200),
+  // Conversational refine (planner chatbot) — both optional/additive.
+  instruction: z.string().trim().max(400).optional(),
+  priorPlan: z.string().max(12000).optional(),
 });
 export type GenerateSamplePlanBody = z.infer<typeof GenerateSamplePlanBodySchema>;
 

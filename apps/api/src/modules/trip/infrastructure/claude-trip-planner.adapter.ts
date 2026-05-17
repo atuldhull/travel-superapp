@@ -118,11 +118,19 @@ export class ClaudeTripPlannerAdapter implements TripPlannerPort {
       req.startsOn && req.endsOn
         ? `${req.startsOn.toISOString().slice(0, 10)} to ${req.endsOn.toISOString().slice(0, 10)}`
         : 'flexible dates';
-    return [
-      `Plan a trip titled "${req.title}".`,
-      `Center coordinates (lat,lng): ${req.center.lat.toFixed(4)}, ${req.center.lng.toFixed(4)}.`,
-      `Search radius: ${req.radiusKm}km.`,
-      `Dates: ${dates}.`,
-    ].join('\n');
+    return (
+      [
+        `Plan a trip titled "${req.title}".`,
+        `Center coordinates (lat,lng): ${req.center.lat.toFixed(4)}, ${req.center.lng.toFixed(4)}.`,
+        `Search radius: ${req.radiusKm}km.`,
+        `Dates: ${dates}.`,
+      ].join('\n') +
+      (req.instruction
+        ? `\n\n${req.priorPlan ? `Current itinerary:\n${req.priorPlan}\n\n` : ''}` +
+          `The traveller now asks: "${req.instruction}". Rewrite the FULL ` +
+          `itinerary applying this request, keeping every output rule and ` +
+          `the "Day 1 — …" format.`
+        : '')
+    );
   }
 }
