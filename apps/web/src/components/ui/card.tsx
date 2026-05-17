@@ -24,11 +24,14 @@ interface CardProps extends HTMLAttributes<HTMLElement> {
   readonly children?: ReactNode;
 }
 
-const depthBase = 'rounded-lg border border-muted/20 bg-surface p-4 transition';
+const depthBase =
+  'rounded-2xl border border-gold-600/12 bg-surface p-5 transition duration-200 ease-out';
 const depthStyles: Record<CardDepth, string> = {
-  flat: 'shadow-sm hover:shadow',
-  raised: 'shadow-(--shadow-depth-2) hover:shadow-(--shadow-depth-3) hover:-translate-y-0.5',
-  floating: 'shadow-(--shadow-depth-3) hover:shadow-(--shadow-depth-3) hover:-translate-y-1',
+  flat: 'shadow-(--shadow-depth-1) hover:shadow-(--shadow-depth-2) hover:border-gold-600/25',
+  raised:
+    'shadow-(--shadow-depth-2) hover:shadow-(--shadow-depth-3) hover:-translate-y-1 hover:border-gold-600/30',
+  floating:
+    'shadow-(--shadow-depth-3) hover:shadow-(--shadow-glow) hover:-translate-y-1.5 hover:border-gold-500/40',
 };
 
 export function Card({
@@ -54,7 +57,11 @@ export function CardHeader({ className, children }: { className?: string; childr
 }
 
 export function CardTitle({ className, children }: { className?: string; children?: ReactNode }) {
-  return <h2 className={cn('text-lg font-semibold tracking-tight', className)}>{children}</h2>;
+  return (
+    <h2 className={cn('font-display text-xl font-semibold tracking-tight', className)}>
+      {children}
+    </h2>
+  );
 }
 
 export function CardSubtitle({

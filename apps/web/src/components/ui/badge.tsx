@@ -11,12 +11,15 @@
 import { type ReactNode } from 'react';
 import { cn } from '../../lib/cn';
 
-type Variant = 'neutral' | 'brand' | 'danger';
+type Variant = 'neutral' | 'brand' | 'danger' | 'gold' | 'success';
 
 const variantStyles: Record<Variant, string> = {
-  neutral: 'bg-muted/10 text-muted',
-  brand: 'bg-brand/10 text-brand',
-  danger: 'bg-danger/10 text-danger',
+  neutral: 'bg-muted/10 text-muted ring-1 ring-inset ring-muted/20',
+  brand: 'bg-brand/10 text-brand ring-1 ring-inset ring-brand/25',
+  danger: 'bg-danger/10 text-danger ring-1 ring-inset ring-danger/25',
+  gold: 'bg-gold-500/12 text-gold-700 ring-1 ring-inset ring-gold-500/35 dark:text-gold-300',
+  success:
+    'bg-emerald-500/12 text-emerald-700 ring-1 ring-inset ring-emerald-500/30 dark:text-emerald-300',
 };
 
 export function Badge({
