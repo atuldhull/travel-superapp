@@ -33,6 +33,7 @@ import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card, CardHeader, CardSubtitle, CardTitle } from '../../components/ui/card';
 import { Skeleton } from '../../components/ui/skeleton';
+import { DestinationImage } from '../../components/ui/destination-image';
 import { toast } from '../../components/ui/toast';
 import { clearAccessToken } from '../../lib/auth-store';
 import { useAuthBootComplete, useAuthToken } from '../../lib/use-auth-token';
@@ -362,6 +363,20 @@ function TripCard({
       depth="raised"
       className={role === 'collaborator' ? 'border-emerald-500/40' : undefined}
     >
+      <Link
+        href={`/trips/${trip.id}` as never}
+        tabIndex={-1}
+        aria-hidden
+        className="mb-4 block overflow-hidden rounded-xl"
+      >
+        <DestinationImage
+          place={trip.title.replace(SAMPLE_TRIP_PREFIX, '')}
+          alt={trip.title}
+          scrim
+          rounded="rounded-xl"
+          className="aspect-video w-full transition duration-300 hover:scale-[1.03]"
+        />
+      </Link>
       <CardHeader>
         <CardTitle>
           <Link

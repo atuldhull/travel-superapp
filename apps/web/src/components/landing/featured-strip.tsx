@@ -19,6 +19,7 @@ import {
 import { Badge } from '../ui/badge';
 import { Card, CardHeader, CardSubtitle, CardTitle } from '../ui/card';
 import { Skeleton } from '../ui/skeleton';
+import { DestinationImage } from '../ui/destination-image';
 
 export function FeaturedStrip() {
   const { data, isLoading, isError } = useMemoryBookControllerFeatured({ limit: '3' });
@@ -77,6 +78,20 @@ export function FeaturedStrip() {
         <ul className="grid gap-4 sm:grid-cols-3">
           {books.map((b) => (
             <Card as="li" key={b.id}>
+              <Link
+                href={`/memory-books/${b.id}` as never}
+                tabIndex={-1}
+                aria-hidden
+                className="mb-4 block overflow-hidden rounded-xl"
+              >
+                <DestinationImage
+                  place={b.title}
+                  alt={b.title}
+                  scrim
+                  rounded="rounded-xl"
+                  className="aspect-video w-full transition duration-300 hover:scale-[1.03]"
+                />
+              </Link>
               <CardHeader>
                 <CardTitle>
                   <Link href={`/memory-books/${b.id}` as never} className="hover:underline">
