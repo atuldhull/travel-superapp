@@ -21,6 +21,8 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useAuthBootComplete, useAuthToken } from '../../lib/use-auth-token';
 import { getNavigation, type NavPoint, type NavRouteSet } from '../../lib/two-oh-api';
+import type { GeoPlace } from '../../lib/geocode';
+import { PlaceSearch } from '../../components/nav/place-search';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
   ArrowLeft,
@@ -119,6 +121,8 @@ export default function NavigatePage() {
   const [error, setError] = useState<string | null>(null);
   const [liveLoc, setLiveLoc] = useState(false);
   const [gpsBusy, setGpsBusy] = useState(false);
+  const [fromSel, setFromSel] = useState<GeoPlace | null>(null);
+  const [toSel, setToSel] = useState<GeoPlace | null>(null);
 
   const load = useCallback(async (o: NavPoint, d: NavPoint) => {
     setLoading(true);
@@ -150,6 +154,17 @@ export default function NavigatePage() {
     setOrigin(p.origin);
     setDestination(p.destination);
     void load(p.origin, p.destination);
+  };
+
+  const plotCustom = () => {
+    if (!fromSel || !toSel) return;
+    const o: NavPoint = { lat: fromSel.lat, lng: fromSel.lng };
+    const d: NavPoint = { lat: toSel.lat, lng: toSel.lng };
+    setPresetIdx(-1);
+    setLiveLoc(false);
+    setOrigin(o);
+    setDestination(d);
+    void load(o, d);
   };
 
   const useMyLocation = () => {
@@ -234,6 +249,41 @@ export default function NavigatePage() {
           <Crosshair aria-hidden className="mr-1.5 h-4 w-4" />
           {gpsBusy ? 'Locating…' : 'Use my location'}
         </Button>
+      </section>
+
+      {/* Custom route — search ANY from/to (free OSM geocoding) */}
+      <section className="rounded-2xl border border-gold-600/15 bg-surface p-5 shadow-(--shadow-depth-1) sm:p-6">
+        <h2 className="mb-4 inline-flex items-center gap-2 font-display text-lg font-semibold tracking-tight text-surface-foreground">
+          <RouteIcon aria-hidden className="h-4 w-4 text-gold-600" />
+          Plan a custom route
+        </h2>
+        <div className="grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+          <PlaceSearch
+            label="From"
+            placeholder="Search any place — e.g. Connaught Place, Delhi"
+            selected={fromSel}
+            onSelect={setFromSel}
+          />
+          <PlaceSearch
+            label="To"
+            placeholder="Search any destination — e.g. Hawa Mahal, Jaipur"
+            selected={toSel}
+            onSelect={setToSel}
+          />
+          <Button
+            type="button"
+            variant="royal"
+            onClick={plotCustom}
+            disabled={!fromSel || !toSel || loading}
+            className="sm:mb-px"
+          >
+            <Navigation aria-hidden className="mr-1.5 h-4 w-4" />
+            Plot route
+          </Button>
+        </div>
+        <p className="mt-3 text-xs text-muted">
+          Powered by OpenStreetMap — type at least 3 letters and pick a match.
+        </p>
       </section>
 
       {!bootComplete || (loading && !data) ? (
