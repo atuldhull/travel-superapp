@@ -36,6 +36,15 @@ export interface TripPlannerRequest {
    * the planner behaves exactly as before 2C.3.
    */
   readonly groundingContext?: readonly string[];
+  /**
+   * Conversational refine (the planner chatbot). Optional + ADDITIVE:
+   * when `instruction` is set the adapters rewrite the FULL plan
+   * applying the traveller's request; `priorPlan` is the plan being
+   * revised. Absent → normal first-generation behaviour. Stub ignores
+   * (structural typing — back-compat).
+   */
+  readonly instruction?: string;
+  readonly priorPlan?: string;
 }
 
 /**
