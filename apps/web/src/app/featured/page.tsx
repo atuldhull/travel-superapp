@@ -79,7 +79,7 @@ export default function FeaturedPage() {
           <p className="max-w-sm text-sm leading-relaxed text-muted">
             We can&apos;t reach the API right now. Once it&apos;s running on{' '}
             <code className="rounded bg-gold-500/10 px-1.5 py-0.5 font-mono text-xs text-gold-700 dark:text-gold-300">
-              {process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000'}
+              {process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:3000'}
             </code>{' '}
             the featured books appear here.
           </p>

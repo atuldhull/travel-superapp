@@ -10,7 +10,7 @@
 import type { MetadataRoute } from 'next';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://travelsuperapp.local';
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:3000';
 
 interface FeaturedBookRow {
   readonly id: string;

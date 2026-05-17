@@ -15,7 +15,7 @@
  *   3. Swap Nest's built-in logger for our Pino-backed one.
  *   4. Set global prefix `/api/v1` — except for health probes, which
  *      Kubernetes / Fly.io hit at `/health/*` directly.
- *   5. Listen on 0.0.0.0:$PORT.
+ *   5. Listen on [::]:$PORT (dual-stack — IPv6 + IPv4-mapped).
  *
  * Installed by prompt [III.11.0]. See Playbook §10 + §15.2.
  */
@@ -119,7 +119,12 @@ async function bootstrap(): Promise<void> {
   // 7. Shutdown hooks so SIGTERM drains in-flight requests cleanly (Fly.io / k8s).
   app.enableShutdownHooks();
 
-  await app.listen(env.PORT, '0.0.0.0');
+  // Dual-stack: '::' accepts IPv6 (::1) AND IPv4-mapped connections
+  // (ipv6Only defaults false). Windows/macOS browsers resolve
+  // `localhost` to ::1 first, so an IPv4-only '0.0.0.0' bind makes
+  // browser fetches to http://localhost:3000 fail even though curl
+  // (IPv4) works. '::' also matches Fly.io's IPv6 internal net.
+  await app.listen(env.PORT, '::');
 
   bootLog.info({ port: env.PORT, nodeEnv: env.NODE_ENV, logLevel: env.LOG_LEVEL }, 'api_started');
 }
