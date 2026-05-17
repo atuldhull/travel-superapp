@@ -111,10 +111,22 @@ const StripeSchema = z.object({
 });
 
 // ─── External place / map / booking APIs ────────────────────────────────
+//
+// Live-navigation feature (user-directed, $0 base):
+//   - OSRM_BASE_URL: real road routing + alternatives. Defaults to
+//     the free public demo server (no key, fair-use). Self-host or
+//     point at a paid OSRM for production volume.
+//   - TOMTOM_API_KEY: optional live traffic flow. When absent the
+//     TrafficProvider uses the deterministic mock and the client
+//     labels routes "estimated" instead of "live" (same env-gated
+//     optional-provider pattern as POST.3/4/9 — adding the key never
+//     breaks anything).
 const ExternalApisSchema = z.object({
   GOOGLE_PLACES_API_KEY: z.string().optional(),
   FOURSQUARE_API_KEY: z.string().optional(),
   MAPBOX_ACCESS_TOKEN: z.string().optional(),
+  OSRM_BASE_URL: z.string().url().default('https://router.project-osrm.org'),
+  TOMTOM_API_KEY: z.string().optional(),
 });
 
 // ─── S3-compatible object storage (R2 prod · MinIO local) ───────────────
