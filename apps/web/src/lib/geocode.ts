@@ -26,6 +26,20 @@ interface NominatimRow {
   readonly lon?: string;
 }
 
+/**
+ * Resolve ONE place, biased to a city ("<place>, <city>") so an
+ * itinerary landmark pins near the trip — not a same-named place on
+ * another continent. Returns null on miss (caller skips the pin).
+ */
+export async function geocodeOne(place: string, city: string): Promise<GeoPlace | null> {
+  const q = place.trim();
+  if (!q) return null;
+  const biased = await searchPlaces(`${q}, ${city}`, 1);
+  if (biased[0]) return biased[0];
+  const bare = await searchPlaces(q, 1);
+  return bare[0] ?? null;
+}
+
 export async function searchPlaces(query: string, limit = 5): Promise<readonly GeoPlace[]> {
   const q = query.trim();
   if (q.length < 3) return [];
