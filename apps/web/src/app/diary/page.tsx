@@ -73,7 +73,7 @@ export default function DiaryPage() {
   const [entries, setEntries] = useState<readonly DiaryEntryDto[]>([]);
   const [game, setGame] = useState<GamificationView | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<null | 'offline' | 'auth'>(null);
 
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
@@ -85,13 +85,15 @@ export default function DiaryPage() {
 
   const refresh = useCallback(async () => {
     setLoading(true);
-    setError(false);
+    setError(null);
     try {
       const [g, e] = await Promise.all([getGamification(), listDiaryEntries({ limit: 50 })]);
       setGame(g);
       setEntries(e.entries);
-    } catch {
-      setError(true);
+    } catch (err) {
+      // A 401 is an expired session, not an API outage — say so.
+      const ex = err as { status?: number; code?: string };
+      setError(ex?.status === 401 || ex?.code === 'UNAUTHENTICATED' ? 'auth' : 'offline');
     } finally {
       setLoading(false);
     }
@@ -193,20 +195,20 @@ export default function DiaryPage() {
 
       {!bootComplete || loading ? (
         <SkeletonCard count={2} />
-      ) : !token ? (
+      ) : !token || error === 'auth' ? (
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-gold-600/15 bg-surface px-6 py-14 text-center shadow-(--shadow-depth-1)">
           <span className="grid h-16 w-16 place-items-center rounded-2xl border border-gold-500/25 bg-gold-500/8 text-gold-600 shadow-(--shadow-depth-1)">
             <ShieldAlert aria-hidden className="h-7 w-7" />
           </span>
           <h2 className="font-display text-xl font-semibold tracking-tight text-surface-foreground">
-            Sign in to start your diary
+            {error === 'auth' ? 'Your session expired' : 'Sign in to start your diary'}
           </h2>
           <p className="max-w-sm text-sm leading-relaxed text-muted">
-            Your adventures are private to you.{' '}
+            {error === 'auth' ? 'Your sign-in lapsed. ' : 'Your adventures are private to you. '}
             <Link href="/login" className="text-gold-600 underline-offset-4 hover:underline">
               Sign in
             </Link>{' '}
-            to begin writing.
+            {error === 'auth' ? 'again to keep writing.' : 'to begin writing.'}
           </p>
         </div>
       ) : error ? (
