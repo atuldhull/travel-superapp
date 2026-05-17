@@ -131,14 +131,21 @@ export function ItineraryGlobe({ plan, city, center, className }: ItineraryGlobe
     return out;
   }, [stops]);
 
-  // Cinematic camera: ease to the newest stop / journey centroid.
+  // Cinematic camera: ease to the journey centroid, framed by how
+  // spread out it is — a one-city plan gets a dramatic CLOSE orbital
+  // curve (not a far speck); a regional one pulls back.
   useEffect(() => {
     const g = globeRef.current;
     if (!g || stops.length === 0) return;
     const lat = stops.reduce((s, p) => s + p.lat, 0) / stops.length;
     const lng = stops.reduce((s, p) => s + p.lng, 0) / stops.length;
-    const altitude = stops.length <= 1 ? 2.1 : 1.7;
-    g.pointOfView({ lat, lng, altitude }, reduce ? 0 : 1200);
+    const spread = stops.reduce(
+      (mx, p) => Math.max(mx, haversineKm({ lat, lng }, { lat: p.lat, lng: p.lng })),
+      0,
+    );
+    // ≤8km (one city) → 0.5 ; ~120km → ~1.4 ; clamp.
+    const altitude = Math.min(1.8, Math.max(0.5, 0.45 + spread / 90));
+    g.pointOfView({ lat, lng, altitude }, reduce ? 0 : 1300);
   }, [stops, reduce]);
 
   return (
@@ -150,10 +157,19 @@ export function ItineraryGlobe({ plan, city, center, className }: ItineraryGlobe
       )}
       style={{ backgroundImage: 'var(--gradient-royal)' }}
     >
+      {/* deep-space starfield (static, cheap) */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-70"
+        style={{
+          backgroundImage:
+            'radial-gradient(1px 1px at 12% 22%, rgba(255,255,255,.7) 50%, transparent), radial-gradient(1px 1px at 78% 14%, rgba(255,255,255,.55) 50%, transparent), radial-gradient(1.4px 1.4px at 36% 68%, rgba(243,224,166,.7) 50%, transparent), radial-gradient(1px 1px at 64% 82%, rgba(255,255,255,.5) 50%, transparent), radial-gradient(1px 1px at 88% 54%, rgba(255,255,255,.45) 50%, transparent), radial-gradient(1.2px 1.2px at 22% 88%, rgba(243,224,166,.55) 50%, transparent)',
+        }}
+      />
       {/* champagne aura behind the globe */}
       <div
         aria-hidden
-        className="pointer-events-none absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold-500/15 blur-[90px]"
+        className="pointer-events-none absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold-500/20 blur-[90px]"
       />
       <Globe
         ref={globeRef}
