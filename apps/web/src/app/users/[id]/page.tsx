@@ -63,7 +63,7 @@ export default function PublicReviewerProfilePage() {
         </Card>
       ) : isError ? (
         <Card>
-          <p className="text-sm text-danger">
+          <p className="text-sm text-red-600 dark:text-red-400">
             {apiErr?.code === 'USER_NOT_FOUND'
               ? "We couldn't find that reviewer."
               : `Couldn't load profile (${apiErr?.code ?? `HTTP_${apiErr?.status ?? '???'}`}).`}
@@ -144,23 +144,23 @@ function ReviewRow({
     },
   });
   return (
-    <li className="rounded border border-muted/15 p-3 text-sm">
+    <li className="rounded-xl border border-gold-600/12 bg-surface p-3.5 text-sm shadow-(--shadow-depth-1) transition hover:border-gold-600/25">
       <p className="text-xs text-muted">
-        ★ {review.rating}/5 · {new Date(review.createdAt).toLocaleDateString()} ·{' '}
-        {review.targetType}
+        <span className="text-gold-600">★</span> {review.rating}/5 ·{' '}
+        {new Date(review.createdAt).toLocaleDateString()} · {review.targetType}
       </p>
-      <p className="mt-1 leading-relaxed">{review.body}</p>
+      <p className="mt-1 leading-relaxed text-surface-foreground/90">{review.body}</p>
       {canHelpful ? (
         <div className="mt-2 flex items-center gap-3 text-xs">
           <button
             type="button"
             onClick={() => helpful.mutate({ id: review.id })}
             disabled={helpful.isPending}
-            className="rounded-md border border-muted/30 px-2 py-1 hover:bg-muted/10 disabled:opacity-50"
+            className="rounded-full border border-gold-600/25 px-2.5 py-1 transition hover:bg-gold-500/10 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             👍 Helpful{helpfulCount !== null ? ` (${helpfulCount})` : ''}
           </button>
-          {errMsg ? <span className="text-danger">{errMsg}</span> : null}
+          {errMsg ? <span className="text-red-600 dark:text-red-400">{errMsg}</span> : null}
         </div>
       ) : null}
     </li>
@@ -285,7 +285,7 @@ function CreatorPanel({ userId }: { readonly userId: string }) {
             <li key={t.tripId}>
               <Link
                 href={`/trips/${t.tripId}` as Route}
-                className="block rounded-md border border-muted/15 bg-surface px-3 py-2 text-sm hover:border-accent/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                className="block rounded-xl border border-gold-600/15 bg-surface px-3.5 py-2.5 text-sm shadow-(--shadow-depth-1) transition hover:-translate-y-0.5 hover:border-gold-600/30 hover:shadow-(--shadow-depth-2) focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >
                 Trip {t.tripId.slice(0, 8)}
                 <span className="ml-2 text-xs text-muted">{t.visibility.toLowerCase()}</span>
