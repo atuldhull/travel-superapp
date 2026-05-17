@@ -24,7 +24,7 @@ export function ThemeToggle({ className }: { className?: string }) {
       role="radiogroup"
       aria-label="Theme"
       className={cn(
-        'inline-flex items-center gap-1 rounded-md border border-muted/30 bg-surface p-0.5 text-xs',
+        'inline-flex items-center gap-0.5 rounded-full border border-gold-600/20 bg-surface/60 p-0.5 text-xs backdrop-blur-sm',
         className,
       )}
     >
@@ -38,9 +38,12 @@ export function ThemeToggle({ className }: { className?: string }) {
             aria-checked={selected}
             onClick={() => setThemePreference(opt.value)}
             className={cn(
-              'rounded px-2 py-1 font-medium transition',
-              selected ? 'bg-brand text-brand-foreground' : 'text-muted hover:bg-muted/10',
+              'rounded-full px-2.5 py-1 font-medium transition',
+              selected
+                ? 'text-brand-900 shadow-(--shadow-depth-1)'
+                : 'text-muted hover:bg-gold-500/10 hover:text-surface-foreground',
             )}
+            style={selected ? { backgroundImage: 'var(--gradient-gold)' } : undefined}
           >
             {opt.label}
           </button>
