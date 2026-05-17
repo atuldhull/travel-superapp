@@ -214,6 +214,93 @@ export function getNavigation(body: {
   }).then((r) => r.data);
 }
 
+// ─── Adventure Diary + gamification ─────────────────────────────────────
+// Mirrors apps/api diary DTOs 1:1 (TS-interface DTOs, deferred SDK seam).
+export interface DiaryEntryDto {
+  readonly id: string;
+  readonly userId: string;
+  readonly tripId: string | null;
+  readonly title: string;
+  readonly body: string;
+  readonly mood: string | null;
+  readonly aiAssisted: boolean;
+  readonly entryDate: string;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+export interface GamificationDelta {
+  readonly totalPoints: number;
+  readonly currentStreak: number;
+  readonly longestStreak: number;
+  readonly entryCount: number;
+  readonly aiAssistCount: number;
+  readonly lastEntryOn: string | null;
+  readonly pointsAwarded: number;
+  readonly newlyEarnedBadges: readonly string[];
+}
+export interface CreateDiaryEntryResult {
+  readonly entry: DiaryEntryDto;
+  readonly gamification: GamificationDelta;
+}
+export interface BadgeView {
+  readonly key: string;
+  readonly name: string;
+  readonly description: string;
+  readonly icon: string;
+  readonly earned: boolean;
+}
+export interface GamificationView {
+  readonly totalPoints: number;
+  readonly currentStreak: number;
+  readonly longestStreak: number;
+  readonly entryCount: number;
+  readonly aiAssistCount: number;
+  readonly lastEntryOn: string | null;
+  readonly badges: readonly BadgeView[];
+}
+export type DiaryAssistMode = 'prompt' | 'polish' | 'title';
+export interface DiaryAssistResult {
+  readonly mode: DiaryAssistMode;
+  readonly text?: string;
+  readonly suggestions?: readonly string[];
+  readonly aiBacked: boolean;
+}
+
+export function listDiaryEntries(opts: { tripId?: string; limit?: number } = {}): Promise<{
+  entries: readonly DiaryEntryDto[];
+}> {
+  return get(`/api/v1/diary/entries${qs({ tripId: opts.tripId, limit: opts.limit })}`);
+}
+export function getGamification(): Promise<GamificationView> {
+  return get(`/api/v1/diary/gamification`);
+}
+export function createDiaryEntry(body: {
+  title: string;
+  body: string;
+  tripId?: string;
+  mood?: string;
+  aiAssisted?: boolean;
+  entryDate?: string;
+}): Promise<CreateDiaryEntryResult> {
+  return apiFetch<Envelope<CreateDiaryEntryResult>>(`/api/v1/diary/entries`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+    headers: { 'content-type': 'application/json' },
+  }).then((r) => r.data);
+}
+export function assistDiary(body: {
+  mode: DiaryAssistMode;
+  text?: string;
+  mood?: string;
+  place?: string;
+}): Promise<DiaryAssistResult> {
+  return apiFetch<Envelope<DiaryAssistResult>>(`/api/v1/diary/assist`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+    headers: { 'content-type': 'application/json' },
+  }).then((r) => r.data);
+}
+
 // ─── Agent ──────────────────────────────────────────────────────────────
 export function getAgentStatus(): Promise<{ enabled: true; phase: string }> {
   return get(`/api/v1/agent/status`);
