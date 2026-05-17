@@ -36,6 +36,7 @@ import {
 import { GoogleSignInButton } from '../../components/google-sign-in-button';
 import { Button } from '../../components/ui/button';
 import { Field } from '../../components/ui/input';
+import { AuthError, AuthShell } from '../../components/auth/auth-shell';
 import { setAccessToken } from '../../lib/auth-store';
 import { decidePostAuthDestination } from '../../lib/post-auth-redirect';
 
@@ -109,132 +110,134 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="space-y-6">
-      <p>
-        <Link href="/" className="text-sm text-muted hover:underline">
-          ← Back
-        </Link>
-      </p>
-      <h1 className="text-3xl font-bold tracking-tight">Create your account</h1>
-
-      {/* POST.3 — Google OAuth path. Renders nothing when
-          NEXT_PUBLIC_GOOGLE_CLIENT_ID is absent (dev fallback). */}
-      <section className="rounded-xl border border-muted/15 bg-surface p-5">
-        <header className="mb-3 flex items-center gap-2">
-          <span aria-hidden className="text-xl">
-            🌐
-          </span>
-          <h2 className="text-lg font-semibold">Continue with Google</h2>
-        </header>
-        <p className="mb-4 text-sm text-muted">
-          Faster — no password to remember. We&apos;ll create your account on first sign-in.
-        </p>
-        <GoogleSignInButton
-          onSignedIn={() => router.push('/onboarding' as never)}
-          onError={(msg) => setErrorMsg(msg)}
-        />
-      </section>
-
-      {/* ───── Magic-link path ───────────────────────────────────────── */}
-      <section className="rounded-xl border border-brand/30 bg-brand/5 p-5">
-        <header className="mb-3 flex items-center gap-2">
-          <span aria-hidden className="text-xl">
-            ✨
-          </span>
-          <h2 className="text-lg font-semibold">Email me a sign-in link</h2>
-        </header>
-        <p className="mb-4 text-sm text-muted">
-          Skip the password. We'll send a one-tap link to your inbox — works for new accounts and
-          existing ones.
-        </p>
-        {magicSent ? (
-          <p className="rounded-md border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 text-sm">
-            <span aria-hidden className="mr-1.5">
-              ✉️
+    <AuthShell
+      eyebrow="Join the journey"
+      title="Create your account"
+      subtitle="Plan smarter, travel safer, and keep an AI diary of every adventure."
+    >
+      <div className="space-y-6">
+        {/* POST.3 — Google OAuth path. Renders nothing when
+            NEXT_PUBLIC_GOOGLE_CLIENT_ID is absent (dev fallback). */}
+        <section className="rounded-xl border border-gold-600/15 bg-surface p-5 shadow-(--shadow-depth-1)">
+          <header className="mb-3 flex items-center gap-2">
+            <span aria-hidden className="text-xl">
+              🌐
             </span>
-            Check <strong>{magicEmail}</strong> — your sign-in link should arrive in seconds. The
-            link expires in 15 minutes.
+            <h2 className="font-display text-lg font-semibold tracking-tight text-surface-foreground">
+              Continue with Google
+            </h2>
+          </header>
+          <p className="mb-4 text-sm text-muted">
+            Faster — no password to remember. We&apos;ll create your account on first sign-in.
           </p>
-        ) : (
-          <form onSubmit={onMagicSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-end">
-            <div className="sm:flex-1">
-              <Field
-                label="Email"
-                type="email"
-                autoComplete="email"
-                value={magicEmail}
-                onChange={(e) => setMagicEmail(e.target.value)}
-                required
-                maxLength={254}
-              />
+          <GoogleSignInButton
+            onSignedIn={() => router.push('/onboarding' as never)}
+            onError={(msg) => setErrorMsg(msg)}
+          />
+        </section>
+
+        {/* ───── Magic-link path (premium gold panel) ────────────────── */}
+        <section className="rounded-xl border border-gold-600/25 bg-gold-500/5 p-5 shadow-(--shadow-depth-1)">
+          <header className="mb-3 flex items-center gap-2">
+            <span aria-hidden className="text-xl">
+              ✨
+            </span>
+            <h2 className="font-display text-lg font-semibold tracking-tight text-surface-foreground">
+              Email me a sign-in link
+            </h2>
+          </header>
+          <p className="mb-4 text-sm text-muted">
+            Skip the password. We&apos;ll send a one-tap link to your inbox — works for new accounts
+            and existing ones.
+          </p>
+          {magicSent ? (
+            <p className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 text-sm text-surface-foreground">
+              <span aria-hidden className="mr-1.5">
+                ✉️
+              </span>
+              Check <strong>{magicEmail}</strong> — your sign-in link should arrive in seconds. The
+              link expires in 15 minutes.
+            </p>
+          ) : (
+            <form onSubmit={onMagicSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <div className="sm:flex-1">
+                <Field
+                  label="Email"
+                  type="email"
+                  autoComplete="email"
+                  value={magicEmail}
+                  onChange={(e) => setMagicEmail(e.target.value)}
+                  required
+                  maxLength={254}
+                />
+              </div>
+              <Button type="submit" variant="royal" disabled={magicLinkMutation.isPending}>
+                {magicLinkMutation.isPending ? 'Sending…' : 'Send sign-in link'}
+              </Button>
+            </form>
+          )}
+          {magicError ? (
+            <div className="mt-3">
+              <AuthError>{magicError}</AuthError>
             </div>
-            <Button type="submit" variant="primary" disabled={magicLinkMutation.isPending}>
-              {magicLinkMutation.isPending ? 'Sending…' : 'Send sign-in link'}
-            </Button>
-          </form>
-        )}
-        {magicError ? (
-          <p className="mt-3 rounded-md border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">
-            {magicError}
-          </p>
-        ) : null}
-      </section>
+          ) : null}
+        </section>
 
-      {/* ───── Divider ─────────────────────────────────────────────── */}
-      <div className="flex items-center gap-3 text-xs uppercase tracking-wider text-muted">
-        <span className="h-px flex-1 bg-muted/20" />
-        <span>or use a password</span>
-        <span className="h-px flex-1 bg-muted/20" />
+        {/* ───── Divider ───────────────────────────────────────────── */}
+        <div className="flex items-center gap-3 text-xs uppercase tracking-wider text-muted">
+          <span className="h-px flex-1 bg-gold-600/20" />
+          <span>or use a password</span>
+          <span className="h-px flex-1 bg-gold-600/20" />
+        </div>
+
+        {/* ───── Password form ─────────────────────────────────────── */}
+        <form onSubmit={onRegisterSubmit} className="space-y-4">
+          <Field
+            label="Display name"
+            type="text"
+            autoComplete="nickname"
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            required
+            minLength={1}
+            maxLength={60}
+            help="1..60 characters."
+          />
+          <Field
+            label="Email"
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            maxLength={254}
+          />
+          <Field
+            label="Password"
+            type="password"
+            autoComplete="new-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={12}
+            maxLength={128}
+            help="At least 12 characters."
+          />
+          {errorMsg ? <AuthError>{errorMsg}</AuthError> : null}
+          <Button type="submit" variant="royal" disabled={registerMutation.isPending}>
+            {registerMutation.isPending ? 'Creating account…' : 'Create account'}
+          </Button>
+        </form>
+        <p className="text-sm text-muted">
+          Already have an account?{' '}
+          <Link
+            href="/login"
+            className="font-medium text-gold-600 transition hover:text-gold-700 hover:underline dark:hover:text-gold-300"
+          >
+            Sign in →
+          </Link>
+        </p>
       </div>
-
-      {/* ───── Password form ───────────────────────────────────────── */}
-      <form onSubmit={onRegisterSubmit} className="space-y-4">
-        <Field
-          label="Display name"
-          type="text"
-          autoComplete="nickname"
-          value={displayName}
-          onChange={(e) => setDisplayName(e.target.value)}
-          required
-          minLength={1}
-          maxLength={60}
-          help="1..60 characters."
-        />
-        <Field
-          label="Email"
-          type="email"
-          autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          maxLength={254}
-        />
-        <Field
-          label="Password"
-          type="password"
-          autoComplete="new-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          minLength={12}
-          maxLength={128}
-          help="At least 12 characters."
-        />
-        {errorMsg ? (
-          <p className="rounded-md border border-danger/30 bg-danger/5 px-4 py-2 text-sm text-danger">
-            {errorMsg}
-          </p>
-        ) : null}
-        <Button type="submit" disabled={registerMutation.isPending}>
-          {registerMutation.isPending ? 'Creating account…' : 'Create account'}
-        </Button>
-      </form>
-      <p className="text-sm text-muted">
-        Already have an account?{' '}
-        <Link href="/login" className="text-brand hover:underline">
-          Sign in →
-        </Link>
-      </p>
-    </main>
+    </AuthShell>
   );
 }
