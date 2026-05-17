@@ -14,6 +14,7 @@
 'use client';
 
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import React, { useEffect, useState } from 'react';
 import {
   useTripControllerSamplePlan,
@@ -24,6 +25,17 @@ import { Button } from '../ui/button';
 import { Card, CardHeader, CardSubtitle, CardTitle } from '../ui/card';
 import { Skeleton } from '../ui/skeleton';
 import { getRecalledSamplePlan, rememberSamplePlan } from '../../lib/visit-recall';
+
+// Leaflet touches `window` — keep the animated journey map out of SSR.
+const JourneyMap = dynamic(
+  () => import('./itinerary-journey-map').then((m) => m.ItineraryJourneyMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="mt-2 h-72 w-full animate-pulse rounded-2xl border border-gold-600/15 bg-gold-500/5" />
+    ),
+  },
+);
 
 interface ApiError extends Error {
   readonly code?: string;
@@ -214,9 +226,20 @@ export function SampleTripDemo() {
                   )}
                 </CardSubtitle>
               </CardHeader>
-              <pre className="mt-2 max-h-96 overflow-auto whitespace-pre-wrap rounded-xl border border-gold-600/12 bg-gold-500/5 p-4 text-sm leading-relaxed text-surface-foreground/90">
-                {planResult.plan}
-              </pre>
+              <JourneyMap
+                plan={planResult.plan}
+                city={selected.title}
+                center={selected.center}
+                className="mt-2 h-72 w-full"
+              />
+              <details className="mt-3 rounded-xl border border-gold-600/12 bg-gold-500/5">
+                <summary className="cursor-pointer px-4 py-2.5 text-sm font-medium text-surface-foreground transition hover:text-gold-700 dark:hover:text-gold-300">
+                  📖 Read the written plan
+                </summary>
+                <pre className="max-h-80 overflow-auto whitespace-pre-wrap px-4 pb-4 text-sm leading-relaxed text-surface-foreground/90">
+                  {planResult.plan}
+                </pre>
+              </details>
               <div className="mt-4 flex flex-wrap items-center gap-3">
                 <Link
                   href="/register"
