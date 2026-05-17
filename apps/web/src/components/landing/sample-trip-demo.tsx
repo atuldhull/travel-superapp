@@ -143,7 +143,7 @@ export function SampleTripDemo() {
           Pick a city, set your radius, get a 3-day AI itinerary in seconds. No account needed.
         </p>
       </header>
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="space-y-8">
         <div className="space-y-5">
           <div>
             <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-muted">
@@ -255,23 +255,39 @@ export function SampleTripDemo() {
                   plan={planResult.plan}
                   city={selected.title}
                   center={selected.center}
-                  className="mt-2 h-80 w-full"
+                  className="mt-3 h-115 w-full sm:h-140"
                 />
               ) : (
                 <JourneyMap
                   plan={planResult.plan}
                   city={selected.title}
                   center={selected.center}
-                  className="mt-2 h-72 w-full"
+                  className="mt-3 h-110 w-full sm:h-130"
                 />
               )}
               <details className="mt-3 rounded-xl border border-gold-600/12 bg-gold-500/5">
                 <summary className="cursor-pointer px-4 py-2.5 text-sm font-medium text-surface-foreground transition hover:text-gold-700 dark:hover:text-gold-300">
                   📖 Read the written plan
                 </summary>
-                <pre className="max-h-80 overflow-auto whitespace-pre-wrap px-4 pb-4 text-sm leading-relaxed text-surface-foreground/90">
-                  {planResult.plan}
-                </pre>
+                <div className="max-h-96 space-y-3 overflow-auto px-4 pb-4 text-sm leading-relaxed text-surface-foreground/90">
+                  {planResult.plan
+                    .split(/\n{2,}/)
+                    .map((para) => para.trim())
+                    .filter(Boolean)
+                    .map((para, i) => {
+                      const m = para.match(/^(Day\s*\d+)\s*[—–-]\s*([\s\S]*)$/);
+                      return m ? (
+                        <p key={i}>
+                          <span className="font-display font-semibold text-gold-700 dark:text-gold-300">
+                            {m[1]}
+                          </span>{' '}
+                          — {m[2]}
+                        </p>
+                      ) : (
+                        <p key={i}>{para}</p>
+                      );
+                    })}
+                </div>
               </details>
               <div className="mt-4 flex flex-wrap items-center gap-3">
                 <Link

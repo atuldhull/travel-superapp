@@ -1,16 +1,13 @@
 /**
- * Free, key-less place geocoding via the public OSM **Nominatim**
- * service — same $0 / no-key ethos as the OSM map tiles + OSRM
- * routing already used by LiveNavMap. Lets the traveller type ANY
- * "from" / "to" instead of only the presets.
+ * Free, key-less place geocoding. Primary: **Photon** (komoot,
+ * photon.komoot.io) — open-source, no key, CORS-open, built for
+ * type-ahead and FAR more lenient than Nominatim's public endpoint
+ * (which 429s under the rapid lookups an itinerary needs, leaving the
+ * globe empty). Fallback: Nominatim, one shot, if Photon misses.
  *
- * Etiquette: Nominatim's public endpoint asks for ≤ 1 req/sec and a
- * real referer (the browser sends Origin/Referer automatically).
- * Callers debounce. For production volume self-host Nominatim or
- * swap in Photon behind this same function — the contract stays.
- *
- * Always resolves (never throws): a failed lookup → empty list, so
- * the UI degrades to "no matches" rather than an error.
+ * Same $0 / no-key ethos as the OSM tiles + OSRM routing. Always
+ * resolves (never throws): a miss → empty list / null so the UI
+ * degrades gracefully instead of erroring.
  */
 export interface GeoPlace {
   readonly label: string;
@@ -18,41 +15,84 @@ export interface GeoPlace {
   readonly lng: number;
 }
 
-const ENDPOINT = 'https://nominatim.openstreetmap.org/search';
+const PHOTON = 'https://photon.komoot.io/api/';
+const NOMINATIM = 'https://nominatim.openstreetmap.org/search';
 
+interface PhotonResp {
+  readonly features?: ReadonlyArray<{
+    readonly geometry?: { readonly coordinates?: readonly [number, number] };
+    readonly properties?: {
+      readonly name?: string;
+      readonly city?: string;
+      readonly state?: string;
+      readonly country?: string;
+    };
+  }>;
+}
 interface NominatimRow {
   readonly display_name?: string;
   readonly lat?: string;
   readonly lon?: string;
 }
 
-/**
- * Resolve ONE place, biased to a city ("<place>, <city>") so an
- * itinerary landmark pins near the trip — not a same-named place on
- * another continent. Returns null on miss (caller skips the pin).
- */
-export async function geocodeOne(place: string, city: string): Promise<GeoPlace | null> {
-  const q = place.trim();
-  if (!q) return null;
-  const biased = await searchPlaces(`${q}, ${city}`, 1);
-  if (biased[0]) return biased[0];
-  const bare = await searchPlaces(q, 1);
-  return bare[0] ?? null;
+async function timedFetch(url: string, ms: number): Promise<Response | null> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  try {
+    const res = await fetch(url, { signal: ctrl.signal, headers: { Accept: 'application/json' } });
+    return res.ok ? res : null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
-export async function searchPlaces(query: string, limit = 5): Promise<readonly GeoPlace[]> {
+function photonLabel(p: NonNullable<PhotonResp['features']>[number]['properties']): string {
+  if (!p) return '';
+  return [p.name, p.city, p.state, p.country].filter(Boolean).join(', ');
+}
+
+/**
+ * Search places (type-ahead). Photon first, Nominatim fallback.
+ * `bias` (lat/lng) nudges Photon toward the trip area when known.
+ */
+export async function searchPlaces(
+  query: string,
+  limit = 5,
+  bias?: { readonly lat: number; readonly lng: number },
+): Promise<readonly GeoPlace[]> {
   const q = query.trim();
   if (q.length < 3) return [];
-  const url = `${ENDPOINT}?format=json&addressdetails=0&limit=${limit}&q=${encodeURIComponent(q)}`;
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 6000);
+
+  const biasQs = bias ? `&lat=${bias.lat}&lon=${bias.lng}` : '';
+  const pRes = await timedFetch(
+    `${PHOTON}?q=${encodeURIComponent(q)}&limit=${limit}${biasQs}`,
+    6000,
+  );
+  if (pRes) {
+    try {
+      const j = (await pRes.json()) as PhotonResp;
+      const out = (j.features ?? [])
+        .map((f) => ({
+          label: photonLabel(f.properties),
+          lat: f.geometry?.coordinates?.[1] ?? NaN,
+          lng: f.geometry?.coordinates?.[0] ?? NaN,
+        }))
+        .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng));
+      if (out.length > 0) return out;
+    } catch {
+      /* fall through to Nominatim */
+    }
+  }
+
+  const nRes = await timedFetch(
+    `${NOMINATIM}?format=json&addressdetails=0&limit=${limit}&q=${encodeURIComponent(q)}`,
+    6000,
+  );
+  if (!nRes) return [];
   try {
-    const res = await fetch(url, {
-      signal: ctrl.signal,
-      headers: { Accept: 'application/json' },
-    });
-    if (!res.ok) return [];
-    const rows = (await res.json()) as NominatimRow[];
+    const rows = (await nRes.json()) as NominatimRow[];
     return rows
       .map((r) => ({
         label: r.display_name ?? '',
@@ -62,7 +102,24 @@ export async function searchPlaces(query: string, limit = 5): Promise<readonly G
       .filter((p) => p.label.length > 0 && Number.isFinite(p.lat) && Number.isFinite(p.lng));
   } catch {
     return [];
-  } finally {
-    clearTimeout(timer);
   }
+}
+
+/**
+ * Resolve ONE place, biased to a city so an itinerary landmark pins
+ * near the trip — not a same-named place on another continent.
+ * Returns null on miss (caller skips the pin). One network call in
+ * the common case (Photon handles "<place> <city>" well).
+ */
+export async function geocodeOne(
+  place: string,
+  city: string,
+  bias?: { readonly lat: number; readonly lng: number },
+): Promise<GeoPlace | null> {
+  const q = place.trim();
+  if (!q) return null;
+  const hit = await searchPlaces(`${q}, ${city}`, 1, bias);
+  if (hit[0]) return hit[0];
+  const bare = await searchPlaces(q, 1, bias);
+  return bare[0] ?? null;
 }
