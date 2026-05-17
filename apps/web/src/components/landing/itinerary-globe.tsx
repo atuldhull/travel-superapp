@@ -121,32 +121,79 @@ export function ItineraryGlobe({ plan, city, center, className }: ItineraryGlobe
     };
   }, [plan, city, center.lat, center.lng]);
 
+  // A globe CANNOT separate places ~1km apart — so don't try. Group
+  // stops within 25km into ONE beacon (the city). Only genuinely
+  // far-apart regions become distinct beacons + arcs. This is the
+  // fix for "8 labels stacked on one pixel + a blue wall".
+  const clusters = useMemo(() => {
+    const CL_KM = 25;
+    const cs: {
+      lat: number;
+      lng: number;
+      sumLat: number;
+      sumLng: number;
+      n: number;
+      names: string[];
+      hasStart: boolean;
+    }[] = [];
+    for (const s of stops) {
+      const hit = cs.find(
+        (c) => haversineKm({ lat: c.lat, lng: c.lng }, { lat: s.lat, lng: s.lng }) <= CL_KM,
+      );
+      if (hit) {
+        hit.sumLat += s.lat;
+        hit.sumLng += s.lng;
+        hit.n += 1;
+        hit.lat = hit.sumLat / hit.n;
+        hit.lng = hit.sumLng / hit.n;
+        if (s.start) hit.hasStart = true;
+        else hit.names.push(s.name);
+      } else {
+        cs.push({
+          lat: s.lat,
+          lng: s.lng,
+          sumLat: s.lat,
+          sumLng: s.lng,
+          n: 1,
+          names: s.start ? [] : [s.name],
+          hasStart: !!s.start,
+        });
+      }
+    }
+    return cs.map((c) => ({
+      lat: c.lat,
+      lng: c.lng,
+      count: c.n,
+      label: c.names.length === 1 && !c.hasStart ? c.names[0]! : city,
+    }));
+  }, [stops, city]);
+
   const arcs: Arc[] = useMemo(() => {
     const out: Arc[] = [];
-    for (let i = 1; i < stops.length; i += 1) {
-      const a = stops[i - 1]!;
-      const b = stops[i]!;
+    for (let i = 1; i < clusters.length; i += 1) {
+      const a = clusters[i - 1]!;
+      const b = clusters[i]!;
       out.push({ startLat: a.lat, startLng: a.lng, endLat: b.lat, endLng: b.lng });
     }
     return out;
-  }, [stops]);
+  }, [clusters]);
 
-  // Cinematic camera: ease to the journey centroid, framed by how
-  // spread out it is — a one-city plan gets a dramatic CLOSE orbital
-  // curve (not a far speck); a regional one pulls back.
+  // Frame the PLANET, never a blue wall. Single beacon (one city) →
+  // a beautiful orbital shot with Earth's curve visible. Multi-region
+  // → pull back to fit, but the camera never dives below 1.5 so you
+  // always see the globe, not a featureless close-up.
   useEffect(() => {
     const g = globeRef.current;
-    if (!g || stops.length === 0) return;
-    const lat = stops.reduce((s, p) => s + p.lat, 0) / stops.length;
-    const lng = stops.reduce((s, p) => s + p.lng, 0) / stops.length;
-    const spread = stops.reduce(
+    if (!g || clusters.length === 0) return;
+    const lat = clusters.reduce((s, p) => s + p.lat, 0) / clusters.length;
+    const lng = clusters.reduce((s, p) => s + p.lng, 0) / clusters.length;
+    const spread = clusters.reduce(
       (mx, p) => Math.max(mx, haversineKm({ lat, lng }, { lat: p.lat, lng: p.lng })),
       0,
     );
-    // ≤8km (one city) → 0.5 ; ~120km → ~1.4 ; clamp.
-    const altitude = Math.min(1.8, Math.max(0.5, 0.45 + spread / 90));
+    const altitude = clusters.length <= 1 ? 1.85 : Math.min(2.5, Math.max(1.5, 0.7 + spread / 130));
     g.pointOfView({ lat, lng, altitude }, reduce ? 0 : 1300);
-  }, [stops, reduce]);
+  }, [clusters, reduce]);
 
   return (
     <div
@@ -193,26 +240,26 @@ export function ItineraryGlobe({ plan, city, center, className }: ItineraryGlobe
         arcDashInitialGap={1}
         arcDashAnimateTime={reduce ? 0 : 1600}
         arcsTransitionDuration={500}
-        pointsData={stops as object[]}
+        pointsData={clusters as object[]}
         pointLat="lat"
         pointLng="lng"
-        pointColor={(d) => ((d as Stop).start ? GOLD_HOT : GOLD)}
+        pointColor={() => GOLD_HOT}
         pointAltitude={0.02}
-        pointRadius={(d) => ((d as Stop).start ? 0.7 : 0.5)}
+        pointRadius={0.8}
         pointsTransitionDuration={400}
-        ringsData={(reduce ? stops.slice(-1) : stops) as object[]}
+        ringsData={clusters as object[]}
         ringLat="lat"
         ringLng="lng"
         ringColor={() => (t: number) => `rgba(240,217,154,${Math.max(0, 1 - t)})`}
-        ringMaxRadius={4}
-        ringPropagationSpeed={2.4}
-        ringRepeatPeriod={reduce ? 0 : 1100}
-        labelsData={stops as object[]}
+        ringMaxRadius={6}
+        ringPropagationSpeed={2.2}
+        ringRepeatPeriod={reduce ? 0 : 1000}
+        labelsData={clusters as object[]}
         labelLat="lat"
         labelLng="lng"
-        labelText={(d) => (d as Stop).name}
-        labelSize={1.15}
-        labelDotRadius={0.38}
+        labelText={(d) => (d as { label: string }).label}
+        labelSize={1.5}
+        labelDotRadius={0.5}
         labelColor={() => 'rgba(243,224,166,0.95)'}
         labelResolution={2}
         onGlobeReady={() => {
@@ -235,9 +282,9 @@ export function ItineraryGlobe({ plan, city, center, className }: ItineraryGlobe
       <div className="pointer-events-none absolute left-3 top-3 z-10 rounded-full border border-gold-500/40 bg-black/45 px-3 py-1 text-xs font-medium text-gold-200 backdrop-blur-sm">
         {status === 'charting'
           ? `✨ Charting your ${city} journey…`
-          : stops.length > 1
-            ? `${stops.length - 1} stop${stops.length - 1 === 1 ? '' : 's'} · spin & explore`
-            : `${city} — your journey begins here`}
+          : clusters.length > 1
+            ? `${clusters.length} regions · ${stops.length - 1} stops · spin to explore`
+            : `${city} — your trip, on Earth · see Story/Map for each stop`}
       </div>
     </div>
   );
