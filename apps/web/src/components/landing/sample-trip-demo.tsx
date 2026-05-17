@@ -26,15 +26,17 @@ import { Card, CardHeader, CardSubtitle, CardTitle } from '../ui/card';
 import { Skeleton } from '../ui/skeleton';
 import { getRecalledSamplePlan, rememberSamplePlan } from '../../lib/visit-recall';
 
-// Leaflet touches `window` — keep the animated journey map out of SSR.
+// WebGL/Leaflet touch `window` — keep both viz out of SSR, lazy.
+const loadingBox = (
+  <div className="mt-2 h-72 w-full animate-pulse rounded-2xl border border-gold-600/15 bg-gold-500/5" />
+);
+const JourneyGlobe = dynamic(() => import('./itinerary-globe').then((m) => m.ItineraryGlobe), {
+  ssr: false,
+  loading: () => loadingBox,
+});
 const JourneyMap = dynamic(
   () => import('./itinerary-journey-map').then((m) => m.ItineraryJourneyMap),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="mt-2 h-72 w-full animate-pulse rounded-2xl border border-gold-600/15 bg-gold-500/5" />
-    ),
-  },
+  { ssr: false, loading: () => loadingBox },
 );
 
 interface ApiError extends Error {
@@ -64,6 +66,9 @@ export function SampleTripDemo() {
   const [planResult, setPlanResult] = useState<GenerateSamplePlanResponseDto | null>(null);
   /** True when the visible plan was hydrated from localStorage rather than freshly generated. */
   const [fromCache, setFromCache] = useState(false);
+  // 'globe' = the cinematic 3D view (default — the wow); 'map' = the
+  // detailed street view. Both render the same geocoded journey.
+  const [view, setView] = useState<'globe' | 'map'>('globe');
 
   // Hydrate from localStorage on mount — returning visitors see their
   // last plan instantly without re-generation. The matching city is
@@ -226,12 +231,40 @@ export function SampleTripDemo() {
                   )}
                 </CardSubtitle>
               </CardHeader>
-              <JourneyMap
-                plan={planResult.plan}
-                city={selected.title}
-                center={selected.center}
-                className="mt-2 h-72 w-full"
-              />
+              <div className="mt-3 inline-flex rounded-full border border-gold-600/20 bg-surface p-0.5 text-xs">
+                {(['globe', 'map'] as const).map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setView(v)}
+                    aria-pressed={view === v}
+                    className={
+                      'rounded-full px-3 py-1 font-medium transition ' +
+                      (view === v
+                        ? 'text-brand-900 shadow-(--shadow-depth-1)'
+                        : 'text-muted hover:text-surface-foreground')
+                    }
+                    style={view === v ? { backgroundImage: 'var(--gradient-gold)' } : undefined}
+                  >
+                    {v === 'globe' ? '🌍 Globe' : '🗺️ Map'}
+                  </button>
+                ))}
+              </div>
+              {view === 'globe' ? (
+                <JourneyGlobe
+                  plan={planResult.plan}
+                  city={selected.title}
+                  center={selected.center}
+                  className="mt-2 h-80 w-full"
+                />
+              ) : (
+                <JourneyMap
+                  plan={planResult.plan}
+                  city={selected.title}
+                  center={selected.center}
+                  className="mt-2 h-72 w-full"
+                />
+              )}
               <details className="mt-3 rounded-xl border border-gold-600/12 bg-gold-500/5">
                 <summary className="cursor-pointer px-4 py-2.5 text-sm font-medium text-surface-foreground transition hover:text-gold-700 dark:hover:text-gold-300">
                   📖 Read the written plan
