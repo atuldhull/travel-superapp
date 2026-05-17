@@ -1,13 +1,13 @@
 /**
- * POST.2 — value-pillars rewrite.
+ * Three-pillar feature grid below the hero. Premium "Cinematic
+ * Editorial" rebuild to sit cohesively under the royal hero: gold
+ * eyebrow, Playfair (`font-display`) heading, champagne icon plates,
+ * gold-hairline cards with a depth-lift on hover.
  *
- * Three-pillar feature grid below the hero. Each pillar:
- *   • brand-tinted icon plate (rounded square, depth-1 shadow)
- *   • 1-line headline (text-lg, font-semibold)
- *   • 2-line elaboration (text-sm, leading-relaxed, text-muted)
- *   • subtle hover lift (depth-1 → depth-2; brand-300 border)
+ * Server Component (no client runtime) — inline SVG icons, zero
+ * library dependency, pure CSS motion so it stays SSR-safe.
  *
- * Server Component. Inline SVG icons (no library dependency).
+ * Installed by [POST.2]; premium rebuild for the royal frontend pass.
  */
 import type { ReactNode } from 'react';
 
@@ -24,7 +24,7 @@ function SparkleIcon() {
       className="h-6 w-6"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
+      strokeWidth="1.8"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden
@@ -43,7 +43,7 @@ function ShieldIcon() {
       className="h-6 w-6"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
+      strokeWidth="1.8"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden
@@ -61,7 +61,7 @@ function UsersIcon() {
       className="h-6 w-6"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
+      strokeWidth="1.8"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden
@@ -94,25 +94,36 @@ const PILLARS: readonly Pillar[] = [
 
 export function ValuePillars() {
   return (
-    <section className="space-y-6">
+    <section className="space-y-7">
       <header className="space-y-2">
-        <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Three things we do better</h2>
-        <p className="max-w-2xl text-sm text-muted sm:text-base">
-          The same problems every traveler hits — solved end-to-end, not patched together with
+        <p className="inline-flex items-center gap-2 rounded-full border border-gold-600/25 bg-gold-500/8 px-3 py-1 text-xs font-medium tracking-wide text-gold-700 dark:text-gold-300">
+          Why TravelSuperApp
+        </p>
+        <h2 className="font-display text-3xl font-semibold tracking-tight text-surface-foreground sm:text-4xl">
+          Three things we do better
+        </h2>
+        <p className="max-w-2xl text-sm leading-relaxed text-muted sm:text-base">
+          The same problems every traveller hits — solved end-to-end, not patched together with
           spreadsheets and 40 browser tabs.
         </p>
       </header>
-      <ul className="grid gap-4 sm:grid-cols-3">
+      <ul className="grid gap-5 sm:grid-cols-3">
         {PILLARS.map((p) => (
           <li
             key={p.title}
-            className="group rounded-xl border border-muted/15 bg-surface p-5 shadow-(--shadow-depth-1) transition hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-(--shadow-depth-2)"
+            className="group relative overflow-hidden rounded-2xl border border-gold-600/15 bg-surface p-6 shadow-(--shadow-depth-1) transition duration-200 hover:-translate-y-1 hover:border-gold-600/30 hover:shadow-(--shadow-depth-3)"
           >
-            <div className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-lg bg-brand/10 text-brand transition group-hover:bg-brand/15">
+            <span
+              aria-hidden
+              className="pointer-events-none absolute -right-10 -top-10 h-24 w-24 rounded-full bg-gold-500/10 blur-2xl transition group-hover:bg-gold-500/20"
+            />
+            <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl border border-gold-500/25 bg-gold-500/10 text-gold-600 shadow-(--shadow-depth-1) transition group-hover:bg-gold-500/15">
               {p.icon}
             </div>
-            <h3 className="text-lg font-semibold tracking-tight">{p.title}</h3>
-            <p className="mt-1.5 text-sm leading-relaxed text-muted">{p.body}</p>
+            <h3 className="font-display text-xl font-semibold tracking-tight text-surface-foreground">
+              {p.title}
+            </h3>
+            <p className="mt-2 text-sm leading-relaxed text-muted">{p.body}</p>
           </li>
         ))}
       </ul>

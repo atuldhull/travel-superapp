@@ -113,11 +113,16 @@ export function SampleTripDemo() {
   return (
     <section
       id="sample-trip"
-      className="rounded-2xl border border-muted/15 bg-background px-6 py-8 sm:px-10 sm:py-12"
+      className="rounded-3xl border border-gold-600/15 bg-surface px-6 py-8 shadow-(--shadow-depth-1) sm:px-10 sm:py-12"
     >
-      <header className="mb-6 max-w-2xl">
-        <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Try it without signing up</h2>
-        <p className="mt-1 text-sm text-muted sm:text-base">
+      <header className="mb-6 max-w-2xl space-y-2">
+        <p className="inline-flex items-center gap-2 rounded-full border border-gold-600/25 bg-gold-500/8 px-3 py-1 text-xs font-medium tracking-wide text-gold-700 dark:text-gold-300">
+          Live demo
+        </p>
+        <h2 className="font-display text-3xl font-semibold tracking-tight text-surface-foreground sm:text-4xl">
+          Try it without signing up
+        </h2>
+        <p className="text-sm leading-relaxed text-muted sm:text-base">
           Pick a city, set your radius, get a 3-day AI itinerary in seconds. No account needed.
         </p>
       </header>
@@ -136,10 +141,10 @@ export function SampleTripDemo() {
                     type="button"
                     onClick={() => setSelectedIdx(i)}
                     aria-pressed={active}
-                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition ${
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                       active
-                        ? 'border-brand bg-brand text-brand-foreground'
-                        : 'border-muted/30 text-muted hover:bg-muted/10'
+                        ? 'border-gold-600/40 bg-gold-500/15 font-medium text-surface-foreground shadow-(--shadow-depth-1)'
+                        : 'border-gold-600/15 text-muted hover:bg-gold-500/5 hover:text-surface-foreground'
                     }`}
                   >
                     <span aria-hidden>{c.emoji}</span> {c.title}
@@ -154,7 +159,7 @@ export function SampleTripDemo() {
               className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-muted"
             >
               <span>Radius</span>
-              <span className="font-mono text-brand">{radiusKm} km</span>
+              <span className="font-mono text-gold-700 dark:text-gold-300">{radiusKm} km</span>
             </label>
             <input
               id="sample-radius"
@@ -164,12 +169,12 @@ export function SampleTripDemo() {
               step={5}
               value={radiusKm}
               onChange={(e) => setRadiusKm(Number(e.target.value))}
-              className="w-full accent-brand"
+              className="w-full accent-gold-600"
             />
           </div>
           <Button
             type="button"
-            variant="primary"
+            variant="royal"
             onClick={generate}
             disabled={mutation.isPending}
             className="w-full sm:w-auto"
@@ -177,7 +182,7 @@ export function SampleTripDemo() {
             {mutation.isPending ? 'Generating…' : `✨ Plan ${selected.title} for me`}
           </Button>
           {errorMsg ? (
-            <p className="rounded-md border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">
+            <p className="rounded-xl border border-red-500/30 bg-red-500/5 px-3.5 py-2.5 text-sm text-red-600 dark:text-red-400">
               {errorMsg}
             </p>
           ) : null}
@@ -203,19 +208,20 @@ export function SampleTripDemo() {
                 <CardSubtitle>
                   Powered by <code className="font-mono text-[11px]">{planResult.model}</code> ·{' '}
                   {fromCache ? (
-                    <span className="text-brand">From your last visit</span>
+                    <span className="text-gold-700 dark:text-gold-300">From your last visit</span>
                   ) : (
                     <span>No account needed</span>
                   )}
                 </CardSubtitle>
               </CardHeader>
-              <pre className="mt-2 max-h-96 overflow-auto whitespace-pre-wrap rounded-md bg-muted/5 p-4 text-sm leading-relaxed">
+              <pre className="mt-2 max-h-96 overflow-auto whitespace-pre-wrap rounded-xl border border-gold-600/12 bg-gold-500/5 p-4 text-sm leading-relaxed text-surface-foreground/90">
                 {planResult.plan}
               </pre>
               <div className="mt-4 flex flex-wrap items-center gap-3">
                 <Link
                   href="/register"
-                  className="inline-flex items-center gap-1 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-brand-foreground shadow-sm transition hover:opacity-90"
+                  className="inline-flex items-center gap-1 rounded-xl px-4 py-2 text-sm font-semibold text-brand-900 shadow-(--shadow-depth-1) transition hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  style={{ backgroundImage: 'var(--gradient-gold)' }}
                 >
                   Save this trip — sign up free →
                 </Link>
