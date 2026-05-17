@@ -1326,3 +1326,58 @@ model TripPublication {
   @@index([authorId])
   @@index([visibility, publishedAt])
 }
+
+// ─── Adventure Diary + gamification (user-directed feature) ─────────────
+//
+// A freeform, AI-assisted travel journal + a points / streak / badge
+// layer that rewards writing. FK-less on `userId` (AgentRun / Follow /
+// TripPublication precedent — never ALTERs the User table; orphan
+// rows after a hard-delete are harmless, filtered on read). No
+// PostGIS / pgvector columns → cleanly additive; migration is
+// hand-curated additive-only and applied via `migrate deploy` (see
+// feedback prisma-migrate-drops-postgis-indexes).
+
+model DiaryEntry {
+  id         String   @id @default(cuid())
+  userId     String
+  tripId     String? // optional link to a trip
+  title      String
+  body       String
+  mood       String? // free-form: joyful | adventurous | calm | tired | …
+  aiAssisted Boolean  @default(false)
+  // The adventure DAY this entry is about (date-only semantics).
+  // Streaks count distinct entryDate days, not createdAt.
+  entryDate  DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([userId, entryDate])
+  @@index([tripId])
+}
+
+// One running-totals row per user (userId is the PK). Mutable —
+// upserted on every entry by the gamification award.
+model GamificationProfile {
+  userId        String    @id
+  totalPoints   Int       @default(0)
+  currentStreak Int       @default(0)
+  longestStreak Int       @default(0)
+  entryCount    Int       @default(0)
+  aiAssistCount Int       @default(0)
+  lastEntryOn   DateTime? // date-only of the most recent entryDate
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// Append-only earned-badge ledger. `badgeKey` is free-form (catalog
+// lives in the domain, not the DB — new badges need no migration).
+model EarnedBadge {
+  id        String   @id @default(cuid())
+  userId    String
+  badgeKey  String
+  awardedAt DateTime @default(now())
+
+  @@unique([userId, badgeKey])
+  @@index([userId])
+}
