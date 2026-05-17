@@ -28,12 +28,24 @@ import {
   type AgentRunView,
   type AgentStep,
 } from '../../../../lib/two-oh-api';
-import { Card, CardHeader, CardSubtitle, CardTitle } from '../../../../components/ui/card';
+import { motion, useReducedMotion } from 'framer-motion';
+import { ArrowLeft, Check, CircleDot, Compass, FileText, Flag, Radar, X } from 'lucide-react';
 import { EmptyState } from '../../../../components/ui/empty-state';
 import { Skeleton } from '../../../../components/ui/skeleton';
 import { RelativeTime } from '../../../../components/ui/relative-time';
 import { Button } from '../../../../components/ui/button';
+import { Badge } from '../../../../components/ui/badge';
 import { toast } from '../../../../components/ui/toast';
+
+type IconType = typeof Compass;
+const KIND_ICON: Record<string, IconType> = {
+  watch_started: Compass,
+  signal_seen: Radar,
+  proposal: FileText,
+  accepted: Check,
+  declined: X,
+  watch_closed: Flag,
+};
 
 const KIND_LABEL: Record<string, string> = {
   watch_started: 'Watch started',
@@ -54,6 +66,7 @@ export default function AgentRunPage() {
   const runId = params?.id ?? '';
   const token = useAuthToken();
   const bootComplete = useAuthBootComplete();
+  const reduce = useReducedMotion();
 
   const [view, setView] = useState<AgentRunView | null>(null);
   const [loading, setLoading] = useState(true);
@@ -103,21 +116,35 @@ export default function AgentRunPage() {
   };
 
   return (
-    <main className="space-y-6">
-      <p>
-        <Link href={'/inbox' as Route} className="text-sm text-muted hover:underline">
-          ← Inbox
-        </Link>
-      </p>
-      <header className="space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight">Trip agent</h1>
-        <p className="text-sm text-muted">
-          Your agent watches this trip and proposes changes — you decide.
+    <main className="space-y-8">
+      <Link
+        href={'/inbox' as Route}
+        className="inline-flex items-center gap-1.5 text-sm text-muted transition hover:text-gold-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      >
+        <ArrowLeft aria-hidden className="h-4 w-4" /> Inbox
+      </Link>
+
+      <header
+        className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-10 shadow-(--shadow-depth-2) sm:px-10"
+        style={{ backgroundImage: 'var(--gradient-royal)' }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-gold-500/20 blur-[110px]"
+        />
+        <p className="relative inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+          <Compass aria-hidden className="h-3.5 w-3.5" /> Your companion
+        </p>
+        <h1 className="relative mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+          Trip agent
+        </h1>
+        <p className="relative mt-2 max-w-md text-sm text-white/65">
+          It watches this trip and proposes changes — every change is yours to accept or decline.
         </p>
       </header>
 
       {loading ? (
-        <Skeleton className="h-5 w-2/3" count={4} />
+        <Skeleton className="h-14" count={4} />
       ) : disabled ? (
         <EmptyState
           emoji="🌙"
@@ -127,7 +154,7 @@ export default function AgentRunPage() {
       ) : error ? (
         <p
           role="alert"
-          className="rounded-md border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger"
+          className="rounded-2xl border border-danger/30 bg-danger/5 px-5 py-4 text-sm text-danger shadow-(--shadow-depth-1)"
         >
           Couldn&apos;t load this run ({error}).
         </p>
@@ -135,71 +162,95 @@ export default function AgentRunPage() {
         <EmptyState emoji="🔍" title="Run not found" />
       ) : (
         <>
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between gap-3">
-                <CardTitle>
-                  <Link href={`/trips/${view.run.tripId}` as Route} className="hover:underline">
-                    Trip {view.run.tripId.slice(0, 8)}
-                  </Link>
-                </CardTitle>
-                <span
-                  className={`rounded-full border px-2 py-0.5 text-xs ${
-                    view.run.status === 'watching'
-                      ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
-                      : 'border-muted/30 bg-muted/10 text-muted'
-                  }`}
-                >
-                  {view.run.status === 'watching' ? 'Watching' : 'Closed'}
-                </span>
-              </div>
-              <CardSubtitle>
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gold-600/15 bg-surface p-5 shadow-(--shadow-depth-1)">
+            <div>
+              <Link
+                href={`/trips/${view.run.tripId}` as Route}
+                className="font-display text-xl font-semibold tracking-tight transition hover:text-gold-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                Trip {view.run.tripId.slice(0, 8)}
+              </Link>
+              <p className="mt-0.5 text-sm text-muted">
                 Plan v{view.run.planVersion} · started <RelativeTime at={view.run.createdAt} />
-              </CardSubtitle>
-            </CardHeader>
-          </Card>
+              </p>
+            </div>
+            <Badge variant={view.run.status === 'watching' ? 'success' : 'neutral'}>
+              {view.run.status === 'watching' ? '● Watching' : 'Closed'}
+            </Badge>
+          </div>
 
-          <ol className="space-y-2">
+          <motion.ol
+            className="relative space-y-3 before:absolute before:bottom-3 before:left-[1.4rem] before:top-3 before:w-px before:bg-gold-600/20"
+            initial="hidden"
+            animate="show"
+            variants={{ show: { transition: { staggerChildren: reduce ? 0 : 0.06 } } }}
+          >
             {view.steps.map((s) => {
               const pending = isPendingProposal(s);
               const summary =
                 typeof s.detail?.['summary'] === 'string' ? (s.detail['summary'] as string) : null;
               const reason =
                 typeof s.detail?.['reason'] === 'string' ? (s.detail['reason'] as string) : null;
+              const Icon = KIND_ICON[s.kind] ?? CircleDot;
               return (
-                <li
+                <motion.li
                   key={s.id}
-                  className="rounded-md border border-muted/15 bg-surface px-3 py-2 text-sm"
+                  variants={{
+                    hidden: reduce ? { opacity: 0 } : { opacity: 0, y: 14 },
+                    show: {
+                      opacity: 1,
+                      y: 0,
+                      transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] },
+                    },
+                  }}
+                  className="relative flex gap-4 pl-1"
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="font-medium">{KIND_LABEL[s.kind] ?? s.kind}</span>
-                    <RelativeTime at={s.createdAt} className="text-xs text-muted" />
-                  </div>
-                  {reason ? <p className="mt-1 text-muted">Why: {reason}</p> : null}
-                  {summary ? <p className="mt-1">{summary}</p> : null}
-                  {pending ? (
-                    <div className="mt-2 flex gap-2">
-                      <Button
-                        size="sm"
-                        onClick={() => void decide(s.id, 'accept')}
-                        disabled={busyId !== null}
-                      >
-                        {busyId === s.id ? 'Working…' : 'Accept'}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => void decide(s.id, 'decline')}
-                        disabled={busyId !== null}
-                      >
-                        Decline
-                      </Button>
+                  <span
+                    aria-hidden
+                    className={`z-10 mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full shadow-(--shadow-depth-1) ring-4 ring-surface ${
+                      pending
+                        ? 'text-brand-900'
+                        : 'border border-gold-600/25 bg-surface text-gold-600'
+                    }`}
+                    style={pending ? { backgroundImage: 'var(--gradient-gold)' } : undefined}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  <div className="flex-1 rounded-2xl border border-gold-600/12 bg-surface p-4 shadow-(--shadow-depth-1)">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="font-display font-semibold tracking-tight">
+                        {KIND_LABEL[s.kind] ?? s.kind}
+                      </span>
+                      <RelativeTime at={s.createdAt} className="text-xs text-muted" />
                     </div>
-                  ) : null}
-                </li>
+                    {reason ? <p className="mt-1.5 text-sm text-muted">Why: {reason}</p> : null}
+                    {summary ? (
+                      <p className="mt-1.5 text-sm text-surface-foreground">{summary}</p>
+                    ) : null}
+                    {pending ? (
+                      <div className="mt-3 flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => void decide(s.id, 'accept')}
+                          disabled={busyId !== null}
+                        >
+                          {busyId === s.id ? 'Working…' : 'Accept'}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => void decide(s.id, 'decline')}
+                          disabled={busyId !== null}
+                        >
+                          Decline
+                        </Button>
+                      </div>
+                    ) : null}
+                  </div>
+                </motion.li>
               );
             })}
-          </ol>
+          </motion.ol>
         </>
       )}
     </main>
