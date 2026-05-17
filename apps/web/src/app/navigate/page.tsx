@@ -41,6 +41,7 @@ import {
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { SkeletonCard } from '../../components/ui/skeleton';
+import { DestinationImage } from '../../components/ui/destination-image';
 
 const LiveNavMap = dynamic(
   () => import('../../components/nav/live-nav-map').then((m) => m.LiveNavMap),
@@ -218,37 +219,52 @@ export default function NavigatePage() {
       </header>
 
       {/* Journey picker */}
-      <section className="flex flex-wrap items-center gap-2.5">
-        {PRESETS.map((p, i) => (
-          <button
-            key={p.label}
-            type="button"
-            onClick={() => choosePreset(i)}
-            aria-pressed={presetIdx === i && !loading}
-            className={
-              'group rounded-2xl border px-4 py-2.5 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ' +
-              (presetIdx === i
-                ? 'border-gold-600/40 bg-gold-500/10 shadow-(--shadow-depth-1)'
-                : 'border-gold-600/15 bg-surface hover:border-gold-600/30 hover:bg-gold-500/5')
-            }
-          >
-            <span className="flex items-center gap-2 text-sm font-medium text-surface-foreground">
-              <MapPinned aria-hidden className="h-4 w-4 text-gold-600" />
-              {p.label}
-            </span>
-            <span className="mt-0.5 block text-xs text-muted">{p.hint}</span>
-          </button>
-        ))}
-        <Button
-          type="button"
-          variant="royal"
-          onClick={useMyLocation}
-          disabled={gpsBusy}
-          className="ml-auto"
-        >
-          <Crosshair aria-hidden className="mr-1.5 h-4 w-4" />
-          {gpsBusy ? 'Locating…' : 'Use my location'}
-        </Button>
+      <section className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted">Popular journeys</p>
+          <Button type="button" variant="royal" onClick={useMyLocation} disabled={gpsBusy}>
+            <Crosshair aria-hidden className="mr-1.5 h-4 w-4" />
+            {gpsBusy ? 'Locating…' : 'Use my location'}
+          </Button>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {PRESETS.map((p, i) => (
+            <button
+              key={p.label}
+              type="button"
+              onClick={() => choosePreset(i)}
+              aria-pressed={presetIdx === i && !loading}
+              className={
+                'group overflow-hidden rounded-2xl border text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ' +
+                (presetIdx === i
+                  ? 'border-gold-600/45 shadow-(--shadow-depth-2)'
+                  : 'border-gold-600/15 hover:border-gold-600/30 hover:shadow-(--shadow-depth-2)')
+              }
+            >
+              <div className="relative">
+                <DestinationImage
+                  place={p.label}
+                  alt={p.label}
+                  rounded="rounded-none"
+                  scrim
+                  className="aspect-[16/10] w-full transition duration-300 group-hover:scale-[1.03]"
+                />
+                {presetIdx === i ? (
+                  <span className="absolute right-2 top-2 rounded-full bg-gold-500/90 px-2 py-0.5 text-[10px] font-semibold text-brand-900 shadow-(--shadow-depth-1)">
+                    Selected
+                  </span>
+                ) : null}
+                <div className="absolute inset-x-0 bottom-0 p-3">
+                  <span className="flex items-center gap-1.5 font-display text-sm font-semibold tracking-tight text-white">
+                    <MapPinned aria-hidden className="h-3.5 w-3.5 text-gold-300" />
+                    {p.label}
+                  </span>
+                  <span className="mt-0.5 block text-xs text-white/70">{p.hint}</span>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
       </section>
 
       {/* Custom route — search ANY from/to (free OSM geocoding) */}
