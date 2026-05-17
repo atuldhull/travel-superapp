@@ -48,6 +48,12 @@ import { DEMO_BOOKS, assetsForBook } from './fixtures/memory-books';
 import { DEMO_REVIEWS } from './fixtures/reviews';
 import { DEMO_SOS, DEMO_SCAMS } from './fixtures/safety';
 import { DEMO_AGENTS, DEMO_BAN_APPEALS, DEMO_AUDIT_LOGS } from './fixtures/admin';
+import {
+  DEMO_DIARY_ENTRIES,
+  DEMO_GAMIFICATION,
+  DEMO_PUBLICATIONS,
+  DEMO_FOLLOWS,
+} from './fixtures/diary';
 
 const prisma = new PrismaClient();
 
@@ -95,6 +101,13 @@ async function wipeDemoRows(): Promise<void> {
   await prisma.sosEvent.deleteMany({ where: { userId: { in: ids } } });
   await prisma.mediaAsset.deleteMany({ where: { ownerId: { in: ids } } });
   await prisma.memoryBook.deleteMany({ where: { ownerId: { in: ids } } });
+  await prisma.diaryEntry.deleteMany({ where: { userId: { in: ids } } });
+  await prisma.gamificationProfile.deleteMany({ where: { userId: { in: ids } } });
+  await prisma.earnedBadge.deleteMany({ where: { userId: { in: ids } } });
+  await prisma.tripPublication.deleteMany({ where: { authorId: { in: ids } } });
+  await prisma.follow.deleteMany({
+    where: { OR: [{ followerId: { in: ids } }, { followeeId: { in: ids } }] },
+  });
   await prisma.trip.deleteMany({ where: { userId: { in: ids } } });
   await prisma.agent.deleteMany({ where: { userId: { in: ids } } });
   await prisma.user.deleteMany({ where: { id: { in: ids } } });
@@ -417,6 +430,119 @@ async function seedAuditLogs(usersByEmail: Map<string, string>): Promise<number>
   return created;
 }
 
+async function seedDiary(
+  usersByEmail: Map<string, string>,
+): Promise<{ entries: number; profiles: number; badges: number }> {
+  let entries = 0;
+  let profiles = 0;
+  let badges = 0;
+  for (const e of DEMO_DIARY_ENTRIES) {
+    const userId = usersByEmail.get(e.authorEmail);
+    if (!userId) continue;
+    const existing = await prisma.diaryEntry.findFirst({
+      where: { userId, title: e.title },
+    });
+    if (existing) continue;
+    const when = daysAgo(e.daysAgo);
+    await prisma.diaryEntry.create({
+      data: {
+        userId,
+        title: e.title,
+        body: e.body,
+        mood: e.mood,
+        aiAssisted: e.aiAssisted,
+        entryDate: when,
+        createdAt: when,
+        updatedAt: when,
+      },
+    });
+    entries++;
+  }
+  for (const g of DEMO_GAMIFICATION) {
+    const userId = usersByEmail.get(g.userEmail);
+    if (!userId) continue;
+    await prisma.gamificationProfile.upsert({
+      where: { userId },
+      create: {
+        userId,
+        totalPoints: g.totalPoints,
+        currentStreak: g.currentStreak,
+        longestStreak: g.longestStreak,
+        entryCount: g.entryCount,
+        aiAssistCount: g.aiAssistCount,
+        lastEntryOn: daysAgo(g.lastEntryDaysAgo),
+      },
+      update: {
+        totalPoints: g.totalPoints,
+        currentStreak: g.currentStreak,
+        longestStreak: g.longestStreak,
+        entryCount: g.entryCount,
+        aiAssistCount: g.aiAssistCount,
+        lastEntryOn: daysAgo(g.lastEntryDaysAgo),
+      },
+    });
+    profiles++;
+    if (g.badges.length > 0) {
+      const r = await prisma.earnedBadge.createMany({
+        data: g.badges.map((badgeKey) => ({ userId, badgeKey })),
+        skipDuplicates: true,
+      });
+      badges += r.count;
+    }
+  }
+  return { entries, profiles, badges };
+}
+
+async function seedFeed(
+  usersByEmail: Map<string, string>,
+): Promise<{ publications: number; follows: number }> {
+  let publications = 0;
+  let follows = 0;
+  for (const p of DEMO_PUBLICATIONS) {
+    const authorId = usersByEmail.get(p.ownerEmail);
+    if (!authorId) continue;
+    const trip = await prisma.trip.findFirst({
+      where: { userId: authorId, title: p.tripTitle },
+      select: { id: true },
+    });
+    if (!trip) continue;
+    const existing = await prisma.tripPublication.findUnique({
+      where: { tripId: trip.id },
+    });
+    if (existing) continue;
+    // Coarsen exposed coords to ~city level (INVARIANT B parity).
+    const center = await prisma.$queryRaw<{ lat: number; lng: number }[]>`
+      SELECT ST_Y("center"::geometry) AS lat, ST_X("center"::geometry) AS lng
+      FROM "Trip" WHERE "id" = ${trip.id}
+    `;
+    const exposedLat = center[0] ? Math.round(center[0].lat * 10) / 10 : null;
+    const exposedLng = center[0] ? Math.round(center[0].lng * 10) / 10 : null;
+    await prisma.tripPublication.create({
+      data: {
+        tripId: trip.id,
+        authorId,
+        visibility: 'PUBLIC',
+        exposedLat,
+        exposedLng,
+        publishedAt: daysAgo(Math.floor(Math.random() * 9) + 1),
+      },
+    });
+    publications++;
+  }
+  for (const f of DEMO_FOLLOWS) {
+    const followerId = usersByEmail.get(f.followerEmail);
+    const followeeId = usersByEmail.get(f.followeeEmail);
+    if (!followerId || !followeeId || followerId === followeeId) continue;
+    const existing = await prisma.follow.findUnique({
+      where: { followerId_followeeId: { followerId, followeeId } },
+    });
+    if (existing) continue;
+    await prisma.follow.create({ data: { followerId, followeeId } });
+    follows++;
+  }
+  return { publications, follows };
+}
+
 function printCredentials(): void {
   log('');
   log('========================================');
@@ -479,6 +605,12 @@ async function main(): Promise<void> {
 
   const audit = await seedAuditLogs(usersByEmail);
   log(`  admin audit logs: +${audit}`);
+
+  const diary = await seedDiary(usersByEmail);
+  log(`  diary: +${diary.entries} entries, +${diary.profiles} profiles, +${diary.badges} badges`);
+
+  const feed = await seedFeed(usersByEmail);
+  log(`  feed: +${feed.publications} publications, +${feed.follows} follows`);
 
   log('');
   log('done.');
