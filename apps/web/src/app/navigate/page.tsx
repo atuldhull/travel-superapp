@@ -137,6 +137,9 @@ export default function NavigatePage() {
   // 'raster' = reliable Leaflet/OSM (default + fallback); 'vector' =
   // MapLibre + Protomaps PMTiles (offline-capable, Organic-Maps-class).
   const [renderer, setRenderer] = useState<'raster' | 'vector'>('raster');
+  // True once you've shared your real GPS location — unlocks the
+  // standalone offline map even if the server route is too far / down.
+  const [originIsMine, setOriginIsMine] = useState(false);
 
   const load = useCallback(async (o: NavPoint, d: NavPoint) => {
     setLoading(true);
@@ -156,7 +159,7 @@ export default function NavigatePage() {
         setError({
           kind: 'route',
           title: 'That route is too far for live nav',
-          body: 'Live navigation covers up to ~5000 km point-to-point — enough for any cross-country road trip. Beyond that it’s really flight territory; use the trip planner instead.',
+          body: 'Live navigation covers up to ~5000 km point-to-point — enough for any cross-country drive. Beyond that it’s flight territory; use the trip planner instead. (Tip: on desktop your location can resolve to your ISP’s city, which may be far from your destination — “Use my location” still opens the offline GPS map below.)',
         });
       } else if (e?.code === 'NO_ROUTE_FOUND') {
         setError({
@@ -212,6 +215,7 @@ export default function NavigatePage() {
         if (t) setToSel(t);
         if (f && t) {
           setPresetIdx(-1);
+          setOriginIsMine(false);
           const o: NavPoint = { lat: f.lat, lng: f.lng };
           const d: NavPoint = { lat: t.lat, lng: t.lng };
           setOrigin(o);
@@ -228,6 +232,7 @@ export default function NavigatePage() {
   const choosePreset = (i: number) => {
     const p = PRESETS[i]!;
     setPresetIdx(i);
+    setOriginIsMine(false);
     setOrigin(p.origin);
     setDestination(p.destination);
     void load(p.origin, p.destination);
@@ -238,6 +243,7 @@ export default function NavigatePage() {
     const o: NavPoint = { lat: fromSel.lat, lng: fromSel.lng };
     const d: NavPoint = { lat: toSel.lat, lng: toSel.lng };
     setPresetIdx(-1);
+    setOriginIsMine(false);
     setLiveLoc(false);
     setOrigin(o);
     setDestination(d);
@@ -266,13 +272,16 @@ export default function NavigatePage() {
         setLiveLoc(true);
         setGpsBusy(false);
         setPresetIdx(-1);
+        setOriginIsMine(true);
         setError(null);
         if (toSel) {
           const d: NavPoint = { lat: toSel.lat, lng: toSel.lng };
           setDestination(d);
           void load(o, d);
         } else {
-          setLocNote('Location set as “From”. Now pick a destination in “To” and Plot route.');
+          setLocNote(
+            'Located you. Pick a destination above to plot a route — or use the offline map below to download this area and navigate by GPS.',
+          );
         }
       },
       (err) => {
@@ -603,6 +612,47 @@ export default function NavigatePage() {
             )}
           </aside>
         </div>
+      ) : null}
+
+      {/* Standalone offline map — always available once you've shared
+          your GPS location, even when the server route is too far or
+          the API is down. Download the area, then it locates and
+          reroutes entirely on-device. */}
+      {token && originIsMine && !data ? (
+        <section className="space-y-3">
+          <div>
+            <h2 className="inline-flex items-center gap-2 font-display text-lg font-semibold tracking-tight text-surface-foreground">
+              <MapPinned aria-hidden className="h-4 w-4 text-gold-600" />
+              Offline map — your location
+            </h2>
+            <p className="mt-1 max-w-2xl text-sm text-muted">
+              Tap <strong>Download this area</strong> on the map to cache it to this device. It then
+              renders, shows your live GPS position, and recomputes a route if you take a wrong turn
+              — all with zero signal. Works even though a server route isn’t plotted.
+            </p>
+          </div>
+          <MapErrorBoundary
+            onError={() => undefined}
+            fallback={
+              <div className="grid h-115 w-full place-items-center rounded-2xl border border-gold-600/20 bg-surface p-6 text-center">
+                <p className="max-w-sm text-sm text-muted">
+                  The offline map couldn’t load. If you’re running the dev server,{' '}
+                  <strong>restart it</strong> to pick up the offline-map libraries.
+                </p>
+              </div>
+            }
+          >
+            <OfflineVectorMap
+              routes={[]}
+              selectedRouteId=""
+              recommendedRouteId=""
+              onSelectRoute={() => undefined}
+              showLiveLocation
+              center={origin}
+              className="h-115 w-full"
+            />
+          </MapErrorBoundary>
+        </section>
       ) : null}
     </main>
   );

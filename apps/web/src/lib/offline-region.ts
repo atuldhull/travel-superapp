@@ -129,6 +129,12 @@ function idbClear(store: string): Promise<void> {
 // network-first with write-through, falling back to cache on any failure.
 // ---------------------------------------------------------------------------
 
+// While a region download runs, byte-range writes are awaited so that
+// "100%" genuinely means persisted — you can pull the network the
+// instant the bar fills. Normal map browsing keeps writes async so
+// rendering is never blocked on IndexedDB.
+let recording = false;
+
 class IdbCachingSource implements Source {
   private readonly inner: FetchSource;
   private readonly url: string;
@@ -165,7 +171,12 @@ class IdbCachingSource implements Source {
       const res = await this.inner.getBytes(offset, length, signal, etag);
       // Clone before returning: PMTiles' decompress path can detach the
       // buffer, so the copy we persist must be taken up front.
-      void idbPut(STORE_RANGES, key, res.data.slice(0)).catch(() => undefined);
+      const copy = res.data.slice(0);
+      if (recording) {
+        await idbPut(STORE_RANGES, key, copy).catch(() => undefined);
+      } else {
+        void idbPut(STORE_RANGES, key, copy).catch(() => undefined);
+      }
       return res;
     } catch (err) {
       const cached = await idbGet<ArrayBuffer>(STORE_RANGES, key).catch(() => undefined);
@@ -248,22 +259,49 @@ export async function downloadRegion(
   signal?: AbortSignal,
 ): Promise<RegionMeta> {
   installOfflinePmtiles();
+  if (!archive) throw new Error('pmtiles not initialised');
+
+  // Clamp the requested zoom span to what the archive actually holds.
+  // Requesting zooms it doesn't contain just spins caching nothing —
+  // which is exactly what made a "successful" download feel broken.
+  try {
+    const h = await archive.getHeader();
+    minZoom = Math.max(minZoom, h.minZoom);
+    maxZoom = Math.min(maxZoom, h.maxZoom);
+  } catch {
+    throw new Error('Could not reach the map source to download — check your connection.');
+  }
+  if (maxZoom < minZoom) throw new Error('This map has no tiles to download for that area.');
+
   const tiles = tilesForBbox(bbox, minZoom, maxZoom);
   if (tiles.length > MAX_TILES) throw new RegionTooLargeError(tiles.length);
-  if (!archive) throw new Error('pmtiles not initialised');
 
   let done = 0;
   let bytes = 0;
-  for (const t of tiles) {
-    if (signal?.aborted) throw new DOMException('Download cancelled', 'AbortError');
-    try {
-      const r = await archive.getZxy(t.z, t.x, t.y, signal ?? undefined);
-      if (r) bytes += r.data.byteLength;
-    } catch {
-      // A single absent/over-zoom tile must not abort the whole region.
+  let stored = 0;
+  recording = true;
+  try {
+    for (const t of tiles) {
+      if (signal?.aborted) throw new DOMException('Download cancelled', 'AbortError');
+      try {
+        const r = await archive.getZxy(t.z, t.x, t.y, signal ?? undefined);
+        if (r) {
+          bytes += r.data.byteLength;
+          stored++;
+        }
+      } catch {
+        // A single absent/over-zoom tile must not abort the whole region.
+      }
+      done++;
+      if (done % 8 === 0 || done === tiles.length) {
+        onProgress?.({ done, total: tiles.length, bytes });
+      }
     }
-    done++;
-    if (done % 8 === 0 || done === tiles.length) onProgress?.({ done, total: tiles.length, bytes });
+  } finally {
+    recording = false;
+  }
+  if (stored === 0) {
+    throw new Error('No map tiles were available for this area — try a different spot.');
   }
 
   const meta: RegionMeta = {

@@ -69,6 +69,12 @@ export interface OfflineVectorMapProps {
   readonly recommendedRouteId: string;
   readonly onSelectRoute: (id: string) => void;
   readonly showLiveLocation?: boolean;
+  /**
+   * Optional start view. When given (e.g. "use my location" with no
+   * route yet), the map opens here instead of the whole world — so
+   * "Download this area" caches somewhere sensible and GPS has context.
+   */
+  readonly center?: { readonly lat: number; readonly lng: number };
   readonly className?: string;
 }
 
@@ -133,6 +139,7 @@ export function OfflineVectorMap({
   routes,
   selectedRouteId,
   showLiveLocation,
+  center,
   className,
 }: OfflineVectorMapProps) {
   const wrapRef = useRef<HTMLDivElement | null>(null);
@@ -172,8 +179,8 @@ export function OfflineVectorMap({
           },
           layers: layers('protomaps', namedTheme('dark')) as maplibregl.LayerSpecification[],
         },
-        center: [0, 20],
-        zoom: 1.4,
+        center: center ? [center.lng, center.lat] : [0, 20],
+        zoom: center ? 12 : 1.4,
         attributionControl: { compact: true },
       });
     } catch {
@@ -205,6 +212,17 @@ export function OfflineVectorMap({
     if (readyRef.current) draw();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routes, selectedRouteId]);
+
+  // Follow a changing `center` when there's no route to frame.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !center || routes.length > 0 || !readyRef.current) return;
+    map.easeTo({
+      center: [center.lng, center.lat],
+      zoom: Math.max(map.getZoom(), 12),
+      duration: 600,
+    });
+  }, [center, routes.length]);
 
   // Device-GPS watch: live position + on-device off-route reroute.
   useEffect(() => {
