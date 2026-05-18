@@ -1,22 +1,26 @@
 /**
- * ItineraryGlobe — the "crazy" view. A real 3D WebGL globe (deep
- * royal sphere, champagne atmosphere, starless space) that spins
- * slowly while glowing gold flight-arcs draw themselves between the
- * itinerary's geocoded stops, each stop a pulsing ring — the sci-fi
- * airline-network look, but it's your actual trip.
+ * ItineraryGlobe — the "crazy" view. A real, textured 3D Earth
+ * (NASA Blue-Marble continents + oceans, topographic relief, a real
+ * starfield) that your trip is drawn onto: each geocoded stop a
+ * pulsing gold beacon, gold flight-arcs between them — then the
+ * camera *flies the route*, easing from stop to stop in order while
+ * the path draws itself segment by segment.
+ *
+ * Assets are the Earth textures that ship inside `three-globe`,
+ * copied to `/public/globe` so they load **same-origin** — real
+ * imagery, still $0, no CDN, no key. If a texture ever fails the
+ * globe falls back to the deep-royal sphere, so it can't break.
  *
  * Same pipeline as the map view (extract landmarks from the AI prose
- * → city-biased $0 OSM geocode), revealed progressively as arcs +
- * rings light up. ZERO external assets (no tiles, no texture, no
- * GeoJSON) — pure three.js, so it can never fail to render. The
- * camera eases to frame the journey; prefers-reduced-motion stops
- * the spin + dash + ring pulse.
+ * → city-biased $0 OSM geocode), revealed progressively. The whole
+ * cinematic (spin, dash, ring pulse, fly-through) is disabled under
+ * prefers-reduced-motion — it just frames the journey instead.
  *
  * react-globe.gl (three.js) — client + WebGL only, heavy: ALWAYS
- * load via next/dynamic({ ssr:false }) and lazily (it mounts only
- * once a plan exists).
+ * load via next/dynamic({ ssr:false }) and lazily.
  *
- * Installed for the cinematic-itinerary feature.
+ * Installed for the cinematic-itinerary feature; real-Earth texture
+ * + fly-the-route animation added on user request.
  */
 'use client';
 
@@ -30,6 +34,12 @@ import { cn } from '../../lib/cn';
 const GOLD = '#cdab63';
 const GOLD_HOT = '#f0d99a';
 const MAX_KM_FROM_CITY = 150;
+const DEDUPE_KM = 0.3; // merge only near-identical geocodes
+const TEX = {
+  globe: '/globe/earth-blue-marble.jpg',
+  bump: '/globe/earth-topology.png',
+  sky: '/globe/night-sky.png',
+} as const;
 
 interface Stop {
   readonly name: string;
@@ -64,15 +74,22 @@ function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: num
 export function ItineraryGlobe({ plan, city, center, className }: ItineraryGlobeProps) {
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const globeRef = useRef<GlobeMethods | undefined>(undefined);
+  const tourTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [dims, setDims] = useState<{ w: number; h: number }>({ w: 600, h: 320 });
   const [stops, setStops] = useState<readonly Stop[]>([]);
   const [status, setStatus] = useState<'charting' | 'done'>('charting');
+  // null = still checking the texture; true = real Earth; false = the
+  // royal-sphere fallback (so the globe can never fail to render).
+  const [texOk, setTexOk] = useState<boolean | null>(null);
+  // How many stops are currently lit. During charting that's "all so
+  // far"; during the fly-through it steps 1..n to draw the route.
+  const [reveal, setReveal] = useState(0);
 
   const reduce =
     typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // A royal, texture-less globe material — zero external assets.
-  const globeMaterial = useMemo(
+  // Deep-royal fallback material — zero external assets.
+  const royalMaterial = useMemo(
     () =>
       new MeshPhongMaterial({
         color: '#1b2150',
@@ -82,6 +99,18 @@ export function ItineraryGlobe({ plan, city, center, className }: ItineraryGlobe
       }),
     [],
   );
+
+  // Preflight the Earth texture so a swap never flashes black.
+  useEffect(() => {
+    let alive = true;
+    const img = new Image();
+    img.onload = () => alive && setTexOk(true);
+    img.onerror = () => alive && setTexOk(false);
+    img.src = TEX.globe;
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   // Size to the container.
   useEffect(() => {
@@ -100,6 +129,7 @@ export function ItineraryGlobe({ plan, city, center, className }: ItineraryGlobe
     const start: Stop = { name: city, lat: center.lat, lng: center.lng, start: true };
     setStops([start]);
     setStatus('charting');
+    setReveal(1);
     void (async () => {
       const candidates = extractPlaces(plan, city);
       const acc: Stop[] = [start];
@@ -111,7 +141,6 @@ export function ItineraryGlobe({ plan, city, center, className }: ItineraryGlobe
           acc.push({ name: c.name, lat: g.lat, lng: g.lng });
           setStops(acc.slice());
         }
-        // Photon is lenient — keep it snappy so the journey fills in.
         await new Promise((r) => setTimeout(r, 220));
       }
       if (alive) setStatus('done');
@@ -121,79 +150,93 @@ export function ItineraryGlobe({ plan, city, center, className }: ItineraryGlobe
     };
   }, [plan, city, center.lat, center.lng]);
 
-  // A globe CANNOT separate places ~1km apart — so don't try. Group
-  // stops within 25km into ONE beacon (the city). Only genuinely
-  // far-apart regions become distinct beacons + arcs. This is the
-  // fix for "8 labels stacked on one pixel + a blue wall".
-  const clusters = useMemo(() => {
-    const CL_KM = 25;
-    const cs: {
-      lat: number;
-      lng: number;
-      sumLat: number;
-      sumLng: number;
-      n: number;
-      names: string[];
-      hasStart: boolean;
-    }[] = [];
+  // Distinct stops — merge only near-identical geocodes so the route
+  // keeps its real shape (the old 25 km clustering collapsed a whole
+  // day-plan into one dot; with a real texture we can zoom in).
+  const pts: readonly Stop[] = useMemo(() => {
+    const out: Stop[] = [];
     for (const s of stops) {
-      const hit = cs.find(
-        (c) => haversineKm({ lat: c.lat, lng: c.lng }, { lat: s.lat, lng: s.lng }) <= CL_KM,
-      );
-      if (hit) {
-        hit.sumLat += s.lat;
-        hit.sumLng += s.lng;
-        hit.n += 1;
-        hit.lat = hit.sumLat / hit.n;
-        hit.lng = hit.sumLng / hit.n;
-        if (s.start) hit.hasStart = true;
-        else hit.names.push(s.name);
-      } else {
-        cs.push({
-          lat: s.lat,
-          lng: s.lng,
-          sumLat: s.lat,
-          sumLng: s.lng,
-          n: 1,
-          names: s.start ? [] : [s.name],
-          hasStart: !!s.start,
-        });
-      }
+      if (out.some((o) => haversineKm(o, s) <= DEDUPE_KM)) continue;
+      out.push(s);
     }
-    return cs.map((c) => ({
-      lat: c.lat,
-      lng: c.lng,
-      count: c.n,
-      label: c.names.length === 1 && !c.hasStart ? c.names[0]! : city,
-    }));
-  }, [stops, city]);
+    return out;
+  }, [stops]);
 
-  const arcs: Arc[] = useMemo(() => {
+  const arcs: readonly Arc[] = useMemo(() => {
     const out: Arc[] = [];
-    for (let i = 1; i < clusters.length; i += 1) {
-      const a = clusters[i - 1]!;
-      const b = clusters[i]!;
+    for (let i = 1; i < pts.length; i += 1) {
+      const a = pts[i - 1]!;
+      const b = pts[i]!;
       out.push({ startLat: a.lat, startLng: a.lng, endLat: b.lat, endLng: b.lng });
     }
     return out;
-  }, [clusters]);
+  }, [pts]);
 
-  // Frame the PLANET, never a blue wall. Single beacon (one city) →
-  // a beautiful orbital shot with Earth's curve visible. Multi-region
-  // → pull back to fit, but the camera never dives below 1.5 so you
-  // always see the globe, not a featureless close-up.
+  // Spread of the journey → how close the camera can sensibly get.
+  const geo = useMemo(() => {
+    if (pts.length === 0) return { lat: center.lat, lng: center.lng, spread: 0 };
+    const lat = pts.reduce((s, p) => s + p.lat, 0) / pts.length;
+    const lng = pts.reduce((s, p) => s + p.lng, 0) / pts.length;
+    const spread = pts.reduce((mx, p) => Math.max(mx, haversineKm({ lat, lng }, p)), 0);
+    return { lat, lng, spread };
+  }, [pts, center.lat, center.lng]);
+
+  const legAltitude = Math.min(1.8, Math.max(0.18, 0.18 + geo.spread / 500));
+  const overviewAltitude = Math.min(2.6, Math.max(1.2, 0.6 + geo.spread / 250));
+
+  // While charting: keep the latest stop framed so each new place
+  // visibly "drops in" as the camera glides to it.
   useEffect(() => {
     const g = globeRef.current;
-    if (!g || clusters.length === 0) return;
-    const lat = clusters.reduce((s, p) => s + p.lat, 0) / clusters.length;
-    const lng = clusters.reduce((s, p) => s + p.lng, 0) / clusters.length;
-    const spread = clusters.reduce(
-      (mx, p) => Math.max(mx, haversineKm({ lat, lng }, { lat: p.lat, lng: p.lng })),
-      0,
-    );
-    const altitude = clusters.length <= 1 ? 1.85 : Math.min(2.5, Math.max(1.5, 0.7 + spread / 130));
-    g.pointOfView({ lat, lng, altitude }, reduce ? 0 : 1300);
-  }, [clusters, reduce]);
+    if (!g || status !== 'charting' || pts.length === 0) return;
+    const last = pts[pts.length - 1]!;
+    g.pointOfView({ lat: last.lat, lng: last.lng, altitude: legAltitude }, reduce ? 0 : 900);
+    setReveal(pts.length);
+  }, [pts, status, legAltitude, reduce]);
+
+  // Once charted: fly the route — ease stop → stop in order while the
+  // arcs draw themselves, then pull back to an overview and spin.
+  useEffect(() => {
+    const g = globeRef.current;
+    if (!g || status !== 'done' || pts.length === 0) return;
+    const controls = g.controls() as { autoRotate: boolean; autoRotateSpeed: number };
+
+    if (reduce || pts.length < 2) {
+      setReveal(pts.length);
+      g.pointOfView({ lat: geo.lat, lng: geo.lng, altitude: overviewAltitude }, reduce ? 0 : 1200);
+      return;
+    }
+
+    controls.autoRotate = false;
+    let i = 0;
+    setReveal(1);
+    const step = () => {
+      const gg = globeRef.current;
+      if (!gg) return;
+      if (i >= pts.length) {
+        gg.pointOfView({ lat: geo.lat, lng: geo.lng, altitude: overviewAltitude }, 1700);
+        const c = gg.controls() as { autoRotate: boolean; autoRotateSpeed: number };
+        c.autoRotate = true;
+        c.autoRotateSpeed = 0.55;
+        return;
+      }
+      const p = pts[i]!;
+      gg.pointOfView({ lat: p.lat, lng: p.lng, altitude: legAltitude }, 1500);
+      setReveal(i + 1);
+      i += 1;
+      tourTimer.current = setTimeout(step, 1850);
+    };
+    step();
+    return () => {
+      if (tourTimer.current) clearTimeout(tourTimer.current);
+    };
+  }, [status, pts, reduce, geo.lat, geo.lng, legAltitude, overviewAltitude]);
+
+  const shownPts = pts.slice(0, Math.max(1, reveal));
+  const shownArcs = arcs.slice(0, Math.max(0, reveal - 1));
+  // null (still checking) is treated as "not ready" → safe royal
+  // sphere until the real Earth texture is confirmed loaded.
+  const useTex = texOk === true;
 
   return (
     <div
@@ -204,15 +247,6 @@ export function ItineraryGlobe({ plan, city, center, className }: ItineraryGlobe
       )}
       style={{ backgroundImage: 'var(--gradient-royal)' }}
     >
-      {/* deep-space starfield (static, cheap) */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-70"
-        style={{
-          backgroundImage:
-            'radial-gradient(1px 1px at 12% 22%, rgba(255,255,255,.7) 50%, transparent), radial-gradient(1px 1px at 78% 14%, rgba(255,255,255,.55) 50%, transparent), radial-gradient(1.4px 1.4px at 36% 68%, rgba(243,224,166,.7) 50%, transparent), radial-gradient(1px 1px at 64% 82%, rgba(255,255,255,.5) 50%, transparent), radial-gradient(1px 1px at 88% 54%, rgba(255,255,255,.45) 50%, transparent), radial-gradient(1.2px 1.2px at 22% 88%, rgba(243,224,166,.55) 50%, transparent)',
-        }}
-      />
       {/* champagne aura behind the globe */}
       <div
         aria-hidden
@@ -223,43 +257,45 @@ export function ItineraryGlobe({ plan, city, center, className }: ItineraryGlobe
         width={dims.w}
         height={dims.h}
         backgroundColor="rgba(0,0,0,0)"
-        globeMaterial={globeMaterial}
+        globeImageUrl={useTex ? TEX.globe : undefined}
+        bumpImageUrl={useTex ? TEX.bump : undefined}
+        backgroundImageUrl={useTex ? TEX.sky : undefined}
+        globeMaterial={useTex ? undefined : royalMaterial}
         atmosphereColor={GOLD}
-        atmosphereAltitude={0.28}
-        showGraticules
-        arcsData={arcs as object[]}
+        atmosphereAltitude={0.22}
+        arcsData={shownArcs as object[]}
         arcStartLat="startLat"
         arcStartLng="startLng"
         arcEndLat="endLat"
         arcEndLng="endLng"
         arcColor={() => [GOLD_HOT, GOLD]}
-        arcAltitudeAutoScale={0.62}
+        arcAltitudeAutoScale={0.5}
         arcStroke={1.1}
         arcDashLength={0.4}
         arcDashGap={0.16}
         arcDashInitialGap={1}
         arcDashAnimateTime={reduce ? 0 : 1600}
         arcsTransitionDuration={500}
-        pointsData={clusters as object[]}
+        pointsData={shownPts as object[]}
         pointLat="lat"
         pointLng="lng"
-        pointColor={() => GOLD_HOT}
+        pointColor={(d) => ((d as Stop).start ? GOLD_HOT : GOLD)}
         pointAltitude={0.02}
-        pointRadius={0.8}
+        pointRadius={0.55}
         pointsTransitionDuration={400}
-        ringsData={clusters as object[]}
+        ringsData={shownPts as object[]}
         ringLat="lat"
         ringLng="lng"
         ringColor={() => (t: number) => `rgba(240,217,154,${Math.max(0, 1 - t)})`}
-        ringMaxRadius={6}
+        ringMaxRadius={5}
         ringPropagationSpeed={2.2}
-        ringRepeatPeriod={reduce ? 0 : 1000}
-        labelsData={clusters as object[]}
+        ringRepeatPeriod={reduce ? 0 : 1100}
+        labelsData={shownPts as object[]}
         labelLat="lat"
         labelLng="lng"
-        labelText={(d) => (d as { label: string }).label}
-        labelSize={1.5}
-        labelDotRadius={0.5}
+        labelText={(d) => (d as Stop).name}
+        labelSize={1.2}
+        labelDotRadius={0.45}
         labelColor={() => 'rgba(243,224,166,0.95)'}
         labelResolution={2}
         onGlobeReady={() => {
@@ -271,19 +307,18 @@ export function ItineraryGlobe({ plan, city, center, className }: ItineraryGlobe
             enableZoom: boolean;
           };
           controls.autoRotate = !reduce;
-          controls.autoRotateSpeed = 0.7;
+          controls.autoRotateSpeed = 0.55;
           controls.enableZoom = true;
-          // Cinematic approach: start far in space, glide down to the
-          // trip city.
-          g.pointOfView({ lat: center.lat, lng: center.lng, altitude: 3.4 }, 0);
-          g.pointOfView({ lat: center.lat, lng: center.lng, altitude: 2.2 }, reduce ? 0 : 1600);
+          // Cinematic approach: from far in space down to the city.
+          g.pointOfView({ lat: center.lat, lng: center.lng, altitude: 3.6 }, 0);
+          g.pointOfView({ lat: center.lat, lng: center.lng, altitude: 2.2 }, reduce ? 0 : 1700);
         }}
       />
       <div className="pointer-events-none absolute left-3 top-3 z-10 rounded-full border border-gold-500/40 bg-black/45 px-3 py-1 text-xs font-medium text-gold-200 backdrop-blur-sm">
         {status === 'charting'
           ? `✨ Charting your ${city} journey…`
-          : clusters.length > 1
-            ? `${clusters.length} regions · ${stops.length - 1} stops · spin to explore`
+          : pts.length > 1
+            ? `Flying your route · ${pts.length - 1} stops · drag to explore`
             : `${city} — your trip, on Earth · see Story/Map for each stop`}
       </div>
     </div>
