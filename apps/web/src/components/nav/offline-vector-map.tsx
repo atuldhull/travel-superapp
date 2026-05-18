@@ -1,19 +1,22 @@
 /**
- * OfflineVectorMap — an Organic-Maps-class vector renderer.
+ * OfflineVectorMap — an Organic-Maps-class vector renderer with true
+ * on-device offline: download the area, locate via device GPS, and
+ * reroute on a wrong turn — all with zero connectivity.
  *
  * MapLibre GL (BSD, open) drawing OpenStreetMap **vector** tiles from
  * a **Protomaps PMTiles** archive via the `pmtiles://` protocol — the
- * exact architecture Organic Maps / Maps.me use. GPU vector tiles =
- * smooth pitch/zoom/rotate, and the Protomaps "dark" theme matches
- * the app's royal ink palette.
+ * exact architecture Organic Maps / Maps.me use. The protocol is
+ * registered through an IndexedDB byte-range cache (see
+ * `lib/offline-region`), so a "Download this area" pass makes the
+ * region work fully offline.
  *
- * "Offline-capable", honestly: PMTiles serves only the tiles you
- * actually view via HTTP range requests, which the browser caches —
- * so revisited areas keep working without a connection. For TRUE
- * full-offline, point `NEXT_PUBLIC_PMTILES_URL` at a self-hosted
- * regional `.pmtiles` extract (one file, $0, no tile server). The
- * default is Protomaps' public planet demo bucket so it works out of
- * the box.
+ * Offline navigation, honestly:
+ *  - position comes from the browser Geolocation API (`watchPosition`),
+ *    which on GPS-capable hardware works without any signal;
+ *  - if the traveller leaves the active route, a corrected route is
+ *    computed on-device from the rendered road geometry (see
+ *    `lib/offline-router`) — geometric shortest-path over OSM lines,
+ *    bounded to the downloaded area (no turn restrictions / traffic).
  *
  * Drop-in for LiveNavMap (same props). The raster Leaflet map stays
  * the default + fallback, so a MapLibre/tiles hiccup never strands
@@ -21,17 +24,25 @@
  *
  * Client + WebGL only — load via next/dynamic({ ssr:false }).
  *
- * Installed for the offline-vector-map feature.
+ * Installed for the offline-vector-map feature; on-device offline
+ * (download + GPS + reroute) added for the offline-region feature.
  */
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { Protocol } from 'pmtiles';
 import { layers, namedTheme } from 'protomaps-themes-base';
 import type { NavRoute, TrafficLevel } from '../../lib/two-oh-api';
 import { cn } from '../../lib/cn';
+import { installOfflinePmtiles, PMTILES_URL, type RegionBBox } from '../../lib/offline-region';
+import {
+  buildRoadGraph,
+  distanceToPathMeters,
+  shortestPath,
+  type LngLat,
+} from '../../lib/offline-router';
+import { OfflineRegionControl } from './offline-region-control';
 
 const TRAFFIC_COLOR: Record<TrafficLevel, string> = {
   free: '#15b371',
@@ -40,18 +51,17 @@ const TRAFFIC_COLOR: Record<TrafficLevel, string> = {
   blocked: '#dc2626',
 };
 const GOLD = '#cdab63';
-const PMTILES_URL =
-  process.env['NEXT_PUBLIC_PMTILES_URL'] ?? 'https://demo-bucket.protomaps.com/v4.pmtiles';
 const PROTO_ASSETS = 'https://protomaps.github.io/basemaps-assets';
 
-// Register the pmtiles:// protocol once per page.
-let pmtilesReady = false;
-function ensurePmtiles(): void {
-  if (pmtilesReady) return;
-  const protocol = new Protocol();
-  maplibregl.addProtocol('pmtiles', protocol.tile);
-  pmtilesReady = true;
-}
+// Off-route tuning. A reroute fires only after the traveller is
+// clearly off (not a single noisy fix), and recomputes at most once
+// per cooldown so the device isn't pegged.
+const OFFROUTE_M = 45;
+const BACK_ON_M = 25;
+const MIN_OFF_FIXES = 3;
+const REROUTE_COOLDOWN_MS = 6000;
+// Protomaps `roads` kinds we treat as drivable for offline rerouting.
+const DRIVABLE = new Set(['highway', 'major_road', 'medium_road', 'minor_road', 'other']);
 
 export interface OfflineVectorMapProps {
   readonly routes: readonly NavRoute[];
@@ -69,17 +79,82 @@ function pinEl(bg: string, glyph: string, ring: string): HTMLDivElement {
   return el;
 }
 
-export function OfflineVectorMap({ routes, selectedRouteId, className }: OfflineVectorMapProps) {
+function meEl(): HTMLDivElement {
+  const el = document.createElement('div');
+  el.style.cssText =
+    'width:18px;height:18px;border-radius:9999px;background:#cdab63;box-shadow:0 0 0 3px rgba(205,171,99,.35),0 0 12px 3px rgba(205,171,99,.6)';
+  const reduce =
+    typeof window !== 'undefined' &&
+    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  if (!reduce && typeof el.animate === 'function') {
+    el.animate(
+      [
+        { boxShadow: '0 0 0 3px rgba(205,171,99,.35),0 0 0 0 rgba(205,171,99,.55)' },
+        { boxShadow: '0 0 0 3px rgba(205,171,99,.35),0 0 0 16px rgba(205,171,99,0)' },
+      ],
+      { duration: 1800, iterations: Infinity, easing: 'ease-out' },
+    );
+  }
+  return el;
+}
+
+// Pull drivable road polylines from the currently-rendered vector
+// tiles. Prefers driving kinds; widens (everything but rail/ferry/
+// path) if that yields nothing so a reroute is still possible.
+function roadLinesFromMap(map: maplibregl.Map): LngLat[][] {
+  let feats: ReturnType<maplibregl.Map['querySourceFeatures']> = [];
+  try {
+    feats = map.querySourceFeatures('protomaps', { sourceLayer: 'roads' });
+  } catch {
+    return [];
+  }
+  const collect = (predicate: (kind: string) => boolean): LngLat[][] => {
+    const lines: LngLat[][] = [];
+    for (const f of feats) {
+      const kind = String((f.properties as Record<string, unknown>)?.['kind'] ?? '');
+      if (!predicate(kind)) continue;
+      const g = f.geometry;
+      if (g.type === 'LineString') {
+        lines.push(g.coordinates.map((c) => [c[0]!, c[1]!] as LngLat));
+      } else if (g.type === 'MultiLineString') {
+        for (const part of g.coordinates) {
+          lines.push(part.map((c) => [c[0]!, c[1]!] as LngLat));
+        }
+      }
+    }
+    return lines;
+  };
+  const drivable = collect((k) => DRIVABLE.has(k));
+  if (drivable.length > 0) return drivable;
+  return collect((k) => k !== 'rail' && k !== 'ferry' && k !== 'path');
+}
+
+export function OfflineVectorMap({
+  routes,
+  selectedRouteId,
+  showLiveLocation,
+  className,
+}: OfflineVectorMapProps) {
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const readyRef = useRef(false);
   const [failed, setFailed] = useState(false);
 
+  // Live-navigation state (refs so the geolocation callback stays
+  // stable and doesn't re-subscribe on every fix).
+  const meMarkerRef = useRef<maplibregl.Marker | null>(null);
+  const activeCoordsRef = useRef<LngLat[]>([]);
+  const rerouteCoordsRef = useRef<LngLat[]>([]);
+  const offCountRef = useRef(0);
+  const lastRerouteAtRef = useRef(0);
+  const centeredRef = useRef(false);
+  const [gps, setGps] = useState<'idle' | 'live' | 'rerouted' | 'noroute' | 'denied'>('idle');
+
   // One-time map init.
   useEffect(() => {
     if (!wrapRef.current || mapRef.current) return;
-    ensurePmtiles();
+    installOfflinePmtiles();
     let map: maplibregl.Map;
     try {
       map = new maplibregl.Map({
@@ -131,15 +206,139 @@ export function OfflineVectorMap({ routes, selectedRouteId, className }: Offline
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routes, selectedRouteId]);
 
+  // Device-GPS watch: live position + on-device off-route reroute.
+  useEffect(() => {
+    if (!showLiveLocation || typeof navigator === 'undefined' || !('geolocation' in navigator)) {
+      return;
+    }
+    const id = navigator.geolocation.watchPosition(onPosition, onGeoError, {
+      enableHighAccuracy: true,
+      maximumAge: 2000,
+      timeout: 15000,
+    });
+    return () => {
+      navigator.geolocation.clearWatch(id);
+      meMarkerRef.current?.remove();
+      meMarkerRef.current = null;
+      centeredRef.current = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showLiveLocation]);
+
+  function onGeoError(err: GeolocationPositionError): void {
+    setGps(err.code === err.PERMISSION_DENIED ? 'denied' : 'idle');
+  }
+
+  function setRerouteData(coords: LngLat[]): void {
+    const map = mapRef.current;
+    if (!map) return;
+    const fc: GeoJSON.FeatureCollection = {
+      type: 'FeatureCollection',
+      features:
+        coords.length >= 2
+          ? [
+              {
+                type: 'Feature',
+                properties: {},
+                geometry: {
+                  type: 'LineString',
+                  coordinates: coords.map((c) => [c[0], c[1]]),
+                },
+              },
+            ]
+          : [],
+    };
+    const src = map.getSource('reroute') as maplibregl.GeoJSONSource | undefined;
+    if (src) src.setData(fc);
+    else map.addSource('reroute', { type: 'geojson', data: fc });
+    if (!map.getLayer('reroute-l')) {
+      map.addLayer({
+        id: 'reroute-l',
+        type: 'line',
+        source: 'reroute',
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: {
+          'line-color': '#22d3ee',
+          'line-width': 5,
+          'line-dasharray': [1.5, 1.2],
+        },
+      });
+    }
+  }
+
+  function tryReroute(me: LngLat): void {
+    const map = mapRef.current;
+    const dest = activeCoordsRef.current[activeCoordsRef.current.length - 1];
+    if (!map || !dest) return;
+    const now = Date.now();
+    if (now - lastRerouteAtRef.current < REROUTE_COOLDOWN_MS) return;
+    lastRerouteAtRef.current = now;
+    try {
+      const graph = buildRoadGraph(roadLinesFromMap(map));
+      const path = shortestPath(graph, me, dest);
+      if (path && path.length >= 2) {
+        rerouteCoordsRef.current = path;
+        setRerouteData(path);
+        setGps('rerouted');
+      } else {
+        setGps('noroute');
+      }
+    } catch {
+      setGps('noroute');
+    }
+  }
+
+  function onPosition(p: GeolocationPosition): void {
+    const map = mapRef.current;
+    if (!map) return;
+    const me: LngLat = [p.coords.longitude, p.coords.latitude];
+    const mePt: [number, number] = [me[0], me[1]];
+
+    if (!meMarkerRef.current) {
+      meMarkerRef.current = new maplibregl.Marker({ element: meEl() }).setLngLat(mePt).addTo(map);
+    } else {
+      meMarkerRef.current.setLngLat(mePt);
+    }
+    if (!centeredRef.current) {
+      centeredRef.current = true;
+      map.easeTo({ center: mePt, zoom: Math.max(map.getZoom(), 14), duration: 900 });
+    }
+    if (gps === 'idle' || gps === 'denied') setGps('live');
+
+    // Compare against the reroute if one is active, else the route.
+    const onReroute = rerouteCoordsRef.current.length >= 2;
+    const path = onReroute ? rerouteCoordsRef.current : activeCoordsRef.current;
+    if (path.length < 2) return;
+
+    const d = distanceToPathMeters(me, path);
+    if (d > OFFROUTE_M) {
+      offCountRef.current += 1;
+      if (offCountRef.current >= MIN_OFF_FIXES) tryReroute(me);
+      return;
+    }
+    offCountRef.current = 0;
+    // Back on the original line — drop the offline detour.
+    if (onReroute && distanceToPathMeters(me, activeCoordsRef.current) <= BACK_ON_M) {
+      rerouteCoordsRef.current = [];
+      setRerouteData([]);
+      setGps('live');
+    }
+  }
+
   function draw(): void {
     const map = mapRef.current;
     if (!map) return;
     const selected = routes.find((r) => r.id === selectedRouteId) ?? routes[0];
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
+    // A new plan/route invalidates any offline detour.
+    rerouteCoordsRef.current = [];
+    offCountRef.current = 0;
+    setRerouteData([]);
     if (!selected || selected.geometry.length < 2) return;
 
     const coords = selected.geometry.map((p) => [p.lng, p.lat] as [number, number]);
+    activeCoordsRef.current = coords.map((c) => [c[0], c[1]] as LngLat);
     const segs =
       selected.trafficSegments.length > 0
         ? selected.trafficSegments
@@ -236,6 +435,21 @@ export function OfflineVectorMap({ routes, selectedRouteId, className }: Offline
     );
   }
 
+  function viewportBBox(): RegionBBox | null {
+    const map = mapRef.current;
+    if (!map) return null;
+    const b = map.getBounds();
+    return { west: b.getWest(), south: b.getSouth(), east: b.getEast(), north: b.getNorth() };
+  }
+
+  const gpsLabel: Record<typeof gps, string | null> = {
+    idle: null,
+    live: '● Live GPS',
+    rerouted: '↻ Rerouted offline',
+    noroute: 'Off route — download this area to reroute',
+    denied: 'Location blocked — enable to navigate',
+  };
+
   return (
     <div
       className={cn(
@@ -247,6 +461,23 @@ export function OfflineVectorMap({ routes, selectedRouteId, className }: Offline
       <span className="pointer-events-none absolute left-3 top-3 z-10 rounded-full border border-gold-500/40 bg-black/55 px-3 py-1 text-xs font-medium text-gold-200 backdrop-blur-sm">
         Vector · offline-capable (OSM/Protomaps)
       </span>
+      {showLiveLocation && gpsLabel[gps] ? (
+        <span
+          className={cn(
+            'pointer-events-none absolute left-3 top-12 z-10 rounded-full border px-3 py-1 text-xs font-medium backdrop-blur-sm',
+            gps === 'rerouted'
+              ? 'border-cyan-400/50 bg-cyan-500/15 text-cyan-200'
+              : gps === 'noroute' || gps === 'denied'
+                ? 'border-amber-400/50 bg-amber-500/15 text-amber-200'
+                : 'border-gold-500/40 bg-black/55 text-gold-200',
+          )}
+        >
+          {gpsLabel[gps]}
+        </span>
+      ) : null}
+      <div className="absolute bottom-3 left-3 z-10">
+        <OfflineRegionControl getBBox={viewportBBox} />
+      </div>
       {failed ? (
         <div className="absolute inset-0 z-20 grid place-items-center bg-surface/95 p-6 text-center">
           <p className="max-w-xs text-sm text-muted">
