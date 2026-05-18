@@ -23,6 +23,7 @@ import { useAuthBootComplete, useAuthToken } from '../../lib/use-auth-token';
 import { getNavigation, type NavPoint, type NavRouteSet } from '../../lib/two-oh-api';
 import { searchPlaces, type GeoPlace } from '../../lib/geocode';
 import { PlaceSearch } from '../../components/nav/place-search';
+import { MapErrorBoundary } from '../../components/nav/map-error-boundary';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
   ArrowLeft,
@@ -130,6 +131,7 @@ export default function NavigatePage() {
   } | null>(null);
   const [liveLoc, setLiveLoc] = useState(false);
   const [gpsBusy, setGpsBusy] = useState(false);
+  const [locNote, setLocNote] = useState<string | null>(null);
   const [fromSel, setFromSel] = useState<GeoPlace | null>(null);
   const [toSel, setToSel] = useState<GeoPlace | null>(null);
   // 'raster' = reliable Leaflet/OSM (default + fallback); 'vector' =
@@ -154,7 +156,7 @@ export default function NavigatePage() {
         setError({
           kind: 'route',
           title: 'That route is too far for live nav',
-          body: 'Live navigation covers up to ~1500 km point-to-point (e.g. Yelahanka → New Delhi is ~1,740 km). Pick closer places, or use the trip planner for cross-country journeys.',
+          body: 'Live navigation covers up to ~5000 km point-to-point — enough for any cross-country road trip. Beyond that it’s really flight territory; use the trip planner instead.',
         });
       } else if (e?.code === 'NO_ROUTE_FOUND') {
         setError({
@@ -242,18 +244,45 @@ export default function NavigatePage() {
     void load(o, d);
   };
 
+  // Capture the device GPS and set it as the *From* point. We do NOT
+  // auto-plot against whatever destination happened to be loaded
+  // before (that's what produced the bogus "route too far" — your
+  // location to a stale far-away preset). Instead: if you've already
+  // chosen a destination, plot to it; otherwise drop your location
+  // into "From" and let you pick where you're going.
   const useMyLocation = () => {
-    if (typeof navigator === 'undefined' || !navigator.geolocation) return;
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      setLocNote('This device can’t share a location.');
+      return;
+    }
     setGpsBusy(true);
+    setLocNote(null);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const o: NavPoint = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        const here: GeoPlace = { label: 'Your location', lat: o.lat, lng: o.lng };
+        setFromSel(here);
         setOrigin(o);
         setLiveLoc(true);
         setGpsBusy(false);
-        void load(o, destination);
+        setPresetIdx(-1);
+        setError(null);
+        if (toSel) {
+          const d: NavPoint = { lat: toSel.lat, lng: toSel.lng };
+          setDestination(d);
+          void load(o, d);
+        } else {
+          setLocNote('Location set as “From”. Now pick a destination in “To” and Plot route.');
+        }
       },
-      () => setGpsBusy(false),
+      (err) => {
+        setGpsBusy(false);
+        setLocNote(
+          err.code === err.PERMISSION_DENIED
+            ? 'Location permission was blocked — enable it in your browser to navigate from here.'
+            : 'Couldn’t get your location. Try again, or set “From” manually.',
+        );
+      },
       { enableHighAccuracy: true, timeout: 12_000 },
     );
   };
@@ -301,6 +330,11 @@ export default function NavigatePage() {
             {gpsBusy ? 'Locating…' : 'Use my location'}
           </Button>
         </div>
+        {locNote ? (
+          <p className="rounded-xl border border-gold-600/25 bg-gold-500/10 px-3.5 py-2 text-xs text-gold-700 dark:text-gold-200">
+            {locNote}
+          </p>
+        ) : null}
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {PRESETS.map((p, i) => (
             <button
@@ -449,14 +483,27 @@ export default function NavigatePage() {
               ))}
             </div>
             {renderer === 'vector' ? (
-              <OfflineVectorMap
-                routes={data.routes}
-                selectedRouteId={selected.id}
-                recommendedRouteId={data.recommendedRouteId}
-                onSelectRoute={setSelectedId}
-                showLiveLocation={liveLoc}
-                className="h-115 w-full"
-              />
+              <MapErrorBoundary
+                onError={() => setRenderer('raster')}
+                fallback={
+                  <div className="grid h-115 w-full place-items-center rounded-2xl border border-gold-600/20 bg-surface p-6 text-center">
+                    <p className="max-w-sm text-sm text-muted">
+                      The Vector map couldn’t load here. If you’re running the dev server,{' '}
+                      <strong>restart it</strong> to pick up the offline-map libraries — showing the
+                      reliable Raster map instead.
+                    </p>
+                  </div>
+                }
+              >
+                <OfflineVectorMap
+                  routes={data.routes}
+                  selectedRouteId={selected.id}
+                  recommendedRouteId={data.recommendedRouteId}
+                  onSelectRoute={setSelectedId}
+                  showLiveLocation={liveLoc}
+                  className="h-115 w-full"
+                />
+              </MapErrorBoundary>
             ) : (
               <LiveNavMap
                 routes={data.routes}

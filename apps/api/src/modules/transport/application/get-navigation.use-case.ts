@@ -9,9 +9,14 @@
  * ties break toward the `fastest` flavour. This is what makes
  * "there's a blockage — take the 2nd route" fall out automatically.
  *
- * Distance cap: 1500km straight-line. Live nav is a road-trip
+ * Distance cap: 5000km straight-line. Live nav is a road-trip
  * surface, so the cap is far higher than `GetRoutesUseCase`'s 500km
- * mode-fit cap, but still bounded — beyond that it's flight territory.
+ * mode-fit cap — 5000km comfortably covers any cross-country drive
+ * (e.g. the ~3500km north-south span of India, or coast-to-coast US).
+ * Still bounded — beyond that it's genuinely flight territory. The
+ * composite provider falls back to the deterministic mock if the
+ * public OSRM demo is slow/refuses a very long route, so a long but
+ * valid request still returns a route rather than an error.
  *
  * Installed for the live-navigation feature.
  */
@@ -21,7 +26,7 @@ import type { NavRoute, NavRouteSet } from '../domain/nav-route.entity';
 import { NAVIGATION_PROVIDER, type NavigationProvider } from './ports/navigation-provider';
 import { TRAFFIC_PROVIDER, type TrafficProvider } from './ports/traffic-provider';
 
-const MAX_STRAIGHT_LINE_KM = 1500;
+const MAX_STRAIGHT_LINE_KM = 5000;
 const MAX_WAYPOINTS = 8;
 const EARTH_RADIUS_KM = 6371;
 
