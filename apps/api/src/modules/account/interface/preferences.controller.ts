@@ -37,6 +37,11 @@ interface PreferencesDto {
   readonly budgetMode: boolean;
   readonly dailyBudgetUsd: string | null;
   readonly nomadMode: boolean;
+  readonly travelAura: string | null;
+  readonly homeLabel: string | null;
+  readonly homeLat: number | null;
+  readonly homeLng: number | null;
+  readonly travelInterests: readonly string[];
   readonly createdAt: string;
   readonly updatedAt: string;
 }
@@ -55,6 +60,11 @@ function toDto(p: Preferences): PreferencesDto {
     budgetMode: p.budgetMode,
     dailyBudgetUsd: p.dailyBudgetUsd,
     nomadMode: p.nomadMode,
+    travelAura: p.travelAura,
+    homeLabel: p.homeLabel,
+    homeLat: p.homeLat,
+    homeLng: p.homeLng,
+    travelInterests: p.travelInterests,
     createdAt: p.createdAt.toISOString(),
     updatedAt: p.updatedAt.toISOString(),
   };
@@ -109,6 +119,11 @@ export class PreferencesController {
       ...(body.budgetMode !== undefined ? { budgetMode: body.budgetMode } : {}),
       ...(body.dailyBudgetUsd !== undefined ? { dailyBudgetUsd: body.dailyBudgetUsd } : {}),
       ...(body.nomadMode !== undefined ? { nomadMode: body.nomadMode } : {}),
+      ...(body.travelAura !== undefined ? { travelAura: body.travelAura } : {}),
+      ...(body.homeLabel !== undefined ? { homeLabel: body.homeLabel } : {}),
+      ...(body.homeLat !== undefined ? { homeLat: body.homeLat } : {}),
+      ...(body.homeLng !== undefined ? { homeLng: body.homeLng } : {}),
+      ...(body.travelInterests !== undefined ? { travelInterests: body.travelInterests } : {}),
     });
     return toDto(updated);
   }

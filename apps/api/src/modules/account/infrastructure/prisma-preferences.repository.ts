@@ -36,6 +36,11 @@ export class PrismaPreferencesRepository implements PreferencesRepository {
       budgetMode: false,
       dailyBudgetUsd: null,
       nomadMode: false,
+      travelAura: null,
+      homeLabel: null,
+      homeLat: null,
+      homeLng: null,
+      travelInterests: [],
       createdAt: now,
       updatedAt: now,
     };
@@ -55,6 +60,12 @@ export class PrismaPreferencesRepository implements PreferencesRepository {
     if (input.budgetMode !== undefined) updateData['budgetMode'] = input.budgetMode;
     if (input.dailyBudgetUsd !== undefined) updateData['dailyBudgetUsd'] = input.dailyBudgetUsd;
     if (input.nomadMode !== undefined) updateData['nomadMode'] = input.nomadMode;
+    if (input.travelAura !== undefined) updateData['travelAura'] = input.travelAura;
+    if (input.homeLabel !== undefined) updateData['homeLabel'] = input.homeLabel;
+    if (input.homeLat !== undefined) updateData['homeLat'] = input.homeLat;
+    if (input.homeLng !== undefined) updateData['homeLng'] = input.homeLng;
+    if (input.travelInterests !== undefined)
+      updateData['travelInterests'] = [...input.travelInterests];
 
     const row = await this.prisma.preferences.upsert({
       where: { userId: input.userId },
@@ -71,6 +82,11 @@ export class PrismaPreferencesRepository implements PreferencesRepository {
         budgetMode: input.budgetMode ?? false,
         dailyBudgetUsd: input.dailyBudgetUsd ?? null,
         nomadMode: input.nomadMode ?? false,
+        travelAura: input.travelAura ?? null,
+        homeLabel: input.homeLabel ?? null,
+        homeLat: input.homeLat ?? null,
+        homeLng: input.homeLng ?? null,
+        travelInterests: input.travelInterests ? [...input.travelInterests] : [],
       },
     });
     return toDomain(row);
@@ -94,6 +110,11 @@ function toDomain(row: PrismaPreferences): Preferences {
     // uses for money.
     dailyBudgetUsd: row.dailyBudgetUsd === null ? null : row.dailyBudgetUsd.toFixed(2),
     nomadMode: row.nomadMode,
+    travelAura: row.travelAura,
+    homeLabel: row.homeLabel,
+    homeLat: row.homeLat,
+    homeLng: row.homeLng,
+    travelInterests: row.travelInterests,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
