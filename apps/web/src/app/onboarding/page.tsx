@@ -34,6 +34,8 @@ import {
 import { CITY_PRESETS, StepWhere, type CityPreset } from '../../components/onboarding/step-where';
 import { StepWhen, type WhenValue } from '../../components/onboarding/step-when';
 import { StepGenerate } from '../../components/onboarding/step-generate';
+import { TravelAuraQuiz } from '../../components/onboarding/travel-aura-quiz';
+import { saveAuraDraft, type AuraDraft } from '../../lib/travel-aura';
 import { useAuthBootComplete, useAuthToken } from '../../lib/use-auth-token';
 
 interface ApiError extends Error {
@@ -52,6 +54,10 @@ export default function OnboardingPage() {
   const token = useAuthToken();
   const bootComplete = useAuthBootComplete();
 
+  // New users meet the traveller quiz first ("answer MCQs to identify
+  // what type of traveller they are"), then the trip wizard. Skipping
+  // the quiz drops straight into the wizard.
+  const [phase, setPhase] = useState<'aura' | 'trip'>('aura');
   const [step, setStep] = useState<0 | 1 | 2>(0);
   const [cityIdx, setCityIdx] = useState(0);
   const [when, setWhen] = useState<WhenValue>(defaultWhen());
@@ -132,6 +138,22 @@ export default function OnboardingPage() {
     return (
       <main>
         <p className="text-muted">Redirecting to sign in…</p>
+      </main>
+    );
+  }
+
+  // P1.2: traveller-type quiz first. The result + home + interests are
+  // kept in a localStorage draft for now; P1.3 persists it server-side
+  // and feeds it into personalization + the "calibrating" screen.
+  function onAuraComplete(draft: AuraDraft) {
+    saveAuraDraft(draft);
+    setPhase('trip');
+  }
+
+  if (phase === 'aura') {
+    return (
+      <main className="mx-auto max-w-2xl space-y-8 py-4">
+        <TravelAuraQuiz onComplete={onAuraComplete} onSkip={() => setPhase('trip')} />
       </main>
     );
   }
