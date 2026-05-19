@@ -35,6 +35,7 @@ import { Button } from '../../components/ui/button';
 import { Field } from '../../components/ui/input';
 import { AuthError, AuthShell } from '../../components/auth/auth-shell';
 import { GoogleSignInButton } from '../../components/google-sign-in-button';
+import { OtpSignIn } from '../../components/auth/otp-sign-in';
 import { setAccessToken } from '../../lib/auth-store';
 import { decidePostAuthDestination } from '../../lib/post-auth-redirect';
 
@@ -54,6 +55,7 @@ interface BanState {
 export default function LoginPage() {
   const router = useRouter();
   const [step, setStep] = useState<Step>('credentials');
+  const [method, setMethod] = useState<'password' | 'otp'>('password');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [mfaCode, setMfaCode] = useState('');
@@ -159,6 +161,15 @@ export default function LoginPage() {
     setErrorMsg(null);
   }
 
+  // OtpSignIn already put the token in auth-store; route like Google.
+  async function handleOtpSignedIn() {
+    const { getAccessToken } = await import('../../lib/auth-store');
+    const token = getAccessToken();
+    if (!token) return;
+    const { destination } = await decidePostAuthDestination(token);
+    router.push(destination as never);
+  }
+
   const eyebrow = banState ? 'Account' : step === 'credentials' ? 'Welcome back' : 'Security';
   const title = banState
     ? 'Account suspended'
@@ -210,71 +221,111 @@ export default function LoginPage() {
           </div>
         </div>
       ) : step === 'credentials' ? (
-        <form onSubmit={submitCredentials} className="space-y-4">
-          <Field
-            label="Email"
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <Field
-            label="Password"
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          {errorMsg ? <AuthError>{errorMsg}</AuthError> : null}
-          <Button type="submit" variant="royal" disabled={loginMutation.isPending}>
-            {loginMutation.isPending ? 'Signing in…' : 'Sign in'}
-          </Button>
-          <div className="flex items-center gap-3 py-2">
-            <hr className="flex-1 border-t border-gold-600/20" />
-            <span className="text-xs uppercase tracking-wide text-muted">or</span>
-            <hr className="flex-1 border-t border-gold-600/20" />
+        method === 'otp' ? (
+          <div className="space-y-5">
+            <OtpSignIn onSignedIn={handleOtpSignedIn} />
+            <div className="flex items-center gap-3 py-1">
+              <hr className="flex-1 border-t border-gold-600/20" />
+              <span className="text-xs uppercase tracking-wide text-muted">or</span>
+              <hr className="flex-1 border-t border-gold-600/20" />
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setMethod('password');
+                setErrorMsg(null);
+              }}
+              className="text-sm text-muted underline-offset-2 transition hover:text-gold-600 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              ← Sign in with a password instead
+            </button>
+            <p className="text-sm text-muted">
+              New here?{' '}
+              <Link
+                href="/register"
+                className="font-medium text-gold-600 transition hover:text-gold-700 hover:underline dark:hover:text-gold-300"
+              >
+                Create an account →
+              </Link>
+            </p>
           </div>
-          <GoogleSignInButton
-            onSignedIn={async () => {
-              // The button has already populated auth-store. Use the
-              // store's value to make the post-auth routing decision.
-              const { getAccessToken } = await import('../../lib/auth-store');
-              const token = getAccessToken();
-              if (!token) return;
-              const { destination } = await decidePostAuthDestination(token);
-              router.push(destination as never);
-            }}
-            onError={(msg) => setErrorMsg(msg)}
-          />
-          <Button
-            type="button"
-            variant="outline"
-            disabled={oauthMutation.isPending}
-            onClick={signInWithMockProvider}
-            className="w-full justify-center"
-          >
-            {oauthMutation.isPending ? 'Signing in…' : 'Sign in with mock provider (dev only)'}
-          </Button>
-          <p className="text-sm text-muted">
-            New here?{' '}
-            <Link
-              href="/register"
-              className="font-medium text-gold-600 transition hover:text-gold-700 hover:underline dark:hover:text-gold-300"
+        ) : (
+          <form onSubmit={submitCredentials} className="space-y-4">
+            <Field
+              label="Email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <Field
+              label="Password"
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            {errorMsg ? <AuthError>{errorMsg}</AuthError> : null}
+            <Button type="submit" variant="royal" disabled={loginMutation.isPending}>
+              {loginMutation.isPending ? 'Signing in…' : 'Sign in'}
+            </Button>
+            <div className="flex items-center gap-3 py-2">
+              <hr className="flex-1 border-t border-gold-600/20" />
+              <span className="text-xs uppercase tracking-wide text-muted">or</span>
+              <hr className="flex-1 border-t border-gold-600/20" />
+            </div>
+            <GoogleSignInButton
+              onSignedIn={async () => {
+                // The button has already populated auth-store. Use the
+                // store's value to make the post-auth routing decision.
+                const { getAccessToken } = await import('../../lib/auth-store');
+                const token = getAccessToken();
+                if (!token) return;
+                const { destination } = await decidePostAuthDestination(token);
+                router.push(destination as never);
+              }}
+              onError={(msg) => setErrorMsg(msg)}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              disabled={oauthMutation.isPending}
+              onClick={signInWithMockProvider}
+              className="w-full justify-center"
             >
-              Create an account →
-            </Link>
-          </p>
-          <p className="text-sm">
-            <Link
-              href={'/login/forgot' as never}
-              className="text-muted underline-offset-2 transition hover:text-gold-600 hover:underline"
+              {oauthMutation.isPending ? 'Signing in…' : 'Sign in with mock provider (dev only)'}
+            </Button>
+            <button
+              type="button"
+              onClick={() => {
+                setMethod('otp');
+                setErrorMsg(null);
+              }}
+              className="w-full rounded-xl border border-gold-600/25 px-4 py-2 text-sm font-medium transition hover:bg-gold-500/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             >
-              Trouble signing in?
-            </Link>
-          </p>
-        </form>
+              Email or text me a one-time code instead
+            </button>
+            <p className="text-sm text-muted">
+              New here?{' '}
+              <Link
+                href="/register"
+                className="font-medium text-gold-600 transition hover:text-gold-700 hover:underline dark:hover:text-gold-300"
+              >
+                Create an account →
+              </Link>
+            </p>
+            <p className="text-sm">
+              <Link
+                href={'/login/forgot' as never}
+                className="text-muted underline-offset-2 transition hover:text-gold-600 hover:underline"
+              >
+                Trouble signing in?
+              </Link>
+            </p>
+          </form>
+        )
       ) : (
         <form onSubmit={submitMfa} className="space-y-4">
           <p className="text-sm text-muted">

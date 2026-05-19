@@ -37,6 +37,7 @@ import { GoogleSignInButton } from '../../components/google-sign-in-button';
 import { Button } from '../../components/ui/button';
 import { Field } from '../../components/ui/input';
 import { AuthError, AuthShell } from '../../components/auth/auth-shell';
+import { OtpSignIn } from '../../components/auth/otp-sign-in';
 import { setAccessToken } from '../../lib/auth-store';
 import { decidePostAuthDestination } from '../../lib/post-auth-redirect';
 
@@ -107,6 +108,16 @@ export default function RegisterPage() {
     setErrorMsg(null);
     const data: RegisterRequestDto = { email, password, displayName };
     registerMutation.mutate({ data });
+  }
+
+  // OtpSignIn already stored the token; route via the shared decision
+  // (a brand-new code account lands in onboarding → the Aura quiz).
+  async function handleOtpSignedIn() {
+    const { getAccessToken } = await import('../../lib/auth-store');
+    const token = getAccessToken();
+    if (!token) return;
+    const { destination } = await decidePostAuthDestination(token);
+    router.push(destination as never);
   }
 
   return (
@@ -181,6 +192,22 @@ export default function RegisterPage() {
               <AuthError>{magicError}</AuthError>
             </div>
           ) : null}
+        </section>
+
+        {/* ───── One-time code path (email OR phone) ────────────────── */}
+        <section className="rounded-xl border border-gold-600/15 bg-surface p-5 shadow-(--shadow-depth-1)">
+          <header className="mb-3 flex items-center gap-2">
+            <span aria-hidden className="text-xl">
+              🔑
+            </span>
+            <h2 className="font-display text-lg font-semibold tracking-tight text-surface-foreground">
+              Use a one-time code
+            </h2>
+          </header>
+          <p className="mb-4 text-sm text-muted">
+            Sign up with just your email or phone — we send a 6-digit code, no password to set.
+          </p>
+          <OtpSignIn onSignedIn={handleOtpSignedIn} />
         </section>
 
         {/* ───── Divider ───────────────────────────────────────────── */}
