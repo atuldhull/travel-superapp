@@ -4,7 +4,8 @@
  *
  * Decides the destination by hitting `/auth/me`:
  *   - `hasSeenOnboarding === false` → `/onboarding`
- *   - everything else                → `/trips` (or the caller-supplied default)
+ *   - everything else                → `/home` (the Phase-2 hub) or
+ *     the caller-supplied default
  *
  * Failure-tolerant: if the whoami probe fails for any reason, fall
  * back to the default (don't block the user from reaching their
@@ -26,7 +27,7 @@ export async function decidePostAuthDestination(
   accessToken: string,
   options: { readonly defaultDestination?: string } = {},
 ): Promise<PostAuthDecision> {
-  const fallback = options.defaultDestination ?? '/trips';
+  const fallback = options.defaultDestination ?? '/home';
   try {
     const res = await authControllerMe({
       headers: { authorization: `Bearer ${accessToken}` },
