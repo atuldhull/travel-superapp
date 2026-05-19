@@ -29,6 +29,7 @@ import { ShortcutSheet } from '../components/cmdk/shortcut-sheet';
 import { Logo } from '../components/branding/logo';
 import { Footer } from '../components/landing/footer';
 import { AuraNudge } from '../components/auth/aura-nudge';
+import { GlobalAssistant } from '../components/assistant/global-assistant';
 import { Providers } from './providers';
 
 // POST.2 — Inter as the brand typeface. `next/font/google` self-hosts
@@ -138,6 +139,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               anonymous callers; tap → confirm modal → POST /safety/sos
               → fan-out to trusted contacts. */}
           <SosFab />
+          {/* Phase 2 (D2) — app-wide AI travel planner, stacked above
+              the SOS FAB (bottom-right). $0 public planner chain. */}
+          <GlobalAssistant />
           {/* V.UX.18 — persistent translate widget bottom-left.
               Disabled for anonymous callers (api requires auth). */}
           <TranslateWidget />
