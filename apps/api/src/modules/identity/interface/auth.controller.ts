@@ -52,6 +52,8 @@ import { RefreshSessionUseCase } from '../../identity/application/refresh-sessio
 import { RegisterUseCase } from '../../identity/application/register.use-case';
 import { RevokeSessionUseCase } from '../../identity/application/revoke-session.use-case';
 import { ConsumeMagicLinkUseCase } from '../../identity/application/consume-magic-link.use-case';
+import { RequestLoginCodeUseCase } from '../../identity/application/request-login-code.use-case';
+import { ConsumeLoginCodeUseCase } from '../../identity/application/consume-login-code.use-case';
 import { MarkOnboardingCompleteUseCase } from '../../identity/application/mark-onboarding-complete.use-case';
 import {
   USER_REPOSITORY,
@@ -66,6 +68,8 @@ import {
   LoginBodySchema,
   MagicLinkConsumeBodySchema,
   MagicLinkRequestBodySchema,
+  LoginCodeRequestBodySchema,
+  LoginCodeVerifyBodySchema,
   MfaCodeBodySchema,
   OAuthSignInBodySchema,
   OnboardingCompleteBodySchema,
@@ -75,6 +79,8 @@ import {
   type LoginBody,
   type MagicLinkConsumeBody,
   type MagicLinkRequestBody,
+  type LoginCodeRequestBody,
+  type LoginCodeVerifyBody,
   type MfaCodeBody,
   type OAuthSignInBody,
   type OnboardingCompleteBody,
@@ -95,6 +101,8 @@ import {
   LoginRequestDto,
   MagicLinkConsumeRequestDto,
   MagicLinkRequestRequestDto,
+  LoginCodeRequestRequestDto,
+  LoginCodeVerifyRequestDto,
   OAuthSignInRequestDto,
   OnboardingCompleteRequestDto,
   PasswordResetConsumeRequestDto,
@@ -135,6 +143,8 @@ export class AuthController {
     private readonly oauthUc: SignInWithOAuthUseCase,
     private readonly magicLinkRequestUc: RequestMagicLinkUseCase,
     private readonly magicLinkConsumeUc: ConsumeMagicLinkUseCase,
+    private readonly loginCodeRequestUc: RequestLoginCodeUseCase,
+    private readonly loginCodeVerifyUc: ConsumeLoginCodeUseCase,
     private readonly passwordResetRequestUc: RequestPasswordResetUseCase,
     private readonly passwordResetConsumeUc: ConsumePasswordResetUseCase,
     private readonly markOnboardingCompleteUc: MarkOnboardingCompleteUseCase,
@@ -296,6 +306,72 @@ export class AuthController {
   ): Promise<AuthSuccessBody> {
     const issued = await this.magicLinkConsumeUc.execute({
       token: body.token,
+      deviceContext: this.deviceContext(req),
+    });
+    this.setRefreshCookie(reply, issued.refreshToken, issued.refreshTokenExpiresAt);
+    return {
+      userId: issued.userId,
+      accessToken: issued.accessToken,
+      expiresAt: issued.accessTokenExpiresAt.toISOString(),
+    };
+  }
+
+  /**
+   * Phase 1 (B1/B2) — passwordless OTP step 1. Email or SMS a 6-digit
+   * code. Always returns 'ok' (enumeration-safe); soft-rate-limited
+   * (≤5 per destination / 15 min) inside the use-case.
+   */
+  @ApiOperation({
+    summary:
+      "Passwordless OTP step 1: email/SMS a 6-digit code. Always 'ok' — never reveals registration.",
+  })
+  @ApiBody({ type: LoginCodeRequestRequestDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Always ok. Code may or may not have been sent.',
+    type: MagicLinkRequestResponseDto,
+  })
+  @Public()
+  @Post('otp/request')
+  @HttpCode(HttpStatus.OK)
+  async otpRequest(
+    @Body(new ZodValidationPipe(LoginCodeRequestBodySchema)) body: LoginCodeRequestBody,
+  ): Promise<{ status: 'ok' }> {
+    await this.loginCodeRequestUc.execute({
+      channel: body.channel,
+      destination: body.destination,
+    });
+    return { status: 'ok' };
+  }
+
+  /**
+   * Phase 1 (B1/B2) — passwordless OTP step 2. Verify the code +
+   * issue a session (refresh-cookie set, access token returned).
+   * Wrong / expired / consumed / too-many-attempts → 401
+   * LOGIN_CODE_INVALID (no info leak). Works for new + existing users.
+   */
+  @ApiOperation({
+    summary: 'Passwordless OTP step 2: verify the code + issue a session.',
+  })
+  @ApiBody({ type: LoginCodeVerifyRequestDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Sign-in succeeded; refresh-cookie set; access token returned.',
+    type: AuthSuccessResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'LOGIN_CODE_INVALID.' })
+  @Public()
+  @Post('otp/verify')
+  @HttpCode(HttpStatus.OK)
+  async otpVerify(
+    @Body(new ZodValidationPipe(LoginCodeVerifyBodySchema)) body: LoginCodeVerifyBody,
+    @Req() req: FastifyRequest,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ): Promise<AuthSuccessBody> {
+    const issued = await this.loginCodeVerifyUc.execute({
+      channel: body.channel,
+      destination: body.destination,
+      code: body.code,
       deviceContext: this.deviceContext(req),
     });
     this.setRefreshCookie(reply, issued.refreshToken, issued.refreshTokenExpiresAt);
