@@ -44,6 +44,18 @@ export const GenerateSamplePlanBodySchema = z.object({
 export type GenerateSamplePlanBody = z.infer<typeof GenerateSamplePlanBodySchema>;
 
 /**
+ * Body for `POST /trips/:id/plan-with-ai` (Phase 2, E4). Entirely
+ * optional + additive: the create flow composes a free-text
+ * `instruction` from trip-type + region + the traveller's
+ * preferences. Transient (never persisted — no schema column). An
+ * absent body is valid (the onboarding flow fires this with none).
+ */
+export const PlanWithAiBodySchema = z.object({
+  instruction: z.string().trim().max(600).optional(),
+});
+export type PlanWithAiBody = z.infer<typeof PlanWithAiBodySchema>;
+
+/**
  * PATCH /trips/:id body. Every field optional. `startsOn` / `endsOn`
  * also accept `null` so the client can clear a previously-set date.
  * No `center` — trip location changes are delete + re-create.

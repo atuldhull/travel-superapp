@@ -26,7 +26,13 @@ export class GeneratePlanWithAiUseCase {
     @Inject(TRIP_PLANNER_PORT) private readonly planner: TripPlannerPort,
   ) {}
 
-  async execute(tripId: string, userId: string): Promise<TripPlannerResult> {
+  /**
+   * `instruction` (Phase 2, E4) is an optional free-text focus the
+   * create flow composes from trip-type + region + the traveller's
+   * preferences. It's transient (NOT persisted — no schema column);
+   * the planner port already consumes `instruction`.
+   */
+  async execute(tripId: string, userId: string, instruction?: string): Promise<TripPlannerResult> {
     const trip = await this.trips.findByIdForUser(tripId, userId);
     if (!trip) {
       throw new NotFoundError(`Trip not found: ${tripId}`, { tripId }, 'TRIP_NOT_FOUND');
@@ -35,12 +41,14 @@ export class GeneratePlanWithAiUseCase {
     if (!center) {
       throw new NotFoundError(`Trip center missing: ${tripId}`, { tripId }, 'TRIP_NOT_FOUND');
     }
+    const trimmed = instruction?.trim();
     return this.planner.generatePlan({
       title: trip.title,
       center,
       radiusKm: trip.radiusKm,
       startsOn: trip.startsOn ?? null,
       endsOn: trip.endsOn ?? null,
+      ...(trimmed ? { instruction: trimmed.slice(0, 600) } : {}),
     });
   }
 }
