@@ -37,6 +37,7 @@ import { StepWhen, type WhenValue } from '../../components/onboarding/step-when'
 import { StepGenerate } from '../../components/onboarding/step-generate';
 import { TravelAuraQuiz } from '../../components/onboarding/travel-aura-quiz';
 import { CalibratingScreen } from '../../components/onboarding/calibrating-screen';
+import { CinematicAuthBackground } from '../../components/auth/cinematic-auth-background';
 import { saveAuraDraft, type AuraDraft } from '../../lib/travel-aura';
 import { useAuthBootComplete, useAuthToken } from '../../lib/use-auth-token';
 
@@ -176,9 +177,14 @@ export default function OnboardingPage() {
 
   if (phase === 'aura') {
     return (
-      <main className="mx-auto max-w-2xl space-y-8 py-4">
-        <TravelAuraQuiz onComplete={onAuraComplete} onSkip={() => setPhase('trip')} />
-      </main>
+      <>
+        <CinematicAuthBackground />
+        <main className="relative z-10 mx-auto max-w-2xl py-4">
+          <div className="rounded-3xl border border-gold-600/15 bg-surface/85 p-6 shadow-(--shadow-depth-2) backdrop-blur-xl sm:p-8">
+            <TravelAuraQuiz onComplete={onAuraComplete} onSkip={() => setPhase('trip')} />
+          </div>
+        </main>
+      </>
     );
   }
 
@@ -189,63 +195,68 @@ export default function OnboardingPage() {
   }
 
   return (
-    <main className="mx-auto max-w-2xl space-y-8 py-4">
-      <header className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-wider text-brand">Welcome aboard</p>
-        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-          Let's plan your first trip
-        </h1>
-        <p className="text-sm text-muted">
-          Three quick questions, ~30 seconds. You can skip anytime.
-        </p>
-      </header>
+    <>
+      <CinematicAuthBackground />
+      <main className="relative z-10 mx-auto max-w-2xl space-y-8 rounded-3xl border border-gold-600/15 bg-surface/85 p-6 shadow-(--shadow-depth-2) backdrop-blur-xl sm:p-8">
+        <header className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-wider text-brand">
+            Welcome aboard
+          </p>
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+            Let's plan your first trip
+          </h1>
+          <p className="text-sm text-muted">
+            Three quick questions, ~30 seconds. You can skip anytime.
+          </p>
+        </header>
 
-      {/* Progress dots */}
-      <ol className="flex items-center gap-2" aria-label="Wizard progress">
-        {[0, 1, 2].map((i) => (
-          <li
-            key={i}
-            className={`h-1.5 flex-1 rounded-full transition ${
-              i <= step ? 'bg-brand' : 'bg-muted/20'
-            }`}
-            aria-current={i === step ? 'step' : undefined}
+        {/* Progress dots */}
+        <ol className="flex items-center gap-2" aria-label="Wizard progress">
+          {[0, 1, 2].map((i) => (
+            <li
+              key={i}
+              className={`h-1.5 flex-1 rounded-full transition ${
+                i <= step ? 'bg-brand' : 'bg-muted/20'
+              }`}
+              aria-current={i === step ? 'step' : undefined}
+            />
+          ))}
+        </ol>
+
+        {step === 0 ? (
+          <StepWhere
+            value={cityIdx}
+            onChange={setCityIdx}
+            onNext={() => setStep(1)}
+            onSkip={onSkip}
+            isSkipping={completeMutation.isPending}
           />
-        ))}
-      </ol>
+        ) : null}
 
-      {step === 0 ? (
-        <StepWhere
-          value={cityIdx}
-          onChange={setCityIdx}
-          onNext={() => setStep(1)}
-          onSkip={onSkip}
-          isSkipping={completeMutation.isPending}
-        />
-      ) : null}
+        {step === 1 ? (
+          <StepWhen
+            value={when}
+            onChange={setWhen}
+            onBack={() => setStep(0)}
+            onNext={() => setStep(2)}
+            onSkip={onSkip}
+            isSkipping={completeMutation.isPending}
+          />
+        ) : null}
 
-      {step === 1 ? (
-        <StepWhen
-          value={when}
-          onChange={setWhen}
-          onBack={() => setStep(0)}
-          onNext={() => setStep(2)}
-          onSkip={onSkip}
-          isSkipping={completeMutation.isPending}
-        />
-      ) : null}
-
-      {step === 2 ? (
-        <StepGenerate
-          city={CITY_PRESETS[cityIdx]!}
-          when={when}
-          onBack={() => setStep(1)}
-          onGenerate={onGenerate}
-          onSkip={onSkip}
-          isGenerating={createTripMutation.isPending || completeMutation.isPending}
-          isSkipping={completeMutation.isPending && !createTripMutation.isPending}
-          errorMsg={errorMsg}
-        />
-      ) : null}
-    </main>
+        {step === 2 ? (
+          <StepGenerate
+            city={CITY_PRESETS[cityIdx]!}
+            when={when}
+            onBack={() => setStep(1)}
+            onGenerate={onGenerate}
+            onSkip={onSkip}
+            isGenerating={createTripMutation.isPending || completeMutation.isPending}
+            isSkipping={completeMutation.isPending && !createTripMutation.isPending}
+            errorMsg={errorMsg}
+          />
+        ) : null}
+      </main>
+    </>
   );
 }

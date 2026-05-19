@@ -21,6 +21,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { AURAS, getAuraDraft } from '../../lib/travel-aura';
+import { CinematicAuthBackground } from '../auth/cinematic-auth-background';
 
 export interface CalibratingScreenProps {
   /** Called exactly once when the sequence finishes. */
@@ -81,12 +82,14 @@ export function CalibratingScreen({ onDone }: CalibratingScreenProps) {
   return (
     <main
       className="fixed inset-0 z-50 grid place-items-center overflow-hidden px-6"
-      style={{ backgroundImage: 'var(--gradient-royal)' }}
       aria-busy="true"
     >
+      {/* Same world as the rest of setup — continuity until done. */}
+      <CinematicAuthBackground />
+      <div aria-hidden className="absolute inset-0" style={{ background: 'rgba(2,3,10,0.6)' }} />
       <div
         aria-hidden
-        className="pointer-events-none absolute left-1/2 top-1/2 h-[28rem] w-[28rem] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[120px]"
+        className="pointer-events-none absolute left-1/2 top-1/2 h-112 w-md -translate-x-1/2 -translate-y-1/2 rounded-full blur-[120px]"
         style={{ background: `${accent}33` }}
       />
 
