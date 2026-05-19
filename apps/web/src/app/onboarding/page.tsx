@@ -22,7 +22,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   useAuthControllerOnboardingComplete,
   useTripControllerCreate,
@@ -36,6 +36,7 @@ import { CITY_PRESETS, StepWhere, type CityPreset } from '../../components/onboa
 import { StepWhen, type WhenValue } from '../../components/onboarding/step-when';
 import { StepGenerate } from '../../components/onboarding/step-generate';
 import { TravelAuraQuiz } from '../../components/onboarding/travel-aura-quiz';
+import { CalibratingScreen } from '../../components/onboarding/calibrating-screen';
 import { saveAuraDraft, type AuraDraft } from '../../lib/travel-aura';
 import { useAuthBootComplete, useAuthToken } from '../../lib/use-auth-token';
 
@@ -58,7 +59,10 @@ export default function OnboardingPage() {
   // New users meet the traveller quiz first ("answer MCQs to identify
   // what type of traveller they are"), then the trip wizard. Skipping
   // the quiz drops straight into the wizard.
-  const [phase, setPhase] = useState<'aura' | 'trip'>('aura');
+  const [phase, setPhase] = useState<'aura' | 'trip' | 'calibrating'>('aura');
+  // Where to go once the "calibrating" screen finishes. A thunk (not a
+  // string) so the typed-route literal is preserved without a cast.
+  const navRef = useRef<() => void>(() => router.push('/trips'));
   const [step, setStep] = useState<0 | 1 | 2>(0);
   const [cityIdx, setCityIdx] = useState(0);
   const [when, setWhen] = useState<WhenValue>(defaultWhen());
@@ -81,7 +85,8 @@ export default function OnboardingPage() {
     try {
       const data: OnboardingCompleteRequestDto = { seedSample: true };
       await completeMutation.mutateAsync({ data });
-      router.push('/trips');
+      navRef.current = () => router.push('/trips');
+      setPhase('calibrating');
     } catch (err) {
       const e = err as ApiError;
       setErrorMsg(`${e.code ?? `HTTP_${e.status ?? '???'}`} — ${e.message ?? 'Skip failed.'}`);
@@ -119,7 +124,8 @@ export default function OnboardingPage() {
       // Mark onboarding complete WITHOUT seeding (user has a real trip).
       await completeMutation.mutateAsync({ data: {} });
 
-      router.push(`/trips/${trip.id}`);
+      navRef.current = () => router.push(`/trips/${trip.id}`);
+      setPhase('calibrating');
     } catch (err) {
       const e = err as ApiError;
       setErrorMsg(
@@ -174,6 +180,12 @@ export default function OnboardingPage() {
         <TravelAuraQuiz onComplete={onAuraComplete} onSkip={() => setPhase('trip')} />
       </main>
     );
+  }
+
+  // P1.4: after setup completes, a brief premium "calibrating" beat
+  // (reads the just-derived Aura) then the stored navigation runs.
+  if (phase === 'calibrating') {
+    return <CalibratingScreen onDone={() => navRef.current()} />;
   }
 
   return (
