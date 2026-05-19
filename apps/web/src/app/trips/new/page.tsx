@@ -124,6 +124,7 @@ export default function NewTripPage() {
   const [endsOn, setEndsOn] = useState('');
   const [tripType, setTripType] = useState<string | null>(null);
   const [continents, setContinents] = useState<readonly string[]>([]);
+  const [country, setCountry] = useState<string | null>(null);
   const [region, setRegion] = useState('');
   const [picked, setPicked] = useState<string | null>(null); // "Dest · Country"
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -140,21 +141,37 @@ export default function NewTripPage() {
     ? (prefs!.travelInterests as unknown[]).filter((x): x is string => typeof x === 'string')
     : [];
 
-  // E2 — famous destinations across the chosen continents.
-  const destOptions = useMemo(() => {
+  // E5 — true cascade: continent(s) → countries within them → that
+  // country's famous destinations.
+  const countriesForSel = useMemo(() => {
+    const out: { country: string; continent: string }[] = [];
+    for (const c of continents) {
+      for (const dc of DESTINATIONS[c] ?? []) {
+        out.push({ country: dc.country, continent: c });
+      }
+    }
+    return out;
+  }, [continents]);
+
+  const destsForCountry = useMemo(() => {
+    if (!country) return [];
     const out: { dest: string; country: string; lat: number; lng: number }[] = [];
     for (const c of continents) {
       for (const dc of DESTINATIONS[c] ?? []) {
+        if (dc.country !== country) continue;
         for (const d of dc.destinations) {
           out.push({ dest: d.name, country: dc.country, lat: d.lat, lng: d.lng });
         }
       }
     }
     return out;
-  }, [continents]);
+  }, [continents, country]);
 
   function toggleContinent(c: string) {
     setContinents((cur) => (cur.includes(c) ? cur.filter((x) => x !== c) : [...cur, c]));
+    // A continent change can invalidate the drilled-down country.
+    setCountry(null);
+    setPicked(null);
   }
 
   function pickDestination(d: { dest: string; country: string; lat: number; lng: number }) {
@@ -331,14 +348,36 @@ export default function NewTripPage() {
               </button>
             ))}
           </div>
-          {destOptions.length > 0 ? (
-            <>
-              <p className="pt-1 text-xs text-muted">
-                Popular picks across {continents.join(', ')} — or use the map / coordinates below
-                for anywhere.
-              </p>
+          {countriesForSel.length > 0 ? (
+            <div className="space-y-2 pt-1">
+              <span className="block text-xs font-medium uppercase tracking-wide text-muted">
+                Countries across {continents.join(', ')}
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {countriesForSel.map((c) => (
+                  <button
+                    key={`${c.continent}:${c.country}`}
+                    type="button"
+                    onClick={() => {
+                      setCountry((cur) => (cur === c.country ? null : c.country));
+                      setPicked(null);
+                    }}
+                    aria-pressed={country === c.country}
+                    className={chip(country === c.country)}
+                  >
+                    {c.country}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          {destsForCountry.length > 0 ? (
+            <div className="space-y-2 pt-1">
+              <span className="block text-xs font-medium uppercase tracking-wide text-muted">
+                Famous in {country} — pick one (or use the map below for anywhere)
+              </span>
               <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {destOptions.map((d) => {
+                {destsForCountry.map((d) => {
                   const id = `${d.dest} · ${d.country}`;
                   const active = picked === id;
                   return (
@@ -361,7 +400,7 @@ export default function NewTripPage() {
                   );
                 })}
               </ul>
-            </>
+            </div>
           ) : null}
         </section>
 
