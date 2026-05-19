@@ -35,6 +35,12 @@ const LINKS: readonly HubLink[] = [
     subtitle: 'Family / comfort / budget / nomad mode + per-trip filters.',
   },
   {
+    // Phase 1 (C2) — re-run the Travel Aura quiz / update home + interests.
+    href: '/onboarding?tour=true',
+    title: 'Travel style & home',
+    subtitle: 'Retake the 30-sec Travel Aura quiz, update your home city & interests.',
+  },
+  {
     href: '/account/trusted-contacts',
     title: 'Trusted contacts',
     subtitle: 'Up to 3 people we notify when you trigger SOS.',
