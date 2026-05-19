@@ -52,10 +52,26 @@ export interface CreateUserInput {
   readonly displayName: string;
 }
 
+export interface CreatePhoneUserInput {
+  /** sha256(EMAIL_PEPPER + normalized phone) — also User.phoneHash. */
+  readonly phoneHash: string;
+  readonly displayName: string;
+}
+
 export interface UserRepository {
   create(input: CreateUserInput): Promise<UserRecord>;
   findByEmailHash(emailHash: string): Promise<UserRecord | null>;
   findById(id: string): Promise<UserRecord | null>;
+
+  /**
+   * Phase 1 (B1) — phone sign-in. Find a user by phoneHash, or
+   * create a password-less phone-only account. `emailHash` is set to
+   * a `phone:<hash>` sentinel (the column is NOT NULL @unique and a
+   * phone-only user has no email) — never collides with a real
+   * 64-hex sha256 email hash.
+   */
+  findByPhoneHash(phoneHash: string): Promise<UserRecord | null>;
+  createPhoneUser(input: CreatePhoneUserInput): Promise<UserRecord>;
 
   /**
    * V.UX.33 / V.UX.34 — same as `findByEmailHash` but ALSO returns

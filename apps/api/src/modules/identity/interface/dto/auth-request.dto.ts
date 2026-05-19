@@ -65,6 +65,28 @@ export class MagicLinkConsumeRequestDto {
   declare token: string;
 }
 
+export class LoginCodeRequestRequestDto {
+  @ApiProperty({ enum: ['email', 'phone'] })
+  declare channel: 'email' | 'phone';
+
+  @ApiProperty({
+    maxLength: 254,
+    description: 'Email address, or E.164-ish phone (optional leading +, 7..15 digits).',
+  })
+  declare destination: string;
+}
+
+export class LoginCodeVerifyRequestDto {
+  @ApiProperty({ enum: ['email', 'phone'] })
+  declare channel: 'email' | 'phone';
+
+  @ApiProperty({ maxLength: 254 })
+  declare destination: string;
+
+  @ApiProperty({ minLength: 6, maxLength: 6, description: '6-digit code.' })
+  declare code: string;
+}
+
 export class OnboardingCompleteRequestDto {
   @ApiProperty({
     required: false,

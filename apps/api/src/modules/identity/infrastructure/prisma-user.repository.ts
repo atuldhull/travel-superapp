@@ -12,6 +12,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { User as PrismaUser } from '@prisma/client';
 import { PrismaService } from '../../../common/db/prisma.service';
 import type {
+  CreatePhoneUserInput,
   CreateUserInput,
   UserRecord,
   UserRepository,
@@ -43,6 +44,29 @@ export class PrismaUserRepository implements UserRepository {
   async findById(id: string): Promise<UserRecord | null> {
     const row = await this.prisma.user.findUnique({ where: { id } });
     if (!row || row.deletedAt !== null) return null;
+    return toDomain(row);
+  }
+
+  async findByPhoneHash(phoneHash: string): Promise<UserRecord | null> {
+    const row = await this.prisma.user.findUnique({ where: { phoneHash } });
+    if (!row || row.deletedAt !== null) return null;
+    return toDomain(row);
+  }
+
+  async createPhoneUser(input: CreatePhoneUserInput): Promise<UserRecord> {
+    const row = await this.prisma.user.create({
+      data: {
+        // emailHash is NOT NULL @unique; a phone-only user has no
+        // email, so use a sentinel that can't collide with a real
+        // 64-hex sha256 email hash.
+        emailHash: `phone:${input.phoneHash}`,
+        emailEncrypted: Buffer.alloc(0),
+        phoneHash: input.phoneHash,
+        phoneEncrypted: Buffer.alloc(0),
+        passwordHash: null,
+        displayName: input.displayName,
+      },
+    });
     return toDomain(row);
   }
 
