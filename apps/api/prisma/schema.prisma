@@ -360,6 +360,16 @@ model Preferences {
   // form defaults to a 4-week window + the wifi-speed slider, and
   // the home page surfaces the connectivity-info link.
   nomadMode      Boolean  @default(false)
+  // P1.3 (Phase 1 — Onboarding & Identity). The new-user MCQ derives
+  // a Travel Aura archetype; home location + free-form interests are
+  // captured alongside it. Personalisation + the "calibrating" screen
+  // read these. Additive + nullable so the column add is a pure
+  // ADD COLUMN (no PostGIS/pgvector drift) applied via migrate deploy.
+  travelAura      String?
+  homeLabel       String?
+  homeLat         Float?
+  homeLng         Float?
+  travelInterests String[]
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }

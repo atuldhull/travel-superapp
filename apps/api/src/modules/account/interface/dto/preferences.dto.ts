@@ -27,6 +27,12 @@ export const UpdatePreferencesBodySchema = z.object({
     .optional(),
   /** V.UX.23 — digital-nomad mode toggle. */
   nomadMode: z.boolean().optional(),
+  /** P1.3 — Travel Aura identity + home location + interests. */
+  travelAura: z.string().trim().min(1).max(40).nullable().optional(),
+  homeLabel: z.string().trim().min(1).max(200).nullable().optional(),
+  homeLat: z.number().min(-90).max(90).nullable().optional(),
+  homeLng: z.number().min(-180).max(180).nullable().optional(),
+  travelInterests: z.array(z.string().trim().min(1).max(40)).max(20).optional(),
 });
 export type UpdatePreferencesBody = z.infer<typeof UpdatePreferencesBodySchema>;
 
@@ -83,6 +89,30 @@ export class UpdatePreferencesRequestDto {
       'V.UX.23 — digital-nomad mode. Stays form defaults to a 4-week window + monthly stay-type.',
   })
   declare nomadMode?: boolean;
+
+  @ApiProperty({
+    required: false,
+    nullable: true,
+    description: 'P1.3 — Travel Aura archetype id from the onboarding MCQ (e.g. "explorer").',
+  })
+  declare travelAura?: string | null;
+
+  @ApiProperty({ required: false, nullable: true, description: 'P1.3 — home location label.' })
+  declare homeLabel?: string | null;
+
+  @ApiProperty({ required: false, nullable: true, minimum: -90, maximum: 90 })
+  declare homeLat?: number | null;
+
+  @ApiProperty({ required: false, nullable: true, minimum: -180, maximum: 180 })
+  declare homeLng?: number | null;
+
+  @ApiProperty({
+    required: false,
+    type: [String],
+    maxItems: 20,
+    description: 'P1.3 — free-form travel interests chosen during onboarding.',
+  })
+  declare travelInterests?: string[];
 }
 
 export class PreferencesDto {
@@ -124,6 +154,21 @@ export class PreferencesDto {
 
   @ApiProperty({ description: 'V.UX.23 — digital-nomad mode toggle.' })
   declare nomadMode: boolean;
+
+  @ApiProperty({ nullable: true, description: 'P1.3 — Travel Aura archetype id, or null.' })
+  declare travelAura: string | null;
+
+  @ApiProperty({ nullable: true })
+  declare homeLabel: string | null;
+
+  @ApiProperty({ nullable: true })
+  declare homeLat: number | null;
+
+  @ApiProperty({ nullable: true })
+  declare homeLng: number | null;
+
+  @ApiProperty({ type: [String], description: 'P1.3 — travel interests.' })
+  declare travelInterests: string[];
 
   @ApiProperty({ format: 'date-time' })
   declare createdAt: string;
