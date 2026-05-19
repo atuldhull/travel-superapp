@@ -33,6 +33,12 @@ export interface UpdatePreferencesCommand {
   readonly dailyBudgetUsd?: string | null;
   /** V.UX.23 — digital-nomad mode toggle. */
   readonly nomadMode?: boolean;
+  /** P1.3 — Travel Aura identity + home location + interests. */
+  readonly travelAura?: string | null;
+  readonly homeLabel?: string | null;
+  readonly homeLat?: number | null;
+  readonly homeLng?: number | null;
+  readonly travelInterests?: readonly string[];
 }
 
 @Injectable()
@@ -83,6 +89,27 @@ export class UpdatePreferencesUseCase {
       }
     }
 
+    if (cmd.homeLat !== undefined && cmd.homeLat !== null) {
+      if (!Number.isFinite(cmd.homeLat) || cmd.homeLat < -90 || cmd.homeLat > 90) {
+        throw new ValidationError(
+          'homeLat must be between -90 and 90',
+          { homeLat: ['-90..90'] },
+          { homeLat: cmd.homeLat },
+          'INVALID_COORDINATES',
+        );
+      }
+    }
+    if (cmd.homeLng !== undefined && cmd.homeLng !== null) {
+      if (!Number.isFinite(cmd.homeLng) || cmd.homeLng < -180 || cmd.homeLng > 180) {
+        throw new ValidationError(
+          'homeLng must be between -180 and 180',
+          { homeLng: ['-180..180'] },
+          { homeLng: cmd.homeLng },
+          'INVALID_COORDINATES',
+        );
+      }
+    }
+
     return this.repo.upsert({
       userId: cmd.userId,
       ...(cmd.diet !== undefined ? { diet: cmd.diet } : {}),
@@ -95,6 +122,11 @@ export class UpdatePreferencesUseCase {
       ...(cmd.budgetMode !== undefined ? { budgetMode: cmd.budgetMode } : {}),
       ...(cmd.dailyBudgetUsd !== undefined ? { dailyBudgetUsd: cmd.dailyBudgetUsd } : {}),
       ...(cmd.nomadMode !== undefined ? { nomadMode: cmd.nomadMode } : {}),
+      ...(cmd.travelAura !== undefined ? { travelAura: cmd.travelAura } : {}),
+      ...(cmd.homeLabel !== undefined ? { homeLabel: cmd.homeLabel } : {}),
+      ...(cmd.homeLat !== undefined ? { homeLat: cmd.homeLat } : {}),
+      ...(cmd.homeLng !== undefined ? { homeLng: cmd.homeLng } : {}),
+      ...(cmd.travelInterests !== undefined ? { travelInterests: cmd.travelInterests } : {}),
     });
   }
 }

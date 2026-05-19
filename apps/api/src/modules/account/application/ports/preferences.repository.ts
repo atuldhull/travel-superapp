@@ -28,6 +28,12 @@ export interface UpsertPreferencesInput {
   readonly dailyBudgetUsd?: string | null;
   /** V.UX.23 — digital-nomad mode toggle. */
   readonly nomadMode?: boolean;
+  /** P1.3 — Travel Aura archetype id (null clears, undefined skips). */
+  readonly travelAura?: string | null;
+  readonly homeLabel?: string | null;
+  readonly homeLat?: number | null;
+  readonly homeLng?: number | null;
+  readonly travelInterests?: readonly string[];
 }
 
 export interface PreferencesRepository {

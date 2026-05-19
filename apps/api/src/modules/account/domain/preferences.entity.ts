@@ -52,6 +52,19 @@ export interface Preferences {
    * page surfaces the connectivity-info link.
    */
   readonly nomadMode: boolean;
+  /**
+   * P1.3 (Onboarding & Identity) — the Travel Aura archetype id from
+   * the new-user MCQ (e.g. "explorer", "luxury_nomad"); `null` until
+   * the quiz is taken. Personalisation + the calibrating screen read
+   * it. Free-form string (the catalog lives client-side).
+   */
+  readonly travelAura: string | null;
+  /** P1.3 — captured home location (label + coords), all nullable. */
+  readonly homeLabel: string | null;
+  readonly homeLat: number | null;
+  readonly homeLng: number | null;
+  /** P1.3 — free-form travel interests chosen during onboarding. */
+  readonly travelInterests: readonly string[];
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }

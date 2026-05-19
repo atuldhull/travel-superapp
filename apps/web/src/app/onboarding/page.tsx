@@ -27,6 +27,7 @@ import {
   useAuthControllerOnboardingComplete,
   useTripControllerCreate,
   useTripControllerPlanWithAi,
+  apiFetch,
   type OnboardingCompleteRequestDto,
   type CreateTripRequestDto,
   type TripDto,
@@ -146,7 +147,24 @@ export default function OnboardingPage() {
   // kept in a localStorage draft for now; P1.3 persists it server-side
   // and feeds it into personalization + the "calibrating" screen.
   function onAuraComplete(draft: AuraDraft) {
+    // localStorage is the offline-safe bridge; also persist server-side
+    // so personalization + the calibrating screen can read it. Direct
+    // apiFetch (PATCH /account/preferences) — the field is additive so
+    // no SDK regen. Fire-and-forget: a failure must not block setup.
     saveAuraDraft(draft);
+    void apiFetch('/api/v1/account/preferences', {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        travelAura: draft.aura,
+        homeLabel: draft.home?.label ?? null,
+        homeLat: draft.home?.lat ?? null,
+        homeLng: draft.home?.lng ?? null,
+        travelInterests: [...draft.interests],
+      }),
+    }).catch(() => {
+      /* offline / transient — the localStorage draft still carries it */
+    });
     setPhase('trip');
   }
 
