@@ -100,6 +100,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <Logo />
               <nav aria-label="Primary" className="flex items-center gap-1.5 sm:gap-2">
                 <Link
+                  href="/home"
+                  className="rounded-full px-3 py-1.5 text-sm font-medium text-muted transition hover:bg-gold-500/10 hover:text-surface-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                >
+                  Home
+                </Link>
+                <Link
                   href="/feed"
                   className="rounded-full px-3 py-1.5 text-sm font-medium text-muted transition hover:bg-gold-500/10 hover:text-surface-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 >
