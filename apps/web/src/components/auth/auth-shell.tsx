@@ -11,6 +11,7 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { Logo } from '../branding/logo';
+import { CinematicAuthBackground } from './cinematic-auth-background';
 
 export interface AuthShellProps {
   readonly eyebrow: string;
@@ -21,10 +22,11 @@ export interface AuthShellProps {
 
 export function AuthShell({ eyebrow, title, subtitle, children }: AuthShellProps) {
   return (
-    <main className="mx-auto max-w-md space-y-6">
+    <main className="relative z-10 mx-auto max-w-md space-y-6">
+      <CinematicAuthBackground />
       <Link
         href="/"
-        className="inline-flex items-center gap-1.5 text-sm text-muted transition hover:text-gold-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        className="inline-flex items-center gap-1.5 rounded-full bg-black/25 px-2.5 py-1 text-sm text-white/85 backdrop-blur-sm transition hover:text-gold-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
       >
         <ArrowLeft aria-hidden className="h-4 w-4" /> Back
       </Link>
