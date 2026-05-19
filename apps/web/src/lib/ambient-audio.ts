@@ -19,6 +19,12 @@ let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
 let started = false;
 let running = false;
+// Phase-modulated nodes (A3 — ambience tracks time of day).
+let waterLpRef: BiquadFilterNode | null = null;
+let breezeGainRef: GainNode | null = null;
+let cricketGainRef: GainNode | null = null;
+
+export type AmbientPhase = 'night' | 'dawn' | 'day' | 'dusk';
 
 function buildNoiseBuffer(context: AudioContext): AudioBuffer {
   // ~3 s of brown-ish noise (integrated white) — soft, water-like.
@@ -80,10 +86,58 @@ function build(): void {
   breezeBp.connect(breezeGain);
   breezeGain.connect(master);
 
+  // Night cricket texture: a high, narrow band of the noise gated by a
+  // fast tremolo — recognisably "night", calm at very low volume.
+  // Silent until ambientSetPhase('night') ramps it in.
+  const cricket = ctx.createBufferSource();
+  cricket.buffer = noise;
+  cricket.loop = true;
+  const cricketBp = ctx.createBiquadFilter();
+  cricketBp.type = 'bandpass';
+  cricketBp.frequency.value = 4500;
+  cricketBp.Q.value = 9;
+  const cricketGain = ctx.createGain();
+  cricketGain.gain.value = 0;
+  const chirp = ctx.createOscillator();
+  chirp.frequency.value = 6; // tremolo rate
+  const chirpAmt = ctx.createGain();
+  chirpAmt.gain.value = 0.5;
+  chirp.connect(chirpAmt);
+  chirpAmt.connect(cricketGain.gain);
+  cricket.connect(cricketBp);
+  cricketBp.connect(cricketGain);
+  cricketGain.connect(master);
+
+  waterLpRef = waterLp;
+  breezeGainRef = breezeGain;
+  cricketGainRef = cricketGain;
+
   water.start();
   breeze.start();
   swell.start();
+  cricket.start();
+  chirp.start();
   started = true;
+}
+
+/**
+ * Re-tune the ambience to the time of day. Smooth ramps so a phase
+ * crossing while a user lingers is seamless. No-op until built.
+ */
+export function ambientSetPhase(phase: AmbientPhase): void {
+  if (!ctx) return;
+  const t = ctx.currentTime;
+  const ramp = (p: AudioParam, v: number) => {
+    p.cancelScheduledValues(t);
+    p.setValueAtTime(p.value, t);
+    p.linearRampToValueAtTime(v, t + 2.5);
+  };
+  const night = phase === 'night';
+  if (waterLpRef) ramp(waterLpRef.frequency, night ? 360 : phase === 'day' ? 540 : 460);
+  if (breezeGainRef) ramp(breezeGainRef.gain, phase === 'day' ? 0.085 : night ? 0.035 : 0.06);
+  // Cricket tremolo centre — actual audible level is this × the chirp
+  // LFO, so keep the centre small.
+  if (cricketGainRef) ramp(cricketGainRef.gain, night ? 0.05 : phase === 'dusk' ? 0.02 : 0);
 }
 
 export function ambientSupported(): boolean {
