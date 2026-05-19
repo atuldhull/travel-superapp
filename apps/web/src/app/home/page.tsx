@@ -15,7 +15,7 @@
  */
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTripControllerList } from '@app/sdk';
@@ -36,6 +36,13 @@ import { Card, CardHeader, CardSubtitle, CardTitle } from '../../components/ui/c
 import { Button } from '../../components/ui/button';
 import { SkeletonCard } from '../../components/ui/skeleton';
 import { useAuthBootComplete, useAuthToken } from '../../lib/use-auth-token';
+import {
+  getGamification,
+  getSocialFeed,
+  listDiaryEntries,
+  type DiaryEntryDto,
+  type GamificationView,
+} from '../../lib/two-oh-api';
 
 // The generated TripDto types startsOn/endsOn as a branded union
 // (`string | object`), so read defensively into a clean local shape.
@@ -115,6 +122,48 @@ export default function HomePage() {
     return { current: cur[0] ?? null, upcoming: up.slice(0, 3) };
   }, [tripsQuery.data]);
 
+  // D3 — live snapshot for the journal + social cards. Plain async
+  // fns (not hooks); all-settled + never-broken: a failure just
+  // leaves that card in its calm fallback.
+  const [gami, setGami] = useState<GamificationView | null>(null);
+  const [lastEntry, setLastEntry] = useState<DiaryEntryDto | null>(null);
+  const [feed, setFeed] = useState<{ count: number; latest: string | null } | null>(null);
+
+  useEffect(() => {
+    if (token === null) return;
+    let alive = true;
+    void (async () => {
+      const [g, d, f] = await Promise.allSettled([
+        getGamification(),
+        listDiaryEntries({ limit: 1 }),
+        getSocialFeed({ limit: 5 }),
+      ]);
+      if (!alive) return;
+      if (g.status === 'fulfilled') setGami(g.value);
+      if (d.status === 'fulfilled') setLastEntry(d.value.entries[0] ?? null);
+      if (f.status === 'fulfilled') {
+        setFeed({
+          count: f.value.items.length,
+          latest: f.value.items[0]?.publishedAt ?? null,
+        });
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [token]);
+
+  // Day X of N for the active trip (honest: only when dated).
+  const dayProgress = useMemo(() => {
+    if (!current?.startsOn || !current?.endsOn) return null;
+    const s = new Date(current.startsOn).getTime();
+    const e = new Date(current.endsOn).getTime();
+    const now = startOfToday();
+    const totalDays = Math.max(1, Math.round((e - s) / 86_400_000) + 1);
+    const dayIdx = Math.min(totalDays, Math.max(1, Math.round((now - s) / 86_400_000) + 1));
+    return { dayIdx, totalDays };
+  }, [current]);
+
   if (!bootComplete || token === null) {
     return (
       <main>
@@ -167,6 +216,11 @@ export default function HomePage() {
                 <p className="mt-0.5 text-sm text-muted">
                   {fmtDate(current.startsOn)} – {fmtDate(current.endsOn)}
                 </p>
+              ) : null}
+              {dayProgress ? (
+                <span className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-gold-500/40 bg-gold-500/10 px-3 py-1 text-xs font-medium text-gold-700 dark:text-gold-200">
+                  Day {dayProgress.dayIdx} of {dayProgress.totalDays}
+                </span>
               ) : null}
             </div>
             <div className="flex gap-2">
@@ -236,6 +290,52 @@ export default function HomePage() {
         )}
       </section>
 
+      {/* Log book + friends — live snapshots, not just links */}
+      <section className="grid gap-4 sm:grid-cols-2">
+        <Card as="div" depth="raised" interactive>
+          <Link href="/diary" className="flex items-start gap-3 p-5">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-gold-500/25 bg-gold-500/8 text-gold-600">
+              <BookOpen aria-hidden className="h-5 w-5" />
+            </span>
+            <div className="min-w-0">
+              <CardTitle className="text-lg">Your log book</CardTitle>
+              {gami ? (
+                <CardSubtitle>
+                  🔥 {gami.currentStreak}-day streak · {gami.totalPoints} pts · {gami.entryCount}{' '}
+                  {gami.entryCount === 1 ? 'entry' : 'entries'}
+                  {lastEntry ? (
+                    <span className="mt-1 block truncate text-muted">
+                      Last: “{lastEntry.title}” · {fmtDate(lastEntry.entryDate)}
+                    </span>
+                  ) : null}
+                </CardSubtitle>
+              ) : (
+                <CardSubtitle>Memory books, diary entries &amp; badges.</CardSubtitle>
+              )}
+            </div>
+          </Link>
+        </Card>
+        <Card as="div" depth="raised" interactive>
+          <Link href="/feed" className="flex items-start gap-3 p-5">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-gold-500/25 bg-gold-500/8 text-gold-600">
+              <Users aria-hidden className="h-5 w-5" />
+            </span>
+            <div className="min-w-0">
+              <CardTitle className="text-lg">Friends&apos; trips</CardTitle>
+              {feed && feed.count > 0 ? (
+                <CardSubtitle>
+                  {feed.count} recent published {feed.count === 1 ? 'trip' : 'trips'} from people
+                  you follow
+                  {feed.latest ? ` · latest ${fmtDate(feed.latest)}` : ''} — open the feed.
+                </CardSubtitle>
+              ) : (
+                <CardSubtitle>See where people you follow are going.</CardSubtitle>
+              )}
+            </div>
+          </Link>
+        </Card>
+      </section>
+
       {/* Everything else — the hub grid */}
       <section>
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">Explore</h2>
@@ -247,18 +347,6 @@ export default function HomePage() {
                 title: 'Create a trip',
                 subtitle: 'Type, places, days — an AI itinerary in one tap.',
                 icon: Plus,
-              },
-              {
-                href: '/memory-books',
-                title: 'Log book',
-                subtitle: 'Your memory books, diary entries & badges.',
-                icon: BookOpen,
-              },
-              {
-                href: '/feed',
-                title: "Explore friends' trips",
-                subtitle: 'See where people you follow are going.',
-                icon: Users,
               },
               {
                 href: '/navigate',
