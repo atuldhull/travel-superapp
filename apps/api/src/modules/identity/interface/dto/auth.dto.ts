@@ -42,6 +42,61 @@ export const MagicLinkConsumeBodySchema = z.object({
 export type MagicLinkConsumeBody = z.infer<typeof MagicLinkConsumeBodySchema>;
 
 /**
+ * Phase 1 (B1/B2) — passwordless OTP. One body for both channels; the
+ * destination is validated per channel (email shape vs E.164-ish
+ * phone). Phone: optional leading `+` then 7..15 digits.
+ */
+const PHONE_RE = /^\+?[1-9]\d{6,14}$/;
+export const LoginCodeRequestBodySchema = z
+  .object({
+    channel: z.enum(['email', 'phone']),
+    destination: z.string().trim().min(3).max(254),
+  })
+  .superRefine((v, ctx) => {
+    if (v.channel === 'email') {
+      if (!z.string().email().max(254).safeParse(v.destination).success) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['destination'],
+          message: 'invalid email',
+        });
+      }
+    } else if (!PHONE_RE.test(v.destination.replace(/[\s()-]/g, ''))) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['destination'],
+        message: 'invalid phone',
+      });
+    }
+  });
+export type LoginCodeRequestBody = z.infer<typeof LoginCodeRequestBodySchema>;
+
+export const LoginCodeVerifyBodySchema = z
+  .object({
+    channel: z.enum(['email', 'phone']),
+    destination: z.string().trim().min(3).max(254),
+    code: z.string().regex(/^\d{6}$/, 'must be 6 digits'),
+  })
+  .superRefine((v, ctx) => {
+    if (v.channel === 'email') {
+      if (!z.string().email().max(254).safeParse(v.destination).success) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['destination'],
+          message: 'invalid email',
+        });
+      }
+    } else if (!PHONE_RE.test(v.destination.replace(/[\s()-]/g, ''))) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['destination'],
+        message: 'invalid phone',
+      });
+    }
+  });
+export type LoginCodeVerifyBody = z.infer<typeof LoginCodeVerifyBodySchema>;
+
+/**
  * Body for `POST /auth/onboarding/complete`. Empty `{}` works for the
  * "Generate" terminal (the user already has a trip). The Skip terminal
  * sends `{seedSample: true}` so the api seeds the read-only Goa weekend

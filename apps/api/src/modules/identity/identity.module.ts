@@ -26,6 +26,10 @@ import { MAGIC_LINK_TOKEN_REPOSITORY } from './application/ports/magic-link-toke
 import { MAILER_PORT } from './application/ports/mailer.port';
 import { PASSWORD_RESET_TOKEN_REPOSITORY } from './application/ports/password-reset-token.repository';
 import { RequestMagicLinkUseCase } from './application/request-magic-link.use-case';
+import { RequestLoginCodeUseCase } from './application/request-login-code.use-case';
+import { ConsumeLoginCodeUseCase } from './application/consume-login-code.use-case';
+import { LOGIN_CODE_REPOSITORY } from './application/ports/login-code.repository';
+import { SMS_SENDER } from './application/ports/sms-sender.port';
 import { RequestPasswordResetUseCase } from './application/request-password-reset.use-case';
 import {
   DisableMfaUseCase,
@@ -61,8 +65,11 @@ import { PrismaUserOAuthIdentityRepository } from './infrastructure/prisma-user-
 import { PrismaUserRepository } from './infrastructure/prisma-user.repository';
 import { RedisFailedLoginCounter } from './infrastructure/redis-failed-login-counter';
 import { RedisJwtKeyringStore } from './infrastructure/redis-jwt-keyring.store';
+import { PrismaLoginCodeRepository } from './infrastructure/prisma-login-code.repository';
 import { ResendMailerAdapter } from './infrastructure/resend-mailer.adapter';
 import { StubMailerAdapter } from './infrastructure/stub-mailer.adapter';
+import { StubSmsSenderAdapter } from './infrastructure/stub-sms-sender.adapter';
+import { TwilioSmsSenderAdapter } from './infrastructure/twilio-sms-sender.adapter';
 import { TotpService } from './infrastructure/totp.service';
 import { AuthController } from './interface/auth.controller';
 import { JwksAdminController } from './interface/jwks-admin.controller';
@@ -142,6 +149,22 @@ const oauthProvidersFactory = {
         return stub;
       },
     },
+    { provide: LOGIN_CODE_REPOSITORY, useClass: PrismaLoginCodeRepository },
+    // SMS port — Twilio when fully configured, else the $0 stub
+    // (logs the code; dev + CI never depend on a paid provider).
+    // Same env-gated-construction pattern as the mailer.
+    StubSmsSenderAdapter,
+    {
+      provide: SMS_SENDER,
+      inject: [ConfigService, StubSmsSenderAdapter],
+      useFactory: (config: ConfigService<Env, true>, stub: StubSmsSenderAdapter) => {
+        const sid = config.get('TWILIO_ACCOUNT_SID', { infer: true });
+        const token = config.get('TWILIO_AUTH_TOKEN', { infer: true });
+        const from = config.get('TWILIO_FROM_NUMBER', { infer: true });
+        if (sid && token && from) return new TwilioSmsSenderAdapter(config);
+        return stub;
+      },
+    },
     MockOAuthProvider,
     oauthProvidersFactory,
     TotpService,
@@ -158,6 +181,8 @@ const oauthProvidersFactory = {
     SignInWithOAuthUseCase,
     RequestMagicLinkUseCase,
     ConsumeMagicLinkUseCase,
+    RequestLoginCodeUseCase,
+    ConsumeLoginCodeUseCase,
     RequestPasswordResetUseCase,
     ConsumePasswordResetUseCase,
     MarkOnboardingCompleteUseCase,

@@ -136,6 +136,12 @@ model User {
   emailHash         String    @unique
   emailEncrypted    Bytes
   passwordHash      String? // argon2id; null for OAuth-only users
+  // Phase 1 (B1) — phone sign-in. Equality-lookup hash over
+  // pepper + normalized phone (same shape as emailHash); the
+  // encrypted form lives in `phoneEncrypted`. Both nullable +
+  // additive (pure ADD COLUMN, no PostGIS/pgvector drift).
+  phoneHash         String?   @unique
+  phoneEncrypted    Bytes?
   role              UserRole  @default(user)
   displayName       String
   avatarUrl         String?
@@ -1390,4 +1396,22 @@ model EarnedBadge {
 
   @@unique([userId, badgeKey])
   @@index([userId])
+}
+
+// Phase 1 (B1/B2) — passwordless one-time sign-in codes (email +
+// phone). Plaintext code is delivered once and never stored; only
+// `codeHash` (sha256 over EMAIL_PEPPER + code) persists. Single-use
+// via `consumedAt`; brute force bounded by `attempts`. Additive
+// only — pure CREATE TABLE, no PostGIS/pgvector drift.
+model LoginCode {
+  id         String    @id @default(cuid())
+  channel    String // 'email' | 'phone'
+  destHash   String // sha256(EMAIL_PEPPER + normalized destination)
+  codeHash   String // sha256(EMAIL_PEPPER + 6-digit code)
+  attempts   Int       @default(0)
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([destHash, createdAt])
 }
