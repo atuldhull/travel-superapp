@@ -27,6 +27,7 @@ import { Volume2, VolumeX } from 'lucide-react';
 import {
   ambientPreferred,
   ambientRunning,
+  ambientSetPhase,
   ambientStart,
   ambientStop,
   ambientSupported,
@@ -190,6 +191,11 @@ export function CinematicAuthBackground() {
     }
     return;
   }, []);
+
+  // A3 — keep the ambience tuned to the time of day while it plays.
+  useEffect(() => {
+    if (soundOn) ambientSetPhase(phase);
+  }, [phase, soundOn]);
 
   const toggleSound = () => {
     if (soundOn) {
