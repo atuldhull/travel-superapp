@@ -89,6 +89,7 @@ import {
   CreateTripBodySchema,
   CreateTripShareBodySchema,
   GenerateSamplePlanBodySchema,
+  PlanWithAiBodySchema,
   SuggestPlacesForTripBodySchema,
   UpdateDayItemsBodySchema,
   UpdateTripBodySchema,
@@ -507,8 +508,14 @@ export class TripController {
   async planWithAi(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
+    // Optional + additive (Phase 2, E4). NOT validated via a pipe:
+    // the onboarding flow fires this with NO body, which must stay
+    // valid. Parse defensively, tolerating an absent/garbage body.
+    @Body() body: unknown,
   ): Promise<TripPlannerResult> {
-    return this.generatePlanWithAi.execute(id, user.sub);
+    const parsed = PlanWithAiBodySchema.safeParse(body ?? {});
+    const instruction = parsed.success ? parsed.data.instruction : undefined;
+    return this.generatePlanWithAi.execute(id, user.sub, instruction);
   }
 
   /**
