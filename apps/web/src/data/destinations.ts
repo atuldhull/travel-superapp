@@ -61,6 +61,17 @@ export const DESTINATIONS: Readonly<Record<string, readonly DestCountry[]>> = {
         { name: 'Interlaken', lat: 46.6863, lng: 7.8632 },
       ],
     },
+    {
+      country: 'Greece',
+      destinations: [
+        { name: 'Athens', lat: 37.9838, lng: 23.7275 },
+        { name: 'Santorini', lat: 36.3932, lng: 25.4615 },
+      ],
+    },
+    {
+      country: 'Netherlands',
+      destinations: [{ name: 'Amsterdam', lat: 52.3676, lng: 4.9041 }],
+    },
   ],
   Asia: [
     {
@@ -98,6 +109,17 @@ export const DESTINATIONS: Readonly<Record<string, readonly DestCountry[]>> = {
       country: 'UAE',
       destinations: [{ name: 'Dubai', lat: 25.2048, lng: 55.2708 }],
     },
+    {
+      country: 'Vietnam',
+      destinations: [
+        { name: 'Hanoi', lat: 21.0278, lng: 105.8342 },
+        { name: 'Hoi An', lat: 15.8801, lng: 108.338 },
+      ],
+    },
+    {
+      country: 'Singapore',
+      destinations: [{ name: 'Singapore', lat: 1.3521, lng: 103.8198 }],
+    },
   ],
   Africa: [
     {
@@ -124,6 +146,10 @@ export const DESTINATIONS: Readonly<Record<string, readonly DestCountry[]>> = {
     {
       country: 'Tanzania',
       destinations: [{ name: 'Zanzibar', lat: -6.1659, lng: 39.2026 }],
+    },
+    {
+      country: 'Kenya',
+      destinations: [{ name: 'Nairobi', lat: -1.2921, lng: 36.8219 }],
     },
   ],
   'North America': [
@@ -168,6 +194,13 @@ export const DESTINATIONS: Readonly<Record<string, readonly DestCountry[]>> = {
     {
       country: 'Argentina',
       destinations: [{ name: 'Buenos Aires', lat: -34.6037, lng: -58.3816 }],
+    },
+    {
+      country: 'Colombia',
+      destinations: [
+        { name: 'Cartagena', lat: 10.391, lng: -75.4794 },
+        { name: 'Medellín', lat: 6.2476, lng: -75.5658 },
+      ],
     },
   ],
   Oceania: [
