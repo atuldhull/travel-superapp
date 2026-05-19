@@ -28,6 +28,7 @@ import { CommandPalette } from '../components/cmdk/command-palette';
 import { ShortcutSheet } from '../components/cmdk/shortcut-sheet';
 import { Logo } from '../components/branding/logo';
 import { Footer } from '../components/landing/footer';
+import { AuraNudge } from '../components/auth/aura-nudge';
 import { Providers } from './providers';
 
 // POST.2 — Inter as the brand typeface. `next/font/google` self-hosts
@@ -122,6 +123,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               </nav>
             </header>
             <main id="main" tabIndex={-1} className="outline-none">
+              <AuraNudge />
               {children}
             </main>
             <Footer />
