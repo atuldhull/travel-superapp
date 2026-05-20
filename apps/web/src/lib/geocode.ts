@@ -151,6 +151,52 @@ function shortLabel(full: string): string {
  * (key-less, CORS-open), Nominatim reverse as fallback. Never throws;
  * a miss returns null so the caller can label it "Custom stop".
  */
+/**
+ * Reverse-geocode lat/lng to an ISO 3166-1 alpha-2 country code
+ * (uppercase, e.g. "IN", "US", "FR"). Photon's `country_code` is
+ * uppercase ISO-2 directly; Nominatim's `address.country_code` is
+ * lowercase. Returns null on miss / no country / network fail.
+ *
+ * Added for Phase 2 polish F7 (destination safety section on /home).
+ * $0 / no-key / never throws — same ethos as the existing helpers.
+ */
+export async function reverseGeocodeCountryCode(lat: number, lng: number): Promise<string | null> {
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  const pRes = await timedFetch(`${PHOTON_REVERSE}?lat=${lat}&lon=${lng}&lang=en`, 5000);
+  if (pRes) {
+    try {
+      const j = (await pRes.json()) as {
+        readonly features?: ReadonlyArray<{
+          readonly properties?: { readonly countrycode?: string };
+        }>;
+      };
+      const cc = j.features?.[0]?.properties?.countrycode;
+      if (typeof cc === 'string' && /^[A-Za-z]{2}$/.test(cc)) {
+        return cc.toUpperCase();
+      }
+    } catch {
+      /* fall through to Nominatim */
+    }
+  }
+  const nRes = await timedFetch(
+    `${NOMINATIM_REVERSE}?format=json&lat=${lat}&lon=${lng}&zoom=3&addressdetails=1`,
+    5000,
+  );
+  if (!nRes) return null;
+  try {
+    const row = (await nRes.json()) as {
+      readonly address?: { readonly country_code?: string };
+    };
+    const cc = row.address?.country_code;
+    if (typeof cc === 'string' && /^[A-Za-z]{2}$/.test(cc)) {
+      return cc.toUpperCase();
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
   const pRes = await timedFetch(`${PHOTON_REVERSE}?lat=${lat}&lon=${lng}&lang=en`, 5000);

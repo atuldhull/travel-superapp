@@ -38,12 +38,15 @@ import {
   LifeBuoy,
   MapPinned,
   Navigation,
+  Phone,
   Plus,
   Settings as SettingsIcon,
+  ShieldAlert,
   Sparkles,
   Sun,
   Users,
 } from 'lucide-react';
+import { reverseGeocodeCountryCode } from '../../lib/geocode';
 import { Card, CardHeader, CardSubtitle, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { SkeletonCard } from '../../components/ui/skeleton';
@@ -321,6 +324,77 @@ export default function HomePage() {
       alive = false;
     };
   }, [token, current?.id]);
+
+  // F7 — destination safety basics for the active or next-up trip.
+  // Two cheap reads behind the trip center:
+  //   - reverseGeocodeCountryCode (Photon → Nominatim, $0/no-key)
+  //   - GET /safety/emergency-numbers/:cc  (public, every ISO country)
+  //   - GET /safety/country-primer/:cc     (auth, top scams + visa,
+  //     seeded for a curated subset → may 404)
+  // Honest: section only renders when reverse-geo succeeds AND at
+  // least the emergency numbers are available. Scams + visa are a
+  // bonus when the country is in the curated primer set.
+  interface SafetyEmergency {
+    readonly countryCode: string;
+    readonly countryName: string;
+    readonly universal: string | null;
+    readonly police: string | null;
+    readonly ambulance: string | null;
+    readonly fire: string | null;
+  }
+  interface SafetyPrimer {
+    readonly topScamCategories: readonly string[];
+    readonly visaInfo: string;
+  }
+  type SafetyState =
+    | { kind: 'idle' }
+    | { kind: 'loading' }
+    | { kind: 'ok'; emergency: SafetyEmergency; primer: SafetyPrimer | null }
+    | { kind: 'unavailable' };
+  const [safety, setSafety] = useState<SafetyState>({ kind: 'idle' });
+  const safetyTrip = weatherTrip; // same target: current ?? upcoming[0]
+
+  useEffect(() => {
+    if (token === null || !safetyTrip || !currentCenter) {
+      setSafety({ kind: 'idle' });
+      return;
+    }
+    let alive = true;
+    setSafety({ kind: 'loading' });
+    void (async () => {
+      try {
+        const cc = await reverseGeocodeCountryCode(currentCenter.lat, currentCenter.lng);
+        if (!alive) return;
+        if (!cc) {
+          setSafety({ kind: 'unavailable' });
+          return;
+        }
+        const [emergencyR, primerR] = await Promise.allSettled([
+          apiFetch<{ data: SafetyEmergency; status: number; headers: Headers }>(
+            `/api/v1/safety/emergency-numbers/${cc}`,
+            { method: 'GET' },
+          ),
+          apiFetch<{ data: SafetyPrimer; status: number; headers: Headers }>(
+            `/api/v1/safety/country-primer/${cc}`,
+            { method: 'GET' },
+          ),
+        ]);
+        if (!alive) return;
+        if (emergencyR.status !== 'fulfilled' || !emergencyR.value.data) {
+          setSafety({ kind: 'unavailable' });
+          return;
+        }
+        const primer =
+          primerR.status === 'fulfilled' && primerR.value.data ? primerR.value.data : null;
+        setSafety({ kind: 'ok', emergency: emergencyR.value.data, primer });
+      } catch {
+        if (alive) setSafety({ kind: 'unavailable' });
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [token, safetyTrip?.id, currentCenter]);
 
   // Day X of N for the active trip (honest: only when dated).
   const dayProgress = useMemo(() => {
@@ -638,6 +712,87 @@ export default function HomePage() {
           </Card>
         )}
       </section>
+
+      {/* F7 — destination safety basics. Only renders when we found
+          the trip's country (reverse-geocoded) AND at least the
+          emergency numbers came back. Top scams + visa show only
+          when the country has a curated primer; otherwise we
+          honestly say "We don't have a primer for {country} yet." */}
+      {safetyTrip !== null && safety.kind === 'ok' ? (
+        <section>
+          <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">
+            Local safety basics
+          </h2>
+          <Card depth="raised" className="p-5">
+            <CardHeader>
+              <CardTitle className="text-lg">
+                <span className="inline-flex items-center gap-2">
+                  <ShieldAlert aria-hidden className="h-5 w-5 text-gold-600" />
+                  {safety.emergency.countryName}
+                </span>
+              </CardTitle>
+              <CardSubtitle>
+                Emergency numbers are public reference data. Scams + visa info come from our curated{' '}
+                <Link href="/help" className="text-gold-600 underline-offset-4 hover:underline">
+                  safety primer
+                </Link>{' '}
+                for the country.
+              </CardSubtitle>
+            </CardHeader>
+            <ul className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              {(
+                [
+                  { label: 'Universal', value: safety.emergency.universal },
+                  { label: 'Police', value: safety.emergency.police },
+                  { label: 'Ambulance', value: safety.emergency.ambulance },
+                  { label: 'Fire', value: safety.emergency.fire },
+                ] satisfies readonly { label: string; value: string | null }[]
+              )
+                .filter((row): row is { label: string; value: string } => row.value !== null)
+                .map((row) => (
+                  <li
+                    key={row.label}
+                    className="flex items-center gap-3 rounded-2xl border border-gold-500/15 bg-surface/40 p-3"
+                  >
+                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-gold-500/25 bg-gold-500/8 text-gold-600">
+                      <Phone aria-hidden className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium uppercase tracking-wide text-muted">
+                        {row.label}
+                      </p>
+                      <p className="text-sm font-semibold tracking-tight text-surface-foreground">
+                        {row.value}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+            </ul>
+            {safety.primer && safety.primer.topScamCategories.length > 0 ? (
+              <div className="mt-4 space-y-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted">
+                  Watch out for
+                </p>
+                <ul className="flex flex-wrap gap-1.5">
+                  {safety.primer.topScamCategories.slice(0, 6).map((scam) => (
+                    <li
+                      key={scam}
+                      className="inline-flex items-center rounded-full border border-gold-600/20 bg-gold-500/5 px-3 py-1 text-xs text-surface-foreground"
+                    >
+                      {scam}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <p className="mt-4 text-xs text-muted">
+                We don&apos;t have a curated scam + visa primer for {safety.emergency.countryName}{' '}
+                yet — the emergency numbers above are still live.
+              </p>
+            )}
+          </Card>
+        </section>
+      ) : null}
     </main>
   );
 }
