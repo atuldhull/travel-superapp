@@ -84,7 +84,7 @@ import {
   type GamificationView,
 } from '../../lib/two-oh-api';
 import { openAssistantWith } from '../../components/assistant/global-assistant';
-import { HubAmbient } from '../../components/home/hub-ambient';
+import { HubAmbient, pickAmbientMood, type AmbientMood } from '../../components/home/hub-ambient';
 import { toHubTripView, type HubTripView } from '../../lib/trip-dto';
 import { useTripCenter } from '../../lib/use-trip-center';
 
@@ -523,6 +523,33 @@ export default function HomePage() {
   // the same path).
   const currentCenter = useTripCenter(token !== null && current ? current.id : null);
 
+  // H1 — derive an ambient mood for the hub backdrop from the
+  // destination's first forecast day + local hour (timezone-aware
+  // when known, otherwise user-local). Honest: when weather isn't
+  // available we fall back to 'calm' (the original D6 palette).
+  const ambientMood = useMemo<AmbientMood>(() => {
+    if (weather.kind !== 'ok' || weather.days.length === 0) {
+      // No weather signal yet — still try a time-of-day mood.
+      return pickAmbientMood(null, new Date().getHours());
+    }
+    const code = weather.days[0]!.code;
+    const tz = weather.timezone;
+    let hour: number;
+    if (tz) {
+      // 'HH' in en-GB gives a 24-hour clock for the trip's TZ.
+      const fmt = new Intl.DateTimeFormat('en-GB', {
+        hour: '2-digit',
+        hour12: false,
+        timeZone: tz,
+      });
+      hour = Number.parseInt(fmt.format(new Date()), 10);
+      if (!Number.isFinite(hour)) hour = new Date().getHours();
+    } else {
+      hour = new Date().getHours();
+    }
+    return pickAmbientMood(code, hour);
+  }, [weather]);
+
   // F7 — destination safety basics for the active or next-up trip.
   // Two cheap reads behind the trip center:
   //   - reverseGeocodeCountryCode (Photon → Nominatim, $0/no-key)
@@ -615,7 +642,7 @@ export default function HomePage() {
 
   return (
     <main className="space-y-8">
-      <HubAmbient />
+      <HubAmbient mood={ambientMood} />
       <motion.header
         initial={reduce ? false : { opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
