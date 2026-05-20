@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="TravelSuperApp maskable icon">
+  <!--
+    Maskable icon — the launcher may crop the outer ~20% (safe-zone is
+    the centred 80% square 51..461). We fill the whole canvas with the
+    brand gold so the crop never reveals a transparent edge, and keep
+    the glyph well inside the safe zone.
+  -->
+  <defs>
+    <linearGradient id="mg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#e9c987" />
+      <stop offset="100%" stop-color="#cdab63" />
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="512" height="512" fill="url(#mg)" />
+  <!-- Compass ring + needle scaled to fit the centered 60% (safe zone). -->
+  <circle cx="256" cy="256" r="110" fill="none" stroke="#fdfcf9" stroke-width="12" />
+  <polygon
+    points="256,160 286,256 256,352 226,256"
+    fill="#fdfcf9"
+    stroke="#161310"
+    stroke-width="3"
+    stroke-linejoin="round"
+  />
+  <circle cx="256" cy="256" r="10" fill="#161310" />
+</svg>
