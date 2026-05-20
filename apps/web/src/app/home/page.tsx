@@ -61,6 +61,7 @@ import {
 import { openAssistantWith } from '../../components/assistant/global-assistant';
 import { HubAmbient } from '../../components/home/hub-ambient';
 import { toHubTripView, type HubTripView } from '../../lib/trip-dto';
+import { useTripCenter } from '../../lib/use-trip-center';
 
 // Local alias keeps the per-file callsites short while reading from
 // the shared lib (Phase 2 polish F4 — same coercion now used by /trips).
@@ -278,52 +279,10 @@ export default function HomePage() {
     };
   }, [token, weatherTrip?.id]);
 
-  // D5 — independent trip-center fetch (Phase 2 polish F2).
-  //
-  // Previously this harvested the center from the weather forecast's
-  // lat/lng — cheap but FRAGILE: if Open-Meteo was down, the "Plan
-  // with AI" button silently disappeared because the weather section
-  // never resolved. Now we call the dedicated `/trips/:id/center`
-  // route directly, so the button shows whenever there's a current
-  // trip we can read.
-  const [currentCenter, setCurrentCenter] = useState<{ lat: number; lng: number } | null>(null);
-
-  useEffect(() => {
-    if (token === null || !current) {
-      setCurrentCenter(null);
-      return;
-    }
-    let alive = true;
-    void (async () => {
-      try {
-        const res = await apiFetch<{
-          data: { lat: number; lng: number };
-          status: number;
-          headers: Headers;
-        }>(`/api/v1/trips/${current.id}/center`, { method: 'GET' });
-        if (!alive) return;
-        const d = res.data;
-        if (
-          d &&
-          typeof d.lat === 'number' &&
-          Number.isFinite(d.lat) &&
-          typeof d.lng === 'number' &&
-          Number.isFinite(d.lng)
-        ) {
-          setCurrentCenter({ lat: d.lat, lng: d.lng });
-        } else {
-          setCurrentCenter(null);
-        }
-      } catch {
-        // Honest: if the fetch fails the button quietly doesn't render;
-        // the assistant is still reachable via the floating FAB.
-        if (alive) setCurrentCenter(null);
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, [token, current?.id]);
+  // D5 — independent trip-center fetch (Phase 2 polish F2, lifted
+  // to the shared `useTripCenter` hook in F9 so /trips/[id] uses
+  // the same path).
+  const currentCenter = useTripCenter(token !== null && current ? current.id : null);
 
   // F7 — destination safety basics for the active or next-up trip.
   // Two cheap reads behind the trip center:
