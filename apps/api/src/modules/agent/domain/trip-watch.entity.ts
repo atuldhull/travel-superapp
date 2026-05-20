@@ -11,7 +11,12 @@
  */
 
 /** Signal kinds the agent can subscribe a trip to. */
-export type SignalKind = 'weather' | 'flight' | 'geofence';
+// Phase 3 (G5) — `deadline` is the trip-start-approaching reminder
+// signal. Pure (no network): a `DeadlineSignalAdapter` derives
+// `daysUntilStart` from the optional `tripStartsOnIso` on the
+// query. Subscribing a watch to this kind stays opt-in — nothing
+// new fires by default (LAW 2).
+export type SignalKind = 'weather' | 'flight' | 'geofence' | 'deadline';
 
 export interface TripWatch {
   readonly id: string;
