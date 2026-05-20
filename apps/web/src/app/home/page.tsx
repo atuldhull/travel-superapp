@@ -79,6 +79,20 @@ function fmtDate(iso: string | null | undefined): string {
   return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
 }
 
+// F20 — full days until a future ISO date. Returns null on bad input,
+// 0 for today, positive integer for future, negative for past. The
+// Upcoming card only ever feeds future startsOn, but the helper stays
+// general so any future caller can rely on its sign.
+function daysUntil(iso: string | null | undefined): number | null {
+  if (!iso) return null;
+  const target = new Date(iso);
+  if (!Number.isFinite(target.getTime())) return null;
+  const t0 = new Date();
+  t0.setHours(0, 0, 0, 0);
+  target.setHours(0, 0, 0, 0);
+  return Math.round((target.getTime() - t0.getTime()) / 86_400_000);
+}
+
 // D4 — defensive weather narrowing. The overview endpoint types
 // `weather` as a `success | failure` union but the inner forecast is
 // `Record<string, unknown>` (orval can't reify it), so we read the
@@ -98,7 +112,15 @@ function num(v: unknown): number | null {
   return typeof v === 'number' && Number.isFinite(v) ? v : null;
 }
 
-function parseWeather(overview: unknown): readonly HubWeatherDay[] | null {
+interface ParsedHubWeather {
+  readonly days: readonly HubWeatherDay[];
+  // F22 — Open-Meteo returns the resolved IANA timezone for the
+  // trip's coords (e.g. "Asia/Kolkata"). Used on the Current Trip
+  // card to show local time.
+  readonly timezone: string | null;
+}
+
+function parseWeather(overview: unknown): ParsedHubWeather | null {
   if (!isObj(overview)) return null;
   const env = overview['data'];
   const root = isObj(env) ? env : overview;
@@ -118,7 +140,10 @@ function parseWeather(overview: unknown): readonly HubWeatherDay[] | null {
     if (date === null || maxC === null || minC === null || code === null) continue;
     out.push({ date, maxC, minC, code, precipPct: num(d['precipitationProbabilityPercent']) });
   }
-  return out.length > 0 ? out : null;
+  if (out.length === 0) return null;
+  const tz =
+    isObj(forecast) && typeof forecast['timezone'] === 'string' ? forecast['timezone'] : null;
+  return { days: out, timezone: tz };
 }
 
 // WMO → lucide icon + short label. Coarse buckets match Open-Meteo's
@@ -226,7 +251,7 @@ export default function HomePage() {
   type WeatherState =
     | { kind: 'idle' }
     | { kind: 'loading' }
-    | { kind: 'ok'; days: readonly HubWeatherDay[] }
+    | { kind: 'ok'; days: readonly HubWeatherDay[]; timezone: string | null }
     | { kind: 'unavailable' };
   const [weather, setWeather] = useState<WeatherState>({ kind: 'idle' });
 
@@ -246,13 +271,13 @@ export default function HomePage() {
       try {
         const res = await tripControllerOverview(weatherTrip.id);
         if (!alive) return;
-        const days = parseWeather(res);
+        const parsed = parseWeather(res);
         // Don't downgrade a previously-OK card to "unavailable" on a
         // background refresh hiccup; only the initial fetch can flip
         // to the unavailable copy. Honest: stale-but-shown beats
         // bouncing "unavailable" on a 1-second blip.
         setWeather((prev) => {
-          if (days) return { kind: 'ok', days };
+          if (parsed) return { kind: 'ok', days: parsed.days, timezone: parsed.timezone };
           if (!firstTime && prev.kind === 'ok') return prev;
           return { kind: 'unavailable' };
         });
@@ -420,11 +445,29 @@ export default function HomePage() {
                   {fmtDate(current.startsOn)} – {fmtDate(current.endsOn)}
                 </p>
               ) : null}
-              {dayProgress ? (
-                <span className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-gold-500/40 bg-gold-500/10 px-3 py-1 text-xs font-medium text-gold-700 dark:text-gold-200">
-                  Day {dayProgress.dayIdx} of {dayProgress.totalDays}
-                </span>
-              ) : null}
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                {dayProgress ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-gold-500/40 bg-gold-500/10 px-3 py-1 text-xs font-medium text-gold-700 dark:text-gold-200">
+                    Day {dayProgress.dayIdx} of {dayProgress.totalDays}
+                  </span>
+                ) : null}
+                {/* F22 — local destination time, honest: only when we
+                    actually know the timezone (from the weather
+                    forecast for the same trip). Skips otherwise. */}
+                {weather.kind === 'ok' && weather.timezone && weatherTrip?.id === current.id ? (
+                  <span
+                    className="inline-flex items-center gap-1.5 rounded-full border border-gold-600/20 bg-surface/60 px-3 py-1 text-xs text-muted"
+                    title={`Local time in ${weather.timezone}`}
+                  >
+                    {new Date().toLocaleTimeString(undefined, {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      timeZone: weather.timezone,
+                    })}{' '}
+                    local
+                  </span>
+                ) : null}
+              </div>
             </div>
             <div className="flex flex-wrap gap-2">
               <Link href={`/trips/${current.id}` as never}>
@@ -480,19 +523,38 @@ export default function HomePage() {
           <SkeletonCard count={1} />
         ) : upcoming.length > 0 ? (
           <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {upcoming.map((t) => (
-              <Card as="li" key={t.id} depth="raised" interactive>
-                <Link href={`/trips/${t.id}` as never} className="block p-5">
-                  <p className="inline-flex items-center gap-1.5 text-xs font-medium text-gold-600">
-                    <MapPinned aria-hidden className="h-3.5 w-3.5" />
-                    {fmtDate(t.startsOn)}
-                  </p>
-                  <p className="mt-1 line-clamp-2 font-display text-lg font-semibold tracking-tight text-surface-foreground">
-                    {t.title}
-                  </p>
-                </Link>
-              </Card>
-            ))}
+            {upcoming.map((t) => {
+              // F20 — countdown chip. Honest: only when startsOn parses.
+              const days = daysUntil(t.startsOn);
+              const countdown =
+                days === null
+                  ? null
+                  : days === 0
+                    ? 'Today'
+                    : days === 1
+                      ? 'Tomorrow'
+                      : days <= 7
+                        ? `in ${days} days`
+                        : days <= 14
+                          ? 'in 1 week'
+                          : days <= 30
+                            ? `in ${Math.round(days / 7)} weeks`
+                            : `in ${Math.round(days / 30)} months`;
+              return (
+                <Card as="li" key={t.id} depth="raised" interactive>
+                  <Link href={`/trips/${t.id}` as never} className="block p-5">
+                    <p className="inline-flex items-center gap-1.5 text-xs font-medium text-gold-600">
+                      <MapPinned aria-hidden className="h-3.5 w-3.5" />
+                      {fmtDate(t.startsOn)}
+                      {countdown ? <span className="text-muted">· {countdown}</span> : null}
+                    </p>
+                    <p className="mt-1 line-clamp-2 font-display text-lg font-semibold tracking-tight text-surface-foreground">
+                      {t.title}
+                    </p>
+                  </Link>
+                </Card>
+              );
+            })}
           </ul>
         ) : (
           <Card depth="flat" className="p-5">
