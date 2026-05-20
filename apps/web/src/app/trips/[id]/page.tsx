@@ -19,6 +19,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
+  apiFetch,
   getTripControllerGetItineraryQueryKey,
   getTripControllerGetOneQueryKey,
   getTripControllerListQueryKey,
@@ -65,6 +66,7 @@ import { PlaceSuggestionPicker } from '../../../components/trip/place-suggestion
 import { PowerPlannerSection } from '../../../components/trip/power-planner-section';
 import { ShareList } from '../../../components/trip/share-list';
 import { VoteButtons } from '../../../components/trip/vote-buttons';
+import { ItemCheckbox } from '../../../components/trip/item-checkbox';
 import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
 import { useTripCenter } from '../../../lib/use-trip-center';
 import { coerceTripDate } from '../../../lib/trip-dto';
@@ -739,13 +741,17 @@ function DayRow({
           {day.items.map((it) => {
             const notes = it.notes as unknown as string | null;
             const placeId = it.placeId as unknown as string | null;
+            const initialCompletedAt = (it as { completedAt?: string | null }).completedAt ?? null;
             return (
               <li key={it.id} className="flex items-start justify-between gap-2 py-1">
-                <span className="flex-1">
-                  · {notes ?? <em>(no notes)</em>}
-                  {placeId ? (
-                    <span className="ml-1 opacity-70">({placeId.slice(0, 8)}…)</span>
-                  ) : null}
+                <span className="flex-1 inline-flex items-start gap-1.5">
+                  <ItemCheckbox itemId={it.id} initialCompletedAt={initialCompletedAt} />
+                  <span>
+                    {notes ?? <em>(no notes)</em>}
+                    {placeId ? (
+                      <span className="ml-1 opacity-70">({placeId.slice(0, 8)}…)</span>
+                    ) : null}
+                  </span>
                 </span>
                 <VoteButtons tripId={tripId} targetId={it.id} targetType="itinerary_item" />
               </li>

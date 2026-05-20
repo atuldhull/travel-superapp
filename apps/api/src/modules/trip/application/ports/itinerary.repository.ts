@@ -69,6 +69,23 @@ export interface ItineraryRepository {
    * set) from a fresh read inside the same transaction.
    */
   replaceItemsForDay(dayId: string, items: readonly CreateItemInput[]): Promise<ItineraryDay>;
+
+  /**
+   * Phase 3 (G1) — toggle the "living trip" completion checkmark on
+   * a single ItineraryItem. Owner-gated through the trip relation:
+   * an attacker who guessed an itemId from another user's trip gets
+   * `null` (the use-case translates to 404 ITEM_NOT_FOUND).
+   *
+   * `completedAt` is set when truthy, cleared when null. The
+   * planner/regenerator never touches this field — re-planning
+   * doesn't carry checkmarks forward (intentional: a fresh plan
+   * starts fresh; explicit + honest).
+   */
+  setItemCompletedForUser(
+    itemId: string,
+    userId: string,
+    completedAt: Date | null,
+  ): Promise<ItineraryItem | null>;
 }
 
 export const ITINERARY_REPOSITORY = Symbol('ItineraryRepository');

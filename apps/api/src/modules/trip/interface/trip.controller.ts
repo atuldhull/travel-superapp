@@ -67,6 +67,7 @@ import {
   type TransportLeg,
 } from '../application/get-trip-transport-legs.use-case';
 import { GetTripCenterUseCase } from '../application/get-trip-center.use-case';
+import { SetItemCompletedUseCase } from '../application/set-item-completed.use-case';
 import { GetTripWeatherUseCase } from '../application/get-trip-weather.use-case';
 import type { EventListing } from '../../events/domain/event-listing.entity';
 import type { EateryListing } from '../../food/domain/eatery-listing.entity';
@@ -181,6 +182,7 @@ export class TripController {
     private readonly revokeTripShare: RevokeTripShareUseCase,
     private readonly listTripShares: ListTripSharesUseCase,
     private readonly getTripCenter: GetTripCenterUseCase,
+    private readonly setItemCompleted: SetItemCompletedUseCase,
     private readonly getTripWeather: GetTripWeatherUseCase,
     private readonly getTripStays: GetTripStaysUseCase,
     private readonly getTripEateries: GetTripEateriesUseCase,
@@ -841,6 +843,51 @@ export class TripController {
   }
 
   /**
+   * Phase 3 (G1) — toggle the "living trip" completion checkmark on
+   * one ItineraryItem.
+   *
+   *   POST /api/v1/trips/items/:itemId/complete    → set
+   *   POST /api/v1/trips/items/:itemId/uncomplete  → clear
+   *
+   * The route lives under `/trips/items/...` rather than
+   * `/trips/:id/itinerary/items/:itemId` because the item is owner-
+   * gated through its day's trip; the tripId on the URL would be
+   * redundant + a second potential mismatch surface. 404
+   * `ITEM_NOT_FOUND` on miss / non-owner.
+   */
+  @ApiOperation({ summary: 'Mark an itinerary item complete (G1 — Living Trip).' })
+  @ApiResponse({ status: 200, description: 'The updated item with completedAt set.' })
+  @ApiResponse({ status: 404, description: 'ITEM_NOT_FOUND.' })
+  @Post('items/:itemId/complete')
+  @HttpCode(HttpStatus.OK)
+  async completeItem(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('itemId') itemId: string,
+  ): Promise<{ id: string; completedAt: string | null }> {
+    const updated = await this.setItemCompleted.execute(itemId, user.sub, true);
+    return {
+      id: updated.id,
+      completedAt: updated.completedAt ? updated.completedAt.toISOString() : null,
+    };
+  }
+
+  @ApiOperation({ summary: 'Clear the completion mark on an itinerary item (G1).' })
+  @ApiResponse({ status: 200, description: 'The updated item with completedAt cleared.' })
+  @ApiResponse({ status: 404, description: 'ITEM_NOT_FOUND.' })
+  @Post('items/:itemId/uncomplete')
+  @HttpCode(HttpStatus.OK)
+  async uncompleteItem(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('itemId') itemId: string,
+  ): Promise<{ id: string; completedAt: string | null }> {
+    const updated = await this.setItemCompleted.execute(itemId, user.sub, false);
+    return {
+      id: updated.id,
+      completedAt: updated.completedAt ? updated.completedAt.toISOString() : null,
+    };
+  }
+
+  /**
    * List every share (active + revoked) the caller has minted for
    * this trip. Owner-only — non-owner + missing collapse to 404
    * `TRIP_NOT_FOUND`, matching the existence-probe defence on every
@@ -1132,6 +1179,8 @@ function toDayDto(d: ItineraryDay): ItineraryDayDto {
       startTime: i.startTime ? i.startTime.toISOString() : null,
       endTime: i.endTime ? i.endTime.toISOString() : null,
       notes: i.notes,
+      // Phase 3 (G1).
+      completedAt: i.completedAt ? i.completedAt.toISOString() : null,
     })),
   };
 }

@@ -16,6 +16,10 @@ export interface ItineraryItem {
   readonly notes: string | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
+  // Phase 3 (G1) — "living trip" completion checkmark. Null until
+  // the traveller marks the item done. The planner/regenerator
+  // never touches this field; it's strictly user-driven.
+  readonly completedAt: Date | null;
 }
 
 export interface ItineraryDay {
