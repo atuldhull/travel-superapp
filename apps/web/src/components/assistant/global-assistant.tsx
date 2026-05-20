@@ -19,10 +19,12 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { MessageCircle, RotateCcw, Send, Sparkles, X } from 'lucide-react';
+import { BookmarkPlus, MessageCircle, RotateCcw, Send, Sparkles, X } from 'lucide-react';
 import { apiFetch, type GenerateSamplePlanResponseDto } from '@app/sdk';
 import { searchPlaces } from '../../lib/geocode';
+import { useAuthToken } from '../../lib/use-auth-token';
 
 interface Msg {
   readonly role: 'you' | 'ai';
@@ -149,6 +151,8 @@ export function openAssistantWith(args: OpenWithArgs): boolean {
 
 export function GlobalAssistant() {
   const reduce = useReducedMotion();
+  const router = useRouter();
+  const authToken = useAuthToken();
   // F6 — lazy init from localStorage so a refresh doesn't lose the
   // conversation. F10 — boot from the 'general' slot by default; the
   // opener swaps to a per-trip slot when fired with a tripId.
@@ -266,6 +270,47 @@ export function GlobalAssistant() {
     });
     const p: unknown = res.data?.plan;
     return typeof p === 'string' ? p : '';
+  }
+
+  // F11 — turn the chat's title+center into a real saved trip.
+  // Honest: the prose plan in the chat doesn't transfer (no schema
+  // column for it); we create a draft trip the user can immediately
+  // re-plan or edit. Auth-gated by the API; unauthenticated callers
+  // see a "Sign in to save" prompt instead of the button.
+  const [saving, setSaving] = useState(false);
+  const [saveErr, setSaveErr] = useState<string | null>(null);
+
+  async function saveAsTrip() {
+    if (!ctxRef.current || saving) return;
+    setSaving(true);
+    setSaveErr(null);
+    try {
+      const res = await apiFetch<{
+        data: { id?: string };
+        status: number;
+        headers: Headers;
+      }>('/api/v1/trips', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          title: ctxRef.current.title,
+          center: { lng: ctxRef.current.center.lng, lat: ctxRef.current.center.lat },
+          radiusKm: RADIUS_KM,
+        }),
+      });
+      const id = res.data?.id;
+      if (typeof id === 'string' && id.length > 0) {
+        say('ai', `Saved as a draft trip — opening it now. You can re-plan or edit dates there.`);
+        setOpen(false);
+        router.push(`/trips/${id}` as never);
+      } else {
+        setSaveErr('Saved but the response was unexpected — check your trips list.');
+      }
+    } catch {
+      setSaveErr('Could not save. If you’re not signed in, sign in first and try again.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function onSend() {
@@ -396,6 +441,30 @@ export function GlobalAssistant() {
                     {q}
                   </button>
                 ))}
+              </div>
+            ) : null}
+
+            {/* F11 — save the current title+center as a real trip. Only
+                shows in 'chat' phase (after a plan exists) and only
+                for signed-in users; the API would 401 otherwise. */}
+            {phase === 'chat' && !busy && ctxRef.current && !activeTripId ? (
+              <div className="flex flex-col gap-1 px-3 pb-2">
+                {authToken !== null ? (
+                  <button
+                    type="button"
+                    onClick={saveAsTrip}
+                    disabled={saving}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-gold-600/30 bg-gold-500/8 px-3 py-1.5 text-xs font-semibold text-gold-700 transition hover:bg-gold-500/15 disabled:opacity-50 dark:text-gold-200"
+                  >
+                    <BookmarkPlus aria-hidden className="h-3.5 w-3.5" />
+                    {saving ? 'Saving…' : 'Save as a new trip'}
+                  </button>
+                ) : (
+                  <p className="text-center text-[11px] text-muted">
+                    Sign in to save this as a trip.
+                  </p>
+                )}
+                {saveErr ? <p className="text-center text-[11px] text-danger">{saveErr}</p> : null}
               </div>
             ) : null}
 
