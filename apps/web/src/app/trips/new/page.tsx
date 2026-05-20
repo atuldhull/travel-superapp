@@ -37,6 +37,7 @@ import {
   type FrequentLocation,
 } from '../../../lib/frequent-locations';
 import { CONTINENTS, DESTINATIONS } from '../../../data/destinations';
+import { reverseGeocodeCountryCode } from '../../../lib/geocode';
 
 const MapPicker = dynamic(() => import('../../../components/map-picker').then((m) => m.MapPicker), {
   ssr: false,
@@ -221,6 +222,112 @@ export default function NewTripPage() {
   // F19 — track the last auto-filled title so picking a NEW destination
   // refreshes the title only when the user hasn't typed their own.
   const [lastAutoTitle, setLastAutoTitle] = useState<string | null>(null);
+
+  // F24 + F25 — destination context. Reverse-geocodes the picked
+  // coords once we have them, then fires two cheap fetches:
+  //   - climate (if startsOn is within Open-Meteo's 16-day horizon)
+  //   - visa + top scams (country primer; curated subset)
+  // All optional + honest fallbacks — nothing renders without data.
+  interface DestContext {
+    readonly countryCode: string;
+    readonly visaInfo: string | null;
+    readonly topScams: readonly string[];
+    readonly forecast: {
+      readonly date: string;
+      readonly maxC: number;
+      readonly minC: number;
+      readonly precipPct: number | null;
+    } | null;
+    readonly forecastDeferred: boolean; // startsOn beyond the 16-day horizon
+  }
+  const [destContext, setDestContext] = useState<DestContext | null>(null);
+
+  useEffect(() => {
+    const latN = Number(lat);
+    const lngN = Number(lng);
+    if (!Number.isFinite(latN) || !Number.isFinite(lngN)) {
+      setDestContext(null);
+      return;
+    }
+    let alive = true;
+    void (async () => {
+      try {
+        const cc = await reverseGeocodeCountryCode(latN, lngN);
+        if (!alive) return;
+        if (!cc) {
+          setDestContext(null);
+          return;
+        }
+        // Country primer (visa + scams) — auth-gated, may 404 for
+        // un-seeded countries. Forecast — public, 16-day max.
+        const horizonDays = (() => {
+          if (!startsOn) return null;
+          const target = new Date(`${startsOn}T00:00:00`).getTime();
+          if (!Number.isFinite(target)) return null;
+          return Math.round((target - Date.now()) / 86_400_000);
+        })();
+        const wantForecast = horizonDays !== null && horizonDays >= 0 && horizonDays <= 16;
+        const forecastDeferred = horizonDays !== null && horizonDays > 16;
+        const days = wantForecast && horizonDays !== null ? Math.max(1, horizonDays + 1) : 0;
+        const [primerR, forecastR] = await Promise.allSettled([
+          apiFetch<{
+            data: { visaInfo?: string; topScamCategories?: readonly string[] };
+            status: number;
+            headers: Headers;
+          }>(`/api/v1/safety/country-primer/${cc}`, { method: 'GET' }),
+          wantForecast
+            ? apiFetch<{
+                data: {
+                  days?: ReadonlyArray<{
+                    date?: string;
+                    maxTempC?: number;
+                    minTempC?: number;
+                    precipitationProbabilityPercent?: number | null;
+                  }>;
+                };
+                status: number;
+                headers: Headers;
+              }>(`/api/v1/weather/forecast?lat=${latN}&lng=${lngN}&days=${days}`, { method: 'GET' })
+            : Promise.resolve(null),
+        ]);
+        if (!alive) return;
+        const primer =
+          primerR.status === 'fulfilled' && primerR.value.data ? primerR.value.data : null;
+        let forecast: DestContext['forecast'] = null;
+        if (forecastR.status === 'fulfilled' && forecastR.value) {
+          const allDays = forecastR.value.data?.days ?? [];
+          // Find the day matching startsOn (Open-Meteo emits ISO
+          // dates "YYYY-MM-DD" anchored to provider TZ).
+          const match = allDays.find((d) => d.date === startsOn);
+          if (match && typeof match.maxTempC === 'number' && typeof match.minTempC === 'number') {
+            forecast = {
+              date: match.date ?? startsOn,
+              maxC: match.maxTempC,
+              minC: match.minTempC,
+              precipPct:
+                typeof match.precipitationProbabilityPercent === 'number'
+                  ? match.precipitationProbabilityPercent
+                  : null,
+            };
+          }
+        }
+        setDestContext({
+          countryCode: cc,
+          visaInfo: typeof primer?.visaInfo === 'string' ? primer.visaInfo : null,
+          topScams: Array.isArray(primer?.topScamCategories)
+            ? (primer.topScamCategories as readonly string[]).slice(0, 4)
+            : [],
+          forecast,
+          forecastDeferred,
+        });
+      } catch {
+        if (alive) setDestContext(null);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [lat, lng, startsOn]);
 
   function toggleConstraint(k: string) {
     setConstraintKeys((cur) => (cur.includes(k) ? cur.filter((x) => x !== k) : [...cur, k]));
@@ -744,6 +851,63 @@ export default function NewTripPage() {
             />
           </div>
         </div>
+
+        {/* F24 + F25 — destination context. Only renders when there's
+            anything honest to show (visa / scams / forecast). */}
+        {destContext &&
+        (destContext.visaInfo ||
+          destContext.topScams.length > 0 ||
+          destContext.forecast ||
+          destContext.forecastDeferred) ? (
+          <section className="space-y-3 rounded-xl border border-brand/15 bg-brand/[0.03] p-4">
+            <span className="block text-sm font-medium text-surface-foreground">
+              About this destination <span className="text-muted">({destContext.countryCode})</span>
+            </span>
+            {destContext.forecast ? (
+              <p className="text-xs text-muted">
+                <span className="font-medium text-surface-foreground">
+                  Forecast for {destContext.forecast.date}:
+                </span>{' '}
+                {Math.round(destContext.forecast.maxC)}° / {Math.round(destContext.forecast.minC)}°
+                {destContext.forecast.precipPct !== null && destContext.forecast.precipPct > 0
+                  ? ` · ${destContext.forecast.precipPct}% rain chance`
+                  : ''}
+                {destContext.forecast.precipPct !== null && destContext.forecast.precipPct >= 60 ? (
+                  <span className="ml-1 text-amber-600 dark:text-amber-400">
+                    — pack a rain jacket.
+                  </span>
+                ) : null}
+              </p>
+            ) : destContext.forecastDeferred ? (
+              <p className="text-xs text-muted">
+                We&apos;ll show the live forecast here once your trip is within 16 days.
+              </p>
+            ) : null}
+            {destContext.visaInfo ? (
+              <p className="text-xs text-muted">
+                <span className="font-medium text-surface-foreground">Visa:</span>{' '}
+                {destContext.visaInfo}
+              </p>
+            ) : null}
+            {destContext.topScams.length > 0 ? (
+              <div className="space-y-1.5">
+                <span className="block text-xs font-medium uppercase tracking-wide text-muted">
+                  Watch out for
+                </span>
+                <ul className="flex flex-wrap gap-1.5">
+                  {destContext.topScams.map((scam) => (
+                    <li
+                      key={scam}
+                      className="inline-flex items-center rounded-full border border-gold-600/20 bg-gold-500/5 px-2.5 py-0.5 text-xs text-surface-foreground"
+                    >
+                      {scam}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </section>
+        ) : null}
 
         {/* F12 — How you like to travel. All optional; each selection
             folds into buildInstruction() so the AI plan reflects them. */}
