@@ -321,7 +321,7 @@ export default function HomePage() {
     { query: { enabled: token !== null } },
   );
 
-  const { current, upcoming } = useMemo(() => {
+  const { current, upcoming, past } = useMemo(() => {
     const env = tripsQuery.data as
       | { data?: { trips?: unknown[]; collaborated?: unknown[] } }
       | undefined;
@@ -348,7 +348,16 @@ export default function HomePage() {
         return t.startsOn !== null && new Date(t.startsOn).getTime() > today;
       })
       .sort((a, b) => new Date(a.startsOn).getTime() - new Date(b.startsOn).getTime());
-    return { current: cur[0] ?? null, upcoming: up.slice(0, 3) };
+    // H6 — past trips for the memory timeline. endsOn < today
+    // (started + finished). Sorted most-recently-ended first; capped
+    // at 6 so the strip doesn't overflow.
+    const pastTrips = trips
+      .filter((t): t is HubTrip & { startsOn: string; endsOn: string } => {
+        return t.startsOn !== null && t.endsOn !== null && new Date(t.endsOn).getTime() < today;
+      })
+      .sort((a, b) => new Date(b.endsOn).getTime() - new Date(a.endsOn).getTime())
+      .slice(0, 6);
+    return { current: cur[0] ?? null, upcoming: up.slice(0, 3), past: pastTrips };
   }, [tripsQuery.data]);
 
   // D3 — live snapshot for the journal + social cards. Plain async
@@ -936,6 +945,53 @@ export default function HomePage() {
           </Link>
         </Card>
       </section>
+
+      {/* H6 — Memory timeline. Horizontal strip of past trips,
+          most-recently-ended first, each linking into its cinematic
+          recap (/trips/[id]/recap). Section only renders when there
+          IS at least one past trip — honest, never empty-padded. */}
+      {past.length > 0 ? (
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted">
+              Your travel memories
+            </h2>
+            <Link
+              href="/trips"
+              className="text-xs font-medium text-gold-600 underline-offset-4 transition hover:underline"
+            >
+              All trips →
+            </Link>
+          </div>
+          <ul
+            className="flex gap-3 overflow-x-auto pb-2"
+            // Mild snap behaviour so phones flick neatly between cards.
+            style={{ scrollSnapType: 'x mandatory' }}
+          >
+            {past.map((t) => (
+              <li
+                key={t.id}
+                className="shrink-0 basis-64 sm:basis-72"
+                style={{ scrollSnapAlign: 'start' }}
+              >
+                <Card depth="raised" interactive className="h-full">
+                  <Link href={`/trips/${t.id}/recap` as never} className="block p-5">
+                    <p className="inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gold-600">
+                      <Sparkles aria-hidden className="h-3.5 w-3.5" /> Recap
+                    </p>
+                    <p className="mt-1 line-clamp-2 font-display text-lg font-semibold tracking-tight text-surface-foreground">
+                      {t.title}
+                    </p>
+                    <p className="mt-1 text-xs text-muted">
+                      {fmtDate(t.startsOn)} – {fmtDate(t.endsOn)}
+                    </p>
+                  </Link>
+                </Card>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {/* F23 — unread inbox preview. Only renders when there's
           something unread. */}
