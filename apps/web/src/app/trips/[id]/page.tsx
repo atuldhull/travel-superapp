@@ -67,6 +67,7 @@ import { ShareList } from '../../../components/trip/share-list';
 import { VoteButtons } from '../../../components/trip/vote-buttons';
 import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
 import { useTripCenter } from '../../../lib/use-trip-center';
+import { coerceTripDate } from '../../../lib/trip-dto';
 import { openAssistantWith } from '../../../components/assistant/global-assistant';
 
 interface ApiError extends Error {
@@ -471,14 +472,17 @@ function ReadView({
         ) : null}
       </CardHeader>
       <p className="text-sm text-muted">
-        {trip.startsOn && trip.endsOn ? (
-          <>
-            {new Date(trip.startsOn as unknown as string).toLocaleDateString()} →{' '}
-            {new Date(trip.endsOn as unknown as string).toLocaleDateString()}
-          </>
-        ) : (
-          'No dates yet'
-        )}
+        {(() => {
+          const starts = coerceTripDate(trip.startsOn);
+          const ends = coerceTripDate(trip.endsOn);
+          return starts && ends ? (
+            <>
+              {new Date(starts).toLocaleDateString()} → {new Date(ends).toLocaleDateString()}
+            </>
+          ) : (
+            'No dates yet'
+          );
+        })()}
       </p>
       <p className="mt-2 text-xs text-muted">
         Created {new Date(trip.createdAt).toLocaleString()} · Updated{' '}
@@ -499,12 +503,8 @@ interface EditFormProps {
 function EditForm({ trip, onSubmit, onCancel, isPending, errorMsg }: EditFormProps) {
   const [title, setTitle] = useState(trip.title);
   const [radiusKm, setRadiusKm] = useState(String(trip.radiusKm));
-  const [startsOn, setStartsOn] = useState(
-    trip.startsOn ? (trip.startsOn as unknown as string).slice(0, 10) : '',
-  );
-  const [endsOn, setEndsOn] = useState(
-    trip.endsOn ? (trip.endsOn as unknown as string).slice(0, 10) : '',
-  );
+  const [startsOn, setStartsOn] = useState((coerceTripDate(trip.startsOn) ?? '').slice(0, 10));
+  const [endsOn, setEndsOn] = useState((coerceTripDate(trip.endsOn) ?? '').slice(0, 10));
 
   function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -512,8 +512,8 @@ function EditForm({ trip, onSubmit, onCancel, isPending, errorMsg }: EditFormPro
     if (title !== trip.title) patch.title = title;
     const r = Number(radiusKm);
     if (Number.isFinite(r) && r !== trip.radiusKm) patch.radiusKm = r;
-    const oldStarts = trip.startsOn ? (trip.startsOn as unknown as string).slice(0, 10) : '';
-    const oldEnds = trip.endsOn ? (trip.endsOn as unknown as string).slice(0, 10) : '';
+    const oldStarts = (coerceTripDate(trip.startsOn) ?? '').slice(0, 10);
+    const oldEnds = (coerceTripDate(trip.endsOn) ?? '').slice(0, 10);
     // Orval emits nullable date-time fields as `{[key:string]:unknown}|null`
     // (its understanding of nullable+format is limited). Cast through unknown.
     if (startsOn !== oldStarts) {
