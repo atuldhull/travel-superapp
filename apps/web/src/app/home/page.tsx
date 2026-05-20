@@ -1,15 +1,20 @@
 /**
- * /home — the signed-in homepage hub (Phase 2, D1).
+ * /home — the signed-in homepage hub (Phase 2, D1+).
  *
  * A calm, premium dashboard with the sections the spec asked for:
  * Current Trip · Upcoming Trips · Create Trip · Log Book · Explore
- * Friends' Trips · Latest News · Help/Alerts/Emergencies · Settings.
+ * Friends' Trips · Live Weather · Help/Alerts/Emergencies · Settings.
  *
  * Honest data: Current/Upcoming are derived from the real trips list
- * (owned + collaborated). Sections without a backend yet (destination
- * "Latest News" — there is no news source) show an honest "coming
- * soon" tile, never fabricated headlines. Protected like the other
- * member surfaces; signed-out `/` stays the marketing landing.
+ * (owned + collaborated). Weather is real (Open-Meteo via the trip
+ * overview endpoint) for the active or next-up trip and degrades
+ * calmly when the upstream is unreachable. The current-trip card has
+ * a "Plan with AI" button that pre-seeds the global assistant with
+ * the trip's context. The page sits over a subtle ambient backdrop
+ * (HubAmbient — D6, CSS-only, reduced-motion safe).
+ *
+ * Protected like the other member surfaces; signed-out `/` stays
+ * the marketing landing.
  *
  * Installed for Phase 2 — Homepage hub.
  */
@@ -51,6 +56,7 @@ import {
   type GamificationView,
 } from '../../lib/two-oh-api';
 import { openAssistantWith } from '../../components/assistant/global-assistant';
+import { HubAmbient } from '../../components/home/hub-ambient';
 
 // The generated TripDto types startsOn/endsOn as a branded union
 // (`string | object`), so read defensively into a clean local shape.
@@ -304,6 +310,7 @@ export default function HomePage() {
 
   return (
     <main className="space-y-8">
+      <HubAmbient />
       <motion.header
         initial={reduce ? false : { opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
