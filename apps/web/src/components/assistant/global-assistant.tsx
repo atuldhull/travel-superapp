@@ -249,6 +249,14 @@ export function GlobalAssistant() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // F13 — track the provider + token usage of the most recent
+  // response so we can surface a calm "powered by …" badge.
+  const [meta, setMeta] = useState<{
+    provider: string;
+    inputTokens?: number;
+    outputTokens?: number;
+  } | null>(null);
+
   async function generate(
     title: string,
     center: { lat: number; lng: number },
@@ -268,9 +276,31 @@ export function GlobalAssistant() {
         ...(instruction ? { instruction, priorPlan: ctxRef.current?.plan ?? '' } : {}),
       }),
     });
-    const p: unknown = res.data?.plan;
+    const d = res.data;
+    const p: unknown = d?.plan;
+    if (d?.provider) {
+      setMeta({
+        provider: d.provider,
+        ...(d.tokenUsage?.inputTokens !== undefined
+          ? { inputTokens: d.tokenUsage.inputTokens }
+          : {}),
+        ...(d.tokenUsage?.outputTokens !== undefined
+          ? { outputTokens: d.tokenUsage.outputTokens }
+          : {}),
+      });
+    }
     return typeof p === 'string' ? p : '';
   }
+
+  // F13 — friendly display for the provider id ("anthropic", "gemini",
+  // "ollama", "stub" → human label).
+  const providerLabel = (p: string): string => {
+    if (p === 'anthropic') return 'Claude';
+    if (p === 'gemini') return 'Gemini';
+    if (p === 'ollama') return 'Ollama (local)';
+    if (p === 'stub') return 'Demo mode';
+    return p;
+  };
 
   // F11 — turn the chat's title+center into a real saved trip.
   // Honest: the prose plan in the chat doesn't transfer (no schema
@@ -491,8 +521,23 @@ export function GlobalAssistant() {
                 <Send aria-hidden className="h-4 w-4" />
               </button>
             </form>
-            <p className="px-3 pb-2 text-center text-[10px] text-muted">
-              Plans &amp; refines itineraries — it doesn&apos;t book or change saved trips.
+            <p className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 px-3 pb-2 text-center text-[10px] text-muted">
+              <span>Plans &amp; refines — it doesn&apos;t book or change saved trips.</span>
+              {meta ? (
+                <span
+                  className="inline-flex items-center gap-1 rounded-full border border-gold-600/20 bg-gold-500/8 px-1.5 py-0.5 text-gold-700 dark:text-gold-300"
+                  title={
+                    meta.inputTokens !== undefined && meta.outputTokens !== undefined
+                      ? `Tokens: ${meta.inputTokens} in / ${meta.outputTokens} out`
+                      : undefined
+                  }
+                >
+                  Powered by {providerLabel(meta.provider)}
+                  {meta.outputTokens !== undefined ? (
+                    <span className="text-muted/80">· {meta.outputTokens} out</span>
+                  ) : null}
+                </span>
+              ) : null}
             </p>
           </motion.div>
         )}
