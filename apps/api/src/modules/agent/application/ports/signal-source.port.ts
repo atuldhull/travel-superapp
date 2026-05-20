@@ -17,6 +17,13 @@ export interface SignalSourceQuery {
   readonly kind: SignalKind;
   readonly lat: number;
   readonly lng: number;
+  /**
+   * Phase 3 (G5) — optional ISO date for the `deadline` kind. NOT
+   * PII (it's a trip date, same class as lat/lng). Other kinds may
+   * ignore it. Absence is honest: the deadline adapter returns
+   * `{ changed: false }` when this isn't supplied.
+   */
+  readonly tripStartsOnIso?: string;
 }
 
 export interface SignalSnapshot {
