@@ -26,15 +26,20 @@ import {
   Check,
   Copy,
   MessageCircle,
+  Mic,
+  MicOff,
   RotateCcw,
   Send,
   Sparkles,
+  Volume2,
+  VolumeX,
   X,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { apiFetch, type GenerateSamplePlanResponseDto } from '@app/sdk';
 import { searchPlaces } from '../../lib/geocode';
 import { useAuthToken } from '../../lib/use-auth-token';
+import { useSpeechRecognition, useSpeechSynthesis } from '../../lib/use-speech';
 
 interface Msg {
   readonly role: 'you' | 'ai';
@@ -61,6 +66,29 @@ const WELCOME_MSG: Msg = {
 // (chat was a few days old; users lose one conversation, not data).
 const STORAGE_PREFIX = 'travel:global-assistant:v2:';
 const MAX_PERSIST_MSGS = 50;
+
+// H4 — voice-output (read AI responses aloud) preference.
+// Off by default — users opt in explicitly.
+const TTS_PREF_KEY = 'travel:global-assistant:tts:v1';
+
+function loadTtsPref(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return window.localStorage.getItem(TTS_PREF_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function saveTtsPref(on: boolean): void {
+  if (typeof window === 'undefined') return;
+  try {
+    if (on) window.localStorage.setItem(TTS_PREF_KEY, '1');
+    else window.localStorage.removeItem(TTS_PREF_KEY);
+  } catch {
+    // no-op — pref just won't persist this session
+  }
+}
 
 function storageKey(tripId: string | null): string {
   return STORAGE_PREFIX + (tripId ?? 'general');
@@ -332,6 +360,44 @@ export function GlobalAssistant() {
   // (tracks the last-copied index, reverts the icon back to Copy
   // after a 1.5s delay).
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+
+  // H3 — voice input. Push-to-talk on the Mic button. Recogniser
+  // pastes the final transcript into the input field; the user
+  // presses Send (or hits Enter) to submit. We deliberately don't
+  // auto-submit — it's an honest "tell me what to type" UX, not a
+  // "tell me what to do" agent.
+  const speechIn = useSpeechRecognition({
+    onFinal: (text) => {
+      setInput((cur) => (cur.trim().length === 0 ? text : `${cur} ${text}`));
+    },
+  });
+
+  // H4 — voice output. Toggle in the header reads new AI messages
+  // aloud via SpeechSynthesis. Preference persisted in localStorage
+  // (`TTS_PREF_KEY`). Off by default; honest fallback when the API
+  // is missing (toggle hides).
+  const speechOut = useSpeechSynthesis();
+  const [ttsOn, setTtsOn] = useState(false);
+  useEffect(() => {
+    setTtsOn(loadTtsPref());
+  }, []);
+  useEffect(() => {
+    saveTtsPref(ttsOn);
+    if (!ttsOn) speechOut.cancel();
+  }, [ttsOn, speechOut]);
+
+  // Read the LATEST AI message aloud when TTS is on. Skipped when
+  // it's the persisted welcome (the very first render's msg).
+  const lastSpokenRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!ttsOn || !speechOut.supported || !open) return;
+    const last = msgs[msgs.length - 1];
+    if (!last || last.role !== 'ai') return;
+    // Don't re-speak the same message on every re-render.
+    if (lastSpokenRef.current === last.text) return;
+    lastSpokenRef.current = last.text;
+    speechOut.speak(last.text);
+  }, [ttsOn, speechOut, msgs, open]);
   async function copyMsg(text: string, idx: number) {
     try {
       if (typeof navigator === 'undefined' || !navigator.clipboard) return;
@@ -503,6 +569,22 @@ export function GlobalAssistant() {
                 <MessageCircle aria-hidden className="h-4 w-4 text-gold-300" /> Travel assistant
               </span>
               <div className="flex items-center gap-1">
+                {speechOut.supported ? (
+                  <button
+                    type="button"
+                    onClick={() => setTtsOn((v) => !v)}
+                    aria-pressed={ttsOn}
+                    aria-label={ttsOn ? 'Stop reading replies aloud' : 'Read replies aloud'}
+                    title={ttsOn ? 'Read aloud: on' : 'Read aloud: off'}
+                    className="rounded-full p-1 text-white/70 transition hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  >
+                    {ttsOn ? (
+                      <Volume2 aria-hidden className="h-4 w-4" />
+                    ) : (
+                      <VolumeX aria-hidden className="h-4 w-4" />
+                    )}
+                  </button>
+                ) : null}
                 {msgs.length > 1 || phase !== 'ask-place' ? (
                   <button
                     type="button"
@@ -616,9 +698,36 @@ export function GlobalAssistant() {
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder={phase === 'ask-place' ? 'e.g. Lisbon, Portugal' : 'Ask to tweak it…'}
+                placeholder={
+                  speechIn.listening
+                    ? speechIn.interim || 'Listening…'
+                    : phase === 'ask-place'
+                      ? 'e.g. Lisbon, Portugal'
+                      : 'Ask to tweak it…'
+                }
                 className="min-w-0 flex-1 rounded-xl border border-gold-600/20 bg-surface px-3 py-2 text-sm text-surface-foreground outline-none transition placeholder:text-muted/70 focus-visible:border-gold-600/50 focus-visible:ring-2 focus-visible:ring-accent"
               />
+              {speechIn.supported ? (
+                <button
+                  type="button"
+                  onClick={() => (speechIn.listening ? speechIn.stop() : speechIn.start())}
+                  aria-pressed={speechIn.listening}
+                  aria-label={speechIn.listening ? 'Stop voice input' : 'Voice input'}
+                  title={speechIn.listening ? 'Stop listening' : 'Voice input'}
+                  className={
+                    'grid h-9 w-9 shrink-0 place-items-center rounded-xl border transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ' +
+                    (speechIn.listening
+                      ? 'animate-pulse border-red-500/60 bg-red-500/15 text-red-600 dark:text-red-400'
+                      : 'border-gold-600/20 text-muted hover:border-gold-600/40 hover:text-surface-foreground')
+                  }
+                >
+                  {speechIn.listening ? (
+                    <MicOff aria-hidden className="h-4 w-4" />
+                  ) : (
+                    <Mic aria-hidden className="h-4 w-4" />
+                  )}
+                </button>
+              ) : null}
               <button
                 type="submit"
                 disabled={busy || !input.trim()}
