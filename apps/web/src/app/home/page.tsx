@@ -85,6 +85,7 @@ import {
 } from '../../lib/two-oh-api';
 import { openAssistantWith } from '../../components/assistant/global-assistant';
 import { HubAmbient, pickAmbientMood, type AmbientMood } from '../../components/home/hub-ambient';
+import { CompanionNudges, type CompanionContext } from '../../components/home/companion-nudges';
 import { toHubTripView, type HubTripView } from '../../lib/trip-dto';
 import { useTripCenter } from '../../lib/use-trip-center';
 
@@ -632,6 +633,33 @@ export default function HomePage() {
     return { dayIdx, totalDays };
   }, [current]);
 
+  // H2 — Companion nudges context. All optional; the component
+  // only renders nudges whose data is genuinely available. Depends
+  // on dayProgress + todayPlan declared above; this block stays
+  // below them.
+  const companionCtx = useMemo<CompanionContext>(() => {
+    const targetTrip = current ?? upcoming[0] ?? null;
+    const daysUntilStart = !current && upcoming[0] ? daysUntil(upcoming[0].startsOn) : null;
+    const firstForecastDay =
+      weather.kind === 'ok' && weather.days.length > 0
+        ? {
+            maxC: weather.days[0]!.maxC,
+            minC: weather.days[0]!.minC,
+            precipPct: weather.days[0]!.precipPct,
+          }
+        : null;
+    return {
+      daysUntilStart,
+      dayProgressIdx: dayProgress?.dayIdx ?? null,
+      dayProgressTotal: dayProgress?.totalDays ?? null,
+      completedCount: todayPlan?.completedCount ?? null,
+      itemCount: todayPlan?.itemCount ?? null,
+      firstForecastDay,
+      tripTitle: targetTrip?.title ?? null,
+      tripId: targetTrip?.id ?? null,
+    };
+  }, [current, upcoming, weather, dayProgress, todayPlan]);
+
   if (!bootComplete || token === null) {
     return (
       <main>
@@ -643,6 +671,7 @@ export default function HomePage() {
   return (
     <main className="space-y-8">
       <HubAmbient mood={ambientMood} />
+      <CompanionNudges ctx={companionCtx} />
       <motion.header
         initial={reduce ? false : { opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
