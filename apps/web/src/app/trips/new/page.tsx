@@ -97,6 +97,19 @@ function nightsBetween(s: string, e: string): number | null {
   return Math.round(ms / 86_400_000);
 }
 
+// E6 — derive endsOn from startsOn + N nights. Pure: bad input → null.
+const MIN_NIGHTS = 1;
+const MAX_NIGHTS = 30;
+function addNights(startsOn: string, nights: number): string | null {
+  if (!startsOn) return null;
+  const n = Math.round(nights);
+  if (!Number.isFinite(n) || n < MIN_NIGHTS || n > MAX_NIGHTS) return null;
+  const d = new Date(`${startsOn}T00:00:00`);
+  if (!Number.isFinite(d.getTime())) return null;
+  d.setDate(d.getDate() + n);
+  return toIsoDate(d);
+}
+
 interface PrefsLike {
   travelAura?: string | null;
   travelInterests?: unknown;
@@ -185,6 +198,36 @@ export default function NewTripPage() {
     const { startsOn: s, endsOn: e } = computeDurationPreset(p);
     setStartsOn(s);
     setEndsOn(e);
+  }
+
+  // E6 — typed Nights input. Empty → clear endsOn but keep startsOn
+  // (lets the user re-pick); valid value + startsOn → derive endsOn;
+  // valid value without startsOn → keep the digits typed but no-op
+  // on endsOn until they set a start.
+  function onNightsChange(value: string) {
+    const trimmed = value.trim();
+    if (trimmed === '') {
+      setEndsOn('');
+      return;
+    }
+    const n = Number(trimmed);
+    if (!Number.isInteger(n)) return;
+    const clamped = Math.min(MAX_NIGHTS, Math.max(MIN_NIGHTS, n));
+    if (!startsOn) return;
+    const next = addNights(startsOn, clamped);
+    if (next) setEndsOn(next);
+  }
+
+  // E6 — when the start date changes and we have a current nights
+  // value, slide endsOn to keep that length. Honest: if the user
+  // hadn't set a nights count yet, we don't invent one.
+  function onStartsOnChange(value: string) {
+    setStartsOn(value);
+    const cur = nightsBetween(startsOn, endsOn);
+    if (value && cur !== null) {
+      const next = addNights(value, cur);
+      if (next) setEndsOn(next);
+    }
   }
 
   function applyFrequentLocation(loc: FrequentLocation) {
@@ -532,12 +575,26 @@ export default function NewTripPage() {
               );
             })}
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-3">
             <Field
               label="Starts on (optional)"
               type="date"
               value={startsOn}
-              onChange={(e) => setStartsOn(e.target.value)}
+              onChange={(e) => onStartsOnChange(e.target.value)}
+            />
+            <Field
+              label="Nights"
+              type="number"
+              step={1}
+              min={MIN_NIGHTS}
+              max={MAX_NIGHTS}
+              value={nights ?? ''}
+              onChange={(e) => onNightsChange(e.target.value)}
+              help={
+                startsOn
+                  ? `1..${MAX_NIGHTS} · ends ${nights ? (addNights(startsOn, nights) ?? '—') : '—'}`
+                  : 'Set a start date to derive the end.'
+              }
             />
             <Field
               label="Ends on (optional)"
