@@ -57,28 +57,12 @@ import {
 } from '../../lib/two-oh-api';
 import { openAssistantWith } from '../../components/assistant/global-assistant';
 import { HubAmbient } from '../../components/home/hub-ambient';
+import { toHubTripView, type HubTripView } from '../../lib/trip-dto';
 
-// The generated TripDto types startsOn/endsOn as a branded union
-// (`string | object`), so read defensively into a clean local shape.
-interface HubTrip {
-  readonly id: string;
-  readonly title: string;
-  readonly startsOn: string | null;
-  readonly endsOn: string | null;
-}
-
-function str(v: unknown): string | null {
-  return typeof v === 'string' && v.length > 0 ? v : null;
-}
-
-function toHubTrip(row: unknown): HubTrip | null {
-  if (typeof row !== 'object' || row === null) return null;
-  const o = row as Record<string, unknown>;
-  const id = str(o['id']);
-  const title = str(o['title']);
-  if (!id || !title) return null;
-  return { id, title, startsOn: str(o['startsOn']), endsOn: str(o['endsOn']) };
-}
+// Local alias keeps the per-file callsites short while reading from
+// the shared lib (Phase 2 polish F4 — same coercion now used by /trips).
+type HubTrip = HubTripView;
+const toHubTrip = toHubTripView;
 
 function startOfToday(): number {
   const d = new Date();
