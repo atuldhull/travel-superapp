@@ -32,7 +32,11 @@ export function AuraNudge() {
   useEffect(() => {
     if (!boot || !token) return;
     // Don't nag inside the auth / setup flow itself.
-    if (pathname && /^\/(login|register|onboarding)/.test(pathname)) return;
+    // F18 — also skip /home: the hub has its own welcome hero +
+    // weather + safety sections, and stacking the nudge on top
+    // makes the first-visit layout busy. Users can still set their
+    // travel style from /trips/new's F8 CTA or from /account.
+    if (pathname && /^\/(login|register|onboarding|home)/.test(pathname)) return;
     try {
       if (window.localStorage.getItem(DISMISS_KEY) === '1') return;
     } catch {
