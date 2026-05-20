@@ -33,6 +33,22 @@ type Phase = 'ask-place' | 'planning' | 'chat';
 const RADIUS_KM = 20;
 const QUICK = ['2 more days', 'Make it cheaper', 'More adventure', 'Slower pace'];
 
+// D5 — imperative entry-point for the homepage hub (and any other
+// surface that already knows the trip context). Calling this opens
+// the panel pre-seeded with {title, center} and skips the ask-place
+// stage. Module-level so callers don't need refs or context.
+//
+// Returns true if the assistant is mounted and accepted the call;
+// false if no instance is currently mounted (e.g. layout not ready).
+type OpenWithArgs = { title: string; center: { lat: number; lng: number } };
+let activeOpener: ((args: OpenWithArgs) => void) | null = null;
+
+export function openAssistantWith(args: OpenWithArgs): boolean {
+  if (!activeOpener) return false;
+  activeOpener(args);
+  return true;
+}
+
 export function GlobalAssistant() {
   const reduce = useReducedMotion();
   const [open, setOpen] = useState(false);
@@ -56,6 +72,44 @@ export function GlobalAssistant() {
   function say(role: Msg['role'], text: string) {
     setMsgs((m) => [...m, { role, text }]);
   }
+
+  // D5 — register the module-level opener while mounted. Note the
+  // closure captures `generate` (stable) and uses functional setters,
+  // so it doesn't go stale across re-renders.
+  useEffect(() => {
+    activeOpener = ({ title, center }) => {
+      setOpen(true);
+      setPhase('planning');
+      ctxRef.current = { title, center, plan: '' };
+      setMsgs([
+        {
+          role: 'ai',
+          text: `Putting together a fresh plan for ${title} — what would you like to focus on?`,
+        },
+      ]);
+      setBusy(true);
+      void (async () => {
+        try {
+          const plan = await generate(title, center);
+          ctxRef.current = { title, center, plan };
+          setPhase('chat');
+          say('ai', plan);
+          say('ai', 'Want to tweak it? e.g. "2 more days", "cheaper", "more adventure".');
+        } catch {
+          say('ai', 'I hit a snag reaching the planner. Try again in a moment, or rephrase.');
+          setPhase('ask-place');
+        } finally {
+          setBusy(false);
+        }
+      })();
+    };
+    return () => {
+      activeOpener = null;
+    };
+    // generate/say are stable closures; intentionally only run once
+    // for the lifetime of this component instance.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function generate(
     title: string,
