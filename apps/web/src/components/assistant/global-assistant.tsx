@@ -314,6 +314,20 @@ export function GlobalAssistant() {
     outputTokens?: number;
   } | null>(null);
 
+  // F15 — Ctrl/Cmd + / toggles the panel from anywhere. Avoids the
+  // bare `/` collision with search-style inputs.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    function onKey(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+        e.preventDefault();
+        setOpen((cur) => !cur);
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   // F14 — copy-to-clipboard for AI messages. Single-message scope
   // (tracks the last-copied index, reverts the icon back to Copy
   // after a 1.5s delay).
@@ -461,7 +475,8 @@ export function GlobalAssistant() {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          aria-label="Open travel assistant"
+          aria-label="Open travel assistant (Ctrl + /)"
+          title="Open travel assistant (Ctrl + /)"
           className="fixed bottom-24 right-4 z-50 inline-flex items-center gap-2 rounded-full border border-gold-500/40 px-4 py-2.5 text-sm font-semibold text-brand-900 shadow-(--shadow-depth-2) transition hover:opacity-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           style={{ backgroundImage: 'var(--gradient-gold)' }}
         >
