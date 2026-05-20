@@ -45,6 +45,55 @@ keystone) land well:
 | D7  | Agent loop cadence         | fixed `setInterval`                         | verified: no cron infra exists             |
 | D8  | Agent scope                | during-trip only                            | tightest, highest-value scope              |
 
+## POST-2.0 — Phase 2 polish (F1-F27, audit-gap closure)
+
+### Phase 2 polish — every audit gap closed (✅ COMPLETE)
+
+- **Date**: 2026-05-20 (across two sessions)
+- **Status**: ✅ DONE. After Phase 2 deep shipped (D1-D6 + E1-E6), an
+  honest audit listed ~55 remaining gaps (🟡 could-have-been-Phase-2,
+  ⛔ Phase-3-6 territory, 🔬 microscopic polish). The 🟡 + 🔬 buckets
+  were closed across F1-F27 (~30 commits); the ⛔ items stay
+  deferred by roadmap.
+- **Honest scope**: voice, recap, multi-thread chat, streaming, mobile/
+  Expo port, /trips/[id] deeper restyle, place-URL paste, template
+  gallery, recurring trips, currency widget, live-ETA, quick-actions
+  FAB, search/jump, illustrations, dark-mode deep audit, sentry
+  config refactor, SDK regen, schema column for instruction — all
+  explicitly NOT shipped and documented in the audit table.
+
+**The full F-train (newest at top):**
+
+- **F26+F27** (`c6e84a2`) — pure unit test for `GetTripCenterUseCase` (4 tests, no DB) + `@ApiResponse` polish for `/center` (200/401/404 with full schema).
+- **F24+F25** (`709046f`) — destination context section on `/trips/new`: forecast (Open-Meteo, 16-day horizon, honest deferred-message otherwise) + visa info + top scams (country primer, curated subset).
+- **F23** (`d69bbe8`) — unread inbox preview on `/home` (top-3 unread via `useNotificationsControllerListMine`, `humanTemplate` fallback, `relativeTime` helper).
+- **F21** (`a94cb4a`) — "What's next today" itinerary glance on the Current Trip card (parses today's items from the SAME overview fetch, no extra network).
+- **F20+F22** (`993b1df`) — trip countdown on Upcoming ("in 3 days") + local destination time on Current Trip (harvested from forecast timezone).
+- **F18+F19** (`5a74254`) — AuraNudge skips `/home`; `MAX_NIGHTS` raised 30→90; `pickDestination` doesn't clobber typed title; past `startsOn` rejected (min attribute + form-level check).
+- **F17** (`97f3044`) — applied F4 `trip-dto` helper to `/trips/[id]` (5 `as unknown as string` reads → `coerceTripDate`; 2 write casts deliberately left for a separate SDK seam).
+- **F16** (`a0506f2`) — e2e for public `POST /trips/sample-plan` (5/5 GREEN with stub planner).
+- **F15** (`7283d11`) — `Ctrl/Cmd + /` global keyboard shortcut to toggle the assistant.
+- **F14** (`d4e4910`) — inline bold/italic markdown render + copy-to-clipboard on AI messages (no deps; tiny tokenizer).
+- **F13** (`9ceacfb`) — "Powered by Claude/Gemini/Ollama/Demo mode" badge + token usage tooltip on the assistant.
+- **F12** (`a66bbd6`) — pace/budget/group/diet+accessibility chips on `/trips/new`, all folded into `buildInstruction()`.
+- **F11** (`09357e8`) — "Save as a new trip" button on the assistant; closes the planner→trip loop.
+- **F10** (`eaf9eca`) — per-trip localStorage keying for the chatbot (`travel:global-assistant:v2:trip:<id>`); switching trips no longer wipes prior chat.
+- **F9** (`b48bc20`) — D5 "Plan with AI" button on `/trips/[id]`; lifted center fetch into a shared `useTripCenter` hook.
+- **F8** (`cb46df8`) — inline "set up travel style" CTA on `/trips/new` when prefs are empty.
+- **F7** (`616bf42`) — real destination safety basics on `/home` (emergency numbers + curated country-primer scam chips, reverse-geocoded ISO).
+- **F6** (`19fd2c8`) — chatbot history persists across page reloads + reset button.
+- **F4** (`c5f8e74`) — `trip-dto` shared helper lifted out of `/home`; applied to `/trips`.
+- **F3** (`156069d`) — weather card refresh on visibility-change + 10-min poll.
+- **F2** (`55ced62`) — decoupled D5 from D4 via new `GET /api/v1/trips/:id/center` route.
+- **F1** (`ac4e5ec`) — e2e for `POST /trips/:id/plan-with-ai` + `/center` (9/9 GREEN with stub planner).
+
+**Verification**: every commit verified — web typecheck GREEN at each
+step; api jest GREEN where applicable (9 + 5 + 4 = 18 new tests
+across F1, F16, F26 with `--runInBand --ci --forceExit`); API
+rebuilt + restarted on :3000 after backend touches. Plain React +
+framer-motion + CSS on web; no new deps; one new API route
+(`GET /trips/:id/center`).
+
 ## POST-2.0 — Phase 1 (Identity) + Phase 2 (Hub + Create-Trip) deep passes
 
 ### Phase 2 — Homepage hub + global AI chatbot + Create-Trip upgrade (✅ COMPLETE)
