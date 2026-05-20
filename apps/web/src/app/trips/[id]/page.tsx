@@ -66,6 +66,8 @@ import { PowerPlannerSection } from '../../../components/trip/power-planner-sect
 import { ShareList } from '../../../components/trip/share-list';
 import { VoteButtons } from '../../../components/trip/vote-buttons';
 import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
+import { useTripCenter } from '../../../lib/use-trip-center';
+import { openAssistantWith } from '../../../components/assistant/global-assistant';
 
 interface ApiError extends Error {
   readonly code?: string;
@@ -351,6 +353,10 @@ function ReadView({
 }: ReadViewProps) {
   const isOwner = role === 'owner';
   const statusVariant: 'neutral' | 'brand' = trip.status === 'draft' ? 'neutral' : 'brand';
+  // F9 — Phase 2 polish: pre-seed the global assistant from THIS
+  // trip's context. Same hook /home uses. Button hides until center
+  // is known (never broken).
+  const tripCenter = useTripCenter(trip.id);
   return (
     <Card>
       <CardHeader>
@@ -378,6 +384,15 @@ function ReadView({
             >
               ✍️ Write diary
             </Link>
+            {tripCenter ? (
+              <button
+                type="button"
+                onClick={() => openAssistantWith({ title: trip.title, center: tripCenter })}
+                className="inline-flex items-center gap-1 rounded-md border border-gold-600/25 px-3 py-1.5 text-sm font-medium text-gold-700 transition hover:bg-gold-500/10 dark:text-gold-300"
+              >
+                ✨ Plan with AI
+              </button>
+            ) : null}
             <Link
               href={`/trips/${trip.id}/overview` as never}
               className="inline-flex items-center gap-1 rounded-md border border-gold-600/25 px-3 py-1.5 text-sm font-medium text-gold-700 transition hover:bg-gold-500/10 dark:text-gold-300"
