@@ -800,8 +800,37 @@ export class TripController {
    * Open-Meteo was down. This route is the dedicated honest source —
    * never coupled to a downstream provider.
    */
+  /**
+   * Tiniest possible read of a trip's PostGIS center — `{ lat, lng }`.
+   * Owner-gated like every other Trip route; a non-owner OR a missing
+   * id collapse to 404 `TRIP_NOT_FOUND` (existence-probe defence).
+   *
+   * Installed for Phase 2 polish (F2) so the /home + /trips/[id]
+   * "Plan with AI" button can seed the global assistant with the
+   * trip context without piggy-backing on the heavyweight weather
+   * forecast inside `/overview`.
+   */
   @ApiOperation({ summary: 'Just the trip center coords. Owner-gated, tiny.' })
-  @ApiResponse({ status: 404, description: 'TRIP_NOT_FOUND.' })
+  @ApiResponse({
+    status: 200,
+    description: 'The PostGIS-backed center as `{ lat, lng }`.',
+    schema: {
+      type: 'object',
+      required: ['lat', 'lng'],
+      properties: {
+        lat: { type: 'number', example: 38.7223 },
+        lng: { type: 'number', example: -9.1393 },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'UNAUTHENTICATED — bearer missing or invalid.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'TRIP_NOT_FOUND — missing trip OR a non-owner (existence-probe defence).',
+  })
   @Get(':id/center')
   @HttpCode(HttpStatus.OK)
   async center(
