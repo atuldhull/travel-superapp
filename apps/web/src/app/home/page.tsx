@@ -1,22 +1,41 @@
 /**
- * /home — the signed-in homepage hub (Phase 2, D1+).
+ * /home — the signed-in homepage hub (Phase 2 D1 + ongoing).
  *
- * A calm, premium dashboard with the sections the spec asked for:
- * Current Trip · Upcoming Trips · Create Trip · Log Book · Explore
- * Friends' Trips · Live Weather · Help/Alerts/Emergencies · Settings.
+ * A calm, premium dashboard the user lands on after sign-in. Every
+ * section is honest about its data source — nothing on this page
+ * is fabricated. Sections (top → bottom):
  *
- * Honest data: Current/Upcoming are derived from the real trips list
- * (owned + collaborated). Weather is real (Open-Meteo via the trip
- * overview endpoint) for the active or next-up trip and degrades
- * calmly when the upstream is unreachable. The current-trip card has
- * a "Plan with AI" button that pre-seeds the global assistant with
- * the trip's context. The page sits over a subtle ambient backdrop
- * (HubAmbient — D6, CSS-only, reduced-motion safe).
+ *   • **Welcome hero** — gradient header, "Plan with AI" entry.
+ *   • **Current Trip** card (D1, F2, F21, F22, G2, G3): live trip
+ *     row with Day-X-of-N (F3 dayProgress), local destination time
+ *     (F22, from the weather forecast's timezone), "What's next
+ *     today" + ETA + ✓ progress (F21/G2, parsed from the same
+ *     overview fetch), and a trip-scoped agent-replan callout (G3).
+ *     The "Plan with AI" button (D5/F2/F9) opens the global assistant
+ *     pre-seeded with this trip's title + center (lifted to
+ *     `useTripCenter`).
+ *   • **Upcoming trips** (D1, F20): list with "in N days" countdown.
+ *   • **Log Book + Friends** (D3): Promise.allSettled snapshot of
+ *     gamification, latest diary entry, and the social feed count.
+ *   • **Weather** (D4, F3): 3-day Open-Meteo forecast for the active
+ *     or next-up trip via `tripControllerOverview` + visibility +
+ *     10-min refresh. Calm "briefly unavailable" fallback.
+ *   • **Local safety basics** (F7): emergency numbers (public) +
+ *     curated country-primer scam chips (auth-gated, may 404 → row
+ *     hides). Reverse-geocoded ISO via Photon → Nominatim fallback.
+ *   • **Unread inbox preview** (F23): top-3 unread, humanised
+ *     templates, relative time. Section hides when empty.
+ *   • **Explore grid**: Create / Navigate / Help / Settings cards.
  *
- * Protected like the other member surfaces; signed-out `/` stays
- * the marketing landing.
+ * Cross-cutting:
+ *   • Defensive TripDto coercion via `lib/trip-dto` (F4).
+ *   • Subtle CSS-only ambient backdrop `<HubAmbient />` (D6).
+ *   • AuraNudge is skipped on /home (F18) — Account hub + the F8
+ *     CTA on /trips/new cover the "set your style" call-out.
+ *   • Protected route; signed-out `/` stays the marketing landing.
  *
- * Installed for Phase 2 — Homepage hub.
+ * Installed for Phase 2 — Homepage hub. Extended through F1-F28 +
+ * G1-G3.
  */
 'use client';
 
