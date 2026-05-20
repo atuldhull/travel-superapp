@@ -408,6 +408,45 @@ export default function HomePage() {
     return items;
   }, [inboxQuery.data]);
 
+  // G3 — surface agent replan proposals for the CURRENT trip as a
+  // prominent callout on the Current Trip card. Reads the same
+  // inbox query the F23 unread-preview consumes (no extra fetch).
+  // Honest: we filter by templateId AND by `payload.context.url`
+  // containing the trip id, so a proposal for trip-A doesn't show
+  // up on trip-B's card.
+  const tripAlert = useMemo<{
+    id: string;
+    subject: string;
+    url: string | null;
+    templateId: string;
+  } | null>(() => {
+    if (!current) return null;
+    const env = inboxQuery.data as { data?: { notifications?: unknown[] } } | undefined;
+    const raw = env?.data?.notifications ?? [];
+    for (const row of raw) {
+      if (!isObj(row)) continue;
+      if (row['archivedAt'] !== null && row['archivedAt'] !== undefined) continue;
+      if (row['read'] === true) continue;
+      const templateId = typeof row['templateId'] === 'string' ? row['templateId'] : '';
+      if (!templateId.includes('replan') && !templateId.includes('trip_agent')) continue;
+      const id = typeof row['id'] === 'string' ? row['id'] : null;
+      if (!id) continue;
+      const payload = isObj(row['payload']) ? row['payload'] : {};
+      const ctx = isObj(payload['context']) ? payload['context'] : {};
+      const url = typeof ctx['url'] === 'string' ? ctx['url'] : null;
+      // Honest scope: trust the alert only when its url points at
+      // this trip. Without a url match we'd risk attaching a stale
+      // alert from a different trip to the current trip's card.
+      if (url && !url.includes(current.id)) continue;
+      const subject =
+        typeof payload['subject'] === 'string' && payload['subject'].length > 0
+          ? payload['subject']
+          : humanTemplate(templateId);
+      return { id, subject, url, templateId };
+    }
+    return null;
+  }, [current, inboxQuery.data]);
+
   // F3 — refresh strategy. Initial fetch + a quiet 10-minute interval
   // + a refresh on tab visibility-change. Open-Meteo doesn't churn
   // by the second; this just keeps a long-open hub from sitting on
@@ -660,6 +699,22 @@ export default function HomePage() {
                   </span>
                 ) : null}
               </div>
+              {/* G3 — agent replan callout. Renders ONLY when the
+                  current trip has an unread agent replan proposal
+                  (matched by url). Links to /agent/runs/[id] if the
+                  payload carried a deep-link, /inbox otherwise. */}
+              {tripAlert ? (
+                <Link
+                  href={(tripAlert.url ?? '/inbox') as never}
+                  className="mt-2 inline-flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 transition hover:bg-amber-500/15 dark:text-amber-300"
+                >
+                  <span aria-hidden>⚠️</span>
+                  <span className="flex-1">
+                    <span className="font-medium">{tripAlert.subject}</span>{' '}
+                    <span className="opacity-80">— tap to review</span>
+                  </span>
+                </Link>
+              ) : null}
             </div>
             <div className="flex flex-wrap gap-2">
               <Link href={`/trips/${current.id}` as never}>
