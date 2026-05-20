@@ -58,6 +58,12 @@ import { DestinationImage } from '../../../../components/ui/destination-image';
 import { useAuthBootComplete, useAuthToken } from '../../../../lib/use-auth-token';
 import { coerceTripDate } from '../../../../lib/trip-dto';
 import { listDiaryEntries, type DiaryEntryDto } from '../../../../lib/two-oh-api';
+import {
+  loadTripSnapshot,
+  saveTripSnapshot,
+  formatSavedAt,
+} from '../../../../lib/offline-trip-cache';
+import { useOnline } from '../../../../lib/use-online';
 
 interface RecapDayItem {
   readonly id: string;
@@ -158,9 +164,18 @@ export default function TripRecapPage() {
   // Composite overview (itinerary days + items) + diary entries —
   // both via apiFetch-direct since the orval-typed `OverviewItineraryDayDtoItemsItem`
   // is opaque (`Record<string, unknown>`). Parse defensively.
+  //
+  // I2 (Phase 6) — mirror the parsed itinerary into the offline
+  // trip-snapshot cache so this page still renders when the network
+  // drops. When BOTH the trip + overview fetches fail, we fall back
+  // to the IDB snapshot and badge the page as "Offline copy".
   const [days, setDays] = useState<readonly RecapDay[]>([]);
   const [diaryEntries, setDiaryEntries] = useState<readonly DiaryEntryDto[]>([]);
   const [loading, setLoading] = useState(true);
+  const [snapshotSavedAt, setSnapshotSavedAt] = useState<number | null>(null);
+  const [renderingFromCache, setRenderingFromCache] = useState(false);
+  const [cachedTrip, setCachedTrip] = useState<TripDto | null>(null);
+  const online = useOnline();
 
   useEffect(() => {
     if (token === null || tripId === '') return;
@@ -172,12 +187,52 @@ export default function TripRecapPage() {
         listDiaryEntries({ tripId, limit: 200 }),
       ]);
       if (!alive) return;
-      if (ov.status === 'fulfilled') setDays(parseRecapDays(ov.value));
+      let parsedDays: readonly RecapDay[] = [];
+      if (ov.status === 'fulfilled') {
+        parsedDays = parseRecapDays(ov.value);
+        setDays(parsedDays);
+      }
       if (diary.status === 'fulfilled') {
         const sorted = [...diary.value.entries].sort((a, b) =>
           a.entryDate.localeCompare(b.entryDate),
         );
         setDiaryEntries(sorted);
+      }
+      // I2 — fall back to the IDB snapshot when overview failed AND
+      // we appear offline. We use the snapshot's overview payload to
+      // recover the day list; diary stays empty offline (intentional —
+      // diary entries can be private and we don't cache them here).
+      if (ov.status === 'rejected') {
+        const snap = await loadTripSnapshot(tripId);
+        if (snap && alive) {
+          setDays(parseRecapDays(snap.overview));
+          setSnapshotSavedAt(snap.savedAt);
+          setRenderingFromCache(true);
+          // Recover trip meta (title + dates) from the cached envelope
+          // so the hero still renders when /trips/:id is unreachable.
+          const cachedT = snap.trip;
+          if (cachedT && typeof cachedT === 'object') {
+            setCachedTrip(cachedT as TripDto);
+          }
+        }
+      } else if (ov.status === 'fulfilled') {
+        // Live data — refresh the snapshot for next time. Fire and
+        // forget; failures inside IDB don't block the UI. We read
+        // trip meta out of the overview response itself (it always
+        // includes `body.trip`) so a parallel /trips/:id error
+        // doesn't poison the snapshot.
+        const env = ov.value as { data?: { trip?: unknown } } | undefined;
+        const tripFromOverview = env?.data?.trip ?? null;
+        const titleFromOverview =
+          isObj(tripFromOverview) && typeof tripFromOverview['title'] === 'string'
+            ? (tripFromOverview['title'] as string)
+            : null;
+        void saveTripSnapshot({
+          tripId,
+          trip: tripFromOverview,
+          overview: ov.value,
+          title: titleFromOverview,
+        });
       }
       setLoading(false);
     })();
@@ -188,8 +243,8 @@ export default function TripRecapPage() {
 
   const trip: TripDto | null = useMemo(() => {
     const env = tripQuery.data as { data?: TripDto } | undefined;
-    return env?.data ?? null;
-  }, [tripQuery.data]);
+    return env?.data ?? cachedTrip ?? null;
+  }, [tripQuery.data, cachedTrip]);
 
   // The generated response is `{ data: { media: MediaAssetDto[] } }`.
   // Honest: MediaAssetDto has NO direct image URL field — bytes are
@@ -248,7 +303,10 @@ export default function TripRecapPage() {
       </main>
     );
   }
-  if (tripQuery.isError) {
+  // When the trip endpoint fails but we have a cached snapshot, still
+  // render the recap from the cache. Without `renderingFromCache`,
+  // there's nothing to show — fall back to the existing error state.
+  if (tripQuery.isError && !renderingFromCache) {
     return (
       <main className="space-y-3">
         <p className="text-sm text-red-600 dark:text-red-400">Couldn&apos;t load this trip.</p>
@@ -296,9 +354,22 @@ export default function TripRecapPage() {
             }}
           />
           <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10">
-            <p className="inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
-              <Sparkles aria-hidden className="h-3.5 w-3.5" /> Your trip recap
-            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+                <Sparkles aria-hidden className="h-3.5 w-3.5" /> Your trip recap
+              </p>
+              {renderingFromCache || !online ? (
+                <p
+                  className="inline-flex items-center gap-1.5 rounded-full border border-white/30 bg-black/30 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm"
+                  title="The network is unreachable. This is the snapshot saved on this device the last time the trip loaded online."
+                >
+                  Offline copy
+                  {snapshotSavedAt
+                    ? ` · saved ${formatSavedAt(snapshotSavedAt) ?? 'a while ago'}`
+                    : null}
+                </p>
+              ) : null}
+            </div>
             <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
               {tripTitle}
             </h1>
