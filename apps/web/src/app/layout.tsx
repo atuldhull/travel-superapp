@@ -30,6 +30,7 @@ import { Logo } from '../components/branding/logo';
 import { Footer } from '../components/landing/footer';
 import { AuraNudge } from '../components/auth/aura-nudge';
 import { GlobalAssistant } from '../components/assistant/global-assistant';
+import { PwaRegister } from '../components/pwa/pwa-register';
 import { Providers } from './providers';
 
 // POST.2 — Inter as the brand typeface. `next/font/google` self-hosts
@@ -57,6 +58,28 @@ const playfair = Playfair_Display({
 export const metadata: Metadata = {
   title: 'TravelSuperApp',
   description: 'Mobile-first, AI-powered travel super-app.',
+  // I1 (Phase 6) — PWA metadata. The manifest lives at /public; the
+  // App Router serves it verbatim. apple-* hints give iOS Safari the
+  // standalone-launch affordances without a separate plist.
+  manifest: '/manifest.webmanifest',
+  applicationName: 'TravelSuperApp',
+  appleWebApp: {
+    capable: true,
+    title: 'Travel',
+    statusBarStyle: 'default',
+  },
+  formatDetection: { telephone: false },
+};
+
+// Next 15 wants theme-color + viewport in their own export. We pair
+// the light + dark theme colors with prefers-color-scheme so the
+// browser chrome (Android URL bar, iOS status bar) matches the
+// active surface — ivory on light, near-black on dark.
+export const viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#fdfcf9' },
+    { media: '(prefers-color-scheme: dark)', color: '#0c0d12' },
+  ],
 };
 
 const themeBootScript = `
@@ -156,6 +179,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               they float above every other element. */}
           <CommandPalette />
           <ShortcutSheet />
+          {/* Phase 6 / I1 — register the service worker for all
+              visitors so the offline fallback page is pre-cached.
+              Renders nothing; runs once on mount via useEffect. */}
+          <PwaRegister />
         </Providers>
       </body>
     </html>

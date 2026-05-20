@@ -1,27 +1,105 @@
 /**
- * V.UX.26 — Web Push service worker.
+ * Service worker — two phases of responsibility stacked in one file:
  *
- * Two responsibilities:
- *   1. `push` — render an OS-level notification from the encrypted
- *      payload the api signed with VAPID. Payload shape mirrors the
- *      `WebPushPayload` interface in `web-push-dispatcher.ts`:
- *          { title, body, url?, templateKey, context }
- *   2. `notificationclick` — focus an existing tab pointed at `url`,
- *      or open a new one. Falls back to the app root.
+ *   1. (V.UX.26) Web Push — render OS-level notifications + focus
+ *      tabs on `notificationclick`. Unchanged from the V.UX.26 ship.
+ *   2. (I1, Phase 6) PWA offline fallback — cache `/offline` on
+ *      install; on a failed navigation, serve that cached page so the
+ *      user lands on a calm "you're offline" surface instead of the
+ *      browser error.
  *
- * Installed by prompt [V.UX.26]. No build step — Next.js serves
- * `apps/web/public/sw.js` verbatim from the same origin.
+ * Honest scope: this SW does NOT proactively pre-cache trip data,
+ * map tiles, or auth-bearing API calls. Trip data + country primer
+ * are cached at the application layer via IndexedDB (I2/I3) so the
+ * pages themselves stay aware of staleness and badge it. Map tiles
+ * already use `OfflineVectorMap` + `offline-region.ts` from /navigate
+ * — the SW does not touch them.
+ *
+ * Installed by [V.UX.26]; offline fallback added by [Phase-6/I1].
+ * Next.js serves `apps/web/public/sw.js` verbatim from the same
+ * origin (port 3001).
  */
 'use strict';
 
+/** Bump the version to force a fresh shell cache on the next visit. */
+const OFFLINE_CACHE = 'travel-app-offline-v1';
+const OFFLINE_URL = '/offline';
+/** Files we want to live in the offline cache so the fallback page
+ *  renders even without the network. /offline is a static HTML route
+ *  Next serves with its CSS already inlined (App Router default). */
+const APP_SHELL = [OFFLINE_URL];
+
 self.addEventListener('install', (event) => {
-  // Activate immediately on first install — no orphan SW from a
-  // prior version sitting around.
-  event.waitUntil(self.skipWaiting());
+  // Pre-cache the offline page and activate immediately on first
+  // install — no orphan SW from a prior version sitting around.
+  event.waitUntil(
+    (async () => {
+      try {
+        const cache = await caches.open(OFFLINE_CACHE);
+        await cache.addAll(APP_SHELL);
+      } catch (_err) {
+        /* offline cache is best-effort — push still works without it */
+      }
+      await self.skipWaiting();
+    })(),
+  );
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+  // Reap stale offline-cache versions; keep only OFFLINE_CACHE.
+  event.waitUntil(
+    (async () => {
+      try {
+        const keys = await caches.keys();
+        await Promise.all(
+          keys
+            .filter((k) => k.startsWith('travel-app-offline-') && k !== OFFLINE_CACHE)
+            .map((k) => caches.delete(k)),
+        );
+      } catch (_err) {
+        /* best-effort cleanup */
+      }
+      await self.clients.claim();
+    })(),
+  );
+});
+
+self.addEventListener('fetch', (event) => {
+  const req = event.request;
+  // Only handle same-origin top-level navigations. API calls
+  // (cross-origin to :3000), assets, and partial fetches stay
+  // untouched — those have their own caching strategy or rely on the
+  // app's online-aware UI states (I2/I3 will mark trips "Offline"
+  // explicitly from the React layer).
+  if (req.mode !== 'navigate') return;
+  if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin) return;
+
+  event.respondWith(
+    (async () => {
+      try {
+        // Network-first so live navigations always get the fresh page.
+        // The 8s timeout keeps us from hanging on a captive portal.
+        const networkResp = await Promise.race([
+          fetch(req),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('sw-network-timeout')), 8000),
+          ),
+        ]);
+        return networkResp;
+      } catch (_err) {
+        const cache = await caches.open(OFFLINE_CACHE);
+        const cached = await cache.match(OFFLINE_URL);
+        if (cached) return cached;
+        // No cached fallback — let the browser render its native error.
+        return new Response(
+          '<!doctype html><meta charset="utf-8"><title>Offline</title><p>You are offline.</p>',
+          { status: 503, headers: { 'content-type': 'text/html; charset=utf-8' } },
+        );
+      }
+    })(),
+  );
 });
 
 self.addEventListener('push', (event) => {
