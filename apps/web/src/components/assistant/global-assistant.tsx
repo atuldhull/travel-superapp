@@ -21,7 +21,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { BookmarkPlus, MessageCircle, RotateCcw, Send, Sparkles, X } from 'lucide-react';
+import {
+  BookmarkPlus,
+  Check,
+  Copy,
+  MessageCircle,
+  RotateCcw,
+  Send,
+  Sparkles,
+  X,
+} from 'lucide-react';
+import type { ReactNode } from 'react';
 import { apiFetch, type GenerateSamplePlanResponseDto } from '@app/sdk';
 import { searchPlaces } from '../../lib/geocode';
 import { useAuthToken } from '../../lib/use-auth-token';
@@ -149,6 +159,53 @@ export function openAssistantWith(args: OpenWithArgs): boolean {
   return true;
 }
 
+// F14 — minimal inline markdown renderer for `**bold**` and
+// `*italic*` / `_italic_`. Honest scope: handles ONLY these inline
+// emphasis patterns + naturally preserves linebreaks via the parent's
+// `whitespace-pre-wrap`. No headings/links/lists — the LLM rarely
+// emits those in itinerary prose and they'd need a real parser.
+//
+// Cheap, deterministic, no deps. Each iteration tokenises the next
+// bold/italic run, emits text + element, repeats. Safety cap at 200
+// iterations guards against any pathological input.
+function renderInlineMd(text: string): ReactNode {
+  const parts: ReactNode[] = [];
+  let rest = text;
+  let key = 0;
+  for (let i = 0; i < 200 && rest.length > 0; i += 1) {
+    const bold = /\*\*([^*\n]+?)\*\*/.exec(rest);
+    const italic = /(?:^|[^*_])([*_])([^*_\n]+?)\1(?![*_])/.exec(rest);
+    let take: { idx: number; len: number; node: ReactNode } | null = null;
+    if (bold && (!italic || bold.index <= italic.index)) {
+      take = {
+        idx: bold.index,
+        len: bold[0].length,
+        node: <strong key={`b${key}`}>{bold[1]}</strong>,
+      };
+    } else if (italic) {
+      // The leading-char guard captures one extra char before the
+      // delimiter — subtract it from idx/len so the surrounding text
+      // is preserved verbatim.
+      const lead = italic[0].startsWith(italic[1] ?? '') ? 0 : 1;
+      take = {
+        idx: italic.index + lead,
+        len: (italic[0]?.length ?? 0) - lead,
+        node: <em key={`i${key}`}>{italic[2]}</em>,
+      };
+    }
+    if (!take) {
+      parts.push(rest);
+      return parts;
+    }
+    if (take.idx > 0) parts.push(rest.slice(0, take.idx));
+    parts.push(take.node);
+    rest = rest.slice(take.idx + take.len);
+    key += 1;
+  }
+  if (rest.length > 0) parts.push(rest);
+  return parts;
+}
+
 export function GlobalAssistant() {
   const reduce = useReducedMotion();
   const router = useRouter();
@@ -256,6 +313,23 @@ export function GlobalAssistant() {
     inputTokens?: number;
     outputTokens?: number;
   } | null>(null);
+
+  // F14 — copy-to-clipboard for AI messages. Single-message scope
+  // (tracks the last-copied index, reverts the icon back to Copy
+  // after a 1.5s delay).
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+  async function copyMsg(text: string, idx: number) {
+    try {
+      if (typeof navigator === 'undefined' || !navigator.clipboard) return;
+      await navigator.clipboard.writeText(text);
+      setCopiedIdx(idx);
+      window.setTimeout(() => {
+        setCopiedIdx((cur) => (cur === idx ? null : cur));
+      }, 1500);
+    } catch {
+      // clipboard blocked → silent no-op (icon stays as Copy)
+    }
+  }
 
   async function generate(
     title: string,
@@ -437,18 +511,37 @@ export function GlobalAssistant() {
             </header>
 
             <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto p-4">
-              {msgs.map((m, i) => (
-                <div
-                  key={i}
-                  className={
-                    m.role === 'you'
-                      ? 'ml-auto max-w-[85%] rounded-2xl rounded-br-sm bg-gold-500/15 px-3 py-2 text-sm text-surface-foreground'
-                      : 'mr-auto max-w-[90%] whitespace-pre-wrap rounded-2xl rounded-bl-sm border border-gold-600/15 bg-surface px-3 py-2 text-sm text-surface-foreground shadow-(--shadow-depth-1)'
-                  }
-                >
-                  {m.text}
-                </div>
-              ))}
+              {msgs.map((m, i) =>
+                m.role === 'you' ? (
+                  <div
+                    key={i}
+                    className="ml-auto max-w-[85%] rounded-2xl rounded-br-sm bg-gold-500/15 px-3 py-2 text-sm text-surface-foreground"
+                  >
+                    {m.text}
+                  </div>
+                ) : (
+                  <div key={i} className="group relative mr-auto max-w-[90%]">
+                    <div className="whitespace-pre-wrap rounded-2xl rounded-bl-sm border border-gold-600/15 bg-surface px-3 py-2 pr-8 text-sm text-surface-foreground shadow-(--shadow-depth-1)">
+                      {renderInlineMd(m.text)}
+                    </div>
+                    {m.text.length > 30 ? (
+                      <button
+                        type="button"
+                        onClick={() => void copyMsg(m.text, i)}
+                        aria-label={copiedIdx === i ? 'Copied' : 'Copy message'}
+                        title={copiedIdx === i ? 'Copied' : 'Copy'}
+                        className="absolute right-1.5 top-1.5 rounded-md p-1 text-muted opacity-0 transition group-hover:opacity-100 hover:bg-gold-500/10 hover:text-gold-700 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent dark:hover:text-gold-300"
+                      >
+                        {copiedIdx === i ? (
+                          <Check aria-hidden className="h-3.5 w-3.5" />
+                        ) : (
+                          <Copy aria-hidden className="h-3.5 w-3.5" />
+                        )}
+                      </button>
+                    ) : null}
+                  </div>
+                ),
+              )}
               {busy ? (
                 <p className="mr-auto inline-flex items-center gap-1.5 rounded-2xl border border-gold-600/15 px-3 py-2 text-sm text-muted">
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-gold-500" />
