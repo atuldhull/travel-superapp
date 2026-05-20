@@ -458,6 +458,11 @@ model ItineraryItem {
   transportMode TransportMode?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+  // Phase 3 (G1) — "living trip" completion checkmarks. Null until
+  // the traveller marks the item done. Set via the dedicated
+  // /trips/:id/itinerary/items/:itemId/complete + …/uncomplete
+  // routes; never mutated by the planner or the day-edit flow.
+  completedAt   DateTime?
 
   @@unique([dayId, position])
   @@index([placeId])

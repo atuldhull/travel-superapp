@@ -119,6 +119,11 @@ export class ItineraryItemDto {
 
   @ApiProperty({ nullable: true })
   declare notes: string | null;
+
+  // Phase 3 (G1) — Living Trip completion mark. Null until the
+  // traveller taps the checkbox on /trips/[id].
+  @ApiProperty({ nullable: true, format: 'date-time' })
+  declare completedAt: string | null;
 }
 
 export class ItineraryDayDto {
