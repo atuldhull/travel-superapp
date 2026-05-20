@@ -154,6 +154,22 @@ export default function NewTripPage() {
     ? (prefs!.travelInterests as unknown[]).filter((x): x is string => typeof x === 'string')
     : [];
 
+  // F8 — has the user actually given us a travel style yet? Aura,
+  // interests, OR any of the 4 modes counts. An "empty" prefs row
+  // (defaults) shows the F8 setup CTA instead of the Personalised
+  // band — the plan still gets generated, we just nudge the user
+  // toward making future trips better.
+  const personalisedParts: string[] = prefs
+    ? [
+        prefs.travelAura ? `style ${prefs.travelAura}` : null,
+        interests.length > 0 ? `${interests.length} interests` : null,
+        prefs.budgetMode ? 'budget' : null,
+        prefs.comfortMode ? 'comfort' : null,
+        prefs.familyMode ? 'family' : null,
+        prefs.nomadMode ? 'nomad' : null,
+      ].filter((s): s is string => s !== null)
+    : [];
+
   // E5 — true cascade: continent(s) → countries within them → that
   // country's famous destinations.
   const countriesForSel = useMemo(() => {
@@ -606,23 +622,25 @@ export default function NewTripPage() {
           </div>
         </div>
 
-        {/* E3 — preferences applied (read-only, folded into the plan) */}
-        {prefs ? (
+        {/* E3 — preferences applied (read-only, folded into the plan).
+            F8 — when prefs is loaded but empty, swap to a calm "set
+            up your travel style" CTA instead of an empty band. */}
+        {prefs && personalisedParts.length > 0 ? (
           <p className="rounded-xl border border-gold-600/20 bg-gold-500/5 px-4 py-2.5 text-xs text-muted">
             <span className="font-medium text-surface-foreground">Personalised:</span>{' '}
-            {[
-              prefs.travelAura ? `style ${prefs.travelAura}` : null,
-              interests.length > 0 ? `${interests.length} interests` : null,
-              prefs.budgetMode ? 'budget' : null,
-              prefs.comfortMode ? 'comfort' : null,
-              prefs.familyMode ? 'family' : null,
-              prefs.nomadMode ? 'nomad' : null,
-            ]
-              .filter(Boolean)
-              .join(' · ') || 'your saved preferences'}{' '}
-            — applied to this itinerary.{' '}
+            {personalisedParts.join(' · ')} — applied to this itinerary.{' '}
             <Link href="/account/preferences" className="text-gold-600 hover:underline">
               Edit
+            </Link>
+          </p>
+        ) : prefs ? (
+          <p className="rounded-xl border border-gold-600/20 bg-gold-500/5 px-4 py-2.5 text-xs text-muted">
+            <span className="font-medium text-surface-foreground">
+              Make this trip more personal:
+            </span>{' '}
+            the AI plans better when it knows your style. Takes about a minute.{' '}
+            <Link href="/onboarding?tour=true" className="text-gold-600 hover:underline">
+              Set your travel style →
             </Link>
           </p>
         ) : null}
