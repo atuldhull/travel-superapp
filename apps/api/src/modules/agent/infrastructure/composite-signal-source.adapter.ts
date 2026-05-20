@@ -24,6 +24,7 @@ import type {
   SignalSource,
   SignalSourceQuery,
 } from '../application/ports/signal-source.port';
+import { DeadlineSignalAdapter } from './deadline-signal.adapter';
 import { WeatherSignalAdapter } from './weather-signal.adapter';
 import { StubSignalAdapter } from './stub-signal.adapter';
 
@@ -31,12 +32,19 @@ import { StubSignalAdapter } from './stub-signal.adapter';
 export class CompositeSignalSource implements SignalSource {
   constructor(
     @Inject(WeatherSignalAdapter) private readonly weather: WeatherSignalAdapter,
+    // Phase 3 (G5) — `deadline` is a pure-data adapter, no network.
+    // Subscribing a watch to this kind stays opt-in (LAW 2: nothing
+    // new fires by default).
+    @Inject(DeadlineSignalAdapter) private readonly deadline: DeadlineSignalAdapter,
     @Inject(StubSignalAdapter) private readonly stub: StubSignalAdapter,
   ) {}
 
   async snapshot(query: SignalSourceQuery): Promise<SignalSnapshot> {
     if (query.kind === 'weather') {
       return this.weather.snapshot(query);
+    }
+    if (query.kind === 'deadline') {
+      return this.deadline.snapshot(query);
     }
     return this.stub.snapshot(query);
   }
