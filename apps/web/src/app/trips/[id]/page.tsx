@@ -387,7 +387,9 @@ function ReadView({
             {tripCenter ? (
               <button
                 type="button"
-                onClick={() => openAssistantWith({ title: trip.title, center: tripCenter })}
+                onClick={() =>
+                  openAssistantWith({ title: trip.title, center: tripCenter, tripId: trip.id })
+                }
                 className="inline-flex items-center gap-1 rounded-md border border-gold-600/25 px-3 py-1.5 text-sm font-medium text-gold-700 transition hover:bg-gold-500/10 dark:text-gold-300"
               >
                 ✨ Plan with AI

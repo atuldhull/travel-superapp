@@ -43,16 +43,23 @@ const WELCOME_MSG: Msg = {
   text: "Hi — I'm your travel planner. Where would you like to go?",
 };
 
-// F6 — persist chat across reloads. Versioned key so a future shape
-// change can break cleanly without parsing old payloads.
-const STORAGE_KEY = 'travel:global-assistant:v1';
+// F6 — persist chat across reloads.
+// F10 — versioned + per-trip-keyed so switching trips doesn't blow
+// away the previous conversation. v1 key is intentionally orphaned
+// (chat was a few days old; users lose one conversation, not data).
+const STORAGE_PREFIX = 'travel:global-assistant:v2:';
 const MAX_PERSIST_MSGS = 50;
 
+function storageKey(tripId: string | null): string {
+  return STORAGE_PREFIX + (tripId ?? 'general');
+}
+
 interface PersistedAssistantState {
-  readonly v: 1;
+  readonly v: 2;
   readonly msgs: readonly Msg[];
   readonly phase: Phase;
   readonly ctx: AssistantCtx | null;
+  readonly tripId: string | null;
 }
 
 function isMsg(v: unknown): v is Msg {
@@ -76,18 +83,19 @@ function isCtx(v: unknown): v is AssistantCtx {
   );
 }
 
-function loadSnapshot(): PersistedAssistantState | null {
+function loadSnapshot(tripId: string | null): PersistedAssistantState | null {
   if (typeof window === 'undefined') return null;
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(storageKey(tripId));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Record<string, unknown>;
-    if (parsed.v !== 1 || !Array.isArray(parsed.msgs)) return null;
+    if (parsed.v !== 2 || !Array.isArray(parsed.msgs)) return null;
     const msgs = parsed.msgs.filter(isMsg);
     const phase: Phase =
       parsed.phase === 'planning' || parsed.phase === 'chat' ? parsed.phase : 'ask-place';
     const ctx: AssistantCtx | null = isCtx(parsed.ctx) ? parsed.ctx : null;
-    return { v: 1, msgs, phase, ctx };
+    const storedTripId = typeof parsed.tripId === 'string' ? parsed.tripId : null;
+    return { v: 2, msgs, phase, ctx, tripId: storedTripId };
   } catch {
     return null;
   }
@@ -100,17 +108,17 @@ function saveSnapshot(state: PersistedAssistantState): void {
       ...state,
       msgs: state.msgs.slice(-MAX_PERSIST_MSGS),
     };
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
+    window.localStorage.setItem(storageKey(state.tripId), JSON.stringify(trimmed));
   } catch {
     // quota, privacy mode, etc. — silently no-op so the chat keeps
     // working in-memory.
   }
 }
 
-function clearSnapshot(): void {
+function clearSnapshot(tripId: string | null): void {
   if (typeof window === 'undefined') return;
   try {
-    window.localStorage.removeItem(STORAGE_KEY);
+    window.localStorage.removeItem(storageKey(tripId));
   } catch {
     // no-op
   }
@@ -121,9 +129,16 @@ function clearSnapshot(): void {
 // the panel pre-seeded with {title, center} and skips the ask-place
 // stage. Module-level so callers don't need refs or context.
 //
+// F10 — optional `tripId` slots the chat under a per-trip localStorage
+// key, so switching trips no longer clobbers a previous conversation.
+//
 // Returns true if the assistant is mounted and accepted the call;
 // false if no instance is currently mounted (e.g. layout not ready).
-type OpenWithArgs = { title: string; center: { lat: number; lng: number } };
+type OpenWithArgs = {
+  title: string;
+  center: { lat: number; lng: number };
+  tripId?: string;
+};
 let activeOpener: ((args: OpenWithArgs) => void) | null = null;
 
 export function openAssistantWith(args: OpenWithArgs): boolean {
@@ -135,14 +150,15 @@ export function openAssistantWith(args: OpenWithArgs): boolean {
 export function GlobalAssistant() {
   const reduce = useReducedMotion();
   // F6 — lazy init from localStorage so a refresh doesn't lose the
-  // conversation. `useMemo` so we read the snapshot exactly once per
-  // mount; falls back to the welcome message + ask-place phase.
-  const initial = useMemo(() => loadSnapshot(), []);
+  // conversation. F10 — boot from the 'general' slot by default; the
+  // opener swaps to a per-trip slot when fired with a tripId.
+  const initial = useMemo(() => loadSnapshot(null), []);
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState<Phase>(initial?.phase ?? 'ask-place');
   const [msgs, setMsgs] = useState<readonly Msg[]>(initial?.msgs ?? [WELCOME_MSG]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
+  const [activeTripId, setActiveTripId] = useState<string | null>(initial?.tripId ?? null);
   const ctxRef = useRef<AssistantCtx | null>(initial?.ctx ?? null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -150,21 +166,20 @@ export function GlobalAssistant() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [msgs, busy]);
 
-  // F6 — persist on every transition. ctxRef is a ref (no re-render
-  // trigger), but every codepath that mutates it also calls a setter
-  // (setPhase / setMsgs via `say`), so this effect fires alongside.
+  // F6 — persist on every transition. F10 — keyed by activeTripId so
+  // each trip's conversation lives in its own localStorage slot.
   useEffect(() => {
-    saveSnapshot({ v: 1, msgs, phase, ctx: ctxRef.current });
-  }, [msgs, phase]);
+    saveSnapshot({ v: 2, msgs, phase, ctx: ctxRef.current, tripId: activeTripId });
+  }, [msgs, phase, activeTripId]);
 
   function say(role: Msg['role'], text: string) {
     setMsgs((m) => [...m, { role, text }]);
   }
 
-  // F6 — reset to a fresh welcome state. Clears localStorage too so a
-  // subsequent refresh doesn't restore the just-cleared chat.
+  // F6 — reset to a fresh welcome state. F10 — only wipes the
+  // currently-active slot; conversations for OTHER trips persist.
   function resetChat() {
-    clearSnapshot();
+    clearSnapshot(activeTripId);
     ctxRef.current = null;
     setPhase('ask-place');
     setMsgs([WELCOME_MSG]);
@@ -172,12 +187,32 @@ export function GlobalAssistant() {
     setBusy(false);
   }
 
-  // D5 — register the module-level opener while mounted. Note the
-  // closure captures `generate` (stable) and uses functional setters,
-  // so it doesn't go stale across re-renders.
+  // D5 — register the module-level opener while mounted. F10 — opener
+  // now switches to the per-trip slot, restoring the conversation if
+  // one exists, otherwise starting fresh with a new plan.
   useEffect(() => {
-    activeOpener = ({ title, center }) => {
+    activeOpener = ({ title, center, tripId }) => {
+      const targetSlot: string | null = tripId ?? null;
+      const existing = loadSnapshot(targetSlot);
+      if (
+        existing &&
+        existing.ctx &&
+        existing.ctx.title === title &&
+        existing.phase === 'chat' &&
+        existing.msgs.length > 0
+      ) {
+        // Same-trip resume — restore the saved conversation in place.
+        setOpen(true);
+        setActiveTripId(targetSlot);
+        ctxRef.current = existing.ctx;
+        setPhase('chat');
+        setMsgs(existing.msgs);
+        setBusy(false);
+        return;
+      }
+      // Different trip OR title changed OR no saved state — start fresh.
       setOpen(true);
+      setActiveTripId(targetSlot);
       setPhase('planning');
       ctxRef.current = { title, center, plan: '' };
       setMsgs([
