@@ -529,14 +529,30 @@ function EditForm({ trip, onSubmit, onCancel, isPending, errorMsg }: EditFormPro
   const [radiusKm, setRadiusKm] = useState(String(trip.radiusKm));
   const [startsOn, setStartsOn] = useState((coerceTripDate(trip.startsOn) ?? '').slice(0, 10));
   const [endsOn, setEndsOn] = useState((coerceTripDate(trip.endsOn) ?? '').slice(0, 10));
+  // G4 — let the user opt in to shifting the existing itinerary by
+  // the same delta when they change startsOn.
+  const [shiftItinerary, setShiftItinerary] = useState(true);
+  const [shiftResult, setShiftResult] = useState<string | null>(null);
+
+  // G4 — compute the delta in whole days so the inline hint can
+  // tell the user exactly what will happen. Null when startsOn
+  // hasn't changed, or either side is unparseable.
+  const oldStarts = (coerceTripDate(trip.startsOn) ?? '').slice(0, 10);
+  const startsOnDelta: number | null = (() => {
+    if (!startsOn || !oldStarts || startsOn === oldStarts) return null;
+    const a = new Date(`${oldStarts}T00:00:00`).getTime();
+    const b = new Date(`${startsOn}T00:00:00`).getTime();
+    if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+    return Math.round((b - a) / 86_400_000);
+  })();
 
   function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setShiftResult(null);
     const patch: UpdateTripRequestDto = {};
     if (title !== trip.title) patch.title = title;
     const r = Number(radiusKm);
     if (Number.isFinite(r) && r !== trip.radiusKm) patch.radiusKm = r;
-    const oldStarts = (coerceTripDate(trip.startsOn) ?? '').slice(0, 10);
     const oldEnds = (coerceTripDate(trip.endsOn) ?? '').slice(0, 10);
     // Orval emits nullable date-time fields as `{[key:string]:unknown}|null`
     // (its understanding of nullable+format is limited). Cast through unknown.
@@ -549,6 +565,28 @@ function EditForm({ trip, onSubmit, onCancel, isPending, errorMsg }: EditFormPro
       patch.endsOn = (endsOn
         ? new Date(endsOn).toISOString()
         : null) as unknown as UpdateTripRequestDto['endsOn'];
+    }
+    // G4 — fire the shift in parallel with the trip update. Both
+    // are owner-gated; ordering doesn't matter (the shift updates
+    // ItineraryDay rows directly, not via the trip patch). Fire-and-
+    // forget — a failed shift surfaces to the inline status line.
+    if (shiftItinerary && startsOnDelta !== null && startsOnDelta !== 0) {
+      void apiFetch<{
+        data: { shifted: number };
+        status: number;
+        headers: Headers;
+      }>(`/api/v1/trips/${trip.id}/itinerary/shift`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ deltaDays: startsOnDelta }),
+      })
+        .then((res) => {
+          const n = res.data?.shifted ?? 0;
+          setShiftResult(n > 0 ? `Shifted ${n} itinerary day${n === 1 ? '' : 's'}.` : null);
+        })
+        .catch(() => {
+          setShiftResult('Could not shift the itinerary — your trip update still went through.');
+        });
     }
     if (Object.keys(patch).length === 0) {
       onCancel();
@@ -596,6 +634,33 @@ function EditForm({ trip, onSubmit, onCancel, isPending, errorMsg }: EditFormPro
             help="≥ starts on."
           />
         </div>
+        {/* G4 — when startsOn changes, offer to slide the existing
+            itinerary by the same delta. Only renders when there's
+            actually a delta. Bounded ±365 days at the API. */}
+        {startsOnDelta !== null && Math.abs(startsOnDelta) <= 365 ? (
+          <label className="flex items-start gap-2 rounded-xl border border-gold-600/20 bg-gold-500/4 px-3 py-2 text-xs text-muted">
+            <input
+              type="checkbox"
+              className="mt-0.5 accent-gold-600"
+              checked={shiftItinerary}
+              onChange={(e) => setShiftItinerary(e.target.checked)}
+            />
+            <span>
+              Also shift my itinerary{' '}
+              <span className="text-surface-foreground">
+                {startsOnDelta > 0
+                  ? `forward ${startsOnDelta} day${startsOnDelta === 1 ? '' : 's'}`
+                  : `back ${Math.abs(startsOnDelta)} day${Math.abs(startsOnDelta) === 1 ? '' : 's'}`}
+              </span>{' '}
+              so the existing plan follows the new start date.
+            </span>
+          </label>
+        ) : null}
+        {shiftResult ? (
+          <p className="rounded-md border border-gold-600/30 bg-gold-500/8 px-3 py-2 text-xs text-gold-700 dark:text-gold-300">
+            {shiftResult}
+          </p>
+        ) : null}
         {errorMsg ? (
           <p className="rounded-md border border-red-500/30 bg-red-500/5 px-4 py-2 text-sm text-red-600 dark:text-red-400">
             {errorMsg}
