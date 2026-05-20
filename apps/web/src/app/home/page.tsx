@@ -23,7 +23,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { tripControllerOverview, useTripControllerList } from '@app/sdk';
+import { apiFetch, tripControllerOverview, useTripControllerList } from '@app/sdk';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
   BookOpen,
@@ -110,12 +110,7 @@ function num(v: unknown): number | null {
   return typeof v === 'number' && Number.isFinite(v) ? v : null;
 }
 
-interface ParsedWeather {
-  readonly days: readonly HubWeatherDay[];
-  readonly center: { lat: number; lng: number } | null;
-}
-
-function parseWeather(overview: unknown): ParsedWeather | null {
+function parseWeather(overview: unknown): readonly HubWeatherDay[] | null {
   if (!isObj(overview)) return null;
   const env = overview['data'];
   const root = isObj(env) ? env : overview;
@@ -135,12 +130,7 @@ function parseWeather(overview: unknown): ParsedWeather | null {
     if (date === null || maxC === null || minC === null || code === null) continue;
     out.push({ date, maxC, minC, code, precipPct: num(d['precipitationProbabilityPercent']) });
   }
-  if (out.length === 0) return null;
-  // The weather provider uses the trip center, so its forecast.lat/lng
-  // *is* the trip center — honest reuse, no extra fetch.
-  const lat = isObj(forecast) ? num(forecast['lat']) : null;
-  const lng = isObj(forecast) ? num(forecast['lng']) : null;
-  return { days: out, center: lat !== null && lng !== null ? { lat, lng } : null };
+  return out.length > 0 ? out : null;
 }
 
 // WMO → lucide icon + short label. Coarse buckets match Open-Meteo's
@@ -248,7 +238,7 @@ export default function HomePage() {
   type WeatherState =
     | { kind: 'idle' }
     | { kind: 'loading' }
-    | { kind: 'ok'; days: readonly HubWeatherDay[]; center: { lat: number; lng: number } | null }
+    | { kind: 'ok'; days: readonly HubWeatherDay[] }
     | { kind: 'unavailable' };
   const [weather, setWeather] = useState<WeatherState>({ kind: 'idle' });
 
@@ -263,12 +253,8 @@ export default function HomePage() {
       try {
         const res = await tripControllerOverview(weatherTrip.id);
         if (!alive) return;
-        const parsed = parseWeather(res);
-        setWeather(
-          parsed
-            ? { kind: 'ok', days: parsed.days, center: parsed.center }
-            : { kind: 'unavailable' },
-        );
+        const days = parseWeather(res);
+        setWeather(days ? { kind: 'ok', days } : { kind: 'unavailable' });
       } catch {
         if (!alive) return;
         setWeather({ kind: 'unavailable' });
@@ -279,15 +265,52 @@ export default function HomePage() {
     };
   }, [token, weatherTrip?.id]);
 
-  // D5 — when we have the current trip's center (harvested from the
-  // weather fetch above), let users open the global assistant pre-
-  // seeded with that context. If center isn't known yet, the button
-  // simply doesn't render — never broken.
-  const currentCenter = useMemo<{ lat: number; lng: number } | null>(() => {
-    if (!current || weather.kind !== 'ok') return null;
-    if (weatherTrip?.id !== current.id) return null;
-    return weather.center;
-  }, [current, weather, weatherTrip]);
+  // D5 — independent trip-center fetch (Phase 2 polish F2).
+  //
+  // Previously this harvested the center from the weather forecast's
+  // lat/lng — cheap but FRAGILE: if Open-Meteo was down, the "Plan
+  // with AI" button silently disappeared because the weather section
+  // never resolved. Now we call the dedicated `/trips/:id/center`
+  // route directly, so the button shows whenever there's a current
+  // trip we can read.
+  const [currentCenter, setCurrentCenter] = useState<{ lat: number; lng: number } | null>(null);
+
+  useEffect(() => {
+    if (token === null || !current) {
+      setCurrentCenter(null);
+      return;
+    }
+    let alive = true;
+    void (async () => {
+      try {
+        const res = await apiFetch<{
+          data: { lat: number; lng: number };
+          status: number;
+          headers: Headers;
+        }>(`/api/v1/trips/${current.id}/center`, { method: 'GET' });
+        if (!alive) return;
+        const d = res.data;
+        if (
+          d &&
+          typeof d.lat === 'number' &&
+          Number.isFinite(d.lat) &&
+          typeof d.lng === 'number' &&
+          Number.isFinite(d.lng)
+        ) {
+          setCurrentCenter({ lat: d.lat, lng: d.lng });
+        } else {
+          setCurrentCenter(null);
+        }
+      } catch {
+        // Honest: if the fetch fails the button quietly doesn't render;
+        // the assistant is still reachable via the floating FAB.
+        if (alive) setCurrentCenter(null);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [token, current?.id]);
 
   // Day X of N for the active trip (honest: only when dated).
   const dayProgress = useMemo(() => {
