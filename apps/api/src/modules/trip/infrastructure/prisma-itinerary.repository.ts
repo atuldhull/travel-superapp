@@ -129,6 +129,29 @@ export class PrismaItineraryRepository implements ItineraryRepository {
     });
     return toDayDomain(row);
   }
+
+  // Phase 3 (G1) — owner-gated toggle for the per-item completion
+  // checkmark. The two queries (item lookup + update) run in the
+  // same transaction so the gate can't race with a deletion. No
+  // network calls inside the transaction (CLAUDE rule 13 preserved).
+  async setItemCompletedForUser(
+    itemId: string,
+    userId: string,
+    completedAt: Date | null,
+  ): Promise<ItineraryItem | null> {
+    return this.prisma.$transaction(async (tx) => {
+      const found = await tx.itineraryItem.findFirst({
+        where: { id: itemId, day: { trip: { userId } } },
+        select: { id: true },
+      });
+      if (!found) return null;
+      const updated = await tx.itineraryItem.update({
+        where: { id: itemId },
+        data: { completedAt },
+      });
+      return toItemDomain(updated);
+    });
+  }
 }
 
 function toDayDomain(row: PrismaDayWithItems): ItineraryDay {
@@ -155,5 +178,7 @@ function toItemDomain(row: PrismaItem): ItineraryItem {
     notes: row.notes,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
+    // Phase 3 (G1) — completion checkmark surfaced to the domain.
+    completedAt: row.completedAt,
   };
 }
