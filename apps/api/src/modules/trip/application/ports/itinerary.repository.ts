@@ -86,6 +86,15 @@ export interface ItineraryRepository {
     userId: string,
     completedAt: Date | null,
   ): Promise<ItineraryItem | null>;
+
+  /**
+   * Phase 3 (G4) — slide every itinerary day's `date` forward
+   * (or backward) by `deltaDays` for a given trip. Owner gate is
+   * the caller's responsibility (the use-case checks the trip
+   * repository); the repo just bulk-updates within a transaction.
+   * Returns the count of rows updated.
+   */
+  shiftDayDates(tripId: string, deltaDays: number): Promise<number>;
 }
 
 export const ITINERARY_REPOSITORY = Symbol('ItineraryRepository');

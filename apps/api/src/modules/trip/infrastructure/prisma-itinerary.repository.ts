@@ -134,6 +134,22 @@ export class PrismaItineraryRepository implements ItineraryRepository {
   // checkmark. The two queries (item lookup + update) run in the
   // same transaction so the gate can't race with a deletion. No
   // network calls inside the transaction (CLAUDE rule 13 preserved).
+  // Phase 3 (G4) — shift every itinerary day's `date` by deltaDays.
+  // Raw SQL because Prisma 5 doesn't have a per-row arithmetic-update
+  // helper for a column-relative interval. The interval is built as
+  // a parameterised string with an explicit `||` so the value can't
+  // smuggle SQL — Prisma still parameterises the days count.
+  async shiftDayDates(tripId: string, deltaDays: number): Promise<number> {
+    if (!Number.isInteger(deltaDays) || deltaDays === 0) return 0;
+    const result = await this.prisma.$executeRaw`
+      UPDATE "ItineraryDay"
+      SET "date" = "date" + (${deltaDays}::int * INTERVAL '1 day'),
+          "updatedAt" = NOW()
+      WHERE "tripId" = ${tripId}
+    `;
+    return result;
+  }
+
   async setItemCompletedForUser(
     itemId: string,
     userId: string,

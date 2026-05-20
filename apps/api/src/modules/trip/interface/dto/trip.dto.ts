@@ -56,6 +56,18 @@ export const PlanWithAiBodySchema = z.object({
 export type PlanWithAiBody = z.infer<typeof PlanWithAiBodySchema>;
 
 /**
+ * Phase 3 (G4) — body for `POST /trips/:id/itinerary/shift`.
+ * `deltaDays` is the signed integer to add to every itinerary day's
+ * `date`. Bounded ±365 days (matches the use-case's MAX_DELTA_DAYS);
+ * the controller's zod gate rejects out-of-range numbers as 422
+ * INVALID_INPUT before the use-case ever runs.
+ */
+export const ShiftItineraryBodySchema = z.object({
+  deltaDays: z.number().int().min(-365).max(365),
+});
+export type ShiftItineraryBody = z.infer<typeof ShiftItineraryBodySchema>;
+
+/**
  * PATCH /trips/:id body. Every field optional. `startsOn` / `endsOn`
  * also accept `null` so the client can clear a previously-set date.
  * No `center` — trip location changes are delete + re-create.
