@@ -437,7 +437,11 @@ export default function HomePage() {
                 <Button
                   variant="secondary"
                   onClick={() => {
-                    openAssistantWith({ title: current.title, center: currentCenter });
+                    openAssistantWith({
+                      title: current.title,
+                      center: currentCenter,
+                      tripId: current.id,
+                    });
                   }}
                 >
                   <Sparkles aria-hidden className="mr-1.5 h-4 w-4" /> Plan with AI
