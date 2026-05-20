@@ -36,6 +36,7 @@ import { Skeleton } from '../../components/ui/skeleton';
 import { DestinationImage } from '../../components/ui/destination-image';
 import { toast } from '../../components/ui/toast';
 import { clearAccessToken } from '../../lib/auth-store';
+import { coerceTripDate } from '../../lib/trip-dto';
 import { useAuthBootComplete, useAuthToken } from '../../lib/use-auth-token';
 import { useShortcut } from '../../lib/use-shortcuts';
 import { useVimListNav } from '../../lib/use-vim-list-nav';
@@ -404,14 +405,17 @@ function TripCard({
           · Radius {trip.radiusKm}km
         </CardSubtitle>
       </CardHeader>
-      {trip.startsOn && trip.endsOn ? (
-        <p className="text-sm text-muted">
-          {new Date(trip.startsOn as unknown as string).toLocaleDateString()} →{' '}
-          {new Date(trip.endsOn as unknown as string).toLocaleDateString()}
-        </p>
-      ) : (
-        <p className="text-sm text-muted">No dates yet</p>
-      )}
+      {(() => {
+        const starts = coerceTripDate(trip.startsOn);
+        const ends = coerceTripDate(trip.endsOn);
+        return starts && ends ? (
+          <p className="text-sm text-muted">
+            {new Date(starts).toLocaleDateString()} → {new Date(ends).toLocaleDateString()}
+          </p>
+        ) : (
+          <p className="text-sm text-muted">No dates yet</p>
+        );
+      })()}
       {onArchive ? (
         <button
           type="button"
