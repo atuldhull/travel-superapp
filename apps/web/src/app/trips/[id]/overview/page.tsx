@@ -19,7 +19,7 @@
 
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   useTripControllerOverview,
   type OverviewSectionFailureDto,
@@ -29,6 +29,13 @@ import { Badge } from '../../../../components/ui/badge';
 import { Card, CardHeader, CardSubtitle, CardTitle } from '../../../../components/ui/card';
 import { Skeleton } from '../../../../components/ui/skeleton';
 import { useAuthBootComplete, useAuthToken } from '../../../../lib/use-auth-token';
+import {
+  loadTripSnapshot,
+  saveTripSnapshot,
+  formatSavedAt,
+  type OfflineTripSnapshot,
+} from '../../../../lib/offline-trip-cache';
+import { useOnline } from '../../../../lib/use-online';
 
 interface ApiError extends Error {
   readonly code?: string;
@@ -60,6 +67,40 @@ export default function TripOverviewPage() {
     query: { enabled: token !== null && id !== '' },
   });
 
+  // I2 (Phase 6) — offline snapshot: on successful overview fetches,
+  // mirror to IDB so this page (and the recap page) survive a network
+  // drop. On failure, fall back to the cached snapshot and badge it.
+  const online = useOnline();
+  const [snapshot, setSnapshot] = useState<OfflineTripSnapshot | null>(null);
+  const [snapshotLoaded, setSnapshotLoaded] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      const snap = id ? await loadTripSnapshot(id) : null;
+      if (alive) {
+        setSnapshot(snap);
+        setSnapshotLoaded(true);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [id]);
+  useEffect(() => {
+    // Save on every successful fetch — the cheapest path to keeping
+    // the cache fresh. We pull trip meta out of the overview itself
+    // (it includes `body.trip`) instead of round-tripping /trips/:id.
+    if (!data || !id) return;
+    const body = (data as { data?: unknown }).data as TripOverviewResponseDto | undefined;
+    if (!body) return;
+    void saveTripSnapshot({
+      tripId: id,
+      trip: body.trip,
+      overview: data,
+      title: body.trip?.title ?? null,
+    });
+  }, [data, id]);
+
   if (!bootComplete) {
     return (
       <main>
@@ -89,7 +130,10 @@ export default function TripOverviewPage() {
       </main>
     );
   }
-  if (isError) {
+  // I2 — when the live overview fetch errors and we have an offline
+  // snapshot, recover from cache instead of crashing the page. The
+  // user sees a soft "Offline copy" badge so the staleness is honest.
+  if (isError && snapshotLoaded && !snapshot) {
     const e = error as ApiError;
     return (
       <main className="space-y-4">
@@ -105,8 +149,21 @@ export default function TripOverviewPage() {
     );
   }
 
-  const body = data?.data as unknown as TripOverviewResponseDto | undefined;
-  if (!body) return null;
+  // Choose the live envelope when present, else the cached one.
+  const liveBody = data?.data as unknown as TripOverviewResponseDto | undefined;
+  const cachedBody =
+    snapshot && snapshot.overview
+      ? ((snapshot.overview as { data?: TripOverviewResponseDto }).data ?? null)
+      : null;
+  const body = liveBody ?? cachedBody;
+  if (!body) {
+    // Nothing live, nothing cached — still loading the snapshot or
+    // truly no data. The skeleton above handles the loading case;
+    // here we just bail out cleanly.
+    if (isError || !snapshotLoaded) return null;
+    return null;
+  }
+  const renderingFromCache = !liveBody && Boolean(cachedBody);
 
   return (
     <main className="space-y-6">
@@ -116,7 +173,18 @@ export default function TripOverviewPage() {
         </Link>
       </p>
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">{body.trip.title}</h1>
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="text-3xl font-bold tracking-tight">{body.trip.title}</h1>
+          {renderingFromCache || !online ? (
+            <span
+              className="inline-flex items-center gap-1.5 rounded-full border border-gold-600/30 bg-gold-500/10 px-3 py-1 text-xs font-medium text-gold-700 dark:text-gold-300"
+              title="The network is unreachable. This is the snapshot saved on this device the last time the overview loaded online."
+            >
+              Offline copy
+              {snapshot ? ` · saved ${formatSavedAt(snapshot.savedAt) ?? 'a while ago'}` : null}
+            </span>
+          ) : null}
+        </div>
         <p className="text-sm text-muted">
           Overview · 7 sections · per-section graceful degradation
         </p>
