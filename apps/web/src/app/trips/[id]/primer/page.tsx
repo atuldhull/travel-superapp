@@ -24,6 +24,13 @@ import { Card, CardHeader, CardSubtitle, CardTitle } from '../../../../component
 import { Field } from '../../../../components/ui/input';
 import { Skeleton } from '../../../../components/ui/skeleton';
 import { useAuthBootComplete, useAuthToken } from '../../../../lib/use-auth-token';
+import {
+  loadCountryPrimer,
+  saveCountryPrimer,
+  type OfflinePrimerSnapshot,
+} from '../../../../lib/offline-primer-cache';
+import { useOnline } from '../../../../lib/use-online';
+import { formatSavedAt } from '../../../../lib/offline-trip-cache';
 
 interface ApiError extends Error {
   readonly code?: string;
@@ -56,6 +63,33 @@ export default function TripPrimerPage() {
     query: { enabled: token !== null && country !== '', retry: false },
   });
 
+  // I3 (Phase 6) — offline primer cache.
+  //
+  //  - When the api returns a primer, mirror it into IDB keyed by cc.
+  //  - When the country changes, try to load the cached snapshot up
+  //    front so we have something to show before the network resolves
+  //    (or instead of nothing when offline).
+  //  - The cache also feeds the dedicated phrases page (I5).
+  const online = useOnline();
+  const [snapshot, setSnapshot] = useState<OfflinePrimerSnapshot | null>(null);
+  useEffect(() => {
+    if (!country) return;
+    let alive = true;
+    void (async () => {
+      const snap = await loadCountryPrimer(country);
+      if (alive) setSnapshot(snap);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [country]);
+  useEffect(() => {
+    const liveEnv = data as { data?: unknown } | undefined;
+    const livePrimer = liveEnv?.data ?? null;
+    if (!livePrimer || !country) return;
+    void saveCountryPrimer({ cc: country, primer: livePrimer });
+  }, [data, country]);
+
   if (!bootComplete) {
     return (
       <main>
@@ -71,9 +105,18 @@ export default function TripPrimerPage() {
     );
   }
 
-  const primer = data?.data as unknown as CountryPrimerDto | undefined;
+  const livePrimer = data?.data as unknown as CountryPrimerDto | undefined;
+  const cachedPrimer = snapshot && snapshot.primer ? (snapshot.primer as CountryPrimerDto) : null;
+  // Prefer the live primer; fall back to the cached snapshot when
+  // the fetch errors or is still loading (so the page never goes
+  // empty offline). A real 404 ("no primer for this cc") wins over
+  // a stale cache for a different cc would be a UX bug — but the
+  // cache is cc-keyed, so a stale-for-different-cc hit isn't
+  // possible. A 404 means the editorial seed truly doesn't have it.
+  const primer: CountryPrimerDto | undefined = livePrimer ?? cachedPrimer ?? undefined;
   const apiErr = error as ApiError | null;
-  const missing = apiErr?.status === 404;
+  const missing = apiErr?.status === 404 && !cachedPrimer;
+  const renderingFromCache = !livePrimer && Boolean(cachedPrimer);
 
   return (
     <main className="space-y-6">
@@ -104,13 +147,13 @@ export default function TripPrimerPage() {
           </select>
         </Field>
       </Card>
-      {isLoading ? (
+      {isLoading && !primer ? (
         <Card>
           <Skeleton className="h-6 w-1/2" />
           <Skeleton className="mt-2 h-4 w-3/4" />
           <Skeleton className="mt-2 h-4 w-1/3" />
         </Card>
-      ) : isError ? (
+      ) : isError && !primer ? (
         <Card>
           <p className="text-sm text-danger">
             {missing
@@ -120,6 +163,15 @@ export default function TripPrimerPage() {
         </Card>
       ) : primer ? (
         <>
+          {renderingFromCache || !online ? (
+            <p
+              className="inline-flex items-center gap-1.5 rounded-full border border-gold-600/30 bg-gold-500/10 px-3 py-1 text-xs font-medium text-gold-700 dark:text-gold-300"
+              title="The network is unreachable. This is the primer saved on this device the last time it loaded online."
+            >
+              Offline copy
+              {snapshot ? ` · fetched ${formatSavedAt(snapshot.fetchedAt) ?? 'a while ago'}` : null}
+            </p>
+          ) : null}
           <Card>
             <CardHeader>
               <CardTitle>🛂 Visa</CardTitle>
