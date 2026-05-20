@@ -45,6 +45,59 @@ keystone) land well:
 | D7  | Agent loop cadence         | fixed `setInterval`                         | verified: no cron infra exists             |
 | D8  | Agent scope                | during-trip only                            | tightest, highest-value scope              |
 
+## POST-2.0 — Phase 4 (Emotional UI / Voice / Recap) (✅ COMPLETE)
+
+- **Date**: 2026-05-20
+- **Status**: ✅ DONE. 6 increments (H1-H6), 5 commits (H3+H4 bundled).
+  Pure frontend except H3+H4 hooks. No new deps, no SDK regen, no
+  backend changes.
+- **What**:
+  - **H1** (`0b7b842`) — weather-aware ambient mood on `/home`.
+    `HubAmbient` gained 9 mood palettes; pure `pickAmbientMood(code,
+hour)` helper derives the mood from D4 weather + F22 timezone.
+    700ms CSS fades; `prefers-reduced-motion` freezes drift.
+  - **H2** (`8cde18a`) — `<CompanionNudges>` toast stack: deadline
+    (≤7d), rain (≥60% precip), cold (≤0°C), heat (≥35°C), progress
+    check. Per-session dismiss; `aria-live="polite"`.
+  - **H3+H4** (`e67aff0`) — Voice I/O on the global assistant. NEW
+    `lib/use-speech.ts` wraps `SpeechRecognition` + `speechSynthesis`.
+    Mic button transcribes to input; Volume header-toggle reads new
+    AI msgs aloud. Preference persists. Hides cleanly when the
+    browser doesn't support the API.
+  - **H5** (`672a5ed`) — cinematic `/trips/[id]/recap` page composing
+    trip + itinerary days (with G1 ✓ marks) + diary entries + media
+    counts. Hero with `<DestinationImage>`, 4-card stats strip, day-
+    by-day timeline, diary echoes, CTAs. NEW "✨ Recap" link on
+    trip header.
+  - **H6** (`ee11d8c`) — memory timeline strip on `/home`. Past
+    trips bucket (endsOn<today, max 6) rendered as horizontal
+    scroll-snap strip linking each card into its H5 recap.
+
+## POST-2.0 — Phase 3 (Living Current Trip) (✅ COMPLETE)
+
+- **Date**: 2026-05-20
+- **Status**: ✅ DONE. 6 increments (G1-G6), 17 new tests GREEN.
+- **What**:
+  - **G1** (`a032c84`) — itinerary item completion checkmarks.
+    Additive Prisma migration `20260520180000_itinerary_item_completed_at`
+    via `migrate deploy`. `SetItemCompletedUseCase`,
+    `POST /trips/items/:itemId/(un)complete`, `ItineraryItemDto.completedAt`,
+    `<ItemCheckbox>` UI. **4/4 e2e GREEN**.
+  - **G2** (`e27d2eb`) — "What's next today" ETA + progress chip.
+    `parseTodayPlan` finds first uncompleted item + startTime;
+    `timeUntil(iso)` renders "Next: X · in 1h 23m"; ✓ N/M chip.
+  - **G3** (`0ff2812`) — trip-scoped agent replan callout on Current
+    Trip card. Reuses F23 inbox query, filters by templateId +
+    payload.context.url containing trip id.
+  - **G4** (`2760190`) — date-shift auto-adjust.
+    `ShiftItineraryDatesUseCase` + `POST /trips/:id/itinerary/shift`
+    (raw SQL INTERVAL, bounded ±365d); EditForm offers "Also shift
+    my itinerary forward N days" checkbox. **5/5 e2e GREEN**.
+  - **G5** (`f6f0311`) — new `deadline` SignalKind +
+    `DeadlineSignalAdapter`. Pure data, 7-day reminder window, opt-
+    in subscription (LAW 2 preserved). **8/8 unit tests GREEN**.
+  - **G6** (`aacf5a3`) — refreshed `/home` + `/trips/[id]` docblocks.
+
 ## POST-2.0 — Phase 2 polish (F1-F27, audit-gap closure)
 
 ### Phase 2 polish — every audit gap closed (✅ COMPLETE)
