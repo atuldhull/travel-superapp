@@ -50,6 +50,7 @@ import {
   type DiaryEntryDto,
   type GamificationView,
 } from '../../lib/two-oh-api';
+import { openAssistantWith } from '../../components/assistant/global-assistant';
 
 // The generated TripDto types startsOn/endsOn as a branded union
 // (`string | object`), so read defensively into a clean local shape.
@@ -103,7 +104,12 @@ function num(v: unknown): number | null {
   return typeof v === 'number' && Number.isFinite(v) ? v : null;
 }
 
-function parseWeather(overview: unknown): readonly HubWeatherDay[] | null {
+interface ParsedWeather {
+  readonly days: readonly HubWeatherDay[];
+  readonly center: { lat: number; lng: number } | null;
+}
+
+function parseWeather(overview: unknown): ParsedWeather | null {
   if (!isObj(overview)) return null;
   const env = overview['data'];
   const root = isObj(env) ? env : overview;
@@ -123,7 +129,12 @@ function parseWeather(overview: unknown): readonly HubWeatherDay[] | null {
     if (date === null || maxC === null || minC === null || code === null) continue;
     out.push({ date, maxC, minC, code, precipPct: num(d['precipitationProbabilityPercent']) });
   }
-  return out.length > 0 ? out : null;
+  if (out.length === 0) return null;
+  // The weather provider uses the trip center, so its forecast.lat/lng
+  // *is* the trip center — honest reuse, no extra fetch.
+  const lat = isObj(forecast) ? num(forecast['lat']) : null;
+  const lng = isObj(forecast) ? num(forecast['lng']) : null;
+  return { days: out, center: lat !== null && lng !== null ? { lat, lng } : null };
 }
 
 // WMO → lucide icon + short label. Coarse buckets match Open-Meteo's
@@ -231,7 +242,7 @@ export default function HomePage() {
   type WeatherState =
     | { kind: 'idle' }
     | { kind: 'loading' }
-    | { kind: 'ok'; days: readonly HubWeatherDay[] }
+    | { kind: 'ok'; days: readonly HubWeatherDay[]; center: { lat: number; lng: number } | null }
     | { kind: 'unavailable' };
   const [weather, setWeather] = useState<WeatherState>({ kind: 'idle' });
 
@@ -246,8 +257,12 @@ export default function HomePage() {
       try {
         const res = await tripControllerOverview(weatherTrip.id);
         if (!alive) return;
-        const days = parseWeather(res);
-        setWeather(days ? { kind: 'ok', days } : { kind: 'unavailable' });
+        const parsed = parseWeather(res);
+        setWeather(
+          parsed
+            ? { kind: 'ok', days: parsed.days, center: parsed.center }
+            : { kind: 'unavailable' },
+        );
       } catch {
         if (!alive) return;
         setWeather({ kind: 'unavailable' });
@@ -257,6 +272,16 @@ export default function HomePage() {
       alive = false;
     };
   }, [token, weatherTrip?.id]);
+
+  // D5 — when we have the current trip's center (harvested from the
+  // weather fetch above), let users open the global assistant pre-
+  // seeded with that context. If center isn't known yet, the button
+  // simply doesn't render — never broken.
+  const currentCenter = useMemo<{ lat: number; lng: number } | null>(() => {
+    if (!current || weather.kind !== 'ok') return null;
+    if (weatherTrip?.id !== current.id) return null;
+    return weather.center;
+  }, [current, weather, weatherTrip]);
 
   // Day X of N for the active trip (honest: only when dated).
   const dayProgress = useMemo(() => {
@@ -328,13 +353,23 @@ export default function HomePage() {
                 </span>
               ) : null}
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Link href={`/trips/${current.id}` as never}>
                 <Button variant="royal">Open trip</Button>
               </Link>
               <Link href="/navigate">
                 <Button variant="secondary">Navigate</Button>
               </Link>
+              {currentCenter ? (
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    openAssistantWith({ title: current.title, center: currentCenter });
+                  }}
+                >
+                  <Sparkles aria-hidden className="mr-1.5 h-4 w-4" /> Plan with AI
+                </Button>
+              ) : null}
             </div>
           </Card>
         ) : (
