@@ -165,8 +165,10 @@ function nightsBetween(s: string, e: string): number | null {
 }
 
 // E6 — derive endsOn from startsOn + N nights. Pure: bad input → null.
+// F19 — raised the cap from 30 to 90 to cover digital-nomad / extended
+// sabbatical trips. The trip schema doesn't have a cap on this field.
 const MIN_NIGHTS = 1;
-const MAX_NIGHTS = 30;
+const MAX_NIGHTS = 90;
 function addNights(startsOn: string, nights: number): string | null {
   if (!startsOn) return null;
   const n = Math.round(nights);
@@ -216,6 +218,9 @@ export default function NewTripPage() {
   const [budget, setBudget] = useState<BudgetTier | null>(null);
   const [groupKind, setGroupKind] = useState<GroupKind | null>(null);
   const [constraintKeys, setConstraintKeys] = useState<readonly string[]>([]);
+  // F19 — track the last auto-filled title so picking a NEW destination
+  // refreshes the title only when the user hasn't typed their own.
+  const [lastAutoTitle, setLastAutoTitle] = useState<string | null>(null);
 
   function toggleConstraint(k: string) {
     setConstraintKeys((cur) => (cur.includes(k) ? cur.filter((x) => x !== k) : [...cur, k]));
@@ -282,7 +287,15 @@ export default function NewTripPage() {
 
   function pickDestination(d: { dest: string; country: string; lat: number; lng: number }) {
     setPicked(`${d.dest} · ${d.country}`);
-    setTitle(`${d.dest}${tripType ? ` — ${tripType}` : ''}`);
+    // F19 — only auto-fill the title if it's empty OR still matches
+    // the previous auto-fill. Once the user types their own, picking
+    // a different destination still updates lat/lng but respects the
+    // typed title.
+    const auto = `${d.dest}${tripType ? ` — ${tripType}` : ''}`;
+    if (title.trim() === '' || title === lastAutoTitle) {
+      setTitle(auto);
+      setLastAutoTitle(auto);
+    }
     setLat(d.lat.toFixed(6));
     setLng(d.lng.toFixed(6));
   }
@@ -417,6 +430,18 @@ export default function NewTripPage() {
     if (!Number.isFinite(lngN) || !Number.isFinite(latN) || !Number.isFinite(radiusN)) {
       setErrorMsg('Pick a destination on the map, from the famous picks, or type coordinates.');
       return;
+    }
+    // F19 — reject past startsOn even if a user bypassed the date
+    // picker's `min` attribute (keyboard entry, paste). The browser
+    // attribute is the soft gate; this is the hard one.
+    if (startsOn) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const start = new Date(`${startsOn}T00:00:00`);
+      if (Number.isFinite(start.getTime()) && start.getTime() < today.getTime()) {
+        setErrorMsg('Start date can’t be in the past.');
+        return;
+      }
     }
     const data: CreateTripRequestDto = {
       title,
@@ -692,7 +717,9 @@ export default function NewTripPage() {
               label="Starts on (optional)"
               type="date"
               value={startsOn}
+              min={toIsoDate(new Date())}
               onChange={(e) => onStartsOnChange(e.target.value)}
+              help="Can't be in the past."
             />
             <Field
               label="Nights"
