@@ -18,18 +18,25 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useTripControllerList } from '@app/sdk';
+import { tripControllerOverview, useTripControllerList } from '@app/sdk';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
   BookOpen,
+  Cloud,
+  CloudDrizzle,
+  CloudFog,
+  CloudLightning,
+  CloudRain,
+  CloudSnow,
+  CloudSun,
   Compass,
   LifeBuoy,
   MapPinned,
   Navigation,
-  Newspaper,
   Plus,
   Settings as SettingsIcon,
   Sparkles,
+  Sun,
   Users,
 } from 'lucide-react';
 import { Card, CardHeader, CardSubtitle, CardTitle } from '../../components/ui/card';
@@ -75,6 +82,68 @@ function startOfToday(): number {
 function fmtDate(iso: string | null | undefined): string {
   if (!iso) return '';
   return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+}
+
+// D4 — defensive weather narrowing. The overview endpoint types
+// `weather` as a `success | failure` union but the inner forecast is
+// `Record<string, unknown>` (orval can't reify it), so we read the
+// daily array by hand. Three days is enough for a hub glance.
+interface HubWeatherDay {
+  readonly date: string;
+  readonly maxC: number;
+  readonly minC: number;
+  readonly code: number;
+  readonly precipPct: number | null;
+}
+
+function isObj(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null;
+}
+function num(v: unknown): number | null {
+  return typeof v === 'number' && Number.isFinite(v) ? v : null;
+}
+
+function parseWeather(overview: unknown): readonly HubWeatherDay[] | null {
+  if (!isObj(overview)) return null;
+  const env = overview['data'];
+  const root = isObj(env) ? env : overview;
+  const w = isObj(root) ? root['weather'] : null;
+  if (!isObj(w) || w['ok'] !== true) return null;
+  const data = w['data'];
+  const forecast = isObj(data) ? data['forecast'] : null;
+  const days = isObj(forecast) ? forecast['days'] : null;
+  if (!Array.isArray(days)) return null;
+  const out: HubWeatherDay[] = [];
+  for (const d of days.slice(0, 3)) {
+    if (!isObj(d)) continue;
+    const date = typeof d['date'] === 'string' ? d['date'] : null;
+    const maxC = num(d['maxTempC']);
+    const minC = num(d['minTempC']);
+    const code = num(d['weatherCode']);
+    if (date === null || maxC === null || minC === null || code === null) continue;
+    out.push({ date, maxC, minC, code, precipPct: num(d['precipitationProbabilityPercent']) });
+  }
+  return out.length > 0 ? out : null;
+}
+
+// WMO → lucide icon + short label. Coarse buckets match Open-Meteo's
+// own grouping (see weather-response.dto.ts comment).
+function wmoVisual(code: number): { Icon: typeof Sun; label: string } {
+  if (code === 0) return { Icon: Sun, label: 'Clear' };
+  if (code <= 3) return { Icon: CloudSun, label: 'Partly cloudy' };
+  if (code === 45 || code === 48) return { Icon: CloudFog, label: 'Fog' };
+  if (code >= 51 && code <= 57) return { Icon: CloudDrizzle, label: 'Drizzle' };
+  if (code >= 61 && code <= 67) return { Icon: CloudRain, label: 'Rain' };
+  if ((code >= 71 && code <= 77) || code === 85 || code === 86)
+    return { Icon: CloudSnow, label: 'Snow' };
+  if (code >= 80 && code <= 82) return { Icon: CloudRain, label: 'Showers' };
+  if (code >= 95) return { Icon: CloudLightning, label: 'Thunder' };
+  return { Icon: Cloud, label: 'Cloudy' };
+}
+
+function fmtDay(iso: string): string {
+  const d = new Date(`${iso}T00:00:00`);
+  return d.toLocaleDateString(undefined, { weekday: 'short' });
 }
 
 export default function HomePage() {
@@ -152,6 +221,42 @@ export default function HomePage() {
       alive = false;
     };
   }, [token]);
+
+  // D4 — real weather (Open-Meteo via /trips/:id/overview) for the
+  // active or next-up trip. Honest: never fabricate; on failure the
+  // section renders a calm "weather unavailable" line.
+  const weatherTrip = useMemo<HubTrip | null>(() => {
+    return current ?? upcoming[0] ?? null;
+  }, [current, upcoming]);
+  type WeatherState =
+    | { kind: 'idle' }
+    | { kind: 'loading' }
+    | { kind: 'ok'; days: readonly HubWeatherDay[] }
+    | { kind: 'unavailable' };
+  const [weather, setWeather] = useState<WeatherState>({ kind: 'idle' });
+
+  useEffect(() => {
+    if (token === null || !weatherTrip) {
+      setWeather({ kind: 'idle' });
+      return;
+    }
+    let alive = true;
+    setWeather({ kind: 'loading' });
+    void (async () => {
+      try {
+        const res = await tripControllerOverview(weatherTrip.id);
+        if (!alive) return;
+        const days = parseWeather(res);
+        setWeather(days ? { kind: 'ok', days } : { kind: 'unavailable' });
+      } catch {
+        if (!alive) return;
+        setWeather({ kind: 'unavailable' });
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [token, weatherTrip?.id]);
 
   // Day X of N for the active trip (honest: only when dated).
   const dayProgress = useMemo(() => {
@@ -386,29 +491,77 @@ export default function HomePage() {
         </ul>
       </section>
 
-      {/* Latest news — honest: no destination-news source yet. */}
+      {/* Weather — real Open-Meteo forecast for the active or next-up
+          trip. Honest: nothing to forecast if you have no trips yet,
+          and we say so plainly when the upstream is down. */}
       <section>
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">
-          Latest news
+          {current ? 'Weather where you are' : 'Weather where you’re going'}
         </h2>
-        <Card depth="flat" className="flex items-start gap-3 p-5">
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-gold-500/25 bg-gold-500/8 text-gold-600">
-            <Newspaper aria-hidden className="h-5 w-5" />
-          </span>
-          <div>
+        {weatherTrip === null ? (
+          <Card depth="flat" className="p-5">
+            <CardSubtitle>
+              We&apos;ll show live weather here when you have an active or upcoming trip.
+            </CardSubtitle>
+          </Card>
+        ) : weather.kind === 'loading' || weather.kind === 'idle' ? (
+          <SkeletonCard count={1} />
+        ) : weather.kind === 'ok' ? (
+          <Card depth="raised" className="p-5">
             <CardHeader>
-              <CardTitle className="text-lg">Destination news</CardTitle>
+              <CardTitle className="text-lg">{weatherTrip.title}</CardTitle>
               <CardSubtitle>
-                Live news & advisories for your destinations are coming in a later phase — we
-                won&apos;t show placeholder headlines. For now,{' '}
-                <Link href="/help" className="text-gold-600 underline-offset-4 hover:underline">
-                  Help &amp; alerts
-                </Link>{' '}
-                covers emergencies and safety.
+                Live 3-day forecast · Open-Meteo ·{' '}
+                <Link
+                  href={`/trips/${weatherTrip.id}` as never}
+                  className="text-gold-600 underline-offset-4 hover:underline"
+                >
+                  full overview →
+                </Link>
               </CardSubtitle>
             </CardHeader>
-          </div>
-        </Card>
+            <ul className="mt-4 grid gap-2 sm:grid-cols-3">
+              {weather.days.map((d) => {
+                const { Icon, label } = wmoVisual(d.code);
+                return (
+                  <li
+                    key={d.date}
+                    className="flex items-center gap-3 rounded-2xl border border-gold-500/15 bg-surface/40 p-3"
+                  >
+                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-gold-500/25 bg-gold-500/8 text-gold-600">
+                      <Icon aria-hidden className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium uppercase tracking-wide text-muted">
+                        {fmtDay(d.date)}
+                      </p>
+                      <p className="truncate text-sm text-surface-foreground">
+                        {label} · {Math.round(d.maxC)}° / {Math.round(d.minC)}°
+                        {d.precipPct !== null && d.precipPct > 0 ? (
+                          <span className="ml-1 text-muted">· {d.precipPct}%</span>
+                        ) : null}
+                      </p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </Card>
+        ) : (
+          <Card depth="flat" className="p-5">
+            <CardSubtitle>
+              Live weather is briefly unavailable for {weatherTrip.title}. It usually comes back
+              within a minute — your{' '}
+              <Link
+                href={`/trips/${weatherTrip.id}` as never}
+                className="text-gold-600 underline-offset-4 hover:underline"
+              >
+                trip overview
+              </Link>{' '}
+              will refresh when it does.
+            </CardSubtitle>
+          </Card>
+        )}
       </section>
     </main>
   );
