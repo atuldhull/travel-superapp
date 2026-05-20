@@ -23,9 +23,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { apiFetch, tripControllerOverview, useTripControllerList } from '@app/sdk';
+import {
+  apiFetch,
+  tripControllerOverview,
+  useNotificationsControllerListMine,
+  useTripControllerList,
+} from '@app/sdk';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
+  Bell,
   BookOpen,
   Cloud,
   CloudDrizzle,
@@ -212,6 +218,40 @@ function fmtDay(iso: string): string {
   return d.toLocaleDateString(undefined, { weekday: 'short' });
 }
 
+// F23 — template id → human label fallback (when the payload didn't
+// carry a `subject`). Covers the templates we ship today; unknown
+// ones drop the prefix + show the remainder ("foo.bar.baz" → "Foo
+// bar baz").
+function humanTemplate(templateId: string): string {
+  const known: Record<string, string> = {
+    'trip.invited': 'You were invited to a trip',
+    'trip.share.created': 'New share link for your trip',
+    'sos.acknowledged': 'Your SOS was acknowledged',
+    'sos.resolved': 'Your SOS was resolved',
+    trip_agent_replan_proposed: 'Agent suggested a replan',
+    'magic_link.sent': 'Magic link sent',
+  };
+  const hit = known[templateId];
+  if (hit) return hit;
+  return templateId.replace(/[._]/g, ' ').replace(/^(.)/, (s) => s.toUpperCase());
+}
+
+// F23 — compact relative time ("2m", "1h", "3d") for the inbox
+// preview. Falls back to a short date when older than 7 days.
+function relativeTime(iso: string): string {
+  const t = new Date(iso).getTime();
+  if (!Number.isFinite(t)) return '';
+  const diffMs = Date.now() - t;
+  const m = Math.floor(diffMs / 60_000);
+  if (m < 1) return 'now';
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `${d}d`;
+  return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+}
+
 export default function HomePage() {
   const router = useRouter();
   const token = useAuthToken();
@@ -302,6 +342,37 @@ export default function HomePage() {
   const [weather, setWeather] = useState<WeatherState>({ kind: 'idle' });
   // F21 — "What's next today" parsed from the same overview fetch.
   const [todayPlan, setTodayPlan] = useState<TodayPlan | null>(null);
+
+  // F23 — inbox preview. Top 3 unread + a "see more" link to /inbox.
+  // Honest: failed fetch + no unread = section hides entirely.
+  // orval marks the params required even though the controller treats
+  // channel + includeArchived as optional — same `as never` cast that
+  // /inbox uses (precedent: apps/web/src/app/inbox/page.tsx:66).
+  const inboxQuery = useNotificationsControllerListMine({ limit: '10' } as never, {
+    query: { enabled: token !== null, retry: false },
+  });
+  const unreadPreview = useMemo(() => {
+    const env = inboxQuery.data as { data?: { notifications?: unknown[] } } | undefined;
+    const raw = env?.data?.notifications ?? [];
+    const items: { id: string; templateId: string; subject: string; createdAt: string }[] = [];
+    for (const row of raw) {
+      if (!isObj(row)) continue;
+      if (row['archivedAt'] !== null && row['archivedAt'] !== undefined) continue;
+      if (row['read'] === true) continue;
+      const id = typeof row['id'] === 'string' ? row['id'] : null;
+      const templateId = typeof row['templateId'] === 'string' ? row['templateId'] : 'notification';
+      const createdAt = typeof row['createdAt'] === 'string' ? row['createdAt'] : null;
+      if (!id || !createdAt) continue;
+      const payload = isObj(row['payload']) ? row['payload'] : {};
+      const subject =
+        typeof payload['subject'] === 'string' && payload['subject'].length > 0
+          ? payload['subject']
+          : humanTemplate(templateId);
+      items.push({ id, templateId, subject, createdAt });
+      if (items.length >= 3) break;
+    }
+    return items;
+  }, [inboxQuery.data]);
 
   // F3 — refresh strategy. Initial fetch + a quiet 10-minute interval
   // + a refresh on tab visibility-change. Open-Meteo doesn't churn
@@ -681,6 +752,44 @@ export default function HomePage() {
           </Link>
         </Card>
       </section>
+
+      {/* F23 — unread inbox preview. Only renders when there's
+          something unread. */}
+      {unreadPreview.length > 0 ? (
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted">
+              Unread inbox
+            </h2>
+            <Link
+              href="/inbox"
+              className="text-xs font-medium text-gold-600 underline-offset-4 transition hover:underline"
+            >
+              See all →
+            </Link>
+          </div>
+          <Card depth="raised" className="p-2">
+            <ul>
+              {unreadPreview.map((n) => (
+                <li key={n.id}>
+                  <Link
+                    href={'/inbox'}
+                    className="flex items-start gap-3 rounded-xl px-3 py-2.5 transition hover:bg-gold-500/5"
+                  >
+                    <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full border border-gold-500/25 bg-gold-500/8 text-gold-600">
+                      <Bell aria-hidden className="h-3.5 w-3.5" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm text-surface-foreground">{n.subject}</p>
+                    </div>
+                    <span className="shrink-0 text-xs text-muted">{relativeTime(n.createdAt)}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </section>
+      ) : null}
 
       {/* Everything else — the hub grid */}
       <section>
