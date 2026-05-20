@@ -1,16 +1,38 @@
 /**
- * Trip detail page — `/trips/:id`. Shows the single trip the caller
- * owns; lets them rename / re-radius / re-date inline + delete with a
- * confirmation gate. Itinerary + overview composite render lands in a
- * follow-up slice.
+ * Trip detail page — `/trips/:id`.
+ *
+ * Owner-readable / collaborator-readable view of a single trip,
+ * roughly organised as:
+ *
+ *   ReadView (header)
+ *     ↳ title + status badge + radius + version
+ *     ↳ Navigate · Write diary · ✨ Plan with AI (F9 — opens the
+ *       global assistant pre-seeded with this trip's center via
+ *       `useTripCenter`) · Overview · Expenses · Open on mobile ·
+ *       Export PDF · Email itinerary · Audio readout · Concierge
+ *     ↳ Live spend banner, pacing warning, festival overlay,
+ *       adventure window
+ *   EditForm (inline)
+ *     ↳ rename / re-radius / re-date / delete behind a confirm gate
+ *   PowerPlannerSection
+ *     ↳ V.UX.6 nearest-neighbour day reorder
+ *   ItineraryList + DayCard + DayItemsEditor
+ *     ↳ G1: per-item completion checkbox (`ItemCheckbox`) — taps
+ *       hit POST /trips/items/:itemId/(un)complete via apiFetch.
+ *   AgentWatchCard (POST-2.0): pending replan proposals / signals
+ *   ShareList + MediaUploader
  *
  * Auth-gated identically to /trips: silent-refresh boot completes
  * first, then bounce to /login if no token. 404 from the api means
  * "not yours OR not found" (existence-probe defence) — surface the
  * same diagnostic either way.
  *
- * Installed by prompt [IV.18.19.29]. Plan-with-AI section added by
- * [IV.18.19.45].
+ * Cross-cutting: TripDto date fields read via the shared
+ * `coerceTripDate` helper (F4 / F17 — no `as unknown as string`
+ * casts on the read side; the two remaining write-side casts are
+ * documented orval-limitation territory).
+ *
+ * Installed by prompt [IV.18.19.29]. Extended through F9 / F17 / G1.
  */
 'use client';
 
