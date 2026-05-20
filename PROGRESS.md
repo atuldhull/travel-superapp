@@ -45,6 +45,43 @@ keystone) land well:
 | D7  | Agent loop cadence         | fixed `setInterval`                         | verified: no cron infra exists             |
 | D8  | Agent scope                | during-trip only                            | tightest, highest-value scope              |
 
+## POST-2.0 — Phase 1 (Identity) + Phase 2 (Hub + Create-Trip) deep passes
+
+### Phase 2 — Homepage hub + global AI chatbot + Create-Trip upgrade (✅ COMPLETE)
+
+- **Date**: 2026-05-19 → 2026-05-20
+- **Status**: ✅ DONE. Two pages D (`/home` hub) + E (`/trips/new`) shipped
+  in priority sequence with per-increment commits. Honest data only,
+  $0 upstreams, no schema changes (planner takes transient
+  `instruction` already), apiFetch-direct (no SDK regen).
+- **Page D — Homepage hub**:
+  - **D1** (`b8cdbed`) — authenticated `/home` route, `decidePostAuthDestination` flips default `/trips` → `/home`; calm Current/Upcoming/Explore/News(placeholder) grid driven by the real trips list.
+  - **D2** (`db32791`) — `GlobalAssistant` floating panel: name a place → $0 OSM geocode → `POST /trips/sample-plan` (same Gemini→Ollama→stub chain as the landing demo) → follow-ups thread `instruction` + `priorPlan` for "cheaper / 2 more days / more adventure".
+  - **D3** (`310e31c`) — live hub sections: `Day X of N` badge on current trip, log-book card with gamification + last diary entry, friends card with feed count — single `Promise.allSettled([getGamification, listDiaryEntries, getSocialFeed])`, all-failures = calm fallback.
+  - **D4** (`197ab45`) — replaced the honest "Latest News coming soon" placeholder with REAL 3-day Open-Meteo weather for the active or next-up trip via `tripControllerOverview` (the same cached endpoint the trip overview page uses). WMO codes → lucide icons. Three states: ok / loading / unavailable; empty when no trips. Never fabricated.
+  - **D5** (`32e5a49`) — context-aware assistant. Module-level `openAssistantWith({title, center})` registers an opener inside `GlobalAssistant`; "Plan with AI" button on the current-trip card pre-seeds the panel + skips ask-place + fires a fresh plan immediately. Trip center harvested from the D4 weather forecast (the Open-Meteo lat/lng IS the trip center — no extra fetch).
+  - **D6** (`6b3436a`) — calm ambient backdrop. Pure CSS gradient mesh (`HubAmbient`), 3 drifting blobs on slow keyframes, `prefers-reduced-motion` freezes the drift, `aria-hidden` + `pointer-events-none` at `z=-10`. Refreshed `/home` docblock to match what the page now does.
+- **Page E — Create-Trip upgrade**:
+  - **E1–E4** (`3e738a8`) — trip-type chips, continent multi-select, state/region field, preferences-applied band (Aura + interests + budget/comfort/family/nomad modes folded into the planner instruction). API: `POST /trips/:id/plan-with-ai` accepts optional `{ instruction: string ≤ 600 chars }`; `GeneratePlanWithAiUseCase` threads it into the planner port (transient, no schema column).
+  - **E5** (`4d56578`) — true continent → country → famous-destination cascade. Curated `apps/web/src/data/destinations.ts` (Europe/Asia/Africa/N.America/S.America/Oceania → countries → famous picks with baked coords, $0 zero-geocode). Picking a destination auto-fills title + lat/lng; map-picker preserved as the anywhere path.
+  - **E6** (`b4491f7`) — explicit "Nights" number input (1..30) driving `endsOn` from `startsOn`. Bi-directional: editing startsOn slides endsOn to preserve length; editing endsOn updates the displayed nights via `nightsBetween`. Preset chips (Weekend / Long weekend / Week) untouched and still set both dates directly.
+- **Verify**: web typecheck GREEN at every commit. API health 200 ([::1]:3000/health/ready). Plain React / framer-motion / CSS — no new deps; no dev-server restart needed for any Phase-2 deep commit.
+- **Honest scope still deferred**: full Phase-2 spec also called for destination NEWS / advisories — there is no $0 web-reachable news source for arbitrary destinations, so D4 ships Open-Meteo weather instead and we say so plainly. News stays an honest "later phase" until a source is identified.
+
+### Phase 1 — Onboarding & Identity (✅ COMPLETE — deep pass + leftover sweep)
+
+- **Date**: 2026-05-18 → 2026-05-19
+- **Status**: ✅ DONE. Four increments (P1.1 → P1.4) plus PAGE A
+  deep continuation (A1 + A2 scene continuity, A3 phased ambience).
+- **What**:
+  - **P1.1** (`d0f5796`) — cinematic auth background (CSS/SVG sky + sun/moon + reflection + clouds + drifting car; procedural Web-Audio water/wind ambience, opt-in, localStorage-remembered). `prefers-reduced-motion` freezes frames. $0/no asset.
+  - **P1.2** (`4867c1b`) — Travel-Aura MCQ (8 archetypes, 6-Q weighted scoring, `scoreAura` pure arg-max + fixed tiebreak) + interests chips + home location via existing $0 PlaceSearch. localStorage draft bridge (`saveAuraDraft`/`getAuraDraft`).
+  - **P1.3** (`bd11ac3`) — additive Prisma migration `20260519120000_travel_aura` (pure ADD COLUMN: `travelAura`, `homeLabel`, `homeLat`, `homeLng`, `travelInterests`) via `migrate deploy` (NO PostGIS drop). Threaded existing clean/hex preferences stack; all fields optional; SDK-direct no regen; 7/7 e2e green.
+  - **P1.4** (`f8813b9`) — animated "calibrating your experience" interstitial: SVG progress ring + pulsing Aura glyph, personalised ticks reading `getAuraDraft()`. Honest fixed-duration (real trip create + AI plan already firing in background, not faked progress).
+  - **PAGE A continuation** (`54fe2b5`, `7bdcdf6`) — scene realism upgrade (sun/moon on real hour-arc, denser stars, Milky-Way band, ocean reflection + dual shimmer, 3 ridges) + scene continuity across login→setup→calibrating + phased ambience (cricket-tremolo night → brighter air day, 2.5s ramps).
+- **Verify**: web typecheck GREEN; API build + 7/7 preferences e2e
+  GREEN for P1.3; no new deps for any P1 commit.
+
 ## POST-2.0 — Agent↔trip real triggers (post-2.0 enhancement)
 
 ### [P1] — The deferred scheduler↔trip glue is now wired (✅ COMPLETE)
