@@ -242,26 +242,52 @@ export default function HomePage() {
     | { kind: 'unavailable' };
   const [weather, setWeather] = useState<WeatherState>({ kind: 'idle' });
 
+  // F3 — refresh strategy. Initial fetch + a quiet 10-minute interval
+  // + a refresh on tab visibility-change. Open-Meteo doesn't churn
+  // by the second; this just keeps a long-open hub from sitting on
+  // stale data. The server-side overview cache is 60s, so multiple
+  // close-spaced refreshes are cheap.
   useEffect(() => {
     if (token === null || !weatherTrip) {
       setWeather({ kind: 'idle' });
       return;
     }
     let alive = true;
-    setWeather({ kind: 'loading' });
-    void (async () => {
+    const fetchOnce = async (firstTime: boolean) => {
+      if (firstTime) setWeather({ kind: 'loading' });
       try {
         const res = await tripControllerOverview(weatherTrip.id);
         if (!alive) return;
         const days = parseWeather(res);
-        setWeather(days ? { kind: 'ok', days } : { kind: 'unavailable' });
+        // Don't downgrade a previously-OK card to "unavailable" on a
+        // background refresh hiccup; only the initial fetch can flip
+        // to the unavailable copy. Honest: stale-but-shown beats
+        // bouncing "unavailable" on a 1-second blip.
+        setWeather((prev) => {
+          if (days) return { kind: 'ok', days };
+          if (!firstTime && prev.kind === 'ok') return prev;
+          return { kind: 'unavailable' };
+        });
       } catch {
         if (!alive) return;
-        setWeather({ kind: 'unavailable' });
+        setWeather((prev) => (firstTime || prev.kind !== 'ok' ? { kind: 'unavailable' } : prev));
       }
-    })();
+    };
+    void fetchOnce(true);
+    const interval = window.setInterval(
+      () => {
+        if (document.visibilityState === 'visible') void fetchOnce(false);
+      },
+      10 * 60 * 1000,
+    );
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void fetchOnce(false);
+    };
+    document.addEventListener('visibilitychange', onVisible);
     return () => {
       alive = false;
+      window.clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisible);
     };
   }, [token, weatherTrip?.id]);
 
