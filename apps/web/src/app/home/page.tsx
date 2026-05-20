@@ -120,6 +120,52 @@ interface ParsedHubWeather {
   readonly timezone: string | null;
 }
 
+// F21 — "What's next today" glance pulled from the SAME overview
+// fetch (no extra network roundtrip). Honest: only when the trip
+// has an itinerary section that succeeded AND today's date matches
+// one of the day rows.
+interface TodayPlan {
+  readonly summary: string | null;
+  readonly itemCount: number;
+  readonly firstItemTitle: string | null;
+}
+
+function parseTodayPlan(overview: unknown, timezone: string | null): TodayPlan | null {
+  if (!isObj(overview)) return null;
+  const env = overview['data'];
+  const root = isObj(env) ? env : overview;
+  const it = isObj(root) ? root['itinerary'] : null;
+  if (!isObj(it) || it['ok'] !== true) return null;
+  const data = it['data'];
+  const days = isObj(data) ? data['days'] : null;
+  if (!Array.isArray(days)) return null;
+  // Today in the destination's local date (falls back to user-local
+  // if we don't know the trip TZ — close enough for the hub glance).
+  const tz = timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const today = new Intl.DateTimeFormat('en-CA', {
+    timeZone: tz,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date()); // → 'YYYY-MM-DD'
+  for (const d of days) {
+    if (!isObj(d)) continue;
+    const date = typeof d['date'] === 'string' ? d['date'].slice(0, 10) : null;
+    if (date !== today) continue;
+    const summary = typeof d['summary'] === 'string' ? d['summary'].trim() : null;
+    const items = Array.isArray(d['items']) ? d['items'] : [];
+    const firstItem = items[0];
+    const firstTitle =
+      isObj(firstItem) && typeof firstItem['title'] === 'string' ? firstItem['title'] : null;
+    return {
+      summary: summary && summary.length > 0 ? summary : null,
+      itemCount: items.length,
+      firstItemTitle: firstTitle,
+    };
+  }
+  return null;
+}
+
 function parseWeather(overview: unknown): ParsedHubWeather | null {
   if (!isObj(overview)) return null;
   const env = overview['data'];
@@ -254,6 +300,8 @@ export default function HomePage() {
     | { kind: 'ok'; days: readonly HubWeatherDay[]; timezone: string | null }
     | { kind: 'unavailable' };
   const [weather, setWeather] = useState<WeatherState>({ kind: 'idle' });
+  // F21 — "What's next today" parsed from the same overview fetch.
+  const [todayPlan, setTodayPlan] = useState<TodayPlan | null>(null);
 
   // F3 — refresh strategy. Initial fetch + a quiet 10-minute interval
   // + a refresh on tab visibility-change. Open-Meteo doesn't churn
@@ -281,6 +329,9 @@ export default function HomePage() {
           if (!firstTime && prev.kind === 'ok') return prev;
           return { kind: 'unavailable' };
         });
+        // F21 — harvest today's plan from the SAME response. No new
+        // network call. Null when no match for today's date.
+        setTodayPlan(parseTodayPlan(res, parsed?.timezone ?? null));
       } catch {
         if (!alive) return;
         setWeather((prev) => (firstTime || prev.kind !== 'ok' ? { kind: 'unavailable' } : prev));
@@ -449,6 +500,22 @@ export default function HomePage() {
                 {dayProgress ? (
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-gold-500/40 bg-gold-500/10 px-3 py-1 text-xs font-medium text-gold-700 dark:text-gold-200">
                     Day {dayProgress.dayIdx} of {dayProgress.totalDays}
+                  </span>
+                ) : null}
+                {/* F21 — today's plan glance. Honest: only when the
+                    overview's itinerary section succeeded AND today's
+                    date matches one of the day rows. */}
+                {todayPlan && weatherTrip?.id === current.id ? (
+                  <span
+                    className="inline-flex items-center gap-1.5 rounded-full border border-brand/30 bg-brand/8 px-3 py-1 text-xs text-surface-foreground"
+                    title={todayPlan.firstItemTitle ?? todayPlan.summary ?? undefined}
+                  >
+                    📍{' '}
+                    {todayPlan.firstItemTitle
+                      ? `Next: ${todayPlan.firstItemTitle}`
+                      : todayPlan.summary
+                        ? todayPlan.summary
+                        : `${todayPlan.itemCount} planned today`}
                   </span>
                 ) : null}
                 {/* F22 — local destination time, honest: only when we
