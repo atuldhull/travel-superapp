@@ -66,6 +66,7 @@ import {
   GetTripTransportLegsUseCase,
   type TransportLeg,
 } from '../application/get-trip-transport-legs.use-case';
+import { GetTripCenterUseCase } from '../application/get-trip-center.use-case';
 import { GetTripWeatherUseCase } from '../application/get-trip-weather.use-case';
 import type { EventListing } from '../../events/domain/event-listing.entity';
 import type { EateryListing } from '../../food/domain/eatery-listing.entity';
@@ -179,6 +180,7 @@ export class TripController {
     private readonly resolveTripShare: ResolveTripShareUseCase,
     private readonly revokeTripShare: RevokeTripShareUseCase,
     private readonly listTripShares: ListTripSharesUseCase,
+    private readonly getTripCenter: GetTripCenterUseCase,
     private readonly getTripWeather: GetTripWeatherUseCase,
     private readonly getTripStays: GetTripStaysUseCase,
     private readonly getTripEateries: GetTripEateriesUseCase,
@@ -786,6 +788,27 @@ export class TripController {
   ): Promise<{ forecast: WeatherForecast }> {
     const forecast = await this.getTripWeather.execute(id, user.sub);
     return { forecast };
+  }
+
+  /**
+   * Trip center as the lightest possible read — `{ lat, lng }`.
+   *
+   * Installed for Phase 2 polish (F2): the /home "Plan with AI"
+   * button needs the center to seed the global assistant. The
+   * previous implementation harvested it from the weather forecast
+   * inside the overview response, which silently disappeared when
+   * Open-Meteo was down. This route is the dedicated honest source —
+   * never coupled to a downstream provider.
+   */
+  @ApiOperation({ summary: 'Just the trip center coords. Owner-gated, tiny.' })
+  @ApiResponse({ status: 404, description: 'TRIP_NOT_FOUND.' })
+  @Get(':id/center')
+  @HttpCode(HttpStatus.OK)
+  async center(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ): Promise<{ lat: number; lng: number }> {
+    return this.getTripCenter.execute(id, user.sub);
   }
 
   /**
