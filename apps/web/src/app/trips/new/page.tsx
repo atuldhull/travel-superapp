@@ -63,6 +63,73 @@ const TRIP_TYPES: readonly string[] = [
   'Budget / backpacking',
 ];
 
+// F12 — "How you like to travel" controls. All fold into the
+// planner instruction so the AI itinerary actually reflects them.
+type Pace = 'slow' | 'balanced' | 'packed';
+const PACES: readonly { key: Pace; label: string; phrase: string }[] = [
+  {
+    key: 'slow',
+    label: 'Slow & relaxed',
+    phrase: 'Slow pace — fewer beats per day, longer stops.',
+  },
+  {
+    key: 'balanced',
+    label: 'Balanced',
+    phrase: 'Balanced pace — a couple of highlights per day with downtime.',
+  },
+  {
+    key: 'packed',
+    label: 'Pack it in',
+    phrase: 'Packed pace — fit as many highlights as possible per day.',
+  },
+];
+
+type BudgetTier = 'shoestring' | 'comfort' | 'luxury';
+const BUDGETS: readonly { key: BudgetTier; label: string; phrase: string }[] = [
+  {
+    key: 'shoestring',
+    label: '⛺ Shoestring',
+    phrase: 'Shoestring budget — hostels, street food, public transport.',
+  },
+  {
+    key: 'comfort',
+    label: '🏨 Comfort',
+    phrase: 'Comfort budget — 3-star stays, mid-range eats, occasional taxis.',
+  },
+  {
+    key: 'luxury',
+    label: '🌟 Luxury',
+    phrase: 'Luxury budget — boutique/5-star stays, fine dining, private transport.',
+  },
+];
+
+type GroupKind = 'solo' | 'couple' | 'family' | 'group';
+const GROUPS: readonly { key: GroupKind; label: string; phrase: string }[] = [
+  { key: 'solo', label: 'Solo', phrase: 'Travelling solo.' },
+  { key: 'couple', label: 'Couple', phrase: 'Couple travel — romantic spots welcome.' },
+  {
+    key: 'family',
+    label: 'Family w/ kids',
+    phrase: 'Family with kids — keep activities child-friendly.',
+  },
+  { key: 'group', label: 'Group of friends', phrase: 'Group of friends — social spots welcome.' },
+];
+
+const CONSTRAINTS: readonly { key: string; label: string; phrase: string }[] = [
+  { key: 'no-fly', label: 'No flying', phrase: 'Avoid flights — ground transport only.' },
+  {
+    key: 'step-free',
+    label: 'Step-free / accessible',
+    phrase: 'Accessibility is required — step-free routes only.',
+  },
+  { key: 'vegetarian', label: 'Vegetarian', phrase: 'Vegetarian-friendly food only.' },
+  { key: 'vegan', label: 'Vegan', phrase: 'Vegan-friendly food only.' },
+  { key: 'halal', label: 'Halal', phrase: 'Halal food only.' },
+  { key: 'kosher', label: 'Kosher', phrase: 'Kosher food only.' },
+  { key: 'gluten-free', label: 'Gluten-free', phrase: 'Gluten-free food only.' },
+  { key: 'no-spicy', label: 'No spicy food', phrase: 'Avoid spicy food.' },
+];
+
 type DurationPresetKey = 'weekend' | 'long-weekend' | 'week';
 const DURATION_PRESETS: readonly { key: DurationPresetKey; label: string }[] = [
   { key: 'weekend', label: 'Weekend (2 nights)' },
@@ -143,6 +210,16 @@ export default function NewTripPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [frequent, setFrequent] = useState<readonly FrequentLocation[]>([]);
   const [titleFocused, setTitleFocused] = useState(false);
+  // F12 — how-you-travel selectors (all optional; fold into the AI
+  // instruction so the plan actually reflects them).
+  const [pace, setPace] = useState<Pace | null>(null);
+  const [budget, setBudget] = useState<BudgetTier | null>(null);
+  const [groupKind, setGroupKind] = useState<GroupKind | null>(null);
+  const [constraintKeys, setConstraintKeys] = useState<readonly string[]>([]);
+
+  function toggleConstraint(k: string) {
+    setConstraintKeys((cur) => (cur.includes(k) ? cur.filter((x) => x !== k) : [...cur, k]));
+  }
 
   useEffect(() => {
     setFrequent(listFrequentLocations(''));
@@ -261,6 +338,9 @@ export default function NewTripPage() {
   const nights = nightsBetween(startsOn, endsOn);
 
   // E4 — compose the planner instruction from every selected input.
+  // F12 — pace + budget tier + group kind + diet/accessibility
+  // constraints fold in at the end so they sit alongside the saved
+  // preferences signals.
   function buildInstruction(): string {
     const p: string[] = [];
     if (tripType) p.push(`Trip type: ${tripType}.`);
@@ -273,6 +353,22 @@ export default function NewTripPage() {
     if (prefs?.comfortMode) p.push('Accessibility & comfort matter.');
     if (prefs?.familyMode) p.push('Family-friendly, travelling with kids.');
     if (prefs?.nomadMode) p.push('Digital-nomad friendly (good wifi, calmer pace).');
+    if (pace) {
+      const phrase = PACES.find((x) => x.key === pace)?.phrase;
+      if (phrase) p.push(phrase);
+    }
+    if (budget) {
+      const phrase = BUDGETS.find((x) => x.key === budget)?.phrase;
+      if (phrase) p.push(phrase);
+    }
+    if (groupKind) {
+      const phrase = GROUPS.find((x) => x.key === groupKind)?.phrase;
+      if (phrase) p.push(phrase);
+    }
+    for (const key of constraintKeys) {
+      const phrase = CONSTRAINTS.find((c) => c.key === key)?.phrase;
+      if (phrase) p.push(phrase);
+    }
     return p.join(' ').slice(0, 600);
   }
 
@@ -621,6 +717,90 @@ export default function NewTripPage() {
             />
           </div>
         </div>
+
+        {/* F12 — How you like to travel. All optional; each selection
+            folds into buildInstruction() so the AI plan reflects them. */}
+        <section className="space-y-3 rounded-xl border border-gold-600/15 bg-gold-500/[0.03] p-4">
+          <span className="block text-sm font-medium text-surface-foreground">
+            How you like to travel <span className="text-muted">(optional)</span>
+          </span>
+
+          <div className="space-y-1.5">
+            <span className="block text-xs font-medium uppercase tracking-wide text-muted">
+              Pace
+            </span>
+            <div className="flex flex-wrap gap-2">
+              {PACES.map((p) => (
+                <button
+                  key={p.key}
+                  type="button"
+                  onClick={() => setPace((cur) => (cur === p.key ? null : p.key))}
+                  aria-pressed={pace === p.key}
+                  className={chip(pace === p.key)}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <span className="block text-xs font-medium uppercase tracking-wide text-muted">
+              Budget
+            </span>
+            <div className="flex flex-wrap gap-2">
+              {BUDGETS.map((b) => (
+                <button
+                  key={b.key}
+                  type="button"
+                  onClick={() => setBudget((cur) => (cur === b.key ? null : b.key))}
+                  aria-pressed={budget === b.key}
+                  className={chip(budget === b.key)}
+                >
+                  {b.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <span className="block text-xs font-medium uppercase tracking-wide text-muted">
+              Group
+            </span>
+            <div className="flex flex-wrap gap-2">
+              {GROUPS.map((g) => (
+                <button
+                  key={g.key}
+                  type="button"
+                  onClick={() => setGroupKind((cur) => (cur === g.key ? null : g.key))}
+                  aria-pressed={groupKind === g.key}
+                  className={chip(groupKind === g.key)}
+                >
+                  {g.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <span className="block text-xs font-medium uppercase tracking-wide text-muted">
+              Diet &amp; accessibility <span className="text-muted/70">(pick any that apply)</span>
+            </span>
+            <div className="flex flex-wrap gap-2">
+              {CONSTRAINTS.map((c) => (
+                <button
+                  key={c.key}
+                  type="button"
+                  onClick={() => toggleConstraint(c.key)}
+                  aria-pressed={constraintKeys.includes(c.key)}
+                  className={chip(constraintKeys.includes(c.key))}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
 
         {/* E3 — preferences applied (read-only, folded into the plan).
             F8 — when prefs is loaded but empty, swap to a calm "set
