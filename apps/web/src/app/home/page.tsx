@@ -133,7 +133,11 @@ interface ParsedHubWeather {
 interface TodayPlan {
   readonly summary: string | null;
   readonly itemCount: number;
-  readonly firstItemTitle: string | null;
+  // First NOT-completed item's title + optional startTime (ISO).
+  // G2 — used to render an ETA chip on /home.
+  readonly nextItemTitle: string | null;
+  readonly nextItemStartTime: string | null;
+  readonly completedCount: number;
 }
 
 function parseTodayPlan(overview: unknown, timezone: string | null): TodayPlan | null {
@@ -160,16 +164,46 @@ function parseTodayPlan(overview: unknown, timezone: string | null): TodayPlan |
     if (date !== today) continue;
     const summary = typeof d['summary'] === 'string' ? d['summary'].trim() : null;
     const items = Array.isArray(d['items']) ? d['items'] : [];
-    const firstItem = items[0];
-    const firstTitle =
-      isObj(firstItem) && typeof firstItem['title'] === 'string' ? firstItem['title'] : null;
+    // G1/G2 — find the first uncompleted item (so users see "next"
+    // not "first ever"). Counts completed for the progress chip.
+    let nextItemTitle: string | null = null;
+    let nextItemStartTime: string | null = null;
+    let completedCount = 0;
+    for (const item of items) {
+      if (!isObj(item)) continue;
+      if (item['completedAt']) {
+        completedCount += 1;
+        continue;
+      }
+      if (nextItemTitle === null) {
+        nextItemTitle = typeof item['title'] === 'string' ? item['title'] : null;
+        nextItemStartTime = typeof item['startTime'] === 'string' ? item['startTime'] : null;
+      }
+    }
     return {
       summary: summary && summary.length > 0 ? summary : null,
       itemCount: items.length,
-      firstItemTitle: firstTitle,
+      nextItemTitle,
+      nextItemStartTime,
+      completedCount,
     };
   }
   return null;
+}
+
+// G2 — short human countdown to a future ISO instant. Returns null
+// if the instant is past (or invalid). "5m", "1h 23m", "in 3h".
+function timeUntil(iso: string | null): string | null {
+  if (!iso) return null;
+  const t = new Date(iso).getTime();
+  if (!Number.isFinite(t)) return null;
+  const diff = t - Date.now();
+  if (diff <= 0) return null;
+  const mins = Math.round(diff / 60_000);
+  if (mins < 60) return `in ${mins}m`;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return m === 0 ? `in ${h}h` : `in ${h}h ${m}m`;
 }
 
 function parseWeather(overview: unknown): ParsedHubWeather | null {
@@ -573,21 +607,41 @@ export default function HomePage() {
                     Day {dayProgress.dayIdx} of {dayProgress.totalDays}
                   </span>
                 ) : null}
-                {/* F21 — today's plan glance. Honest: only when the
-                    overview's itinerary section succeeded AND today's
-                    date matches one of the day rows. */}
+                {/* F21 + G2 — today's plan glance + ETA chip. Honest:
+                    only when the overview's itinerary section succeeded
+                    AND today's date matches one of the day rows. G2 adds
+                    the time-to-next-item when the next uncompleted item
+                    has a startTime, plus a progress chip. */}
                 {todayPlan && weatherTrip?.id === current.id ? (
-                  <span
-                    className="inline-flex items-center gap-1.5 rounded-full border border-brand/30 bg-brand/8 px-3 py-1 text-xs text-surface-foreground"
-                    title={todayPlan.firstItemTitle ?? todayPlan.summary ?? undefined}
-                  >
-                    📍{' '}
-                    {todayPlan.firstItemTitle
-                      ? `Next: ${todayPlan.firstItemTitle}`
-                      : todayPlan.summary
-                        ? todayPlan.summary
-                        : `${todayPlan.itemCount} planned today`}
-                  </span>
+                  <>
+                    <span
+                      className="inline-flex items-center gap-1.5 rounded-full border border-brand/30 bg-brand/8 px-3 py-1 text-xs text-surface-foreground"
+                      title={todayPlan.nextItemTitle ?? todayPlan.summary ?? undefined}
+                    >
+                      📍{' '}
+                      {todayPlan.nextItemTitle ? (
+                        <>
+                          Next: {todayPlan.nextItemTitle}
+                          {(() => {
+                            const eta = timeUntil(todayPlan.nextItemStartTime);
+                            return eta ? <span className="ml-1 text-muted">· {eta}</span> : null;
+                          })()}
+                        </>
+                      ) : todayPlan.summary ? (
+                        todayPlan.summary
+                      ) : (
+                        `${todayPlan.itemCount} planned today`
+                      )}
+                    </span>
+                    {todayPlan.itemCount > 0 ? (
+                      <span
+                        className="inline-flex items-center gap-1 rounded-full border border-gold-600/20 bg-surface/60 px-3 py-1 text-xs text-muted"
+                        title="Items checked off today"
+                      >
+                        ✓ {todayPlan.completedCount}/{todayPlan.itemCount}
+                      </span>
+                    ) : null}
+                  </>
                 ) : null}
                 {/* F22 — local destination time, honest: only when we
                     actually know the timezone (from the weather
