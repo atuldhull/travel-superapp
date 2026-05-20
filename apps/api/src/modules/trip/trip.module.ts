@@ -52,6 +52,7 @@ import { GetTripStaysUseCase } from './application/get-trip-stays.use-case';
 import { GetTripTransportLegsUseCase } from './application/get-trip-transport-legs.use-case';
 import { GetTripCenterUseCase } from './application/get-trip-center.use-case';
 import { SetItemCompletedUseCase } from './application/set-item-completed.use-case';
+import { ShiftItineraryDatesUseCase } from './application/shift-itinerary-dates.use-case';
 import { GetTripWeatherUseCase } from './application/get-trip-weather.use-case';
 import { ListItineraryUseCase } from './application/list-itinerary.use-case';
 import { ListTripsUseCase } from './application/list-trips.use-case';
@@ -159,6 +160,7 @@ import { TripController } from './interface/trip.controller';
     ListTripSharesUseCase,
     GetTripCenterUseCase,
     SetItemCompletedUseCase,
+    ShiftItineraryDatesUseCase,
     GetTripWeatherUseCase,
     GetTripStaysUseCase,
     GetTripEateriesUseCase,

@@ -68,6 +68,7 @@ import {
 } from '../application/get-trip-transport-legs.use-case';
 import { GetTripCenterUseCase } from '../application/get-trip-center.use-case';
 import { SetItemCompletedUseCase } from '../application/set-item-completed.use-case';
+import { ShiftItineraryDatesUseCase } from '../application/shift-itinerary-dates.use-case';
 import { GetTripWeatherUseCase } from '../application/get-trip-weather.use-case';
 import type { EventListing } from '../../events/domain/event-listing.entity';
 import type { EateryListing } from '../../food/domain/eatery-listing.entity';
@@ -92,6 +93,8 @@ import {
   CreateTripShareBodySchema,
   GenerateSamplePlanBodySchema,
   PlanWithAiBodySchema,
+  ShiftItineraryBodySchema,
+  type ShiftItineraryBody,
   SuggestPlacesForTripBodySchema,
   UpdateDayItemsBodySchema,
   UpdateTripBodySchema,
@@ -183,6 +186,7 @@ export class TripController {
     private readonly listTripShares: ListTripSharesUseCase,
     private readonly getTripCenter: GetTripCenterUseCase,
     private readonly setItemCompleted: SetItemCompletedUseCase,
+    private readonly shiftItineraryDates: ShiftItineraryDatesUseCase,
     private readonly getTripWeather: GetTripWeatherUseCase,
     private readonly getTripStays: GetTripStaysUseCase,
     private readonly getTripEateries: GetTripEateriesUseCase,
@@ -885,6 +889,42 @@ export class TripController {
       id: updated.id,
       completedAt: updated.completedAt ? updated.completedAt.toISOString() : null,
     };
+  }
+
+  /**
+   * Phase 3 (G4) — slide every itinerary day for a trip by a signed
+   * integer number of days. Owner-gated. Use case: the user just
+   * pushed `startsOn` forward by a week and wants the existing
+   * itinerary to come along for the ride.
+   *
+   *   POST /api/v1/trips/:id/itinerary/shift  body: { deltaDays }
+   *
+   * Bounded ±365 days at the zod gate. Idempotent on deltaDays=0
+   * (returns shifted=0 without touching rows).
+   */
+  @ApiOperation({ summary: 'Shift every itinerary day for the trip by deltaDays (G4).' })
+  @ApiResponse({
+    status: 200,
+    description: 'How many day rows were updated.',
+    schema: {
+      type: 'object',
+      required: ['shifted'],
+      properties: { shifted: { type: 'number', example: 7 } },
+    },
+  })
+  @ApiResponse({
+    status: 422,
+    description: 'INVALID_INPUT — deltaDays out of range (|delta| > 365) or not an integer.',
+  })
+  @ApiResponse({ status: 404, description: 'TRIP_NOT_FOUND.' })
+  @Post(':id/itinerary/shift')
+  @HttpCode(HttpStatus.OK)
+  async shiftItinerary(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(ShiftItineraryBodySchema)) body: ShiftItineraryBody,
+  ): Promise<{ shifted: number }> {
+    return this.shiftItineraryDates.execute(id, user.sub, body.deltaDays);
   }
 
   /**
