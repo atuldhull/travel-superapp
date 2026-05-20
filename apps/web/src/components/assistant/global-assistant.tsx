@@ -18,9 +18,9 @@
  */
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { MessageCircle, Send, Sparkles, X } from 'lucide-react';
+import { MessageCircle, RotateCcw, Send, Sparkles, X } from 'lucide-react';
 import { apiFetch, type GenerateSamplePlanResponseDto } from '@app/sdk';
 import { searchPlaces } from '../../lib/geocode';
 
@@ -30,8 +30,91 @@ interface Msg {
 }
 type Phase = 'ask-place' | 'planning' | 'chat';
 
+interface AssistantCtx {
+  readonly title: string;
+  readonly center: { readonly lat: number; readonly lng: number };
+  readonly plan: string;
+}
+
 const RADIUS_KM = 20;
 const QUICK = ['2 more days', 'Make it cheaper', 'More adventure', 'Slower pace'];
+const WELCOME_MSG: Msg = {
+  role: 'ai',
+  text: "Hi — I'm your travel planner. Where would you like to go?",
+};
+
+// F6 — persist chat across reloads. Versioned key so a future shape
+// change can break cleanly without parsing old payloads.
+const STORAGE_KEY = 'travel:global-assistant:v1';
+const MAX_PERSIST_MSGS = 50;
+
+interface PersistedAssistantState {
+  readonly v: 1;
+  readonly msgs: readonly Msg[];
+  readonly phase: Phase;
+  readonly ctx: AssistantCtx | null;
+}
+
+function isMsg(v: unknown): v is Msg {
+  if (typeof v !== 'object' || v === null) return false;
+  const o = v as Record<string, unknown>;
+  return (o.role === 'you' || o.role === 'ai') && typeof o.text === 'string';
+}
+
+function isCtx(v: unknown): v is AssistantCtx {
+  if (typeof v !== 'object' || v === null) return false;
+  const o = v as Record<string, unknown>;
+  if (typeof o.title !== 'string' || typeof o.plan !== 'string') return false;
+  const c = o.center;
+  if (typeof c !== 'object' || c === null) return false;
+  const cc = c as Record<string, unknown>;
+  return (
+    typeof cc.lat === 'number' &&
+    Number.isFinite(cc.lat) &&
+    typeof cc.lng === 'number' &&
+    Number.isFinite(cc.lng)
+  );
+}
+
+function loadSnapshot(): PersistedAssistantState | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    if (parsed.v !== 1 || !Array.isArray(parsed.msgs)) return null;
+    const msgs = parsed.msgs.filter(isMsg);
+    const phase: Phase =
+      parsed.phase === 'planning' || parsed.phase === 'chat' ? parsed.phase : 'ask-place';
+    const ctx: AssistantCtx | null = isCtx(parsed.ctx) ? parsed.ctx : null;
+    return { v: 1, msgs, phase, ctx };
+  } catch {
+    return null;
+  }
+}
+
+function saveSnapshot(state: PersistedAssistantState): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const trimmed: PersistedAssistantState = {
+      ...state,
+      msgs: state.msgs.slice(-MAX_PERSIST_MSGS),
+    };
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
+  } catch {
+    // quota, privacy mode, etc. — silently no-op so the chat keeps
+    // working in-memory.
+  }
+}
+
+function clearSnapshot(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // no-op
+  }
+}
 
 // D5 — imperative entry-point for the homepage hub (and any other
 // surface that already knows the trip context). Calling this opens
@@ -51,26 +134,42 @@ export function openAssistantWith(args: OpenWithArgs): boolean {
 
 export function GlobalAssistant() {
   const reduce = useReducedMotion();
+  // F6 — lazy init from localStorage so a refresh doesn't lose the
+  // conversation. `useMemo` so we read the snapshot exactly once per
+  // mount; falls back to the welcome message + ask-place phase.
+  const initial = useMemo(() => loadSnapshot(), []);
   const [open, setOpen] = useState(false);
-  const [phase, setPhase] = useState<Phase>('ask-place');
-  const [msgs, setMsgs] = useState<readonly Msg[]>([
-    { role: 'ai', text: "Hi — I'm your travel planner. Where would you like to go?" },
-  ]);
+  const [phase, setPhase] = useState<Phase>(initial?.phase ?? 'ask-place');
+  const [msgs, setMsgs] = useState<readonly Msg[]>(initial?.msgs ?? [WELCOME_MSG]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
-  const ctxRef = useRef<{
-    title: string;
-    center: { lat: number; lng: number };
-    plan: string;
-  } | null>(null);
+  const ctxRef = useRef<AssistantCtx | null>(initial?.ctx ?? null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [msgs, busy]);
 
+  // F6 — persist on every transition. ctxRef is a ref (no re-render
+  // trigger), but every codepath that mutates it also calls a setter
+  // (setPhase / setMsgs via `say`), so this effect fires alongside.
+  useEffect(() => {
+    saveSnapshot({ v: 1, msgs, phase, ctx: ctxRef.current });
+  }, [msgs, phase]);
+
   function say(role: Msg['role'], text: string) {
     setMsgs((m) => [...m, { role, text }]);
+  }
+
+  // F6 — reset to a fresh welcome state. Clears localStorage too so a
+  // subsequent refresh doesn't restore the just-cleared chat.
+  function resetChat() {
+    clearSnapshot();
+    ctxRef.current = null;
+    setPhase('ask-place');
+    setMsgs([WELCOME_MSG]);
+    setInput('');
+    setBusy(false);
   }
 
   // D5 — register the module-level opener while mounted. Note the
@@ -204,14 +303,27 @@ export function GlobalAssistant() {
               <span className="inline-flex items-center gap-2 text-sm font-semibold">
                 <MessageCircle aria-hidden className="h-4 w-4 text-gold-300" /> Travel assistant
               </span>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                aria-label="Close assistant"
-                className="rounded-full p-1 text-white/70 transition hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-              >
-                <X aria-hidden className="h-4 w-4" />
-              </button>
+              <div className="flex items-center gap-1">
+                {msgs.length > 1 || phase !== 'ask-place' ? (
+                  <button
+                    type="button"
+                    onClick={resetChat}
+                    aria-label="Start a new chat"
+                    title="Start a new chat"
+                    className="rounded-full p-1 text-white/70 transition hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  >
+                    <RotateCcw aria-hidden className="h-4 w-4" />
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  aria-label="Close assistant"
+                  className="rounded-full p-1 text-white/70 transition hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                >
+                  <X aria-hidden className="h-4 w-4" />
+                </button>
+              </div>
             </header>
 
             <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto p-4">
