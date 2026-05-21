@@ -26,7 +26,13 @@ import type { GeoQueries } from '../src/common/db/geo-queries';
 
 const NOW = new Date('2026-05-16T00:00:00.000Z');
 const YESTERDAY = new Date('2026-05-15T00:00:00.000Z');
-const TOMORROW = new Date('2026-05-17T00:00:00.000Z');
+// TOMORROW must be RELATIVE to the real clock, not hardcoded: the
+// PublishTripUseCase calls `assertPublishable(endsOn, new Date())`
+// with the actual `new Date()`, so a fixed "2026-05-17" silently
+// rotted into the past and the "not-yet-ended" test stopped
+// rejecting. Relative-future keeps it genuinely un-ended. (J3 fix
+// of a pre-existing date-drift bug.)
+const TOMORROW = new Date(Date.now() + 2 * 86_400_000);
 
 describe('TripPublication invariants (POST.2B.2, pure domain)', () => {
   it('INVARIANT A: null or future end date → 422 TRIP_NOT_ENDED', () => {
@@ -129,6 +135,10 @@ describe('PublishTripUseCase / UnpublishTripUseCase (POST.2B.2, fakes)', () => {
     }
     async countFollowers(): Promise<number> {
       return 0;
+    }
+    // Phase 5 (J3) — discovery read; not exercised by this spec.
+    async listSuggestedTravellers(): Promise<readonly never[]> {
+      return [];
     }
   }
 

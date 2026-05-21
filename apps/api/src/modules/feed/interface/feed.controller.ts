@@ -25,12 +25,20 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { type AuthenticatedUser, CurrentUser } from '../../../common/auth';
 import { GetMyFeedUseCase, type GetMyFeedResult } from '../application/get-my-feed.use-case';
 import { PublishTripUseCase } from '../application/publish-trip.use-case';
 import { UnpublishTripUseCase } from '../application/unpublish-trip.use-case';
 import { GetTripPublicationUseCase } from '../application/get-trip-publication.use-case';
+import { SuggestedTravellersUseCase } from '../application/suggested-travellers.use-case';
 import { GetFeedUseCase } from '../application/get-feed.use-case';
 import { GetCreatorProfileUseCase } from '../application/get-creator-profile.use-case';
 import { SimilarTripsUseCase } from '../application/similar-trips.use-case';
@@ -60,6 +68,13 @@ interface PublicationStatusDto {
   readonly publishedAt: string | null;
   readonly exposedLat: number | null;
   readonly exposedLng: number | null;
+}
+
+/** J3 — one "discover travellers" suggestion. */
+interface SuggestedTravellerDto {
+  readonly userId: string;
+  readonly displayName: string;
+  readonly publishedCount: number;
 }
 
 function pubToDto(p: TripPublication): TripPublicationDto {
@@ -104,6 +119,7 @@ export class FeedController {
     private readonly getCreatorProfile: GetCreatorProfileUseCase,
     private readonly similarTrips: SimilarTripsUseCase,
     private readonly getTripPublication: GetTripPublicationUseCase,
+    private readonly suggestedTravellers: SuggestedTravellersUseCase,
   ) {}
 
   @ApiOperation({
@@ -196,6 +212,30 @@ export class FeedController {
       ...(parsedLimit !== undefined ? { limit: parsedLimit } : {}),
     });
     return { items };
+  }
+
+  @ApiOperation({
+    summary:
+      "Discover travellers to follow — authors of PUBLIC trips the caller doesn't follow yet, most prolific first.",
+  })
+  @ApiQuery({ name: 'limit', required: false, description: '1..50, default 12' })
+  @Get('people')
+  async people(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('limit') limit?: string,
+  ): Promise<{ travellers: readonly SuggestedTravellerDto[] }> {
+    const parsed = limit !== undefined ? Number.parseInt(limit, 10) : undefined;
+    const list = await this.suggestedTravellers.execute({
+      viewerId: user.sub,
+      ...(parsed !== undefined && Number.isFinite(parsed) ? { limit: parsed } : {}),
+    });
+    return {
+      travellers: list.map((t) => ({
+        userId: t.userId,
+        displayName: t.displayName,
+        publishedCount: t.publishedCount,
+      })),
+    };
   }
 
   @ApiOperation({

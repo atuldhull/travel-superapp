@@ -177,6 +177,19 @@ export function getFollowing(userId: string, limit?: number): Promise<{ users: C
   return get(`/api/v1/users/${encodeURIComponent(userId)}/following${qs({ limit })}`);
 }
 
+/** J3 — a suggested traveller to follow (discover surface). */
+export interface SuggestedTraveller {
+  readonly userId: string;
+  readonly displayName: string;
+  readonly publishedCount: number;
+}
+
+export function getSuggestedTravellers(
+  limit?: number,
+): Promise<{ travellers: SuggestedTraveller[] }> {
+  return get(`/api/v1/feed/people${qs({ limit })}`);
+}
+
 // ─── Social graph ───────────────────────────────────────────────────────
 export function followUser(userId: string): Promise<{ following: true }> {
   return send(`/api/v1/users/${encodeURIComponent(userId)}/follow`, 'POST');
