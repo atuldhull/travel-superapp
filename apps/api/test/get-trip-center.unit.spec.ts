@@ -10,12 +10,12 @@
 import { GeoQueries } from '../src/common/db/geo-queries';
 import { GetTripCenterUseCase } from '../src/modules/trip/application/get-trip-center.use-case';
 import type { TripRepository } from '../src/modules/trip/application/ports/trip.repository';
-import type { TripEntity } from '../src/modules/trip/domain/trip.entity';
+import type { Trip } from '../src/modules/trip/domain/trip.entity';
 
 class StubTripRepository implements Partial<TripRepository> {
-  public byKey = new Map<string, TripEntity>();
+  public byKey = new Map<string, Trip>();
 
-  async findByIdForUser(id: string, userId: string): Promise<TripEntity | null> {
+  async findByIdForUser(id: string, userId: string): Promise<Trip | null> {
     return this.byKey.get(`${id}:${userId}`) ?? null;
   }
 }
@@ -28,7 +28,7 @@ class StubGeoQueries {
   }
 }
 
-function buildTrip(id: string, userId: string): TripEntity {
+function buildTrip(id: string, userId: string): Trip {
   // Minimal shape that satisfies the use-case's reads.
   return {
     id,
@@ -42,7 +42,7 @@ function buildTrip(id: string, userId: string): TripEntity {
     archivedAt: null,
     createdAt: new Date(),
     updatedAt: new Date(),
-  } as TripEntity;
+  } as Trip;
 }
 
 describe('GetTripCenterUseCase (unit)', () => {
