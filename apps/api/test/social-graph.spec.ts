@@ -11,6 +11,7 @@
  * Installed by prompt [POST.2B.1].
  */
 import { ForbiddenError, ValidationError } from '@app/errors';
+import { InMemoryEventBus } from '@app/events';
 import type { Follow } from '../src/modules/social/domain/follow.entity';
 import type { UserBlock } from '../src/modules/social/domain/user-block.entity';
 import type { FollowRepository } from '../src/modules/social/application/ports/follow.repository';
@@ -92,8 +93,13 @@ class FakeBlocks implements BlockRepository {
 }
 
 describe('Follow / Block use-cases (POST.2B.1, unit)', () => {
+  // J6 — FollowUseCase now publishes Social.UserFollowed; an
+  // in-memory bus with no subscribers is a clean no-op for these
+  // pure unit tests.
+  const bus = new InMemoryEventBus();
+
   it('rejects self-follow with 422 CANNOT_FOLLOW_SELF', async () => {
-    const uc = new FollowUseCase(new FakeFollows(), new FakeBlocks());
+    const uc = new FollowUseCase(new FakeFollows(), new FakeBlocks(), bus);
     await expect(uc.execute({ followerId: 'u1', followeeId: 'u1' })).rejects.toMatchObject({
       code: 'CANNOT_FOLLOW_SELF',
     });
@@ -105,7 +111,7 @@ describe('Follow / Block use-cases (POST.2B.1, unit)', () => {
   it('refuses follow when a block exists in EITHER direction (403)', async () => {
     const blocks = new FakeBlocks();
     await blocks.block('u2', 'u1'); // u2 blocked u1
-    const uc = new FollowUseCase(new FakeFollows(), blocks);
+    const uc = new FollowUseCase(new FakeFollows(), blocks, bus);
     await expect(uc.execute({ followerId: 'u1', followeeId: 'u2' })).rejects.toMatchObject({
       code: 'BLOCKED_INTERACTION',
     });
@@ -113,7 +119,7 @@ describe('Follow / Block use-cases (POST.2B.1, unit)', () => {
 
   it('follow then unfollow is idempotent (no throw on repeats)', async () => {
     const follows = new FakeFollows();
-    const fu = new FollowUseCase(follows, new FakeBlocks());
+    const fu = new FollowUseCase(follows, new FakeBlocks(), bus);
     const uu = new UnfollowUseCase(follows);
     await fu.execute({ followerId: 'a', followeeId: 'b' });
     await fu.execute({ followerId: 'a', followeeId: 'b' }); // repeat

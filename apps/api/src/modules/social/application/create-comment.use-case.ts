@@ -12,9 +12,12 @@
  * Installed by prompt [J4].
  */
 import { Inject, Injectable } from '@nestjs/common';
+import { EVENT_BUS, type EventBus } from '@app/events';
 import { NotFoundError, ValidationError } from '@app/errors';
+import { getTraceContext } from '@app/logger';
 import type { TripComment } from '../domain/trip-comment.entity';
 import { MAX_COMMENT_LENGTH } from '../domain/trip-comment.entity';
+import { makeEvent, type TripCommentedEvent } from '../domain/social.events';
 import { COMMENT_REPOSITORY, type CommentRepository } from './ports/comment.repository';
 import { BLOCK_REPOSITORY, type BlockRepository } from './ports/block.repository';
 import { assertNotBlocked } from './block-user.use-case';
@@ -30,6 +33,7 @@ export class CreateCommentUseCase {
   constructor(
     @Inject(COMMENT_REPOSITORY) private readonly comments: CommentRepository,
     @Inject(BLOCK_REPOSITORY) private readonly blocks: BlockRepository,
+    @Inject(EVENT_BUS) private readonly events: EventBus,
   ) {}
 
   async execute(cmd: CreateCommentCommand): Promise<TripComment> {
@@ -67,6 +71,27 @@ export class CreateCommentUseCase {
       await assertNotBlocked(this.blocks, cmd.authorId, trip.authorId);
     }
 
-    return this.comments.create({ tripId: cmd.tripId, authorId: cmd.authorId, body });
+    const comment = await this.comments.create({
+      tripId: cmd.tripId,
+      authorId: cmd.authorId,
+      body,
+    });
+
+    // J6 — notify the trip's author. The handler skips self-comments,
+    // but we also skip emitting one to keep the bus quiet.
+    if (trip.authorId !== cmd.authorId) {
+      const evt: TripCommentedEvent = makeEvent(
+        'Social.TripCommented',
+        {
+          tripId: cmd.tripId,
+          commentId: comment.id,
+          tripAuthorId: trip.authorId,
+          commenterId: cmd.authorId,
+        },
+        getTraceContext()?.traceId ? { traceId: getTraceContext()!.traceId } : {},
+      );
+      await this.events.publish(evt);
+    }
+    return comment;
   }
 }
