@@ -190,6 +190,39 @@ export function getSuggestedTravellers(
   return get(`/api/v1/feed/people${qs({ limit })}`);
 }
 
+// ─── Trip comments (J4) ──────────────────────────────────────────────────
+
+/** J4 — one comment on a published trip. */
+export interface TripCommentDto {
+  readonly id: string;
+  readonly tripId: string;
+  readonly authorId: string;
+  readonly authorDisplayName: string | null;
+  readonly body: string;
+  readonly createdAt: string;
+}
+
+export function getTripComments(
+  tripId: string,
+): Promise<{ comments: TripCommentDto[]; count: number }> {
+  return get(`/api/v1/trips/${encodeURIComponent(tripId)}/comments`);
+}
+
+export function postTripComment(tripId: string, body: string): Promise<TripCommentDto> {
+  return apiFetch<Envelope<TripCommentDto>>(
+    `/api/v1/trips/${encodeURIComponent(tripId)}/comments`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ body }),
+      headers: { 'content-type': 'application/json' },
+    },
+  ).then((r) => r.data);
+}
+
+export function deleteTripComment(commentId: string): Promise<{ deleted: true }> {
+  return send(`/api/v1/comments/${encodeURIComponent(commentId)}`, 'DELETE');
+}
+
 // ─── Social graph ───────────────────────────────────────────────────────
 export function followUser(userId: string): Promise<{ following: true }> {
   return send(`/api/v1/users/${encodeURIComponent(userId)}/follow`, 'POST');

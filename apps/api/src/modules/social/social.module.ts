@@ -59,6 +59,13 @@ import { BlockUserUseCase } from './application/block-user.use-case';
 import { UnblockUserUseCase } from './application/unblock-user.use-case';
 import { ListConnectionsUseCase } from './application/list-connections.use-case';
 import { FollowController } from './interface/follow.controller';
+// Phase 5 (J4) — trip comments
+import { COMMENT_REPOSITORY } from './application/ports/comment.repository';
+import { PrismaCommentRepository } from './infrastructure/prisma-comment.repository';
+import { CreateCommentUseCase } from './application/create-comment.use-case';
+import { ListCommentsUseCase } from './application/list-comments.use-case';
+import { DeleteCommentUseCase } from './application/delete-comment.use-case';
+import { CommentsController } from './interface/comments.controller';
 import { PrismaReviewRepository } from './infrastructure/prisma-review.repository';
 import { PrismaVoteRepository } from './infrastructure/prisma-vote.repository';
 import { TripBalancesCache } from './infrastructure/trip-balances-cache';
@@ -91,6 +98,7 @@ import { VotesController } from './interface/votes.controller';
     SharedTripReactController,
     PublicUserProfileController,
     FollowController,
+    CommentsController,
   ],
   providers: [
     { provide: VOTE_REPOSITORY, useClass: PrismaVoteRepository },
@@ -105,6 +113,10 @@ import { VotesController } from './interface/votes.controller';
     BlockUserUseCase,
     UnblockUserUseCase,
     ListConnectionsUseCase,
+    { provide: COMMENT_REPOSITORY, useClass: PrismaCommentRepository },
+    CreateCommentUseCase,
+    ListCommentsUseCase,
+    DeleteCommentUseCase,
     CastVoteUseCase,
     RevokeVoteUseCase,
     ListTripVotesUseCase,

@@ -1420,3 +1420,24 @@ model LoginCode {
 
   @@index([destHash, createdAt])
 }
+
+// Phase 5 (J4) — comments on published trips. Flat (no threading)
+// in v1: one author leaves one body of text on one trip. FK-less on
+// tripId/authorId (the Follow / UserBlock / TripPublication
+// precedent — these social tables stay FK-less for admin-audit
+// reasons; orphan rows after a hard-delete are harmless, filtered on
+// read). Create is gated server-side to PUBLISHED trips + is
+// block-aware; reads are block-filtered. Additive only — pure
+// CREATE TABLE, no PostGIS/pgvector drift; apply via
+// `prisma migrate deploy`.
+model TripComment {
+  id        String   @id @default(cuid())
+  tripId    String
+  authorId  String
+  body      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tripId, createdAt]) // the per-trip thread, chronological
+  @@index([authorId]) // "comments by X" + author-delete gate
+}
