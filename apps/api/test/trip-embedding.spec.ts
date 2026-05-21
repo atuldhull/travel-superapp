@@ -163,8 +163,11 @@ describe('PublishTripUseCase embed-on-publish is BEST-EFFORT', () => {
     async findSimilarToPublication(): Promise<readonly never[]> {
       return [];
     }
-    // Phase 5 (J3) — discovery read; not exercised here.
+    // Phase 5 (J3/J5) — discovery reads; not exercised here.
     async listSuggestedTravellers(): Promise<readonly never[]> {
+      return [];
+    }
+    async findTripBuddies(): Promise<readonly never[]> {
       return [];
     }
   }
