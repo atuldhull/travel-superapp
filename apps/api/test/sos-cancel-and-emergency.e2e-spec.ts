@@ -137,6 +137,11 @@ describe('V.UX.35 SOS cancel + emergency numbers (integration, requires Docker P
   });
 
   it('Public emergency lookup: US → 911', async () => {
+    // The endpoint itself is a pure in-memory lookup, but the test
+    // app still needs to have BOOTED — a down Postgres makes
+    // `app.init()` unhealthy and every request 500s. Guard like the
+    // SOS tests above so an infra outage SKIPS rather than false-fails.
+    if (!dbReachable) return;
     const res = await app.inject({
       method: 'GET',
       url: '/api/v1/safety/emergency-numbers/US',
@@ -148,12 +153,14 @@ describe('V.UX.35 SOS cancel + emergency numbers (integration, requires Docker P
   });
 
   it('Public emergency lookup: case-insensitive (gb → GB)', async () => {
+    if (!dbReachable) return;
     const res = await app.inject({ method: 'GET', url: '/api/v1/safety/emergency-numbers/gb' });
     expect(res.statusCode).toBe(200);
     expect((JSON.parse(res.body) as { countryCode: string }).countryCode).toBe('GB');
   });
 
   it('Unknown country → 404 EMERGENCY_INFO_NOT_FOUND', async () => {
+    if (!dbReachable) return;
     const res = await app.inject({ method: 'GET', url: '/api/v1/safety/emergency-numbers/ZZ' });
     expect(res.statusCode).toBe(404);
     expect(JSON.parse(res.body).code).toBe('EMERGENCY_INFO_NOT_FOUND');
