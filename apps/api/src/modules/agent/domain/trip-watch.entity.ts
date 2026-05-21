@@ -16,7 +16,15 @@
 // `daysUntilStart` from the optional `tripStartsOnIso` on the
 // query. Subscribing a watch to this kind stays opt-in — nothing
 // new fires by default (LAW 2).
-export type SignalKind = 'weather' | 'flight' | 'geofence' | 'deadline';
+//
+// Phase 6 (I4) — `safety_proximity` is the proactive safety signal:
+// a pure `SafetyProximitySignalAdapter` evaluates recent verified
+// scam reports near the trip center (passed on the query as
+// `nearbyScamReports`, NOT PII — aggregate reports near coordinates).
+// Like `deadline` it is addressable but does NOT auto-fire in the
+// live watch loop, which builds queries with only `{kind,lat,lng}`.
+// Subscribing a watch to this kind is opt-in (LAW 2).
+export type SignalKind = 'weather' | 'flight' | 'geofence' | 'deadline' | 'safety_proximity';
 
 export interface TripWatch {
   readonly id: string;

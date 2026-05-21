@@ -49,6 +49,7 @@ import { OpenSkyFlightAdapter } from './infrastructure/opensky-flight.adapter';
 import { StubSignalAdapter } from './infrastructure/stub-signal.adapter';
 import { CompositeSignalSource } from './infrastructure/composite-signal-source.adapter';
 import { DeadlineSignalAdapter } from './infrastructure/deadline-signal.adapter';
+import { SafetyProximitySignalAdapter } from './infrastructure/safety-proximity-signal.adapter';
 import { TripPlannerToolAdapter } from './infrastructure/trip-planner-tool.adapter';
 import { WeatherSignalAdapter } from './infrastructure/weather-signal.adapter';
 import { AgentController } from './interface/agent.controller';
@@ -78,6 +79,11 @@ import { AgentScheduler } from './interface/agent.scheduler';
     // watch to 'deadline' stays opt-in; default subscribedSignals
     // are unchanged.
     DeadlineSignalAdapter,
+    // Phase 6 (I4) — pure-data safety-proximity signal. Subscribing
+    // a watch to 'safety_proximity' stays opt-in; the live loop
+    // builds queries with only {kind,lat,lng} so nothing new fires
+    // by default (LAW 2).
+    SafetyProximitySignalAdapter,
     {
       // OpenSky base URL has a safe default; the adapter itself
       // degrades to "no change" on any failure (LAW 1) — no boot-time

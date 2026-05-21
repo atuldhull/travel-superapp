@@ -13,6 +13,21 @@
  */
 import type { SignalKind } from '../../domain/trip-watch.entity';
 
+/**
+ * Phase 6 (I4) — one recent scam report near a trip center, as the
+ * `safety_proximity` adapter sees it. This is aggregate, NON-PII
+ * data: a distance + verified flag + recency, never a reporter
+ * identity or exact address (LAW 2).
+ */
+export interface NearbyScamReport {
+  /** Great-circle distance from the trip center, in kilometres. */
+  readonly distanceKm: number;
+  /** True only for community/moderator-verified reports. */
+  readonly verified: boolean;
+  /** Whole days since the report was observed (0 = today). */
+  readonly observedDaysAgo: number;
+}
+
 export interface SignalSourceQuery {
   readonly kind: SignalKind;
   readonly lat: number;
@@ -24,6 +39,14 @@ export interface SignalSourceQuery {
    * `{ changed: false }` when this isn't supplied.
    */
   readonly tripStartsOnIso?: string;
+  /**
+   * Phase 6 (I4) — optional recent scam reports near the trip
+   * centre, for the `safety_proximity` kind. NON-PII (see
+   * NearbyScamReport). Other kinds ignore it. Absence is honest:
+   * the safety-proximity adapter returns `{ changed: false }` when
+   * this isn't supplied — opt-in, nothing fires by default (LAW 2).
+   */
+  readonly nearbyScamReports?: readonly NearbyScamReport[];
 }
 
 export interface SignalSnapshot {

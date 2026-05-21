@@ -25,6 +25,7 @@ import type {
   SignalSourceQuery,
 } from '../application/ports/signal-source.port';
 import { DeadlineSignalAdapter } from './deadline-signal.adapter';
+import { SafetyProximitySignalAdapter } from './safety-proximity-signal.adapter';
 import { WeatherSignalAdapter } from './weather-signal.adapter';
 import { StubSignalAdapter } from './stub-signal.adapter';
 
@@ -36,6 +37,10 @@ export class CompositeSignalSource implements SignalSource {
     // Subscribing a watch to this kind stays opt-in (LAW 2: nothing
     // new fires by default).
     @Inject(DeadlineSignalAdapter) private readonly deadline: DeadlineSignalAdapter,
+    // Phase 6 (I4) — `safety_proximity` is a pure-data adapter too.
+    // Opt-in (LAW 2): the live loop never populates `nearbyScamReports`.
+    @Inject(SafetyProximitySignalAdapter)
+    private readonly safetyProximity: SafetyProximitySignalAdapter,
     @Inject(StubSignalAdapter) private readonly stub: StubSignalAdapter,
   ) {}
 
@@ -45,6 +50,9 @@ export class CompositeSignalSource implements SignalSource {
     }
     if (query.kind === 'deadline') {
       return this.deadline.snapshot(query);
+    }
+    if (query.kind === 'safety_proximity') {
+      return this.safetyProximity.snapshot(query);
     }
     return this.stub.snapshot(query);
   }
