@@ -213,7 +213,17 @@ export default function TripPrimerPage() {
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>🗣️ Survival phrases</CardTitle>
+              <div className="flex items-start justify-between gap-3">
+                <CardTitle>🗣️ Survival phrases</CardTitle>
+                {/* I5 — the phrases page reads the offline cache this
+                    primer fetch just populated; works with no signal. */}
+                <Link
+                  href={`/trips/${tripId}/phrases` as never}
+                  className="shrink-0 text-xs text-gold-600 underline-offset-4 hover:underline"
+                >
+                  Open offline →
+                </Link>
+              </div>
               <CardSubtitle>Tap a phrase to copy it.</CardSubtitle>
             </CardHeader>
             <ul className="space-y-2 text-sm">
