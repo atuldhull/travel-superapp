@@ -99,6 +99,21 @@
 }
 
 /*
+ * I6 (Phase 6) — PWA polish. `color-scheme` tells the browser /
+ * installed-app shell which native UI palette to use for scrollbars,
+ * form controls, and the standalone-mode background between page
+ * paints. Without it an installed dark-theme app flashes a white
+ * gutter on over-scroll. Mirrors the theme dance: the default is
+ * light; `html.dark` (set by the boot script) flips it to dark.
+ */
+html {
+  color-scheme: light;
+}
+html.dark {
+  color-scheme: dark;
+}
+
+/*
  * V.UX.15 — comfort mode (accessibility / senior persona). Applied
  * via `<html class="comfort">` by `apps/web/src/lib/comfort-mode.ts`
  * + the inline boot script in layout.tsx (mirrors the theme dance).
