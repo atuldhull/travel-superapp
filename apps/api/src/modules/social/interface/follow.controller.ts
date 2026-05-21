@@ -13,13 +13,20 @@
  *
  * Installed by prompt [POST.2B.1].
  */
-import { Controller, Delete, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { Controller, Delete, Get, HttpCode, HttpStatus, Param, Query, Post } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { type AuthenticatedUser, CurrentUser } from '../../../common/auth';
 import { FollowUseCase } from '../application/follow.use-case';
 import { UnfollowUseCase } from '../application/unfollow.use-case';
 import { BlockUserUseCase } from '../application/block-user.use-case';
 import { UnblockUserUseCase } from '../application/unblock-user.use-case';
+import { ListConnectionsUseCase } from '../application/list-connections.use-case';
+
+interface ConnectionUserDto {
+  readonly userId: string;
+  readonly displayName: string;
+  readonly followedAt: string;
+}
 
 @ApiTags('social-graph')
 @ApiBearerAuth()
@@ -30,6 +37,7 @@ export class FollowController {
     private readonly unfollowUc: UnfollowUseCase,
     private readonly blockUc: BlockUserUseCase,
     private readonly unblockUc: UnblockUserUseCase,
+    private readonly listConnections: ListConnectionsUseCase,
   ) {}
 
   @ApiOperation({ summary: 'Follow a user (idempotent; self-follow 422; blocked pair 403).' })
@@ -78,5 +86,57 @@ export class FollowController {
   ): Promise<{ blocked: false }> {
     await this.unblockUc.execute({ blockerId: user.sub, blockedId: id });
     return { blocked: false };
+  }
+
+  @ApiOperation({
+    summary:
+      'Users who follow :id (newest first). Block-filtered against the caller. Unknown user → empty list.',
+  })
+  @ApiParam({ name: 'id', description: 'User whose followers to list' })
+  @ApiQuery({ name: 'limit', required: false, description: '1..200, default 100' })
+  @Get(':id/followers')
+  async followers(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Query('limit') limit?: string,
+  ): Promise<{ users: readonly ConnectionUserDto[] }> {
+    return this.connections(id, user.sub, 'followers', limit);
+  }
+
+  @ApiOperation({
+    summary:
+      'Users that :id follows (newest first). Block-filtered against the caller. Unknown user → empty list.',
+  })
+  @ApiParam({ name: 'id', description: 'User whose following to list' })
+  @ApiQuery({ name: 'limit', required: false, description: '1..200, default 100' })
+  @Get(':id/following')
+  async following(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Query('limit') limit?: string,
+  ): Promise<{ users: readonly ConnectionUserDto[] }> {
+    return this.connections(id, user.sub, 'following', limit);
+  }
+
+  private async connections(
+    userId: string,
+    viewerId: string,
+    kind: 'followers' | 'following',
+    limitRaw?: string,
+  ): Promise<{ users: readonly ConnectionUserDto[] }> {
+    const parsed = limitRaw !== undefined ? Number.parseInt(limitRaw, 10) : undefined;
+    const res = await this.listConnections.execute({
+      userId,
+      viewerId,
+      kind,
+      ...(parsed !== undefined && Number.isFinite(parsed) ? { limit: parsed } : {}),
+    });
+    return {
+      users: res.users.map((u) => ({
+        userId: u.userId,
+        displayName: u.displayName,
+        followedAt: u.followedAt.toISOString(),
+      })),
+    };
   }
 }

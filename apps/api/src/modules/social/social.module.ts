@@ -57,6 +57,7 @@ import { FollowUseCase } from './application/follow.use-case';
 import { UnfollowUseCase } from './application/unfollow.use-case';
 import { BlockUserUseCase } from './application/block-user.use-case';
 import { UnblockUserUseCase } from './application/unblock-user.use-case';
+import { ListConnectionsUseCase } from './application/list-connections.use-case';
 import { FollowController } from './interface/follow.controller';
 import { PrismaReviewRepository } from './infrastructure/prisma-review.repository';
 import { PrismaVoteRepository } from './infrastructure/prisma-vote.repository';
@@ -103,6 +104,7 @@ import { VotesController } from './interface/votes.controller';
     UnfollowUseCase,
     BlockUserUseCase,
     UnblockUserUseCase,
+    ListConnectionsUseCase,
     CastVoteUseCase,
     RevokeVoteUseCase,
     ListTripVotesUseCase,
