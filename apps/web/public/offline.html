@@ -1,0 +1,178 @@
+<!doctype html>
+<!--
+  I1/verification (Phase 6) — self-contained offline fallback.
+
+  The service worker pre-caches THIS file and serves it when a
+  navigation fails. It must render correctly with ZERO network, so
+  every style is inline and the only image is an inline SVG — no
+  linked CSS, no font files, no /_next/static chunks. (The earlier
+  Next.js `app/offline` route linked external CSS that the SW
+  doesn't cache, so a cold offline load showed unstyled HTML; this
+  static file fixes that.)
+
+  prefers-color-scheme keeps it consistent with the app's light /
+  dark themes.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#fdfcf9" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0c0d12" media="(prefers-color-scheme: dark)" />
+    <title>Offline — TravelSuperApp</title>
+    <style>
+      :root {
+        --surface: #fdfcf9;
+        --ink: #161310;
+        --muted: #6c6557;
+        --gold: #b3873b;
+        --gold-soft: rgba(179, 135, 59, 0.12);
+        --hairline: rgba(179, 135, 59, 0.2);
+        --card: rgba(255, 255, 255, 0.6);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --surface: #0c0d12;
+          --ink: #f2efe8;
+          --muted: #9a9486;
+          --gold: #e0c483;
+          --gold-soft: rgba(224, 196, 131, 0.1);
+          --hairline: rgba(224, 196, 131, 0.18);
+          --card: rgba(255, 255, 255, 0.04);
+        }
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        background: var(--surface);
+        color: var(--ink);
+        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+      }
+      .wrap {
+        width: 100%;
+        max-width: 460px;
+        text-align: center;
+      }
+      .badge {
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 20px;
+        border-radius: 9999px;
+        border: 1px solid var(--hairline);
+        background: var(--card);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      h1 {
+        font-size: 28px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+      p.lead {
+        margin-top: 10px;
+        font-size: 14px;
+        line-height: 1.6;
+        color: var(--muted);
+      }
+      .links {
+        margin-top: 24px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+      }
+      a.tile {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        padding: 16px 8px;
+        border-radius: 16px;
+        border: 1px solid var(--hairline);
+        background: var(--card);
+        color: var(--ink);
+        text-decoration: none;
+        font-size: 13px;
+        transition: border-color 0.15s ease;
+      }
+      a.tile:hover {
+        border-color: var(--gold);
+      }
+      a.tile svg {
+        color: var(--gold);
+      }
+      .note {
+        margin-top: 22px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      a.inline {
+        color: var(--gold);
+        text-decoration: none;
+      }
+      a.inline:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <div class="badge" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+          style="color: var(--gold)">
+          <path d="M17.5 19H9a7 7 0 1 1 6.7-5" />
+          <path d="m13 12-4 4" />
+          <path d="m22 16-3 3-3-3" />
+        </svg>
+      </div>
+      <h1>You&rsquo;re offline</h1>
+      <p class="lead">
+        The network blinked. A trip you&rsquo;ve already opened in this browser stays
+        available &mdash; just open it again. Maps you downloaded on Navigate keep
+        working too.
+      </p>
+      <nav class="links">
+        <a class="tile" href="/home">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9.5 12 3l9 6.5V21a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1Z" />
+          </svg>
+          Home
+        </a>
+        <a class="tile" href="/navigate">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="3 11 22 2 13 21 11 13 3 11" />
+          </svg>
+          Offline map
+        </a>
+        <a class="tile" href="/diary">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" />
+          </svg>
+          Diary
+        </a>
+      </nav>
+      <p class="note">
+        We&rsquo;ll reconnect automatically when service returns &mdash; or
+        <a class="inline" href="/home" onclick="location.reload()">retry now</a>.
+      </p>
+    </main>
+  </body>
+</html>

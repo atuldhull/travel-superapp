@@ -306,7 +306,9 @@ export default function TripRecapPage() {
   // When the trip endpoint fails but we have a cached snapshot, still
   // render the recap from the cache. Without `renderingFromCache`,
   // there's nothing to show — fall back to the existing error state.
-  if (tripQuery.isError && !renderingFromCache) {
+  // Gate on `!loading` so we don't flash the error before the IDB
+  // snapshot lookup (which sets `renderingFromCache`) has finished.
+  if (tripQuery.isError && !renderingFromCache && !loading) {
     return (
       <main className="space-y-3">
         <p className="text-sm text-red-600 dark:text-red-400">Couldn&apos;t load this trip.</p>
