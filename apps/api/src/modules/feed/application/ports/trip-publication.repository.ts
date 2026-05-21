@@ -73,6 +73,11 @@ export interface TripPublicationRepository {
     viewerId: string,
     limit: number,
   ): Promise<readonly SimilarTrip[]>;
+  /** Phase 5 (J3) — suggested travellers to follow: authors of PUBLIC
+   *  published trips, excluding the viewer, anyone they already
+   *  follow, blocked pairs, and soft-deleted users. Ranked by how
+   *  many PUBLIC trips they've published (most prolific first). */
+  listSuggestedTravellers(viewerId: string, limit: number): Promise<readonly SuggestedTraveller[]>;
 }
 
 /** A nearest published-trip hit (title joined from `Trip`). */
@@ -82,6 +87,16 @@ export interface SimilarTrip {
   readonly authorId: string;
   /** L2 distance — smaller = closer. */
   readonly distance: number;
+}
+
+/**
+ * Phase 5 (J3) — a suggested traveller to follow: an author of
+ * PUBLIC published trips the viewer doesn't already follow.
+ */
+export interface SuggestedTraveller {
+  readonly userId: string;
+  readonly displayName: string;
+  readonly publishedCount: number;
 }
 
 export const TRIP_PUBLICATION_REPOSITORY = Symbol('TripPublicationRepository');
