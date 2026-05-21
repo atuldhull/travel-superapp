@@ -45,6 +45,33 @@ keystone) land well:
 | D7  | Agent loop cadence         | fixed `setInterval`                         | verified: no cron infra exists             |
 | D8  | Agent scope                | during-trip only                            | tightest, highest-value scope              |
 
+## POST-2.0 — Pre-deploy hardening pass (✅ COMPLETE)
+
+- **Date**: 2026-05-21
+- **Context**: all six roadmap phases (1–6) shipped; this pass
+  verifies the app is deploy-ready rather than adding features.
+- **What was done**:
+  - **F26 bug fixed** (`06c3fb5`) — `get-trip-center.unit.spec.ts`
+    imported a non-existent `TripEntity` (the domain type is
+    `Trip`); a standing `tsc --noEmit` error since F26. Pure
+    rename, 4/4 spec green.
+  - **Typecheck** — `tsc --noEmit` now fully GREEN on BOTH api
+    (no excludes) and web.
+  - **Cross-phase UX audit** — empty / error / offline / auth
+    states reviewed across all 6 phases' surfaces. No blockers:
+    auth-gating bounces unsigned users cleanly, empty states are
+    honest (no fake content, no perpetual spinners), error
+    boundaries render human-readable cards, offline caches are
+    defensively narrowed, zero `console.log` in the web app.
+  - **Web production build** — `pnpm build` ✓ compiled in 52s.
+  - **Full API jest suite** — 159 suites, **928 passed / 3 failed
+    / 18 skipped**. The 3 failures are `502`s in `near-me.e2e`
+    that **pass 4/4 when the suite runs standalone** — the
+    documented marathon-run resource flake (159 sequential suites
+    exhausting pooled connections), not a regression.
+- **Verdict**: deploy-ready. No real regressions; the one standing
+  typecheck error is closed.
+
 ## POST-2.0 — Phase 5 (Social / Community / Matchmaking) (✅ COMPLETE)
 
 - **Date**: 2026-05-21
