@@ -223,6 +223,23 @@ export function deleteTripComment(commentId: string): Promise<{ deleted: true }>
   return send(`/api/v1/comments/${encodeURIComponent(commentId)}`, 'DELETE');
 }
 
+// ─── Travel-buddy matchmaking (J5) ───────────────────────────────────────
+
+/** J5 — a nearby PUBLIC published trip matched to yours. */
+export interface TripBuddy {
+  readonly tripId: string;
+  readonly title: string;
+  readonly authorId: string;
+  readonly exposedLat: number;
+  readonly exposedLng: number;
+  readonly startsOn: string | null;
+  readonly endsOn: string | null;
+}
+
+export function getTripBuddies(tripId: string, limit?: number): Promise<{ buddies: TripBuddy[] }> {
+  return get(`/api/v1/feed/trips/${encodeURIComponent(tripId)}/buddies${qs({ limit })}`);
+}
+
 // ─── Social graph ───────────────────────────────────────────────────────
 export function followUser(userId: string): Promise<{ following: true }> {
   return send(`/api/v1/users/${encodeURIComponent(userId)}/follow`, 'POST');

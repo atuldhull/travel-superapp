@@ -39,6 +39,7 @@ import { PublishTripUseCase } from '../application/publish-trip.use-case';
 import { UnpublishTripUseCase } from '../application/unpublish-trip.use-case';
 import { GetTripPublicationUseCase } from '../application/get-trip-publication.use-case';
 import { SuggestedTravellersUseCase } from '../application/suggested-travellers.use-case';
+import { FindTripBuddiesUseCase } from '../application/find-trip-buddies.use-case';
 import { GetFeedUseCase } from '../application/get-feed.use-case';
 import { GetCreatorProfileUseCase } from '../application/get-creator-profile.use-case';
 import { SimilarTripsUseCase } from '../application/similar-trips.use-case';
@@ -75,6 +76,17 @@ interface SuggestedTravellerDto {
   readonly userId: string;
   readonly displayName: string;
   readonly publishedCount: number;
+}
+
+/** J5 — one travel-buddy match (a nearby PUBLIC published trip). */
+interface TripBuddyDto {
+  readonly tripId: string;
+  readonly title: string;
+  readonly authorId: string;
+  readonly exposedLat: number;
+  readonly exposedLng: number;
+  readonly startsOn: string | null;
+  readonly endsOn: string | null;
 }
 
 function pubToDto(p: TripPublication): TripPublicationDto {
@@ -120,6 +132,7 @@ export class FeedController {
     private readonly similarTrips: SimilarTripsUseCase,
     private readonly getTripPublication: GetTripPublicationUseCase,
     private readonly suggestedTravellers: SuggestedTravellersUseCase,
+    private readonly findTripBuddies: FindTripBuddiesUseCase,
   ) {}
 
   @ApiOperation({
@@ -212,6 +225,37 @@ export class FeedController {
       ...(parsedLimit !== undefined ? { limit: parsedLimit } : {}),
     });
     return { items };
+  }
+
+  @ApiOperation({
+    summary:
+      'Travel buddies — PUBLIC published trips near YOUR trip (owner-only) and, when both have dates, in an overlapping window.',
+  })
+  @ApiParam({ name: 'tripId', description: 'Your trip id' })
+  @ApiQuery({ name: 'limit', required: false, description: '1..50, default 12' })
+  @Get('trips/:tripId/buddies')
+  async buddies(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('tripId') tripId: string,
+    @Query('limit') limit?: string,
+  ): Promise<{ buddies: readonly TripBuddyDto[] }> {
+    const parsed = limit !== undefined ? Number.parseInt(limit, 10) : undefined;
+    const list = await this.findTripBuddies.execute({
+      tripId,
+      viewerId: user.sub,
+      ...(parsed !== undefined && Number.isFinite(parsed) ? { limit: parsed } : {}),
+    });
+    return {
+      buddies: list.map((b) => ({
+        tripId: b.tripId,
+        title: b.title,
+        authorId: b.authorId,
+        exposedLat: b.exposedLat,
+        exposedLng: b.exposedLng,
+        startsOn: b.startsOn ? b.startsOn.toISOString() : null,
+        endsOn: b.endsOn ? b.endsOn.toISOString() : null,
+      })),
+    };
   }
 
   @ApiOperation({

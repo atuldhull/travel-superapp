@@ -13,6 +13,8 @@ import type {
   UpsertPublishInput,
   SimilarTrip,
   SuggestedTraveller,
+  TripBuddy,
+  TripBuddyQuery,
 } from '../application/ports/trip-publication.repository';
 import { assertEmbeddingDimension } from '../application/ports/embedding.port';
 
@@ -294,4 +296,58 @@ export class PrismaTripPublicationRepository implements TripPublicationRepositor
       LIMIT ${limit}`);
     return rows;
   }
+
+  // ── Phase 5 (J5) — travel-buddy matchmaking. PUBLIC published trips
+  //    inside a coarse bounding box of the viewer's trip centre.
+  //    Place-based by design (a published trip is always ENDED, so a
+  //    hard date-overlap filter would mostly return nothing) — the
+  //    candidates' dates ride along in the result for display.
+
+  async findTripBuddies(query: TripBuddyQuery): Promise<readonly TripBuddy[]> {
+    // ≈1.5° box ≈ 165km lat — generous, since exposed coords are
+    // already coarsened to ~city level (≤1dp). A buddy "near" your
+    // trip means same region, not same street.
+    const BBOX = 1.5;
+    const rows = await this.prisma.$queryRaw<TripBuddyRow[]>(Prisma.sql`
+      SELECT tp."tripId" AS "tripId", t."title" AS "title", tp."authorId" AS "authorId",
+             tp."exposedLat" AS "exposedLat", tp."exposedLng" AS "exposedLng",
+             t."startsOn" AS "startsOn", t."endsOn" AS "endsOn"
+      FROM "TripPublication" tp
+      JOIN "Trip" t ON t.id = tp."tripId"
+      WHERE tp."publishedAt" IS NOT NULL
+        AND tp.visibility = 'PUBLIC'
+        AND tp."tripId" <> ${query.excludeTripId}
+        AND tp."authorId" <> ${query.viewerId}
+        AND tp."exposedLat" IS NOT NULL
+        AND tp."exposedLng" IS NOT NULL
+        AND tp."exposedLat" BETWEEN ${query.lat - BBOX} AND ${query.lat + BBOX}
+        AND tp."exposedLng" BETWEEN ${query.lng - BBOX} AND ${query.lng + BBOX}
+        AND NOT EXISTS (
+          SELECT 1 FROM "UserBlock" b
+          WHERE (b."blockerId" = ${query.viewerId} AND b."blockedId" = tp."authorId")
+             OR (b."blockerId" = tp."authorId" AND b."blockedId" = ${query.viewerId})
+        )
+      ORDER BY tp."publishedAt" DESC
+      LIMIT ${query.limit}`);
+
+    return rows.map((r) => ({
+      tripId: r.tripId,
+      title: r.title,
+      authorId: r.authorId,
+      exposedLat: r.exposedLat,
+      exposedLng: r.exposedLng,
+      startsOn: r.startsOn,
+      endsOn: r.endsOn,
+    }));
+  }
+}
+
+interface TripBuddyRow {
+  readonly tripId: string;
+  readonly title: string;
+  readonly authorId: string;
+  readonly exposedLat: number;
+  readonly exposedLng: number;
+  readonly startsOn: Date | null;
+  readonly endsOn: Date | null;
 }
