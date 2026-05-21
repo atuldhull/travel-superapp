@@ -32,6 +32,8 @@ import { TripLockedHandler } from './application/handlers/trip-locked.handler';
 import { SessionIssuedHandler } from './application/handlers/session-issued.handler';
 import { SosTriggeredHandler } from './application/handlers/sos-triggered.handler';
 import { AgentReplanProposedHandler } from './application/handlers/agent-replan-proposed.handler';
+import { UserFollowedHandler } from './application/handlers/user-followed.handler';
+import { TripCommentedHandler } from './application/handlers/trip-commented.handler';
 import { GetUnreadCountUseCase } from './application/get-unread-count.use-case';
 import { ListMyNotificationsUseCase } from './application/list-my-notifications.use-case';
 import { MarkAllNotificationsReadUseCase } from './application/mark-all-notifications-read.use-case';
@@ -78,6 +80,8 @@ import { WeeklyDigestScheduler } from './interface/weekly-digest.scheduler';
     TripLockedHandler,
     SosTriggeredHandler,
     AgentReplanProposedHandler,
+    UserFollowedHandler,
+    TripCommentedHandler,
     ListMyNotificationsUseCase,
     MarkNotificationReadUseCase,
     MarkAllNotificationsReadUseCase,
