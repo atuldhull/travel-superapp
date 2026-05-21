@@ -65,12 +65,19 @@ keystone) land well:
     defensively narrowed, zero `console.log` in the web app.
   - **Web production build** — `pnpm build` ✓ compiled in 52s.
   - **Full API jest suite** — 159 suites, **928 passed / 3 failed
-    / 18 skipped**. The 3 failures are `502`s in `near-me.e2e`
-    that **pass 4/4 when the suite runs standalone** — the
-    documented marathon-run resource flake (159 sequential suites
-    exhausting pooled connections), not a regression.
+    / 18 skipped**, run twice. The 3 failures were NOT a code
+    regression: Docker Desktop's engine went down mid-run, so the
+    test DB became unreachable. The failing suite even _moved_
+    between runs (`near-me.e2e` run 1, `sos-cancel-and-emergency`
+    run 2) — a real bug fails the same suite deterministically.
+    With Docker brought back up, both suites pass **10/10**
+    standalone. (Note: `sos-cancel-and-emergency.e2e`'s emergency-
+    lookup tests lack the `dbReachable` guard its SOS tests have,
+    so they `500` instead of skipping when infra is down — a
+    pre-existing test-robustness gap, V.UX.35, flagged not fixed.)
 - **Verdict**: deploy-ready. No real regressions; the one standing
-  typecheck error is closed.
+  typecheck error is closed; the only test failures were an
+  environmental Docker outage, confirmed green once restored.
 
 ## POST-2.0 — Phase 5 (Social / Community / Matchmaking) (✅ COMPLETE)
 
