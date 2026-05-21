@@ -79,9 +79,17 @@ keystone) land well:
   - **I6** (`4697c3d`) — PWA polish. `apple-icon.tsx` (180×180 PNG
     via `@vercel/og`), `color-scheme` light/dark in `globals.css`,
     `<InstallAppButton>` (`beforeinstallprompt`) on `/home`.
+- **Verification fixes** (`f6ecb9d`) — a post-ship audit found two
+  real gaps and closed them: (1) the Next `/offline` route linked
+  external CSS the SW never caches → cold offline loads rendered
+  unstyled; replaced with a self-contained `public/offline.html`
+  (inline CSS + SVG), SW cache bumped v1→v2, dead route removed.
+  (2) the app had NO favicon at all → added `app/icon.svg` (Next
+  icon convention). Recap page also now gates its error fallback on
+  `!loading` to avoid an error-flash before the IDB lookup.
 - **Verification**: web typecheck GREEN every step; api typecheck
-  clean for touched files; `pnpm build` ✓ Compiled in 24.1s;
-  I4 11/11 unit + agent DI smoke (watch-cycle + skeleton) GREEN.
+  clean for touched files; `pnpm build` ✓ Compiled (24.1s, then
+  40s post-fix); I4 11/11 unit + full agent suite 55/55 GREEN.
 - **Honest scope**: offline MAPS already shipped pre-Phase-3
   (`OfflineVectorMap` + `offline-region.ts` on `/navigate`) —
   untouched. The SW does NOT pre-cache trip data / API calls;
