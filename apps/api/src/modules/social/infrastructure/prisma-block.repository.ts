@@ -43,4 +43,17 @@ export class PrismaBlockRepository implements BlockRepository {
     });
     return n > 0;
   }
+
+  async listBlockedUserIds(userId: string): Promise<readonly string[]> {
+    const rows = await this.prisma.userBlock.findMany({
+      where: { OR: [{ blockerId: userId }, { blockedId: userId }] },
+      select: { blockerId: true, blockedId: true },
+    });
+    const ids = new Set<string>();
+    for (const r of rows) {
+      // Collect the OTHER party of each edge — never `userId` itself.
+      ids.add(r.blockerId === userId ? r.blockedId : r.blockerId);
+    }
+    return [...ids];
+  }
 }

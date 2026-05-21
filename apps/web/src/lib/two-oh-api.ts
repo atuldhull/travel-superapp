@@ -160,6 +160,23 @@ export function getTripPublication(tripId: string): Promise<PublicationStatus> {
   return get(`/api/v1/feed/trips/${encodeURIComponent(tripId)}/publish`);
 }
 
+// ─── Social graph — connections (J2) ─────────────────────────────────────
+
+/** J2 — one user on a follower/following list. */
+export interface ConnectionUser {
+  readonly userId: string;
+  readonly displayName: string;
+  readonly followedAt: string;
+}
+
+export function getFollowers(userId: string, limit?: number): Promise<{ users: ConnectionUser[] }> {
+  return get(`/api/v1/users/${encodeURIComponent(userId)}/followers${qs({ limit })}`);
+}
+
+export function getFollowing(userId: string, limit?: number): Promise<{ users: ConnectionUser[] }> {
+  return get(`/api/v1/users/${encodeURIComponent(userId)}/following${qs({ limit })}`);
+}
+
 // ─── Social graph ───────────────────────────────────────────────────────
 export function followUser(userId: string): Promise<{ following: true }> {
   return send(`/api/v1/users/${encodeURIComponent(userId)}/follow`, 'POST');

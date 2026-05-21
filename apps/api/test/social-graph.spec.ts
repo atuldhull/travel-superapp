@@ -42,6 +42,29 @@ class FakeFollows implements FollowRepository {
   async countFollowers(b: string): Promise<number> {
     return [...this.edges].filter((e) => e.endsWith(`>${b}`)).length;
   }
+  // Phase 5 (J2) — list seams. The unit suite below doesn't exercise
+  // them; they exist so the fake still satisfies FollowRepository.
+  async countFollowing(a: string): Promise<number> {
+    return [...this.edges].filter((e) => e.startsWith(`${a}>`)).length;
+  }
+  async listFollowers(
+    b: string,
+    limit: number,
+  ): Promise<readonly { userId: string; displayName: string; followedAt: Date }[]> {
+    return [...this.edges]
+      .filter((e) => e.endsWith(`>${b}`))
+      .slice(0, limit)
+      .map((e) => ({ userId: e.split('>')[0]!, displayName: 'fake', followedAt: new Date(0) }));
+  }
+  async listFollowing(
+    a: string,
+    limit: number,
+  ): Promise<readonly { userId: string; displayName: string; followedAt: Date }[]> {
+    return [...this.edges]
+      .filter((e) => e.startsWith(`${a}>`))
+      .slice(0, limit)
+      .map((e) => ({ userId: e.split('>')[1]!, displayName: 'fake', followedAt: new Date(0) }));
+  }
 }
 
 class FakeBlocks implements BlockRepository {
@@ -55,6 +78,16 @@ class FakeBlocks implements BlockRepository {
   }
   async existsBetween(a: string, b: string): Promise<boolean> {
     return this.edges.has(`${a}>${b}`) || this.edges.has(`${b}>${a}`);
+  }
+  // Phase 5 (J2) — the other party of every block edge touching `u`.
+  async listBlockedUserIds(u: string): Promise<readonly string[]> {
+    const ids = new Set<string>();
+    for (const e of this.edges) {
+      const [a, b] = e.split('>') as [string, string];
+      if (a === u) ids.add(b);
+      else if (b === u) ids.add(a);
+    }
+    return [...ids];
   }
 }
 

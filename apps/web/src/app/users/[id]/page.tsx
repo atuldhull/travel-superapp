@@ -228,7 +228,21 @@ function CreatorPanel({ userId }: { readonly userId: string }) {
       <CardHeader>
         <CardTitle>Creator</CardTitle>
         <CardSubtitle>
-          {profile.followerCount} follower{profile.followerCount === 1 ? '' : 's'} ·{' '}
+          {/* J2 — follower count links into the connections list. */}
+          <Link
+            href={`/users/${userId}/followers` as Route}
+            className="text-gold-600 underline-offset-4 hover:underline"
+          >
+            {profile.followerCount} follower{profile.followerCount === 1 ? '' : 's'}
+          </Link>
+          {' · '}
+          <Link
+            href={`/users/${userId}/following` as Route}
+            className="text-gold-600 underline-offset-4 hover:underline"
+          >
+            Following
+          </Link>
+          {' · '}
           {profile.publishedCount} published trip{profile.publishedCount === 1 ? '' : 's'}
         </CardSubtitle>
       </CardHeader>
