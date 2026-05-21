@@ -44,6 +44,7 @@ import { TRIP_GROUNDING_PORT } from './application/ports/trip-grounding.port';
 import { TripGroundingAdapter } from './infrastructure/trip-grounding.adapter';
 import { PublishTripUseCase } from './application/publish-trip.use-case';
 import { UnpublishTripUseCase } from './application/unpublish-trip.use-case';
+import { GetTripPublicationUseCase } from './application/get-trip-publication.use-case';
 import { GetFeedUseCase } from './application/get-feed.use-case';
 import { GetCreatorProfileUseCase } from './application/get-creator-profile.use-case';
 import { ExpenseAddedFeedSource } from './infrastructure/expense-added-feed-source';
@@ -78,6 +79,7 @@ import { FeedController } from './interface/feed.controller';
     },
     PublishTripUseCase,
     UnpublishTripUseCase,
+    GetTripPublicationUseCase,
     GetFeedUseCase,
     GetCreatorProfileUseCase,
     // Concrete sources — exported as themselves too in case a
