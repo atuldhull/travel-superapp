@@ -45,6 +45,52 @@ keystone) land well:
 | D7  | Agent loop cadence         | fixed `setInterval`                         | verified: no cron infra exists             |
 | D8  | Agent scope                | during-trip only                            | tightest, highest-value scope              |
 
+## POST-2.0 — Phase 5 (Social / Community / Matchmaking) (✅ COMPLETE)
+
+- **Date**: 2026-05-21
+- **Status**: ✅ DONE. 6 increments (J1-J6), 6 commits. One additive
+  Prisma migration (J4 `TripComment`); the rest additive backend +
+  web. apiFetch-direct, no SDK regen.
+- **Context**: an audit found the social SUBSTRATE already mature
+  (follow/block graph, reviews + karma, pull feed, trip-publication
+  API, creator profiles, concierge agent-match, shared-trip hearts,
+  pgvector discovery). Phase 5 = the network-effects / discovery /
+  missing-UI layer on top.
+- **What**:
+  - **J1** (`0fa21d6`) — publish-to-feed control on `/trips/[id]`.
+    The publish API shipped in POST.2B.2 had no web trigger. NEW
+    `GetTripPublicationUseCase` + `GET /feed/trips/:id/publish`;
+    `<PublishPanel>` (visibility picker, privacy-fenced to ended
+    trips). **5/5 e2e**.
+  - **J2** (`1e0cc71`) — follower / following lists. `FollowRepository`
+    - `BlockRepository` extended; NEW `ListConnectionsUseCase` +
+      `GET /users/:id/(followers|following)` (block-filtered); web
+      `/users/[id]/(followers|following)` pages. **5/5 e2e**.
+  - **J3** (`909a088`) — discover-travellers rail.
+    `listSuggestedTravellers` (authors of PUBLIC trips you don't
+    follow); `GET /feed/people`; `<SuggestedTravelers>` rail on
+    `/feed` with inline follow. **5/5 e2e**. Also fixed a
+    pre-existing date-drift bug in `trip-publication.spec.ts`.
+  - **J4** (`d16f53c`) — comments on published trips. NEW `TripComment`
+    model + migration `20260521120000_trip_comment`. Comment
+    repo/use-cases (create gated to published trips + block-aware,
+    list block-filtered, delete by author or trip owner);
+    `CommentsController`; web `<TripComments>` on `/trips/[id]`.
+    **5/5 e2e**.
+  - **J5** (`539d276`) — travel-buddy matchmaking. `findTripBuddies`
+    (PUBLIC trips in a coarse box around your trip centre);
+    `GET /feed/trips/:id/buddies`; `<TripBuddies>` rail. PLACE-based
+    (a published trip is always ENDED — a hard date filter would be
+    empty for future trips). **5/5 e2e**.
+  - **J6** (`1b61a91`) — social notifications. NEW `social.events.ts`
+    (`Social.UserFollowed` / `Social.TripCommented`); Follow +
+    CreateComment publish to the event bus; NEW notification
+    handlers turn them into inbox entries. **4/4 e2e**.
+- **Verification**: api build typecheck clean every step; web
+  typecheck GREEN; `pnpm build` ✓ 30.4s; **regression sweep
+  77/77** across 12 social/feed/notification/publication suites
+  (29 new Phase 5 e2e among them).
+
 ## POST-2.0 — Phase 6 (Safety + Offline / PWA) (✅ COMPLETE)
 
 - **Date**: 2026-05-21
