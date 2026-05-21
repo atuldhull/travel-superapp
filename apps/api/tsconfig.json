@@ -7,5 +7,16 @@
     "noEmit": true
   },
   "include": ["src/**/*", "test/**/*", "scripts/**/*", "instrumentation.ts"],
-  "exclude": ["dist", "node_modules"]
+  "exclude": ["dist", "node_modules"],
+  "ts-node": {
+    // The `dev` script runs the API through ts-node (NOT tsx/esbuild):
+    // esbuild's `emitDecoratorMetadata` is unreliable for this app's
+    // many DI constructors, so Nest saw `undefined` design:paramtypes
+    // and failed to resolve controllers. ts-node uses the real TS
+    // transform, so decorator metadata is emitted correctly.
+    // `transpileOnly` skips per-restart type-checking (the `typecheck`
+    // + `build` scripts own type-safety) — keeps dev restarts fast
+    // while still emitting the decorator metadata Nest needs.
+    "transpileOnly": true
+  }
 }
