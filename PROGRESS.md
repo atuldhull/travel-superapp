@@ -45,6 +45,54 @@ keystone) land well:
 | D7  | Agent loop cadence         | fixed `setInterval`                         | verified: no cron infra exists             |
 | D8  | Agent scope                | during-trip only                            | tightest, highest-value scope              |
 
+## POST-2.0 — Phase 6 (Safety + Offline / PWA) (✅ COMPLETE)
+
+- **Date**: 2026-05-21
+- **Status**: ✅ DONE. 6 increments (I1-I6), 6 commits. Frontend +
+  one pure-data agent adapter. No new deps (`idb` + `@vercel/og`
+  already present), no SDK regen, additive backend only.
+- **What**:
+  - **I1** (`63fec65`) — PWA installability. `manifest.webmanifest`
+    (theme/bg colors, shortcuts, SVG any+maskable icons); `sw.js`
+    extended to pre-cache `/offline` + network-first navigations
+    with an 8s timeout falling back to the offline page (V.UX.26
+    push handlers preserved); RSC `/offline` page; `<PwaRegister>`
+    registers the SW for all visitors on idle in prod.
+  - **I2** (`945fd3a`) — offline trip-snapshot cache. NEW
+    `lib/offline-trip-cache.ts` (IDB keyed by tripId) +
+    `lib/use-online.ts`. `/trips/[id]/overview` + `/recap` mirror
+    successful fetches to IDB and recover from the snapshot when
+    the network drops — "Offline copy · saved Nm ago" badge.
+  - **I3** (`3e093a3`) — offline country-primer cache. NEW
+    `lib/offline-primer-cache.ts` (IDB keyed by cc). The primer
+    page saves on success, falls back to the cached primer when
+    offline; a frequent traveler builds an on-device library.
+  - **I4** (`b5d16b5`) — proactive `safety_proximity` agent signal.
+    Pure-data `SafetyProximitySignalAdapter` mirroring G5's
+    deadline adapter: changed:true when a verified scam report is
+    within 5km observed within 14 days. Wired into
+    `CompositeSignalSource`; opt-in (LAW 2). 11/11 unit tests.
+  - **I5** (`5cba11c`) — offline survival-phrases page
+    `/trips/[id]/phrases`. Big tap-to-copy phrases + emergency
+    numbers from the I3 cache. NOT auth-gated / NOT network-bound
+    so it works offline after a reload. Honest empty state.
+  - **I6** (`4697c3d`) — PWA polish. `apple-icon.tsx` (180×180 PNG
+    via `@vercel/og`), `color-scheme` light/dark in `globals.css`,
+    `<InstallAppButton>` (`beforeinstallprompt`) on `/home`.
+- **Verification**: web typecheck GREEN every step; api typecheck
+  clean for touched files; `pnpm build` ✓ Compiled in 24.1s;
+  I4 11/11 unit + agent DI smoke (watch-cycle + skeleton) GREEN.
+- **Honest scope**: offline MAPS already shipped pre-Phase-3
+  (`OfflineVectorMap` + `offline-region.ts` on `/navigate`) —
+  untouched. The SW does NOT pre-cache trip data / API calls;
+  trip + primer offline is the app-layer IDB cache so staleness is
+  badged honestly. The live watch loop never populates
+  `nearbyScamReports`, so `safety_proximity` is addressable but
+  dormant by default (LAW 2).
+- **Pre-existing flagged**: `test/get-trip-center.unit.spec.ts`
+  (F26, `c6e84a2`) imports a non-existent `TripEntity` — a
+  standing api `tsc --noEmit` error, untouched (scope-lock).
+
 ## POST-2.0 — Phase 4 (Emotional UI / Voice / Recap) (✅ COMPLETE)
 
 - **Date**: 2026-05-20
