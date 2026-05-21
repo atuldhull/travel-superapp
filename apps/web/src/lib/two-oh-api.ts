@@ -147,6 +147,19 @@ export function unpublishTrip(tripId: string): Promise<{ unpublished: true }> {
   return send(`/api/v1/feed/trips/${encodeURIComponent(tripId)}/publish`, 'DELETE');
 }
 
+/** J1 — owner-facing publication status for the manage-publish UI. */
+export interface PublicationStatus {
+  readonly published: boolean;
+  readonly visibility: Visibility;
+  readonly publishedAt: string | null;
+  readonly exposedLat: number | null;
+  readonly exposedLng: number | null;
+}
+
+export function getTripPublication(tripId: string): Promise<PublicationStatus> {
+  return get(`/api/v1/feed/trips/${encodeURIComponent(tripId)}/publish`);
+}
+
 // ─── Social graph ───────────────────────────────────────────────────────
 export function followUser(userId: string): Promise<{ following: true }> {
   return send(`/api/v1/users/${encodeURIComponent(userId)}/follow`, 'POST');

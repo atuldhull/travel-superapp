@@ -30,6 +30,7 @@ import { type AuthenticatedUser, CurrentUser } from '../../../common/auth';
 import { GetMyFeedUseCase, type GetMyFeedResult } from '../application/get-my-feed.use-case';
 import { PublishTripUseCase } from '../application/publish-trip.use-case';
 import { UnpublishTripUseCase } from '../application/unpublish-trip.use-case';
+import { GetTripPublicationUseCase } from '../application/get-trip-publication.use-case';
 import { GetFeedUseCase } from '../application/get-feed.use-case';
 import { GetCreatorProfileUseCase } from '../application/get-creator-profile.use-case';
 import { SimilarTripsUseCase } from '../application/similar-trips.use-case';
@@ -50,6 +51,15 @@ interface TripPublicationDto {
   readonly exposedLat: number | null;
   readonly exposedLng: number | null;
   readonly publishedAt: string | null;
+}
+
+/** J1 — owner-facing publication status for the manage-publish UI. */
+interface PublicationStatusDto {
+  readonly published: boolean;
+  readonly visibility: Visibility;
+  readonly publishedAt: string | null;
+  readonly exposedLat: number | null;
+  readonly exposedLng: number | null;
 }
 
 function pubToDto(p: TripPublication): TripPublicationDto {
@@ -93,6 +103,7 @@ export class FeedController {
     private readonly getFeed: GetFeedUseCase,
     private readonly getCreatorProfile: GetCreatorProfileUseCase,
     private readonly similarTrips: SimilarTripsUseCase,
+    private readonly getTripPublication: GetTripPublicationUseCase,
   ) {}
 
   @ApiOperation({
@@ -185,6 +196,38 @@ export class FeedController {
       ...(parsedLimit !== undefined ? { limit: parsedLimit } : {}),
     });
     return { items };
+  }
+
+  @ApiOperation({
+    summary:
+      "The caller's publication status for a trip (owner-only). `published:false` when never published OR unpublished.",
+  })
+  @ApiParam({ name: 'tripId', description: 'Trip to inspect' })
+  @ApiResponse({ status: 200, description: 'Publication status.' })
+  @ApiResponse({ status: 404, description: 'TRIP_NOT_FOUND' })
+  @Get('trips/:tripId/publish')
+  async publicationStatus(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('tripId') tripId: string,
+  ): Promise<PublicationStatusDto> {
+    const pub = await this.getTripPublication.execute({ tripId, userId: user.sub });
+    if (!pub) {
+      return {
+        published: false,
+        visibility: 'PRIVATE',
+        publishedAt: null,
+        exposedLat: null,
+        exposedLng: null,
+      };
+    }
+    return {
+      // A row with publishedAt cleared = published-then-unpublished.
+      published: pub.publishedAt !== null,
+      visibility: pub.visibility,
+      publishedAt: pub.publishedAt ? pub.publishedAt.toISOString() : null,
+      exposedLat: pub.exposedLat,
+      exposedLng: pub.exposedLng,
+    };
   }
 
   @ApiOperation({
