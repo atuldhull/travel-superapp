@@ -163,6 +163,10 @@ describe('PublishTripUseCase embed-on-publish is BEST-EFFORT', () => {
     async findSimilarToPublication(): Promise<readonly never[]> {
       return [];
     }
+    // Phase 5 (J3) — discovery read; not exercised here.
+    async listSuggestedTravellers(): Promise<readonly never[]> {
+      return [];
+    }
   }
 
   it('Ollama unavailable (embed→null): publish STILL succeeds, skip-index', async () => {

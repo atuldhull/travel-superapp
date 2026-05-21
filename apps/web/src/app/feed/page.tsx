@@ -27,6 +27,7 @@ import {
 import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowUpRight, Compass, MapPin, Sparkles } from 'lucide-react';
 import { EmptyState } from '../../components/ui/empty-state';
+import { SuggestedTravelers } from '../../components/social/suggested-travelers';
 import { SkeletonList } from '../../components/ui/skeleton';
 import { RelativeTime } from '../../components/ui/relative-time';
 import { Button } from '../../components/ui/button';
@@ -126,6 +127,11 @@ export default function FeedPage() {
           Published journeys from the travellers you follow — newest first.
         </p>
       </header>
+
+      {/* J3 — discover travellers to follow. Self-hides when there
+          are no suggestions; shown above the feed so it also helps
+          a brand-new user whose feed is still empty. */}
+      <SuggestedTravelers />
 
       {loading ? (
         <SkeletonList rows={5} />

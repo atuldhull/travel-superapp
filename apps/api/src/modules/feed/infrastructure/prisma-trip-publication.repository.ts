@@ -12,6 +12,7 @@ import type {
   TripPublicationRepository,
   UpsertPublishInput,
   SimilarTrip,
+  SuggestedTraveller,
 } from '../application/ports/trip-publication.repository';
 import { assertEmbeddingDimension } from '../application/ports/embedding.port';
 
@@ -225,6 +226,48 @@ export class PrismaTripPublicationRepository implements TripPublicationRepositor
       ORDER BY tp.embedding <-> ${vec}::vector
       LIMIT ${limit}`);
     return rows;
+  }
+
+  async listSuggestedTravellers(
+    viewerId: string,
+    limit: number,
+  ): Promise<readonly SuggestedTraveller[]> {
+    // ONE grouped query. Discovery only ever surfaces PUBLIC trips —
+    // FOLLOWERS-only authors stay private to non-followers (LAW 2),
+    // and a FOLLOWERS author wouldn't be a useful "discover" hit
+    // anyway. Excludes the viewer, anyone they already follow,
+    // blocked pairs (either direction), and soft-deleted users.
+    const rows = await this.prisma.$queryRaw<
+      Array<{
+        userId: string;
+        displayName: string;
+        publishedCount: bigint;
+      }>
+    >(Prisma.sql`
+      SELECT tp."authorId" AS "userId",
+             u."displayName" AS "displayName",
+             COUNT(*)::bigint AS "publishedCount"
+      FROM "TripPublication" tp
+      JOIN "User" u ON u.id = tp."authorId" AND u."deletedAt" IS NULL
+      WHERE tp."publishedAt" IS NOT NULL
+        AND tp.visibility = 'PUBLIC'
+        AND tp."authorId" <> ${viewerId}
+        AND tp."authorId" NOT IN (
+          SELECT "followeeId" FROM "Follow" WHERE "followerId" = ${viewerId}
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM "UserBlock" b
+          WHERE (b."blockerId" = ${viewerId} AND b."blockedId" = tp."authorId")
+             OR (b."blockerId" = tp."authorId" AND b."blockedId" = ${viewerId})
+        )
+      GROUP BY tp."authorId", u."displayName"
+      ORDER BY "publishedCount" DESC, u."displayName" ASC
+      LIMIT ${limit}`);
+    return rows.map((r) => ({
+      userId: r.userId,
+      displayName: r.displayName,
+      publishedCount: Number(r.publishedCount),
+    }));
   }
 
   async findSimilarToPublication(
