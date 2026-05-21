@@ -22,11 +22,13 @@
 'use strict';
 
 /** Bump the version to force a fresh shell cache on the next visit. */
-const OFFLINE_CACHE = 'travel-app-offline-v1';
-const OFFLINE_URL = '/offline';
+const OFFLINE_CACHE = 'travel-app-offline-v2';
+const OFFLINE_URL = '/offline.html';
 /** Files we want to live in the offline cache so the fallback page
- *  renders even without the network. /offline is a static HTML route
- *  Next serves with its CSS already inlined (App Router default). */
+ *  renders even without the network. `/offline.html` is a fully
+ *  self-contained static file (inline CSS + inline SVG, no /_next
+ *  chunks) so it paints correctly on a cold offline load — a Next
+ *  App Router route would link external CSS the SW doesn't cache. */
 const APP_SHELL = [OFFLINE_URL];
 
 self.addEventListener('install', (event) => {
