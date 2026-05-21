@@ -86,6 +86,7 @@ import {
 import { openAssistantWith } from '../../components/assistant/global-assistant';
 import { HubAmbient, pickAmbientMood, type AmbientMood } from '../../components/home/hub-ambient';
 import { CompanionNudges, type CompanionContext } from '../../components/home/companion-nudges';
+import { InstallAppButton } from '../../components/pwa/install-app-button';
 import { toHubTripView, type HubTripView } from '../../lib/trip-dto';
 import { useTripCenter } from '../../lib/use-trip-center';
 
@@ -702,6 +703,10 @@ export default function HomePage() {
           Pick up a journey, plan the next one, or relive the last — everything in one calm place.
         </p>
       </motion.header>
+
+      {/* I6 — install affordance. Renders nothing until Chromium
+          fires `beforeinstallprompt`; self-hides once installed. */}
+      <InstallAppButton />
 
       {/* Current trip — the centrepiece */}
       <section>
