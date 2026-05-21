@@ -78,6 +78,11 @@ export interface TripPublicationRepository {
    *  follow, blocked pairs, and soft-deleted users. Ranked by how
    *  many PUBLIC trips they've published (most prolific first). */
   listSuggestedTravellers(viewerId: string, limit: number): Promise<readonly SuggestedTraveller[]>;
+  /** Phase 5 (J5) — PUBLIC published trips near the query centre.
+   *  When the query carries dates, only date-overlapping trips (or
+   *  trips with no dates) are returned. Excludes the viewer's own
+   *  trips, the source trip, and blocked pairs. */
+  findTripBuddies(query: TripBuddyQuery): Promise<readonly TripBuddy[]>;
 }
 
 /** A nearest published-trip hit (title joined from `Trip`). */
@@ -97,6 +102,38 @@ export interface SuggestedTraveller {
   readonly userId: string;
   readonly displayName: string;
   readonly publishedCount: number;
+}
+
+/**
+ * Phase 5 (J5) — a candidate travel buddy: another PUBLIC published
+ * trip near the viewer's trip.
+ *
+ * Matchmaking is PLACE-based, not date-filtered: a published trip is
+ * by definition ENDED (past), so a hard date-overlap filter would
+ * return nothing for anyone planning a future trip. We surface
+ * nearby travellers and SHOW their dates so the viewer can see when
+ * they were there — an honest "who has journeyed near here", not a
+ * false "travel together" promise.
+ */
+export interface TripBuddy {
+  readonly tripId: string;
+  readonly title: string;
+  readonly authorId: string;
+  /** Coarsened (≈city-level) location — never the precise centre. */
+  readonly exposedLat: number;
+  readonly exposedLng: number;
+  readonly startsOn: Date | null;
+  readonly endsOn: Date | null;
+}
+
+/** J5 — query for `findTripBuddies`. Coordinates are the viewer's
+ *  trip centre; matching is a coarse proximity box. */
+export interface TripBuddyQuery {
+  readonly lat: number;
+  readonly lng: number;
+  readonly viewerId: string;
+  readonly excludeTripId: string;
+  readonly limit: number;
 }
 
 export const TRIP_PUBLICATION_REPOSITORY = Symbol('TripPublicationRepository');

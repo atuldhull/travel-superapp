@@ -46,6 +46,7 @@ import { PublishTripUseCase } from './application/publish-trip.use-case';
 import { UnpublishTripUseCase } from './application/unpublish-trip.use-case';
 import { GetTripPublicationUseCase } from './application/get-trip-publication.use-case';
 import { SuggestedTravellersUseCase } from './application/suggested-travellers.use-case';
+import { FindTripBuddiesUseCase } from './application/find-trip-buddies.use-case';
 import { GetFeedUseCase } from './application/get-feed.use-case';
 import { GetCreatorProfileUseCase } from './application/get-creator-profile.use-case';
 import { ExpenseAddedFeedSource } from './infrastructure/expense-added-feed-source';
@@ -82,6 +83,7 @@ import { FeedController } from './interface/feed.controller';
     UnpublishTripUseCase,
     GetTripPublicationUseCase,
     SuggestedTravellersUseCase,
+    FindTripBuddiesUseCase,
     GetFeedUseCase,
     GetCreatorProfileUseCase,
     // Concrete sources — exported as themselves too in case a
