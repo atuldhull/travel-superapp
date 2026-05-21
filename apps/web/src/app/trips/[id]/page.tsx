@@ -94,6 +94,7 @@ import { useTripCenter } from '../../../lib/use-trip-center';
 import { coerceTripDate } from '../../../lib/trip-dto';
 import { openAssistantWith } from '../../../components/assistant/global-assistant';
 import { PublishPanel } from '../../../components/trip/publish-panel';
+import { TripComments } from '../../../components/trip/trip-comments';
 
 interface ApiError extends Error {
   readonly code?: string;
@@ -316,6 +317,9 @@ export default function TripDetailPage() {
       <PlanWithAiSection tripId={id} enabled={token !== null && !editing} />
       <MediaSection tripId={id} enabled={token !== null && !editing} />
       <ShareSection tripId={id} enabled={token !== null && !editing} />
+      {/* J4 — comment thread. Self-contained; the API gates posting
+          to published trips and explains when the trip isn't yet. */}
+      {token !== null && !editing ? <TripComments tripId={id} /> : null}
       {confirmDelete ? (
         <Card>
           <CardHeader>
