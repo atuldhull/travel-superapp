@@ -93,6 +93,7 @@ import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
 import { useTripCenter } from '../../../lib/use-trip-center';
 import { coerceTripDate } from '../../../lib/trip-dto';
 import { openAssistantWith } from '../../../components/assistant/global-assistant';
+import { PublishPanel } from '../../../components/trip/publish-panel';
 
 interface ApiError extends Error {
   readonly code?: string;
@@ -518,6 +519,10 @@ function ReadView({
         Created {new Date(trip.createdAt).toLocaleString()} · Updated{' '}
         {new Date(trip.updatedAt).toLocaleString()}
       </p>
+      {/* J1 — owner-only publish-to-feed control. Self-contained:
+          reads its own publication status + handles publish /
+          unpublish. The API privacy-fences this to ended trips. */}
+      {isOwner ? <PublishPanel tripId={trip.id} endsOn={coerceTripDate(trip.endsOn)} /> : null}
     </Card>
   );
 }
