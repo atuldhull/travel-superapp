@@ -23,7 +23,7 @@ import { ConfigService } from '@nestjs/config';
 import type { Env } from '@app/config';
 import { NotFoundError, UnauthorizedError } from '@app/errors';
 import { ACCOUNT_DELETER, type AccountDeleter } from './ports/account-deleter';
-import { verifyReactivationToken } from '../infrastructure/reactivation-token';
+import { verifyReactivationToken } from '../../../common/crypto/reactivation-token';
 
 export interface ReactivateAccountCommand {
   readonly token: string;

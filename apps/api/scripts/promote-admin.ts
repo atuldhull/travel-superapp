@@ -25,7 +25,7 @@
  */
 import 'reflect-metadata';
 import { PrismaClient, type User } from '@prisma/client';
-import { hashEmail } from '../src/modules/identity/infrastructure/email-hash';
+import { hashEmail } from '../src/common/crypto/email-hash';
 
 type PrismaLike = Pick<PrismaClient, 'user'>;
 

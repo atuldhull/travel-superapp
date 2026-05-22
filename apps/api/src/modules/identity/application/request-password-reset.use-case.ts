@@ -16,7 +16,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Env } from '@app/config';
-import { hashEmail } from '../infrastructure/email-hash';
+import { hashEmail } from '../../../common/crypto/email-hash';
 import { MAILER_PORT, type MailerPort } from './ports/mailer.port';
 import {
   PASSWORD_RESET_TOKEN_REPOSITORY,

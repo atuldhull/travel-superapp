@@ -25,7 +25,7 @@ import { UserNotFoundError } from '@app/errors';
 import { createLogger } from '@app/logger';
 import { ACCOUNT_DELETER, type AccountDeleter } from './ports/account-deleter';
 import { MAILER_PORT, type MailerPort } from '../../identity/application/ports/mailer.port';
-import { mintReactivationToken } from '../infrastructure/reactivation-token';
+import { mintReactivationToken } from '../../../common/crypto/reactivation-token';
 
 const log = createLogger('account.delete');
 

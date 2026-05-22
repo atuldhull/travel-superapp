@@ -15,7 +15,7 @@ import { ConfigService } from '@nestjs/config';
 import type { Env } from '@app/config';
 import { ValidationError } from '@app/errors';
 import { PrismaService } from '../../../common/db/prisma.service';
-import { hashEmail } from '../../identity/infrastructure/email-hash';
+import { hashEmail } from '../../../common/crypto/email-hash';
 
 const BODY_MIN = 10;
 const BODY_MAX = 2000;

@@ -28,7 +28,7 @@ import {
   FAILED_LOGIN_COUNTER,
   type FailedLoginCounter,
 } from '../src/modules/identity/application/ports/failed-login-counter';
-import { hashEmail } from '../src/modules/identity/infrastructure/email-hash';
+import { hashEmail } from '../src/common/crypto/email-hash';
 
 const TEST_PREFIX = 'lockout-e2e';
 
