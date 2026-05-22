@@ -21,9 +21,13 @@ import { ConfigService } from '@nestjs/config';
 import type { Env } from '@app/config';
 import { TypedRedisCache } from '../../../common/cache/typed-redis-cache';
 import type { UserBalance } from '../domain/expense.entity';
+import type { TripBalancesCachePort } from '../application/ports/trip-balances-cache.port';
 
 @Injectable()
-export class TripBalancesCache extends TypedRedisCache<readonly UserBalance[]> {
+export class TripBalancesCache
+  extends TypedRedisCache<readonly UserBalance[]>
+  implements TripBalancesCachePort
+{
   constructor(@Inject(ConfigService) config: ConfigService<Env, true>) {
     super(config, 'trip-balances', 'social.trip-balances.cache');
   }

@@ -17,13 +17,16 @@ import {
   TRIP_SHARE_REPOSITORY,
   type TripShareRepository,
 } from '../../trip/application/ports/trip-share.repository';
-import { TripHeartCounter } from '../infrastructure/trip-heart-counter';
+import {
+  TRIP_HEART_COUNTER_PORT,
+  type TripHeartCounterPort,
+} from './ports/trip-heart-counter.port';
 
 @Injectable()
 export class HeartSharedTripUseCase {
   constructor(
     @Inject(TRIP_SHARE_REPOSITORY) private readonly shares: TripShareRepository,
-    private readonly counter: TripHeartCounter,
+    @Inject(TRIP_HEART_COUNTER_PORT) private readonly counter: TripHeartCounterPort,
   ) {}
 
   async execute(shareCode: string): Promise<{ readonly tripId: string; readonly hearts: number }> {
