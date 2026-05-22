@@ -17,7 +17,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Env } from '@app/config';
 import { hashEmail } from '../../../common/crypto/email-hash';
-import { MAILER_PORT, type MailerPort } from './ports/mailer.port';
+import { MAILER_PORT, type MailerPort } from '../../../common/mailer/mailer.port';
 import {
   PASSWORD_RESET_TOKEN_REPOSITORY,
   type PasswordResetTokenRepository,

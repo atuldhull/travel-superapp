@@ -23,10 +23,7 @@ import { AppModule } from '../src/app.module';
 import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { PrismaService } from '../src/common/db/prisma.service';
-import {
-  clearStubMessages,
-  getAllStubMessages,
-} from '../src/modules/identity/infrastructure/stub-mailer.adapter';
+import { clearStubMessages, getAllStubMessages } from '../src/common/mailer/stub-mailer.adapter';
 
 const TEST_PREFIX = 'reactivation-e2e';
 

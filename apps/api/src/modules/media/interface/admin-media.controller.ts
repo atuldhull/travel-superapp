@@ -38,7 +38,7 @@ import type {
   MediaKind,
   MediaStatus,
 } from '../domain/media-asset.entity';
-import { AdminListMediaResponseDto } from '../../admin/interface/dto/admin-response.dto';
+import { AdminListMediaResponseDto } from '../../../common/dto/admin-response.dto';
 
 const VALID_KINDS: readonly MediaKind[] = ['image', 'video'];
 const VALID_STATUSES: readonly MediaStatus[] = ['processing', 'ready', 'failed'];

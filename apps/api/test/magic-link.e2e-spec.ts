@@ -28,7 +28,7 @@ import {
   clearStubMessages,
   getAllStubMessages,
   getLastStubMessage,
-} from '../src/modules/identity/infrastructure/stub-mailer.adapter';
+} from '../src/common/mailer/stub-mailer.adapter';
 
 const TEST_PREFIX = 'magic-link-e2e';
 

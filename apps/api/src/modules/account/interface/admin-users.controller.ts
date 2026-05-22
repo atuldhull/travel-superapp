@@ -48,7 +48,7 @@ import {
 import { AdminListUsersUseCase } from '../application/admin-list-users.use-case';
 import { AdminUnbanUserUseCase } from '../application/admin-unban-user.use-case';
 import type { AdminUserRow } from '../application/ports/admin-user-query';
-import { AdminListUsersResponseDto } from '../../admin/interface/dto/admin-response.dto';
+import { AdminListUsersResponseDto } from '../../../common/dto/admin-response.dto';
 
 class AdminBanRequestDto {
   @ApiProperty({

@@ -41,9 +41,9 @@ import { StreamAccountExportUseCase } from './application/stream-account-export.
 import { UpdatePreferencesUseCase } from './application/update-preferences.use-case';
 import { ACCOUNT_DELETER } from './application/ports/account-deleter';
 import { ACCOUNT_PURGER } from './application/ports/account-purger';
-import { MAILER_PORT } from '../identity/application/ports/mailer.port';
-import { ResendMailerAdapter } from '../identity/infrastructure/resend-mailer.adapter';
-import { StubMailerAdapter } from '../identity/infrastructure/stub-mailer.adapter';
+import { MAILER_PORT } from '../../common/mailer/mailer.port';
+import { ResendMailerAdapter } from '../../common/mailer/resend-mailer.adapter';
+import { StubMailerAdapter } from '../../common/mailer/stub-mailer.adapter';
 import { ADMIN_USER_QUERY } from './application/ports/admin-user-query';
 import { PREFERENCES_REPOSITORY } from './application/ports/preferences.repository';
 import { TRUSTED_CONTACT_REPOSITORY } from './application/ports/trusted-contact.repository';
