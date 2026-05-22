@@ -18,6 +18,9 @@
     "lint": {
       "dependsOn": ["^lint"]
     },
+    "arch": {
+      "inputs": ["src/**", ".dependency-cruiser.cjs", ".dependency-cruiser-known-violations.json"]
+    },
     "typecheck": {
       "dependsOn": ["^build"]
     },
