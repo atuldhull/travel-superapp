@@ -16,6 +16,8 @@ import type {
 
 import type {
   AuthSuccessResponseDto,
+  LoginCodeRequestRequestDto,
+  LoginCodeVerifyRequestDto,
   LoginRequestDto,
   MagicLinkConsumeRequestDto,
   MagicLinkRequestRequestDto,
@@ -435,6 +437,201 @@ export const useAuthControllerMagicLinkConsume = <TError = void, TContext = unkn
   TContext
 > => {
   const mutationOptions = getAuthControllerMagicLinkConsumeMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Passwordless OTP step 1: email/SMS a 6-digit code. Always 'ok' — never reveals registration.
+ */
+export type authControllerOtpRequestResponse200 = {
+  data: MagicLinkRequestResponseDto;
+  status: 200;
+};
+
+export type authControllerOtpRequestResponseSuccess = authControllerOtpRequestResponse200 & {
+  headers: Headers;
+};
+export type authControllerOtpRequestResponse = authControllerOtpRequestResponseSuccess;
+
+export const getAuthControllerOtpRequestUrl = () => {
+  return `/api/v1/auth/otp/request`;
+};
+
+export const authControllerOtpRequest = async (
+  loginCodeRequestRequestDto: LoginCodeRequestRequestDto,
+  options?: RequestInit,
+): Promise<authControllerOtpRequestResponse> => {
+  return apiFetch<authControllerOtpRequestResponse>(getAuthControllerOtpRequestUrl(), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(loginCodeRequestRequestDto),
+  });
+};
+
+export const getAuthControllerOtpRequestMutationOptions = <
+  TError = unknown,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof authControllerOtpRequest>>,
+    TError,
+    { data: LoginCodeRequestRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof authControllerOtpRequest>>,
+  TError,
+  { data: LoginCodeRequestRequestDto },
+  TContext
+> => {
+  const mutationKey = ['authControllerOtpRequest'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof authControllerOtpRequest>>,
+    { data: LoginCodeRequestRequestDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return authControllerOtpRequest(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AuthControllerOtpRequestMutationResult = NonNullable<
+  Awaited<ReturnType<typeof authControllerOtpRequest>>
+>;
+export type AuthControllerOtpRequestMutationBody = LoginCodeRequestRequestDto;
+export type AuthControllerOtpRequestMutationError = unknown;
+
+/**
+ * @summary Passwordless OTP step 1: email/SMS a 6-digit code. Always 'ok' — never reveals registration.
+ */
+export const useAuthControllerOtpRequest = <TError = unknown, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof authControllerOtpRequest>>,
+    TError,
+    { data: LoginCodeRequestRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof authControllerOtpRequest>>,
+  TError,
+  { data: LoginCodeRequestRequestDto },
+  TContext
+> => {
+  const mutationOptions = getAuthControllerOtpRequestMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Passwordless OTP step 2: verify the code + issue a session.
+ */
+export type authControllerOtpVerifyResponse200 = {
+  data: AuthSuccessResponseDto;
+  status: 200;
+};
+
+export type authControllerOtpVerifyResponse401 = {
+  data: void;
+  status: 401;
+};
+
+export type authControllerOtpVerifyResponseSuccess = authControllerOtpVerifyResponse200 & {
+  headers: Headers;
+};
+export type authControllerOtpVerifyResponseError = authControllerOtpVerifyResponse401 & {
+  headers: Headers;
+};
+
+export type authControllerOtpVerifyResponse =
+  | authControllerOtpVerifyResponseSuccess
+  | authControllerOtpVerifyResponseError;
+
+export const getAuthControllerOtpVerifyUrl = () => {
+  return `/api/v1/auth/otp/verify`;
+};
+
+export const authControllerOtpVerify = async (
+  loginCodeVerifyRequestDto: LoginCodeVerifyRequestDto,
+  options?: RequestInit,
+): Promise<authControllerOtpVerifyResponse> => {
+  return apiFetch<authControllerOtpVerifyResponse>(getAuthControllerOtpVerifyUrl(), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(loginCodeVerifyRequestDto),
+  });
+};
+
+export const getAuthControllerOtpVerifyMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof authControllerOtpVerify>>,
+    TError,
+    { data: LoginCodeVerifyRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof authControllerOtpVerify>>,
+  TError,
+  { data: LoginCodeVerifyRequestDto },
+  TContext
+> => {
+  const mutationKey = ['authControllerOtpVerify'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof authControllerOtpVerify>>,
+    { data: LoginCodeVerifyRequestDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return authControllerOtpVerify(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AuthControllerOtpVerifyMutationResult = NonNullable<
+  Awaited<ReturnType<typeof authControllerOtpVerify>>
+>;
+export type AuthControllerOtpVerifyMutationBody = LoginCodeVerifyRequestDto;
+export type AuthControllerOtpVerifyMutationError = void;
+
+/**
+ * @summary Passwordless OTP step 2: verify the code + issue a session.
+ */
+export const useAuthControllerOtpVerify = <TError = void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof authControllerOtpVerify>>,
+    TError,
+    { data: LoginCodeVerifyRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof authControllerOtpVerify>>,
+  TError,
+  { data: LoginCodeVerifyRequestDto },
+  TContext
+> => {
+  const mutationOptions = getAuthControllerOtpVerifyMutationOptions(options);
 
   return useMutation(mutationOptions);
 };

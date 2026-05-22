@@ -17,6 +17,7 @@ import type {
 import type {
   AgentReviewSummaryResponseDto,
   CastVoteRequestDto,
+  CommentsControllerListParams,
   CreateExpenseRequestDto,
   CreateReviewRequestDto,
   EateryReviewSummaryResponseDto,
@@ -3428,3 +3429,377 @@ export function usePublicUserProfileControllerProfile<
 
   return query;
 }
+
+/**
+ * @summary Post a comment on a published trip. 404 TRIP_NOT_COMMENTABLE if the trip is not publicly published.
+ */
+export type commentsControllerCreateResponse201 = {
+  data: void;
+  status: 201;
+};
+
+export type commentsControllerCreateResponseSuccess = commentsControllerCreateResponse201 & {
+  headers: Headers;
+};
+export type commentsControllerCreateResponse = commentsControllerCreateResponseSuccess;
+
+export const getCommentsControllerCreateUrl = (tripId: string) => {
+  return `/api/v1/trips/${tripId}/comments`;
+};
+
+export const commentsControllerCreate = async (
+  tripId: string,
+  options?: RequestInit,
+): Promise<commentsControllerCreateResponse> => {
+  return apiFetch<commentsControllerCreateResponse>(getCommentsControllerCreateUrl(tripId), {
+    ...options,
+    method: 'POST',
+  });
+};
+
+export const getCommentsControllerCreateMutationOptions = <
+  TError = unknown,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof commentsControllerCreate>>,
+    TError,
+    { tripId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof commentsControllerCreate>>,
+  TError,
+  { tripId: string },
+  TContext
+> => {
+  const mutationKey = ['commentsControllerCreate'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof commentsControllerCreate>>,
+    { tripId: string }
+  > = (props) => {
+    const { tripId } = props ?? {};
+
+    return commentsControllerCreate(tripId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CommentsControllerCreateMutationResult = NonNullable<
+  Awaited<ReturnType<typeof commentsControllerCreate>>
+>;
+
+export type CommentsControllerCreateMutationError = unknown;
+
+/**
+ * @summary Post a comment on a published trip. 404 TRIP_NOT_COMMENTABLE if the trip is not publicly published.
+ */
+export const useCommentsControllerCreate = <TError = unknown, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof commentsControllerCreate>>,
+    TError,
+    { tripId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof commentsControllerCreate>>,
+  TError,
+  { tripId: string },
+  TContext
+> => {
+  const mutationOptions = getCommentsControllerCreateMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary A published trip's comment thread, oldest first. Block-filtered against the caller. Not-commentable trip → empty.
+ */
+export type commentsControllerListResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type commentsControllerListResponseSuccess = commentsControllerListResponse200 & {
+  headers: Headers;
+};
+export type commentsControllerListResponse = commentsControllerListResponseSuccess;
+
+export const getCommentsControllerListUrl = (
+  tripId: string,
+  params?: CommentsControllerListParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/trips/${tripId}/comments?${stringifiedParams}`
+    : `/api/v1/trips/${tripId}/comments`;
+};
+
+export const commentsControllerList = async (
+  tripId: string,
+  params?: CommentsControllerListParams,
+  options?: RequestInit,
+): Promise<commentsControllerListResponse> => {
+  return apiFetch<commentsControllerListResponse>(getCommentsControllerListUrl(tripId, params), {
+    ...options,
+    method: 'GET',
+  });
+};
+
+export const getCommentsControllerListInfiniteQueryKey = (
+  tripId?: string,
+  params?: CommentsControllerListParams,
+) => {
+  return ['infinite', `/api/v1/trips/${tripId}/comments`, ...(params ? [params] : [])] as const;
+};
+
+export const getCommentsControllerListQueryKey = (
+  tripId?: string,
+  params?: CommentsControllerListParams,
+) => {
+  return [`/api/v1/trips/${tripId}/comments`, ...(params ? [params] : [])] as const;
+};
+
+export const getCommentsControllerListInfiniteQueryOptions = <
+  TData = Awaited<ReturnType<typeof commentsControllerList>>,
+  TError = unknown,
+>(
+  tripId: string,
+  params?: CommentsControllerListParams,
+  options?: {
+    query?: UseInfiniteQueryOptions<
+      Awaited<ReturnType<typeof commentsControllerList>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getCommentsControllerListInfiniteQueryKey(tripId, params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof commentsControllerList>>> = ({
+    signal,
+    pageParam,
+  }) =>
+    commentsControllerList(
+      tripId,
+      { ...params, limit: pageParam || params?.['limit'] },
+      { signal, ...requestOptions },
+    );
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!tripId,
+    staleTime: 30000,
+    ...queryOptions,
+  } as UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof commentsControllerList>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type CommentsControllerListInfiniteQueryResult = NonNullable<
+  Awaited<ReturnType<typeof commentsControllerList>>
+>;
+export type CommentsControllerListInfiniteQueryError = unknown;
+
+/**
+ * @summary A published trip's comment thread, oldest first. Block-filtered against the caller. Not-commentable trip → empty.
+ */
+
+export function useCommentsControllerListInfinite<
+  TData = Awaited<ReturnType<typeof commentsControllerList>>,
+  TError = unknown,
+>(
+  tripId: string,
+  params?: CommentsControllerListParams,
+  options?: {
+    query?: UseInfiniteQueryOptions<
+      Awaited<ReturnType<typeof commentsControllerList>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+): UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getCommentsControllerListInfiniteQueryOptions(tripId, params, options);
+
+  const query = useInfiniteQuery(queryOptions) as UseInfiniteQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getCommentsControllerListQueryOptions = <
+  TData = Awaited<ReturnType<typeof commentsControllerList>>,
+  TError = unknown,
+>(
+  tripId: string,
+  params?: CommentsControllerListParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof commentsControllerList>>, TError, TData>;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getCommentsControllerListQueryKey(tripId, params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof commentsControllerList>>> = ({ signal }) =>
+    commentsControllerList(tripId, params, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!tripId,
+    staleTime: 30000,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof commentsControllerList>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type CommentsControllerListQueryResult = NonNullable<
+  Awaited<ReturnType<typeof commentsControllerList>>
+>;
+export type CommentsControllerListQueryError = unknown;
+
+/**
+ * @summary A published trip's comment thread, oldest first. Block-filtered against the caller. Not-commentable trip → empty.
+ */
+
+export function useCommentsControllerList<
+  TData = Awaited<ReturnType<typeof commentsControllerList>>,
+  TError = unknown,
+>(
+  tripId: string,
+  params?: CommentsControllerListParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof commentsControllerList>>, TError, TData>;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getCommentsControllerListQueryOptions(tripId, params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary Delete a comment (author or the trip owner). 404 for anyone else.
+ */
+export type commentsControllerRemoveResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type commentsControllerRemoveResponseSuccess = commentsControllerRemoveResponse200 & {
+  headers: Headers;
+};
+export type commentsControllerRemoveResponse = commentsControllerRemoveResponseSuccess;
+
+export const getCommentsControllerRemoveUrl = (id: string) => {
+  return `/api/v1/comments/${id}`;
+};
+
+export const commentsControllerRemove = async (
+  id: string,
+  options?: RequestInit,
+): Promise<commentsControllerRemoveResponse> => {
+  return apiFetch<commentsControllerRemoveResponse>(getCommentsControllerRemoveUrl(id), {
+    ...options,
+    method: 'DELETE',
+  });
+};
+
+export const getCommentsControllerRemoveMutationOptions = <
+  TError = unknown,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof commentsControllerRemove>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof commentsControllerRemove>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ['commentsControllerRemove'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof commentsControllerRemove>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return commentsControllerRemove(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CommentsControllerRemoveMutationResult = NonNullable<
+  Awaited<ReturnType<typeof commentsControllerRemove>>
+>;
+
+export type CommentsControllerRemoveMutationError = unknown;
+
+/**
+ * @summary Delete a comment (author or the trip owner). 404 for anyone else.
+ */
+export const useCommentsControllerRemove = <TError = unknown, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof commentsControllerRemove>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof commentsControllerRemove>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationOptions = getCommentsControllerRemoveMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};

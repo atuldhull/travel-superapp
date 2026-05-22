@@ -5,6 +5,7 @@ import type { ItineraryItemDtoPlaceId } from './itineraryItemDtoPlaceId';
 import type { ItineraryItemDtoStartTime } from './itineraryItemDtoStartTime';
 import type { ItineraryItemDtoEndTime } from './itineraryItemDtoEndTime';
 import type { ItineraryItemDtoNotes } from './itineraryItemDtoNotes';
+import type { ItineraryItemDtoCompletedAt } from './itineraryItemDtoCompletedAt';
 
 export interface ItineraryItemDto {
   id: string;
@@ -18,4 +19,6 @@ export interface ItineraryItemDto {
   endTime: ItineraryItemDtoEndTime;
   /** @nullable */
   notes: ItineraryItemDtoNotes;
+  /** @nullable */
+  completedAt: ItineraryItemDtoCompletedAt;
 }
