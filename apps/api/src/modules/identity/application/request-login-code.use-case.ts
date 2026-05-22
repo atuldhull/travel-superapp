@@ -17,7 +17,7 @@ import type { Env } from '@app/config';
 import { ConfigService } from '@nestjs/config';
 import type { LoginChannel } from '../domain/login-code.entity';
 import { LOGIN_CODE_REPOSITORY, type LoginCodeRepository } from './ports/login-code.repository';
-import { MAILER_PORT, type MailerPort } from './ports/mailer.port';
+import { MAILER_PORT, type MailerPort } from '../../../common/mailer/mailer.port';
 import { SMS_SENDER, type SmsSender } from './ports/sms-sender.port';
 
 const CODE_TTL_MS = 10 * 60 * 1000;

@@ -25,7 +25,7 @@ import type { Place } from '../../places/domain/place.entity';
 import { AdminCreatePlaceUseCase } from '../application/admin-create-place.use-case';
 import { AdminDeletePlaceUseCase } from '../application/admin-delete-place.use-case';
 import { AdminCreatePlaceBodySchema, type AdminCreatePlaceBody } from './dto/admin.dto';
-import { AdminCreatePlaceRequestDto, AdminPlaceDto } from './dto/admin-response.dto';
+import { AdminCreatePlaceRequestDto, AdminPlaceDto } from '../../../common/dto/admin-response.dto';
 
 interface PlaceDto {
   readonly id: string;

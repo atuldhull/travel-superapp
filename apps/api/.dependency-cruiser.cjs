@@ -48,6 +48,32 @@ module.exports = {
       to: { path: '^src/modules/[^/]+/infrastructure/' },
     },
     {
+      name: 'no-cross-module-infrastructure',
+      comment:
+        "A module must not import ANOTHER module's infrastructure layer. Concrete adapters " +
+        '(Prisma repos, Redis caches, 3rd-party wrappers) are private implementation detail. ' +
+        "Cross-module collaboration goes through the other module's ports / domain / NestJS " +
+        'module — never its infrastructure.',
+      severity: 'error',
+      from: { path: '^src/modules/([^/]+)/' },
+      to: {
+        path: '^src/modules/[^/]+/infrastructure/',
+        pathNot: '^src/modules/$1/infrastructure/',
+      },
+    },
+    {
+      name: 'no-cross-module-interface',
+      comment:
+        "A module must not import ANOTHER module's interface layer (controllers). A controller " +
+        'is an HTTP edge, not a programmatic API surface for sibling modules.',
+      severity: 'error',
+      from: { path: '^src/modules/([^/]+)/' },
+      to: {
+        path: '^src/modules/[^/]+/interface/',
+        pathNot: '^src/modules/$1/interface/',
+      },
+    },
+    {
       name: 'no-circular',
       comment:
         'A circular import breaks module-init order (esbuild/ESM trips on it where CJS ' +
