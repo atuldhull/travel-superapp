@@ -1,0 +1,189 @@
+[
+  {
+    "type": "dependency",
+    "from": "src/modules/account/application/delete-account.use-case.ts",
+    "to": "src/modules/account/infrastructure/reactivation-token.ts",
+    "unresolvedTo": "../infrastructure/reactivation-token",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "hex-application-no-infra-or-interface"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/modules/account/application/reactivate-account.use-case.ts",
+    "to": "src/modules/account/infrastructure/reactivation-token.ts",
+    "unresolvedTo": "../infrastructure/reactivation-token",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "hex-application-no-infra-or-interface"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/modules/account/application/submit-ban-appeal.use-case.ts",
+    "to": "src/modules/identity/infrastructure/email-hash.ts",
+    "unresolvedTo": "../../identity/infrastructure/email-hash",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "hex-application-no-infra-or-interface"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/modules/identity/application/login.use-case.ts",
+    "to": "src/modules/account/infrastructure/reactivation-token.ts",
+    "unresolvedTo": "../../account/infrastructure/reactivation-token",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "hex-application-no-infra-or-interface"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/modules/identity/application/login.use-case.ts",
+    "to": "src/modules/identity/infrastructure/backup-code-hash.ts",
+    "unresolvedTo": "../infrastructure/backup-code-hash",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "hex-application-no-infra-or-interface"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/modules/identity/application/login.use-case.ts",
+    "to": "src/modules/identity/infrastructure/email-hash.ts",
+    "unresolvedTo": "../infrastructure/email-hash",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "hex-application-no-infra-or-interface"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/modules/identity/application/login.use-case.ts",
+    "to": "src/modules/identity/infrastructure/totp.service.ts",
+    "unresolvedTo": "../infrastructure/totp.service",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "hex-application-no-infra-or-interface"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/modules/identity/application/mfa.use-case.ts",
+    "to": "src/modules/identity/infrastructure/totp.service.ts",
+    "unresolvedTo": "../infrastructure/totp.service",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "hex-application-no-infra-or-interface"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/modules/identity/application/register.use-case.ts",
+    "to": "src/modules/identity/infrastructure/email-hash.ts",
+    "unresolvedTo": "../infrastructure/email-hash",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "hex-application-no-infra-or-interface"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/modules/identity/application/request-password-reset.use-case.ts",
+    "to": "src/modules/identity/infrastructure/email-hash.ts",
+    "unresolvedTo": "../infrastructure/email-hash",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "hex-application-no-infra-or-interface"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/modules/identity/application/sign-in-with-oauth.use-case.ts",
+    "to": "src/modules/identity/infrastructure/email-hash.ts",
+    "unresolvedTo": "../infrastructure/email-hash",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "hex-application-no-infra-or-interface"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/modules/social/application/create-expense.use-case.ts",
+    "to": "src/modules/social/infrastructure/trip-balances-cache.ts",
+    "unresolvedTo": "../infrastructure/trip-balances-cache",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "hex-application-no-infra-or-interface"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/modules/social/application/delete-expense.use-case.ts",
+    "to": "src/modules/social/infrastructure/trip-balances-cache.ts",
+    "unresolvedTo": "../infrastructure/trip-balances-cache",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "hex-application-no-infra-or-interface"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/modules/social/application/get-trip-balances.use-case.ts",
+    "to": "src/modules/social/infrastructure/trip-balances-cache.ts",
+    "unresolvedTo": "../infrastructure/trip-balances-cache",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "hex-application-no-infra-or-interface"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/modules/social/application/heart-shared-trip.use-case.ts",
+    "to": "src/modules/social/infrastructure/trip-heart-counter.ts",
+    "unresolvedTo": "../infrastructure/trip-heart-counter",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "hex-application-no-infra-or-interface"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/modules/social/interface/shared-trip-react.controller.ts",
+    "to": "src/modules/social/infrastructure/trip-heart-counter.ts",
+    "unresolvedTo": "../infrastructure/trip-heart-counter",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "hex-interface-no-direct-infrastructure"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/modules/trip/interface/trip.controller.ts",
+    "to": "src/modules/trip/infrastructure/trip-overview-cache.ts",
+    "unresolvedTo": "../infrastructure/trip-overview-cache",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "hex-interface-no-direct-infrastructure"
+    }
+  }
+]
