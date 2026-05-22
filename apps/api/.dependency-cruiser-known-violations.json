@@ -1,72 +1,6 @@
 [
   {
     "type": "dependency",
-    "from": "src/modules/account/application/delete-account.use-case.ts",
-    "to": "src/modules/account/infrastructure/reactivation-token.ts",
-    "unresolvedTo": "../infrastructure/reactivation-token",
-    "dependencyTypes": ["local", "import"],
-    "rule": {
-      "severity": "error",
-      "name": "hex-application-no-infra-or-interface"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/modules/account/application/reactivate-account.use-case.ts",
-    "to": "src/modules/account/infrastructure/reactivation-token.ts",
-    "unresolvedTo": "../infrastructure/reactivation-token",
-    "dependencyTypes": ["local", "import"],
-    "rule": {
-      "severity": "error",
-      "name": "hex-application-no-infra-or-interface"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/modules/account/application/submit-ban-appeal.use-case.ts",
-    "to": "src/modules/identity/infrastructure/email-hash.ts",
-    "unresolvedTo": "../../identity/infrastructure/email-hash",
-    "dependencyTypes": ["local", "import"],
-    "rule": {
-      "severity": "error",
-      "name": "hex-application-no-infra-or-interface"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/modules/identity/application/login.use-case.ts",
-    "to": "src/modules/account/infrastructure/reactivation-token.ts",
-    "unresolvedTo": "../../account/infrastructure/reactivation-token",
-    "dependencyTypes": ["local", "import"],
-    "rule": {
-      "severity": "error",
-      "name": "hex-application-no-infra-or-interface"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/modules/identity/application/login.use-case.ts",
-    "to": "src/modules/identity/infrastructure/backup-code-hash.ts",
-    "unresolvedTo": "../infrastructure/backup-code-hash",
-    "dependencyTypes": ["local", "import"],
-    "rule": {
-      "severity": "error",
-      "name": "hex-application-no-infra-or-interface"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/modules/identity/application/login.use-case.ts",
-    "to": "src/modules/identity/infrastructure/email-hash.ts",
-    "unresolvedTo": "../infrastructure/email-hash",
-    "dependencyTypes": ["local", "import"],
-    "rule": {
-      "severity": "error",
-      "name": "hex-application-no-infra-or-interface"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/modules/identity/application/login.use-case.ts",
     "to": "src/modules/identity/infrastructure/totp.service.ts",
     "unresolvedTo": "../infrastructure/totp.service",
@@ -81,39 +15,6 @@
     "from": "src/modules/identity/application/mfa.use-case.ts",
     "to": "src/modules/identity/infrastructure/totp.service.ts",
     "unresolvedTo": "../infrastructure/totp.service",
-    "dependencyTypes": ["local", "import"],
-    "rule": {
-      "severity": "error",
-      "name": "hex-application-no-infra-or-interface"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/modules/identity/application/register.use-case.ts",
-    "to": "src/modules/identity/infrastructure/email-hash.ts",
-    "unresolvedTo": "../infrastructure/email-hash",
-    "dependencyTypes": ["local", "import"],
-    "rule": {
-      "severity": "error",
-      "name": "hex-application-no-infra-or-interface"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/modules/identity/application/request-password-reset.use-case.ts",
-    "to": "src/modules/identity/infrastructure/email-hash.ts",
-    "unresolvedTo": "../infrastructure/email-hash",
-    "dependencyTypes": ["local", "import"],
-    "rule": {
-      "severity": "error",
-      "name": "hex-application-no-infra-or-interface"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/modules/identity/application/sign-in-with-oauth.use-case.ts",
-    "to": "src/modules/identity/infrastructure/email-hash.ts",
-    "unresolvedTo": "../infrastructure/email-hash",
     "dependencyTypes": ["local", "import"],
     "rule": {
       "severity": "error",

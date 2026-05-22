@@ -41,7 +41,7 @@ import {
   USER_OAUTH_IDENTITY_REPOSITORY,
   type UserOAuthIdentityRepository,
 } from './ports/user-oauth-identity.repository';
-import { hashEmail } from '../infrastructure/email-hash';
+import { hashEmail } from '../../../common/crypto/email-hash';
 
 export interface SignInWithOAuthCommand {
   readonly provider: string;

@@ -15,7 +15,7 @@ import type { Env } from '@app/config';
 import { hashPassword, verifyPassword } from '@app/auth';
 import { RateLimitError, UnauthorizedError } from '@app/errors';
 import { createLogger } from '@app/logger';
-import { isWellFormedBackupCode } from '../infrastructure/backup-code-hash';
+import { isWellFormedBackupCode } from '../../../common/crypto/backup-code-hash';
 import { TotpService } from '../infrastructure/totp.service';
 import {
   IssueSessionUseCase,
@@ -25,8 +25,8 @@ import {
 import { BACKUP_CODE_REPOSITORY, type BackupCodeRepository } from './ports/backup-code.repository';
 import { FAILED_LOGIN_COUNTER, type FailedLoginCounter } from './ports/failed-login-counter';
 import { USER_REPOSITORY, type UserRepository } from './ports/user.repository';
-import { hashEmail } from '../infrastructure/email-hash';
-import { mintReactivationToken } from '../../account/infrastructure/reactivation-token';
+import { hashEmail } from '../../../common/crypto/email-hash';
+import { mintReactivationToken } from '../../../common/crypto/reactivation-token';
 
 const log = createLogger('identity.login');
 

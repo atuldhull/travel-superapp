@@ -21,7 +21,7 @@ import {
   type IssuedSession,
 } from './issue-session.use-case';
 import { USER_REPOSITORY, type UserRepository } from './ports/user.repository';
-import { hashEmail } from '../infrastructure/email-hash';
+import { hashEmail } from '../../../common/crypto/email-hash';
 
 export interface RegisterCommand {
   readonly email: string;
