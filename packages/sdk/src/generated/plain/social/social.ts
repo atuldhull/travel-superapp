@@ -4,6 +4,7 @@
 import type {
   AgentReviewSummaryResponseDto,
   CastVoteRequestDto,
+  CommentsControllerListParams,
   CreateExpenseRequestDto,
   CreateReviewRequestDto,
   EateryReviewSummaryResponseDto,
@@ -917,4 +918,101 @@ export const publicUserProfileControllerProfile = async (
       method: 'GET',
     },
   );
+};
+
+/**
+ * @summary Post a comment on a published trip. 404 TRIP_NOT_COMMENTABLE if the trip is not publicly published.
+ */
+export type commentsControllerCreateResponse201 = {
+  data: void;
+  status: 201;
+};
+
+export type commentsControllerCreateResponseSuccess = commentsControllerCreateResponse201 & {
+  headers: Headers;
+};
+export type commentsControllerCreateResponse = commentsControllerCreateResponseSuccess;
+
+export const getCommentsControllerCreateUrl = (tripId: string) => {
+  return `/api/v1/trips/${tripId}/comments`;
+};
+
+export const commentsControllerCreate = async (
+  tripId: string,
+  options?: RequestInit,
+): Promise<commentsControllerCreateResponse> => {
+  return apiFetch<commentsControllerCreateResponse>(getCommentsControllerCreateUrl(tripId), {
+    ...options,
+    method: 'POST',
+  });
+};
+
+/**
+ * @summary A published trip's comment thread, oldest first. Block-filtered against the caller. Not-commentable trip → empty.
+ */
+export type commentsControllerListResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type commentsControllerListResponseSuccess = commentsControllerListResponse200 & {
+  headers: Headers;
+};
+export type commentsControllerListResponse = commentsControllerListResponseSuccess;
+
+export const getCommentsControllerListUrl = (
+  tripId: string,
+  params?: CommentsControllerListParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/trips/${tripId}/comments?${stringifiedParams}`
+    : `/api/v1/trips/${tripId}/comments`;
+};
+
+export const commentsControllerList = async (
+  tripId: string,
+  params?: CommentsControllerListParams,
+  options?: RequestInit,
+): Promise<commentsControllerListResponse> => {
+  return apiFetch<commentsControllerListResponse>(getCommentsControllerListUrl(tripId, params), {
+    ...options,
+    method: 'GET',
+  });
+};
+
+/**
+ * @summary Delete a comment (author or the trip owner). 404 for anyone else.
+ */
+export type commentsControllerRemoveResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type commentsControllerRemoveResponseSuccess = commentsControllerRemoveResponse200 & {
+  headers: Headers;
+};
+export type commentsControllerRemoveResponse = commentsControllerRemoveResponseSuccess;
+
+export const getCommentsControllerRemoveUrl = (id: string) => {
+  return `/api/v1/comments/${id}`;
+};
+
+export const commentsControllerRemove = async (
+  id: string,
+  options?: RequestInit,
+): Promise<commentsControllerRemoveResponse> => {
+  return apiFetch<commentsControllerRemoveResponse>(getCommentsControllerRemoveUrl(id), {
+    ...options,
+    method: 'DELETE',
+  });
 };
