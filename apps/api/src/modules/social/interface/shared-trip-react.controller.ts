@@ -17,7 +17,10 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Public } from '../../../common/auth';
 import { HeartSharedTripUseCase } from '../application/heart-shared-trip.use-case';
-import { TripHeartCounter } from '../infrastructure/trip-heart-counter';
+import {
+  TRIP_HEART_COUNTER_PORT,
+  type TripHeartCounterPort,
+} from '../application/ports/trip-heart-counter.port';
 import {
   TRIP_SHARE_REPOSITORY,
   type TripShareRepository,
@@ -42,7 +45,7 @@ const HEART_LIMIT_PER_MIN = process.env['NODE_ENV'] === 'test' ? 10_000 : 1;
 export class SharedTripReactController {
   constructor(
     private readonly heart: HeartSharedTripUseCase,
-    private readonly counter: TripHeartCounter,
+    @Inject(TRIP_HEART_COUNTER_PORT) private readonly counter: TripHeartCounterPort,
     @Inject(TRIP_SHARE_REPOSITORY) private readonly shares: TripShareRepository,
   ) {}
 

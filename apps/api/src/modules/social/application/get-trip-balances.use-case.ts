@@ -32,7 +32,10 @@ import {
   type TripShareRepository,
 } from '../../trip/application/ports/trip-share.repository';
 import type { UserBalance } from '../domain/expense.entity';
-import { TripBalancesCache } from '../infrastructure/trip-balances-cache';
+import {
+  TRIP_BALANCES_CACHE_PORT,
+  type TripBalancesCachePort,
+} from './ports/trip-balances-cache.port';
 import { assertCanVote as assertTripAccess } from './cast-vote.use-case';
 import { EXPENSE_REPOSITORY, type ExpenseRepository } from './ports/expense.repository';
 
@@ -52,7 +55,7 @@ export class GetTripBalancesUseCase {
     @Inject(EXPENSE_REPOSITORY) private readonly expenses: ExpenseRepository,
     @Inject(TRIP_REPOSITORY) private readonly trips: TripRepository,
     @Inject(TRIP_SHARE_REPOSITORY) private readonly shares: TripShareRepository,
-    @Inject(TripBalancesCache) private readonly cache: TripBalancesCache,
+    @Inject(TRIP_BALANCES_CACHE_PORT) private readonly cache: TripBalancesCachePort,
   ) {}
 
   async execute(cmd: GetTripBalancesCommand): Promise<readonly UserBalance[]> {

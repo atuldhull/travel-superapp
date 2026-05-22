@@ -11,7 +11,7 @@
     "clean": "rimraf dist",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src test",
-    "arch": "depcruise src --config .dependency-cruiser.cjs --ignore-known",
+    "arch": "depcruise src --config .dependency-cruiser.cjs",
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
     "prisma": "prisma",
