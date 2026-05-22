@@ -17,7 +17,7 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { UnauthorizedError, ConflictError, NotFoundError } from '@app/errors';
-import { TotpService } from '../infrastructure/totp.service';
+import { TOTP_PORT, type TotpPort } from './ports/totp.port';
 import { BACKUP_CODE_REPOSITORY, type BackupCodeRepository } from './ports/backup-code.repository';
 import { USER_REPOSITORY, type UserRepository } from './ports/user.repository';
 
@@ -34,7 +34,7 @@ export interface SetupMfaResult {
 export class SetupMfaUseCase {
   constructor(
     @Inject(USER_REPOSITORY) private readonly users: UserRepository,
-    private readonly totp: TotpService,
+    @Inject(TOTP_PORT) private readonly totp: TotpPort,
   ) {}
 
   async execute(userId: string): Promise<SetupMfaResult> {
@@ -74,7 +74,7 @@ export class VerifyMfaUseCase {
     @Inject(USER_REPOSITORY) private readonly users: UserRepository,
     @Inject(BACKUP_CODE_REPOSITORY)
     private readonly backupCodes: BackupCodeRepository,
-    private readonly totp: TotpService,
+    @Inject(TOTP_PORT) private readonly totp: TotpPort,
   ) {}
 
   async execute(userId: string, code: string): Promise<VerifyMfaResult> {
@@ -105,7 +105,7 @@ export class DisableMfaUseCase {
     @Inject(USER_REPOSITORY) private readonly users: UserRepository,
     @Inject(BACKUP_CODE_REPOSITORY)
     private readonly backupCodes: BackupCodeRepository,
-    private readonly totp: TotpService,
+    @Inject(TOTP_PORT) private readonly totp: TotpPort,
   ) {}
 
   async execute(userId: string, code: string): Promise<void> {
@@ -140,7 +140,7 @@ export class RegenerateBackupCodesUseCase {
     @Inject(USER_REPOSITORY) private readonly users: UserRepository,
     @Inject(BACKUP_CODE_REPOSITORY)
     private readonly backupCodes: BackupCodeRepository,
-    private readonly totp: TotpService,
+    @Inject(TOTP_PORT) private readonly totp: TotpPort,
   ) {}
 
   async execute(userId: string, code: string): Promise<readonly string[]> {

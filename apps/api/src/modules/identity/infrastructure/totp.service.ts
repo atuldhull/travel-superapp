@@ -22,14 +22,10 @@
  */
 import { Injectable } from '@nestjs/common';
 import speakeasy from 'speakeasy';
-
-export interface TotpSecret {
-  readonly base32: string;
-  readonly otpauthUri: string;
-}
+import type { TotpPort, TotpSecret } from '../application/ports/totp.port';
 
 @Injectable()
-export class TotpService {
+export class TotpService implements TotpPort {
   /**
    * Generate a fresh TOTP secret and the otpauth:// URI to show to
    * the user (as a QR code). `label` is the account identifier

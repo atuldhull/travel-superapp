@@ -1,28 +1,6 @@
 [
   {
     "type": "dependency",
-    "from": "src/modules/identity/application/login.use-case.ts",
-    "to": "src/modules/identity/infrastructure/totp.service.ts",
-    "unresolvedTo": "../infrastructure/totp.service",
-    "dependencyTypes": ["local", "import"],
-    "rule": {
-      "severity": "error",
-      "name": "hex-application-no-infra-or-interface"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/modules/identity/application/mfa.use-case.ts",
-    "to": "src/modules/identity/infrastructure/totp.service.ts",
-    "unresolvedTo": "../infrastructure/totp.service",
-    "dependencyTypes": ["local", "import"],
-    "rule": {
-      "severity": "error",
-      "name": "hex-application-no-infra-or-interface"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/modules/social/application/create-expense.use-case.ts",
     "to": "src/modules/social/infrastructure/trip-balances-cache.ts",
     "unresolvedTo": "../infrastructure/trip-balances-cache",
