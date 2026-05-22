@@ -3,6 +3,8 @@
 // Regenerate via: pnpm --filter=@app/sdk sdk:gen
 import type {
   AuthSuccessResponseDto,
+  LoginCodeRequestRequestDto,
+  LoginCodeVerifyRequestDto,
   LoginRequestDto,
   MagicLinkConsumeRequestDto,
   MagicLinkRequestRequestDto,
@@ -171,6 +173,75 @@ export const authControllerMagicLinkConsume = async (
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(magicLinkConsumeRequestDto),
+  });
+};
+
+/**
+ * @summary Passwordless OTP step 1: email/SMS a 6-digit code. Always 'ok' — never reveals registration.
+ */
+export type authControllerOtpRequestResponse200 = {
+  data: MagicLinkRequestResponseDto;
+  status: 200;
+};
+
+export type authControllerOtpRequestResponseSuccess = authControllerOtpRequestResponse200 & {
+  headers: Headers;
+};
+export type authControllerOtpRequestResponse = authControllerOtpRequestResponseSuccess;
+
+export const getAuthControllerOtpRequestUrl = () => {
+  return `/api/v1/auth/otp/request`;
+};
+
+export const authControllerOtpRequest = async (
+  loginCodeRequestRequestDto: LoginCodeRequestRequestDto,
+  options?: RequestInit,
+): Promise<authControllerOtpRequestResponse> => {
+  return apiFetch<authControllerOtpRequestResponse>(getAuthControllerOtpRequestUrl(), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(loginCodeRequestRequestDto),
+  });
+};
+
+/**
+ * @summary Passwordless OTP step 2: verify the code + issue a session.
+ */
+export type authControllerOtpVerifyResponse200 = {
+  data: AuthSuccessResponseDto;
+  status: 200;
+};
+
+export type authControllerOtpVerifyResponse401 = {
+  data: void;
+  status: 401;
+};
+
+export type authControllerOtpVerifyResponseSuccess = authControllerOtpVerifyResponse200 & {
+  headers: Headers;
+};
+export type authControllerOtpVerifyResponseError = authControllerOtpVerifyResponse401 & {
+  headers: Headers;
+};
+
+export type authControllerOtpVerifyResponse =
+  | authControllerOtpVerifyResponseSuccess
+  | authControllerOtpVerifyResponseError;
+
+export const getAuthControllerOtpVerifyUrl = () => {
+  return `/api/v1/auth/otp/verify`;
+};
+
+export const authControllerOtpVerify = async (
+  loginCodeVerifyRequestDto: LoginCodeVerifyRequestDto,
+  options?: RequestInit,
+): Promise<authControllerOtpVerifyResponse> => {
+  return apiFetch<authControllerOtpVerifyResponse>(getAuthControllerOtpVerifyUrl(), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(loginCodeVerifyRequestDto),
   });
 };
 

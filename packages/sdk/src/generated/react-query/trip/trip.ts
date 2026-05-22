@@ -28,9 +28,11 @@ import type {
   SharedTripDto,
   SuggestPlacesForTripRequestDto,
   SuggestPlacesForTripResponseDto,
+  TripControllerCenter200,
   TripControllerEateriesParams,
   TripControllerEventsParams,
   TripControllerListParams,
+  TripControllerShiftItinerary200,
   TripControllerStaysParams,
   TripDto,
   TripOverviewResponseDto,
@@ -2996,6 +2998,494 @@ export function useTripControllerWeather<
   return query;
 }
 
+/**
+ * @summary Just the trip center coords. Owner-gated, tiny.
+ */
+export type tripControllerCenterResponse200 = {
+  data: TripControllerCenter200;
+  status: 200;
+};
+
+export type tripControllerCenterResponse401 = {
+  data: void;
+  status: 401;
+};
+
+export type tripControllerCenterResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type tripControllerCenterResponseSuccess = tripControllerCenterResponse200 & {
+  headers: Headers;
+};
+export type tripControllerCenterResponseError = (
+  | tripControllerCenterResponse401
+  | tripControllerCenterResponse404
+) & {
+  headers: Headers;
+};
+
+export type tripControllerCenterResponse =
+  | tripControllerCenterResponseSuccess
+  | tripControllerCenterResponseError;
+
+export const getTripControllerCenterUrl = (id: string) => {
+  return `/api/v1/trips/${id}/center`;
+};
+
+export const tripControllerCenter = async (
+  id: string,
+  options?: RequestInit,
+): Promise<tripControllerCenterResponse> => {
+  return apiFetch<tripControllerCenterResponse>(getTripControllerCenterUrl(id), {
+    ...options,
+    method: 'GET',
+  });
+};
+
+export const getTripControllerCenterInfiniteQueryKey = (id?: string) => {
+  return ['infinite', `/api/v1/trips/${id}/center`] as const;
+};
+
+export const getTripControllerCenterQueryKey = (id?: string) => {
+  return [`/api/v1/trips/${id}/center`] as const;
+};
+
+export const getTripControllerCenterInfiniteQueryOptions = <
+  TData = Awaited<ReturnType<typeof tripControllerCenter>>,
+  TError = void,
+>(
+  id: string,
+  options?: {
+    query?: UseInfiniteQueryOptions<
+      Awaited<ReturnType<typeof tripControllerCenter>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getTripControllerCenterInfiniteQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof tripControllerCenter>>> = ({ signal }) =>
+    tripControllerCenter(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    staleTime: 30000,
+    ...queryOptions,
+  } as UseInfiniteQueryOptions<Awaited<ReturnType<typeof tripControllerCenter>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type TripControllerCenterInfiniteQueryResult = NonNullable<
+  Awaited<ReturnType<typeof tripControllerCenter>>
+>;
+export type TripControllerCenterInfiniteQueryError = void;
+
+/**
+ * @summary Just the trip center coords. Owner-gated, tiny.
+ */
+
+export function useTripControllerCenterInfinite<
+  TData = Awaited<ReturnType<typeof tripControllerCenter>>,
+  TError = void,
+>(
+  id: string,
+  options?: {
+    query?: UseInfiniteQueryOptions<
+      Awaited<ReturnType<typeof tripControllerCenter>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+): UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getTripControllerCenterInfiniteQueryOptions(id, options);
+
+  const query = useInfiniteQuery(queryOptions) as UseInfiniteQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getTripControllerCenterQueryOptions = <
+  TData = Awaited<ReturnType<typeof tripControllerCenter>>,
+  TError = void,
+>(
+  id: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof tripControllerCenter>>, TError, TData>;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getTripControllerCenterQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof tripControllerCenter>>> = ({ signal }) =>
+    tripControllerCenter(id, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, enabled: !!id, staleTime: 30000, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof tripControllerCenter>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type TripControllerCenterQueryResult = NonNullable<
+  Awaited<ReturnType<typeof tripControllerCenter>>
+>;
+export type TripControllerCenterQueryError = void;
+
+/**
+ * @summary Just the trip center coords. Owner-gated, tiny.
+ */
+
+export function useTripControllerCenter<
+  TData = Awaited<ReturnType<typeof tripControllerCenter>>,
+  TError = void,
+>(
+  id: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof tripControllerCenter>>, TError, TData>;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getTripControllerCenterQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary Mark an itinerary item complete (G1 — Living Trip).
+ */
+export type tripControllerCompleteItemResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type tripControllerCompleteItemResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type tripControllerCompleteItemResponseSuccess = tripControllerCompleteItemResponse200 & {
+  headers: Headers;
+};
+export type tripControllerCompleteItemResponseError = tripControllerCompleteItemResponse404 & {
+  headers: Headers;
+};
+
+export type tripControllerCompleteItemResponse =
+  | tripControllerCompleteItemResponseSuccess
+  | tripControllerCompleteItemResponseError;
+
+export const getTripControllerCompleteItemUrl = (itemId: string) => {
+  return `/api/v1/trips/items/${itemId}/complete`;
+};
+
+export const tripControllerCompleteItem = async (
+  itemId: string,
+  options?: RequestInit,
+): Promise<tripControllerCompleteItemResponse> => {
+  return apiFetch<tripControllerCompleteItemResponse>(getTripControllerCompleteItemUrl(itemId), {
+    ...options,
+    method: 'POST',
+  });
+};
+
+export const getTripControllerCompleteItemMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof tripControllerCompleteItem>>,
+    TError,
+    { itemId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof tripControllerCompleteItem>>,
+  TError,
+  { itemId: string },
+  TContext
+> => {
+  const mutationKey = ['tripControllerCompleteItem'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof tripControllerCompleteItem>>,
+    { itemId: string }
+  > = (props) => {
+    const { itemId } = props ?? {};
+
+    return tripControllerCompleteItem(itemId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type TripControllerCompleteItemMutationResult = NonNullable<
+  Awaited<ReturnType<typeof tripControllerCompleteItem>>
+>;
+
+export type TripControllerCompleteItemMutationError = void;
+
+/**
+ * @summary Mark an itinerary item complete (G1 — Living Trip).
+ */
+export const useTripControllerCompleteItem = <TError = void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof tripControllerCompleteItem>>,
+    TError,
+    { itemId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof tripControllerCompleteItem>>,
+  TError,
+  { itemId: string },
+  TContext
+> => {
+  const mutationOptions = getTripControllerCompleteItemMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Clear the completion mark on an itinerary item (G1).
+ */
+export type tripControllerUncompleteItemResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type tripControllerUncompleteItemResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type tripControllerUncompleteItemResponseSuccess =
+  tripControllerUncompleteItemResponse200 & {
+    headers: Headers;
+  };
+export type tripControllerUncompleteItemResponseError = tripControllerUncompleteItemResponse404 & {
+  headers: Headers;
+};
+
+export type tripControllerUncompleteItemResponse =
+  | tripControllerUncompleteItemResponseSuccess
+  | tripControllerUncompleteItemResponseError;
+
+export const getTripControllerUncompleteItemUrl = (itemId: string) => {
+  return `/api/v1/trips/items/${itemId}/uncomplete`;
+};
+
+export const tripControllerUncompleteItem = async (
+  itemId: string,
+  options?: RequestInit,
+): Promise<tripControllerUncompleteItemResponse> => {
+  return apiFetch<tripControllerUncompleteItemResponse>(
+    getTripControllerUncompleteItemUrl(itemId),
+    {
+      ...options,
+      method: 'POST',
+    },
+  );
+};
+
+export const getTripControllerUncompleteItemMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof tripControllerUncompleteItem>>,
+    TError,
+    { itemId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof tripControllerUncompleteItem>>,
+  TError,
+  { itemId: string },
+  TContext
+> => {
+  const mutationKey = ['tripControllerUncompleteItem'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof tripControllerUncompleteItem>>,
+    { itemId: string }
+  > = (props) => {
+    const { itemId } = props ?? {};
+
+    return tripControllerUncompleteItem(itemId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type TripControllerUncompleteItemMutationResult = NonNullable<
+  Awaited<ReturnType<typeof tripControllerUncompleteItem>>
+>;
+
+export type TripControllerUncompleteItemMutationError = void;
+
+/**
+ * @summary Clear the completion mark on an itinerary item (G1).
+ */
+export const useTripControllerUncompleteItem = <TError = void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof tripControllerUncompleteItem>>,
+    TError,
+    { itemId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof tripControllerUncompleteItem>>,
+  TError,
+  { itemId: string },
+  TContext
+> => {
+  const mutationOptions = getTripControllerUncompleteItemMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Shift every itinerary day for the trip by deltaDays (G4).
+ */
+export type tripControllerShiftItineraryResponse200 = {
+  data: TripControllerShiftItinerary200;
+  status: 200;
+};
+
+export type tripControllerShiftItineraryResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type tripControllerShiftItineraryResponse422 = {
+  data: void;
+  status: 422;
+};
+
+export type tripControllerShiftItineraryResponseSuccess =
+  tripControllerShiftItineraryResponse200 & {
+    headers: Headers;
+  };
+export type tripControllerShiftItineraryResponseError = (
+  | tripControllerShiftItineraryResponse404
+  | tripControllerShiftItineraryResponse422
+) & {
+  headers: Headers;
+};
+
+export type tripControllerShiftItineraryResponse =
+  | tripControllerShiftItineraryResponseSuccess
+  | tripControllerShiftItineraryResponseError;
+
+export const getTripControllerShiftItineraryUrl = (id: string) => {
+  return `/api/v1/trips/${id}/itinerary/shift`;
+};
+
+export const tripControllerShiftItinerary = async (
+  id: string,
+  options?: RequestInit,
+): Promise<tripControllerShiftItineraryResponse> => {
+  return apiFetch<tripControllerShiftItineraryResponse>(getTripControllerShiftItineraryUrl(id), {
+    ...options,
+    method: 'POST',
+  });
+};
+
+export const getTripControllerShiftItineraryMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof tripControllerShiftItinerary>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof tripControllerShiftItinerary>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ['tripControllerShiftItinerary'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof tripControllerShiftItinerary>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return tripControllerShiftItinerary(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type TripControllerShiftItineraryMutationResult = NonNullable<
+  Awaited<ReturnType<typeof tripControllerShiftItinerary>>
+>;
+
+export type TripControllerShiftItineraryMutationError = void;
+
+/**
+ * @summary Shift every itinerary day for the trip by deltaDays (G4).
+ */
+export const useTripControllerShiftItinerary = <TError = void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof tripControllerShiftItinerary>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof tripControllerShiftItinerary>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationOptions = getTripControllerShiftItineraryMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
 /**
  * @summary List active share codes for the trip the caller owns.
  */

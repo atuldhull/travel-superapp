@@ -15,9 +15,11 @@ import type {
   SharedTripDto,
   SuggestPlacesForTripRequestDto,
   SuggestPlacesForTripResponseDto,
+  TripControllerCenter200,
   TripControllerEateriesParams,
   TripControllerEventsParams,
   TripControllerListParams,
+  TripControllerShiftItinerary200,
   TripControllerStaysParams,
   TripDto,
   TripOverviewResponseDto,
@@ -869,6 +871,179 @@ export const tripControllerWeather = async (
   return apiFetch<tripControllerWeatherResponse>(getTripControllerWeatherUrl(id), {
     ...options,
     method: 'GET',
+  });
+};
+
+/**
+ * @summary Just the trip center coords. Owner-gated, tiny.
+ */
+export type tripControllerCenterResponse200 = {
+  data: TripControllerCenter200;
+  status: 200;
+};
+
+export type tripControllerCenterResponse401 = {
+  data: void;
+  status: 401;
+};
+
+export type tripControllerCenterResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type tripControllerCenterResponseSuccess = tripControllerCenterResponse200 & {
+  headers: Headers;
+};
+export type tripControllerCenterResponseError = (
+  | tripControllerCenterResponse401
+  | tripControllerCenterResponse404
+) & {
+  headers: Headers;
+};
+
+export type tripControllerCenterResponse =
+  | tripControllerCenterResponseSuccess
+  | tripControllerCenterResponseError;
+
+export const getTripControllerCenterUrl = (id: string) => {
+  return `/api/v1/trips/${id}/center`;
+};
+
+export const tripControllerCenter = async (
+  id: string,
+  options?: RequestInit,
+): Promise<tripControllerCenterResponse> => {
+  return apiFetch<tripControllerCenterResponse>(getTripControllerCenterUrl(id), {
+    ...options,
+    method: 'GET',
+  });
+};
+
+/**
+ * @summary Mark an itinerary item complete (G1 — Living Trip).
+ */
+export type tripControllerCompleteItemResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type tripControllerCompleteItemResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type tripControllerCompleteItemResponseSuccess = tripControllerCompleteItemResponse200 & {
+  headers: Headers;
+};
+export type tripControllerCompleteItemResponseError = tripControllerCompleteItemResponse404 & {
+  headers: Headers;
+};
+
+export type tripControllerCompleteItemResponse =
+  | tripControllerCompleteItemResponseSuccess
+  | tripControllerCompleteItemResponseError;
+
+export const getTripControllerCompleteItemUrl = (itemId: string) => {
+  return `/api/v1/trips/items/${itemId}/complete`;
+};
+
+export const tripControllerCompleteItem = async (
+  itemId: string,
+  options?: RequestInit,
+): Promise<tripControllerCompleteItemResponse> => {
+  return apiFetch<tripControllerCompleteItemResponse>(getTripControllerCompleteItemUrl(itemId), {
+    ...options,
+    method: 'POST',
+  });
+};
+
+/**
+ * @summary Clear the completion mark on an itinerary item (G1).
+ */
+export type tripControllerUncompleteItemResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type tripControllerUncompleteItemResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type tripControllerUncompleteItemResponseSuccess =
+  tripControllerUncompleteItemResponse200 & {
+    headers: Headers;
+  };
+export type tripControllerUncompleteItemResponseError = tripControllerUncompleteItemResponse404 & {
+  headers: Headers;
+};
+
+export type tripControllerUncompleteItemResponse =
+  | tripControllerUncompleteItemResponseSuccess
+  | tripControllerUncompleteItemResponseError;
+
+export const getTripControllerUncompleteItemUrl = (itemId: string) => {
+  return `/api/v1/trips/items/${itemId}/uncomplete`;
+};
+
+export const tripControllerUncompleteItem = async (
+  itemId: string,
+  options?: RequestInit,
+): Promise<tripControllerUncompleteItemResponse> => {
+  return apiFetch<tripControllerUncompleteItemResponse>(
+    getTripControllerUncompleteItemUrl(itemId),
+    {
+      ...options,
+      method: 'POST',
+    },
+  );
+};
+
+/**
+ * @summary Shift every itinerary day for the trip by deltaDays (G4).
+ */
+export type tripControllerShiftItineraryResponse200 = {
+  data: TripControllerShiftItinerary200;
+  status: 200;
+};
+
+export type tripControllerShiftItineraryResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type tripControllerShiftItineraryResponse422 = {
+  data: void;
+  status: 422;
+};
+
+export type tripControllerShiftItineraryResponseSuccess =
+  tripControllerShiftItineraryResponse200 & {
+    headers: Headers;
+  };
+export type tripControllerShiftItineraryResponseError = (
+  | tripControllerShiftItineraryResponse404
+  | tripControllerShiftItineraryResponse422
+) & {
+  headers: Headers;
+};
+
+export type tripControllerShiftItineraryResponse =
+  | tripControllerShiftItineraryResponseSuccess
+  | tripControllerShiftItineraryResponseError;
+
+export const getTripControllerShiftItineraryUrl = (id: string) => {
+  return `/api/v1/trips/${id}/itinerary/shift`;
+};
+
+export const tripControllerShiftItinerary = async (
+  id: string,
+  options?: RequestInit,
+): Promise<tripControllerShiftItineraryResponse> => {
+  return apiFetch<tripControllerShiftItineraryResponse>(getTripControllerShiftItineraryUrl(id), {
+    ...options,
+    method: 'POST',
   });
 };
 

@@ -8,7 +8,12 @@ import type {
   UseMutationResult,
 } from '@tanstack/react-query';
 
-import type { GetRoutesRequestDto, GetRoutesResponseDto } from '../../schemas';
+import type {
+  GetNavigationRequestDto,
+  GetNavigationResponseDto,
+  GetRoutesRequestDto,
+  GetRoutesResponseDto,
+} from '../../schemas';
 
 import { apiFetch } from '../../../runtime/fetcher';
 
@@ -114,6 +119,111 @@ export const useTransportControllerRoutes = <TError = void, TContext = unknown>(
   TContext
 > => {
   const mutationOptions = getTransportControllerRoutesMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Compute drawable road routes (fastest / scenic / avoid-traffic) with live(ish) traffic colouring + reroute advisories for the LiveNavMap.
+ */
+export type transportControllerNavigationResponse200 = {
+  data: GetNavigationResponseDto;
+  status: 200;
+};
+
+export type transportControllerNavigationResponse422 = {
+  data: void;
+  status: 422;
+};
+
+export type transportControllerNavigationResponseSuccess =
+  transportControllerNavigationResponse200 & {
+    headers: Headers;
+  };
+export type transportControllerNavigationResponseError =
+  transportControllerNavigationResponse422 & {
+    headers: Headers;
+  };
+
+export type transportControllerNavigationResponse =
+  | transportControllerNavigationResponseSuccess
+  | transportControllerNavigationResponseError;
+
+export const getTransportControllerNavigationUrl = () => {
+  return `/api/v1/transport/navigation`;
+};
+
+export const transportControllerNavigation = async (
+  getNavigationRequestDto: GetNavigationRequestDto,
+  options?: RequestInit,
+): Promise<transportControllerNavigationResponse> => {
+  return apiFetch<transportControllerNavigationResponse>(getTransportControllerNavigationUrl(), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(getNavigationRequestDto),
+  });
+};
+
+export const getTransportControllerNavigationMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof transportControllerNavigation>>,
+    TError,
+    { data: GetNavigationRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof transportControllerNavigation>>,
+  TError,
+  { data: GetNavigationRequestDto },
+  TContext
+> => {
+  const mutationKey = ['transportControllerNavigation'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof transportControllerNavigation>>,
+    { data: GetNavigationRequestDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return transportControllerNavigation(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type TransportControllerNavigationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof transportControllerNavigation>>
+>;
+export type TransportControllerNavigationMutationBody = GetNavigationRequestDto;
+export type TransportControllerNavigationMutationError = void;
+
+/**
+ * @summary Compute drawable road routes (fastest / scenic / avoid-traffic) with live(ish) traffic colouring + reroute advisories for the LiveNavMap.
+ */
+export const useTransportControllerNavigation = <TError = void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof transportControllerNavigation>>,
+    TError,
+    { data: GetNavigationRequestDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof transportControllerNavigation>>,
+  TError,
+  { data: GetNavigationRequestDto },
+  TContext
+> => {
+  const mutationOptions = getTransportControllerNavigationMutationOptions(options);
 
   return useMutation(mutationOptions);
 };
