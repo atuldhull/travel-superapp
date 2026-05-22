@@ -18,7 +18,7 @@
  */
 import { Injectable } from '@nestjs/common';
 import { createLogger, type AppLogger } from '@app/logger';
-import type { MailMessage, MailerPort } from '../application/ports/mailer.port';
+import type { MailMessage, MailerPort } from './mailer.port';
 
 const RING_CAPACITY = 100;
 const ring: MailMessage[] = [];

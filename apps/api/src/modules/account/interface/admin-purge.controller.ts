@@ -28,7 +28,7 @@
 import { Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../../../common/auth';
-import { AdminPurgeForceResponseDto } from '../../admin/interface/dto/admin-response.dto';
+import { AdminPurgeForceResponseDto } from '../../../common/dto/admin-response.dto';
 import { AccountPurgeScheduler } from './account-purge.scheduler';
 
 @ApiTags('admin')

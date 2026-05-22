@@ -24,7 +24,7 @@ import type { Env } from '@app/config';
 import { UserNotFoundError } from '@app/errors';
 import { createLogger } from '@app/logger';
 import { ACCOUNT_DELETER, type AccountDeleter } from './ports/account-deleter';
-import { MAILER_PORT, type MailerPort } from '../../identity/application/ports/mailer.port';
+import { MAILER_PORT, type MailerPort } from '../../../common/mailer/mailer.port';
 import { mintReactivationToken } from '../../../common/crypto/reactivation-token';
 
 const log = createLogger('account.delete');

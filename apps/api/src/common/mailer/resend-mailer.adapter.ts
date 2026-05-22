@@ -26,7 +26,7 @@ import { Resend } from 'resend';
 import type { Env } from '@app/config';
 import { DomainError } from '@app/errors';
 import { createLogger, type AppLogger } from '@app/logger';
-import type { MailMessage, MailerPort } from '../application/ports/mailer.port';
+import type { MailMessage, MailerPort } from './mailer.port';
 
 /** Thrown when Resend rejects a send. The wrapping use-case decides
  *  whether to surface (magic-link request) or swallow (account-

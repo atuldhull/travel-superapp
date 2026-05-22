@@ -27,7 +27,7 @@ import {
   MAGIC_LINK_TOKEN_REPOSITORY,
   type MagicLinkTokenRepository,
 } from './ports/magic-link-token.repository';
-import { MAILER_PORT, type MailerPort } from './ports/mailer.port';
+import { MAILER_PORT, type MailerPort } from '../../../common/mailer/mailer.port';
 import { magicLinkEmail } from './email-templates';
 
 const TOKEN_TTL_MS = 15 * 60 * 1000; // 15 minutes

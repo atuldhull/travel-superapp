@@ -11,10 +11,7 @@
  * assert the behavioural contract.
  */
 import { ConfigService } from '@nestjs/config';
-import {
-  MailDeliveryError,
-  ResendMailerAdapter,
-} from '../src/modules/identity/infrastructure/resend-mailer.adapter';
+import { MailDeliveryError, ResendMailerAdapter } from '../src/common/mailer/resend-mailer.adapter';
 
 const skip = !process.env['RESEND_API_KEY'];
 const describeReal = skip ? describe.skip : describe;
