@@ -22,6 +22,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Inject,
   Param,
   Patch,
   Post,
@@ -85,9 +86,10 @@ import { UpdateTripUseCase } from '../application/update-trip.use-case';
 import type { ItineraryDay } from '../domain/itinerary.entity';
 import type { Trip } from '../domain/trip.entity';
 import {
+  TRIP_OVERVIEW_CACHE_PORT,
   TRIP_OVERVIEW_CACHE_TTL_SEC,
-  TripOverviewCache,
-} from '../infrastructure/trip-overview-cache';
+  type TripOverviewCachePort,
+} from '../application/ports/trip-overview-cache.port';
 import {
   CreateTripBodySchema,
   CreateTripShareBodySchema,
@@ -196,7 +198,8 @@ export class TripController {
     private readonly suggestPlacesForTrip: SuggestPlacesForTripUseCase,
     private readonly archiveTrip: ArchiveTripUseCase,
     private readonly suggestFromHistory: SuggestFromHistoryUseCase,
-    private readonly tripOverviewCache: TripOverviewCache,
+    @Inject(TRIP_OVERVIEW_CACHE_PORT)
+    private readonly tripOverviewCache: TripOverviewCachePort,
   ) {}
 
   @ApiOperation({

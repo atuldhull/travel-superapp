@@ -22,11 +22,12 @@ import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 import type { Env } from '@app/config';
 import { createLogger } from '@app/logger';
+import type { TripHeartCounterPort } from '../application/ports/trip-heart-counter.port';
 
 const log = createLogger('social.heart-counter');
 
 @Injectable()
-export class TripHeartCounter implements OnModuleDestroy {
+export class TripHeartCounter implements OnModuleDestroy, TripHeartCounterPort {
   private readonly redis: Redis;
   private readonly keyPrefix: string;
 

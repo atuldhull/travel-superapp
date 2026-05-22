@@ -36,17 +36,14 @@ import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Env } from '@app/config';
 import { TypedRedisCache } from '../../../common/cache/typed-redis-cache';
+import type { TripOverviewCachePort } from '../application/ports/trip-overview-cache.port';
 
 @Injectable()
-export class TripOverviewCache extends TypedRedisCache<unknown> {
+export class TripOverviewCache extends TypedRedisCache<unknown> implements TripOverviewCachePort {
   constructor(@Inject(ConfigService) config: ConfigService<Env, true>) {
     super(config, 'trip-overview', 'trip.overview.cache');
   }
 }
 
-/**
- * 60-second TTL. Long enough that a tab refresh / nav-back hits
- * the warmed cache; short enough that itinerary edits and new
- * stays show up "promptly" without explicit invalidation.
- */
-export const TRIP_OVERVIEW_CACHE_TTL_SEC = 60;
+// TTL moved to the port (trip-overview-cache.port.ts) so the
+// controller imports it without an interface→infrastructure edge.

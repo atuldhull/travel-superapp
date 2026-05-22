@@ -19,7 +19,10 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { NotFoundError } from '@app/errors';
-import { TripBalancesCache } from '../infrastructure/trip-balances-cache';
+import {
+  TRIP_BALANCES_CACHE_PORT,
+  type TripBalancesCachePort,
+} from './ports/trip-balances-cache.port';
 import { EXPENSE_REPOSITORY, type ExpenseRepository } from './ports/expense.repository';
 
 export interface DeleteExpenseCommand {
@@ -31,7 +34,7 @@ export interface DeleteExpenseCommand {
 export class DeleteExpenseUseCase {
   constructor(
     @Inject(EXPENSE_REPOSITORY) private readonly expenses: ExpenseRepository,
-    @Inject(TripBalancesCache) private readonly balancesCache: TripBalancesCache,
+    @Inject(TRIP_BALANCES_CACHE_PORT) private readonly balancesCache: TripBalancesCachePort,
   ) {}
 
   async execute(cmd: DeleteExpenseCommand): Promise<void> {

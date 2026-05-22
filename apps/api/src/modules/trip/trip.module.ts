@@ -73,6 +73,7 @@ import { PrismaTripRepository } from './infrastructure/prisma-trip.repository';
 import { PrismaTripShareRepository } from './infrastructure/prisma-trip-share.repository';
 import { StubTripPlannerAdapter } from './infrastructure/stub-trip-planner.adapter';
 import { TripOverviewCache } from './infrastructure/trip-overview-cache';
+import { TRIP_OVERVIEW_CACHE_PORT } from './application/ports/trip-overview-cache.port';
 import { AdminTripsController } from './interface/admin-trips.controller';
 import { AutoArchiveTripsScheduler } from './interface/auto-archive-trips.scheduler';
 import { NearMeController } from './interface/near-me.controller';
@@ -176,7 +177,7 @@ import { TripController } from './interface/trip.controller';
     UnlockTripUseCase,
     GetTripWithRoleUseCase,
     CloneSharedTripUseCase,
-    TripOverviewCache,
+    { provide: TRIP_OVERVIEW_CACHE_PORT, useClass: TripOverviewCache },
     AdminListTripsUseCase,
     AdminArchiveTripUseCase,
     AdminDeleteTripUseCase,

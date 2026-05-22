@@ -32,6 +32,8 @@ import { SettleUpUseCase } from './application/settle-up.use-case';
 import { HeartSharedTripUseCase } from './application/heart-shared-trip.use-case';
 import { RecomputeKarmaUseCase } from './application/recompute-karma.use-case';
 import { TripHeartCounter } from './infrastructure/trip-heart-counter';
+import { TRIP_HEART_COUNTER_PORT } from './application/ports/trip-heart-counter.port';
+import { TRIP_BALANCES_CACHE_PORT } from './application/ports/trip-balances-cache.port';
 import { SharedTripReactController } from './interface/shared-trip-react.controller';
 import { GetVoteSummaryUseCase } from './application/get-vote-summary.use-case';
 import { ListMyReviewsUseCase } from './application/list-my-reviews.use-case';
@@ -126,7 +128,7 @@ import { VotesController } from './interface/votes.controller';
     GetTripBalancesUseCase,
     SettleUpUseCase,
     HeartSharedTripUseCase,
-    TripHeartCounter,
+    { provide: TRIP_HEART_COUNTER_PORT, useClass: TripHeartCounter },
     CreateReviewUseCase,
     DeleteReviewUseCase,
     ListReviewsForTargetUseCase,
@@ -139,7 +141,7 @@ import { VotesController } from './interface/votes.controller';
     RecomputeKarmaUseCase,
     GetPublicReviewerProfileUseCase,
     KarmaRecomputeScheduler,
-    TripBalancesCache,
+    { provide: TRIP_BALANCES_CACHE_PORT, useClass: TripBalancesCache },
   ],
   exports: [VOTE_REPOSITORY, EXPENSE_REPOSITORY, REVIEW_REPOSITORY, KARMA_REPOSITORY],
 })
