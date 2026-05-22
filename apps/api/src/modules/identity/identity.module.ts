@@ -71,6 +71,7 @@ import { StubMailerAdapter } from './infrastructure/stub-mailer.adapter';
 import { StubSmsSenderAdapter } from './infrastructure/stub-sms-sender.adapter';
 import { TwilioSmsSenderAdapter } from './infrastructure/twilio-sms-sender.adapter';
 import { TotpService } from './infrastructure/totp.service';
+import { TOTP_PORT } from './application/ports/totp.port';
 import { AuthController } from './interface/auth.controller';
 import { JwksAdminController } from './interface/jwks-admin.controller';
 
@@ -167,7 +168,7 @@ const oauthProvidersFactory = {
     },
     MockOAuthProvider,
     oauthProvidersFactory,
-    TotpService,
+    { provide: TOTP_PORT, useClass: TotpService },
     // Use-cases.
     IssueSessionUseCase,
     RegisterUseCase,

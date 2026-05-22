@@ -16,7 +16,7 @@ import { hashPassword, verifyPassword } from '@app/auth';
 import { RateLimitError, UnauthorizedError } from '@app/errors';
 import { createLogger } from '@app/logger';
 import { isWellFormedBackupCode } from '../../../common/crypto/backup-code-hash';
-import { TotpService } from '../infrastructure/totp.service';
+import { TOTP_PORT, type TotpPort } from './ports/totp.port';
 import {
   IssueSessionUseCase,
   type IssueSessionCommand,
@@ -123,7 +123,7 @@ export class LoginUseCase {
     @Inject(FAILED_LOGIN_COUNTER)
     private readonly failCounter: FailedLoginCounter,
     private readonly issueSession: IssueSessionUseCase,
-    private readonly totp: TotpService,
+    @Inject(TOTP_PORT) private readonly totp: TotpPort,
   ) {}
 
   async execute(cmd: LoginCommand): Promise<IssuedSession & { userId: string }> {
