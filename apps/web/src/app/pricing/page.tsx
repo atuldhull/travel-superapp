@@ -12,7 +12,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { apiFetch } from '@app/sdk';
+import { paymentsControllerCheckout } from '@app/sdk';
 import { useAuthToken } from '../../lib/use-auth-token';
 import { useRouter } from 'next/navigation';
 
@@ -101,14 +101,11 @@ function useUpgradeToPremium() {
     }
     setBusy(true);
     try {
-      const res = await apiFetch<{ data: { url?: string }; status: number; headers: Headers }>(
-        '/api/v1/payments/checkout',
-        {
-          method: 'POST',
-          body: JSON.stringify({}),
-          headers: { 'content-type': 'application/json' },
-        },
-      );
+      const res = (await paymentsControllerCheckout({
+        method: 'POST',
+        body: JSON.stringify({}),
+        headers: { 'content-type': 'application/json' },
+      })) as unknown as { data: { url?: string } };
       const url = res.data?.url;
       if (url) {
         window.location.href = url;

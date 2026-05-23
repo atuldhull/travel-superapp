@@ -11,7 +11,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { apiFetch } from '@app/sdk';
+import { paymentsControllerMySubscription, paymentsControllerPortalUrl } from '@app/sdk';
 import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
 
 interface CurrentSubscription {
@@ -60,10 +60,7 @@ export default function BillingPage() {
     let cancelled = false;
     const fetchOnce = async () => {
       try {
-        const res = await apiFetch<{ data: MyResponse; status: number; headers: Headers }>(
-          '/api/v1/payments/me/subscription',
-          { method: 'GET' },
-        );
+        const res = (await paymentsControllerMySubscription()) as unknown as { data: MyResponse };
         if (!cancelled) setData(res.data);
       } catch (err) {
         if (cancelled) return;
@@ -84,14 +81,11 @@ export default function BillingPage() {
     if (portalBusy) return;
     setPortalBusy(true);
     try {
-      const res = await apiFetch<{ data: { url?: string }; status: number; headers: Headers }>(
-        '/api/v1/payments/me/portal-url',
-        {
-          method: 'POST',
-          body: JSON.stringify({}),
-          headers: { 'content-type': 'application/json' },
-        },
-      );
+      const res = (await paymentsControllerPortalUrl({
+        method: 'POST',
+        body: JSON.stringify({}),
+        headers: { 'content-type': 'application/json' },
+      })) as unknown as { data: { url?: string } };
       const url = res.data?.url;
       if (url) {
         window.location.href = url;

@@ -41,7 +41,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
-  apiFetch,
+  tripControllerShiftItinerary,
   getTripControllerGetItineraryQueryKey,
   getTripControllerGetOneQueryKey,
   getTripControllerListQueryKey,
@@ -590,15 +590,12 @@ function EditForm({ trip, onSubmit, onCancel, isPending, errorMsg }: EditFormPro
     // ItineraryDay rows directly, not via the trip patch). Fire-and-
     // forget — a failed shift surfaces to the inline status line.
     if (shiftItinerary && startsOnDelta !== null && startsOnDelta !== 0) {
-      void apiFetch<{
-        data: { shifted: number };
-        status: number;
-        headers: Headers;
-      }>(`/api/v1/trips/${trip.id}/itinerary/shift`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ deltaDays: startsOnDelta }),
-      })
+      void (
+        tripControllerShiftItinerary(trip.id, {
+          body: JSON.stringify({ deltaDays: startsOnDelta }),
+          headers: { 'content-type': 'application/json' },
+        }) as unknown as Promise<{ data: { shifted: number } }>
+      )
         .then((res) => {
           const n = res.data?.shifted ?? 0;
           setShiftResult(n > 0 ? `Shifted ${n} itinerary day${n === 1 ? '' : 's'}.` : null);

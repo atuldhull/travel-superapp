@@ -22,7 +22,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   apiFetch,
+  countryPrimerControllerGet,
   getTripControllerListQueryKey,
+  getWeatherControllerForecastUrl,
+  tripControllerPlanWithAi,
   useTripControllerCreate,
   usePreferencesControllerGetMine,
   type CreateTripRequestDto,
@@ -270,11 +273,13 @@ export default function NewTripPage() {
         const forecastDeferred = horizonDays !== null && horizonDays > 16;
         const days = wantForecast && horizonDays !== null ? Math.max(1, horizonDays + 1) : 0;
         const [primerR, forecastR] = await Promise.allSettled([
-          apiFetch<{
+          countryPrimerControllerGet(cc) as unknown as Promise<{
             data: { visaInfo?: string; topScamCategories?: readonly string[] };
-            status: number;
-            headers: Headers;
-          }>(`/api/v1/safety/country-primer/${cc}`, { method: 'GET' }),
+          }>,
+          // Weather forecast: orval-@Query() limitation (controller's
+          // Zod pipe doesn't surface as typed params in OpenAPI), so
+          // build the URL via the SDK's getter + apiFetch. ALL plumbing
+          // still lives in @app/sdk — no raw URL strings.
           wantForecast
             ? apiFetch<{
                 data: {
@@ -287,7 +292,9 @@ export default function NewTripPage() {
                 };
                 status: number;
                 headers: Headers;
-              }>(`/api/v1/weather/forecast?lat=${latN}&lng=${lngN}&days=${days}`, { method: 'GET' })
+              }>(`${getWeatherControllerForecastUrl()}?lat=${latN}&lng=${lngN}&days=${days}`, {
+                method: 'GET',
+              })
             : Promise.resolve(null),
         ]);
         if (!alive) return;
@@ -505,16 +512,14 @@ export default function NewTripPage() {
         await queryClient.invalidateQueries({
           queryKey: getTripControllerListQueryKey({ limit: '20' } as never),
         });
-        // E4 — fire the AI planner with the composed focus. Direct
-        // apiFetch (additive optional body, no SDK regen); fire-and-
+        // E4 — fire the AI planner with the composed focus. Fire-and-
         // forget so a slow LLM never blocks the redirect — the trip
         // page surfaces the plan on its own.
         const instruction = buildInstruction();
         if (trip?.id) {
-          void apiFetch(`/api/v1/trips/${trip.id}/plan-with-ai`, {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
+          void tripControllerPlanWithAi(trip.id, {
             body: JSON.stringify(instruction ? { instruction } : {}),
+            headers: { 'content-type': 'application/json' },
           }).catch(() => undefined);
           router.push(`/trips/${trip.id}` as never);
         } else {
