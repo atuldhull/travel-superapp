@@ -14,3 +14,9 @@ export * from './application/ports/agent-run.repository';
 export * from './application/ports/plan-tool.port';
 export * from './application/ports/signal-source.port';
 export * from './application/ports/trip-watch.repository';
+
+// Public event payload types — what cross-module subscribers
+// (notifications handlers) need to read off the event bus. The
+// `makeAgentEvent` factory stays private to the agent module
+// (only agent use-cases mint these events).
+export type { ReplanProposedEvent, ReplanProposedPayload } from './domain/agent.events';

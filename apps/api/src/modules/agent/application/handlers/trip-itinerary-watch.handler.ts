@@ -27,7 +27,7 @@ import { ConfigService } from '@nestjs/config';
 import { EVENT_BUS, type EventBus, type Subscription } from '@app/events';
 import type { Env } from '@app/config';
 import { createLogger } from '@app/logger';
-import type { TripItineraryGeneratedPayload } from '../../../trip/domain/trip.events';
+import type { TripItineraryGeneratedPayload } from '../../../trip';
 import { StartTripWatchUseCase } from '../start-trip-watch.use-case';
 
 const log = createLogger('agent.trip-itinerary-watch');

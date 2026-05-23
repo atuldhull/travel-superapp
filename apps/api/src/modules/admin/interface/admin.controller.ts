@@ -21,7 +21,7 @@ import { Body, Controller, Delete, HttpCode, HttpStatus, Param, Post } from '@ne
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
-import type { Place } from '../../places/domain/place.entity';
+import type { Place } from '../../places';
 import { AdminCreatePlaceUseCase } from '../application/admin-create-place.use-case';
 import { AdminDeletePlaceUseCase } from '../application/admin-delete-place.use-case';
 import { AdminCreatePlaceBodySchema, type AdminCreatePlaceBody } from './dto/admin.dto';

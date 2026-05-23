@@ -19,3 +19,13 @@ export * from './application/ports/review.repository';
 export * from './application/ports/trip-balances-cache.port';
 export * from './application/ports/trip-heart-counter.port';
 export * from './application/ports/vote.repository';
+
+// Public event payload types — notifications handlers consume
+// these for follow + comment alert flows. `makeEvent` factory
+// stays private to social.
+export type {
+  TripCommentedEvent,
+  TripCommentedPayload,
+  UserFollowedEvent,
+  UserFollowedPayload,
+} from './domain/social.events';

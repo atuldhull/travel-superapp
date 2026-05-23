@@ -12,7 +12,7 @@
 import { Inject, Injectable, OnApplicationBootstrap, OnModuleDestroy } from '@nestjs/common';
 import { EVENT_BUS, type EventBus, type Subscription } from '@app/events';
 import { createLogger } from '@app/logger';
-import type { ReplanProposedPayload } from '../../../agent/domain/agent.events';
+import type { ReplanProposedPayload } from '../../../agent';
 import { NOTIFICATION_SENDER, type NotificationSender } from '../ports/notification-sender';
 
 const log = createLogger('notifications.agent-replan-proposed');
