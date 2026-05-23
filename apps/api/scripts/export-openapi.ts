@@ -137,6 +137,11 @@ async function main(): Promise<void> {
   }
 
   await app.close();
+  // Force-exit. `app.close()` releases Nest's DI graph but doesn't
+  // tear down ioredis reconnect timers, the Sentry session flush, or
+  // the Prisma connection pool. Without an explicit exit the script
+  // hangs (and the [D1] sdk-check gate that wraps it hangs with it).
+  process.exit(0);
 }
 
 main().catch((err: unknown) => {
