@@ -13,10 +13,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ValidationError } from '@app/errors';
 import type { Place } from '../../places/domain/place.entity';
-import {
-  PLACE_REPOSITORY,
-  type PlaceRepository,
-} from '../../places/application/ports/place.repository';
+import { PLACE_REPOSITORY, type PlaceRepository } from '../../places';
 
 export interface AdminCreatePlaceCommand {
   readonly sourceKey: string;

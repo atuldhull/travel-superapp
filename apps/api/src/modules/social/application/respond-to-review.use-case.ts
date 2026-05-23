@@ -20,10 +20,7 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '@app/errors';
-import {
-  AGENT_REPOSITORY,
-  type AgentRepository,
-} from '../../safety/application/ports/agent.repository';
+import { AGENT_REPOSITORY, type AgentRepository } from '../../safety';
 import type { Review } from '../domain/review.entity';
 import { REVIEW_REPOSITORY, type ReviewRepository } from './ports/review.repository';
 

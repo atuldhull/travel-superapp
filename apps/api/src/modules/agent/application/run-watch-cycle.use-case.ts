@@ -30,7 +30,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { createLogger, type AppLogger } from '@app/logger';
 import { GeoQueries } from '../../../common/db/geo-queries';
-import { TRIP_REPOSITORY, type TripRepository } from '../../trip/application/ports/trip.repository';
+import { TRIP_REPOSITORY, type TripRepository } from '../../trip';
 import type { SignalKind, TripWatch } from '../domain/trip-watch.entity';
 import type { AgentStep } from '../domain/agent-step.entity';
 import type { SignalSnapshot } from './ports/signal-source.port';

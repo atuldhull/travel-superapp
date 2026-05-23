@@ -24,10 +24,7 @@ import { EVENT_BUS, type EventBus } from '@app/events';
 import { NotFoundError, ValidationError } from '@app/errors';
 import { createLogger, getTraceContext } from '@app/logger';
 import { GeoQueries } from '../../../common/db/geo-queries';
-import {
-  PLACE_REPOSITORY,
-  type PlaceRepository,
-} from '../../places/application/ports/place.repository';
+import { PLACE_REPOSITORY, type PlaceRepository } from '../../places';
 import type { ItineraryDay } from '../domain/itinerary.entity';
 import type { Trip } from '../domain/trip.entity';
 import { makeEvent, type TripItineraryGeneratedEvent } from '../domain/trip.events';

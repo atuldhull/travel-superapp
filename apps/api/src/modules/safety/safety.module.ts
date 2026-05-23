@@ -17,8 +17,8 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Env } from '@app/config';
-import { AccountModule } from '../account/account.module';
-import { TripModule } from '../trip/trip.module';
+import { AccountModule } from '../account';
+import { TripModule } from '../trip';
 import { AdminListSosEventsUseCase } from './application/admin-list-sos-events.use-case';
 import { AdminResolveSosUseCase } from './application/admin-resolve-sos.use-case';
 import { DismissScamReportUseCase } from './application/dismiss-scam-report.use-case';

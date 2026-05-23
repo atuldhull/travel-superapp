@@ -21,11 +21,13 @@
  * Installed by prompt [V.UX.8].
  */
 import { Inject, Injectable } from '@nestjs/common';
-import { TRIP_REPOSITORY, type TripRepository } from '../../trip/application/ports/trip.repository';
 import {
+  TRIP_REPOSITORY,
   TRIP_SHARE_REPOSITORY,
+  type TripRepository,
   type TripShareRepository,
-} from '../../trip/application/ports/trip-share.repository';
+} from '../../trip';
+
 import { assertCanVote as assertTripAccess } from './cast-vote.use-case';
 import { GetTripBalancesUseCase } from './get-trip-balances.use-case';
 

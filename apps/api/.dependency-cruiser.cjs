@@ -78,12 +78,13 @@ module.exports = {
       comment:
         'A circular import breaks module-init order (esbuild/ESM trips on it where CJS ' +
         'tolerates it — see the payments dev-server incident) and signals a design problem. ' +
-        'NestJS `<m>.module.ts` files are EXCLUDED as the cycle entry point: module-graph ' +
-        'cycles are a sanctioned NestJS pattern resolved with `forwardRef()`. Any cycle that ' +
-        'touches non-module code is still caught.',
+        'Two exclusions: (1) the violation FROM is not a `<m>.module.ts` or a per-module ' +
+        '`index.ts` barrel — those are composition-root tier; (2) the cycle path passes ' +
+        'through at least one `<m>.module.ts`, meaning it is a NestJS module-graph cycle ' +
+        'sanctioned by `forwardRef()`. Cycles that touch no module file are still caught.',
       severity: 'error',
-      from: { path: '^src/', pathNot: '\\.module\\.ts$' },
-      to: { circular: true },
+      from: { path: '^src/', pathNot: '\\.module\\.ts$|^src/modules/[^/]+/index\\.ts$' },
+      to: { circular: true, viaNot: '\\.module\\.ts$' },
     },
   ],
   options: {

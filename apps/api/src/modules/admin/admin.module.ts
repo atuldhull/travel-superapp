@@ -18,7 +18,7 @@
  * [V.UX.36].
  */
 import { Global, Module } from '@nestjs/common';
-import { PlacesModule } from '../places/places.module';
+import { PlacesModule } from '../places';
 import { AdminCreatePlaceUseCase } from './application/admin-create-place.use-case';
 import { AdminDeletePlaceUseCase } from './application/admin-delete-place.use-case';
 import { AdminListAuditLogsUseCase } from './application/admin-list-audit-logs.use-case';

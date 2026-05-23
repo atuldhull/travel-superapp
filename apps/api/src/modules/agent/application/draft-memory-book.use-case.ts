@@ -20,10 +20,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { createLogger, type AppLogger } from '@app/logger';
 import { AGENT_RUN_REPOSITORY, type AgentRunRepository } from './ports/agent-run.repository';
-import {
-  TRIP_BOOK_DRAFTER_PORT,
-  type TripBookDrafter,
-} from '../../media/application/ports/trip-book-drafter.port';
+import { TRIP_BOOK_DRAFTER_PORT, type TripBookDrafter } from '../../media';
 
 export interface DraftMemoryBookCommand {
   readonly agentRunId: string;

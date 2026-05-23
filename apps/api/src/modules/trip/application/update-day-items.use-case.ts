@@ -27,10 +27,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { NotFoundError, ValidationError } from '@app/errors';
 import type { ItineraryDay } from '../domain/itinerary.entity';
-import {
-  PLACE_REPOSITORY,
-  type PlaceRepository,
-} from '../../places/application/ports/place.repository';
+import { PLACE_REPOSITORY, type PlaceRepository } from '../../places';
 import {
   ITINERARY_REPOSITORY,
   type CreateItemInput,

@@ -13,10 +13,7 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { NotFoundError } from '@app/errors';
-import {
-  TRIP_SHARE_REPOSITORY,
-  type TripShareRepository,
-} from '../../trip/application/ports/trip-share.repository';
+import { TRIP_SHARE_REPOSITORY, type TripShareRepository } from '../../trip';
 import {
   TRIP_HEART_COUNTER_PORT,
   type TripHeartCounterPort,

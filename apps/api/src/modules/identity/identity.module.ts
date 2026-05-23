@@ -15,7 +15,7 @@
 import { forwardRef, Module, type Provider } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Env } from '@app/config';
-import { TripModule } from '../trip/trip.module';
+import { TripModule } from '../trip';
 import { ConsumeMagicLinkUseCase } from './application/consume-magic-link.use-case';
 import { ConsumePasswordResetUseCase } from './application/consume-password-reset.use-case';
 import { IssueSessionUseCase } from './application/issue-session.use-case';

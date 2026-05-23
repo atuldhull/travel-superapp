@@ -22,10 +22,7 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { NotFoundError } from '@app/errors';
-import {
-  ADMIN_AUDIT_LOG_REPOSITORY,
-  type AdminAuditLogRepository,
-} from '../../admin/application/ports/admin-audit-log.repository';
+import { ADMIN_AUDIT_LOG_REPOSITORY, type AdminAuditLogRepository } from '../../admin';
 import { recordAdminAction } from '../../admin/application/record-admin-action.helper';
 import { MEDIA_ASSET_REPOSITORY, type MediaAssetRepository } from './ports/media-asset.repository';
 

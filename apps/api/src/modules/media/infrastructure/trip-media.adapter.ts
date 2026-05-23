@@ -13,7 +13,7 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../common/db/prisma.service';
-import type { TripMediaPort, TripMediaSummary } from '../../trip/application/ports/trip-media.port';
+import type { TripMediaPort, TripMediaSummary } from '../../trip';
 import {
   MEDIA_ASSET_REPOSITORY,
   type MediaAssetRepository,

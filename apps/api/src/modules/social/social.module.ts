@@ -16,8 +16,8 @@
  * Installed by prompt [IV.18.12.3].
  */
 import { Module, forwardRef } from '@nestjs/common';
-import { SafetyModule } from '../safety/safety.module';
-import { TripModule } from '../trip/trip.module';
+import { SafetyModule } from '../safety';
+import { TripModule } from '../trip';
 import { CastHelpfulVoteUseCase } from './application/cast-helpful-vote.use-case';
 import { CastVoteUseCase } from './application/cast-vote.use-case';
 import { CreateExpenseUseCase } from './application/create-expense.use-case';
