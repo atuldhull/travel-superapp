@@ -15,7 +15,7 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { NotFoundError } from '@app/errors';
-import { TRIP_REPOSITORY, type TripRepository } from '../../trip/application/ports/trip.repository';
+import { TRIP_REPOSITORY, type TripRepository } from '../../trip';
 import type { MediaAsset } from '../domain/media-asset.entity';
 import { MEDIA_ASSET_REPOSITORY, type MediaAssetRepository } from './ports/media-asset.repository';
 

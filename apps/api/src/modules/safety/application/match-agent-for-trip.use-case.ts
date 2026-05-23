@@ -21,7 +21,7 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { NotFoundError } from '@app/errors';
-import { TRIP_REPOSITORY, type TripRepository } from '../../trip/application/ports/trip.repository';
+import { TRIP_REPOSITORY, type TripRepository } from '../../trip';
 import type { AgentMatch } from '../domain/agent-match.entity';
 import { AGENT_REPOSITORY, type AgentRepository } from './ports/agent.repository';
 

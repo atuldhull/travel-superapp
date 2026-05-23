@@ -15,8 +15,8 @@
  * Installed by prompt [IV.18.12.1].
  */
 import { forwardRef, Module } from '@nestjs/common';
-import { TRIP_MEDIA_PORT } from '../trip/application/ports/trip-media.port';
-import { TripModule } from '../trip/trip.module';
+import { TRIP_MEDIA_PORT, TripModule } from '../trip';
+
 import { AdminDeleteMediaUseCase } from './application/admin-delete-media.use-case';
 import { AdminListMediaUseCase } from './application/admin-list-media.use-case';
 import { AttachMediaToBookUseCase } from './application/attach-media-to-book.use-case';

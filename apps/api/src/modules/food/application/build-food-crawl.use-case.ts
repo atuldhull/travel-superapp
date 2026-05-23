@@ -23,7 +23,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { NotFoundError, ValidationError } from '@app/errors';
 import { GeoQueries } from '../../../common/db/geo-queries';
-import { TRIP_REPOSITORY, type TripRepository } from '../../trip/application/ports/trip.repository';
+import { TRIP_REPOSITORY, type TripRepository } from '../../trip';
 
 const WALKING_SPEED_MPS = 1.4;
 const MIN_STOPS = 2;

@@ -23,10 +23,7 @@ import { AGENT_RUN_REPOSITORY, type AgentRunRepository } from './ports/agent-run
 import { PLAN_TOOL_PORT, type PlanTool, type PlanTripContext } from './ports/plan-tool.port';
 // POST.2C.3 — agent → feed INBOUND seam (hex direction preserved;
 // same stance as the 2C.1 agent → media TRIP_BOOK_DRAFTER seam).
-import {
-  TRIP_GROUNDING_PORT,
-  type TripGroundingPort,
-} from '../../feed/application/ports/trip-grounding.port';
+import { TRIP_GROUNDING_PORT, type TripGroundingPort } from '../../feed';
 
 export interface ProposeReplanCommand {
   readonly agentRunId: string;

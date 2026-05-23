@@ -26,12 +26,12 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Env } from '@app/config';
-import { WeatherModule } from '../weather/weather.module';
-import { TripModule } from '../trip/trip.module';
-import { MediaModule } from '../media/media.module';
+import { WeatherModule } from '../weather';
+import { TripModule } from '../trip';
+import { MediaModule } from '../media';
 // POST.2C.3 — exports TRIP_GROUNDING_PORT (agent → feed inbound seam,
 // hex direction preserved; feed never imports agent → no cycle).
-import { FeedModule } from '../feed/feed.module';
+import { FeedModule } from '../feed';
 import { AGENT_RUN_REPOSITORY } from './application/ports/agent-run.repository';
 import { PLAN_TOOL_PORT } from './application/ports/plan-tool.port';
 import { SIGNAL_SOURCE_PORT } from './application/ports/signal-source.port';

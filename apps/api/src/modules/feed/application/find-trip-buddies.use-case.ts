@@ -20,7 +20,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { NotFoundError } from '@app/errors';
 import { GeoQueries } from '../../../common/db/geo-queries';
-import { TRIP_REPOSITORY, type TripRepository } from '../../trip/application/ports/trip.repository';
+import { TRIP_REPOSITORY, type TripRepository } from '../../trip';
 import {
   TRIP_PUBLICATION_REPOSITORY,
   type TripBuddy,

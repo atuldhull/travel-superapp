@@ -21,10 +21,7 @@ import {
   TRIP_HEART_COUNTER_PORT,
   type TripHeartCounterPort,
 } from '../application/ports/trip-heart-counter.port';
-import {
-  TRIP_SHARE_REPOSITORY,
-  type TripShareRepository,
-} from '../../trip/application/ports/trip-share.repository';
+import { TRIP_SHARE_REPOSITORY, type TripShareRepository } from '../../trip';
 import { Inject } from '@nestjs/common';
 import { NotFoundError } from '@app/errors';
 import {

@@ -21,11 +21,13 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { NotFoundError } from '@app/errors';
-import { TRIP_REPOSITORY, type TripRepository } from '../../trip/application/ports/trip.repository';
 import {
+  TRIP_REPOSITORY,
   TRIP_SHARE_REPOSITORY,
+  type TripRepository,
   type TripShareRepository,
-} from '../../trip/application/ports/trip-share.repository';
+} from '../../trip';
+
 import type { Vote, VoteTargetType, VoteValue } from '../domain/vote.entity';
 import { VOTE_REPOSITORY, type VoteRepository } from './ports/vote.repository';
 import { BLOCK_REPOSITORY, type BlockRepository } from './ports/block.repository';

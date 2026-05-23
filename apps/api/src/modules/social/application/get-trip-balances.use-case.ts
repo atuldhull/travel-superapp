@@ -26,11 +26,13 @@
  * Installed by prompt [IV.18.12.4].
  */
 import { Inject, Injectable } from '@nestjs/common';
-import { TRIP_REPOSITORY, type TripRepository } from '../../trip/application/ports/trip.repository';
 import {
+  TRIP_REPOSITORY,
   TRIP_SHARE_REPOSITORY,
+  type TripRepository,
   type TripShareRepository,
-} from '../../trip/application/ports/trip-share.repository';
+} from '../../trip';
+
 import type { UserBalance } from '../domain/expense.entity';
 import {
   TRIP_BALANCES_CACHE_PORT,
