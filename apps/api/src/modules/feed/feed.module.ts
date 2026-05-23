@@ -28,7 +28,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Env } from '@app/config';
-import { TripModule } from '../trip';
+import { TripModule } from '../trip/trip.module';
 import { GetMyFeedUseCase } from './application/get-my-feed.use-case';
 import { FEED_SOURCES } from './application/ports/feed-source';
 // POST.2B.2 — trip publication
