@@ -5,7 +5,8 @@
 /**
  * Upload lifecycle status.
  */
-export type MediaAssetDtoStatus = (typeof MediaAssetDtoStatus)[keyof typeof MediaAssetDtoStatus];
+export type MediaAssetDtoStatus = typeof MediaAssetDtoStatus[keyof typeof MediaAssetDtoStatus];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const MediaAssetDtoStatus = {

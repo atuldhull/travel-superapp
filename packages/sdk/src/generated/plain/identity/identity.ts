@@ -18,7 +18,7 @@ import type {
   PasswordResetRequestResponseDto,
   RefreshSuccessResponseDto,
   RegisterRequestDto,
-  WhoAmIResponseDto,
+  WhoAmIResponseDto
 } from '../../schemas';
 
 import { apiFetch } from '../../../runtime/fetcher';
@@ -27,600 +27,673 @@ import { apiFetch } from '../../../runtime/fetcher';
  * @summary Create a new account. Email + password + displayName. Sets the refresh-cookie + returns access token.
  */
 export type authControllerRegisterResponse201 = {
-  data: AuthSuccessResponseDto;
-  status: 201;
-};
+  data: AuthSuccessResponseDto
+  status: 201
+}
 
 export type authControllerRegisterResponse409 = {
-  data: void;
-  status: 409;
-};
-
-export type authControllerRegisterResponseSuccess = authControllerRegisterResponse201 & {
+  data: void
+  status: 409
+}
+    
+export type authControllerRegisterResponseSuccess = (authControllerRegisterResponse201) & {
   headers: Headers;
 };
-export type authControllerRegisterResponseError = authControllerRegisterResponse409 & {
+export type authControllerRegisterResponseError = (authControllerRegisterResponse409) & {
   headers: Headers;
 };
 
-export type authControllerRegisterResponse =
-  | authControllerRegisterResponseSuccess
-  | authControllerRegisterResponseError;
+export type authControllerRegisterResponse = (authControllerRegisterResponseSuccess | authControllerRegisterResponseError)
 
 export const getAuthControllerRegisterUrl = () => {
-  return `/api/v1/auth/register`;
-};
 
-export const authControllerRegister = async (
-  registerRequestDto: RegisterRequestDto,
-  options?: RequestInit,
-): Promise<authControllerRegisterResponse> => {
-  return apiFetch<authControllerRegisterResponse>(getAuthControllerRegisterUrl(), {
+
+  
+
+  return `/api/v1/auth/register`
+}
+
+export const authControllerRegister = async (registerRequestDto: RegisterRequestDto, options?: RequestInit): Promise<authControllerRegisterResponse> => {
+  
+  return apiFetch<authControllerRegisterResponse>(getAuthControllerRegisterUrl(),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(registerRequestDto),
-  });
-};
+    body: JSON.stringify(
+      registerRequestDto,)
+  }
+);}
+
 
 /**
  * @summary OAuth sign-in. Verifies a provider id token (Google / Apple / mock); auto-links by email or creates a passwordless account.
  */
 export type authControllerOauthResponse200 = {
-  data: AuthSuccessResponseDto;
-  status: 200;
-};
+  data: AuthSuccessResponseDto
+  status: 200
+}
 
 export type authControllerOauthResponse401 = {
-  data: void;
-  status: 401;
-};
-
-export type authControllerOauthResponseSuccess = authControllerOauthResponse200 & {
+  data: void
+  status: 401
+}
+    
+export type authControllerOauthResponseSuccess = (authControllerOauthResponse200) & {
   headers: Headers;
 };
-export type authControllerOauthResponseError = authControllerOauthResponse401 & {
+export type authControllerOauthResponseError = (authControllerOauthResponse401) & {
   headers: Headers;
 };
 
-export type authControllerOauthResponse =
-  | authControllerOauthResponseSuccess
-  | authControllerOauthResponseError;
+export type authControllerOauthResponse = (authControllerOauthResponseSuccess | authControllerOauthResponseError)
 
-export const getAuthControllerOauthUrl = (provider: string) => {
-  return `/api/v1/auth/oauth/${provider}`;
-};
+export const getAuthControllerOauthUrl = (provider: string,) => {
 
-export const authControllerOauth = async (
-  provider: string,
-  oAuthSignInRequestDto: OAuthSignInRequestDto,
-  options?: RequestInit,
-): Promise<authControllerOauthResponse> => {
-  return apiFetch<authControllerOauthResponse>(getAuthControllerOauthUrl(provider), {
+
+  
+
+  return `/api/v1/auth/oauth/${provider}`
+}
+
+export const authControllerOauth = async (provider: string,
+    oAuthSignInRequestDto: OAuthSignInRequestDto, options?: RequestInit): Promise<authControllerOauthResponse> => {
+  
+  return apiFetch<authControllerOauthResponse>(getAuthControllerOauthUrl(provider),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(oAuthSignInRequestDto),
-  });
-};
+    body: JSON.stringify(
+      oAuthSignInRequestDto,)
+  }
+);}
+
 
 /**
  * @summary Passwordless sign-in step 1: email a magic link. Always returns 'ok' — doesn't reveal whether the email is registered.
  */
 export type authControllerMagicLinkRequestResponse200 = {
-  data: MagicLinkRequestResponseDto;
-  status: 200;
+  data: MagicLinkRequestResponseDto
+  status: 200
+}
+    
+export type authControllerMagicLinkRequestResponseSuccess = (authControllerMagicLinkRequestResponse200) & {
+  headers: Headers;
 };
+;
 
-export type authControllerMagicLinkRequestResponseSuccess =
-  authControllerMagicLinkRequestResponse200 & {
-    headers: Headers;
-  };
-export type authControllerMagicLinkRequestResponse = authControllerMagicLinkRequestResponseSuccess;
+export type authControllerMagicLinkRequestResponse = (authControllerMagicLinkRequestResponseSuccess)
 
 export const getAuthControllerMagicLinkRequestUrl = () => {
-  return `/api/v1/auth/magic-link/request`;
-};
 
-export const authControllerMagicLinkRequest = async (
-  magicLinkRequestRequestDto: MagicLinkRequestRequestDto,
-  options?: RequestInit,
-): Promise<authControllerMagicLinkRequestResponse> => {
-  return apiFetch<authControllerMagicLinkRequestResponse>(getAuthControllerMagicLinkRequestUrl(), {
+
+  
+
+  return `/api/v1/auth/magic-link/request`
+}
+
+export const authControllerMagicLinkRequest = async (magicLinkRequestRequestDto: MagicLinkRequestRequestDto, options?: RequestInit): Promise<authControllerMagicLinkRequestResponse> => {
+  
+  return apiFetch<authControllerMagicLinkRequestResponse>(getAuthControllerMagicLinkRequestUrl(),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(magicLinkRequestRequestDto),
-  });
-};
+    body: JSON.stringify(
+      magicLinkRequestRequestDto,)
+  }
+);}
+
 
 /**
  * @summary Passwordless sign-in step 2: consume the magic-link token + issue a session. Single-use, 15-min TTL.
  */
 export type authControllerMagicLinkConsumeResponse200 = {
-  data: AuthSuccessResponseDto;
-  status: 200;
-};
+  data: AuthSuccessResponseDto
+  status: 200
+}
 
 export type authControllerMagicLinkConsumeResponse401 = {
-  data: void;
-  status: 401;
+  data: void
+  status: 401
+}
+    
+export type authControllerMagicLinkConsumeResponseSuccess = (authControllerMagicLinkConsumeResponse200) & {
+  headers: Headers;
+};
+export type authControllerMagicLinkConsumeResponseError = (authControllerMagicLinkConsumeResponse401) & {
+  headers: Headers;
 };
 
-export type authControllerMagicLinkConsumeResponseSuccess =
-  authControllerMagicLinkConsumeResponse200 & {
-    headers: Headers;
-  };
-export type authControllerMagicLinkConsumeResponseError =
-  authControllerMagicLinkConsumeResponse401 & {
-    headers: Headers;
-  };
-
-export type authControllerMagicLinkConsumeResponse =
-  | authControllerMagicLinkConsumeResponseSuccess
-  | authControllerMagicLinkConsumeResponseError;
+export type authControllerMagicLinkConsumeResponse = (authControllerMagicLinkConsumeResponseSuccess | authControllerMagicLinkConsumeResponseError)
 
 export const getAuthControllerMagicLinkConsumeUrl = () => {
-  return `/api/v1/auth/magic-link/consume`;
-};
 
-export const authControllerMagicLinkConsume = async (
-  magicLinkConsumeRequestDto: MagicLinkConsumeRequestDto,
-  options?: RequestInit,
-): Promise<authControllerMagicLinkConsumeResponse> => {
-  return apiFetch<authControllerMagicLinkConsumeResponse>(getAuthControllerMagicLinkConsumeUrl(), {
+
+  
+
+  return `/api/v1/auth/magic-link/consume`
+}
+
+export const authControllerMagicLinkConsume = async (magicLinkConsumeRequestDto: MagicLinkConsumeRequestDto, options?: RequestInit): Promise<authControllerMagicLinkConsumeResponse> => {
+  
+  return apiFetch<authControllerMagicLinkConsumeResponse>(getAuthControllerMagicLinkConsumeUrl(),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(magicLinkConsumeRequestDto),
-  });
-};
+    body: JSON.stringify(
+      magicLinkConsumeRequestDto,)
+  }
+);}
+
 
 /**
  * @summary Passwordless OTP step 1: email/SMS a 6-digit code. Always 'ok' — never reveals registration.
  */
 export type authControllerOtpRequestResponse200 = {
-  data: MagicLinkRequestResponseDto;
-  status: 200;
-};
-
-export type authControllerOtpRequestResponseSuccess = authControllerOtpRequestResponse200 & {
+  data: MagicLinkRequestResponseDto
+  status: 200
+}
+    
+export type authControllerOtpRequestResponseSuccess = (authControllerOtpRequestResponse200) & {
   headers: Headers;
 };
-export type authControllerOtpRequestResponse = authControllerOtpRequestResponseSuccess;
+;
+
+export type authControllerOtpRequestResponse = (authControllerOtpRequestResponseSuccess)
 
 export const getAuthControllerOtpRequestUrl = () => {
-  return `/api/v1/auth/otp/request`;
-};
 
-export const authControllerOtpRequest = async (
-  loginCodeRequestRequestDto: LoginCodeRequestRequestDto,
-  options?: RequestInit,
-): Promise<authControllerOtpRequestResponse> => {
-  return apiFetch<authControllerOtpRequestResponse>(getAuthControllerOtpRequestUrl(), {
+
+  
+
+  return `/api/v1/auth/otp/request`
+}
+
+export const authControllerOtpRequest = async (loginCodeRequestRequestDto: LoginCodeRequestRequestDto, options?: RequestInit): Promise<authControllerOtpRequestResponse> => {
+  
+  return apiFetch<authControllerOtpRequestResponse>(getAuthControllerOtpRequestUrl(),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(loginCodeRequestRequestDto),
-  });
-};
+    body: JSON.stringify(
+      loginCodeRequestRequestDto,)
+  }
+);}
+
 
 /**
  * @summary Passwordless OTP step 2: verify the code + issue a session.
  */
 export type authControllerOtpVerifyResponse200 = {
-  data: AuthSuccessResponseDto;
-  status: 200;
-};
+  data: AuthSuccessResponseDto
+  status: 200
+}
 
 export type authControllerOtpVerifyResponse401 = {
-  data: void;
-  status: 401;
-};
-
-export type authControllerOtpVerifyResponseSuccess = authControllerOtpVerifyResponse200 & {
+  data: void
+  status: 401
+}
+    
+export type authControllerOtpVerifyResponseSuccess = (authControllerOtpVerifyResponse200) & {
   headers: Headers;
 };
-export type authControllerOtpVerifyResponseError = authControllerOtpVerifyResponse401 & {
+export type authControllerOtpVerifyResponseError = (authControllerOtpVerifyResponse401) & {
   headers: Headers;
 };
 
-export type authControllerOtpVerifyResponse =
-  | authControllerOtpVerifyResponseSuccess
-  | authControllerOtpVerifyResponseError;
+export type authControllerOtpVerifyResponse = (authControllerOtpVerifyResponseSuccess | authControllerOtpVerifyResponseError)
 
 export const getAuthControllerOtpVerifyUrl = () => {
-  return `/api/v1/auth/otp/verify`;
-};
 
-export const authControllerOtpVerify = async (
-  loginCodeVerifyRequestDto: LoginCodeVerifyRequestDto,
-  options?: RequestInit,
-): Promise<authControllerOtpVerifyResponse> => {
-  return apiFetch<authControllerOtpVerifyResponse>(getAuthControllerOtpVerifyUrl(), {
+
+  
+
+  return `/api/v1/auth/otp/verify`
+}
+
+export const authControllerOtpVerify = async (loginCodeVerifyRequestDto: LoginCodeVerifyRequestDto, options?: RequestInit): Promise<authControllerOtpVerifyResponse> => {
+  
+  return apiFetch<authControllerOtpVerifyResponse>(getAuthControllerOtpVerifyUrl(),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(loginCodeVerifyRequestDto),
-  });
-};
+    body: JSON.stringify(
+      loginCodeVerifyRequestDto,)
+  }
+);}
+
 
 /**
  * @summary V.UX.31 — request a password-reset email. Always returns ok regardless of registration state.
  */
 export type authControllerPasswordResetRequestResponse200 = {
-  data: PasswordResetRequestResponseDto;
-  status: 200;
+  data: PasswordResetRequestResponseDto
+  status: 200
+}
+    
+export type authControllerPasswordResetRequestResponseSuccess = (authControllerPasswordResetRequestResponse200) & {
+  headers: Headers;
 };
+;
 
-export type authControllerPasswordResetRequestResponseSuccess =
-  authControllerPasswordResetRequestResponse200 & {
-    headers: Headers;
-  };
-export type authControllerPasswordResetRequestResponse =
-  authControllerPasswordResetRequestResponseSuccess;
+export type authControllerPasswordResetRequestResponse = (authControllerPasswordResetRequestResponseSuccess)
 
 export const getAuthControllerPasswordResetRequestUrl = () => {
-  return `/api/v1/auth/password-reset/request`;
-};
 
-export const authControllerPasswordResetRequest = async (
-  passwordResetRequestRequestDto: PasswordResetRequestRequestDto,
-  options?: RequestInit,
-): Promise<authControllerPasswordResetRequestResponse> => {
-  return apiFetch<authControllerPasswordResetRequestResponse>(
-    getAuthControllerPasswordResetRequestUrl(),
-    {
-      ...options,
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...options?.headers },
-      body: JSON.stringify(passwordResetRequestRequestDto),
-    },
-  );
-};
+
+  
+
+  return `/api/v1/auth/password-reset/request`
+}
+
+export const authControllerPasswordResetRequest = async (passwordResetRequestRequestDto: PasswordResetRequestRequestDto, options?: RequestInit): Promise<authControllerPasswordResetRequestResponse> => {
+  
+  return apiFetch<authControllerPasswordResetRequestResponse>(getAuthControllerPasswordResetRequestUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      passwordResetRequestRequestDto,)
+  }
+);}
+
 
 /**
  * @summary V.UX.31 — consume the password-reset token + set a new password. Single-use, 15-min TTL.
  */
 export type authControllerPasswordResetConsumeResponse200 = {
-  data: PasswordResetConsumeResponseDto;
-  status: 200;
-};
+  data: PasswordResetConsumeResponseDto
+  status: 200
+}
 
 export type authControllerPasswordResetConsumeResponse401 = {
-  data: void;
-  status: 401;
-};
+  data: void
+  status: 401
+}
 
 export type authControllerPasswordResetConsumeResponse422 = {
-  data: void;
-  status: 422;
+  data: void
+  status: 422
+}
+    
+export type authControllerPasswordResetConsumeResponseSuccess = (authControllerPasswordResetConsumeResponse200) & {
+  headers: Headers;
 };
-
-export type authControllerPasswordResetConsumeResponseSuccess =
-  authControllerPasswordResetConsumeResponse200 & {
-    headers: Headers;
-  };
-export type authControllerPasswordResetConsumeResponseError = (
-  | authControllerPasswordResetConsumeResponse401
-  | authControllerPasswordResetConsumeResponse422
-) & {
+export type authControllerPasswordResetConsumeResponseError = (authControllerPasswordResetConsumeResponse401 | authControllerPasswordResetConsumeResponse422) & {
   headers: Headers;
 };
 
-export type authControllerPasswordResetConsumeResponse =
-  | authControllerPasswordResetConsumeResponseSuccess
-  | authControllerPasswordResetConsumeResponseError;
+export type authControllerPasswordResetConsumeResponse = (authControllerPasswordResetConsumeResponseSuccess | authControllerPasswordResetConsumeResponseError)
 
 export const getAuthControllerPasswordResetConsumeUrl = () => {
-  return `/api/v1/auth/password-reset/consume`;
-};
 
-export const authControllerPasswordResetConsume = async (
-  passwordResetConsumeRequestDto: PasswordResetConsumeRequestDto,
-  options?: RequestInit,
-): Promise<authControllerPasswordResetConsumeResponse> => {
-  return apiFetch<authControllerPasswordResetConsumeResponse>(
-    getAuthControllerPasswordResetConsumeUrl(),
-    {
-      ...options,
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...options?.headers },
-      body: JSON.stringify(passwordResetConsumeRequestDto),
-    },
-  );
-};
+
+  
+
+  return `/api/v1/auth/password-reset/consume`
+}
+
+export const authControllerPasswordResetConsume = async (passwordResetConsumeRequestDto: PasswordResetConsumeRequestDto, options?: RequestInit): Promise<authControllerPasswordResetConsumeResponse> => {
+  
+  return apiFetch<authControllerPasswordResetConsumeResponse>(getAuthControllerPasswordResetConsumeUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      passwordResetConsumeRequestDto,)
+  }
+);}
+
 
 /**
  * @summary Email + password login. With MFA enabled, mfaCode is required on the second call.
  */
 export type authControllerLoginResponse200 = {
-  data: AuthSuccessResponseDto;
-  status: 200;
-};
+  data: AuthSuccessResponseDto
+  status: 200
+}
 
 export type authControllerLoginResponse401 = {
-  data: void;
-  status: 401;
-};
-
-export type authControllerLoginResponseSuccess = authControllerLoginResponse200 & {
+  data: void
+  status: 401
+}
+    
+export type authControllerLoginResponseSuccess = (authControllerLoginResponse200) & {
   headers: Headers;
 };
-export type authControllerLoginResponseError = authControllerLoginResponse401 & {
+export type authControllerLoginResponseError = (authControllerLoginResponse401) & {
   headers: Headers;
 };
 
-export type authControllerLoginResponse =
-  | authControllerLoginResponseSuccess
-  | authControllerLoginResponseError;
+export type authControllerLoginResponse = (authControllerLoginResponseSuccess | authControllerLoginResponseError)
 
 export const getAuthControllerLoginUrl = () => {
-  return `/api/v1/auth/login`;
-};
 
-export const authControllerLogin = async (
-  loginRequestDto: LoginRequestDto,
-  options?: RequestInit,
-): Promise<authControllerLoginResponse> => {
-  return apiFetch<authControllerLoginResponse>(getAuthControllerLoginUrl(), {
+
+  
+
+  return `/api/v1/auth/login`
+}
+
+export const authControllerLogin = async (loginRequestDto: LoginRequestDto, options?: RequestInit): Promise<authControllerLoginResponse> => {
+  
+  return apiFetch<authControllerLoginResponse>(getAuthControllerLoginUrl(),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(loginRequestDto),
-  });
-};
+    body: JSON.stringify(
+      loginRequestDto,)
+  }
+);}
+
 
 /**
  * @summary Rotate the access + refresh tokens. Reads the httpOnly refresh cookie; rejects if missing or stolen-detected.
  */
 export type authControllerRefreshResponse200 = {
-  data: RefreshSuccessResponseDto;
-  status: 200;
-};
+  data: RefreshSuccessResponseDto
+  status: 200
+}
 
 export type authControllerRefreshResponse401 = {
-  data: void;
-  status: 401;
-};
-
-export type authControllerRefreshResponseSuccess = authControllerRefreshResponse200 & {
+  data: void
+  status: 401
+}
+    
+export type authControllerRefreshResponseSuccess = (authControllerRefreshResponse200) & {
   headers: Headers;
 };
-export type authControllerRefreshResponseError = authControllerRefreshResponse401 & {
+export type authControllerRefreshResponseError = (authControllerRefreshResponse401) & {
   headers: Headers;
 };
 
-export type authControllerRefreshResponse =
-  | authControllerRefreshResponseSuccess
-  | authControllerRefreshResponseError;
+export type authControllerRefreshResponse = (authControllerRefreshResponseSuccess | authControllerRefreshResponseError)
 
 export const getAuthControllerRefreshUrl = () => {
-  return `/api/v1/auth/refresh`;
-};
 
-export const authControllerRefresh = async (
-  options?: RequestInit,
-): Promise<authControllerRefreshResponse> => {
-  return apiFetch<authControllerRefreshResponse>(getAuthControllerRefreshUrl(), {
+
+  
+
+  return `/api/v1/auth/refresh`
+}
+
+export const authControllerRefresh = async ( options?: RequestInit): Promise<authControllerRefreshResponse> => {
+  
+  return apiFetch<authControllerRefreshResponse>(getAuthControllerRefreshUrl(),
+  {      
     ...options,
-    method: 'POST',
-  });
-};
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Whoami probe — returns the authed user's JWT claims + lightweight User-row state (hasSeenOnboarding).
  */
 export type authControllerMeResponse200 = {
-  data: WhoAmIResponseDto;
-  status: 200;
-};
+  data: WhoAmIResponseDto
+  status: 200
+}
 
 export type authControllerMeResponse401 = {
-  data: void;
-  status: 401;
-};
-
-export type authControllerMeResponseSuccess = authControllerMeResponse200 & {
+  data: void
+  status: 401
+}
+    
+export type authControllerMeResponseSuccess = (authControllerMeResponse200) & {
   headers: Headers;
 };
-export type authControllerMeResponseError = authControllerMeResponse401 & {
+export type authControllerMeResponseError = (authControllerMeResponse401) & {
   headers: Headers;
 };
 
-export type authControllerMeResponse =
-  | authControllerMeResponseSuccess
-  | authControllerMeResponseError;
+export type authControllerMeResponse = (authControllerMeResponseSuccess | authControllerMeResponseError)
 
 export const getAuthControllerMeUrl = () => {
-  return `/api/v1/auth/me`;
-};
 
-export const authControllerMe = async (
-  options?: RequestInit,
-): Promise<authControllerMeResponse> => {
-  return apiFetch<authControllerMeResponse>(getAuthControllerMeUrl(), {
+
+  
+
+  return `/api/v1/auth/me`
+}
+
+export const authControllerMe = async ( options?: RequestInit): Promise<authControllerMeResponse> => {
+  
+  return apiFetch<authControllerMeResponse>(getAuthControllerMeUrl(),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Mark the caller as having completed the onboarding wizard; optionally seed a Sample trip. Idempotent.
  */
 export type authControllerOnboardingCompleteResponse200 = {
-  data: OnboardingCompleteResponseDto;
-  status: 200;
-};
+  data: OnboardingCompleteResponseDto
+  status: 200
+}
 
 export type authControllerOnboardingCompleteResponse401 = {
-  data: void;
-  status: 401;
+  data: void
+  status: 401
+}
+    
+export type authControllerOnboardingCompleteResponseSuccess = (authControllerOnboardingCompleteResponse200) & {
+  headers: Headers;
+};
+export type authControllerOnboardingCompleteResponseError = (authControllerOnboardingCompleteResponse401) & {
+  headers: Headers;
 };
 
-export type authControllerOnboardingCompleteResponseSuccess =
-  authControllerOnboardingCompleteResponse200 & {
-    headers: Headers;
-  };
-export type authControllerOnboardingCompleteResponseError =
-  authControllerOnboardingCompleteResponse401 & {
-    headers: Headers;
-  };
-
-export type authControllerOnboardingCompleteResponse =
-  | authControllerOnboardingCompleteResponseSuccess
-  | authControllerOnboardingCompleteResponseError;
+export type authControllerOnboardingCompleteResponse = (authControllerOnboardingCompleteResponseSuccess | authControllerOnboardingCompleteResponseError)
 
 export const getAuthControllerOnboardingCompleteUrl = () => {
-  return `/api/v1/auth/onboarding/complete`;
-};
 
-export const authControllerOnboardingComplete = async (
-  onboardingCompleteRequestDto: OnboardingCompleteRequestDto,
-  options?: RequestInit,
-): Promise<authControllerOnboardingCompleteResponse> => {
-  return apiFetch<authControllerOnboardingCompleteResponse>(
-    getAuthControllerOnboardingCompleteUrl(),
-    {
-      ...options,
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...options?.headers },
-      body: JSON.stringify(onboardingCompleteRequestDto),
-    },
-  );
-};
+
+  
+
+  return `/api/v1/auth/onboarding/complete`
+}
+
+export const authControllerOnboardingComplete = async (onboardingCompleteRequestDto: OnboardingCompleteRequestDto, options?: RequestInit): Promise<authControllerOnboardingCompleteResponse> => {
+  
+  return apiFetch<authControllerOnboardingCompleteResponse>(getAuthControllerOnboardingCompleteUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      onboardingCompleteRequestDto,)
+  }
+);}
+
 
 /**
  * @summary Begin MFA enrollment — returns base32 secret + otpauth:// URI for QR rendering. Pending until /mfa/verify confirms.
  */
 export type authControllerMfaSetupResponse200 = {
-  data: void;
-  status: 200;
-};
-
-export type authControllerMfaSetupResponseSuccess = authControllerMfaSetupResponse200 & {
+  data: void
+  status: 200
+}
+    
+export type authControllerMfaSetupResponseSuccess = (authControllerMfaSetupResponse200) & {
   headers: Headers;
 };
-export type authControllerMfaSetupResponse = authControllerMfaSetupResponseSuccess;
+;
+
+export type authControllerMfaSetupResponse = (authControllerMfaSetupResponseSuccess)
 
 export const getAuthControllerMfaSetupUrl = () => {
-  return `/api/v1/auth/mfa/setup`;
-};
 
-export const authControllerMfaSetup = async (
-  options?: RequestInit,
-): Promise<authControllerMfaSetupResponse> => {
-  return apiFetch<authControllerMfaSetupResponse>(getAuthControllerMfaSetupUrl(), {
+
+  
+
+  return `/api/v1/auth/mfa/setup`
+}
+
+export const authControllerMfaSetup = async ( options?: RequestInit): Promise<authControllerMfaSetupResponse> => {
+  
+  return apiFetch<authControllerMfaSetupResponse>(getAuthControllerMfaSetupUrl(),
+  {      
     ...options,
-    method: 'POST',
-  });
-};
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Confirm MFA enrollment with a TOTP code. First-time enable returns 10 plaintext backup codes (shown ONCE).
  */
 export type authControllerMfaVerifyResponse200 = {
-  data: void;
-  status: 200;
-};
-
-export type authControllerMfaVerifyResponseSuccess = authControllerMfaVerifyResponse200 & {
+  data: void
+  status: 200
+}
+    
+export type authControllerMfaVerifyResponseSuccess = (authControllerMfaVerifyResponse200) & {
   headers: Headers;
 };
-export type authControllerMfaVerifyResponse = authControllerMfaVerifyResponseSuccess;
+;
+
+export type authControllerMfaVerifyResponse = (authControllerMfaVerifyResponseSuccess)
 
 export const getAuthControllerMfaVerifyUrl = () => {
-  return `/api/v1/auth/mfa/verify`;
-};
 
-export const authControllerMfaVerify = async (
-  options?: RequestInit,
-): Promise<authControllerMfaVerifyResponse> => {
-  return apiFetch<authControllerMfaVerifyResponse>(getAuthControllerMfaVerifyUrl(), {
+
+  
+
+  return `/api/v1/auth/mfa/verify`
+}
+
+export const authControllerMfaVerify = async ( options?: RequestInit): Promise<authControllerMfaVerifyResponse> => {
+  
+  return apiFetch<authControllerMfaVerifyResponse>(getAuthControllerMfaVerifyUrl(),
+  {      
     ...options,
-    method: 'POST',
-  });
-};
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Regenerate the 10 single-use MFA backup codes. Requires a valid current TOTP. Returns plaintexts shown ONCE.
  */
 export type authControllerRegenerateBackupCodesResponse200 = {
-  data: void;
-  status: 200;
+  data: void
+  status: 200
+}
+    
+export type authControllerRegenerateBackupCodesResponseSuccess = (authControllerRegenerateBackupCodesResponse200) & {
+  headers: Headers;
 };
+;
 
-export type authControllerRegenerateBackupCodesResponseSuccess =
-  authControllerRegenerateBackupCodesResponse200 & {
-    headers: Headers;
-  };
-export type authControllerRegenerateBackupCodesResponse =
-  authControllerRegenerateBackupCodesResponseSuccess;
+export type authControllerRegenerateBackupCodesResponse = (authControllerRegenerateBackupCodesResponseSuccess)
 
 export const getAuthControllerRegenerateBackupCodesUrl = () => {
-  return `/api/v1/auth/mfa/backup-codes/regenerate`;
-};
 
-export const authControllerRegenerateBackupCodes = async (
-  options?: RequestInit,
-): Promise<authControllerRegenerateBackupCodesResponse> => {
-  return apiFetch<authControllerRegenerateBackupCodesResponse>(
-    getAuthControllerRegenerateBackupCodesUrl(),
-    {
-      ...options,
-      method: 'POST',
-    },
-  );
-};
+
+  
+
+  return `/api/v1/auth/mfa/backup-codes/regenerate`
+}
+
+export const authControllerRegenerateBackupCodes = async ( options?: RequestInit): Promise<authControllerRegenerateBackupCodesResponse> => {
+  
+  return apiFetch<authControllerRegenerateBackupCodesResponse>(getAuthControllerRegenerateBackupCodesUrl(),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Disable MFA. Requires a valid TOTP — a hijacked session alone cannot strip the second factor.
  */
 export type authControllerMfaDisableResponse204 = {
-  data: void;
-  status: 204;
-};
-
-export type authControllerMfaDisableResponseSuccess = authControllerMfaDisableResponse204 & {
+  data: void
+  status: 204
+}
+    
+export type authControllerMfaDisableResponseSuccess = (authControllerMfaDisableResponse204) & {
   headers: Headers;
 };
-export type authControllerMfaDisableResponse = authControllerMfaDisableResponseSuccess;
+;
+
+export type authControllerMfaDisableResponse = (authControllerMfaDisableResponseSuccess)
 
 export const getAuthControllerMfaDisableUrl = () => {
-  return `/api/v1/auth/mfa/disable`;
-};
 
-export const authControllerMfaDisable = async (
-  options?: RequestInit,
-): Promise<authControllerMfaDisableResponse> => {
-  return apiFetch<authControllerMfaDisableResponse>(getAuthControllerMfaDisableUrl(), {
+
+  
+
+  return `/api/v1/auth/mfa/disable`
+}
+
+export const authControllerMfaDisable = async ( options?: RequestInit): Promise<authControllerMfaDisableResponse> => {
+  
+  return apiFetch<authControllerMfaDisableResponse>(getAuthControllerMfaDisableUrl(),
+  {      
     ...options,
-    method: 'POST',
-  });
-};
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Logout — revokes the refresh token + clears the cookie. Idempotent if already logged out.
  */
 export type authControllerLogoutResponse204 = {
-  data: void;
-  status: 204;
-};
-
-export type authControllerLogoutResponseSuccess = authControllerLogoutResponse204 & {
+  data: void
+  status: 204
+}
+    
+export type authControllerLogoutResponseSuccess = (authControllerLogoutResponse204) & {
   headers: Headers;
 };
-export type authControllerLogoutResponse = authControllerLogoutResponseSuccess;
+;
+
+export type authControllerLogoutResponse = (authControllerLogoutResponseSuccess)
 
 export const getAuthControllerLogoutUrl = () => {
-  return `/api/v1/auth/logout`;
-};
 
-export const authControllerLogout = async (
-  options?: RequestInit,
-): Promise<authControllerLogoutResponse> => {
-  return apiFetch<authControllerLogoutResponse>(getAuthControllerLogoutUrl(), {
+
+  
+
+  return `/api/v1/auth/logout`
+}
+
+export const authControllerLogout = async ( options?: RequestInit): Promise<authControllerLogoutResponse> => {
+  
+  return apiFetch<authControllerLogoutResponse>(getAuthControllerLogoutUrl(),
+  {      
     ...options,
-    method: 'POST',
-  });
-};
+    method: 'POST'
+    
+    
+  }
+);}
+
+

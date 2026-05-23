@@ -7,7 +7,7 @@ import type {
   FederatedSearchPlacesRequestDto,
   FederatedSearchPlacesResponseDto,
   SearchPlacesRequestDto,
-  SearchPlacesResponseDto,
+  SearchPlacesResponseDto
 } from '../../schemas';
 
 import { apiFetch } from '../../../runtime/fetcher';
@@ -16,85 +16,107 @@ import { apiFetch } from '../../../runtime/fetcher';
  * @summary Search the canonical Place catalog within a radius. Optional category filter + limit.
  */
 export type placesControllerSearchResponse200 = {
-  data: SearchPlacesResponseDto;
-  status: 200;
-};
-
-export type placesControllerSearchResponseSuccess = placesControllerSearchResponse200 & {
+  data: SearchPlacesResponseDto
+  status: 200
+}
+    
+export type placesControllerSearchResponseSuccess = (placesControllerSearchResponse200) & {
   headers: Headers;
 };
-export type placesControllerSearchResponse = placesControllerSearchResponseSuccess;
+;
+
+export type placesControllerSearchResponse = (placesControllerSearchResponseSuccess)
 
 export const getPlacesControllerSearchUrl = () => {
-  return `/api/v1/places/search`;
-};
 
-export const placesControllerSearch = async (
-  searchPlacesRequestDto: SearchPlacesRequestDto,
-  options?: RequestInit,
-): Promise<placesControllerSearchResponse> => {
-  return apiFetch<placesControllerSearchResponse>(getPlacesControllerSearchUrl(), {
+
+  
+
+  return `/api/v1/places/search`
+}
+
+export const placesControllerSearch = async (searchPlacesRequestDto: SearchPlacesRequestDto, options?: RequestInit): Promise<placesControllerSearchResponse> => {
+  
+  return apiFetch<placesControllerSearchResponse>(getPlacesControllerSearchUrl(),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(searchPlacesRequestDto),
-  });
-};
+    body: JSON.stringify(
+      searchPlacesRequestDto,)
+  }
+);}
+
 
 /**
  * @summary Federated search across external providers (Google/FSQ/OSM). Optional ingest=true write-through to the canonical catalog.
  */
 export type placesControllerFederatedResponse200 = {
-  data: FederatedSearchPlacesResponseDto;
-  status: 200;
-};
-
-export type placesControllerFederatedResponseSuccess = placesControllerFederatedResponse200 & {
+  data: FederatedSearchPlacesResponseDto
+  status: 200
+}
+    
+export type placesControllerFederatedResponseSuccess = (placesControllerFederatedResponse200) & {
   headers: Headers;
 };
-export type placesControllerFederatedResponse = placesControllerFederatedResponseSuccess;
+;
+
+export type placesControllerFederatedResponse = (placesControllerFederatedResponseSuccess)
 
 export const getPlacesControllerFederatedUrl = () => {
-  return `/api/v1/places/federated-search`;
-};
 
-export const placesControllerFederated = async (
-  federatedSearchPlacesRequestDto: FederatedSearchPlacesRequestDto,
-  options?: RequestInit,
-): Promise<placesControllerFederatedResponse> => {
-  return apiFetch<placesControllerFederatedResponse>(getPlacesControllerFederatedUrl(), {
+
+  
+
+  return `/api/v1/places/federated-search`
+}
+
+export const placesControllerFederated = async (federatedSearchPlacesRequestDto: FederatedSearchPlacesRequestDto, options?: RequestInit): Promise<placesControllerFederatedResponse> => {
+  
+  return apiFetch<placesControllerFederatedResponse>(getPlacesControllerFederatedUrl(),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(federatedSearchPlacesRequestDto),
-  });
-};
+    body: JSON.stringify(
+      federatedSearchPlacesRequestDto,)
+  }
+);}
+
 
 /**
  * @summary Hidden-gem discovery within a day-trip radius. Filters to places with 5..50 reviews, sorts by average rating.
  */
 export type placesControllerHiddenGemsResponse200 = {
-  data: DiscoverHiddenGemsResponseDto;
-  status: 200;
-};
-
-export type placesControllerHiddenGemsResponseSuccess = placesControllerHiddenGemsResponse200 & {
+  data: DiscoverHiddenGemsResponseDto
+  status: 200
+}
+    
+export type placesControllerHiddenGemsResponseSuccess = (placesControllerHiddenGemsResponse200) & {
   headers: Headers;
 };
-export type placesControllerHiddenGemsResponse = placesControllerHiddenGemsResponseSuccess;
+;
+
+export type placesControllerHiddenGemsResponse = (placesControllerHiddenGemsResponseSuccess)
 
 export const getPlacesControllerHiddenGemsUrl = () => {
-  return `/api/v1/places/hidden-gems`;
-};
 
-export const placesControllerHiddenGems = async (
-  discoverHiddenGemsRequestDto: DiscoverHiddenGemsRequestDto,
-  options?: RequestInit,
-): Promise<placesControllerHiddenGemsResponse> => {
-  return apiFetch<placesControllerHiddenGemsResponse>(getPlacesControllerHiddenGemsUrl(), {
+
+  
+
+  return `/api/v1/places/hidden-gems`
+}
+
+export const placesControllerHiddenGems = async (discoverHiddenGemsRequestDto: DiscoverHiddenGemsRequestDto, options?: RequestInit): Promise<placesControllerHiddenGemsResponse> => {
+  
+  return apiFetch<placesControllerHiddenGemsResponse>(getPlacesControllerHiddenGemsUrl(),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(discoverHiddenGemsRequestDto),
-  });
-};
+    body: JSON.stringify(
+      discoverHiddenGemsRequestDto,)
+  }
+);}
+
+

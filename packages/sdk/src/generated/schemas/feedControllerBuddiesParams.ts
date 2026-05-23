@@ -3,8 +3,8 @@
 // Regenerate via: pnpm --filter=@app/sdk sdk:gen
 
 export type FeedControllerBuddiesParams = {
-  /**
-   * 1..50, default 12
-   */
-  limit?: string;
+/**
+ * 1..50, default 12
+ */
+limit?: string;
 };

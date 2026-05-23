@@ -5,8 +5,8 @@
 /**
  * Bundle format version. Bumps on shape changes.
  */
-export type UserDataExportMetadataDtoFormatVersion =
-  (typeof UserDataExportMetadataDtoFormatVersion)[keyof typeof UserDataExportMetadataDtoFormatVersion];
+export type UserDataExportMetadataDtoFormatVersion = typeof UserDataExportMetadataDtoFormatVersion[keyof typeof UserDataExportMetadataDtoFormatVersion];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const UserDataExportMetadataDtoFormatVersion = {

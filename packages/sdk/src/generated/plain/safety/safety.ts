@@ -16,7 +16,7 @@ import type {
   ScamReportDto,
   SosControllerListMineParams,
   SosEventDto,
-  TriggerSosRequestDto,
+  TriggerSosRequestDto
 } from '../../schemas';
 
 import { apiFetch } from '../../../runtime/fetcher';
@@ -25,345 +25,391 @@ import { apiFetch } from '../../../runtime/fetcher';
  * @summary File a crowd-sourced scam report at the given coordinates.
  */
 export type safetyControllerReportResponse201 = {
-  data: ScamReportDto;
-  status: 201;
-};
-
-export type safetyControllerReportResponseSuccess = safetyControllerReportResponse201 & {
+  data: ScamReportDto
+  status: 201
+}
+    
+export type safetyControllerReportResponseSuccess = (safetyControllerReportResponse201) & {
   headers: Headers;
 };
-export type safetyControllerReportResponse = safetyControllerReportResponseSuccess;
+;
+
+export type safetyControllerReportResponse = (safetyControllerReportResponseSuccess)
 
 export const getSafetyControllerReportUrl = () => {
-  return `/api/v1/safety/scam-reports`;
-};
 
-export const safetyControllerReport = async (
-  reportScamRequestDto: ReportScamRequestDto,
-  options?: RequestInit,
-): Promise<safetyControllerReportResponse> => {
-  return apiFetch<safetyControllerReportResponse>(getSafetyControllerReportUrl(), {
+
+  
+
+  return `/api/v1/safety/scam-reports`
+}
+
+export const safetyControllerReport = async (reportScamRequestDto: ReportScamRequestDto, options?: RequestInit): Promise<safetyControllerReportResponse> => {
+  
+  return apiFetch<safetyControllerReportResponse>(getSafetyControllerReportUrl(),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(reportScamRequestDto),
-  });
-};
+    body: JSON.stringify(
+      reportScamRequestDto,)
+  }
+);}
+
 
 /**
  * @summary Find scam reports within a radius. Optional filters by category / minSeverity / verifiedOnly.
  */
 export type safetyControllerSearchResponse200 = {
-  data: FindNearbyScamsResponseDto;
-  status: 200;
-};
-
-export type safetyControllerSearchResponseSuccess = safetyControllerSearchResponse200 & {
+  data: FindNearbyScamsResponseDto
+  status: 200
+}
+    
+export type safetyControllerSearchResponseSuccess = (safetyControllerSearchResponse200) & {
   headers: Headers;
 };
-export type safetyControllerSearchResponse = safetyControllerSearchResponseSuccess;
+;
+
+export type safetyControllerSearchResponse = (safetyControllerSearchResponseSuccess)
 
 export const getSafetyControllerSearchUrl = () => {
-  return `/api/v1/safety/scam-reports/search`;
-};
 
-export const safetyControllerSearch = async (
-  findNearbyScamsRequestDto: FindNearbyScamsRequestDto,
-  options?: RequestInit,
-): Promise<safetyControllerSearchResponse> => {
-  return apiFetch<safetyControllerSearchResponse>(getSafetyControllerSearchUrl(), {
+
+  
+
+  return `/api/v1/safety/scam-reports/search`
+}
+
+export const safetyControllerSearch = async (findNearbyScamsRequestDto: FindNearbyScamsRequestDto, options?: RequestInit): Promise<safetyControllerSearchResponse> => {
+  
+  return apiFetch<safetyControllerSearchResponse>(getSafetyControllerSearchUrl(),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(findNearbyScamsRequestDto),
-  });
-};
+    body: JSON.stringify(
+      findNearbyScamsRequestDto,)
+  }
+);}
+
 
 /**
  * @summary Trigger an SOS event at the given coordinates.
  */
 export type sosControllerTriggerResponse201 = {
-  data: SosEventDto;
-  status: 201;
-};
-
-export type sosControllerTriggerResponseSuccess = sosControllerTriggerResponse201 & {
+  data: SosEventDto
+  status: 201
+}
+    
+export type sosControllerTriggerResponseSuccess = (sosControllerTriggerResponse201) & {
   headers: Headers;
 };
-export type sosControllerTriggerResponse = sosControllerTriggerResponseSuccess;
+;
+
+export type sosControllerTriggerResponse = (sosControllerTriggerResponseSuccess)
 
 export const getSosControllerTriggerUrl = () => {
-  return `/api/v1/safety/sos`;
-};
 
-export const sosControllerTrigger = async (
-  triggerSosRequestDto: TriggerSosRequestDto,
-  options?: RequestInit,
-): Promise<sosControllerTriggerResponse> => {
-  return apiFetch<sosControllerTriggerResponse>(getSosControllerTriggerUrl(), {
+
+  
+
+  return `/api/v1/safety/sos`
+}
+
+export const sosControllerTrigger = async (triggerSosRequestDto: TriggerSosRequestDto, options?: RequestInit): Promise<sosControllerTriggerResponse> => {
+  
+  return apiFetch<sosControllerTriggerResponse>(getSosControllerTriggerUrl(),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(triggerSosRequestDto),
-  });
-};
+    body: JSON.stringify(
+      triggerSosRequestDto,)
+  }
+);}
+
 
 /**
  * @summary List the caller's SOS events, most-recent-first. ?limit (1..200, default 50).
  */
 export type sosControllerListMineResponse200 = {
-  data: ListSosEventsResponseDto;
-  status: 200;
-};
-
-export type sosControllerListMineResponseSuccess = sosControllerListMineResponse200 & {
+  data: ListSosEventsResponseDto
+  status: 200
+}
+    
+export type sosControllerListMineResponseSuccess = (sosControllerListMineResponse200) & {
   headers: Headers;
 };
-export type sosControllerListMineResponse = sosControllerListMineResponseSuccess;
+;
 
-export const getSosControllerListMineUrl = (params: SosControllerListMineParams) => {
+export type sosControllerListMineResponse = (sosControllerListMineResponseSuccess)
+
+export const getSosControllerListMineUrl = (params: SosControllerListMineParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
+    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString());
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0
-    ? `/api/v1/safety/sos?${stringifiedParams}`
-    : `/api/v1/safety/sos`;
-};
+  return stringifiedParams.length > 0 ? `/api/v1/safety/sos?${stringifiedParams}` : `/api/v1/safety/sos`
+}
 
-export const sosControllerListMine = async (
-  params: SosControllerListMineParams,
-  options?: RequestInit,
-): Promise<sosControllerListMineResponse> => {
-  return apiFetch<sosControllerListMineResponse>(getSosControllerListMineUrl(params), {
+export const sosControllerListMine = async (params: SosControllerListMineParams, options?: RequestInit): Promise<sosControllerListMineResponse> => {
+  
+  return apiFetch<sosControllerListMineResponse>(getSosControllerListMineUrl(params),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Mark an SOS event resolved (owner-only).
  */
 export type sosControllerResolveResponse200 = {
-  data: SosEventDto;
-  status: 200;
-};
+  data: SosEventDto
+  status: 200
+}
 
 export type sosControllerResolveResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type sosControllerResolveResponseSuccess = sosControllerResolveResponse200 & {
+  data: void
+  status: 404
+}
+    
+export type sosControllerResolveResponseSuccess = (sosControllerResolveResponse200) & {
   headers: Headers;
 };
-export type sosControllerResolveResponseError = sosControllerResolveResponse404 & {
+export type sosControllerResolveResponseError = (sosControllerResolveResponse404) & {
   headers: Headers;
 };
 
-export type sosControllerResolveResponse =
-  | sosControllerResolveResponseSuccess
-  | sosControllerResolveResponseError;
+export type sosControllerResolveResponse = (sosControllerResolveResponseSuccess | sosControllerResolveResponseError)
 
-export const getSosControllerResolveUrl = (id: string) => {
-  return `/api/v1/safety/sos/${id}/resolve`;
-};
+export const getSosControllerResolveUrl = (id: string,) => {
 
-export const sosControllerResolve = async (
-  id: string,
-  resolveSosRequestDto: ResolveSosRequestDto,
-  options?: RequestInit,
-): Promise<sosControllerResolveResponse> => {
-  return apiFetch<sosControllerResolveResponse>(getSosControllerResolveUrl(id), {
+
+  
+
+  return `/api/v1/safety/sos/${id}/resolve`
+}
+
+export const sosControllerResolve = async (id: string,
+    resolveSosRequestDto: ResolveSosRequestDto, options?: RequestInit): Promise<sosControllerResolveResponse> => {
+  
+  return apiFetch<sosControllerResolveResponse>(getSosControllerResolveUrl(id),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(resolveSosRequestDto),
-  });
-};
+    body: JSON.stringify(
+      resolveSosRequestDto,)
+  }
+);}
+
 
 /**
  * @summary V.UX.35 — owner-scoped cancel of an active SOS (the 'I'm OK' button). 404 on already-resolved or cross-user.
  */
 export type sosControllerCancelResponse200 = {
-  data: SosEventDto;
-  status: 200;
-};
+  data: SosEventDto
+  status: 200
+}
 
 export type sosControllerCancelResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type sosControllerCancelResponseSuccess = sosControllerCancelResponse200 & {
+  data: void
+  status: 404
+}
+    
+export type sosControllerCancelResponseSuccess = (sosControllerCancelResponse200) & {
   headers: Headers;
 };
-export type sosControllerCancelResponseError = sosControllerCancelResponse404 & {
+export type sosControllerCancelResponseError = (sosControllerCancelResponse404) & {
   headers: Headers;
 };
 
-export type sosControllerCancelResponse =
-  | sosControllerCancelResponseSuccess
-  | sosControllerCancelResponseError;
+export type sosControllerCancelResponse = (sosControllerCancelResponseSuccess | sosControllerCancelResponseError)
 
-export const getSosControllerCancelUrl = (id: string) => {
-  return `/api/v1/safety/sos/${id}/cancel`;
-};
+export const getSosControllerCancelUrl = (id: string,) => {
 
-export const sosControllerCancel = async (
-  id: string,
-  options?: RequestInit,
-): Promise<sosControllerCancelResponse> => {
-  return apiFetch<sosControllerCancelResponse>(getSosControllerCancelUrl(id), {
+
+  
+
+  return `/api/v1/safety/sos/${id}/cancel`
+}
+
+export const sosControllerCancel = async (id: string, options?: RequestInit): Promise<sosControllerCancelResponse> => {
+  
+  return apiFetch<sosControllerCancelResponse>(getSosControllerCancelUrl(id),
+  {      
     ...options,
-    method: 'POST',
-  });
-};
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Find crime incidents within a radius. Optional category / minSeverity / sinceDays filters.
  */
 export type crimeLayerControllerSearchResponse200 = {
-  data: FindNearbyCrimesResponseDto;
-  status: 200;
-};
-
-export type crimeLayerControllerSearchResponseSuccess = crimeLayerControllerSearchResponse200 & {
+  data: FindNearbyCrimesResponseDto
+  status: 200
+}
+    
+export type crimeLayerControllerSearchResponseSuccess = (crimeLayerControllerSearchResponse200) & {
   headers: Headers;
 };
-export type crimeLayerControllerSearchResponse = crimeLayerControllerSearchResponseSuccess;
+;
+
+export type crimeLayerControllerSearchResponse = (crimeLayerControllerSearchResponseSuccess)
 
 export const getCrimeLayerControllerSearchUrl = () => {
-  return `/api/v1/safety/crimes/search`;
-};
 
-export const crimeLayerControllerSearch = async (
-  findNearbyCrimesRequestDto: FindNearbyCrimesRequestDto,
-  options?: RequestInit,
-): Promise<crimeLayerControllerSearchResponse> => {
-  return apiFetch<crimeLayerControllerSearchResponse>(getCrimeLayerControllerSearchUrl(), {
+
+  
+
+  return `/api/v1/safety/crimes/search`
+}
+
+export const crimeLayerControllerSearch = async (findNearbyCrimesRequestDto: FindNearbyCrimesRequestDto, options?: RequestInit): Promise<crimeLayerControllerSearchResponse> => {
+  
+  return apiFetch<crimeLayerControllerSearchResponse>(getCrimeLayerControllerSearchUrl(),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(findNearbyCrimesRequestDto),
-  });
-};
+    body: JSON.stringify(
+      findNearbyCrimesRequestDto,)
+  }
+);}
+
 
 /**
  * @summary Composite safety score for a coord (crime + scam density). Returns letter grade + breakdown.
  */
 export type safetyScoreControllerScoreResponse200 = {
-  data: SafetyScoreResponseDto;
-  status: 200;
-};
-
-export type safetyScoreControllerScoreResponseSuccess = safetyScoreControllerScoreResponse200 & {
+  data: SafetyScoreResponseDto
+  status: 200
+}
+    
+export type safetyScoreControllerScoreResponseSuccess = (safetyScoreControllerScoreResponse200) & {
   headers: Headers;
 };
-export type safetyScoreControllerScoreResponse = safetyScoreControllerScoreResponseSuccess;
+;
+
+export type safetyScoreControllerScoreResponse = (safetyScoreControllerScoreResponseSuccess)
 
 export const getSafetyScoreControllerScoreUrl = () => {
-  return `/api/v1/safety/score`;
-};
 
-export const safetyScoreControllerScore = async (
-  safetyScoreRequestDto: SafetyScoreRequestDto,
-  options?: RequestInit,
-): Promise<safetyScoreControllerScoreResponse> => {
-  return apiFetch<safetyScoreControllerScoreResponse>(getSafetyScoreControllerScoreUrl(), {
+
+  
+
+  return `/api/v1/safety/score`
+}
+
+export const safetyScoreControllerScore = async (safetyScoreRequestDto: SafetyScoreRequestDto, options?: RequestInit): Promise<safetyScoreControllerScoreResponse> => {
+  
+  return apiFetch<safetyScoreControllerScoreResponse>(getSafetyScoreControllerScoreUrl(),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(safetyScoreRequestDto),
-  });
-};
+    body: JSON.stringify(
+      safetyScoreRequestDto,)
+  }
+);}
+
 
 /**
  * @summary Editorial first-time-international primer for a destination — visa info, top scams, emergency numbers, survival phrases.
  */
 export type countryPrimerControllerGetResponse200 = {
-  data: CountryPrimerDto;
-  status: 200;
-};
+  data: CountryPrimerDto
+  status: 200
+}
 
 export type countryPrimerControllerGetResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type countryPrimerControllerGetResponseSuccess = countryPrimerControllerGetResponse200 & {
+  data: void
+  status: 404
+}
+    
+export type countryPrimerControllerGetResponseSuccess = (countryPrimerControllerGetResponse200) & {
   headers: Headers;
 };
-export type countryPrimerControllerGetResponseError = countryPrimerControllerGetResponse404 & {
+export type countryPrimerControllerGetResponseError = (countryPrimerControllerGetResponse404) & {
   headers: Headers;
 };
 
-export type countryPrimerControllerGetResponse =
-  | countryPrimerControllerGetResponseSuccess
-  | countryPrimerControllerGetResponseError;
+export type countryPrimerControllerGetResponse = (countryPrimerControllerGetResponseSuccess | countryPrimerControllerGetResponseError)
 
-export const getCountryPrimerControllerGetUrl = (countryCode: string) => {
-  return `/api/v1/safety/country-primer/${countryCode}`;
-};
+export const getCountryPrimerControllerGetUrl = (countryCode: string,) => {
 
-export const countryPrimerControllerGet = async (
-  countryCode: string,
-  options?: RequestInit,
-): Promise<countryPrimerControllerGetResponse> => {
-  return apiFetch<countryPrimerControllerGetResponse>(
-    getCountryPrimerControllerGetUrl(countryCode),
-    {
-      ...options,
-      method: 'GET',
-    },
-  );
-};
+
+  
+
+  return `/api/v1/safety/country-primer/${countryCode}`
+}
+
+export const countryPrimerControllerGet = async (countryCode: string, options?: RequestInit): Promise<countryPrimerControllerGetResponse> => {
+  
+  return apiFetch<countryPrimerControllerGetResponse>(getCountryPrimerControllerGetUrl(countryCode),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary V.UX.35 — local police / ambulance / fire numbers for a country (~50 seeded). Public — sign-in not required mid-emergency.
  */
 export type emergencyNumbersControllerGetResponse200 = {
-  data: LocalEmergencyResponseDto;
-  status: 200;
-};
+  data: LocalEmergencyResponseDto
+  status: 200
+}
 
 export type emergencyNumbersControllerGetResponse404 = {
-  data: void;
-  status: 404;
+  data: void
+  status: 404
+}
+    
+export type emergencyNumbersControllerGetResponseSuccess = (emergencyNumbersControllerGetResponse200) & {
+  headers: Headers;
+};
+export type emergencyNumbersControllerGetResponseError = (emergencyNumbersControllerGetResponse404) & {
+  headers: Headers;
 };
 
-export type emergencyNumbersControllerGetResponseSuccess =
-  emergencyNumbersControllerGetResponse200 & {
-    headers: Headers;
-  };
-export type emergencyNumbersControllerGetResponseError =
-  emergencyNumbersControllerGetResponse404 & {
-    headers: Headers;
-  };
+export type emergencyNumbersControllerGetResponse = (emergencyNumbersControllerGetResponseSuccess | emergencyNumbersControllerGetResponseError)
 
-export type emergencyNumbersControllerGetResponse =
-  | emergencyNumbersControllerGetResponseSuccess
-  | emergencyNumbersControllerGetResponseError;
+export const getEmergencyNumbersControllerGetUrl = (countryCode: string,) => {
 
-export const getEmergencyNumbersControllerGetUrl = (countryCode: string) => {
-  return `/api/v1/safety/emergency-numbers/${countryCode}`;
-};
 
-export const emergencyNumbersControllerGet = async (
-  countryCode: string,
-  options?: RequestInit,
-): Promise<emergencyNumbersControllerGetResponse> => {
-  return apiFetch<emergencyNumbersControllerGetResponse>(
-    getEmergencyNumbersControllerGetUrl(countryCode),
-    {
-      ...options,
-      method: 'GET',
-    },
-  );
-};
+  
+
+  return `/api/v1/safety/emergency-numbers/${countryCode}`
+}
+
+export const emergencyNumbersControllerGet = async (countryCode: string, options?: RequestInit): Promise<emergencyNumbersControllerGetResponse> => {
+  
+  return apiFetch<emergencyNumbersControllerGetResponse>(getEmergencyNumbersControllerGetUrl(countryCode),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+

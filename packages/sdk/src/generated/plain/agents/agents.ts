@@ -7,7 +7,7 @@ import type {
   AgentSelfControllerDashboardParams,
   MatchAgentForTripRequestDto,
   MatchAgentForTripResponseDto,
-  UpdateAgentProfileRequestDto,
+  UpdateAgentProfileRequestDto
 } from '../../schemas';
 
 import { apiFetch } from '../../../runtime/fetcher';
@@ -16,186 +16,186 @@ import { apiFetch } from '../../../runtime/fetcher';
  * @summary Premium-only concierge match: top 3 verified agents for the caller-owned trip, optionally region-filtered.
  */
 export type agentsControllerMatchForTripResponse200 = {
-  data: MatchAgentForTripResponseDto;
-  status: 200;
-};
+  data: MatchAgentForTripResponseDto
+  status: 200
+}
 
 export type agentsControllerMatchForTripResponse403 = {
-  data: void;
-  status: 403;
-};
+  data: void
+  status: 403
+}
 
 export type agentsControllerMatchForTripResponse404 = {
-  data: void;
-  status: 404;
+  data: void
+  status: 404
+}
+    
+export type agentsControllerMatchForTripResponseSuccess = (agentsControllerMatchForTripResponse200) & {
+  headers: Headers;
 };
-
-export type agentsControllerMatchForTripResponseSuccess =
-  agentsControllerMatchForTripResponse200 & {
-    headers: Headers;
-  };
-export type agentsControllerMatchForTripResponseError = (
-  | agentsControllerMatchForTripResponse403
-  | agentsControllerMatchForTripResponse404
-) & {
+export type agentsControllerMatchForTripResponseError = (agentsControllerMatchForTripResponse403 | agentsControllerMatchForTripResponse404) & {
   headers: Headers;
 };
 
-export type agentsControllerMatchForTripResponse =
-  | agentsControllerMatchForTripResponseSuccess
-  | agentsControllerMatchForTripResponseError;
+export type agentsControllerMatchForTripResponse = (agentsControllerMatchForTripResponseSuccess | agentsControllerMatchForTripResponseError)
 
 export const getAgentsControllerMatchForTripUrl = () => {
-  return `/api/v1/agents/match-for-trip`;
-};
 
-export const agentsControllerMatchForTrip = async (
-  matchAgentForTripRequestDto: MatchAgentForTripRequestDto,
-  options?: RequestInit,
-): Promise<agentsControllerMatchForTripResponse> => {
-  return apiFetch<agentsControllerMatchForTripResponse>(getAgentsControllerMatchForTripUrl(), {
+
+  
+
+  return `/api/v1/agents/match-for-trip`
+}
+
+export const agentsControllerMatchForTrip = async (matchAgentForTripRequestDto: MatchAgentForTripRequestDto, options?: RequestInit): Promise<agentsControllerMatchForTripResponse> => {
+  
+  return apiFetch<agentsControllerMatchForTripResponse>(getAgentsControllerMatchForTripUrl(),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(matchAgentForTripRequestDto),
-  });
-};
+    body: JSON.stringify(
+      matchAgentForTripRequestDto,)
+  }
+);}
+
 
 /**
  * @summary The caller's Agent profile (agent/admin role only).
  */
 export type agentSelfControllerMeResponse200 = {
-  data: AgentProfileDto;
-  status: 200;
-};
+  data: AgentProfileDto
+  status: 200
+}
 
 export type agentSelfControllerMeResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type agentSelfControllerMeResponseSuccess = agentSelfControllerMeResponse200 & {
+  data: void
+  status: 404
+}
+    
+export type agentSelfControllerMeResponseSuccess = (agentSelfControllerMeResponse200) & {
   headers: Headers;
 };
-export type agentSelfControllerMeResponseError = agentSelfControllerMeResponse404 & {
+export type agentSelfControllerMeResponseError = (agentSelfControllerMeResponse404) & {
   headers: Headers;
 };
 
-export type agentSelfControllerMeResponse =
-  | agentSelfControllerMeResponseSuccess
-  | agentSelfControllerMeResponseError;
+export type agentSelfControllerMeResponse = (agentSelfControllerMeResponseSuccess | agentSelfControllerMeResponseError)
 
 export const getAgentSelfControllerMeUrl = () => {
-  return `/api/v1/agent/me`;
-};
 
-export const agentSelfControllerMe = async (
-  options?: RequestInit,
-): Promise<agentSelfControllerMeResponse> => {
-  return apiFetch<agentSelfControllerMeResponse>(getAgentSelfControllerMeUrl(), {
+
+  
+
+  return `/api/v1/agent/me`
+}
+
+export const agentSelfControllerMe = async ( options?: RequestInit): Promise<agentSelfControllerMeResponse> => {
+  
+  return apiFetch<agentSelfControllerMeResponse>(getAgentSelfControllerMeUrl(),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Partial update of the caller-owned Agent profile.
  */
 export type agentSelfControllerUpdateResponse200 = {
-  data: AgentProfileDto;
-  status: 200;
-};
+  data: AgentProfileDto
+  status: 200
+}
 
 export type agentSelfControllerUpdateResponse404 = {
-  data: void;
-  status: 404;
-};
+  data: void
+  status: 404
+}
 
 export type agentSelfControllerUpdateResponse422 = {
-  data: void;
-  status: 422;
-};
-
-export type agentSelfControllerUpdateResponseSuccess = agentSelfControllerUpdateResponse200 & {
+  data: void
+  status: 422
+}
+    
+export type agentSelfControllerUpdateResponseSuccess = (agentSelfControllerUpdateResponse200) & {
   headers: Headers;
 };
-export type agentSelfControllerUpdateResponseError = (
-  | agentSelfControllerUpdateResponse404
-  | agentSelfControllerUpdateResponse422
-) & {
+export type agentSelfControllerUpdateResponseError = (agentSelfControllerUpdateResponse404 | agentSelfControllerUpdateResponse422) & {
   headers: Headers;
 };
 
-export type agentSelfControllerUpdateResponse =
-  | agentSelfControllerUpdateResponseSuccess
-  | agentSelfControllerUpdateResponseError;
+export type agentSelfControllerUpdateResponse = (agentSelfControllerUpdateResponseSuccess | agentSelfControllerUpdateResponseError)
 
 export const getAgentSelfControllerUpdateUrl = () => {
-  return `/api/v1/agent/me`;
-};
 
-export const agentSelfControllerUpdate = async (
-  updateAgentProfileRequestDto: UpdateAgentProfileRequestDto,
-  options?: RequestInit,
-): Promise<agentSelfControllerUpdateResponse> => {
-  return apiFetch<agentSelfControllerUpdateResponse>(getAgentSelfControllerUpdateUrl(), {
+
+  
+
+  return `/api/v1/agent/me`
+}
+
+export const agentSelfControllerUpdate = async (updateAgentProfileRequestDto: UpdateAgentProfileRequestDto, options?: RequestInit): Promise<agentSelfControllerUpdateResponse> => {
+  
+  return apiFetch<agentSelfControllerUpdateResponse>(getAgentSelfControllerUpdateUrl(),
+  {      
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(updateAgentProfileRequestDto),
-  });
-};
+    body: JSON.stringify(
+      updateAgentProfileRequestDto,)
+  }
+);}
+
 
 /**
  * @summary Composite dashboard: profile + bookings + earnings + recent reviews. Window default 30 days.
  */
 export type agentSelfControllerDashboardResponse200 = {
-  data: AgentDashboardDto;
-  status: 200;
-};
+  data: AgentDashboardDto
+  status: 200
+}
 
 export type agentSelfControllerDashboardResponse404 = {
-  data: void;
-  status: 404;
+  data: void
+  status: 404
+}
+    
+export type agentSelfControllerDashboardResponseSuccess = (agentSelfControllerDashboardResponse200) & {
+  headers: Headers;
 };
-
-export type agentSelfControllerDashboardResponseSuccess =
-  agentSelfControllerDashboardResponse200 & {
-    headers: Headers;
-  };
-export type agentSelfControllerDashboardResponseError = agentSelfControllerDashboardResponse404 & {
+export type agentSelfControllerDashboardResponseError = (agentSelfControllerDashboardResponse404) & {
   headers: Headers;
 };
 
-export type agentSelfControllerDashboardResponse =
-  | agentSelfControllerDashboardResponseSuccess
-  | agentSelfControllerDashboardResponseError;
+export type agentSelfControllerDashboardResponse = (agentSelfControllerDashboardResponseSuccess | agentSelfControllerDashboardResponseError)
 
-export const getAgentSelfControllerDashboardUrl = (params?: AgentSelfControllerDashboardParams) => {
+export const getAgentSelfControllerDashboardUrl = (params?: AgentSelfControllerDashboardParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
+    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString());
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0
-    ? `/api/v1/agent/me/dashboard?${stringifiedParams}`
-    : `/api/v1/agent/me/dashboard`;
-};
+  return stringifiedParams.length > 0 ? `/api/v1/agent/me/dashboard?${stringifiedParams}` : `/api/v1/agent/me/dashboard`
+}
 
-export const agentSelfControllerDashboard = async (
-  params?: AgentSelfControllerDashboardParams,
-  options?: RequestInit,
-): Promise<agentSelfControllerDashboardResponse> => {
-  return apiFetch<agentSelfControllerDashboardResponse>(
-    getAgentSelfControllerDashboardUrl(params),
-    {
-      ...options,
-      method: 'GET',
-    },
-  );
-};
+export const agentSelfControllerDashboard = async (params?: AgentSelfControllerDashboardParams, options?: RequestInit): Promise<agentSelfControllerDashboardResponse> => {
+  
+  return apiFetch<agentSelfControllerDashboardResponse>(getAgentSelfControllerDashboardUrl(params),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+

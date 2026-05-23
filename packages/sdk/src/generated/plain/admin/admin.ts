@@ -21,7 +21,7 @@ import type {
   AdminUsersControllerListAppealsParams,
   AdminUsersControllerListParams,
   ScamReportDto,
-  SosEventDto,
+  SosEventDto
 } from '../../schemas';
 
 import { apiFetch } from '../../../runtime/fetcher';
@@ -30,839 +30,884 @@ import { apiFetch } from '../../../runtime/fetcher';
  * @summary Rotate a JWT signing keyring (access | refresh). Returns new kid + previous-kid retirement list.
  */
 export type jwksAdminControllerRotateResponse200 = {
-  data: void;
-  status: 200;
-};
+  data: void
+  status: 200
+}
 
 export type jwksAdminControllerRotateResponse403 = {
-  data: void;
-  status: 403;
-};
-
-export type jwksAdminControllerRotateResponseSuccess = jwksAdminControllerRotateResponse200 & {
+  data: void
+  status: 403
+}
+    
+export type jwksAdminControllerRotateResponseSuccess = (jwksAdminControllerRotateResponse200) & {
   headers: Headers;
 };
-export type jwksAdminControllerRotateResponseError = jwksAdminControllerRotateResponse403 & {
+export type jwksAdminControllerRotateResponseError = (jwksAdminControllerRotateResponse403) & {
   headers: Headers;
 };
 
-export type jwksAdminControllerRotateResponse =
-  | jwksAdminControllerRotateResponseSuccess
-  | jwksAdminControllerRotateResponseError;
+export type jwksAdminControllerRotateResponse = (jwksAdminControllerRotateResponseSuccess | jwksAdminControllerRotateResponseError)
 
 export const getJwksAdminControllerRotateUrl = () => {
-  return `/api/v1/admin/identity/jwks/rotate`;
-};
 
-export const jwksAdminControllerRotate = async (
-  options?: RequestInit,
-): Promise<jwksAdminControllerRotateResponse> => {
-  return apiFetch<jwksAdminControllerRotateResponse>(getJwksAdminControllerRotateUrl(), {
+
+  
+
+  return `/api/v1/admin/identity/jwks/rotate`
+}
+
+export const jwksAdminControllerRotate = async ( options?: RequestInit): Promise<jwksAdminControllerRotateResponse> => {
+  
+  return apiFetch<jwksAdminControllerRotateResponse>(getJwksAdminControllerRotateUrl(),
+  {      
     ...options,
-    method: 'POST',
-  });
-};
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary List active kids across both keyrings (access + refresh). Used to confirm rotations + retirement windows.
  */
 export type jwksAdminControllerKidsResponse200 = {
-  data: void;
-  status: 200;
-};
-
-export type jwksAdminControllerKidsResponseSuccess = jwksAdminControllerKidsResponse200 & {
+  data: void
+  status: 200
+}
+    
+export type jwksAdminControllerKidsResponseSuccess = (jwksAdminControllerKidsResponse200) & {
   headers: Headers;
 };
-export type jwksAdminControllerKidsResponse = jwksAdminControllerKidsResponseSuccess;
+;
+
+export type jwksAdminControllerKidsResponse = (jwksAdminControllerKidsResponseSuccess)
 
 export const getJwksAdminControllerKidsUrl = () => {
-  return `/api/v1/admin/identity/jwks/kids`;
-};
 
-export const jwksAdminControllerKids = async (
-  options?: RequestInit,
-): Promise<jwksAdminControllerKidsResponse> => {
-  return apiFetch<jwksAdminControllerKidsResponse>(getJwksAdminControllerKidsUrl(), {
+
+  
+
+  return `/api/v1/admin/identity/jwks/kids`
+}
+
+export const jwksAdminControllerKids = async ( options?: RequestInit): Promise<jwksAdminControllerKidsResponse> => {
+  
+  return apiFetch<jwksAdminControllerKidsResponse>(getJwksAdminControllerKidsUrl(),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary List trips across all users with optional q + status filters. Admin-only.
  */
 export type adminTripsControllerListResponse200 = {
-  data: void;
-  status: 200;
-};
+  data: void
+  status: 200
+}
 
 export type adminTripsControllerListResponse403 = {
-  data: void;
-  status: 403;
-};
-
-export type adminTripsControllerListResponseSuccess = adminTripsControllerListResponse200 & {
+  data: void
+  status: 403
+}
+    
+export type adminTripsControllerListResponseSuccess = (adminTripsControllerListResponse200) & {
   headers: Headers;
 };
-export type adminTripsControllerListResponseError = adminTripsControllerListResponse403 & {
+export type adminTripsControllerListResponseError = (adminTripsControllerListResponse403) & {
   headers: Headers;
 };
 
-export type adminTripsControllerListResponse =
-  | adminTripsControllerListResponseSuccess
-  | adminTripsControllerListResponseError;
+export type adminTripsControllerListResponse = (adminTripsControllerListResponseSuccess | adminTripsControllerListResponseError)
 
-export const getAdminTripsControllerListUrl = (params: AdminTripsControllerListParams) => {
+export const getAdminTripsControllerListUrl = (params: AdminTripsControllerListParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
+    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString());
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0
-    ? `/api/v1/admin/trips?${stringifiedParams}`
-    : `/api/v1/admin/trips`;
-};
+  return stringifiedParams.length > 0 ? `/api/v1/admin/trips?${stringifiedParams}` : `/api/v1/admin/trips`
+}
 
-export const adminTripsControllerList = async (
-  params: AdminTripsControllerListParams,
-  options?: RequestInit,
-): Promise<adminTripsControllerListResponse> => {
-  return apiFetch<adminTripsControllerListResponse>(getAdminTripsControllerListUrl(params), {
+export const adminTripsControllerList = async (params: AdminTripsControllerListParams, options?: RequestInit): Promise<adminTripsControllerListResponse> => {
+  
+  return apiFetch<adminTripsControllerListResponse>(getAdminTripsControllerListUrl(params),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Soft-archive a trip (status = archived). Reversible by the owner via the standard CRUD path.
  */
 export type adminTripsControllerArchiveResponse204 = {
-  data: void;
-  status: 204;
-};
-
-export type adminTripsControllerArchiveResponseSuccess = adminTripsControllerArchiveResponse204 & {
+  data: void
+  status: 204
+}
+    
+export type adminTripsControllerArchiveResponseSuccess = (adminTripsControllerArchiveResponse204) & {
   headers: Headers;
 };
-export type adminTripsControllerArchiveResponse = adminTripsControllerArchiveResponseSuccess;
+;
 
-export const getAdminTripsControllerArchiveUrl = (id: string) => {
-  return `/api/v1/admin/trips/${id}/archive`;
-};
+export type adminTripsControllerArchiveResponse = (adminTripsControllerArchiveResponseSuccess)
 
-export const adminTripsControllerArchive = async (
-  id: string,
-  options?: RequestInit,
-): Promise<adminTripsControllerArchiveResponse> => {
-  return apiFetch<adminTripsControllerArchiveResponse>(getAdminTripsControllerArchiveUrl(id), {
+export const getAdminTripsControllerArchiveUrl = (id: string,) => {
+
+
+  
+
+  return `/api/v1/admin/trips/${id}/archive`
+}
+
+export const adminTripsControllerArchive = async (id: string, options?: RequestInit): Promise<adminTripsControllerArchiveResponse> => {
+  
+  return apiFetch<adminTripsControllerArchiveResponse>(getAdminTripsControllerArchiveUrl(id),
+  {      
     ...options,
-    method: 'POST',
-  });
-};
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Hard-delete a trip + cascade itinerary. For takedowns of clearly-abusive content.
  */
 export type adminTripsControllerRemoveResponse204 = {
-  data: void;
-  status: 204;
-};
-
-export type adminTripsControllerRemoveResponseSuccess = adminTripsControllerRemoveResponse204 & {
+  data: void
+  status: 204
+}
+    
+export type adminTripsControllerRemoveResponseSuccess = (adminTripsControllerRemoveResponse204) & {
   headers: Headers;
 };
-export type adminTripsControllerRemoveResponse = adminTripsControllerRemoveResponseSuccess;
+;
 
-export const getAdminTripsControllerRemoveUrl = (id: string) => {
-  return `/api/v1/admin/trips/${id}`;
-};
+export type adminTripsControllerRemoveResponse = (adminTripsControllerRemoveResponseSuccess)
 
-export const adminTripsControllerRemove = async (
-  id: string,
-  options?: RequestInit,
-): Promise<adminTripsControllerRemoveResponse> => {
-  return apiFetch<adminTripsControllerRemoveResponse>(getAdminTripsControllerRemoveUrl(id), {
+export const getAdminTripsControllerRemoveUrl = (id: string,) => {
+
+
+  
+
+  return `/api/v1/admin/trips/${id}`
+}
+
+export const adminTripsControllerRemove = async (id: string, options?: RequestInit): Promise<adminTripsControllerRemoveResponse> => {
+  
+  return apiFetch<adminTripsControllerRemoveResponse>(getAdminTripsControllerRemoveUrl(id),
+  {      
     ...options,
-    method: 'DELETE',
-  });
-};
+    method: 'DELETE'
+    
+    
+  }
+);}
+
 
 /**
  * @summary List scam reports for moderation. Default = pending; ?verified=true for the verified pile.
  */
 export type adminScamModerationControllerListResponse200 = {
-  data: AdminListScamReportsResponseDto;
-  status: 200;
+  data: AdminListScamReportsResponseDto
+  status: 200
+}
+    
+export type adminScamModerationControllerListResponseSuccess = (adminScamModerationControllerListResponse200) & {
+  headers: Headers;
 };
+;
 
-export type adminScamModerationControllerListResponseSuccess =
-  adminScamModerationControllerListResponse200 & {
-    headers: Headers;
-  };
-export type adminScamModerationControllerListResponse =
-  adminScamModerationControllerListResponseSuccess;
+export type adminScamModerationControllerListResponse = (adminScamModerationControllerListResponseSuccess)
 
-export const getAdminScamModerationControllerListUrl = (
-  params: AdminScamModerationControllerListParams,
-) => {
+export const getAdminScamModerationControllerListUrl = (params: AdminScamModerationControllerListParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
+    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString());
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0
-    ? `/api/v1/admin/safety/scam-reports?${stringifiedParams}`
-    : `/api/v1/admin/safety/scam-reports`;
-};
+  return stringifiedParams.length > 0 ? `/api/v1/admin/safety/scam-reports?${stringifiedParams}` : `/api/v1/admin/safety/scam-reports`
+}
 
-export const adminScamModerationControllerList = async (
-  params: AdminScamModerationControllerListParams,
-  options?: RequestInit,
-): Promise<adminScamModerationControllerListResponse> => {
-  return apiFetch<adminScamModerationControllerListResponse>(
-    getAdminScamModerationControllerListUrl(params),
-    {
-      ...options,
-      method: 'GET',
-    },
-  );
-};
+export const adminScamModerationControllerList = async (params: AdminScamModerationControllerListParams, options?: RequestInit): Promise<adminScamModerationControllerListResponse> => {
+  
+  return apiFetch<adminScamModerationControllerListResponse>(getAdminScamModerationControllerListUrl(params),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Mark a scam report verified.
  */
 export type adminScamModerationControllerVerifyResponse200 = {
-  data: ScamReportDto;
-  status: 200;
-};
+  data: ScamReportDto
+  status: 200
+}
 
 export type adminScamModerationControllerVerifyResponse404 = {
-  data: void;
-  status: 404;
+  data: void
+  status: 404
+}
+    
+export type adminScamModerationControllerVerifyResponseSuccess = (adminScamModerationControllerVerifyResponse200) & {
+  headers: Headers;
+};
+export type adminScamModerationControllerVerifyResponseError = (adminScamModerationControllerVerifyResponse404) & {
+  headers: Headers;
 };
 
-export type adminScamModerationControllerVerifyResponseSuccess =
-  adminScamModerationControllerVerifyResponse200 & {
-    headers: Headers;
-  };
-export type adminScamModerationControllerVerifyResponseError =
-  adminScamModerationControllerVerifyResponse404 & {
-    headers: Headers;
-  };
+export type adminScamModerationControllerVerifyResponse = (adminScamModerationControllerVerifyResponseSuccess | adminScamModerationControllerVerifyResponseError)
 
-export type adminScamModerationControllerVerifyResponse =
-  | adminScamModerationControllerVerifyResponseSuccess
-  | adminScamModerationControllerVerifyResponseError;
+export const getAdminScamModerationControllerVerifyUrl = (id: string,) => {
 
-export const getAdminScamModerationControllerVerifyUrl = (id: string) => {
-  return `/api/v1/admin/safety/scam-reports/${id}/verify`;
-};
 
-export const adminScamModerationControllerVerify = async (
-  id: string,
-  options?: RequestInit,
-): Promise<adminScamModerationControllerVerifyResponse> => {
-  return apiFetch<adminScamModerationControllerVerifyResponse>(
-    getAdminScamModerationControllerVerifyUrl(id),
-    {
-      ...options,
-      method: 'POST',
-    },
-  );
-};
+  
+
+  return `/api/v1/admin/safety/scam-reports/${id}/verify`
+}
+
+export const adminScamModerationControllerVerify = async (id: string, options?: RequestInit): Promise<adminScamModerationControllerVerifyResponse> => {
+  
+  return apiFetch<adminScamModerationControllerVerifyResponse>(getAdminScamModerationControllerVerifyUrl(id),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Flip a verified report back to pending.
  */
 export type adminScamModerationControllerUnverifyResponse200 = {
-  data: ScamReportDto;
-  status: 200;
-};
+  data: ScamReportDto
+  status: 200
+}
 
 export type adminScamModerationControllerUnverifyResponse404 = {
-  data: void;
-  status: 404;
+  data: void
+  status: 404
+}
+    
+export type adminScamModerationControllerUnverifyResponseSuccess = (adminScamModerationControllerUnverifyResponse200) & {
+  headers: Headers;
+};
+export type adminScamModerationControllerUnverifyResponseError = (adminScamModerationControllerUnverifyResponse404) & {
+  headers: Headers;
 };
 
-export type adminScamModerationControllerUnverifyResponseSuccess =
-  adminScamModerationControllerUnverifyResponse200 & {
-    headers: Headers;
-  };
-export type adminScamModerationControllerUnverifyResponseError =
-  adminScamModerationControllerUnverifyResponse404 & {
-    headers: Headers;
-  };
+export type adminScamModerationControllerUnverifyResponse = (adminScamModerationControllerUnverifyResponseSuccess | adminScamModerationControllerUnverifyResponseError)
 
-export type adminScamModerationControllerUnverifyResponse =
-  | adminScamModerationControllerUnverifyResponseSuccess
-  | adminScamModerationControllerUnverifyResponseError;
+export const getAdminScamModerationControllerUnverifyUrl = (id: string,) => {
 
-export const getAdminScamModerationControllerUnverifyUrl = (id: string) => {
-  return `/api/v1/admin/safety/scam-reports/${id}/unverify`;
-};
 
-export const adminScamModerationControllerUnverify = async (
-  id: string,
-  options?: RequestInit,
-): Promise<adminScamModerationControllerUnverifyResponse> => {
-  return apiFetch<adminScamModerationControllerUnverifyResponse>(
-    getAdminScamModerationControllerUnverifyUrl(id),
-    {
-      ...options,
-      method: 'POST',
-    },
-  );
-};
+  
+
+  return `/api/v1/admin/safety/scam-reports/${id}/unverify`
+}
+
+export const adminScamModerationControllerUnverify = async (id: string, options?: RequestInit): Promise<adminScamModerationControllerUnverifyResponse> => {
+  
+  return apiFetch<adminScamModerationControllerUnverifyResponse>(getAdminScamModerationControllerUnverifyUrl(id),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Dismiss a scam report (hard-delete).
  */
 export type adminScamModerationControllerDismissResponse204 = {
-  data: void;
-  status: 204;
-};
+  data: void
+  status: 204
+}
 
 export type adminScamModerationControllerDismissResponse404 = {
-  data: void;
-  status: 404;
+  data: void
+  status: 404
+}
+    
+export type adminScamModerationControllerDismissResponseSuccess = (adminScamModerationControllerDismissResponse204) & {
+  headers: Headers;
+};
+export type adminScamModerationControllerDismissResponseError = (adminScamModerationControllerDismissResponse404) & {
+  headers: Headers;
 };
 
-export type adminScamModerationControllerDismissResponseSuccess =
-  adminScamModerationControllerDismissResponse204 & {
-    headers: Headers;
-  };
-export type adminScamModerationControllerDismissResponseError =
-  adminScamModerationControllerDismissResponse404 & {
-    headers: Headers;
-  };
+export type adminScamModerationControllerDismissResponse = (adminScamModerationControllerDismissResponseSuccess | adminScamModerationControllerDismissResponseError)
 
-export type adminScamModerationControllerDismissResponse =
-  | adminScamModerationControllerDismissResponseSuccess
-  | adminScamModerationControllerDismissResponseError;
+export const getAdminScamModerationControllerDismissUrl = (id: string,) => {
 
-export const getAdminScamModerationControllerDismissUrl = (id: string) => {
-  return `/api/v1/admin/safety/scam-reports/${id}`;
-};
 
-export const adminScamModerationControllerDismiss = async (
-  id: string,
-  options?: RequestInit,
-): Promise<adminScamModerationControllerDismissResponse> => {
-  return apiFetch<adminScamModerationControllerDismissResponse>(
-    getAdminScamModerationControllerDismissUrl(id),
-    {
-      ...options,
-      method: 'DELETE',
-    },
-  );
-};
+  
+
+  return `/api/v1/admin/safety/scam-reports/${id}`
+}
+
+export const adminScamModerationControllerDismiss = async (id: string, options?: RequestInit): Promise<adminScamModerationControllerDismissResponse> => {
+  
+  return apiFetch<adminScamModerationControllerDismissResponse>(getAdminScamModerationControllerDismissUrl(id),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Triage list of SOS events. ?status=active|resolved (default: both). Offset pagination.
  */
 export type adminSosControllerListResponse200 = {
-  data: AdminListSosEventsResponseDto;
-  status: 200;
-};
+  data: AdminListSosEventsResponseDto
+  status: 200
+}
 
 export type adminSosControllerListResponse400 = {
-  data: void;
-  status: 400;
-};
-
-export type adminSosControllerListResponseSuccess = adminSosControllerListResponse200 & {
+  data: void
+  status: 400
+}
+    
+export type adminSosControllerListResponseSuccess = (adminSosControllerListResponse200) & {
   headers: Headers;
 };
-export type adminSosControllerListResponseError = adminSosControllerListResponse400 & {
+export type adminSosControllerListResponseError = (adminSosControllerListResponse400) & {
   headers: Headers;
 };
 
-export type adminSosControllerListResponse =
-  | adminSosControllerListResponseSuccess
-  | adminSosControllerListResponseError;
+export type adminSosControllerListResponse = (adminSosControllerListResponseSuccess | adminSosControllerListResponseError)
 
-export const getAdminSosControllerListUrl = (params: AdminSosControllerListParams) => {
+export const getAdminSosControllerListUrl = (params: AdminSosControllerListParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
+    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString());
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0
-    ? `/api/v1/admin/safety/sos-events?${stringifiedParams}`
-    : `/api/v1/admin/safety/sos-events`;
-};
+  return stringifiedParams.length > 0 ? `/api/v1/admin/safety/sos-events?${stringifiedParams}` : `/api/v1/admin/safety/sos-events`
+}
 
-export const adminSosControllerList = async (
-  params: AdminSosControllerListParams,
-  options?: RequestInit,
-): Promise<adminSosControllerListResponse> => {
-  return apiFetch<adminSosControllerListResponse>(getAdminSosControllerListUrl(params), {
+export const adminSosControllerList = async (params: AdminSosControllerListParams, options?: RequestInit): Promise<adminSosControllerListResponse> => {
+  
+  return apiFetch<adminSosControllerListResponse>(getAdminSosControllerListUrl(params),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Admin-resolve an SOS event with an optional resolution note.
  */
 export type adminSosControllerResolveResponse200 = {
-  data: SosEventDto;
-  status: 200;
-};
+  data: SosEventDto
+  status: 200
+}
 
 export type adminSosControllerResolveResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type adminSosControllerResolveResponseSuccess = adminSosControllerResolveResponse200 & {
+  data: void
+  status: 404
+}
+    
+export type adminSosControllerResolveResponseSuccess = (adminSosControllerResolveResponse200) & {
   headers: Headers;
 };
-export type adminSosControllerResolveResponseError = adminSosControllerResolveResponse404 & {
+export type adminSosControllerResolveResponseError = (adminSosControllerResolveResponse404) & {
   headers: Headers;
 };
 
-export type adminSosControllerResolveResponse =
-  | adminSosControllerResolveResponseSuccess
-  | adminSosControllerResolveResponseError;
+export type adminSosControllerResolveResponse = (adminSosControllerResolveResponseSuccess | adminSosControllerResolveResponseError)
 
-export const getAdminSosControllerResolveUrl = (id: string) => {
-  return `/api/v1/admin/safety/sos-events/${id}/resolve`;
-};
+export const getAdminSosControllerResolveUrl = (id: string,) => {
 
-export const adminSosControllerResolve = async (
-  id: string,
-  adminResolveSosRequestDto: AdminResolveSosRequestDto,
-  options?: RequestInit,
-): Promise<adminSosControllerResolveResponse> => {
-  return apiFetch<adminSosControllerResolveResponse>(getAdminSosControllerResolveUrl(id), {
+
+  
+
+  return `/api/v1/admin/safety/sos-events/${id}/resolve`
+}
+
+export const adminSosControllerResolve = async (id: string,
+    adminResolveSosRequestDto: AdminResolveSosRequestDto, options?: RequestInit): Promise<adminSosControllerResolveResponse> => {
+  
+  return apiFetch<adminSosControllerResolveResponse>(getAdminSosControllerResolveUrl(id),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(adminResolveSosRequestDto),
-  });
-};
+    body: JSON.stringify(
+      adminResolveSosRequestDto,)
+  }
+);}
+
 
 /**
  * @summary List users with optional ?role / ?deleted / ?q filters. Offset pagination via ?limit + ?offset. Admin-only.
  */
 export type adminUsersControllerListResponse200 = {
-  data: AdminListUsersResponseDto;
-  status: 200;
-};
+  data: AdminListUsersResponseDto
+  status: 200
+}
 
 export type adminUsersControllerListResponse400 = {
-  data: void;
-  status: 400;
-};
-
-export type adminUsersControllerListResponseSuccess = adminUsersControllerListResponse200 & {
+  data: void
+  status: 400
+}
+    
+export type adminUsersControllerListResponseSuccess = (adminUsersControllerListResponse200) & {
   headers: Headers;
 };
-export type adminUsersControllerListResponseError = adminUsersControllerListResponse400 & {
+export type adminUsersControllerListResponseError = (adminUsersControllerListResponse400) & {
   headers: Headers;
 };
 
-export type adminUsersControllerListResponse =
-  | adminUsersControllerListResponseSuccess
-  | adminUsersControllerListResponseError;
+export type adminUsersControllerListResponse = (adminUsersControllerListResponseSuccess | adminUsersControllerListResponseError)
 
-export const getAdminUsersControllerListUrl = (params: AdminUsersControllerListParams) => {
+export const getAdminUsersControllerListUrl = (params: AdminUsersControllerListParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
+    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString());
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0
-    ? `/api/v1/admin/users?${stringifiedParams}`
-    : `/api/v1/admin/users`;
-};
+  return stringifiedParams.length > 0 ? `/api/v1/admin/users?${stringifiedParams}` : `/api/v1/admin/users`
+}
 
-export const adminUsersControllerList = async (
-  params: AdminUsersControllerListParams,
-  options?: RequestInit,
-): Promise<adminUsersControllerListResponse> => {
-  return apiFetch<adminUsersControllerListResponse>(getAdminUsersControllerListUrl(params), {
+export const adminUsersControllerList = async (params: AdminUsersControllerListParams, options?: RequestInit): Promise<adminUsersControllerListResponse> => {
+  
+  return apiFetch<adminUsersControllerListResponse>(getAdminUsersControllerListUrl(params),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary V.UX.34 — ban a user with a user-readable reason. Sets bannedAt + banReason + revokes sessions.
  */
 export type adminUsersControllerBanResponse204 = {
-  data: void;
-  status: 204;
-};
+  data: void
+  status: 204
+}
 
 export type adminUsersControllerBanResponse404 = {
-  data: void;
-  status: 404;
-};
+  data: void
+  status: 404
+}
 
 export type adminUsersControllerBanResponse422 = {
-  data: void;
-  status: 422;
-};
-
-export type adminUsersControllerBanResponseSuccess = adminUsersControllerBanResponse204 & {
+  data: void
+  status: 422
+}
+    
+export type adminUsersControllerBanResponseSuccess = (adminUsersControllerBanResponse204) & {
   headers: Headers;
 };
-export type adminUsersControllerBanResponseError = (
-  | adminUsersControllerBanResponse404
-  | adminUsersControllerBanResponse422
-) & {
+export type adminUsersControllerBanResponseError = (adminUsersControllerBanResponse404 | adminUsersControllerBanResponse422) & {
   headers: Headers;
 };
 
-export type adminUsersControllerBanResponse =
-  | adminUsersControllerBanResponseSuccess
-  | adminUsersControllerBanResponseError;
+export type adminUsersControllerBanResponse = (adminUsersControllerBanResponseSuccess | adminUsersControllerBanResponseError)
 
-export const getAdminUsersControllerBanUrl = (id: string) => {
-  return `/api/v1/admin/users/${id}/ban`;
-};
+export const getAdminUsersControllerBanUrl = (id: string,) => {
 
-export const adminUsersControllerBan = async (
-  id: string,
-  adminBanRequestDto: AdminBanRequestDto,
-  options?: RequestInit,
-): Promise<adminUsersControllerBanResponse> => {
-  return apiFetch<adminUsersControllerBanResponse>(getAdminUsersControllerBanUrl(id), {
+
+  
+
+  return `/api/v1/admin/users/${id}/ban`
+}
+
+export const adminUsersControllerBan = async (id: string,
+    adminBanRequestDto: AdminBanRequestDto, options?: RequestInit): Promise<adminUsersControllerBanResponse> => {
+  
+  return apiFetch<adminUsersControllerBanResponse>(getAdminUsersControllerBanUrl(id),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(adminBanRequestDto),
-  });
-};
+    body: JSON.stringify(
+      adminBanRequestDto,)
+  }
+);}
+
 
 /**
  * @summary V.UX.34 — unban a user (clears bannedAt + banReason). Admin-only.
  */
 export type adminUsersControllerUnbanResponse204 = {
-  data: void;
-  status: 204;
-};
+  data: void
+  status: 204
+}
 
 export type adminUsersControllerUnbanResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type adminUsersControllerUnbanResponseSuccess = adminUsersControllerUnbanResponse204 & {
+  data: void
+  status: 404
+}
+    
+export type adminUsersControllerUnbanResponseSuccess = (adminUsersControllerUnbanResponse204) & {
   headers: Headers;
 };
-export type adminUsersControllerUnbanResponseError = adminUsersControllerUnbanResponse404 & {
+export type adminUsersControllerUnbanResponseError = (adminUsersControllerUnbanResponse404) & {
   headers: Headers;
 };
 
-export type adminUsersControllerUnbanResponse =
-  | adminUsersControllerUnbanResponseSuccess
-  | adminUsersControllerUnbanResponseError;
+export type adminUsersControllerUnbanResponse = (adminUsersControllerUnbanResponseSuccess | adminUsersControllerUnbanResponseError)
 
-export const getAdminUsersControllerUnbanUrl = (id: string) => {
-  return `/api/v1/admin/users/${id}/unban`;
-};
+export const getAdminUsersControllerUnbanUrl = (id: string,) => {
 
-export const adminUsersControllerUnban = async (
-  id: string,
-  options?: RequestInit,
-): Promise<adminUsersControllerUnbanResponse> => {
-  return apiFetch<adminUsersControllerUnbanResponse>(getAdminUsersControllerUnbanUrl(id), {
+
+  
+
+  return `/api/v1/admin/users/${id}/unban`
+}
+
+export const adminUsersControllerUnban = async (id: string, options?: RequestInit): Promise<adminUsersControllerUnbanResponse> => {
+  
+  return apiFetch<adminUsersControllerUnbanResponse>(getAdminUsersControllerUnbanUrl(id),
+  {      
     ...options,
-    method: 'POST',
-  });
-};
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary V.UX.34 — list ban appeals. Defaults to status=pending. Admin moderation queue.
  */
 export type adminUsersControllerListAppealsResponse200 = {
-  data: AdminListBanAppealsResponseDto;
-  status: 200;
+  data: AdminListBanAppealsResponseDto
+  status: 200
+}
+    
+export type adminUsersControllerListAppealsResponseSuccess = (adminUsersControllerListAppealsResponse200) & {
+  headers: Headers;
 };
+;
 
-export type adminUsersControllerListAppealsResponseSuccess =
-  adminUsersControllerListAppealsResponse200 & {
-    headers: Headers;
-  };
-export type adminUsersControllerListAppealsResponse =
-  adminUsersControllerListAppealsResponseSuccess;
+export type adminUsersControllerListAppealsResponse = (adminUsersControllerListAppealsResponseSuccess)
 
-export const getAdminUsersControllerListAppealsUrl = (
-  params: AdminUsersControllerListAppealsParams,
-) => {
+export const getAdminUsersControllerListAppealsUrl = (params: AdminUsersControllerListAppealsParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
+    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString());
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0
-    ? `/api/v1/admin/users/appeals?${stringifiedParams}`
-    : `/api/v1/admin/users/appeals`;
-};
+  return stringifiedParams.length > 0 ? `/api/v1/admin/users/appeals?${stringifiedParams}` : `/api/v1/admin/users/appeals`
+}
 
-export const adminUsersControllerListAppeals = async (
-  params: AdminUsersControllerListAppealsParams,
-  options?: RequestInit,
-): Promise<adminUsersControllerListAppealsResponse> => {
-  return apiFetch<adminUsersControllerListAppealsResponse>(
-    getAdminUsersControllerListAppealsUrl(params),
-    {
-      ...options,
-      method: 'GET',
-    },
-  );
-};
+export const adminUsersControllerListAppeals = async (params: AdminUsersControllerListAppealsParams, options?: RequestInit): Promise<adminUsersControllerListAppealsResponse> => {
+  
+  return apiFetch<adminUsersControllerListAppealsResponse>(getAdminUsersControllerListAppealsUrl(params),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Force the account-purge scheduler tick. Idempotent — re-entrant guard skips overlapping calls.
  */
 export type adminPurgeControllerForcePurgeResponse200 = {
-  data: AdminPurgeForceResponseDto;
-  status: 200;
+  data: AdminPurgeForceResponseDto
+  status: 200
+}
+    
+export type adminPurgeControllerForcePurgeResponseSuccess = (adminPurgeControllerForcePurgeResponse200) & {
+  headers: Headers;
 };
+;
 
-export type adminPurgeControllerForcePurgeResponseSuccess =
-  adminPurgeControllerForcePurgeResponse200 & {
-    headers: Headers;
-  };
-export type adminPurgeControllerForcePurgeResponse = adminPurgeControllerForcePurgeResponseSuccess;
+export type adminPurgeControllerForcePurgeResponse = (adminPurgeControllerForcePurgeResponseSuccess)
 
 export const getAdminPurgeControllerForcePurgeUrl = () => {
-  return `/api/v1/admin/account-purge`;
-};
 
-export const adminPurgeControllerForcePurge = async (
-  options?: RequestInit,
-): Promise<adminPurgeControllerForcePurgeResponse> => {
-  return apiFetch<adminPurgeControllerForcePurgeResponse>(getAdminPurgeControllerForcePurgeUrl(), {
+
+  
+
+  return `/api/v1/admin/account-purge`
+}
+
+export const adminPurgeControllerForcePurge = async ( options?: RequestInit): Promise<adminPurgeControllerForcePurgeResponse> => {
+  
+  return apiFetch<adminPurgeControllerForcePurgeResponse>(getAdminPurgeControllerForcePurgeUrl(),
+  {      
     ...options,
-    method: 'POST',
-  });
-};
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Cross-user list of media with optional ?ownerId, ?kind, ?status filters. Admin-only.
  */
 export type adminMediaControllerListResponse200 = {
-  data: AdminListMediaResponseDto;
-  status: 200;
-};
+  data: AdminListMediaResponseDto
+  status: 200
+}
 
 export type adminMediaControllerListResponse400 = {
-  data: void;
-  status: 400;
-};
-
-export type adminMediaControllerListResponseSuccess = adminMediaControllerListResponse200 & {
+  data: void
+  status: 400
+}
+    
+export type adminMediaControllerListResponseSuccess = (adminMediaControllerListResponse200) & {
   headers: Headers;
 };
-export type adminMediaControllerListResponseError = adminMediaControllerListResponse400 & {
+export type adminMediaControllerListResponseError = (adminMediaControllerListResponse400) & {
   headers: Headers;
 };
 
-export type adminMediaControllerListResponse =
-  | adminMediaControllerListResponseSuccess
-  | adminMediaControllerListResponseError;
+export type adminMediaControllerListResponse = (adminMediaControllerListResponseSuccess | adminMediaControllerListResponseError)
 
-export const getAdminMediaControllerListUrl = (params: AdminMediaControllerListParams) => {
+export const getAdminMediaControllerListUrl = (params: AdminMediaControllerListParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
+    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString());
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0
-    ? `/api/v1/admin/media?${stringifiedParams}`
-    : `/api/v1/admin/media`;
-};
+  return stringifiedParams.length > 0 ? `/api/v1/admin/media?${stringifiedParams}` : `/api/v1/admin/media`
+}
 
-export const adminMediaControllerList = async (
-  params: AdminMediaControllerListParams,
-  options?: RequestInit,
-): Promise<adminMediaControllerListResponse> => {
-  return apiFetch<adminMediaControllerListResponse>(getAdminMediaControllerListUrl(params), {
+export const adminMediaControllerList = async (params: AdminMediaControllerListParams, options?: RequestInit): Promise<adminMediaControllerListResponse> => {
+  
+  return apiFetch<adminMediaControllerListResponse>(getAdminMediaControllerListUrl(params),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Hard-delete media (takedown). Trip + memory book references SetNull-cascade.
  */
 export type adminMediaControllerRemoveResponse204 = {
-  data: void;
-  status: 204;
-};
+  data: void
+  status: 204
+}
 
 export type adminMediaControllerRemoveResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type adminMediaControllerRemoveResponseSuccess = adminMediaControllerRemoveResponse204 & {
+  data: void
+  status: 404
+}
+    
+export type adminMediaControllerRemoveResponseSuccess = (adminMediaControllerRemoveResponse204) & {
   headers: Headers;
 };
-export type adminMediaControllerRemoveResponseError = adminMediaControllerRemoveResponse404 & {
+export type adminMediaControllerRemoveResponseError = (adminMediaControllerRemoveResponse404) & {
   headers: Headers;
 };
 
-export type adminMediaControllerRemoveResponse =
-  | adminMediaControllerRemoveResponseSuccess
-  | adminMediaControllerRemoveResponseError;
+export type adminMediaControllerRemoveResponse = (adminMediaControllerRemoveResponseSuccess | adminMediaControllerRemoveResponseError)
 
-export const getAdminMediaControllerRemoveUrl = (id: string) => {
-  return `/api/v1/admin/media/${id}`;
-};
+export const getAdminMediaControllerRemoveUrl = (id: string,) => {
 
-export const adminMediaControllerRemove = async (
-  id: string,
-  options?: RequestInit,
-): Promise<adminMediaControllerRemoveResponse> => {
-  return apiFetch<adminMediaControllerRemoveResponse>(getAdminMediaControllerRemoveUrl(id), {
+
+  
+
+  return `/api/v1/admin/media/${id}`
+}
+
+export const adminMediaControllerRemove = async (id: string, options?: RequestInit): Promise<adminMediaControllerRemoveResponse> => {
+  
+  return apiFetch<adminMediaControllerRemoveResponse>(getAdminMediaControllerRemoveUrl(id),
+  {      
     ...options,
-    method: 'DELETE',
-  });
-};
+    method: 'DELETE'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Curate a new Place into the canonical catalog. Admin-only.
  */
 export type adminControllerCreateResponse201 = {
-  data: AdminPlaceDto;
-  status: 201;
-};
-
-export type adminControllerCreateResponseSuccess = adminControllerCreateResponse201 & {
+  data: AdminPlaceDto
+  status: 201
+}
+    
+export type adminControllerCreateResponseSuccess = (adminControllerCreateResponse201) & {
   headers: Headers;
 };
-export type adminControllerCreateResponse = adminControllerCreateResponseSuccess;
+;
+
+export type adminControllerCreateResponse = (adminControllerCreateResponseSuccess)
 
 export const getAdminControllerCreateUrl = () => {
-  return `/api/v1/admin/places`;
-};
 
-export const adminControllerCreate = async (
-  adminCreatePlaceRequestDto: AdminCreatePlaceRequestDto,
-  options?: RequestInit,
-): Promise<adminControllerCreateResponse> => {
-  return apiFetch<adminControllerCreateResponse>(getAdminControllerCreateUrl(), {
+
+  
+
+  return `/api/v1/admin/places`
+}
+
+export const adminControllerCreate = async (adminCreatePlaceRequestDto: AdminCreatePlaceRequestDto, options?: RequestInit): Promise<adminControllerCreateResponse> => {
+  
+  return apiFetch<adminControllerCreateResponse>(getAdminControllerCreateUrl(),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(adminCreatePlaceRequestDto),
-  });
-};
+    body: JSON.stringify(
+      adminCreatePlaceRequestDto,)
+  }
+);}
+
 
 /**
  * @summary Remove a Place from the canonical catalog. Admin-only.
  */
 export type adminControllerRemoveResponse204 = {
-  data: void;
-  status: 204;
-};
+  data: void
+  status: 204
+}
 
 export type adminControllerRemoveResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type adminControllerRemoveResponseSuccess = adminControllerRemoveResponse204 & {
+  data: void
+  status: 404
+}
+    
+export type adminControllerRemoveResponseSuccess = (adminControllerRemoveResponse204) & {
   headers: Headers;
 };
-export type adminControllerRemoveResponseError = adminControllerRemoveResponse404 & {
+export type adminControllerRemoveResponseError = (adminControllerRemoveResponse404) & {
   headers: Headers;
 };
 
-export type adminControllerRemoveResponse =
-  | adminControllerRemoveResponseSuccess
-  | adminControllerRemoveResponseError;
+export type adminControllerRemoveResponse = (adminControllerRemoveResponseSuccess | adminControllerRemoveResponseError)
 
-export const getAdminControllerRemoveUrl = (id: string) => {
-  return `/api/v1/admin/places/${id}`;
-};
+export const getAdminControllerRemoveUrl = (id: string,) => {
 
-export const adminControllerRemove = async (
-  id: string,
-  options?: RequestInit,
-): Promise<adminControllerRemoveResponse> => {
-  return apiFetch<adminControllerRemoveResponse>(getAdminControllerRemoveUrl(id), {
+
+  
+
+  return `/api/v1/admin/places/${id}`
+}
+
+export const adminControllerRemove = async (id: string, options?: RequestInit): Promise<adminControllerRemoveResponse> => {
+  
+  return apiFetch<adminControllerRemoveResponse>(getAdminControllerRemoveUrl(id),
+  {      
     ...options,
-    method: 'DELETE',
-  });
-};
+    method: 'DELETE'
+    
+    
+  }
+);}
+
 
 /**
  * @summary V.UX.36 — read-only admin audit log. Filter by actorId / targetType / targetId / action. Newest first.
  */
 export type adminAuditLogsControllerListResponse200 = {
-  data: AdminListAuditLogsResponseDto;
-  status: 200;
+  data: AdminListAuditLogsResponseDto
+  status: 200
+}
+    
+export type adminAuditLogsControllerListResponseSuccess = (adminAuditLogsControllerListResponse200) & {
+  headers: Headers;
 };
+;
 
-export type adminAuditLogsControllerListResponseSuccess =
-  adminAuditLogsControllerListResponse200 & {
-    headers: Headers;
-  };
-export type adminAuditLogsControllerListResponse = adminAuditLogsControllerListResponseSuccess;
+export type adminAuditLogsControllerListResponse = (adminAuditLogsControllerListResponseSuccess)
 
-export const getAdminAuditLogsControllerListUrl = (params: AdminAuditLogsControllerListParams) => {
+export const getAdminAuditLogsControllerListUrl = (params: AdminAuditLogsControllerListParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
+    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString());
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0
-    ? `/api/v1/admin/audit-logs?${stringifiedParams}`
-    : `/api/v1/admin/audit-logs`;
-};
+  return stringifiedParams.length > 0 ? `/api/v1/admin/audit-logs?${stringifiedParams}` : `/api/v1/admin/audit-logs`
+}
 
-export const adminAuditLogsControllerList = async (
-  params: AdminAuditLogsControllerListParams,
-  options?: RequestInit,
-): Promise<adminAuditLogsControllerListResponse> => {
-  return apiFetch<adminAuditLogsControllerListResponse>(
-    getAdminAuditLogsControllerListUrl(params),
-    {
-      ...options,
-      method: 'GET',
-    },
-  );
-};
+export const adminAuditLogsControllerList = async (params: AdminAuditLogsControllerListParams, options?: RequestInit): Promise<adminAuditLogsControllerListResponse> => {
+  
+  return apiFetch<adminAuditLogsControllerListResponse>(getAdminAuditLogsControllerListUrl(params),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+

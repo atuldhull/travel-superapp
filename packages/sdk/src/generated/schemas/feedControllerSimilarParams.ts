@@ -3,5 +3,5 @@
 // Regenerate via: pnpm --filter=@app/sdk sdk:gen
 
 export type FeedControllerSimilarParams = {
-  limit: string;
+limit: string;
 };

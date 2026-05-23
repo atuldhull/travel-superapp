@@ -5,4 +5,4 @@
 /**
  * Scam counts bucketed by severity.
  */
-export type SafetyScoreBreakdownDtoByScamSeverity = { [key: string]: number };
+export type SafetyScoreBreakdownDtoByScamSeverity = {[key: string]: number};

@@ -3,9 +3,9 @@
 // Regenerate via: pnpm --filter=@app/sdk sdk:gen
 
 export type AgentSelfControllerDashboardParams = {
-  /**
-   * @minimum 1
-   * @maximum 365
-   */
-  windowDays?: number;
+/**
+ * @minimum 1
+ * @maximum 365
+ */
+windowDays?: number;
 };

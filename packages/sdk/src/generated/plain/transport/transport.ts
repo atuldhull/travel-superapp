@@ -5,7 +5,7 @@ import type {
   GetNavigationRequestDto,
   GetNavigationResponseDto,
   GetRoutesRequestDto,
-  GetRoutesResponseDto,
+  GetRoutesResponseDto
 } from '../../schemas';
 
 import { apiFetch } from '../../../runtime/fetcher';
@@ -14,80 +14,85 @@ import { apiFetch } from '../../../runtime/fetcher';
  * @summary Compute one route leg per available transport mode for the given origin → destination.
  */
 export type transportControllerRoutesResponse200 = {
-  data: GetRoutesResponseDto;
-  status: 200;
-};
+  data: GetRoutesResponseDto
+  status: 200
+}
 
 export type transportControllerRoutesResponse422 = {
-  data: void;
-  status: 422;
-};
-
-export type transportControllerRoutesResponseSuccess = transportControllerRoutesResponse200 & {
+  data: void
+  status: 422
+}
+    
+export type transportControllerRoutesResponseSuccess = (transportControllerRoutesResponse200) & {
   headers: Headers;
 };
-export type transportControllerRoutesResponseError = transportControllerRoutesResponse422 & {
+export type transportControllerRoutesResponseError = (transportControllerRoutesResponse422) & {
   headers: Headers;
 };
 
-export type transportControllerRoutesResponse =
-  | transportControllerRoutesResponseSuccess
-  | transportControllerRoutesResponseError;
+export type transportControllerRoutesResponse = (transportControllerRoutesResponseSuccess | transportControllerRoutesResponseError)
 
 export const getTransportControllerRoutesUrl = () => {
-  return `/api/v1/transport/routes`;
-};
 
-export const transportControllerRoutes = async (
-  getRoutesRequestDto: GetRoutesRequestDto,
-  options?: RequestInit,
-): Promise<transportControllerRoutesResponse> => {
-  return apiFetch<transportControllerRoutesResponse>(getTransportControllerRoutesUrl(), {
+
+  
+
+  return `/api/v1/transport/routes`
+}
+
+export const transportControllerRoutes = async (getRoutesRequestDto: GetRoutesRequestDto, options?: RequestInit): Promise<transportControllerRoutesResponse> => {
+  
+  return apiFetch<transportControllerRoutesResponse>(getTransportControllerRoutesUrl(),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(getRoutesRequestDto),
-  });
-};
+    body: JSON.stringify(
+      getRoutesRequestDto,)
+  }
+);}
+
 
 /**
  * @summary Compute drawable road routes (fastest / scenic / avoid-traffic) with live(ish) traffic colouring + reroute advisories for the LiveNavMap.
  */
 export type transportControllerNavigationResponse200 = {
-  data: GetNavigationResponseDto;
-  status: 200;
-};
+  data: GetNavigationResponseDto
+  status: 200
+}
 
 export type transportControllerNavigationResponse422 = {
-  data: void;
-  status: 422;
+  data: void
+  status: 422
+}
+    
+export type transportControllerNavigationResponseSuccess = (transportControllerNavigationResponse200) & {
+  headers: Headers;
+};
+export type transportControllerNavigationResponseError = (transportControllerNavigationResponse422) & {
+  headers: Headers;
 };
 
-export type transportControllerNavigationResponseSuccess =
-  transportControllerNavigationResponse200 & {
-    headers: Headers;
-  };
-export type transportControllerNavigationResponseError =
-  transportControllerNavigationResponse422 & {
-    headers: Headers;
-  };
-
-export type transportControllerNavigationResponse =
-  | transportControllerNavigationResponseSuccess
-  | transportControllerNavigationResponseError;
+export type transportControllerNavigationResponse = (transportControllerNavigationResponseSuccess | transportControllerNavigationResponseError)
 
 export const getTransportControllerNavigationUrl = () => {
-  return `/api/v1/transport/navigation`;
-};
 
-export const transportControllerNavigation = async (
-  getNavigationRequestDto: GetNavigationRequestDto,
-  options?: RequestInit,
-): Promise<transportControllerNavigationResponse> => {
-  return apiFetch<transportControllerNavigationResponse>(getTransportControllerNavigationUrl(), {
+
+  
+
+  return `/api/v1/transport/navigation`
+}
+
+export const transportControllerNavigation = async (getNavigationRequestDto: GetNavigationRequestDto, options?: RequestInit): Promise<transportControllerNavigationResponse> => {
+  
+  return apiFetch<transportControllerNavigationResponse>(getTransportControllerNavigationUrl(),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(getNavigationRequestDto),
-  });
-};
+    body: JSON.stringify(
+      getNavigationRequestDto,)
+  }
+);}
+
+

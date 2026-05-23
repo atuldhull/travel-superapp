@@ -4,7 +4,7 @@
 import type {
   ComplianceControllerTakedownsParams,
   RetentionStatsResponseDto,
-  TakedownListResponseDto,
+  TakedownListResponseDto
 } from '../../schemas';
 
 import { apiFetch } from '../../../runtime/fetcher';
@@ -13,70 +13,76 @@ import { apiFetch } from '../../../runtime/fetcher';
  * @summary V.UX.37 — retention dashboard: 16 indexed counts (users / trips / safety / inbox / appeals) + oldest-soft-delete age.
  */
 export type complianceControllerRetentionResponse200 = {
-  data: RetentionStatsResponseDto;
-  status: 200;
+  data: RetentionStatsResponseDto
+  status: 200
+}
+    
+export type complianceControllerRetentionResponseSuccess = (complianceControllerRetentionResponse200) & {
+  headers: Headers;
 };
+;
 
-export type complianceControllerRetentionResponseSuccess =
-  complianceControllerRetentionResponse200 & {
-    headers: Headers;
-  };
-export type complianceControllerRetentionResponse = complianceControllerRetentionResponseSuccess;
+export type complianceControllerRetentionResponse = (complianceControllerRetentionResponseSuccess)
 
 export const getComplianceControllerRetentionUrl = () => {
-  return `/api/v1/compliance/retention`;
-};
 
-export const complianceControllerRetention = async (
-  options?: RequestInit,
-): Promise<complianceControllerRetentionResponse> => {
-  return apiFetch<complianceControllerRetentionResponse>(getComplianceControllerRetentionUrl(), {
+
+  
+
+  return `/api/v1/compliance/retention`
+}
+
+export const complianceControllerRetention = async ( options?: RequestInit): Promise<complianceControllerRetentionResponse> => {
+  
+  return apiFetch<complianceControllerRetentionResponse>(getComplianceControllerRetentionUrl(),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary V.UX.37 — takedown report: AdminAuditLog scoped to delete_media | delete_trip | archive_trip | dismiss_scam. Newest-first.
  */
 export type complianceControllerTakedownsResponse200 = {
-  data: TakedownListResponseDto;
-  status: 200;
+  data: TakedownListResponseDto
+  status: 200
+}
+    
+export type complianceControllerTakedownsResponseSuccess = (complianceControllerTakedownsResponse200) & {
+  headers: Headers;
 };
+;
 
-export type complianceControllerTakedownsResponseSuccess =
-  complianceControllerTakedownsResponse200 & {
-    headers: Headers;
-  };
-export type complianceControllerTakedownsResponse = complianceControllerTakedownsResponseSuccess;
+export type complianceControllerTakedownsResponse = (complianceControllerTakedownsResponseSuccess)
 
-export const getComplianceControllerTakedownsUrl = (
-  params: ComplianceControllerTakedownsParams,
-) => {
+export const getComplianceControllerTakedownsUrl = (params: ComplianceControllerTakedownsParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
+    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString());
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0
-    ? `/api/v1/compliance/takedowns?${stringifiedParams}`
-    : `/api/v1/compliance/takedowns`;
-};
+  return stringifiedParams.length > 0 ? `/api/v1/compliance/takedowns?${stringifiedParams}` : `/api/v1/compliance/takedowns`
+}
 
-export const complianceControllerTakedowns = async (
-  params: ComplianceControllerTakedownsParams,
-  options?: RequestInit,
-): Promise<complianceControllerTakedownsResponse> => {
-  return apiFetch<complianceControllerTakedownsResponse>(
-    getComplianceControllerTakedownsUrl(params),
-    {
-      ...options,
-      method: 'GET',
-    },
-  );
-};
+export const complianceControllerTakedowns = async (params: ComplianceControllerTakedownsParams, options?: RequestInit): Promise<complianceControllerTakedownsResponse> => {
+  
+  return apiFetch<complianceControllerTakedownsResponse>(getComplianceControllerTakedownsUrl(params),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+

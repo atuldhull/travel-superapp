@@ -5,8 +5,8 @@
 /**
  * Stable provider identifier — drives the "powered by …" badge.
  */
-export type GenerateSamplePlanResponseDtoProvider =
-  (typeof GenerateSamplePlanResponseDtoProvider)[keyof typeof GenerateSamplePlanResponseDtoProvider];
+export type GenerateSamplePlanResponseDtoProvider = typeof GenerateSamplePlanResponseDtoProvider[keyof typeof GenerateSamplePlanResponseDtoProvider];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const GenerateSamplePlanResponseDtoProvider = {

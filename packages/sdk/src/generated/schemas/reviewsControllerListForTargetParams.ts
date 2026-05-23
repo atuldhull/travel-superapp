@@ -3,7 +3,7 @@
 // Regenerate via: pnpm --filter=@app/sdk sdk:gen
 
 export type ReviewsControllerListForTargetParams = {
-  targetType: string;
-  targetId: string;
-  limit: string;
+targetType: string;
+targetId: string;
+limit: string;
 };

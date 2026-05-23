@@ -5,8 +5,8 @@
 /**
  * Source provider key.
  */
-export type EateryListingDtoProvider =
-  (typeof EateryListingDtoProvider)[keyof typeof EateryListingDtoProvider];
+export type EateryListingDtoProvider = typeof EateryListingDtoProvider[keyof typeof EateryListingDtoProvider];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const EateryListingDtoProvider = {

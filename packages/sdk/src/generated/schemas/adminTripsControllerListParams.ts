@@ -3,8 +3,8 @@
 // Regenerate via: pnpm --filter=@app/sdk sdk:gen
 
 export type AdminTripsControllerListParams = {
-  q: string;
-  status: string;
-  limit: string;
-  offset: string;
+q: string;
+status: string;
+limit: string;
+offset: string;
 };

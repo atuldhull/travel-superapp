@@ -5,8 +5,8 @@
 /**
  * Stable provider identifier — drives the "powered by …" badge on /trips/[id].
  */
-export type GeneratePlanWithAiResponseDtoProvider =
-  (typeof GeneratePlanWithAiResponseDtoProvider)[keyof typeof GeneratePlanWithAiResponseDtoProvider];
+export type GeneratePlanWithAiResponseDtoProvider = typeof GeneratePlanWithAiResponseDtoProvider[keyof typeof GeneratePlanWithAiResponseDtoProvider];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const GeneratePlanWithAiResponseDtoProvider = {

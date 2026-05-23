@@ -3,6 +3,6 @@
 // Regenerate via: pnpm --filter=@app/sdk sdk:gen
 
 export type VotesControllerSummaryParams = {
-  targetType: string;
-  targetId: string;
+targetType: string;
+targetId: string;
 };

@@ -3,9 +3,9 @@
 // Regenerate via: pnpm --filter=@app/sdk sdk:gen
 
 export type AdminUsersControllerListParams = {
-  role: string;
-  deleted: string;
-  q: string;
-  limit: string;
-  offset: string;
+role: string;
+deleted: string;
+q: string;
+limit: string;
+offset: string;
 };

@@ -30,7 +30,7 @@ import type {
   StayReviewSummaryResponseDto,
   VoteDto,
   VoteSummaryDto,
-  VotesControllerSummaryParams,
+  VotesControllerSummaryParams
 } from '../../schemas';
 
 import { apiFetch } from '../../../runtime/fetcher';
@@ -39,980 +39,1061 @@ import { apiFetch } from '../../../runtime/fetcher';
  * @summary Cast or update a vote on a trip target. Body: { targetType, targetId, value }. Auth gate: owner OR active TripShare.
  */
 export type socialControllerCastResponse200 = {
-  data: VoteDto;
-  status: 200;
-};
-
-export type socialControllerCastResponseSuccess = socialControllerCastResponse200 & {
+  data: VoteDto
+  status: 200
+}
+    
+export type socialControllerCastResponseSuccess = (socialControllerCastResponse200) & {
   headers: Headers;
 };
-export type socialControllerCastResponse = socialControllerCastResponseSuccess;
+;
 
-export const getSocialControllerCastUrl = (tripId: string) => {
-  return `/api/v1/trips/${tripId}/votes`;
-};
+export type socialControllerCastResponse = (socialControllerCastResponseSuccess)
 
-export const socialControllerCast = async (
-  tripId: string,
-  castVoteRequestDto: CastVoteRequestDto,
-  options?: RequestInit,
-): Promise<socialControllerCastResponse> => {
-  return apiFetch<socialControllerCastResponse>(getSocialControllerCastUrl(tripId), {
+export const getSocialControllerCastUrl = (tripId: string,) => {
+
+
+  
+
+  return `/api/v1/trips/${tripId}/votes`
+}
+
+export const socialControllerCast = async (tripId: string,
+    castVoteRequestDto: CastVoteRequestDto, options?: RequestInit): Promise<socialControllerCastResponse> => {
+  
+  return apiFetch<socialControllerCastResponse>(getSocialControllerCastUrl(tripId),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(castVoteRequestDto),
-  });
-};
+    body: JSON.stringify(
+      castVoteRequestDto,)
+  }
+);}
+
 
 /**
  * @summary Revoke a previously-cast vote. Body: { targetType, targetId }. Idempotent.
  */
 export type socialControllerRevokeResponse204 = {
-  data: void;
-  status: 204;
-};
-
-export type socialControllerRevokeResponseSuccess = socialControllerRevokeResponse204 & {
+  data: void
+  status: 204
+}
+    
+export type socialControllerRevokeResponseSuccess = (socialControllerRevokeResponse204) & {
   headers: Headers;
 };
-export type socialControllerRevokeResponse = socialControllerRevokeResponseSuccess;
+;
 
-export const getSocialControllerRevokeUrl = (tripId: string) => {
-  return `/api/v1/trips/${tripId}/votes`;
-};
+export type socialControllerRevokeResponse = (socialControllerRevokeResponseSuccess)
 
-export const socialControllerRevoke = async (
-  tripId: string,
-  revokeVoteRequestDto: RevokeVoteRequestDto,
-  options?: RequestInit,
-): Promise<socialControllerRevokeResponse> => {
-  return apiFetch<socialControllerRevokeResponse>(getSocialControllerRevokeUrl(tripId), {
+export const getSocialControllerRevokeUrl = (tripId: string,) => {
+
+
+  
+
+  return `/api/v1/trips/${tripId}/votes`
+}
+
+export const socialControllerRevoke = async (tripId: string,
+    revokeVoteRequestDto: RevokeVoteRequestDto, options?: RequestInit): Promise<socialControllerRevokeResponse> => {
+  
+  return apiFetch<socialControllerRevokeResponse>(getSocialControllerRevokeUrl(tripId),
+  {      
     ...options,
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(revokeVoteRequestDto),
-  });
-};
+    body: JSON.stringify(
+      revokeVoteRequestDto,)
+  }
+);}
+
 
 /**
  * @summary Aggregated tallies for a trip's votes + the caller's own vote per target.
  */
 export type socialControllerListResponse200 = {
-  data: ListTripVotesResponseDto;
-  status: 200;
-};
-
-export type socialControllerListResponseSuccess = socialControllerListResponse200 & {
+  data: ListTripVotesResponseDto
+  status: 200
+}
+    
+export type socialControllerListResponseSuccess = (socialControllerListResponse200) & {
   headers: Headers;
 };
-export type socialControllerListResponse = socialControllerListResponseSuccess;
+;
 
-export const getSocialControllerListUrl = (tripId: string) => {
-  return `/api/v1/trips/${tripId}/votes`;
-};
+export type socialControllerListResponse = (socialControllerListResponseSuccess)
 
-export const socialControllerList = async (
-  tripId: string,
-  options?: RequestInit,
-): Promise<socialControllerListResponse> => {
-  return apiFetch<socialControllerListResponse>(getSocialControllerListUrl(tripId), {
+export const getSocialControllerListUrl = (tripId: string,) => {
+
+
+  
+
+  return `/api/v1/trips/${tripId}/votes`
+}
+
+export const socialControllerList = async (tripId: string, options?: RequestInit): Promise<socialControllerListResponse> => {
+  
+  return apiFetch<socialControllerListResponse>(getSocialControllerListUrl(tripId),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Record a shared expense on a trip. Auth gate: owner OR active TripShare. Splits sum-checked.
  */
 export type expensesControllerCreateResponse201 = {
-  data: ExpenseDto;
-  status: 201;
-};
-
-export type expensesControllerCreateResponseSuccess = expensesControllerCreateResponse201 & {
+  data: ExpenseDto
+  status: 201
+}
+    
+export type expensesControllerCreateResponseSuccess = (expensesControllerCreateResponse201) & {
   headers: Headers;
 };
-export type expensesControllerCreateResponse = expensesControllerCreateResponseSuccess;
+;
 
-export const getExpensesControllerCreateUrl = (tripId: string) => {
-  return `/api/v1/trips/${tripId}/expenses`;
-};
+export type expensesControllerCreateResponse = (expensesControllerCreateResponseSuccess)
 
-export const expensesControllerCreate = async (
-  tripId: string,
-  createExpenseRequestDto: CreateExpenseRequestDto,
-  options?: RequestInit,
-): Promise<expensesControllerCreateResponse> => {
-  return apiFetch<expensesControllerCreateResponse>(getExpensesControllerCreateUrl(tripId), {
+export const getExpensesControllerCreateUrl = (tripId: string,) => {
+
+
+  
+
+  return `/api/v1/trips/${tripId}/expenses`
+}
+
+export const expensesControllerCreate = async (tripId: string,
+    createExpenseRequestDto: CreateExpenseRequestDto, options?: RequestInit): Promise<expensesControllerCreateResponse> => {
+  
+  return apiFetch<expensesControllerCreateResponse>(getExpensesControllerCreateUrl(tripId),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(createExpenseRequestDto),
-  });
-};
+    body: JSON.stringify(
+      createExpenseRequestDto,)
+  }
+);}
+
 
 /**
  * @summary List trip expenses, most-recent-first. ?limit=N (1..500, default 50).
  */
 export type expensesControllerListResponse200 = {
-  data: ListExpensesResponseDto;
-  status: 200;
-};
-
-export type expensesControllerListResponseSuccess = expensesControllerListResponse200 & {
+  data: ListExpensesResponseDto
+  status: 200
+}
+    
+export type expensesControllerListResponseSuccess = (expensesControllerListResponse200) & {
   headers: Headers;
 };
-export type expensesControllerListResponse = expensesControllerListResponseSuccess;
+;
 
-export const getExpensesControllerListUrl = (
-  tripId: string,
-  params: ExpensesControllerListParams,
-) => {
+export type expensesControllerListResponse = (expensesControllerListResponseSuccess)
+
+export const getExpensesControllerListUrl = (tripId: string,
+    params: ExpensesControllerListParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
+    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString());
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0
-    ? `/api/v1/trips/${tripId}/expenses?${stringifiedParams}`
-    : `/api/v1/trips/${tripId}/expenses`;
-};
+  return stringifiedParams.length > 0 ? `/api/v1/trips/${tripId}/expenses?${stringifiedParams}` : `/api/v1/trips/${tripId}/expenses`
+}
 
-export const expensesControllerList = async (
-  tripId: string,
-  params: ExpensesControllerListParams,
-  options?: RequestInit,
-): Promise<expensesControllerListResponse> => {
-  return apiFetch<expensesControllerListResponse>(getExpensesControllerListUrl(tripId, params), {
+export const expensesControllerList = async (tripId: string,
+    params: ExpensesControllerListParams, options?: RequestInit): Promise<expensesControllerListResponse> => {
+  
+  return apiFetch<expensesControllerListResponse>(getExpensesControllerListUrl(tripId,params),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Net per-user "who owes whom" ledger. Sum is zero (modulo 2dp). 60s cache; write-invalidated on expense create/delete.
  */
 export type expensesControllerBalancesResponse200 = {
-  data: ListBalancesResponseDto;
-  status: 200;
-};
-
-export type expensesControllerBalancesResponseSuccess = expensesControllerBalancesResponse200 & {
+  data: ListBalancesResponseDto
+  status: 200
+}
+    
+export type expensesControllerBalancesResponseSuccess = (expensesControllerBalancesResponse200) & {
   headers: Headers;
 };
-export type expensesControllerBalancesResponse = expensesControllerBalancesResponseSuccess;
+;
 
-export const getExpensesControllerBalancesUrl = (tripId: string) => {
-  return `/api/v1/trips/${tripId}/expenses/balances`;
-};
+export type expensesControllerBalancesResponse = (expensesControllerBalancesResponseSuccess)
 
-export const expensesControllerBalances = async (
-  tripId: string,
-  options?: RequestInit,
-): Promise<expensesControllerBalancesResponse> => {
-  return apiFetch<expensesControllerBalancesResponse>(getExpensesControllerBalancesUrl(tripId), {
+export const getExpensesControllerBalancesUrl = (tripId: string,) => {
+
+
+  
+
+  return `/api/v1/trips/${tripId}/expenses/balances`
+}
+
+export const expensesControllerBalances = async (tripId: string, options?: RequestInit): Promise<expensesControllerBalancesResponse> => {
+  
+  return apiFetch<expensesControllerBalancesResponse>(getExpensesControllerBalancesUrl(tripId),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Settle-up plan — greedy minimum-cashflow transfers that zero the trip ledger. Owner OR active share.
  */
 export type expensesControllerSettleUpResponse200 = {
-  data: SettleUpResponseDto;
-  status: 200;
-};
-
-export type expensesControllerSettleUpResponseSuccess = expensesControllerSettleUpResponse200 & {
+  data: SettleUpResponseDto
+  status: 200
+}
+    
+export type expensesControllerSettleUpResponseSuccess = (expensesControllerSettleUpResponse200) & {
   headers: Headers;
 };
-export type expensesControllerSettleUpResponse = expensesControllerSettleUpResponseSuccess;
+;
 
-export const getExpensesControllerSettleUpUrl = (tripId: string) => {
-  return `/api/v1/trips/${tripId}/expenses/settle-up`;
-};
+export type expensesControllerSettleUpResponse = (expensesControllerSettleUpResponseSuccess)
 
-export const expensesControllerSettleUp = async (
-  tripId: string,
-  options?: RequestInit,
-): Promise<expensesControllerSettleUpResponse> => {
-  return apiFetch<expensesControllerSettleUpResponse>(getExpensesControllerSettleUpUrl(tripId), {
+export const getExpensesControllerSettleUpUrl = (tripId: string,) => {
+
+
+  
+
+  return `/api/v1/trips/${tripId}/expenses/settle-up`
+}
+
+export const expensesControllerSettleUp = async (tripId: string, options?: RequestInit): Promise<expensesControllerSettleUpResponse> => {
+  
+  return apiFetch<expensesControllerSettleUpResponse>(getExpensesControllerSettleUpUrl(tripId),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Delete an expense. Payer-only — only the user who recorded it can remove it.
  */
 export type expensesControllerRemoveResponse204 = {
-  data: void;
-  status: 204;
-};
+  data: void
+  status: 204
+}
 
 export type expensesControllerRemoveResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type expensesControllerRemoveResponseSuccess = expensesControllerRemoveResponse204 & {
+  data: void
+  status: 404
+}
+    
+export type expensesControllerRemoveResponseSuccess = (expensesControllerRemoveResponse204) & {
   headers: Headers;
 };
-export type expensesControllerRemoveResponseError = expensesControllerRemoveResponse404 & {
+export type expensesControllerRemoveResponseError = (expensesControllerRemoveResponse404) & {
   headers: Headers;
 };
 
-export type expensesControllerRemoveResponse =
-  | expensesControllerRemoveResponseSuccess
-  | expensesControllerRemoveResponseError;
+export type expensesControllerRemoveResponse = (expensesControllerRemoveResponseSuccess | expensesControllerRemoveResponseError)
 
-export const getExpensesControllerRemoveUrl = (tripId: unknown, id: string) => {
-  return `/api/v1/trips/${tripId}/expenses/${id}`;
-};
+export const getExpensesControllerRemoveUrl = (tripId: unknown,
+    id: string,) => {
 
-export const expensesControllerRemove = async (
-  tripId: unknown,
-  id: string,
-  options?: RequestInit,
-): Promise<expensesControllerRemoveResponse> => {
-  return apiFetch<expensesControllerRemoveResponse>(getExpensesControllerRemoveUrl(tripId, id), {
+
+  
+
+  return `/api/v1/trips/${tripId}/expenses/${id}`
+}
+
+export const expensesControllerRemove = async (tripId: unknown,
+    id: string, options?: RequestInit): Promise<expensesControllerRemoveResponse> => {
+  
+  return apiFetch<expensesControllerRemoveResponse>(getExpensesControllerRemoveUrl(tripId,id),
+  {      
     ...options,
-    method: 'DELETE',
-  });
-};
+    method: 'DELETE'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Create a review for any review-target (place/stay/eatery/agent). Owner-stamped to the caller.
  */
 export type reviewsControllerCreateResponse201 = {
-  data: ReviewDto;
-  status: 201;
-};
-
-export type reviewsControllerCreateResponseSuccess = reviewsControllerCreateResponse201 & {
+  data: ReviewDto
+  status: 201
+}
+    
+export type reviewsControllerCreateResponseSuccess = (reviewsControllerCreateResponse201) & {
   headers: Headers;
 };
-export type reviewsControllerCreateResponse = reviewsControllerCreateResponseSuccess;
+;
+
+export type reviewsControllerCreateResponse = (reviewsControllerCreateResponseSuccess)
 
 export const getReviewsControllerCreateUrl = () => {
-  return `/api/v1/reviews`;
-};
 
-export const reviewsControllerCreate = async (
-  createReviewRequestDto: CreateReviewRequestDto,
-  options?: RequestInit,
-): Promise<reviewsControllerCreateResponse> => {
-  return apiFetch<reviewsControllerCreateResponse>(getReviewsControllerCreateUrl(), {
+
+  
+
+  return `/api/v1/reviews`
+}
+
+export const reviewsControllerCreate = async (createReviewRequestDto: CreateReviewRequestDto, options?: RequestInit): Promise<reviewsControllerCreateResponse> => {
+  
+  return apiFetch<reviewsControllerCreateResponse>(getReviewsControllerCreateUrl(),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(createReviewRequestDto),
-  });
-};
+    body: JSON.stringify(
+      createReviewRequestDto,)
+  }
+);}
+
 
 /**
  * @summary Target-scoped review listing. ?targetType + ?targetId required. Most-recent-first.
  */
 export type reviewsControllerListForTargetResponse200 = {
-  data: ListReviewsResponseDto;
-  status: 200;
-};
+  data: ListReviewsResponseDto
+  status: 200
+}
 
 export type reviewsControllerListForTargetResponse400 = {
-  data: void;
-  status: 400;
+  data: void
+  status: 400
+}
+    
+export type reviewsControllerListForTargetResponseSuccess = (reviewsControllerListForTargetResponse200) & {
+  headers: Headers;
+};
+export type reviewsControllerListForTargetResponseError = (reviewsControllerListForTargetResponse400) & {
+  headers: Headers;
 };
 
-export type reviewsControllerListForTargetResponseSuccess =
-  reviewsControllerListForTargetResponse200 & {
-    headers: Headers;
-  };
-export type reviewsControllerListForTargetResponseError =
-  reviewsControllerListForTargetResponse400 & {
-    headers: Headers;
-  };
+export type reviewsControllerListForTargetResponse = (reviewsControllerListForTargetResponseSuccess | reviewsControllerListForTargetResponseError)
 
-export type reviewsControllerListForTargetResponse =
-  | reviewsControllerListForTargetResponseSuccess
-  | reviewsControllerListForTargetResponseError;
-
-export const getReviewsControllerListForTargetUrl = (
-  params: ReviewsControllerListForTargetParams,
-) => {
+export const getReviewsControllerListForTargetUrl = (params: ReviewsControllerListForTargetParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
+    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString());
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/api/v1/reviews?${stringifiedParams}` : `/api/v1/reviews`;
-};
+  return stringifiedParams.length > 0 ? `/api/v1/reviews?${stringifiedParams}` : `/api/v1/reviews`
+}
 
-export const reviewsControllerListForTarget = async (
-  params: ReviewsControllerListForTargetParams,
-  options?: RequestInit,
-): Promise<reviewsControllerListForTargetResponse> => {
-  return apiFetch<reviewsControllerListForTargetResponse>(
-    getReviewsControllerListForTargetUrl(params),
-    {
-      ...options,
-      method: 'GET',
-    },
-  );
-};
+export const reviewsControllerListForTarget = async (params: ReviewsControllerListForTargetParams, options?: RequestInit): Promise<reviewsControllerListForTargetResponse> => {
+  
+  return apiFetch<reviewsControllerListForTargetResponse>(getReviewsControllerListForTargetUrl(params),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Aggregated review summary { count, average, histogram } for a target. @Public.
  */
 export type reviewsControllerSummaryResponse200 = {
-  data: ReviewSummaryDto;
-  status: 200;
-};
+  data: ReviewSummaryDto
+  status: 200
+}
 
 export type reviewsControllerSummaryResponse400 = {
-  data: void;
-  status: 400;
-};
-
-export type reviewsControllerSummaryResponseSuccess = reviewsControllerSummaryResponse200 & {
+  data: void
+  status: 400
+}
+    
+export type reviewsControllerSummaryResponseSuccess = (reviewsControllerSummaryResponse200) & {
   headers: Headers;
 };
-export type reviewsControllerSummaryResponseError = reviewsControllerSummaryResponse400 & {
+export type reviewsControllerSummaryResponseError = (reviewsControllerSummaryResponse400) & {
   headers: Headers;
 };
 
-export type reviewsControllerSummaryResponse =
-  | reviewsControllerSummaryResponseSuccess
-  | reviewsControllerSummaryResponseError;
+export type reviewsControllerSummaryResponse = (reviewsControllerSummaryResponseSuccess | reviewsControllerSummaryResponseError)
 
-export const getReviewsControllerSummaryUrl = (params: ReviewsControllerSummaryParams) => {
+export const getReviewsControllerSummaryUrl = (params: ReviewsControllerSummaryParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
+    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString());
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0
-    ? `/api/v1/reviews/summary?${stringifiedParams}`
-    : `/api/v1/reviews/summary`;
-};
+  return stringifiedParams.length > 0 ? `/api/v1/reviews/summary?${stringifiedParams}` : `/api/v1/reviews/summary`
+}
 
-export const reviewsControllerSummary = async (
-  params: ReviewsControllerSummaryParams,
-  options?: RequestInit,
-): Promise<reviewsControllerSummaryResponse> => {
-  return apiFetch<reviewsControllerSummaryResponse>(getReviewsControllerSummaryUrl(params), {
+export const reviewsControllerSummary = async (params: ReviewsControllerSummaryParams, options?: RequestInit): Promise<reviewsControllerSummaryResponse> => {
+  
+  return apiFetch<reviewsControllerSummaryResponse>(getReviewsControllerSummaryUrl(params),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary List the caller's authored reviews, most-recent-first. ?limit=N (1..200, default 50).
  */
 export type reviewsControllerListMineResponse200 = {
-  data: ListReviewsResponseDto;
-  status: 200;
-};
-
-export type reviewsControllerListMineResponseSuccess = reviewsControllerListMineResponse200 & {
+  data: ListReviewsResponseDto
+  status: 200
+}
+    
+export type reviewsControllerListMineResponseSuccess = (reviewsControllerListMineResponse200) & {
   headers: Headers;
 };
-export type reviewsControllerListMineResponse = reviewsControllerListMineResponseSuccess;
+;
 
-export const getReviewsControllerListMineUrl = (params: ReviewsControllerListMineParams) => {
+export type reviewsControllerListMineResponse = (reviewsControllerListMineResponseSuccess)
+
+export const getReviewsControllerListMineUrl = (params: ReviewsControllerListMineParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
+    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString());
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0
-    ? `/api/v1/reviews/mine?${stringifiedParams}`
-    : `/api/v1/reviews/mine`;
-};
+  return stringifiedParams.length > 0 ? `/api/v1/reviews/mine?${stringifiedParams}` : `/api/v1/reviews/mine`
+}
 
-export const reviewsControllerListMine = async (
-  params: ReviewsControllerListMineParams,
-  options?: RequestInit,
-): Promise<reviewsControllerListMineResponse> => {
-  return apiFetch<reviewsControllerListMineResponse>(getReviewsControllerListMineUrl(params), {
+export const reviewsControllerListMine = async (params: ReviewsControllerListMineParams, options?: RequestInit): Promise<reviewsControllerListMineResponse> => {
+  
+  return apiFetch<reviewsControllerListMineResponse>(getReviewsControllerListMineUrl(params),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Delete one of the caller's reviews. Author-gated; 404 on cross-user / missing.
  */
 export type reviewsControllerRemoveResponse204 = {
-  data: void;
-  status: 204;
-};
+  data: void
+  status: 204
+}
 
 export type reviewsControllerRemoveResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type reviewsControllerRemoveResponseSuccess = reviewsControllerRemoveResponse204 & {
+  data: void
+  status: 404
+}
+    
+export type reviewsControllerRemoveResponseSuccess = (reviewsControllerRemoveResponse204) & {
   headers: Headers;
 };
-export type reviewsControllerRemoveResponseError = reviewsControllerRemoveResponse404 & {
+export type reviewsControllerRemoveResponseError = (reviewsControllerRemoveResponse404) & {
   headers: Headers;
 };
 
-export type reviewsControllerRemoveResponse =
-  | reviewsControllerRemoveResponseSuccess
-  | reviewsControllerRemoveResponseError;
+export type reviewsControllerRemoveResponse = (reviewsControllerRemoveResponseSuccess | reviewsControllerRemoveResponseError)
 
-export const getReviewsControllerRemoveUrl = (id: string) => {
-  return `/api/v1/reviews/${id}`;
-};
+export const getReviewsControllerRemoveUrl = (id: string,) => {
 
-export const reviewsControllerRemove = async (
-  id: string,
-  options?: RequestInit,
-): Promise<reviewsControllerRemoveResponse> => {
-  return apiFetch<reviewsControllerRemoveResponse>(getReviewsControllerRemoveUrl(id), {
+
+  
+
+  return `/api/v1/reviews/${id}`
+}
+
+export const reviewsControllerRemove = async (id: string, options?: RequestInit): Promise<reviewsControllerRemoveResponse> => {
+  
+  return apiFetch<reviewsControllerRemoveResponse>(getReviewsControllerRemoveUrl(id),
+  {      
     ...options,
-    method: 'DELETE',
-  });
-};
+    method: 'DELETE'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Agent reply to a review (one-shot). 403 if the review is not about the caller; 409 on re-submit.
  */
 export type reviewsControllerRespondResponse200 = {
-  data: ReviewDto;
-  status: 200;
-};
+  data: ReviewDto
+  status: 200
+}
 
 export type reviewsControllerRespondResponse403 = {
-  data: void;
-  status: 403;
-};
+  data: void
+  status: 403
+}
 
 export type reviewsControllerRespondResponse404 = {
-  data: void;
-  status: 404;
-};
+  data: void
+  status: 404
+}
 
 export type reviewsControllerRespondResponse409 = {
-  data: void;
-  status: 409;
-};
+  data: void
+  status: 409
+}
 
 export type reviewsControllerRespondResponse422 = {
-  data: void;
-  status: 422;
-};
-
-export type reviewsControllerRespondResponseSuccess = reviewsControllerRespondResponse200 & {
+  data: void
+  status: 422
+}
+    
+export type reviewsControllerRespondResponseSuccess = (reviewsControllerRespondResponse200) & {
   headers: Headers;
 };
-export type reviewsControllerRespondResponseError = (
-  | reviewsControllerRespondResponse403
-  | reviewsControllerRespondResponse404
-  | reviewsControllerRespondResponse409
-  | reviewsControllerRespondResponse422
-) & {
+export type reviewsControllerRespondResponseError = (reviewsControllerRespondResponse403 | reviewsControllerRespondResponse404 | reviewsControllerRespondResponse409 | reviewsControllerRespondResponse422) & {
   headers: Headers;
 };
 
-export type reviewsControllerRespondResponse =
-  | reviewsControllerRespondResponseSuccess
-  | reviewsControllerRespondResponseError;
+export type reviewsControllerRespondResponse = (reviewsControllerRespondResponseSuccess | reviewsControllerRespondResponseError)
 
-export const getReviewsControllerRespondUrl = (id: string) => {
-  return `/api/v1/reviews/${id}/response`;
-};
+export const getReviewsControllerRespondUrl = (id: string,) => {
 
-export const reviewsControllerRespond = async (
-  id: string,
-  respondToReviewRequestDto: RespondToReviewRequestDto,
-  options?: RequestInit,
-): Promise<reviewsControllerRespondResponse> => {
-  return apiFetch<reviewsControllerRespondResponse>(getReviewsControllerRespondUrl(id), {
+
+  
+
+  return `/api/v1/reviews/${id}/response`
+}
+
+export const reviewsControllerRespond = async (id: string,
+    respondToReviewRequestDto: RespondToReviewRequestDto, options?: RequestInit): Promise<reviewsControllerRespondResponse> => {
+  
+  return apiFetch<reviewsControllerRespondResponse>(getReviewsControllerRespondUrl(id),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(respondToReviewRequestDto),
-  });
-};
+    body: JSON.stringify(
+      respondToReviewRequestDto,)
+  }
+);}
+
 
 /**
  * @summary Mark a review as helpful. Idempotent (re-vote returns the current count). Author can't self-vote.
  */
 export type reviewsControllerHelpfulResponse200 = {
-  data: HelpfulVoteResponseDto;
-  status: 200;
-};
+  data: HelpfulVoteResponseDto
+  status: 200
+}
 
 export type reviewsControllerHelpfulResponse403 = {
-  data: void;
-  status: 403;
-};
+  data: void
+  status: 403
+}
 
 export type reviewsControllerHelpfulResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type reviewsControllerHelpfulResponseSuccess = reviewsControllerHelpfulResponse200 & {
+  data: void
+  status: 404
+}
+    
+export type reviewsControllerHelpfulResponseSuccess = (reviewsControllerHelpfulResponse200) & {
   headers: Headers;
 };
-export type reviewsControllerHelpfulResponseError = (
-  | reviewsControllerHelpfulResponse403
-  | reviewsControllerHelpfulResponse404
-) & {
+export type reviewsControllerHelpfulResponseError = (reviewsControllerHelpfulResponse403 | reviewsControllerHelpfulResponse404) & {
   headers: Headers;
 };
 
-export type reviewsControllerHelpfulResponse =
-  | reviewsControllerHelpfulResponseSuccess
-  | reviewsControllerHelpfulResponseError;
+export type reviewsControllerHelpfulResponse = (reviewsControllerHelpfulResponseSuccess | reviewsControllerHelpfulResponseError)
 
-export const getReviewsControllerHelpfulUrl = (id: string) => {
-  return `/api/v1/reviews/${id}/helpful`;
-};
+export const getReviewsControllerHelpfulUrl = (id: string,) => {
 
-export const reviewsControllerHelpful = async (
-  id: string,
-  options?: RequestInit,
-): Promise<reviewsControllerHelpfulResponse> => {
-  return apiFetch<reviewsControllerHelpfulResponse>(getReviewsControllerHelpfulUrl(id), {
+
+  
+
+  return `/api/v1/reviews/${id}/helpful`
+}
+
+export const reviewsControllerHelpful = async (id: string, options?: RequestInit): Promise<reviewsControllerHelpfulResponse> => {
+  
+  return apiFetch<reviewsControllerHelpfulResponse>(getReviewsControllerHelpfulUrl(id),
+  {      
     ...options,
-    method: 'POST',
-  });
-};
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Cross-trip vote tally for { targetType, targetId }. @Public — crowd-signal aggregation.
  */
 export type votesControllerSummaryResponse200 = {
-  data: VoteSummaryDto;
-  status: 200;
-};
+  data: VoteSummaryDto
+  status: 200
+}
 
 export type votesControllerSummaryResponse400 = {
-  data: void;
-  status: 400;
-};
-
-export type votesControllerSummaryResponseSuccess = votesControllerSummaryResponse200 & {
+  data: void
+  status: 400
+}
+    
+export type votesControllerSummaryResponseSuccess = (votesControllerSummaryResponse200) & {
   headers: Headers;
 };
-export type votesControllerSummaryResponseError = votesControllerSummaryResponse400 & {
+export type votesControllerSummaryResponseError = (votesControllerSummaryResponse400) & {
   headers: Headers;
 };
 
-export type votesControllerSummaryResponse =
-  | votesControllerSummaryResponseSuccess
-  | votesControllerSummaryResponseError;
+export type votesControllerSummaryResponse = (votesControllerSummaryResponseSuccess | votesControllerSummaryResponseError)
 
-export const getVotesControllerSummaryUrl = (params: VotesControllerSummaryParams) => {
+export const getVotesControllerSummaryUrl = (params: VotesControllerSummaryParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
+    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString());
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0
-    ? `/api/v1/votes/summary?${stringifiedParams}`
-    : `/api/v1/votes/summary`;
-};
+  return stringifiedParams.length > 0 ? `/api/v1/votes/summary?${stringifiedParams}` : `/api/v1/votes/summary`
+}
 
-export const votesControllerSummary = async (
-  params: VotesControllerSummaryParams,
-  options?: RequestInit,
-): Promise<votesControllerSummaryResponse> => {
-  return apiFetch<votesControllerSummaryResponse>(getVotesControllerSummaryUrl(params), {
+export const votesControllerSummary = async (params: VotesControllerSummaryParams, options?: RequestInit): Promise<votesControllerSummaryResponse> => {
+  
+  return apiFetch<votesControllerSummaryResponse>(getVotesControllerSummaryUrl(params),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Place detail-page composite — bundles review summary + vote tally + recent reviews. @Public.
  */
 export type placeReviewSummaryControllerSummaryResponse200 = {
-  data: PlaceReviewSummaryResponseDto;
-  status: 200;
+  data: PlaceReviewSummaryResponseDto
+  status: 200
+}
+    
+export type placeReviewSummaryControllerSummaryResponseSuccess = (placeReviewSummaryControllerSummaryResponse200) & {
+  headers: Headers;
 };
+;
 
-export type placeReviewSummaryControllerSummaryResponseSuccess =
-  placeReviewSummaryControllerSummaryResponse200 & {
-    headers: Headers;
-  };
-export type placeReviewSummaryControllerSummaryResponse =
-  placeReviewSummaryControllerSummaryResponseSuccess;
+export type placeReviewSummaryControllerSummaryResponse = (placeReviewSummaryControllerSummaryResponseSuccess)
 
-export const getPlaceReviewSummaryControllerSummaryUrl = (id: string) => {
-  return `/api/v1/places/${id}/review-summary`;
-};
+export const getPlaceReviewSummaryControllerSummaryUrl = (id: string,) => {
 
-export const placeReviewSummaryControllerSummary = async (
-  id: string,
-  options?: RequestInit,
-): Promise<placeReviewSummaryControllerSummaryResponse> => {
-  return apiFetch<placeReviewSummaryControllerSummaryResponse>(
-    getPlaceReviewSummaryControllerSummaryUrl(id),
-    {
-      ...options,
-      method: 'GET',
-    },
-  );
-};
+
+  
+
+  return `/api/v1/places/${id}/review-summary`
+}
+
+export const placeReviewSummaryControllerSummary = async (id: string, options?: RequestInit): Promise<placeReviewSummaryControllerSummaryResponse> => {
+  
+  return apiFetch<placeReviewSummaryControllerSummaryResponse>(getPlaceReviewSummaryControllerSummaryUrl(id),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Stay detail-page composite. Same shape as place; votes always zero (no vote target for stays).
  */
 export type stayReviewSummaryControllerSummaryResponse200 = {
-  data: StayReviewSummaryResponseDto;
-  status: 200;
+  data: StayReviewSummaryResponseDto
+  status: 200
+}
+    
+export type stayReviewSummaryControllerSummaryResponseSuccess = (stayReviewSummaryControllerSummaryResponse200) & {
+  headers: Headers;
 };
+;
 
-export type stayReviewSummaryControllerSummaryResponseSuccess =
-  stayReviewSummaryControllerSummaryResponse200 & {
-    headers: Headers;
-  };
-export type stayReviewSummaryControllerSummaryResponse =
-  stayReviewSummaryControllerSummaryResponseSuccess;
+export type stayReviewSummaryControllerSummaryResponse = (stayReviewSummaryControllerSummaryResponseSuccess)
 
-export const getStayReviewSummaryControllerSummaryUrl = (id: string) => {
-  return `/api/v1/stays/${id}/review-summary`;
-};
+export const getStayReviewSummaryControllerSummaryUrl = (id: string,) => {
 
-export const stayReviewSummaryControllerSummary = async (
-  id: string,
-  options?: RequestInit,
-): Promise<stayReviewSummaryControllerSummaryResponse> => {
-  return apiFetch<stayReviewSummaryControllerSummaryResponse>(
-    getStayReviewSummaryControllerSummaryUrl(id),
-    {
-      ...options,
-      method: 'GET',
-    },
-  );
-};
+
+  
+
+  return `/api/v1/stays/${id}/review-summary`
+}
+
+export const stayReviewSummaryControllerSummary = async (id: string, options?: RequestInit): Promise<stayReviewSummaryControllerSummaryResponse> => {
+  
+  return apiFetch<stayReviewSummaryControllerSummaryResponse>(getStayReviewSummaryControllerSummaryUrl(id),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Eatery detail-page composite. Same shape as place; votes always zero.
  */
 export type eateryReviewSummaryControllerSummaryResponse200 = {
-  data: EateryReviewSummaryResponseDto;
-  status: 200;
+  data: EateryReviewSummaryResponseDto
+  status: 200
+}
+    
+export type eateryReviewSummaryControllerSummaryResponseSuccess = (eateryReviewSummaryControllerSummaryResponse200) & {
+  headers: Headers;
 };
+;
 
-export type eateryReviewSummaryControllerSummaryResponseSuccess =
-  eateryReviewSummaryControllerSummaryResponse200 & {
-    headers: Headers;
-  };
-export type eateryReviewSummaryControllerSummaryResponse =
-  eateryReviewSummaryControllerSummaryResponseSuccess;
+export type eateryReviewSummaryControllerSummaryResponse = (eateryReviewSummaryControllerSummaryResponseSuccess)
 
-export const getEateryReviewSummaryControllerSummaryUrl = (id: string) => {
-  return `/api/v1/eateries/${id}/review-summary`;
-};
+export const getEateryReviewSummaryControllerSummaryUrl = (id: string,) => {
 
-export const eateryReviewSummaryControllerSummary = async (
-  id: string,
-  options?: RequestInit,
-): Promise<eateryReviewSummaryControllerSummaryResponse> => {
-  return apiFetch<eateryReviewSummaryControllerSummaryResponse>(
-    getEateryReviewSummaryControllerSummaryUrl(id),
-    {
-      ...options,
-      method: 'GET',
-    },
-  );
-};
+
+  
+
+  return `/api/v1/eateries/${id}/review-summary`
+}
+
+export const eateryReviewSummaryControllerSummary = async (id: string, options?: RequestInit): Promise<eateryReviewSummaryControllerSummaryResponse> => {
+  
+  return apiFetch<eateryReviewSummaryControllerSummaryResponse>(getEateryReviewSummaryControllerSummaryUrl(id),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Agent detail-page composite. Closes the 4-of-4 review-target arc; votes always zero.
  */
 export type agentReviewSummaryControllerSummaryResponse200 = {
-  data: AgentReviewSummaryResponseDto;
-  status: 200;
+  data: AgentReviewSummaryResponseDto
+  status: 200
+}
+    
+export type agentReviewSummaryControllerSummaryResponseSuccess = (agentReviewSummaryControllerSummaryResponse200) & {
+  headers: Headers;
 };
+;
 
-export type agentReviewSummaryControllerSummaryResponseSuccess =
-  agentReviewSummaryControllerSummaryResponse200 & {
-    headers: Headers;
-  };
-export type agentReviewSummaryControllerSummaryResponse =
-  agentReviewSummaryControllerSummaryResponseSuccess;
+export type agentReviewSummaryControllerSummaryResponse = (agentReviewSummaryControllerSummaryResponseSuccess)
 
-export const getAgentReviewSummaryControllerSummaryUrl = (id: string) => {
-  return `/api/v1/agents/${id}/review-summary`;
-};
+export const getAgentReviewSummaryControllerSummaryUrl = (id: string,) => {
 
-export const agentReviewSummaryControllerSummary = async (
-  id: string,
-  options?: RequestInit,
-): Promise<agentReviewSummaryControllerSummaryResponse> => {
-  return apiFetch<agentReviewSummaryControllerSummaryResponse>(
-    getAgentReviewSummaryControllerSummaryUrl(id),
-    {
-      ...options,
-      method: 'GET',
-    },
-  );
-};
+
+  
+
+  return `/api/v1/agents/${id}/review-summary`
+}
+
+export const agentReviewSummaryControllerSummary = async (id: string, options?: RequestInit): Promise<agentReviewSummaryControllerSummaryResponse> => {
+  
+  return apiFetch<agentReviewSummaryControllerSummaryResponse>(getAgentReviewSummaryControllerSummaryUrl(id),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary ❤️ a publicly-shared trip. No auth. Per-IP rate-limited at 1/min so anonymous fans can react but scripts can't farm hearts.
  */
 export type sharedTripReactControllerHeartTripResponse200 = {
-  data: HeartSharedTripResponseDto;
-  status: 200;
-};
+  data: HeartSharedTripResponseDto
+  status: 200
+}
 
 export type sharedTripReactControllerHeartTripResponse404 = {
-  data: void;
-  status: 404;
-};
+  data: void
+  status: 404
+}
 
 export type sharedTripReactControllerHeartTripResponse429 = {
-  data: void;
-  status: 429;
+  data: void
+  status: 429
+}
+    
+export type sharedTripReactControllerHeartTripResponseSuccess = (sharedTripReactControllerHeartTripResponse200) & {
+  headers: Headers;
 };
-
-export type sharedTripReactControllerHeartTripResponseSuccess =
-  sharedTripReactControllerHeartTripResponse200 & {
-    headers: Headers;
-  };
-export type sharedTripReactControllerHeartTripResponseError = (
-  | sharedTripReactControllerHeartTripResponse404
-  | sharedTripReactControllerHeartTripResponse429
-) & {
+export type sharedTripReactControllerHeartTripResponseError = (sharedTripReactControllerHeartTripResponse404 | sharedTripReactControllerHeartTripResponse429) & {
   headers: Headers;
 };
 
-export type sharedTripReactControllerHeartTripResponse =
-  | sharedTripReactControllerHeartTripResponseSuccess
-  | sharedTripReactControllerHeartTripResponseError;
+export type sharedTripReactControllerHeartTripResponse = (sharedTripReactControllerHeartTripResponseSuccess | sharedTripReactControllerHeartTripResponseError)
 
-export const getSharedTripReactControllerHeartTripUrl = (code: string) => {
-  return `/api/v1/trips/shared/${code}/heart`;
-};
+export const getSharedTripReactControllerHeartTripUrl = (code: string,) => {
 
-export const sharedTripReactControllerHeartTrip = async (
-  code: string,
-  options?: RequestInit,
-): Promise<sharedTripReactControllerHeartTripResponse> => {
-  return apiFetch<sharedTripReactControllerHeartTripResponse>(
-    getSharedTripReactControllerHeartTripUrl(code),
-    {
-      ...options,
-      method: 'POST',
-    },
-  );
-};
+
+  
+
+  return `/api/v1/trips/shared/${code}/heart`
+}
+
+export const sharedTripReactControllerHeartTrip = async (code: string, options?: RequestInit): Promise<sharedTripReactControllerHeartTripResponse> => {
+  
+  return apiFetch<sharedTripReactControllerHeartTripResponse>(getSharedTripReactControllerHeartTripUrl(code),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Current ❤️ count for a shared trip. Public, no auth.
  */
 export type sharedTripReactControllerGetHeartsResponse200 = {
-  data: SharedTripHeartCountResponseDto;
-  status: 200;
-};
+  data: SharedTripHeartCountResponseDto
+  status: 200
+}
 
 export type sharedTripReactControllerGetHeartsResponse404 = {
-  data: void;
-  status: 404;
+  data: void
+  status: 404
+}
+    
+export type sharedTripReactControllerGetHeartsResponseSuccess = (sharedTripReactControllerGetHeartsResponse200) & {
+  headers: Headers;
+};
+export type sharedTripReactControllerGetHeartsResponseError = (sharedTripReactControllerGetHeartsResponse404) & {
+  headers: Headers;
 };
 
-export type sharedTripReactControllerGetHeartsResponseSuccess =
-  sharedTripReactControllerGetHeartsResponse200 & {
-    headers: Headers;
-  };
-export type sharedTripReactControllerGetHeartsResponseError =
-  sharedTripReactControllerGetHeartsResponse404 & {
-    headers: Headers;
-  };
+export type sharedTripReactControllerGetHeartsResponse = (sharedTripReactControllerGetHeartsResponseSuccess | sharedTripReactControllerGetHeartsResponseError)
 
-export type sharedTripReactControllerGetHeartsResponse =
-  | sharedTripReactControllerGetHeartsResponseSuccess
-  | sharedTripReactControllerGetHeartsResponseError;
+export const getSharedTripReactControllerGetHeartsUrl = (code: string,) => {
 
-export const getSharedTripReactControllerGetHeartsUrl = (code: string) => {
-  return `/api/v1/trips/shared/${code}/hearts`;
-};
 
-export const sharedTripReactControllerGetHearts = async (
-  code: string,
-  options?: RequestInit,
-): Promise<sharedTripReactControllerGetHeartsResponse> => {
-  return apiFetch<sharedTripReactControllerGetHeartsResponse>(
-    getSharedTripReactControllerGetHeartsUrl(code),
-    {
-      ...options,
-      method: 'GET',
-    },
-  );
-};
+  
+
+  return `/api/v1/trips/shared/${code}/hearts`
+}
+
+export const sharedTripReactControllerGetHearts = async (code: string, options?: RequestInit): Promise<sharedTripReactControllerGetHeartsResponse> => {
+  
+  return apiFetch<sharedTripReactControllerGetHeartsResponse>(getSharedTripReactControllerGetHeartsUrl(code),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Public reviewer profile: karma + badges + recent reviews. Public; no auth required.
  */
 export type publicUserProfileControllerProfileResponse200 = {
-  data: PublicReviewerProfileDto;
-  status: 200;
-};
+  data: PublicReviewerProfileDto
+  status: 200
+}
 
 export type publicUserProfileControllerProfileResponse404 = {
-  data: void;
-  status: 404;
+  data: void
+  status: 404
+}
+    
+export type publicUserProfileControllerProfileResponseSuccess = (publicUserProfileControllerProfileResponse200) & {
+  headers: Headers;
+};
+export type publicUserProfileControllerProfileResponseError = (publicUserProfileControllerProfileResponse404) & {
+  headers: Headers;
 };
 
-export type publicUserProfileControllerProfileResponseSuccess =
-  publicUserProfileControllerProfileResponse200 & {
-    headers: Headers;
-  };
-export type publicUserProfileControllerProfileResponseError =
-  publicUserProfileControllerProfileResponse404 & {
-    headers: Headers;
-  };
+export type publicUserProfileControllerProfileResponse = (publicUserProfileControllerProfileResponseSuccess | publicUserProfileControllerProfileResponseError)
 
-export type publicUserProfileControllerProfileResponse =
-  | publicUserProfileControllerProfileResponseSuccess
-  | publicUserProfileControllerProfileResponseError;
+export const getPublicUserProfileControllerProfileUrl = (userId: string,) => {
 
-export const getPublicUserProfileControllerProfileUrl = (userId: string) => {
-  return `/api/v1/users/${userId}/profile`;
-};
 
-export const publicUserProfileControllerProfile = async (
-  userId: string,
-  options?: RequestInit,
-): Promise<publicUserProfileControllerProfileResponse> => {
-  return apiFetch<publicUserProfileControllerProfileResponse>(
-    getPublicUserProfileControllerProfileUrl(userId),
-    {
-      ...options,
-      method: 'GET',
-    },
-  );
-};
+  
+
+  return `/api/v1/users/${userId}/profile`
+}
+
+export const publicUserProfileControllerProfile = async (userId: string, options?: RequestInit): Promise<publicUserProfileControllerProfileResponse> => {
+  
+  return apiFetch<publicUserProfileControllerProfileResponse>(getPublicUserProfileControllerProfileUrl(userId),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Post a comment on a published trip. 404 TRIP_NOT_COMMENTABLE if the trip is not publicly published.
  */
 export type commentsControllerCreateResponse201 = {
-  data: void;
-  status: 201;
-};
-
-export type commentsControllerCreateResponseSuccess = commentsControllerCreateResponse201 & {
+  data: void
+  status: 201
+}
+    
+export type commentsControllerCreateResponseSuccess = (commentsControllerCreateResponse201) & {
   headers: Headers;
 };
-export type commentsControllerCreateResponse = commentsControllerCreateResponseSuccess;
+;
 
-export const getCommentsControllerCreateUrl = (tripId: string) => {
-  return `/api/v1/trips/${tripId}/comments`;
-};
+export type commentsControllerCreateResponse = (commentsControllerCreateResponseSuccess)
 
-export const commentsControllerCreate = async (
-  tripId: string,
-  options?: RequestInit,
-): Promise<commentsControllerCreateResponse> => {
-  return apiFetch<commentsControllerCreateResponse>(getCommentsControllerCreateUrl(tripId), {
+export const getCommentsControllerCreateUrl = (tripId: string,) => {
+
+
+  
+
+  return `/api/v1/trips/${tripId}/comments`
+}
+
+export const commentsControllerCreate = async (tripId: string, options?: RequestInit): Promise<commentsControllerCreateResponse> => {
+  
+  return apiFetch<commentsControllerCreateResponse>(getCommentsControllerCreateUrl(tripId),
+  {      
     ...options,
-    method: 'POST',
-  });
-};
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary A published trip's comment thread, oldest first. Block-filtered against the caller. Not-commentable trip → empty.
  */
 export type commentsControllerListResponse200 = {
-  data: void;
-  status: 200;
-};
-
-export type commentsControllerListResponseSuccess = commentsControllerListResponse200 & {
+  data: void
+  status: 200
+}
+    
+export type commentsControllerListResponseSuccess = (commentsControllerListResponse200) & {
   headers: Headers;
 };
-export type commentsControllerListResponse = commentsControllerListResponseSuccess;
+;
 
-export const getCommentsControllerListUrl = (
-  tripId: string,
-  params?: CommentsControllerListParams,
-) => {
+export type commentsControllerListResponse = (commentsControllerListResponseSuccess)
+
+export const getCommentsControllerListUrl = (tripId: string,
+    params?: CommentsControllerListParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
+    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString());
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0
-    ? `/api/v1/trips/${tripId}/comments?${stringifiedParams}`
-    : `/api/v1/trips/${tripId}/comments`;
-};
+  return stringifiedParams.length > 0 ? `/api/v1/trips/${tripId}/comments?${stringifiedParams}` : `/api/v1/trips/${tripId}/comments`
+}
 
-export const commentsControllerList = async (
-  tripId: string,
-  params?: CommentsControllerListParams,
-  options?: RequestInit,
-): Promise<commentsControllerListResponse> => {
-  return apiFetch<commentsControllerListResponse>(getCommentsControllerListUrl(tripId, params), {
+export const commentsControllerList = async (tripId: string,
+    params?: CommentsControllerListParams, options?: RequestInit): Promise<commentsControllerListResponse> => {
+  
+  return apiFetch<commentsControllerListResponse>(getCommentsControllerListUrl(tripId,params),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Delete a comment (author or the trip owner). 404 for anyone else.
  */
 export type commentsControllerRemoveResponse200 = {
-  data: void;
-  status: 200;
-};
-
-export type commentsControllerRemoveResponseSuccess = commentsControllerRemoveResponse200 & {
+  data: void
+  status: 200
+}
+    
+export type commentsControllerRemoveResponseSuccess = (commentsControllerRemoveResponse200) & {
   headers: Headers;
 };
-export type commentsControllerRemoveResponse = commentsControllerRemoveResponseSuccess;
+;
 
-export const getCommentsControllerRemoveUrl = (id: string) => {
-  return `/api/v1/comments/${id}`;
-};
+export type commentsControllerRemoveResponse = (commentsControllerRemoveResponseSuccess)
 
-export const commentsControllerRemove = async (
-  id: string,
-  options?: RequestInit,
-): Promise<commentsControllerRemoveResponse> => {
-  return apiFetch<commentsControllerRemoveResponse>(getCommentsControllerRemoveUrl(id), {
+export const getCommentsControllerRemoveUrl = (id: string,) => {
+
+
+  
+
+  return `/api/v1/comments/${id}`
+}
+
+export const commentsControllerRemove = async (id: string, options?: RequestInit): Promise<commentsControllerRemoveResponse> => {
+  
+  return apiFetch<commentsControllerRemoveResponse>(getCommentsControllerRemoveUrl(id),
+  {      
     ...options,
-    method: 'DELETE',
-  });
-};
+    method: 'DELETE'
+    
+    
+  }
+);}
+
+

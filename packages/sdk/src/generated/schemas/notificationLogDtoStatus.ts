@@ -5,8 +5,8 @@
 /**
  * Lifecycle status of the delivery attempt.
  */
-export type NotificationLogDtoStatus =
-  (typeof NotificationLogDtoStatus)[keyof typeof NotificationLogDtoStatus];
+export type NotificationLogDtoStatus = typeof NotificationLogDtoStatus[keyof typeof NotificationLogDtoStatus];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const NotificationLogDtoStatus = {

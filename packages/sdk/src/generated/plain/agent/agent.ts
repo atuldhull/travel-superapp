@@ -7,110 +7,139 @@ import { apiFetch } from '../../../runtime/fetcher';
  * @summary Agent probe — 503 (AGENT_DISABLED) when FEATURE_AGENT_ENABLED is off.
  */
 export type agentControllerStatusResponse200 = {
-  data: void;
-  status: 200;
-};
-
-export type agentControllerStatusResponseSuccess = agentControllerStatusResponse200 & {
+  data: void
+  status: 200
+}
+    
+export type agentControllerStatusResponseSuccess = (agentControllerStatusResponse200) & {
   headers: Headers;
 };
-export type agentControllerStatusResponse = agentControllerStatusResponseSuccess;
+;
+
+export type agentControllerStatusResponse = (agentControllerStatusResponseSuccess)
 
 export const getAgentControllerStatusUrl = () => {
-  return `/api/v1/agent/status`;
-};
 
-export const agentControllerStatus = async (
-  options?: RequestInit,
-): Promise<agentControllerStatusResponse> => {
-  return apiFetch<agentControllerStatusResponse>(getAgentControllerStatusUrl(), {
+
+  
+
+  return `/api/v1/agent/status`
+}
+
+export const agentControllerStatus = async ( options?: RequestInit): Promise<agentControllerStatusResponse> => {
+  
+  return apiFetch<agentControllerStatusResponse>(getAgentControllerStatusUrl(),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary An agent run + its append-only step log.
  */
 export type agentControllerGetRunResponse404 = {
-  data: void;
-  status: 404;
-};
-export type agentControllerGetRunResponseError = agentControllerGetRunResponse404 & {
+  data: void
+  status: 404
+}
+    
+;
+export type agentControllerGetRunResponseError = (agentControllerGetRunResponse404) & {
   headers: Headers;
 };
 
-export type agentControllerGetRunResponse = agentControllerGetRunResponseError;
+export type agentControllerGetRunResponse = (agentControllerGetRunResponseError)
 
-export const getAgentControllerGetRunUrl = (id: string) => {
-  return `/api/v1/agent/runs/${id}`;
-};
+export const getAgentControllerGetRunUrl = (id: string,) => {
 
-export const agentControllerGetRun = async (
-  id: string,
-  options?: RequestInit,
-): Promise<agentControllerGetRunResponse> => {
-  return apiFetch<agentControllerGetRunResponse>(getAgentControllerGetRunUrl(id), {
+
+  
+
+  return `/api/v1/agent/runs/${id}`
+}
+
+export const agentControllerGetRun = async (id: string, options?: RequestInit): Promise<agentControllerGetRunResponse> => {
+  
+  return apiFetch<agentControllerGetRunResponse>(getAgentControllerGetRunUrl(id),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Accept a proposed re-plan (human-in-the-loop; never autonomous).
  */
 export type agentControllerAcceptProposalResponse404 = {
-  data: void;
-  status: 404;
-};
-export type agentControllerAcceptProposalResponseError =
-  agentControllerAcceptProposalResponse404 & {
-    headers: Headers;
-  };
-
-export type agentControllerAcceptProposalResponse = agentControllerAcceptProposalResponseError;
-
-export const getAgentControllerAcceptProposalUrl = (id: string) => {
-  return `/api/v1/agent/proposals/${id}/accept`;
+  data: void
+  status: 404
+}
+    
+;
+export type agentControllerAcceptProposalResponseError = (agentControllerAcceptProposalResponse404) & {
+  headers: Headers;
 };
 
-export const agentControllerAcceptProposal = async (
-  id: string,
-  options?: RequestInit,
-): Promise<agentControllerAcceptProposalResponse> => {
-  return apiFetch<agentControllerAcceptProposalResponse>(getAgentControllerAcceptProposalUrl(id), {
+export type agentControllerAcceptProposalResponse = (agentControllerAcceptProposalResponseError)
+
+export const getAgentControllerAcceptProposalUrl = (id: string,) => {
+
+
+  
+
+  return `/api/v1/agent/proposals/${id}/accept`
+}
+
+export const agentControllerAcceptProposal = async (id: string, options?: RequestInit): Promise<agentControllerAcceptProposalResponse> => {
+  
+  return apiFetch<agentControllerAcceptProposalResponse>(getAgentControllerAcceptProposalUrl(id),
+  {      
     ...options,
-    method: 'POST',
-  });
-};
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Decline a proposed re-plan (raises the watch threshold).
  */
 export type agentControllerDeclineProposalResponse404 = {
-  data: void;
-  status: 404;
-};
-export type agentControllerDeclineProposalResponseError =
-  agentControllerDeclineProposalResponse404 & {
-    headers: Headers;
-  };
-
-export type agentControllerDeclineProposalResponse = agentControllerDeclineProposalResponseError;
-
-export const getAgentControllerDeclineProposalUrl = (id: string) => {
-  return `/api/v1/agent/proposals/${id}/decline`;
+  data: void
+  status: 404
+}
+    
+;
+export type agentControllerDeclineProposalResponseError = (agentControllerDeclineProposalResponse404) & {
+  headers: Headers;
 };
 
-export const agentControllerDeclineProposal = async (
-  id: string,
-  options?: RequestInit,
-): Promise<agentControllerDeclineProposalResponse> => {
-  return apiFetch<agentControllerDeclineProposalResponse>(
-    getAgentControllerDeclineProposalUrl(id),
-    {
-      ...options,
-      method: 'POST',
-    },
-  );
-};
+export type agentControllerDeclineProposalResponse = (agentControllerDeclineProposalResponseError)
+
+export const getAgentControllerDeclineProposalUrl = (id: string,) => {
+
+
+  
+
+  return `/api/v1/agent/proposals/${id}/decline`
+}
+
+export const agentControllerDeclineProposal = async (id: string, options?: RequestInit): Promise<agentControllerDeclineProposalResponse> => {
+  
+  return apiFetch<agentControllerDeclineProposalResponse>(getAgentControllerDeclineProposalUrl(id),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+

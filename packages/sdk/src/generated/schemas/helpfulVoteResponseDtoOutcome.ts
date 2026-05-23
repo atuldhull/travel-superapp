@@ -5,8 +5,8 @@
 /**
  * inserted = first helpful vote from this voter; duplicate = re-click no-op.
  */
-export type HelpfulVoteResponseDtoOutcome =
-  (typeof HelpfulVoteResponseDtoOutcome)[keyof typeof HelpfulVoteResponseDtoOutcome];
+export type HelpfulVoteResponseDtoOutcome = typeof HelpfulVoteResponseDtoOutcome[keyof typeof HelpfulVoteResponseDtoOutcome];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const HelpfulVoteResponseDtoOutcome = {

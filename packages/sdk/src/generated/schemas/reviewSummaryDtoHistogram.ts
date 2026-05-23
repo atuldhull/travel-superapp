@@ -5,4 +5,4 @@
 /**
  * Histogram keyed by rating bucket ("1".."5") → count.
  */
-export type ReviewSummaryDtoHistogram = { [key: string]: number };
+export type ReviewSummaryDtoHistogram = {[key: string]: number};

@@ -7,7 +7,7 @@ import type {
   FeedControllerPeopleParams,
   FeedControllerSimilarParams,
   FeedControllerSocialFeedParams,
-  FeedResponseDto,
+  FeedResponseDto
 } from '../../schemas';
 
 import { apiFetch } from '../../../runtime/fetcher';
@@ -16,351 +16,379 @@ import { apiFetch } from '../../../runtime/fetcher';
  * @summary The social pull feed — published trips from people you follow + public, reverse-chron, cursor (?before, ?limit). Visibility + block filtered.
  */
 export type feedControllerSocialFeedResponse200 = {
-  data: void;
-  status: 200;
-};
-
-export type feedControllerSocialFeedResponseSuccess = feedControllerSocialFeedResponse200 & {
+  data: void
+  status: 200
+}
+    
+export type feedControllerSocialFeedResponseSuccess = (feedControllerSocialFeedResponse200) & {
   headers: Headers;
 };
-export type feedControllerSocialFeedResponse = feedControllerSocialFeedResponseSuccess;
+;
 
-export const getFeedControllerSocialFeedUrl = (params: FeedControllerSocialFeedParams) => {
+export type feedControllerSocialFeedResponse = (feedControllerSocialFeedResponseSuccess)
+
+export const getFeedControllerSocialFeedUrl = (params: FeedControllerSocialFeedParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
+    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString());
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/api/v1/feed?${stringifiedParams}` : `/api/v1/feed`;
-};
+  return stringifiedParams.length > 0 ? `/api/v1/feed?${stringifiedParams}` : `/api/v1/feed`
+}
 
-export const feedControllerSocialFeed = async (
-  params: FeedControllerSocialFeedParams,
-  options?: RequestInit,
-): Promise<feedControllerSocialFeedResponse> => {
-  return apiFetch<feedControllerSocialFeedResponse>(getFeedControllerSocialFeedUrl(params), {
+export const feedControllerSocialFeed = async (params: FeedControllerSocialFeedParams, options?: RequestInit): Promise<feedControllerSocialFeedResponse> => {
+  
+  return apiFetch<feedControllerSocialFeedResponse>(getFeedControllerSocialFeedUrl(params),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary A creator's profile — their visible published trips + counts.
  */
 export type feedControllerCreatorResponse200 = {
-  data: void;
-  status: 200;
-};
-
-export type feedControllerCreatorResponseSuccess = feedControllerCreatorResponse200 & {
+  data: void
+  status: 200
+}
+    
+export type feedControllerCreatorResponseSuccess = (feedControllerCreatorResponse200) & {
   headers: Headers;
 };
-export type feedControllerCreatorResponse = feedControllerCreatorResponseSuccess;
+;
 
-export const getFeedControllerCreatorUrl = (id: string) => {
-  return `/api/v1/feed/creators/${id}`;
-};
+export type feedControllerCreatorResponse = (feedControllerCreatorResponseSuccess)
 
-export const feedControllerCreator = async (
-  id: string,
-  options?: RequestInit,
-): Promise<feedControllerCreatorResponse> => {
-  return apiFetch<feedControllerCreatorResponse>(getFeedControllerCreatorUrl(id), {
+export const getFeedControllerCreatorUrl = (id: string,) => {
+
+
+  
+
+  return `/api/v1/feed/creators/${id}`
+}
+
+export const feedControllerCreator = async (id: string, options?: RequestInit): Promise<feedControllerCreatorResponse> => {
+  
+  return apiFetch<feedControllerCreatorResponse>(getFeedControllerCreatorUrl(id),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary "Trips like this" — pgvector-nearest PUBLISHED trips to a given trip. Visibility + block filtered AS the caller; empty when the trip has no embedding (EmptyState). Optional ?limit.
  */
 export type feedControllerSimilarResponse200 = {
-  data: void;
-  status: 200;
-};
-
-export type feedControllerSimilarResponseSuccess = feedControllerSimilarResponse200 & {
+  data: void
+  status: 200
+}
+    
+export type feedControllerSimilarResponseSuccess = (feedControllerSimilarResponse200) & {
   headers: Headers;
 };
-export type feedControllerSimilarResponse = feedControllerSimilarResponseSuccess;
+;
 
-export const getFeedControllerSimilarUrl = (
-  tripId: string,
-  params: FeedControllerSimilarParams,
-) => {
+export type feedControllerSimilarResponse = (feedControllerSimilarResponseSuccess)
+
+export const getFeedControllerSimilarUrl = (tripId: string,
+    params: FeedControllerSimilarParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
+    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString());
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0
-    ? `/api/v1/feed/trips/${tripId}/similar?${stringifiedParams}`
-    : `/api/v1/feed/trips/${tripId}/similar`;
-};
+  return stringifiedParams.length > 0 ? `/api/v1/feed/trips/${tripId}/similar?${stringifiedParams}` : `/api/v1/feed/trips/${tripId}/similar`
+}
 
-export const feedControllerSimilar = async (
-  tripId: string,
-  params: FeedControllerSimilarParams,
-  options?: RequestInit,
-): Promise<feedControllerSimilarResponse> => {
-  return apiFetch<feedControllerSimilarResponse>(getFeedControllerSimilarUrl(tripId, params), {
+export const feedControllerSimilar = async (tripId: string,
+    params: FeedControllerSimilarParams, options?: RequestInit): Promise<feedControllerSimilarResponse> => {
+  
+  return apiFetch<feedControllerSimilarResponse>(getFeedControllerSimilarUrl(tripId,params),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Travel buddies — PUBLIC published trips near YOUR trip (owner-only) and, when both have dates, in an overlapping window.
  */
 export type feedControllerBuddiesResponse200 = {
-  data: void;
-  status: 200;
-};
-
-export type feedControllerBuddiesResponseSuccess = feedControllerBuddiesResponse200 & {
+  data: void
+  status: 200
+}
+    
+export type feedControllerBuddiesResponseSuccess = (feedControllerBuddiesResponse200) & {
   headers: Headers;
 };
-export type feedControllerBuddiesResponse = feedControllerBuddiesResponseSuccess;
+;
 
-export const getFeedControllerBuddiesUrl = (
-  tripId: string,
-  params?: FeedControllerBuddiesParams,
-) => {
+export type feedControllerBuddiesResponse = (feedControllerBuddiesResponseSuccess)
+
+export const getFeedControllerBuddiesUrl = (tripId: string,
+    params?: FeedControllerBuddiesParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
+    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString());
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0
-    ? `/api/v1/feed/trips/${tripId}/buddies?${stringifiedParams}`
-    : `/api/v1/feed/trips/${tripId}/buddies`;
-};
+  return stringifiedParams.length > 0 ? `/api/v1/feed/trips/${tripId}/buddies?${stringifiedParams}` : `/api/v1/feed/trips/${tripId}/buddies`
+}
 
-export const feedControllerBuddies = async (
-  tripId: string,
-  params?: FeedControllerBuddiesParams,
-  options?: RequestInit,
-): Promise<feedControllerBuddiesResponse> => {
-  return apiFetch<feedControllerBuddiesResponse>(getFeedControllerBuddiesUrl(tripId, params), {
+export const feedControllerBuddies = async (tripId: string,
+    params?: FeedControllerBuddiesParams, options?: RequestInit): Promise<feedControllerBuddiesResponse> => {
+  
+  return apiFetch<feedControllerBuddiesResponse>(getFeedControllerBuddiesUrl(tripId,params),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Discover travellers to follow — authors of PUBLIC trips the caller doesn't follow yet, most prolific first.
  */
 export type feedControllerPeopleResponse200 = {
-  data: void;
-  status: 200;
-};
-
-export type feedControllerPeopleResponseSuccess = feedControllerPeopleResponse200 & {
+  data: void
+  status: 200
+}
+    
+export type feedControllerPeopleResponseSuccess = (feedControllerPeopleResponse200) & {
   headers: Headers;
 };
-export type feedControllerPeopleResponse = feedControllerPeopleResponseSuccess;
+;
 
-export const getFeedControllerPeopleUrl = (params?: FeedControllerPeopleParams) => {
+export type feedControllerPeopleResponse = (feedControllerPeopleResponseSuccess)
+
+export const getFeedControllerPeopleUrl = (params?: FeedControllerPeopleParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
+    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString());
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0
-    ? `/api/v1/feed/people?${stringifiedParams}`
-    : `/api/v1/feed/people`;
-};
+  return stringifiedParams.length > 0 ? `/api/v1/feed/people?${stringifiedParams}` : `/api/v1/feed/people`
+}
 
-export const feedControllerPeople = async (
-  params?: FeedControllerPeopleParams,
-  options?: RequestInit,
-): Promise<feedControllerPeopleResponse> => {
-  return apiFetch<feedControllerPeopleResponse>(getFeedControllerPeopleUrl(params), {
+export const feedControllerPeople = async (params?: FeedControllerPeopleParams, options?: RequestInit): Promise<feedControllerPeopleResponse> => {
+  
+  return apiFetch<feedControllerPeopleResponse>(getFeedControllerPeopleUrl(params),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary The caller's publication status for a trip (owner-only). `published:false` when never published OR unpublished.
  */
 export type feedControllerPublicationStatusResponse200 = {
-  data: void;
-  status: 200;
-};
+  data: void
+  status: 200
+}
 
 export type feedControllerPublicationStatusResponse404 = {
-  data: void;
-  status: 404;
+  data: void
+  status: 404
+}
+    
+export type feedControllerPublicationStatusResponseSuccess = (feedControllerPublicationStatusResponse200) & {
+  headers: Headers;
+};
+export type feedControllerPublicationStatusResponseError = (feedControllerPublicationStatusResponse404) & {
+  headers: Headers;
 };
 
-export type feedControllerPublicationStatusResponseSuccess =
-  feedControllerPublicationStatusResponse200 & {
-    headers: Headers;
-  };
-export type feedControllerPublicationStatusResponseError =
-  feedControllerPublicationStatusResponse404 & {
-    headers: Headers;
-  };
+export type feedControllerPublicationStatusResponse = (feedControllerPublicationStatusResponseSuccess | feedControllerPublicationStatusResponseError)
 
-export type feedControllerPublicationStatusResponse =
-  | feedControllerPublicationStatusResponseSuccess
-  | feedControllerPublicationStatusResponseError;
+export const getFeedControllerPublicationStatusUrl = (tripId: string,) => {
 
-export const getFeedControllerPublicationStatusUrl = (tripId: string) => {
-  return `/api/v1/feed/trips/${tripId}/publish`;
-};
 
-export const feedControllerPublicationStatus = async (
-  tripId: string,
-  options?: RequestInit,
-): Promise<feedControllerPublicationStatusResponse> => {
-  return apiFetch<feedControllerPublicationStatusResponse>(
-    getFeedControllerPublicationStatusUrl(tripId),
-    {
-      ...options,
-      method: 'GET',
-    },
-  );
-};
+  
+
+  return `/api/v1/feed/trips/${tripId}/publish`
+}
+
+export const feedControllerPublicationStatus = async (tripId: string, options?: RequestInit): Promise<feedControllerPublicationStatusResponse> => {
+  
+  return apiFetch<feedControllerPublicationStatusResponse>(getFeedControllerPublicationStatusUrl(tripId),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Publish a trip (owner-only). Privacy-fenced: trip must have ENDED; PUBLIC coarsens geo. Default visibility FOLLOWERS.
  */
 export type feedControllerPublishResponse200 = {
-  data: void;
-  status: 200;
-};
+  data: void
+  status: 200
+}
 
 export type feedControllerPublishResponse404 = {
-  data: void;
-  status: 404;
-};
+  data: void
+  status: 404
+}
 
 export type feedControllerPublishResponse422 = {
-  data: void;
-  status: 422;
-};
-
-export type feedControllerPublishResponseSuccess = feedControllerPublishResponse200 & {
+  data: void
+  status: 422
+}
+    
+export type feedControllerPublishResponseSuccess = (feedControllerPublishResponse200) & {
   headers: Headers;
 };
-export type feedControllerPublishResponseError = (
-  | feedControllerPublishResponse404
-  | feedControllerPublishResponse422
-) & {
+export type feedControllerPublishResponseError = (feedControllerPublishResponse404 | feedControllerPublishResponse422) & {
   headers: Headers;
 };
 
-export type feedControllerPublishResponse =
-  | feedControllerPublishResponseSuccess
-  | feedControllerPublishResponseError;
+export type feedControllerPublishResponse = (feedControllerPublishResponseSuccess | feedControllerPublishResponseError)
 
-export const getFeedControllerPublishUrl = (tripId: string) => {
-  return `/api/v1/feed/trips/${tripId}/publish`;
-};
+export const getFeedControllerPublishUrl = (tripId: string,) => {
 
-export const feedControllerPublish = async (
-  tripId: string,
-  options?: RequestInit,
-): Promise<feedControllerPublishResponse> => {
-  return apiFetch<feedControllerPublishResponse>(getFeedControllerPublishUrl(tripId), {
+
+  
+
+  return `/api/v1/feed/trips/${tripId}/publish`
+}
+
+export const feedControllerPublish = async (tripId: string, options?: RequestInit): Promise<feedControllerPublishResponse> => {
+  
+  return apiFetch<feedControllerPublishResponse>(getFeedControllerPublishUrl(tripId),
+  {      
     ...options,
-    method: 'POST',
-  });
-};
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Unpublish a trip (owner-only; idempotent; visibility → PRIVATE).
  */
 export type feedControllerUnpublishResponse200 = {
-  data: void;
-  status: 200;
-};
-
-export type feedControllerUnpublishResponseSuccess = feedControllerUnpublishResponse200 & {
+  data: void
+  status: 200
+}
+    
+export type feedControllerUnpublishResponseSuccess = (feedControllerUnpublishResponse200) & {
   headers: Headers;
 };
-export type feedControllerUnpublishResponse = feedControllerUnpublishResponseSuccess;
+;
 
-export const getFeedControllerUnpublishUrl = (tripId: string) => {
-  return `/api/v1/feed/trips/${tripId}/publish`;
-};
+export type feedControllerUnpublishResponse = (feedControllerUnpublishResponseSuccess)
 
-export const feedControllerUnpublish = async (
-  tripId: string,
-  options?: RequestInit,
-): Promise<feedControllerUnpublishResponse> => {
-  return apiFetch<feedControllerUnpublishResponse>(getFeedControllerUnpublishUrl(tripId), {
+export const getFeedControllerUnpublishUrl = (tripId: string,) => {
+
+
+  
+
+  return `/api/v1/feed/trips/${tripId}/publish`
+}
+
+export const feedControllerUnpublish = async (tripId: string, options?: RequestInit): Promise<feedControllerUnpublishResponse> => {
+  
+  return apiFetch<feedControllerUnpublishResponse>(getFeedControllerUnpublishUrl(tripId),
+  {      
     ...options,
-    method: 'DELETE',
-  });
-};
+    method: 'DELETE'
+    
+    
+  }
+);}
+
 
 /**
  * @summary List the caller's recent activity (cursor pagination via ?before=). Optional ?limit caps the page size.
  */
 export type feedControllerMeResponse200 = {
-  data: FeedResponseDto;
-  status: 200;
-};
+  data: FeedResponseDto
+  status: 200
+}
 
 export type feedControllerMeResponse400 = {
-  data: void;
-  status: 400;
-};
-
-export type feedControllerMeResponseSuccess = feedControllerMeResponse200 & {
+  data: void
+  status: 400
+}
+    
+export type feedControllerMeResponseSuccess = (feedControllerMeResponse200) & {
   headers: Headers;
 };
-export type feedControllerMeResponseError = feedControllerMeResponse400 & {
+export type feedControllerMeResponseError = (feedControllerMeResponse400) & {
   headers: Headers;
 };
 
-export type feedControllerMeResponse =
-  | feedControllerMeResponseSuccess
-  | feedControllerMeResponseError;
+export type feedControllerMeResponse = (feedControllerMeResponseSuccess | feedControllerMeResponseError)
 
-export const getFeedControllerMeUrl = (params: FeedControllerMeParams) => {
+export const getFeedControllerMeUrl = (params: FeedControllerMeParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
+    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString());
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/api/v1/feed/me?${stringifiedParams}` : `/api/v1/feed/me`;
-};
+  return stringifiedParams.length > 0 ? `/api/v1/feed/me?${stringifiedParams}` : `/api/v1/feed/me`
+}
 
-export const feedControllerMe = async (
-  params: FeedControllerMeParams,
-  options?: RequestInit,
-): Promise<feedControllerMeResponse> => {
-  return apiFetch<feedControllerMeResponse>(getFeedControllerMeUrl(params), {
+export const feedControllerMe = async (params: FeedControllerMeParams, options?: RequestInit): Promise<feedControllerMeResponse> => {
+  
+  return apiFetch<feedControllerMeResponse>(getFeedControllerMeUrl(params),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
+

@@ -3,5 +3,5 @@
 // Regenerate via: pnpm --filter=@app/sdk sdk:gen
 
 export type TripControllerEventsParams = {
-  category: string;
+category: string;
 };

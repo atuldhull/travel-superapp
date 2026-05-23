@@ -3,6 +3,6 @@
 // Regenerate via: pnpm --filter=@app/sdk sdk:gen
 
 export type FeedControllerSocialFeedParams = {
-  limit: string;
-  before: string;
+limit: string;
+before: string;
 };

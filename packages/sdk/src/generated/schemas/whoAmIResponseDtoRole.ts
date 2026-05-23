@@ -5,8 +5,8 @@
 /**
  * Role assigned to the session.
  */
-export type WhoAmIResponseDtoRole =
-  (typeof WhoAmIResponseDtoRole)[keyof typeof WhoAmIResponseDtoRole];
+export type WhoAmIResponseDtoRole = typeof WhoAmIResponseDtoRole[keyof typeof WhoAmIResponseDtoRole];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const WhoAmIResponseDtoRole = {
