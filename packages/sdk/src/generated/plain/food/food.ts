@@ -8,7 +8,7 @@ import type {
   DishDto,
   ListDishesResponseDto,
   SearchEateriesRequestDto,
-  SearchEateriesResponseDto,
+  SearchEateriesResponseDto
 } from '../../schemas';
 
 import { apiFetch } from '../../../runtime/fetcher';
@@ -17,114 +17,144 @@ import { apiFetch } from '../../../runtime/fetcher';
  * @summary Search eateries within a radius. Optional cuisine + price-tier filters.
  */
 export type foodControllerSearchResponse200 = {
-  data: SearchEateriesResponseDto;
-  status: 200;
-};
-
-export type foodControllerSearchResponseSuccess = foodControllerSearchResponse200 & {
+  data: SearchEateriesResponseDto
+  status: 200
+}
+    
+export type foodControllerSearchResponseSuccess = (foodControllerSearchResponse200) & {
   headers: Headers;
 };
-export type foodControllerSearchResponse = foodControllerSearchResponseSuccess;
+;
+
+export type foodControllerSearchResponse = (foodControllerSearchResponseSuccess)
 
 export const getFoodControllerSearchUrl = () => {
-  return `/api/v1/eateries/search`;
-};
 
-export const foodControllerSearch = async (
-  searchEateriesRequestDto: SearchEateriesRequestDto,
-  options?: RequestInit,
-): Promise<foodControllerSearchResponse> => {
-  return apiFetch<foodControllerSearchResponse>(getFoodControllerSearchUrl(), {
+
+  
+
+  return `/api/v1/eateries/search`
+}
+
+export const foodControllerSearch = async (searchEateriesRequestDto: SearchEateriesRequestDto, options?: RequestInit): Promise<foodControllerSearchResponse> => {
+  
+  return apiFetch<foodControllerSearchResponse>(getFoodControllerSearchUrl(),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(searchEateriesRequestDto),
-  });
-};
+    body: JSON.stringify(
+      searchEateriesRequestDto,)
+  }
+);}
+
 
 /**
  * @summary List dishes reported on an eatery (newest first).
  */
 export type foodControllerDishesResponse200 = {
-  data: ListDishesResponseDto;
-  status: 200;
-};
-
-export type foodControllerDishesResponseSuccess = foodControllerDishesResponse200 & {
+  data: ListDishesResponseDto
+  status: 200
+}
+    
+export type foodControllerDishesResponseSuccess = (foodControllerDishesResponse200) & {
   headers: Headers;
 };
-export type foodControllerDishesResponse = foodControllerDishesResponseSuccess;
+;
 
-export const getFoodControllerDishesUrl = (eateryId: string) => {
-  return `/api/v1/eateries/${eateryId}/dishes`;
-};
+export type foodControllerDishesResponse = (foodControllerDishesResponseSuccess)
 
-export const foodControllerDishes = async (
-  eateryId: string,
-  options?: RequestInit,
-): Promise<foodControllerDishesResponse> => {
-  return apiFetch<foodControllerDishesResponse>(getFoodControllerDishesUrl(eateryId), {
+export const getFoodControllerDishesUrl = (eateryId: string,) => {
+
+
+  
+
+  return `/api/v1/eateries/${eateryId}/dishes`
+}
+
+export const foodControllerDishes = async (eateryId: string, options?: RequestInit): Promise<foodControllerDishesResponse> => {
+  
+  return apiFetch<foodControllerDishesResponse>(getFoodControllerDishesUrl(eateryId),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Report a dish on an eatery (auth required).
  */
 export type foodControllerCreateDishResponse201 = {
-  data: DishDto;
-  status: 201;
-};
-
-export type foodControllerCreateDishResponseSuccess = foodControllerCreateDishResponse201 & {
+  data: DishDto
+  status: 201
+}
+    
+export type foodControllerCreateDishResponseSuccess = (foodControllerCreateDishResponse201) & {
   headers: Headers;
 };
-export type foodControllerCreateDishResponse = foodControllerCreateDishResponseSuccess;
+;
 
-export const getFoodControllerCreateDishUrl = (eateryId: string) => {
-  return `/api/v1/eateries/${eateryId}/dishes`;
-};
+export type foodControllerCreateDishResponse = (foodControllerCreateDishResponseSuccess)
 
-export const foodControllerCreateDish = async (
-  eateryId: string,
-  addDishReportRequestDto: AddDishReportRequestDto,
-  options?: RequestInit,
-): Promise<foodControllerCreateDishResponse> => {
-  return apiFetch<foodControllerCreateDishResponse>(getFoodControllerCreateDishUrl(eateryId), {
+export const getFoodControllerCreateDishUrl = (eateryId: string,) => {
+
+
+  
+
+  return `/api/v1/eateries/${eateryId}/dishes`
+}
+
+export const foodControllerCreateDish = async (eateryId: string,
+    addDishReportRequestDto: AddDishReportRequestDto, options?: RequestInit): Promise<foodControllerCreateDishResponse> => {
+  
+  return apiFetch<foodControllerCreateDishResponse>(getFoodControllerCreateDishUrl(eateryId),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(addDishReportRequestDto),
-  });
-};
+    body: JSON.stringify(
+      addDishReportRequestDto,)
+  }
+);}
+
 
 /**
  * @summary Build a walking-optimised food crawl across 2..5 eateries. Owner-gated against the trip.
  */
 export type foodCrawlControllerBuildResponse201 = {
-  data: BuildFoodCrawlResponseDto;
-  status: 201;
-};
-
-export type foodCrawlControllerBuildResponseSuccess = foodCrawlControllerBuildResponse201 & {
+  data: BuildFoodCrawlResponseDto
+  status: 201
+}
+    
+export type foodCrawlControllerBuildResponseSuccess = (foodCrawlControllerBuildResponse201) & {
   headers: Headers;
 };
-export type foodCrawlControllerBuildResponse = foodCrawlControllerBuildResponseSuccess;
+;
 
-export const getFoodCrawlControllerBuildUrl = (tripId: string) => {
-  return `/api/v1/trips/${tripId}/food-crawl`;
-};
+export type foodCrawlControllerBuildResponse = (foodCrawlControllerBuildResponseSuccess)
 
-export const foodCrawlControllerBuild = async (
-  tripId: string,
-  buildFoodCrawlRequestDto: BuildFoodCrawlRequestDto,
-  options?: RequestInit,
-): Promise<foodCrawlControllerBuildResponse> => {
-  return apiFetch<foodCrawlControllerBuildResponse>(getFoodCrawlControllerBuildUrl(tripId), {
+export const getFoodCrawlControllerBuildUrl = (tripId: string,) => {
+
+
+  
+
+  return `/api/v1/trips/${tripId}/food-crawl`
+}
+
+export const foodCrawlControllerBuild = async (tripId: string,
+    buildFoodCrawlRequestDto: BuildFoodCrawlRequestDto, options?: RequestInit): Promise<foodCrawlControllerBuildResponse> => {
+  
+  return apiFetch<foodCrawlControllerBuildResponse>(getFoodCrawlControllerBuildUrl(tripId),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(buildFoodCrawlRequestDto),
-  });
-};
+    body: JSON.stringify(
+      buildFoodCrawlRequestDto,)
+  }
+);}
+
+

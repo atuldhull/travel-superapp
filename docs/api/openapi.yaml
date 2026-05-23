@@ -5,8 +5,8 @@ paths:
       operationId: MetricsController_scrape
       parameters: []
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
       tags:
         - Metrics
   /health/live:
@@ -14,8 +14,8 @@ paths:
       operationId: HealthController_live
       parameters: []
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
       tags: &a4
         - Health
   /health/ready:
@@ -23,7 +23,7 @@ paths:
       operationId: HealthController_ready
       parameters: []
       responses:
-        '200':
+        "200":
           description: The Health Check is successful
           content:
             application/json:
@@ -70,7 +70,7 @@ paths:
                         status:
                           type: string
                       additionalProperties: true
-        '503':
+        "503":
           description: The Health Check is not successful
           content:
             application/json:
@@ -126,7 +126,7 @@ paths:
       operationId: HealthController_startup
       parameters: []
       responses:
-        '200':
+        "200":
           description: The Health Check is successful
           content:
             application/json:
@@ -173,7 +173,7 @@ paths:
                         status:
                           type: string
                       additionalProperties: true
-        '503':
+        "503":
           description: The Health Check is not successful
           content:
             application/json:
@@ -233,15 +233,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RegisterRequestDto'
+              $ref: "#/components/schemas/RegisterRequestDto"
       responses:
-        '201':
+        "201":
           description: Account created; refresh-cookie set; access token returned.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthSuccessResponseDto'
-        '409':
+                $ref: "#/components/schemas/AuthSuccessResponseDto"
+        "409":
           description: EMAIL_TAKEN.
       summary: Create a new account. Email + password + displayName. Sets the
         refresh-cookie + returns access token.
@@ -261,15 +261,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/OAuthSignInRequestDto'
+              $ref: "#/components/schemas/OAuthSignInRequestDto"
       responses:
-        '200':
+        "200":
           description: OAuth sign-in succeeded; refresh-cookie set; access token returned.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthSuccessResponseDto'
-        '401':
+                $ref: "#/components/schemas/AuthSuccessResponseDto"
+        "401":
           description: OAUTH_PROVIDER_UNKNOWN / OAUTH_INVALID_TOKEN /
             OAUTH_EMAIL_UNVERIFIED.
       summary: OAuth sign-in. Verifies a provider id token (Google / Apple / mock);
@@ -284,14 +284,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/MagicLinkRequestRequestDto'
+              $ref: "#/components/schemas/MagicLinkRequestRequestDto"
       responses:
-        '200':
+        "200":
           description: Always ok. Email may or may not have been sent.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MagicLinkRequestResponseDto'
+                $ref: "#/components/schemas/MagicLinkRequestResponseDto"
       summary: "Passwordless sign-in step 1: email a magic link. Always returns 'ok' —
         doesn't reveal whether the email is registered."
       tags: *a8
@@ -304,18 +304,18 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/MagicLinkConsumeRequestDto'
+              $ref: "#/components/schemas/MagicLinkConsumeRequestDto"
       responses:
-        '200':
+        "200":
           description: Sign-in succeeded; refresh-cookie set; access token returned.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthSuccessResponseDto'
-        '401':
+                $ref: "#/components/schemas/AuthSuccessResponseDto"
+        "401":
           description: MAGIC_LINK_INVALID.
-      summary: 'Passwordless sign-in step 2: consume the magic-link token + issue a
-        session. Single-use, 15-min TTL.'
+      summary: "Passwordless sign-in step 2: consume the magic-link token + issue a
+        session. Single-use, 15-min TTL."
       tags: *a8
   /api/v1/auth/otp/request:
     post:
@@ -326,14 +326,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LoginCodeRequestRequestDto'
+              $ref: "#/components/schemas/LoginCodeRequestRequestDto"
       responses:
-        '200':
+        "200":
           description: Always ok. Code may or may not have been sent.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MagicLinkRequestResponseDto'
+                $ref: "#/components/schemas/MagicLinkRequestResponseDto"
       summary: "Passwordless OTP step 1: email/SMS a 6-digit code. Always 'ok' — never
         reveals registration."
       tags: *a8
@@ -346,17 +346,17 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LoginCodeVerifyRequestDto'
+              $ref: "#/components/schemas/LoginCodeVerifyRequestDto"
       responses:
-        '200':
+        "200":
           description: Sign-in succeeded; refresh-cookie set; access token returned.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthSuccessResponseDto'
-        '401':
+                $ref: "#/components/schemas/AuthSuccessResponseDto"
+        "401":
           description: LOGIN_CODE_INVALID.
-      summary: 'Passwordless OTP step 2: verify the code + issue a session.'
+      summary: "Passwordless OTP step 2: verify the code + issue a session."
       tags: *a8
   /api/v1/auth/password-reset/request:
     post:
@@ -367,14 +367,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PasswordResetRequestRequestDto'
+              $ref: "#/components/schemas/PasswordResetRequestRequestDto"
       responses:
-        '200':
+        "200":
           description: Always ok. Email may or may not have been sent.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PasswordResetRequestResponseDto'
+                $ref: "#/components/schemas/PasswordResetRequestResponseDto"
       summary: V.UX.31 — request a password-reset email. Always returns ok regardless
         of registration state.
       tags: *a8
@@ -387,17 +387,17 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PasswordResetConsumeRequestDto'
+              $ref: "#/components/schemas/PasswordResetConsumeRequestDto"
       responses:
-        '200':
+        "200":
           description: Password updated. User must sign in with the new password.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PasswordResetConsumeResponseDto'
-        '401':
+                $ref: "#/components/schemas/PasswordResetConsumeResponseDto"
+        "401":
           description: RESET_TOKEN_INVALID.
-        '422':
+        "422":
           description: WEAK_PASSWORD or VALIDATION_FAILED.
       summary: V.UX.31 — consume the password-reset token + set a new password.
         Single-use, 15-min TTL.
@@ -411,15 +411,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LoginRequestDto'
+              $ref: "#/components/schemas/LoginRequestDto"
       responses:
-        '200':
+        "200":
           description: Login succeeded; refresh-cookie set; access token returned.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthSuccessResponseDto'
-        '401':
+                $ref: "#/components/schemas/AuthSuccessResponseDto"
+        "401":
           description: INVALID_CREDENTIALS / MFA_REQUIRED / MFA_INVALID.
       summary: Email + password login. With MFA enabled, mfaCode is required on the
         second call.
@@ -429,13 +429,13 @@ paths:
       operationId: AuthController_refresh
       parameters: []
       responses:
-        '200':
+        "200":
           description: New access token issued; new refresh cookie set.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RefreshSuccessResponseDto'
-        '401':
+                $ref: "#/components/schemas/RefreshSuccessResponseDto"
+        "401":
           description: REFRESH_MISSING / REFRESH_INVALID / REFRESH_REUSED.
       summary: Rotate the access + refresh tokens. Reads the httpOnly refresh cookie;
         rejects if missing or stolen-detected.
@@ -445,13 +445,13 @@ paths:
       operationId: AuthController_me
       parameters: []
       responses:
-        '200':
+        "200":
           description: Caller JWT claims (sub / sid / role) + hasSeenOnboarding.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WhoAmIResponseDto'
-        '401':
+                $ref: "#/components/schemas/WhoAmIResponseDto"
+        "401":
           description: UNAUTHENTICATED — missing or invalid bearer.
       security:
         - bearer: []
@@ -467,16 +467,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/OnboardingCompleteRequestDto'
+              $ref: "#/components/schemas/OnboardingCompleteRequestDto"
       responses:
-        '200':
+        "200":
           description: Onboarding flag flipped (and Sample trip seeded if requested +
             applicable).
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/OnboardingCompleteResponseDto'
-        '401':
+                $ref: "#/components/schemas/OnboardingCompleteResponseDto"
+        "401":
           description: UNAUTHENTICATED.
       security:
         - bearer: []
@@ -488,8 +488,8 @@ paths:
       operationId: AuthController_mfaSetup
       parameters: []
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
       security:
         - bearer: []
       summary: Begin MFA enrollment — returns base32 secret + otpauth:// URI for QR
@@ -500,8 +500,8 @@ paths:
       operationId: AuthController_mfaVerify
       parameters: []
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
       security:
         - bearer: []
       summary: Confirm MFA enrollment with a TOTP code. First-time enable returns 10
@@ -512,8 +512,8 @@ paths:
       operationId: AuthController_regenerateBackupCodes
       parameters: []
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
       security:
         - bearer: []
       summary: Regenerate the 10 single-use MFA backup codes. Requires a valid current
@@ -524,8 +524,8 @@ paths:
       operationId: AuthController_mfaDisable
       parameters: []
       responses:
-        '204':
-          description: ''
+        "204":
+          description: ""
       security:
         - bearer: []
       summary: Disable MFA. Requires a valid TOTP — a hijacked session alone cannot
@@ -536,8 +536,8 @@ paths:
       operationId: AuthController_logout
       parameters: []
       responses:
-        '204':
-          description: ''
+        "204":
+          description: ""
       summary: Logout — revokes the refresh token + clears the cookie. Idempotent if
         already logged out.
       tags: *a8
@@ -546,9 +546,9 @@ paths:
       operationId: JwksAdminController_rotate
       parameters: []
       responses:
-        '200':
+        "200":
           description: New kid + previous kids.
-        '403':
+        "403":
           description: Caller is not admin.
       security: &a9
         - bearer: []
@@ -561,8 +561,8 @@ paths:
       operationId: JwksAdminController_kids
       parameters: []
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
       security: *a9
       summary: List active kids across both keyrings (access + refresh). Used to
         confirm rotations + retirement windows.
@@ -576,14 +576,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateTripRequestDto'
+              $ref: "#/components/schemas/CreateTripRequestDto"
       responses:
-        '201':
+        "201":
           description: Trip created.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TripDto'
+                $ref: "#/components/schemas/TripDto"
       security: &a11
         - bearer: []
       summary: Create a trip draft from { title, center, radiusKm, startsOn?, endsOn? }
@@ -603,12 +603,12 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Caller-owned trips, most-recent-first. ?limit=N (1..100, default 20).
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ListTripsResponseDto'
+                $ref: "#/components/schemas/ListTripsResponseDto"
       security: *a11
       summary: List the caller's trips, most-recent-first
       tags: *a12
@@ -617,7 +617,7 @@ paths:
       operationId: TripController_suggestions
       parameters: []
       responses:
-        '200':
+        "200":
           description: Up to 3 suggestions.
       security: *a11
       summary: V.UX.30 — destination suggestions seeded from caller's past trips.
@@ -634,13 +634,13 @@ paths:
             format: cuid
             type: string
       responses:
-        '200':
+        "200":
           description: Archived trip row.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TripDto'
-        '404':
+                $ref: "#/components/schemas/TripDto"
+        "404":
           description: TRIP_NOT_FOUND.
       security: *a11
       summary: V.UX.30 — archive a trip (soft). Idempotent. Owner-gated; 404 on
@@ -657,13 +657,13 @@ paths:
             format: cuid
             type: string
       responses:
-        '200':
+        "200":
           description: Unarchived trip row.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TripDto'
-        '404':
+                $ref: "#/components/schemas/TripDto"
+        "404":
           description: TRIP_NOT_FOUND.
       security: *a11
       summary: V.UX.30 — unarchive a trip. Idempotent. Owner-gated; 404 on cross-user.
@@ -678,13 +678,13 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: The trip + caller role.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TripWithRoleResponseDto'
-        '404':
+                $ref: "#/components/schemas/TripWithRoleResponseDto"
+        "404":
           description: TRIP_NOT_FOUND.
       security: *a11
       summary: Fetch a single trip. Owner OR active collaborator (vote/expense). 404
@@ -703,15 +703,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateTripRequestDto'
+              $ref: "#/components/schemas/UpdateTripRequestDto"
       responses:
-        '200':
+        "200":
           description: Updated trip.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TripDto'
-        '404':
+                $ref: "#/components/schemas/TripDto"
+        "404":
           description: TRIP_NOT_FOUND.
       security: *a11
       summary: Update a trip the caller owns. Partial body; only provided fields change.
@@ -725,9 +725,9 @@ paths:
           schema:
             type: string
       responses:
-        '204':
+        "204":
           description: Trip deleted.
-        '404':
+        "404":
           description: TRIP_NOT_FOUND.
       security: *a11
       summary: Delete a trip the caller owns. Cascades to itinerary days, items, shares.
@@ -742,13 +742,13 @@ paths:
           schema:
             type: string
       responses:
-        '201':
+        "201":
           description: Newly-created duplicate trip.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TripDto'
-        '404':
+                $ref: "#/components/schemas/TripDto"
+        "404":
           description: TRIP_NOT_FOUND.
       security: *a11
       summary: Duplicate a trip the caller owns. Deep-copies title (+" (copy)"),
@@ -764,13 +764,13 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Trip after lock (status="published").
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TripDto'
-        '404':
+                $ref: "#/components/schemas/TripDto"
+        "404":
           description: TRIP_NOT_FOUND.
       security: *a11
       summary: Lock the trip — freezes itinerary edits for share-collaborators;
@@ -786,13 +786,13 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Trip after unlock (status="draft").
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TripDto'
-        '404':
+                $ref: "#/components/schemas/TripDto"
+        "404":
           description: TRIP_NOT_FOUND.
       security: *a11
       summary: Unlock the trip — restores share-collaborator edit access.
@@ -807,13 +807,13 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Newly-generated itinerary days (replaces any prior ones).
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ItineraryListResponseDto'
-        '422':
+                $ref: "#/components/schemas/ItineraryListResponseDto"
+        "422":
           description: TRIP_DATES_REQUIRED.
       security: *a11
       summary: Generate itinerary stub for the trip (one ItineraryDay per date in the
@@ -828,13 +828,13 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Itinerary days, ordered by dayIndex.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ItineraryListResponseDto'
-        '404':
+                $ref: "#/components/schemas/ItineraryListResponseDto"
+        "404":
           description: TRIP_NOT_FOUND.
       security: *a11
       summary: List itinerary days + items for the trip the caller owns.
@@ -848,14 +848,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenerateSamplePlanRequestDto'
+              $ref: "#/components/schemas/GenerateSamplePlanRequestDto"
       responses:
-        '200':
+        "200":
           description: Free-form prose plan + provider model identifier.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenerateSamplePlanResponseDto'
+                $ref: "#/components/schemas/GenerateSamplePlanResponseDto"
       security: *a11
       summary: Public sample-plan demo for the landing page. NO auth, NO trip
         persisted — feeds the AI port directly.
@@ -870,13 +870,13 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Free-form prose plan + provider identifier + optional token usage.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GeneratePlanWithAiResponseDto'
-        '404':
+                $ref: "#/components/schemas/GeneratePlanWithAiResponseDto"
+        "404":
           description: TRIP_NOT_FOUND.
       security: *a11
       summary: Generate a free-form trip plan via the configured AI adapter (Anthropic
@@ -896,18 +896,18 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateTripShareRequestDto'
+              $ref: "#/components/schemas/CreateTripShareRequestDto"
       responses:
-        '201':
+        "201":
           description: Newly-minted share. Use `shareCode` in the public
             /trips/shared/:code path.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TripShareResponseDto'
-        '404':
+                $ref: "#/components/schemas/TripShareResponseDto"
+        "404":
           description: TRIP_NOT_FOUND.
-        '422':
+        "422":
           description: INVALID_EXPIRY (past timestamp).
       security: *a11
       summary: Mint a share code so collaborators can view (or co-edit, if
@@ -923,13 +923,13 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Public-safe trip view + itinerary. Owner userId is never exposed.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SharedTripDto'
-        '404':
+                $ref: "#/components/schemas/SharedTripDto"
+        "404":
           description: Share code not found, revoked, or expired.
       security: *a11
       summary: Public read of a shared trip by code. No auth required.
@@ -944,13 +944,13 @@ paths:
           schema:
             type: string
       responses:
-        '201':
+        "201":
           description: New draft trip cloned from the source share-code.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TripDto'
-        '404':
+                $ref: "#/components/schemas/TripDto"
+        "404":
           description: SHARE_NOT_FOUND or SHARE_EXPIRED.
       security: *a11
       summary: Clone a publicly-shared trip into the caller's account. Auth required.
@@ -965,13 +965,13 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Per-user-cached composite. Empty/dateless sections surface as {
             ok:false, code }.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TripOverviewResponseDto'
+                $ref: "#/components/schemas/TripOverviewResponseDto"
       security: *a11
       summary: Trip overview composite — 7 sections (itinerary, weather, stays,
         eateries, events, transport, media). Per-section graceful degradation.
@@ -997,8 +997,8 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
       security: *a11
       summary: Eateries near the trip center. Optional cuisineTag + maxPriceTier
         filters.
@@ -1018,7 +1018,7 @@ paths:
           schema:
             type: string
       responses:
-        '422':
+        "422":
           description: TRIP_DATES_REQUIRED.
       security: *a11
       summary: Events near the trip center during the trip date range. Requires
@@ -1039,8 +1039,8 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
       security: *a11
       summary: Stays near the trip center for the trip date range. Requires startsOn +
         endsOn.
@@ -1055,8 +1055,8 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
       security: *a11
       summary: Weather forecast for the trip center. Up to 16 days. TTL-cached.
       tags: *a12
@@ -1070,7 +1070,7 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: The PostGIS-backed center as `{ lat, lng }`.
           content:
             application/json:
@@ -1086,9 +1086,9 @@ paths:
                   lng:
                     type: number
                     example: -9.1393
-        '401':
+        "401":
           description: UNAUTHENTICATED — bearer missing or invalid.
-        '404':
+        "404":
           description: TRIP_NOT_FOUND — missing trip OR a non-owner (existence-probe
             defence).
       security: *a11
@@ -1104,9 +1104,9 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: The updated item with completedAt set.
-        '404':
+        "404":
           description: ITEM_NOT_FOUND.
       security: *a11
       summary: Mark an itinerary item complete (G1 — Living Trip).
@@ -1121,9 +1121,9 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: The updated item with completedAt cleared.
-        '404':
+        "404":
           description: ITEM_NOT_FOUND.
       security: *a11
       summary: Clear the completion mark on an itinerary item (G1).
@@ -1138,7 +1138,7 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: How many day rows were updated.
           content:
             application/json:
@@ -1150,9 +1150,9 @@ paths:
                   shifted:
                     type: number
                     example: 7
-        '404':
+        "404":
           description: TRIP_NOT_FOUND.
-        '422':
+        "422":
           description: INVALID_INPUT — deltaDays out of range (|delta| > 365) or not an
             integer.
       security: *a11
@@ -1168,12 +1168,12 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Owner-side share rows (active + revoked).
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ListTripSharesResponseDto'
+                $ref: "#/components/schemas/ListTripSharesResponseDto"
       security: *a11
       summary: List active share codes for the trip the caller owns.
       tags: *a12
@@ -1193,8 +1193,8 @@ paths:
           description: Trip id (validated implicitly via owner-scoped share lookup).
           schema: {}
       responses:
-        '204':
-          description: ''
+        "204":
+          description: ""
       security: *a11
       summary: Revoke a share code. Owner-scoped.
       tags: *a12
@@ -1208,8 +1208,8 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
       security: *a11
       summary: Compute transport legs between consecutive itinerary items.
       tags: *a12
@@ -1227,15 +1227,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SuggestPlacesForTripRequestDto'
+              $ref: "#/components/schemas/SuggestPlacesForTripRequestDto"
       responses:
-        '200':
+        "200":
           description: Up to 6 suggested places, nearest first.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuggestPlacesForTripResponseDto'
-        '404':
+                $ref: "#/components/schemas/SuggestPlacesForTripResponseDto"
+        "404":
           description: TRIP_NOT_FOUND.
       security: *a11
       summary: Suggest up to 6 ranked places near the trip's center. Optional category
@@ -1260,15 +1260,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateDayItemsRequestDto'
+              $ref: "#/components/schemas/UpdateDayItemsRequestDto"
       responses:
-        '200':
+        "200":
           description: Updated itinerary day with refreshed items.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UpdateDayItemsResponseDto'
-        '404':
+                $ref: "#/components/schemas/UpdateDayItemsResponseDto"
+        "404":
           description: TRIP_NOT_FOUND or PLACE_NOT_FOUND.
       security: *a11
       summary: Replace items in an itinerary day. Owner OR active TripShare may write.
@@ -1288,13 +1288,13 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Reordered day + before/after total travel seconds.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/OptimizeDayRouteResponseDto'
-        '404':
+                $ref: "#/components/schemas/OptimizeDayRouteResponseDto"
+        "404":
           description: TRIP_NOT_FOUND.
       security: *a11
       summary: Reorder a day's items to minimise travel time (greedy NN over the
@@ -1315,13 +1315,13 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Per-item coords.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DayRouteCoordsResponseDto'
-        '404':
+                $ref: "#/components/schemas/DayRouteCoordsResponseDto"
+        "404":
           description: TRIP_NOT_FOUND.
       security: *a11
       summary: Coords for a day's routable items, in current order. Powers the V.UX.6
@@ -1352,9 +1352,9 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Paginated trip rows.
-        '403':
+        "403":
           description: Caller is not admin.
       security: &a13
         - bearer: []
@@ -1371,7 +1371,7 @@ paths:
           schema:
             type: string
       responses:
-        '204':
+        "204":
           description: Trip archived.
       security: *a13
       summary: Soft-archive a trip (status = archived). Reversible by the owner via
@@ -1387,7 +1387,7 @@ paths:
           schema:
             type: string
       responses:
-        '204':
+        "204":
           description: Trip deleted.
       security: *a13
       summary: Hard-delete a trip + cascade itinerary. For takedowns of
@@ -1402,15 +1402,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/NearMeNowRequestDto'
+              $ref: "#/components/schemas/NearMeNowRequestDto"
       responses:
-        '200':
+        "200":
           description: Composite response with places + weather + safety.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NearMeNowResponseDto'
-        '422':
+                $ref: "#/components/schemas/NearMeNowResponseDto"
+        "422":
           description: INVALID_COORDINATES.
       summary: Spontaneous-improviser composite — 5 nearest places + walking routes +
         1-day weather + safety score. Public, no auth.
@@ -1425,14 +1425,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SearchPlacesRequestDto'
+              $ref: "#/components/schemas/SearchPlacesRequestDto"
       responses:
-        '200':
+        "200":
           description: Matching places.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SearchPlacesResponseDto'
+                $ref: "#/components/schemas/SearchPlacesResponseDto"
       security: &a15
         - bearer: []
       summary: Search the canonical Place catalog within a radius. Optional category
@@ -1448,15 +1448,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/FederatedSearchPlacesRequestDto'
+              $ref: "#/components/schemas/FederatedSearchPlacesRequestDto"
       responses:
-        '200':
+        "200":
           description: Provider results, optionally enriched with canonical
             placeId/created flags when ingest=true.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FederatedSearchPlacesResponseDto'
+                $ref: "#/components/schemas/FederatedSearchPlacesResponseDto"
       security: *a15
       summary: Federated search across external providers (Google/FSQ/OSM). Optional
         ingest=true write-through to the canonical catalog.
@@ -1470,14 +1470,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DiscoverHiddenGemsRequestDto'
+              $ref: "#/components/schemas/DiscoverHiddenGemsRequestDto"
       responses:
-        '200':
+        "200":
           description: Hidden-gem places.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DiscoverHiddenGemsResponseDto'
+                $ref: "#/components/schemas/DiscoverHiddenGemsResponseDto"
       security: *a15
       summary: Hidden-gem discovery within a day-trip radius. Filters to places with
         5..50 reviews, sorts by average rating.
@@ -1487,15 +1487,15 @@ paths:
       operationId: WeatherController_forecast
       parameters: []
       responses:
-        '200':
+        "200":
           description: Forecast bundle.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WeatherForecastResponseDto'
-        '422':
+                $ref: "#/components/schemas/WeatherForecastResponseDto"
+        "422":
           description: INVALID_COORDINATES — lat/lng out of range.
-        '502':
+        "502":
           description: WEATHER_PROVIDER_UNAVAILABLE — upstream fetch failed.
       security: &a17
         - bearer: []
@@ -1507,15 +1507,15 @@ paths:
       operationId: WeatherController_hourly
       parameters: []
       responses:
-        '200':
+        "200":
           description: Hourly forecast bundle.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HourlyWeatherForecastResponseDto'
-        '422':
+                $ref: "#/components/schemas/HourlyWeatherForecastResponseDto"
+        "422":
           description: INVALID_COORDINATES — lat/lng out of range.
-        '502':
+        "502":
           description: WEATHER_PROVIDER_UNAVAILABLE — upstream fetch failed.
       security: *a17
       summary: Hourly forecast (precip + wind + temp) for the next 1..48 hours. Powers
@@ -1530,15 +1530,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SearchStaysRequestDto'
+              $ref: "#/components/schemas/SearchStaysRequestDto"
       responses:
-        '200':
+        "200":
           description: Matching stays, nearest-first.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SearchStaysResponseDto'
-        '422':
+                $ref: "#/components/schemas/SearchStaysResponseDto"
+        "422":
           description: INVALID_COORDINATES | INVALID_RADIUS | INVALID_DATE_RANGE.
       security:
         - bearer: []
@@ -1554,14 +1554,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SearchEateriesRequestDto'
+              $ref: "#/components/schemas/SearchEateriesRequestDto"
       responses:
-        '200':
+        "200":
           description: Matching eateries, nearest-first.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SearchEateriesResponseDto'
+                $ref: "#/components/schemas/SearchEateriesResponseDto"
       security: &a19
         - bearer: []
       summary: Search eateries within a radius. Optional cuisine + price-tier filters.
@@ -1578,12 +1578,12 @@ paths:
             format: cuid
             type: string
       responses:
-        '200':
+        "200":
           description: Dish list.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ListDishesResponseDto'
+                $ref: "#/components/schemas/ListDishesResponseDto"
       security: *a19
       summary: List dishes reported on an eatery (newest first).
       tags: *a20
@@ -1601,14 +1601,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AddDishReportRequestDto'
+              $ref: "#/components/schemas/AddDishReportRequestDto"
       responses:
-        '201':
+        "201":
           description: The newly created dish report.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DishDto'
+                $ref: "#/components/schemas/DishDto"
       security: *a19
       summary: Report a dish on an eatery (auth required).
       tags: *a20
@@ -1627,14 +1627,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/BuildFoodCrawlRequestDto'
+              $ref: "#/components/schemas/BuildFoodCrawlRequestDto"
       responses:
-        '201':
+        "201":
           description: Walking-ordered crawl + per-leg + total distances/durations.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BuildFoodCrawlResponseDto'
+                $ref: "#/components/schemas/BuildFoodCrawlResponseDto"
       security:
         - bearer: []
       summary: Build a walking-optimised food crawl across 2..5 eateries. Owner-gated
@@ -1650,15 +1650,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SearchEventsRequestDto'
+              $ref: "#/components/schemas/SearchEventsRequestDto"
       responses:
-        '200':
+        "200":
           description: Matching events, soonest-first.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SearchEventsResponseDto'
-        '422':
+                $ref: "#/components/schemas/SearchEventsResponseDto"
+        "422":
           description: INVALID_COORDINATES | INVALID_RADIUS | INVALID_DATE_RANGE.
       security: &a21
         - bearer: []
@@ -1697,13 +1697,13 @@ paths:
           schema:
             type: number
       responses:
-        '200':
+        "200":
           description: Festivals overlapping the window, soonest-first.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FestivalsDuringResponseDto'
-        '422':
+                $ref: "#/components/schemas/FestivalsDuringResponseDto"
+        "422":
           description: INVALID_COORDINATES | INVALID_RADIUS | INVALID_DATE_RANGE.
       security: *a21
       summary: List festival events overlapping [from, to] near a centre. Powers the
@@ -1718,15 +1718,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GetRoutesRequestDto'
+              $ref: "#/components/schemas/GetRoutesRequestDto"
       responses:
-        '200':
+        "200":
           description: One leg per mode.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GetRoutesResponseDto'
-        '422':
+                $ref: "#/components/schemas/GetRoutesResponseDto"
+        "422":
           description: INVALID_COORDINATES | SAME_ORIGIN_DESTINATION | ROUTE_TOO_LONG.
       security: &a23
         - bearer: []
@@ -1743,15 +1743,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GetNavigationRequestDto'
+              $ref: "#/components/schemas/GetNavigationRequestDto"
       responses:
-        '200':
+        "200":
           description: Route options + recommended id.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GetNavigationResponseDto'
-        '422':
+                $ref: "#/components/schemas/GetNavigationResponseDto"
+        "422":
           description: INVALID_COORDINATES | SAME_ORIGIN_DESTINATION | ROUTE_TOO_LONG |
             TOO_MANY_WAYPOINTS | NO_ROUTE_FOUND.
       security: *a23
@@ -1767,14 +1767,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ReportScamRequestDto'
+              $ref: "#/components/schemas/ReportScamRequestDto"
       responses:
-        '201':
+        "201":
           description: Newly-created report row.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ScamReportDto'
+                $ref: "#/components/schemas/ScamReportDto"
       security: &a25
         - bearer: []
       summary: File a crowd-sourced scam report at the given coordinates.
@@ -1789,14 +1789,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/FindNearbyScamsRequestDto'
+              $ref: "#/components/schemas/FindNearbyScamsRequestDto"
       responses:
-        '200':
+        "200":
           description: Matching reports, nearest-first.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FindNearbyScamsResponseDto'
+                $ref: "#/components/schemas/FindNearbyScamsResponseDto"
       security: *a25
       summary: Find scam reports within a radius. Optional filters by category /
         minSeverity / verifiedOnly.
@@ -1810,14 +1810,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TriggerSosRequestDto'
+              $ref: "#/components/schemas/TriggerSosRequestDto"
       responses:
-        '201':
+        "201":
           description: New SOS event row.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SosEventDto'
+                $ref: "#/components/schemas/SosEventDto"
       security: &a27
         - bearer: []
       summary: Trigger an SOS event at the given coordinates.
@@ -1832,12 +1832,12 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Caller's events.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ListSosEventsResponseDto'
+                $ref: "#/components/schemas/ListSosEventsResponseDto"
       security: *a27
       summary: List the caller's SOS events, most-recent-first. ?limit (1..200,
         default 50).
@@ -1856,15 +1856,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ResolveSosRequestDto'
+              $ref: "#/components/schemas/ResolveSosRequestDto"
       responses:
-        '200':
+        "200":
           description: Resolved event row.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SosEventDto'
-        '404':
+                $ref: "#/components/schemas/SosEventDto"
+        "404":
           description: SOS_NOT_FOUND.
       security: *a27
       summary: Mark an SOS event resolved (owner-only).
@@ -1879,13 +1879,13 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Cancelled event row.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SosEventDto'
-        '404':
+                $ref: "#/components/schemas/SosEventDto"
+        "404":
           description: SOS_NOT_FOUND.
       security: *a27
       summary: V.UX.35 — owner-scoped cancel of an active SOS (the 'I'm OK' button).
@@ -1900,14 +1900,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/FindNearbyCrimesRequestDto'
+              $ref: "#/components/schemas/FindNearbyCrimesRequestDto"
       responses:
-        '200':
+        "200":
           description: Matching incidents, nearest-first.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FindNearbyCrimesResponseDto'
+                $ref: "#/components/schemas/FindNearbyCrimesResponseDto"
       security:
         - bearer: []
       summary: Find crime incidents within a radius. Optional category / minSeverity /
@@ -1923,14 +1923,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SafetyScoreRequestDto'
+              $ref: "#/components/schemas/SafetyScoreRequestDto"
       responses:
-        '200':
+        "200":
           description: Composite score + breakdown.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SafetyScoreResponseDto'
+                $ref: "#/components/schemas/SafetyScoreResponseDto"
       security:
         - bearer: []
       summary: Composite safety score for a coord (crime + scam density). Returns
@@ -1952,12 +1952,12 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Scam reports.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AdminListScamReportsResponseDto'
+                $ref: "#/components/schemas/AdminListScamReportsResponseDto"
       security: &a29
         - bearer: []
       summary: List scam reports for moderation. Default = pending; ?verified=true for
@@ -1974,13 +1974,13 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Verified report row.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ScamReportDto'
-        '404':
+                $ref: "#/components/schemas/ScamReportDto"
+        "404":
           description: SCAM_REPORT_NOT_FOUND.
       security: *a29
       summary: Mark a scam report verified.
@@ -1995,13 +1995,13 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Updated report row.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ScamReportDto'
-        '404':
+                $ref: "#/components/schemas/ScamReportDto"
+        "404":
           description: SCAM_REPORT_NOT_FOUND.
       security: *a29
       summary: Flip a verified report back to pending.
@@ -2016,9 +2016,9 @@ paths:
           schema:
             type: string
       responses:
-        '204':
+        "204":
           description: Dismissed.
-        '404':
+        "404":
           description: SCAM_REPORT_NOT_FOUND.
       security: *a29
       summary: Dismiss a scam report (hard-delete).
@@ -2043,18 +2043,18 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Events + total.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AdminListSosEventsResponseDto'
-        '400':
+                $ref: "#/components/schemas/AdminListSosEventsResponseDto"
+        "400":
           description: VALIDATION_FAILED — status not in active|resolved.
       security: &a31
         - bearer: []
-      summary: 'Triage list of SOS events. ?status=active|resolved (default: both).
-        Offset pagination.'
+      summary: "Triage list of SOS events. ?status=active|resolved (default: both).
+        Offset pagination."
       tags: &a32
         - admin
   /api/v1/admin/safety/sos-events/{id}/resolve:
@@ -2071,15 +2071,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AdminResolveSosRequestDto'
+              $ref: "#/components/schemas/AdminResolveSosRequestDto"
       responses:
-        '200':
+        "200":
           description: Resolved event row.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SosEventDto'
-        '404':
+                $ref: "#/components/schemas/SosEventDto"
+        "404":
           description: SOS_NOT_FOUND.
       security: *a31
       summary: Admin-resolve an SOS event with an optional resolution note.
@@ -2093,22 +2093,22 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/MatchAgentForTripRequestDto'
+              $ref: "#/components/schemas/MatchAgentForTripRequestDto"
       responses:
-        '200':
+        "200":
           description: Top 3 matches, oldest possible empty array.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MatchAgentForTripResponseDto'
-        '403':
+                $ref: "#/components/schemas/MatchAgentForTripResponseDto"
+        "403":
           description: ROLE_FORBIDDEN.
-        '404':
+        "404":
           description: TRIP_NOT_FOUND.
       security:
         - bearer: []
-      summary: 'Premium-only concierge match: top 3 verified agents for the
-        caller-owned trip, optionally region-filtered.'
+      summary: "Premium-only concierge match: top 3 verified agents for the
+        caller-owned trip, optionally region-filtered."
       tags:
         - agents
   /api/v1/agent/me:
@@ -2116,13 +2116,13 @@ paths:
       operationId: AgentSelfController_me
       parameters: []
       responses:
-        '200':
+        "200":
           description: Agent profile.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AgentProfileDto'
-        '404':
+                $ref: "#/components/schemas/AgentProfileDto"
+        "404":
           description: AGENT_PROFILE_NOT_FOUND.
       security: &a33
         - bearer: []
@@ -2137,17 +2137,17 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateAgentProfileRequestDto'
+              $ref: "#/components/schemas/UpdateAgentProfileRequestDto"
       responses:
-        '200':
+        "200":
           description: Updated profile.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AgentProfileDto'
-        '404':
+                $ref: "#/components/schemas/AgentProfileDto"
+        "404":
           description: AGENT_PROFILE_NOT_FOUND.
-        '422':
+        "422":
           description: INVALID_AGENT_DISPLAY_NAME | INVALID_AGENT_BIO | INVALID_AGENT_LIST.
       security: *a33
       summary: Partial update of the caller-owned Agent profile.
@@ -2164,17 +2164,17 @@ paths:
             maximum: 365
             type: number
       responses:
-        '200':
+        "200":
           description: Agent dashboard.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AgentDashboardDto'
-        '404':
+                $ref: "#/components/schemas/AgentDashboardDto"
+        "404":
           description: AGENT_PROFILE_NOT_FOUND.
       security: *a33
-      summary: 'Composite dashboard: profile + bookings + earnings + recent reviews.
-        Window default 30 days.'
+      summary: "Composite dashboard: profile + bookings + earnings + recent reviews.
+        Window default 30 days."
       tags: *a34
   /api/v1/safety/country-primer/{countryCode}:
     get:
@@ -2187,13 +2187,13 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Primer.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CountryPrimerDto'
-        '404':
+                $ref: "#/components/schemas/CountryPrimerDto"
+        "404":
           description: COUNTRY_PRIMER_NOT_FOUND.
       security:
         - bearer: []
@@ -2212,13 +2212,13 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Numbers + optional note.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LocalEmergencyResponseDto'
-        '404':
+                $ref: "#/components/schemas/LocalEmergencyResponseDto"
+        "404":
           description: EMERGENCY_INFO_NOT_FOUND.
       summary: V.UX.35 — local police / ambulance / fire numbers for a country (~50
         seeded). Public — sign-in not required mid-emergency.
@@ -2229,12 +2229,12 @@ paths:
       operationId: AccountController_storageStats
       parameters: []
       responses:
-        '200':
+        "200":
           description: Per-category row counts.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StorageStatsResponseDto'
+                $ref: "#/components/schemas/StorageStatsResponseDto"
       security: &a35
         - bearer: []
       summary: "V.UX.32 — caller-scoped storage stats per category. Powers the
@@ -2246,13 +2246,13 @@ paths:
       operationId: AccountController_exportMyData
       parameters: []
       responses:
-        '200':
+        "200":
           description: Full export bundle. Per-section row shapes documented in
             user-data-export.entity.ts.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserDataExportResponseDto'
+                $ref: "#/components/schemas/UserDataExportResponseDto"
       security: *a35
       summary: Full GDPR/DPDP/COPPA self-export bundle as a single JSON object. ~30
         sections; sensitive fields stripped.
@@ -2262,19 +2262,19 @@ paths:
       operationId: AccountController_exportMyDataNdjson
       parameters: []
       responses:
-        '200':
+        "200":
           description: Streaming NDJSON. Each line is a `{type,data}` envelope; downstream
             tooling (jq -c, ndjson-cli) parses incrementally.
       security: *a35
-      summary: 'NDJSON variant of the export bundle — one `{type,data}` envelope per
-        line. Content-Type: application/x-ndjson.'
+      summary: "NDJSON variant of the export bundle — one `{type,data}` envelope per
+        line. Content-Type: application/x-ndjson."
       tags: *a36
   /api/v1/account:
     delete:
       operationId: AccountController_deleteMyAccount
       parameters: []
       responses:
-        '204':
+        "204":
           description: Account marked soft-deleted; sessions revoked.
       security: *a35
       summary: Soft-delete the caller's account + revoke all live sessions. GDPR Art.
@@ -2289,17 +2289,17 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ReactivateRequestDto'
+              $ref: "#/components/schemas/ReactivateRequestDto"
       responses:
-        '200':
+        "200":
           description: Account restored.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ReactivateResponseDto'
-        '401':
+                $ref: "#/components/schemas/ReactivateResponseDto"
+        "401":
           description: REACTIVATION_INVALID — token bad/expired.
-        '404':
+        "404":
           description: ACCOUNT_NOT_RECOVERABLE — past the 7-day window.
       security: *a35
       summary: V.UX.33 — restore a soft-deleted account within the 7-day window. Token
@@ -2314,11 +2314,11 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AppealRequestDto'
+              $ref: "#/components/schemas/AppealRequestDto"
       responses:
-        '200':
+        "200":
           description: Always ok.
-        '422':
+        "422":
           description: INVALID_APPEAL_BODY.
       security: *a35
       summary: V.UX.34 — submit a ban appeal. Always returns 200 regardless of
@@ -2354,13 +2354,13 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Matching users + total.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AdminListUsersResponseDto'
-        '400':
+                $ref: "#/components/schemas/AdminListUsersResponseDto"
+        "400":
           description: VALIDATION_FAILED — role not in user|premium|agent|admin.
       security: &a37
         - bearer: []
@@ -2382,13 +2382,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AdminBanRequestDto'
+              $ref: "#/components/schemas/AdminBanRequestDto"
       responses:
-        '204':
+        "204":
           description: Banned.
-        '404':
+        "404":
           description: USER_NOT_FOUND.
-        '422':
+        "422":
           description: INVALID_BAN_REASON.
       security: *a37
       summary: V.UX.34 — ban a user with a user-readable reason. Sets bannedAt +
@@ -2404,9 +2404,9 @@ paths:
           schema:
             type: string
       responses:
-        '204':
+        "204":
           description: Unbanned.
-        '404':
+        "404":
           description: USER_NOT_FOUND.
       security: *a37
       summary: V.UX.34 — unban a user (clears bannedAt + banReason). Admin-only.
@@ -2431,12 +2431,12 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Appeals + total count.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AdminListBanAppealsResponseDto'
+                $ref: "#/components/schemas/AdminListBanAppealsResponseDto"
       security: *a37
       summary: V.UX.34 — list ban appeals. Defaults to status=pending. Admin
         moderation queue.
@@ -2446,12 +2446,12 @@ paths:
       operationId: AdminPurgeController_forcePurge
       parameters: []
       responses:
-        '200':
+        "200":
           description: Tick fired (or skipped if already running).
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AdminPurgeForceResponseDto'
+                $ref: "#/components/schemas/AdminPurgeForceResponseDto"
       security:
         - bearer: []
       summary: Force the account-purge scheduler tick. Idempotent — re-entrant guard
@@ -2463,12 +2463,12 @@ paths:
       operationId: TrustedContactsController_list
       parameters: []
       responses:
-        '200':
+        "200":
           description: Caller's contacts, oldest-first.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ListTrustedContactsResponseDto'
+                $ref: "#/components/schemas/ListTrustedContactsResponseDto"
       security: &a39
         - bearer: []
       summary: List the caller's pre-set safety contacts. Cap 3 per account.
@@ -2482,15 +2482,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AddTrustedContactRequestDto'
+              $ref: "#/components/schemas/AddTrustedContactRequestDto"
       responses:
-        '201':
+        "201":
           description: Newly-created row.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TrustedContactDto'
-        '422':
+                $ref: "#/components/schemas/TrustedContactDto"
+        "422":
           description: CONTACT_CHANNEL_REQUIRED or CONTACT_LIMIT_REACHED.
       security: *a39
       summary: Add a trusted contact. Requires at least one of phone or email. 422
@@ -2506,9 +2506,9 @@ paths:
           schema:
             type: string
       responses:
-        '204':
+        "204":
           description: Deleted.
-        '404':
+        "404":
           description: CONTACT_NOT_FOUND.
       security: *a39
       summary: Delete one of the caller-owned trusted contacts.
@@ -2518,12 +2518,12 @@ paths:
       operationId: PreferencesController_getMine
       parameters: []
       responses:
-        '200':
+        "200":
           description: Preferences row.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PreferencesDto'
+                $ref: "#/components/schemas/PreferencesDto"
       security: &a41
         - bearer: []
       summary: Caller's preferences. Returns a synthetic default shape if the user has
@@ -2538,15 +2538,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdatePreferencesRequestDto'
+              $ref: "#/components/schemas/UpdatePreferencesRequestDto"
       responses:
-        '200':
+        "200":
           description: Updated preferences.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PreferencesDto'
-        '422':
+                $ref: "#/components/schemas/PreferencesDto"
+        "422":
           description: INVALID_BUDGET_TIER, INVALID_KID_AGE, or TOO_MANY_KIDS.
       security: *a41
       summary: Partial update of the caller-owned preferences. Idempotent upsert;
@@ -2563,13 +2563,13 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Connectivity info for the country.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ConnectivityInfoDto'
-        '404':
+                $ref: "#/components/schemas/ConnectivityInfoDto"
+        "404":
           description: CONNECTIVITY_INFO_NOT_FOUND — country not in the editorial seed yet.
       summary: Per-country connectivity info (mobile + fixed avg speeds, SIM cost,
         best carrier, power plugs). Public; seeded editorially.
@@ -2584,14 +2584,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateUploadUrlRequestDto'
+              $ref: "#/components/schemas/CreateUploadUrlRequestDto"
       responses:
-        '201':
+        "201":
           description: Presigned upload URL + initial asset row.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CreateUploadUrlResponseDto'
+                $ref: "#/components/schemas/CreateUploadUrlResponseDto"
       security: &a43
         - bearer: []
       summary: Issue a presigned PUT URL for direct-to-S3 upload. Creates the
@@ -2608,13 +2608,13 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Asset row in `ready` state.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MediaAssetDto'
-        '404':
+                $ref: "#/components/schemas/MediaAssetDto"
+        "404":
           description: MEDIA_NOT_FOUND.
       security: *a43
       summary: Confirm upload landed (HEAD verifies bytes). Flips status to `ready`.
@@ -2630,13 +2630,13 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Presigned GET URL + ISO expiry.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MediaDownloadUrlResponseDto'
-        '404':
+                $ref: "#/components/schemas/MediaDownloadUrlResponseDto"
+        "404":
           description: MEDIA_NOT_FOUND.
       security: *a43
       summary: Short-lived presigned GET URL for the asset. Owner-gated.
@@ -2655,15 +2655,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AttachMediaToTripRequestDto'
+              $ref: "#/components/schemas/AttachMediaToTripRequestDto"
       responses:
-        '200':
+        "200":
           description: Updated asset row.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MediaAssetDto'
-        '404':
+                $ref: "#/components/schemas/MediaAssetDto"
+        "404":
           description: MEDIA_NOT_FOUND or TRIP_NOT_FOUND.
       security: *a43
       summary: Attach (`{tripId}`) or detach (`{tripId:null}`) the media to a trip.
@@ -2684,12 +2684,12 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Caller-owned media for the given trip.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ListTripMediaResponseDto'
+                $ref: "#/components/schemas/ListTripMediaResponseDto"
       security: *a43
       summary: List the caller's `ready` media attached to a trip. ?limit=N (1..200,
         default 50).
@@ -2708,15 +2708,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AttachMediaToBookRequestDto'
+              $ref: "#/components/schemas/AttachMediaToBookRequestDto"
       responses:
-        '200':
+        "200":
           description: Updated asset row.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MediaAssetDto'
-        '404':
+                $ref: "#/components/schemas/MediaAssetDto"
+        "404":
           description: MEDIA_NOT_FOUND or BOOK_NOT_FOUND.
       security: *a43
       summary: Attach (`{memoryBookId}`) or detach (`{memoryBookId:null}`) the media
@@ -2732,12 +2732,12 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Currently-published memory books, newest-first.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FeaturedMemoryBooksResponseDto'
+                $ref: "#/components/schemas/FeaturedMemoryBooksResponseDto"
       security: &a45
         - bearer: []
       summary: Public discovery — currently-published memory books across all users,
@@ -2754,13 +2754,13 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Published book metadata + ids of attached assets.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PublicMemoryBookWithAssetsResponseDto'
-        '404':
+                $ref: "#/components/schemas/PublicMemoryBookWithAssetsResponseDto"
+        "404":
           description: BOOK_NOT_PUBLISHED.
       security: *a45
       summary: Public read of a published memory book by id. The cuid is the
@@ -2781,17 +2781,17 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Short-lived presigned GET URL + ISO expiry.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PublicDownloadUrlResponseDto'
-        '404':
+                $ref: "#/components/schemas/PublicDownloadUrlResponseDto"
+        "404":
           description: BOOK_NOT_PUBLISHED, MEDIA_NOT_FOUND, or NOT_ATTACHED.
       security: *a45
-      summary: 'Public presigned download URL for a memory-book asset. Three-clause
-        gate: book published + asset attached + asset ready.'
+      summary: "Public presigned download URL for a memory-book asset. Three-clause
+        gate: book published + asset attached + asset ready."
       tags: *a46
   /api/v1/memory-books:
     post:
@@ -2802,14 +2802,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateMemoryBookRequestDto'
+              $ref: "#/components/schemas/CreateMemoryBookRequestDto"
       responses:
-        '201':
+        "201":
           description: Newly-created book row.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MemoryBookDto'
+                $ref: "#/components/schemas/MemoryBookDto"
       security: *a45
       summary: Create a memory book (draft). Owner = caller.
       tags: *a46
@@ -2822,12 +2822,12 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Caller-owned memory books, newest first.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ListMemoryBooksResponseDto'
+                $ref: "#/components/schemas/ListMemoryBooksResponseDto"
       security: *a45
       summary: List the caller's memory books, newest first. ?limit=N (1..200, default
         50). Owner-scoped.
@@ -2842,13 +2842,13 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Book row + ids of attached assets (any status).
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MemoryBookWithAssetsResponseDto'
-        '404':
+                $ref: "#/components/schemas/MemoryBookWithAssetsResponseDto"
+        "404":
           description: BOOK_NOT_FOUND.
       security: *a45
       summary: Get one of the caller-owned books + the attached asset ids.
@@ -2866,15 +2866,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateMemoryBookRequestDto'
+              $ref: "#/components/schemas/UpdateMemoryBookRequestDto"
       responses:
-        '200':
+        "200":
           description: Updated book row.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MemoryBookDto'
-        '404':
+                $ref: "#/components/schemas/MemoryBookDto"
+        "404":
           description: BOOK_NOT_FOUND.
       security: *a45
       summary: Update one of the caller-owned books. Partial update.
@@ -2888,9 +2888,9 @@ paths:
           schema:
             type: string
       responses:
-        '204':
+        "204":
           description: Deleted.
-        '404':
+        "404":
           description: BOOK_NOT_FOUND.
       security: *a45
       summary: Delete one of the caller-owned books. SetNull on MediaAsset.memoryBookId.
@@ -2905,13 +2905,13 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Published book row.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MemoryBookDto'
-        '404':
+                $ref: "#/components/schemas/MemoryBookDto"
+        "404":
           description: BOOK_NOT_FOUND.
       security: *a45
       summary: Publish a book — flips publishedAt to now (idempotent).
@@ -2926,13 +2926,13 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Updated book row.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MemoryBookDto'
-        '404':
+                $ref: "#/components/schemas/MemoryBookDto"
+        "404":
           description: BOOK_NOT_FOUND.
       security: *a45
       summary: Unpublish a book — clears publishedAt (idempotent).
@@ -2956,15 +2956,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateAssetCaptionRequestDto'
+              $ref: "#/components/schemas/UpdateAssetCaptionRequestDto"
       responses:
-        '200':
+        "200":
           description: Updated asset row.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MediaAssetDto'
-        '404':
+                $ref: "#/components/schemas/MediaAssetDto"
+        "404":
           description: MEDIA_NOT_FOUND.
       security: *a45
       summary: Set or clear an asset's caption (story-mode narrative). Owner-only.
@@ -2983,13 +2983,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ReorderBookAssetsRequestDto'
+              $ref: "#/components/schemas/ReorderBookAssetsRequestDto"
       responses:
-        '204':
+        "204":
           description: Reordering applied.
-        '404':
+        "404":
           description: MEMORY_BOOK_NOT_FOUND.
-        '422':
+        "422":
           description: INVALID_ASSET_ORDER (duplicates, length mismatch, or unknown id).
       security: *a45
       summary: Persist asset ordering for the memory book. Body is the desired
@@ -3025,13 +3025,13 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Matching media + total.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AdminListMediaResponseDto'
-        '400':
+                $ref: "#/components/schemas/AdminListMediaResponseDto"
+        "400":
           description: VALIDATION_FAILED — kind / status invalid.
       security: &a47
         - bearer: []
@@ -3049,9 +3049,9 @@ paths:
           schema:
             type: string
       responses:
-        '204':
+        "204":
           description: Deleted.
-        '404':
+        "404":
           description: MEDIA_NOT_FOUND.
       security: *a47
       summary: Hard-delete media (takedown). Trip + memory book references
@@ -3062,16 +3062,16 @@ paths:
       operationId: NotificationsController_unreadCount
       parameters: []
       responses:
-        '200':
+        "200":
           description: Unread count.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnreadCountResponseDto'
+                $ref: "#/components/schemas/UnreadCountResponseDto"
       security: &a49
         - bearer: []
-      summary: 'Returns { unread: N } for the home-screen badge. Single indexed COUNT
-        — cheap.'
+      summary: "Returns { unread: N } for the home-screen badge. Single indexed COUNT
+        — cheap."
       tags: &a50
         - notifications
   /api/v1/notifications/me:
@@ -3094,13 +3094,13 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Caller's recent deliveries, newest-first.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ListMyNotificationsResponseDto'
-        '400':
+                $ref: "#/components/schemas/ListMyNotificationsResponseDto"
+        "400":
           description: VALIDATION_FAILED — channel is not one of push|email|sms.
       security: *a49
       summary: List the caller's recent notifications. Optional
@@ -3111,15 +3111,15 @@ paths:
       operationId: NotificationsController_markAllRead
       parameters: []
       responses:
-        '200':
+        "200":
           description: Number of rows actually flipped.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MarkAllReadResponseDto'
+                $ref: "#/components/schemas/MarkAllReadResponseDto"
       security: *a49
-      summary: 'Mark every unread row as read. Returns { marked: N }. Idempotent
-        (second call returns 0).'
+      summary: "Mark every unread row as read. Returns { marked: N }. Idempotent
+        (second call returns 0)."
       tags: *a50
   /api/v1/notifications/{id}/read:
     post:
@@ -3131,13 +3131,13 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Updated notification row.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NotificationLogDto'
-        '404':
+                $ref: "#/components/schemas/NotificationLogDto"
+        "404":
           description: NOTIFICATION_NOT_FOUND.
       security: *a49
       summary: Mark one notification as read. Owner-gated; 404 on cross-user / missing.
@@ -3152,13 +3152,13 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Updated notification row.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NotificationLogDto'
-        '404':
+                $ref: "#/components/schemas/NotificationLogDto"
+        "404":
           description: NOTIFICATION_NOT_FOUND.
       security: *a49
       summary: Mark one notification as UNread (symmetric to /read). Owner-gated.
@@ -3173,9 +3173,9 @@ paths:
           schema:
             type: string
       responses:
-        '204':
+        "204":
           description: Deleted.
-        '404':
+        "404":
           description: NOTIFICATION_NOT_FOUND.
       security: *a49
       summary: Hard-delete a notification (inbox prune). Owner-gated; 404 on
@@ -3191,9 +3191,9 @@ paths:
           schema:
             type: string
       responses:
-        '204':
+        "204":
           description: Archived.
-        '404':
+        "404":
           description: NOTIFICATION_NOT_FOUND.
       security: *a49
       summary: Soft-archive a notification (swipe-to-archive). Owner-gated; 404 on
@@ -3204,12 +3204,12 @@ paths:
       operationId: NotificationPreferencesController_getMine
       parameters: []
       responses:
-        '200':
+        "200":
           description: Preferences row.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NotificationPreferencesDto'
+                $ref: "#/components/schemas/NotificationPreferencesDto"
       security: &a51
         - bearer: []
       summary: Caller's notification preferences. Returns a default shape if the user
@@ -3224,15 +3224,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateNotificationPreferencesRequestDto'
+              $ref: "#/components/schemas/UpdateNotificationPreferencesRequestDto"
       responses:
-        '200':
+        "200":
           description: Updated preferences.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NotificationPreferencesDto'
-        '422':
+                $ref: "#/components/schemas/NotificationPreferencesDto"
+        "422":
           description: VALIDATION_FAILED.
       security: *a51
       summary: Partial upsert of the caller-owned notification prefs. Idempotent.
@@ -3247,15 +3247,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SubscribePushRequestDto'
+              $ref: "#/components/schemas/SubscribePushRequestDto"
       responses:
-        '201':
+        "201":
           description: Subscription stored.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PushSubscriptionDto'
-        '422':
+                $ref: "#/components/schemas/PushSubscriptionDto"
+        "422":
           description: VALIDATION_FAILED.
       security: &a53
         - bearer: []
@@ -3271,11 +3271,11 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UnsubscribePushRequestDto'
+              $ref: "#/components/schemas/UnsubscribePushRequestDto"
       responses:
-        '204':
+        "204":
           description: Unsubscribed.
-        '404':
+        "404":
           description: PUSH_SUBSCRIPTION_NOT_FOUND.
       security: *a53
       summary: Owner-scoped Web Push unsubscribe. 404 if the endpoint is not
@@ -3290,14 +3290,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AdminCreatePlaceRequestDto'
+              $ref: "#/components/schemas/AdminCreatePlaceRequestDto"
       responses:
-        '201':
+        "201":
           description: Created place row.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AdminPlaceDto'
+                $ref: "#/components/schemas/AdminPlaceDto"
       security: &a55
         - bearer: []
       summary: Curate a new Place into the canonical catalog. Admin-only.
@@ -3313,9 +3313,9 @@ paths:
           schema:
             type: string
       responses:
-        '204':
+        "204":
           description: Deleted.
-        '404':
+        "404":
           description: PLACE_NOT_FOUND.
       security: *a55
       summary: Remove a Place from the canonical catalog. Admin-only.
@@ -3355,12 +3355,12 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Matching audit rows + total.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AdminListAuditLogsResponseDto'
+                $ref: "#/components/schemas/AdminListAuditLogsResponseDto"
       security:
         - bearer: []
       summary: V.UX.36 — read-only admin audit log. Filter by actorId / targetType /
@@ -3372,16 +3372,16 @@ paths:
       operationId: ComplianceController_retention
       parameters: []
       responses:
-        '200':
+        "200":
           description: Counts.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RetentionStatsResponseDto'
+                $ref: "#/components/schemas/RetentionStatsResponseDto"
       security: &a57
         - bearer: []
-      summary: 'V.UX.37 — retention dashboard: 16 indexed counts (users / trips /
-        safety / inbox / appeals) + oldest-soft-delete age.'
+      summary: "V.UX.37 — retention dashboard: 16 indexed counts (users / trips /
+        safety / inbox / appeals) + oldest-soft-delete age."
       tags: &a58
         - compliance
   /api/v1/compliance/takedowns:
@@ -3399,27 +3399,27 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Takedown rows + total.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TakedownListResponseDto'
+                $ref: "#/components/schemas/TakedownListResponseDto"
       security: *a57
-      summary: 'V.UX.37 — takedown report: AdminAuditLog scoped to delete_media |
-        delete_trip | archive_trip | dismiss_scam. Newest-first.'
+      summary: "V.UX.37 — takedown report: AdminAuditLog scoped to delete_media |
+        delete_trip | archive_trip | dismiss_scam. Newest-first."
       tags: *a58
   /api/v1/metrics-public:
     get:
       operationId: PublicMetricsController_get
       parameters: []
       responses:
-        '200':
+        "200":
           description: Sanitized aggregate metrics.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PublicMetricsResponseDto'
+                $ref: "#/components/schemas/PublicMetricsResponseDto"
       summary: V.UX.40 — anonymized landing-page counts. Public, 5-min cached, fuzzed
         under 1000.
       tags:
@@ -3438,18 +3438,18 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CastVoteRequestDto'
+              $ref: "#/components/schemas/CastVoteRequestDto"
       responses:
-        '200':
+        "200":
           description: Cast or updated vote row.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/VoteDto'
+                $ref: "#/components/schemas/VoteDto"
       security: &a59
         - bearer: []
-      summary: 'Cast or update a vote on a trip target. Body: { targetType, targetId,
-        value }. Auth gate: owner OR active TripShare.'
+      summary: "Cast or update a vote on a trip target. Body: { targetType, targetId,
+        value }. Auth gate: owner OR active TripShare."
       tags: &a60
         - social
     delete:
@@ -3465,13 +3465,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RevokeVoteRequestDto'
+              $ref: "#/components/schemas/RevokeVoteRequestDto"
       responses:
-        '204':
+        "204":
           description: Revoked (or no-op if no prior vote).
       security: *a59
-      summary: 'Revoke a previously-cast vote. Body: { targetType, targetId }.
-        Idempotent.'
+      summary: "Revoke a previously-cast vote. Body: { targetType, targetId }.
+        Idempotent."
       tags: *a60
     get:
       operationId: SocialController_list
@@ -3482,12 +3482,12 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Tallies + caller-own vote per target.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ListTripVotesResponseDto'
+                $ref: "#/components/schemas/ListTripVotesResponseDto"
       security: *a59
       summary: Aggregated tallies for a trip's votes + the caller's own vote per target.
       tags: *a60
@@ -3506,18 +3506,18 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateExpenseRequestDto'
+              $ref: "#/components/schemas/CreateExpenseRequestDto"
       responses:
-        '201':
+        "201":
           description: Newly-created expense row.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ExpenseDto'
+                $ref: "#/components/schemas/ExpenseDto"
       security: &a61
         - bearer: []
-      summary: 'Record a shared expense on a trip. Auth gate: owner OR active
-        TripShare. Splits sum-checked.'
+      summary: "Record a shared expense on a trip. Auth gate: owner OR active
+        TripShare. Splits sum-checked."
       tags: &a62
         - social
     get:
@@ -3535,12 +3535,12 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Trip expenses.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ListExpensesResponseDto'
+                $ref: "#/components/schemas/ListExpensesResponseDto"
       security: *a61
       summary: List trip expenses, most-recent-first. ?limit=N (1..500, default 50).
       tags: *a62
@@ -3555,12 +3555,12 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Per-user net ledger, sorted largest-creditor-first.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ListBalancesResponseDto'
+                $ref: "#/components/schemas/ListBalancesResponseDto"
       security: *a61
       summary: Net per-user "who owes whom" ledger. Sum is zero (modulo 2dp). 60s
         cache; write-invalidated on expense create/delete.
@@ -3576,12 +3576,12 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Transfer plan that zeros every balance.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SettleUpResponseDto'
+                $ref: "#/components/schemas/SettleUpResponseDto"
       security: *a61
       summary: Settle-up plan — greedy minimum-cashflow transfers that zero the trip
         ledger. Owner OR active share.
@@ -3601,9 +3601,9 @@ paths:
           description: Trip id (auth-gated to owner OR active TripShare).
           schema: {}
       responses:
-        '204':
+        "204":
           description: Deleted.
-        '404':
+        "404":
           description: EXPENSE_NOT_FOUND.
       security: *a61
       summary: Delete an expense. Payer-only — only the user who recorded it can
@@ -3618,14 +3618,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateReviewRequestDto'
+              $ref: "#/components/schemas/CreateReviewRequestDto"
       responses:
-        '201':
+        "201":
           description: Newly-created review row.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ReviewDto'
+                $ref: "#/components/schemas/ReviewDto"
       security: &a63
         - bearer: []
       summary: Create a review for any review-target (place/stay/eatery/agent).
@@ -3651,13 +3651,13 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Reviews on the target.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ListReviewsResponseDto'
-        '400':
+                $ref: "#/components/schemas/ListReviewsResponseDto"
+        "400":
           description: VALIDATION_FAILED — targetType / targetId missing or invalid.
       security: *a63
       summary: Target-scoped review listing. ?targetType + ?targetId required.
@@ -3678,13 +3678,13 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Summary; zero-filled for empty targets.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ReviewSummaryDto'
-        '400':
+                $ref: "#/components/schemas/ReviewSummaryDto"
+        "400":
           description: VALIDATION_FAILED — targetType / targetId missing or invalid.
       security: *a63
       summary: Aggregated review summary { count, average, histogram } for a target.
@@ -3700,12 +3700,12 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Caller's reviews.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ListReviewsResponseDto'
+                $ref: "#/components/schemas/ListReviewsResponseDto"
       security: *a63
       summary: List the caller's authored reviews, most-recent-first. ?limit=N
         (1..200, default 50).
@@ -3720,9 +3720,9 @@ paths:
           schema:
             type: string
       responses:
-        '204':
+        "204":
           description: Deleted.
-        '404':
+        "404":
           description: REVIEW_NOT_FOUND.
       security: *a63
       summary: Delete one of the caller's reviews. Author-gated; 404 on cross-user /
@@ -3742,21 +3742,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RespondToReviewRequestDto'
+              $ref: "#/components/schemas/RespondToReviewRequestDto"
       responses:
-        '200':
+        "200":
           description: Updated review row.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ReviewDto'
-        '403':
+                $ref: "#/components/schemas/ReviewDto"
+        "403":
           description: REVIEW_RESPONSE_FORBIDDEN | ROLE_FORBIDDEN.
-        '404':
+        "404":
           description: REVIEW_NOT_FOUND | AGENT_PROFILE_NOT_FOUND.
-        '409':
+        "409":
           description: REVIEW_RESPONSE_LOCKED.
-        '422':
+        "422":
           description: INVALID_REVIEW_RESPONSE.
       security: *a63
       summary: Agent reply to a review (one-shot). 403 if the review is not about the
@@ -3772,15 +3772,15 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Helpful count after the vote.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HelpfulVoteResponseDto'
-        '403':
+                $ref: "#/components/schemas/HelpfulVoteResponseDto"
+        "403":
           description: HELPFUL_VOTE_SELF.
-        '404':
+        "404":
           description: REVIEW_NOT_FOUND.
       security: *a63
       summary: Mark a review as helpful. Idempotent (re-vote returns the current
@@ -3801,13 +3801,13 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Vote tally; zero-filled for empty targets.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/VoteSummaryDto'
-        '400':
+                $ref: "#/components/schemas/VoteSummaryDto"
+        "400":
           description: VALIDATION_FAILED — targetType / targetId missing or invalid.
       summary: Cross-trip vote tally for { targetType, targetId }. @Public —
         crowd-signal aggregation.
@@ -3823,12 +3823,12 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Place review bundle.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PlaceReviewSummaryResponseDto'
+                $ref: "#/components/schemas/PlaceReviewSummaryResponseDto"
       summary: Place detail-page composite — bundles review summary + vote tally +
         recent reviews. @Public.
       tags:
@@ -3843,12 +3843,12 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Stay review bundle.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StayReviewSummaryResponseDto'
+                $ref: "#/components/schemas/StayReviewSummaryResponseDto"
       summary: Stay detail-page composite. Same shape as place; votes always zero (no
         vote target for stays).
       tags:
@@ -3863,12 +3863,12 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Eatery review bundle.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EateryReviewSummaryResponseDto'
+                $ref: "#/components/schemas/EateryReviewSummaryResponseDto"
       summary: Eatery detail-page composite. Same shape as place; votes always zero.
       tags:
         - social
@@ -3882,12 +3882,12 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Agent review bundle.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AgentReviewSummaryResponseDto'
+                $ref: "#/components/schemas/AgentReviewSummaryResponseDto"
       summary: Agent detail-page composite. Closes the 4-of-4 review-target arc; votes
         always zero.
       tags:
@@ -3902,15 +3902,15 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Updated heart count for the trip.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HeartSharedTripResponseDto'
-        '404':
+                $ref: "#/components/schemas/HeartSharedTripResponseDto"
+        "404":
           description: SHARE_NOT_FOUND or SHARE_EXPIRED.
-        '429':
+        "429":
           description: Too many requests — wait 60s.
       summary: ❤️ a publicly-shared trip. No auth. Per-IP rate-limited at 1/min so
         anonymous fans can react but scripts can't farm hearts.
@@ -3926,13 +3926,13 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Heart count snapshot.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SharedTripHeartCountResponseDto'
-        '404':
+                $ref: "#/components/schemas/SharedTripHeartCountResponseDto"
+        "404":
           description: SHARE_NOT_FOUND or SHARE_EXPIRED.
       summary: Current ❤️ count for a shared trip. Public, no auth.
       tags: *a65
@@ -3947,16 +3947,16 @@ paths:
             format: cuid
             type: string
       responses:
-        '200':
+        "200":
           description: Profile bundle.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PublicReviewerProfileDto'
-        '404':
+                $ref: "#/components/schemas/PublicReviewerProfileDto"
+        "404":
           description: USER_NOT_FOUND (or soft-deleted).
-      summary: 'Public reviewer profile: karma + badges + recent reviews. Public; no
-        auth required.'
+      summary: "Public reviewer profile: karma + badges + recent reviews. Public; no
+        auth required."
       tags:
         - social
   /api/v1/users/{id}/follow:
@@ -3970,8 +3970,8 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
       security: &a66
         - bearer: []
       summary: Follow a user (idempotent; self-follow 422; blocked pair 403).
@@ -3987,8 +3987,8 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
       security: *a66
       summary: Unfollow a user (idempotent).
       tags: *a67
@@ -4003,8 +4003,8 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
       security: *a66
       summary: Block a user (idempotent; self-block 422).
       tags: *a67
@@ -4018,8 +4018,8 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
       security: *a66
       summary: Unblock a user (idempotent).
       tags: *a67
@@ -4040,8 +4040,8 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
       security: *a66
       summary: Users who follow :id (newest first). Block-filtered against the caller.
         Unknown user → empty list.
@@ -4063,8 +4063,8 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
       security: *a66
       summary: Users that :id follows (newest first). Block-filtered against the
         caller. Unknown user → empty list.
@@ -4080,8 +4080,8 @@ paths:
           schema:
             type: string
       responses:
-        '201':
-          description: ''
+        "201":
+          description: ""
       security: &a68
         - bearer: []
       summary: Post a comment on a published trip. 404 TRIP_NOT_COMMENTABLE if the
@@ -4104,8 +4104,8 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
       security: *a68
       summary: A published trip's comment thread, oldest first. Block-filtered against
         the caller. Not-commentable trip → empty.
@@ -4121,8 +4121,8 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
       security: *a68
       summary: Delete a comment (author or the trip owner). 404 for anyone else.
       tags: *a69
@@ -4141,7 +4141,7 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Feed page + nextBefore cursor.
       security: &a70
         - bearer: []
@@ -4160,7 +4160,7 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Creator profile.
       security: *a70
       summary: A creator's profile — their visible published trips + counts.
@@ -4181,7 +4181,7 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Nearest visible published trips.
       security: *a70
       summary: '"Trips like this" — pgvector-nearest PUBLISHED trips to a given trip.
@@ -4205,8 +4205,8 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
       security: *a70
       summary: Travel buddies — PUBLIC published trips near YOUR trip (owner-only)
         and, when both have dates, in an overlapping window.
@@ -4222,8 +4222,8 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
       security: *a70
       summary: Discover travellers to follow — authors of PUBLIC trips the caller
         doesn't follow yet, most prolific first.
@@ -4239,9 +4239,9 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Publication status.
-        '404':
+        "404":
           description: TRIP_NOT_FOUND
       security: *a70
       summary: The caller's publication status for a trip (owner-only).
@@ -4257,15 +4257,15 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: The publication.
-        '404':
+        "404":
           description: TRIP_NOT_FOUND
-        '422':
+        "422":
           description: TRIP_NOT_ENDED
       security: *a70
-      summary: 'Publish a trip (owner-only). Privacy-fenced: trip must have ENDED;
-        PUBLIC coarsens geo. Default visibility FOLLOWERS.'
+      summary: "Publish a trip (owner-only). Privacy-fenced: trip must have ENDED;
+        PUBLIC coarsens geo. Default visibility FOLLOWERS."
       tags: *a71
     delete:
       operationId: FeedController_unpublish
@@ -4277,7 +4277,7 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Unpublished (idempotent).
       security: *a70
       summary: Unpublish a trip (owner-only; idempotent; visibility → PRIVATE).
@@ -4297,13 +4297,13 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Activity items + nextBefore cursor.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FeedResponseDto'
-        '400':
+                $ref: "#/components/schemas/FeedResponseDto"
+        "400":
           description: VALIDATION_FAILED — before is not an ISO timestamp, or limit is
             non-positive.
       security: *a70
@@ -4319,15 +4319,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TranslateTextRequestDto'
+              $ref: "#/components/schemas/TranslateTextRequestDto"
       responses:
-        '200':
+        "200":
           description: Translated text + provenance.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TranslationDto'
-        '422':
+                $ref: "#/components/schemas/TranslationDto"
+        "422":
           description: INVALID_TEXT | INVALID_TARGET_LANG | INVALID_SOURCE_LANG.
       security:
         - bearer: []
@@ -4340,13 +4340,13 @@ paths:
       operationId: PaymentsController_checkout
       parameters: []
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CheckoutSessionResponseDto'
-        '503':
+                $ref: "#/components/schemas/CheckoutSessionResponseDto"
+        "503":
           description: PAYMENTS_DISABLED — no Stripe key in env.
       security:
         - bearer: []
@@ -4358,15 +4358,15 @@ paths:
       operationId: PaymentsController_webhook
       parameters: []
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WebhookAckResponseDto'
-        '400':
+                $ref: "#/components/schemas/WebhookAckResponseDto"
+        "400":
           description: WEBHOOK_SIGNATURE_INVALID.
-        '503':
+        "503":
           description: PAYMENTS_DISABLED.
       summary: Stripe webhook. Public + raw body (signature-verified).
       tags: *a72
@@ -4375,12 +4375,12 @@ paths:
       operationId: PaymentsController_mySubscription
       parameters: []
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CurrentSubscriptionResponseDto'
+                $ref: "#/components/schemas/CurrentSubscriptionResponseDto"
       security:
         - bearer: []
       summary: Current Premium subscription for the calling user (or null).
@@ -4390,13 +4390,13 @@ paths:
       operationId: PaymentsController_portalUrl
       parameters: []
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PortalUrlResponseDto'
-        '503':
+                $ref: "#/components/schemas/PortalUrlResponseDto"
+        "503":
           description: PAYMENTS_DISABLED.
       security:
         - bearer: []
@@ -4407,8 +4407,8 @@ paths:
       operationId: AgentController_status
       parameters: []
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
       security: &a73
         - bearer: []
       summary: Agent probe — 503 (AGENT_DISABLED) when FEATURE_AGENT_ENABLED is off.
@@ -4425,7 +4425,7 @@ paths:
           schema:
             type: string
       responses:
-        '404':
+        "404":
           description: AGENT_RUN_NOT_FOUND
       security: *a73
       summary: An agent run + its append-only step log.
@@ -4441,7 +4441,7 @@ paths:
           schema:
             type: string
       responses:
-        '404':
+        "404":
           description: AGENT_PROPOSAL_NOT_FOUND
       security: *a73
       summary: Accept a proposed re-plan (human-in-the-loop; never autonomous).
@@ -4457,7 +4457,7 @@ paths:
           schema:
             type: string
       responses:
-        '404':
+        "404":
           description: AGENT_PROPOSAL_NOT_FOUND
       security: *a73
       summary: Decline a proposed re-plan (raises the watch threshold).
@@ -4467,13 +4467,13 @@ paths:
       operationId: DiaryController_create
       parameters: []
       responses:
-        '201':
-          description: ''
+        "201":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CreateDiaryEntryResponseDto'
-        '422':
+                $ref: "#/components/schemas/CreateDiaryEntryResponseDto"
+        "422":
           description: INVALID_DIARY_* validation codes.
       security: &a75
         - bearer: []
@@ -4494,12 +4494,12 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ListDiaryEntriesResponseDto'
+                $ref: "#/components/schemas/ListDiaryEntriesResponseDto"
       security: *a75
       summary: List the caller’s diary entries (newest first).
       tags: *a76
@@ -4508,12 +4508,12 @@ paths:
       operationId: DiaryController_gamification
       parameters: []
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GamificationViewDto'
+                $ref: "#/components/schemas/GamificationViewDto"
       security: *a75
       summary: Points, streaks + the full badge shelf (earned + locked).
       tags: *a76
@@ -4522,16 +4522,16 @@ paths:
       operationId: DiaryController_assistEntry
       parameters: []
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AssistDiaryResponseDto'
-        '422':
+                $ref: "#/components/schemas/AssistDiaryResponseDto"
+        "422":
           description: DIARY_ASSIST_NEEDS_TEXT.
       security: *a75
-      summary: 'AI writing assist: prompt | polish | title.'
+      summary: "AI writing assist: prompt | polish | title."
       tags: *a76
 info:
   title: TravelSuperApp API
@@ -4562,9 +4562,9 @@ components:
       scheme: bearer
       bearerFormat: JWT
       type: http
-      description: 'Access token issued by POST /auth/login or rotated via POST
+      description: "Access token issued by POST /auth/login or rotated via POST
         /auth/refresh. Lifetime: 15 minutes (configurable via
-        JWT_ACCESS_EXPIRY).'
+        JWT_ACCESS_EXPIRY)."
   schemas:
     RegisterRequestDto:
       type: object
@@ -4918,13 +4918,13 @@ components:
             default 20).
           type: array
           items:
-            $ref: '#/components/schemas/TripDto'
+            $ref: "#/components/schemas/TripDto"
         collaborated:
           description: V.UX.9 — trips someone else owns but the caller participates in via
             a vote or expense.
           type: array
           items:
-            $ref: '#/components/schemas/TripDto'
+            $ref: "#/components/schemas/TripDto"
       required:
         - trips
         - collaborated
@@ -4932,7 +4932,7 @@ components:
       type: object
       properties:
         trip:
-          $ref: '#/components/schemas/TripDto'
+          $ref: "#/components/schemas/TripDto"
         role:
           type: string
           description: '"owner" or "collaborator".'
@@ -5021,7 +5021,7 @@ components:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/ItineraryItemDto'
+            $ref: "#/components/schemas/ItineraryItemDto"
       required:
         - id
         - tripId
@@ -5036,7 +5036,7 @@ components:
           description: Itinerary days, ordered by dayIndex ascending.
           type: array
           items:
-            $ref: '#/components/schemas/ItineraryDayDto'
+            $ref: "#/components/schemas/ItineraryDayDto"
       required:
         - days
     SamplePlanCenterDto:
@@ -5060,7 +5060,7 @@ components:
           maxLength: 120
           description: Sample destination title (e.g. "Goa", "Tokyo").
         center:
-          $ref: '#/components/schemas/SamplePlanCenterDto'
+          $ref: "#/components/schemas/SamplePlanCenterDto"
         radiusKm:
           type: number
           minimum: 1
@@ -5106,7 +5106,7 @@ components:
             - stub
           description: Stable provider identifier — drives the "powered by …" badge.
         tokenUsage:
-          $ref: '#/components/schemas/TripPlannerTokenUsageDto'
+          $ref: "#/components/schemas/TripPlannerTokenUsageDto"
       required:
         - plan
         - model
@@ -5132,7 +5132,7 @@ components:
           description: Stable provider identifier — drives the "powered by …" badge on
             /trips/[id].
         tokenUsage:
-          $ref: '#/components/schemas/TripPlannerTokenUsageDto'
+          $ref: "#/components/schemas/TripPlannerTokenUsageDto"
       required:
         - plan
         - model
@@ -5205,7 +5205,7 @@ components:
           description: Itinerary days + items, ordered by dayIndex ascending.
           type: array
           items:
-            $ref: '#/components/schemas/ItineraryDayDto'
+            $ref: "#/components/schemas/ItineraryDayDto"
       required:
         - id
         - title
@@ -5223,7 +5223,7 @@ components:
           type: boolean
           enum:
             - false
-          description: 'Discriminator: this section failed.'
+          description: "Discriminator: this section failed."
         code:
           type: string
           description: Stable failure code (e.g. TRIP_DATES_REQUIRED, PROVIDER_UNREACHABLE).
@@ -5265,7 +5265,7 @@ components:
         days:
           type: array
           items:
-            $ref: '#/components/schemas/OverviewItineraryDayDto'
+            $ref: "#/components/schemas/OverviewItineraryDayDto"
       required:
         - days
     OverviewItinerarySuccessDto:
@@ -5276,7 +5276,7 @@ components:
           enum:
             - true
         data:
-          $ref: '#/components/schemas/OverviewItineraryDataDto'
+          $ref: "#/components/schemas/OverviewItineraryDataDto"
       required:
         - ok
         - data
@@ -5298,7 +5298,7 @@ components:
           enum:
             - true
         data:
-          $ref: '#/components/schemas/OverviewWeatherDataDto'
+          $ref: "#/components/schemas/OverviewWeatherDataDto"
       required:
         - ok
         - data
@@ -5322,7 +5322,7 @@ components:
           enum:
             - true
         data:
-          $ref: '#/components/schemas/OverviewListDataDto'
+          $ref: "#/components/schemas/OverviewListDataDto"
       required:
         - ok
         - data
@@ -5345,7 +5345,7 @@ components:
           enum:
             - true
         data:
-          $ref: '#/components/schemas/OverviewLegsDataDto'
+          $ref: "#/components/schemas/OverviewLegsDataDto"
       required:
         - ok
         - data
@@ -5379,7 +5379,7 @@ components:
         recent:
           type: array
           items:
-            $ref: '#/components/schemas/OverviewMediaRecentDto'
+            $ref: "#/components/schemas/OverviewMediaRecentDto"
       required:
         - count
         - recent
@@ -5391,7 +5391,7 @@ components:
           enum:
             - true
         data:
-          $ref: '#/components/schemas/OverviewMediaDataDto'
+          $ref: "#/components/schemas/OverviewMediaDataDto"
       required:
         - ok
         - data
@@ -5443,35 +5443,35 @@ components:
       type: object
       properties:
         trip:
-          $ref: '#/components/schemas/OverviewTripMetaDto'
+          $ref: "#/components/schemas/OverviewTripMetaDto"
         itinerary:
           oneOf:
-            - $ref: '#/components/schemas/OverviewItinerarySuccessDto'
-            - $ref: '#/components/schemas/OverviewSectionFailureDto'
+            - $ref: "#/components/schemas/OverviewItinerarySuccessDto"
+            - $ref: "#/components/schemas/OverviewSectionFailureDto"
         weather:
           oneOf:
-            - $ref: '#/components/schemas/OverviewWeatherSuccessDto'
-            - $ref: '#/components/schemas/OverviewSectionFailureDto'
+            - $ref: "#/components/schemas/OverviewWeatherSuccessDto"
+            - $ref: "#/components/schemas/OverviewSectionFailureDto"
         stays:
           oneOf:
-            - $ref: '#/components/schemas/OverviewListSuccessDto'
-            - $ref: '#/components/schemas/OverviewSectionFailureDto'
+            - $ref: "#/components/schemas/OverviewListSuccessDto"
+            - $ref: "#/components/schemas/OverviewSectionFailureDto"
         eateries:
           oneOf:
-            - $ref: '#/components/schemas/OverviewListSuccessDto'
-            - $ref: '#/components/schemas/OverviewSectionFailureDto'
+            - $ref: "#/components/schemas/OverviewListSuccessDto"
+            - $ref: "#/components/schemas/OverviewSectionFailureDto"
         events:
           oneOf:
-            - $ref: '#/components/schemas/OverviewListSuccessDto'
-            - $ref: '#/components/schemas/OverviewSectionFailureDto'
+            - $ref: "#/components/schemas/OverviewListSuccessDto"
+            - $ref: "#/components/schemas/OverviewSectionFailureDto"
         transport:
           oneOf:
-            - $ref: '#/components/schemas/OverviewLegsSuccessDto'
-            - $ref: '#/components/schemas/OverviewSectionFailureDto'
+            - $ref: "#/components/schemas/OverviewLegsSuccessDto"
+            - $ref: "#/components/schemas/OverviewSectionFailureDto"
         media:
           oneOf:
-            - $ref: '#/components/schemas/OverviewMediaSuccessDto'
-            - $ref: '#/components/schemas/OverviewSectionFailureDto'
+            - $ref: "#/components/schemas/OverviewMediaSuccessDto"
+            - $ref: "#/components/schemas/OverviewSectionFailureDto"
       required:
         - trip
         - itinerary
@@ -5512,7 +5512,7 @@ components:
           description: Every share the owner has minted (active + revoked).
           type: array
           items:
-            $ref: '#/components/schemas/TripShareOwnerDto'
+            $ref: "#/components/schemas/TripShareOwnerDto"
       required:
         - shares
     SuggestPlacesForTripRequestDto:
@@ -5549,7 +5549,7 @@ components:
           description: Up to 6 ranked suggestions, nearest first.
           type: array
           items:
-            $ref: '#/components/schemas/SuggestedPlaceDto'
+            $ref: "#/components/schemas/SuggestedPlaceDto"
       required:
         - suggestions
     UpdateDayItemDto:
@@ -5576,14 +5576,14 @@ components:
           description: Replaces the day's entire items array. Empty `[]` clears the day.
           type: array
           items:
-            $ref: '#/components/schemas/UpdateDayItemDto'
+            $ref: "#/components/schemas/UpdateDayItemDto"
       required:
         - items
     UpdateDayItemsResponseDto:
       type: object
       properties:
         day:
-          $ref: '#/components/schemas/ItineraryDayDto'
+          $ref: "#/components/schemas/ItineraryDayDto"
       required:
         - day
     OptimizeDayRouteResponseDto:
@@ -5592,7 +5592,7 @@ components:
         day:
           description: Reordered itinerary day with refreshed items.
           allOf:
-            - $ref: '#/components/schemas/ItineraryDayDto'
+            - $ref: "#/components/schemas/ItineraryDayDto"
         beforeSeconds:
           type: number
           description: Total travel seconds across all consecutive routable stops, in the
@@ -5638,7 +5638,7 @@ components:
             placeId are skipped.
           type: array
           items:
-            $ref: '#/components/schemas/DayRouteCoordDto'
+            $ref: "#/components/schemas/DayRouteCoordDto"
       required:
         - coords
     NearMeNowCenterDto:
@@ -5661,7 +5661,7 @@ components:
       type: object
       properties:
         center:
-          $ref: '#/components/schemas/NearMeNowCenterDto'
+          $ref: "#/components/schemas/NearMeNowCenterDto"
         radiusKm:
           type: number
           minimum: 0.5
@@ -5687,7 +5687,7 @@ components:
           description: Provider-derived USD estimate (null when free).
         confidence:
           type: string
-          description: 'Provider confidence: high / medium / low.'
+          description: "Provider confidence: high / medium / low."
       required:
         - mode
         - distanceMeters
@@ -5720,7 +5720,7 @@ components:
             when routing fails.
           type: array
           items:
-            $ref: '#/components/schemas/NearMeRouteLegDto'
+            $ref: "#/components/schemas/NearMeRouteLegDto"
       required:
         - id
         - name
@@ -5771,7 +5771,7 @@ components:
           description: Daily forecast (1 day for near-me).
           type: array
           items:
-            $ref: '#/components/schemas/NearMeWeatherDayDto'
+            $ref: "#/components/schemas/NearMeWeatherDayDto"
       required:
         - lat
         - lng
@@ -5800,7 +5800,7 @@ components:
           type: string
           description: A/B/C/D/F letter grade.
         breakdown:
-          $ref: '#/components/schemas/NearMeSafetyBreakdownDto'
+          $ref: "#/components/schemas/NearMeSafetyBreakdownDto"
         radiusKm:
           type: number
           description: Radius the score covers, km.
@@ -5813,7 +5813,7 @@ components:
       type: object
       properties:
         center:
-          $ref: '#/components/schemas/NearMeNowCenterDto'
+          $ref: "#/components/schemas/NearMeNowCenterDto"
         radiusKm:
           type: number
           description: Search radius (after clamp), km.
@@ -5821,11 +5821,11 @@ components:
           description: Up to 5 nearest places.
           type: array
           items:
-            $ref: '#/components/schemas/NearMePlaceDto'
+            $ref: "#/components/schemas/NearMePlaceDto"
         weather:
-          $ref: '#/components/schemas/NearMeWeatherDto'
+          $ref: "#/components/schemas/NearMeWeatherDto"
         safety:
-          $ref: '#/components/schemas/NearMeSafetyDto'
+          $ref: "#/components/schemas/NearMeSafetyDto"
         fetchedAt:
           type: string
           format: date-time
@@ -5850,7 +5850,7 @@ components:
       type: object
       properties:
         center:
-          $ref: '#/components/schemas/PlacesCoordinatesDto'
+          $ref: "#/components/schemas/PlacesCoordinatesDto"
         radiusKm:
           type: number
         category:
@@ -5921,14 +5921,14 @@ components:
         places:
           type: array
           items:
-            $ref: '#/components/schemas/PlaceDto'
+            $ref: "#/components/schemas/PlaceDto"
       required:
         - places
     FederatedSearchPlacesRequestDto:
       type: object
       properties:
         center:
-          $ref: '#/components/schemas/PlacesCoordinatesDto'
+          $ref: "#/components/schemas/PlacesCoordinatesDto"
         radiusKm:
           type: number
         category:
@@ -5991,14 +5991,14 @@ components:
         results:
           type: array
           items:
-            $ref: '#/components/schemas/FederatedPlaceResultDto'
+            $ref: "#/components/schemas/FederatedPlaceResultDto"
       required:
         - results
     DiscoverHiddenGemsRequestDto:
       type: object
       properties:
         center:
-          $ref: '#/components/schemas/PlacesCoordinatesDto'
+          $ref: "#/components/schemas/PlacesCoordinatesDto"
         radiusKm:
           type: number
           description: Day-trip radius in km. Use-case caps at 300.
@@ -6066,7 +6066,7 @@ components:
         gems:
           type: array
           items:
-            $ref: '#/components/schemas/HiddenGemDto'
+            $ref: "#/components/schemas/HiddenGemDto"
       required:
         - gems
     DailyForecastDto:
@@ -6108,7 +6108,7 @@ components:
         days:
           type: array
           items:
-            $ref: '#/components/schemas/DailyForecastDto'
+            $ref: "#/components/schemas/DailyForecastDto"
       required:
         - lat
         - lng
@@ -6153,7 +6153,7 @@ components:
         hours:
           type: array
           items:
-            $ref: '#/components/schemas/HourlyForecastDto'
+            $ref: "#/components/schemas/HourlyForecastDto"
       required:
         - lat
         - lng
@@ -6173,7 +6173,7 @@ components:
       type: object
       properties:
         center:
-          $ref: '#/components/schemas/StaysCoordinatesDto'
+          $ref: "#/components/schemas/StaysCoordinatesDto"
         radiusKm:
           type: number
         checkIn:
@@ -6275,7 +6275,7 @@ components:
         stays:
           type: array
           items:
-            $ref: '#/components/schemas/StayListingDto'
+            $ref: "#/components/schemas/StayListingDto"
       required:
         - stays
     FoodCoordinatesDto:
@@ -6292,7 +6292,7 @@ components:
       type: object
       properties:
         center:
-          $ref: '#/components/schemas/FoodCoordinatesDto'
+          $ref: "#/components/schemas/FoodCoordinatesDto"
         radiusKm:
           type: number
           description: Search radius in km.
@@ -6352,7 +6352,7 @@ components:
           description: Matching eateries, nearest-first.
           type: array
           items:
-            $ref: '#/components/schemas/EateryListingDto'
+            $ref: "#/components/schemas/EateryListingDto"
       required:
         - eateries
     DishDto:
@@ -6400,7 +6400,7 @@ components:
         dishes:
           type: array
           items:
-            $ref: '#/components/schemas/DishDto'
+            $ref: "#/components/schemas/DishDto"
       required:
         - dishes
     AddDishReportRequestDto:
@@ -6459,7 +6459,7 @@ components:
         stops:
           type: array
           items:
-            $ref: '#/components/schemas/FoodCrawlStopDto'
+            $ref: "#/components/schemas/FoodCrawlStopDto"
         totalDistanceMeters:
           type: number
         totalWalkingSeconds:
@@ -6482,7 +6482,7 @@ components:
       type: object
       properties:
         center:
-          $ref: '#/components/schemas/EventsCoordinatesDto'
+          $ref: "#/components/schemas/EventsCoordinatesDto"
         radiusKm:
           type: number
         from:
@@ -6570,7 +6570,7 @@ components:
         events:
           type: array
           items:
-            $ref: '#/components/schemas/EventListingDto'
+            $ref: "#/components/schemas/EventListingDto"
       required:
         - events
     FestivalsDuringResponseDto:
@@ -6580,7 +6580,7 @@ components:
           description: Festival events overlapping the requested window, soonest-first.
           type: array
           items:
-            $ref: '#/components/schemas/EventListingDto'
+            $ref: "#/components/schemas/EventListingDto"
       required:
         - festivals
     TransportCoordinatesDto:
@@ -6597,9 +6597,9 @@ components:
       type: object
       properties:
         origin:
-          $ref: '#/components/schemas/TransportCoordinatesDto'
+          $ref: "#/components/schemas/TransportCoordinatesDto"
         destination:
-          $ref: '#/components/schemas/TransportCoordinatesDto'
+          $ref: "#/components/schemas/TransportCoordinatesDto"
         modes:
           type: array
           description: Filter to a subset of modes; empty/omitted means all available.
@@ -6659,7 +6659,7 @@ components:
           description: One leg per available mode.
           type: array
           items:
-            $ref: '#/components/schemas/RouteLegDto'
+            $ref: "#/components/schemas/RouteLegDto"
       required:
         - routes
     NavCoordinatesDto:
@@ -6676,14 +6676,14 @@ components:
       type: object
       properties:
         origin:
-          $ref: '#/components/schemas/NavCoordinatesDto'
+          $ref: "#/components/schemas/NavCoordinatesDto"
         destination:
-          $ref: '#/components/schemas/NavCoordinatesDto'
+          $ref: "#/components/schemas/NavCoordinatesDto"
         waypoints:
           description: Intermediate stops in visiting order (≤ 8).
           type: array
           items:
-            $ref: '#/components/schemas/NavCoordinatesDto'
+            $ref: "#/components/schemas/NavCoordinatesDto"
       required:
         - origin
         - destination
@@ -6761,15 +6761,15 @@ components:
         geometry:
           type: array
           items:
-            $ref: '#/components/schemas/NavPointDto'
+            $ref: "#/components/schemas/NavPointDto"
         trafficSegments:
           type: array
           items:
-            $ref: '#/components/schemas/TrafficSegmentDto'
+            $ref: "#/components/schemas/TrafficSegmentDto"
         advisories:
           type: array
           items:
-            $ref: '#/components/schemas/NavAdvisoryDto'
+            $ref: "#/components/schemas/NavAdvisoryDto"
         trafficSource:
           type: string
           enum:
@@ -6794,7 +6794,7 @@ components:
           description: Fastest + scenic + avoid-traffic options.
           type: array
           items:
-            $ref: '#/components/schemas/NavRouteDto'
+            $ref: "#/components/schemas/NavRouteDto"
         recommendedRouteId:
           type: string
           description: Id of the route to recommend right now.
@@ -6835,7 +6835,7 @@ components:
         center:
           description: Where the scam was witnessed.
           allOf:
-            - $ref: '#/components/schemas/CoordinatesDto'
+            - $ref: "#/components/schemas/CoordinatesDto"
         description:
           type: string
           description: Free-form prose description of the scam.
@@ -6895,7 +6895,7 @@ components:
       type: object
       properties:
         center:
-          $ref: '#/components/schemas/CoordinatesDto'
+          $ref: "#/components/schemas/CoordinatesDto"
         radiusKm:
           type: number
           description: Search radius in kilometers.
@@ -6967,7 +6967,7 @@ components:
           description: Matching reports, nearest-first.
           type: array
           items:
-            $ref: '#/components/schemas/ScamReportWithDistanceDto'
+            $ref: "#/components/schemas/ScamReportWithDistanceDto"
       required:
         - reports
     TriggerSosRequestDto:
@@ -6982,7 +6982,7 @@ components:
             - lost
             - other
         center:
-          $ref: '#/components/schemas/CoordinatesDto'
+          $ref: "#/components/schemas/CoordinatesDto"
       required:
         - trigger
         - center
@@ -7026,7 +7026,7 @@ components:
         events:
           type: array
           items:
-            $ref: '#/components/schemas/SosEventDto'
+            $ref: "#/components/schemas/SosEventDto"
       required:
         - events
     ResolveSosRequestDto:
@@ -7040,7 +7040,7 @@ components:
       type: object
       properties:
         center:
-          $ref: '#/components/schemas/CoordinatesDto'
+          $ref: "#/components/schemas/CoordinatesDto"
         radiusKm:
           type: number
         category:
@@ -7096,14 +7096,14 @@ components:
         incidents:
           type: array
           items:
-            $ref: '#/components/schemas/CrimeIncidentDto'
+            $ref: "#/components/schemas/CrimeIncidentDto"
       required:
         - incidents
     SafetyScoreRequestDto:
       type: object
       properties:
         center:
-          $ref: '#/components/schemas/CoordinatesDto'
+          $ref: "#/components/schemas/CoordinatesDto"
         radiusKm:
           type: number
           description: Search radius in km (default depends on use-case).
@@ -7153,7 +7153,7 @@ components:
             - F
           description: Letter grade derived from score.
         breakdown:
-          $ref: '#/components/schemas/SafetyScoreBreakdownDto'
+          $ref: "#/components/schemas/SafetyScoreBreakdownDto"
         computedAt:
           type: string
           format: date-time
@@ -7171,7 +7171,7 @@ components:
         reports:
           type: array
           items:
-            $ref: '#/components/schemas/ScamReportDto'
+            $ref: "#/components/schemas/ScamReportDto"
       required:
         - reports
     AdminListSosEventsResponseDto:
@@ -7180,7 +7180,7 @@ components:
         events:
           type: array
           items:
-            $ref: '#/components/schemas/SosEventDto'
+            $ref: "#/components/schemas/SosEventDto"
         total:
           type: number
       required:
@@ -7255,7 +7255,7 @@ components:
             region yet).
           type: array
           items:
-            $ref: '#/components/schemas/AgentMatchDto'
+            $ref: "#/components/schemas/AgentMatchDto"
       required:
         - matches
     AgentProfileDto:
@@ -7430,17 +7430,17 @@ components:
       type: object
       properties:
         profile:
-          $ref: '#/components/schemas/AgentProfileDto'
+          $ref: "#/components/schemas/AgentProfileDto"
         bookings:
           type: array
           items:
-            $ref: '#/components/schemas/AgentBookingSummaryDto'
+            $ref: "#/components/schemas/AgentBookingSummaryDto"
         earnings:
-          $ref: '#/components/schemas/AgentEarningsSummaryDto'
+          $ref: "#/components/schemas/AgentEarningsSummaryDto"
         reviews:
           type: array
           items:
-            $ref: '#/components/schemas/AgentReviewWithResponseDto'
+            $ref: "#/components/schemas/AgentReviewWithResponseDto"
         windowDays:
           type: number
           description: Lookback window applied (1..365).
@@ -7490,11 +7490,11 @@ components:
         emergencyNumbers:
           type: array
           items:
-            $ref: '#/components/schemas/EmergencyNumberDto'
+            $ref: "#/components/schemas/EmergencyNumberDto"
         languagePhrases:
           type: array
           items:
-            $ref: '#/components/schemas/LanguagePhraseDto'
+            $ref: "#/components/schemas/LanguagePhraseDto"
         seededAt:
           type: string
           format: date-time
@@ -7626,7 +7626,7 @@ components:
       type: object
       properties:
         metadata:
-          $ref: '#/components/schemas/UserDataExportMetadataDto'
+          $ref: "#/components/schemas/UserDataExportMetadataDto"
         identity:
           type: object
           additionalProperties: true
@@ -7636,8 +7636,8 @@ components:
         trips:
           type: object
           additionalProperties: true
-          description: 'Trips section — { count, rows[] }. Row shape: ExportedTrip in
-            user-data-export.entity.ts.'
+          description: "Trips section — { count, rows[] }. Row shape: ExportedTrip in
+            user-data-export.entity.ts."
         itineraryDays:
           type: object
           additionalProperties: true
@@ -7806,7 +7806,7 @@ components:
         users:
           type: array
           items:
-            $ref: '#/components/schemas/AdminUserDto'
+            $ref: "#/components/schemas/AdminUserDto"
         total:
           type: number
           description: Total matching rows across all pages.
@@ -7859,7 +7859,7 @@ components:
         appeals:
           type: array
           items:
-            $ref: '#/components/schemas/AdminBanAppealDto'
+            $ref: "#/components/schemas/AdminBanAppealDto"
         total:
           type: number
       required:
@@ -7915,7 +7915,7 @@ components:
           description: Caller's pre-set safety contacts. At most 3 per account.
           type: array
           items:
-            $ref: '#/components/schemas/TrustedContactDto'
+            $ref: "#/components/schemas/TrustedContactDto"
       required:
         - contacts
     AddTrustedContactRequestDto:
@@ -8232,9 +8232,9 @@ components:
           format: date-time
           description: When the presigned URL expires.
         asset:
-          description: 'Initial asset row (status: pending).'
+          description: "Initial asset row (status: pending)."
           allOf:
-            - $ref: '#/components/schemas/MediaAssetDto'
+            - $ref: "#/components/schemas/MediaAssetDto"
       required:
         - mediaAssetId
         - uploadUrl
@@ -8274,7 +8274,7 @@ components:
             Capped via ?limit (1..200, default 50).
           type: array
           items:
-            $ref: '#/components/schemas/MediaAssetDto'
+            $ref: "#/components/schemas/MediaAssetDto"
       required:
         - media
     AttachMediaToBookRequestDto:
@@ -8324,7 +8324,7 @@ components:
           description: Currently-published memory books, ordered by publishedAt DESC.
           type: array
           items:
-            $ref: '#/components/schemas/PublicMemoryBookDto'
+            $ref: "#/components/schemas/PublicMemoryBookDto"
       required:
         - books
     MemoryBookAssetSummaryDto:
@@ -8354,7 +8354,7 @@ components:
       type: object
       properties:
         book:
-          $ref: '#/components/schemas/PublicMemoryBookDto'
+          $ref: "#/components/schemas/PublicMemoryBookDto"
         assetIds:
           description: Asset ids attached to this published book. Use GET
             /memory-books/public/:id/assets/:assetId/download-url to mint a
@@ -8367,7 +8367,7 @@ components:
             mode.
           type: array
           items:
-            $ref: '#/components/schemas/MemoryBookAssetSummaryDto'
+            $ref: "#/components/schemas/MemoryBookAssetSummaryDto"
       required:
         - book
         - assetIds
@@ -8447,14 +8447,14 @@ components:
           description: Caller-owned memory books, newest first. Default 50 / cap 200.
           type: array
           items:
-            $ref: '#/components/schemas/MemoryBookDto'
+            $ref: "#/components/schemas/MemoryBookDto"
       required:
         - books
     MemoryBookWithAssetsResponseDto:
       type: object
       properties:
         book:
-          $ref: '#/components/schemas/MemoryBookDto'
+          $ref: "#/components/schemas/MemoryBookDto"
         assetIds:
           description: Asset ids attached to this book (any status).
           type: array
@@ -8464,7 +8464,7 @@ components:
           description: V.UX.11 — same assets enriched with caption + position.
           type: array
           items:
-            $ref: '#/components/schemas/MemoryBookAssetSummaryDto'
+            $ref: "#/components/schemas/MemoryBookAssetSummaryDto"
       required:
         - book
         - assetIds
@@ -8512,7 +8512,7 @@ components:
       properties:
         label:
           type: string
-          description: 'Variant label: thumb | medium.'
+          description: "Variant label: thumb | medium."
         format:
           type: string
           description: Output format (webp today).
@@ -8564,7 +8564,7 @@ components:
         variants:
           type: array
           items:
-            $ref: '#/components/schemas/AdminMediaVariantDto'
+            $ref: "#/components/schemas/AdminMediaVariantDto"
         thumbDownloadUrl:
           type: string
           nullable: true
@@ -8585,7 +8585,7 @@ components:
         media:
           type: array
           items:
-            $ref: '#/components/schemas/AdminMediaDto'
+            $ref: "#/components/schemas/AdminMediaDto"
         total:
           type: number
       required:
@@ -8662,7 +8662,7 @@ components:
             (1..200, default 50).
           type: array
           items:
-            $ref: '#/components/schemas/NotificationLogDto'
+            $ref: "#/components/schemas/NotificationLogDto"
       required:
         - notifications
     MarkAllReadResponseDto:
@@ -8751,7 +8751,7 @@ components:
           type: string
           description: Browser-vendor endpoint URL.
         keys:
-          $ref: '#/components/schemas/SubscribePushKeysDto'
+          $ref: "#/components/schemas/SubscribePushKeysDto"
       required:
         - endpoint
         - keys
@@ -8897,7 +8897,7 @@ components:
         rows:
           type: array
           items:
-            $ref: '#/components/schemas/AdminAuditLogDto'
+            $ref: "#/components/schemas/AdminAuditLogDto"
         total:
           type: number
       required:
@@ -8984,15 +8984,15 @@ components:
           type: number
           description: Retention window in days (default 7).
         users:
-          $ref: '#/components/schemas/RetentionUsersDto'
+          $ref: "#/components/schemas/RetentionUsersDto"
         trips:
-          $ref: '#/components/schemas/RetentionTripsDto'
+          $ref: "#/components/schemas/RetentionTripsDto"
         safety:
-          $ref: '#/components/schemas/RetentionSafetyDto'
+          $ref: "#/components/schemas/RetentionSafetyDto"
         inbox:
-          $ref: '#/components/schemas/RetentionInboxDto'
+          $ref: "#/components/schemas/RetentionInboxDto"
         appeals:
-          $ref: '#/components/schemas/RetentionAppealsDto'
+          $ref: "#/components/schemas/RetentionAppealsDto"
         computedAt:
           type: string
           format: date-time
@@ -9041,7 +9041,7 @@ components:
         rows:
           type: array
           items:
-            $ref: '#/components/schemas/TakedownRowDto'
+            $ref: "#/components/schemas/TakedownRowDto"
         total:
           type: number
       required:
@@ -9080,7 +9080,7 @@ components:
           type: string
         value:
           type: number
-          description: 'Vote value: -1 (down), 0 (meh), +1 (up).'
+          description: "Vote value: -1 (down), 0 (meh), +1 (up)."
       required:
         - targetType
         - targetId
@@ -9166,7 +9166,7 @@ components:
         tallies:
           type: array
           items:
-            $ref: '#/components/schemas/VoteTallyDto'
+            $ref: "#/components/schemas/VoteTallyDto"
       required:
         - tallies
     CreateExpenseRequestDto:
@@ -9236,7 +9236,7 @@ components:
         expenses:
           type: array
           items:
-            $ref: '#/components/schemas/ExpenseDto'
+            $ref: "#/components/schemas/ExpenseDto"
       required:
         - expenses
     UserBalanceDto:
@@ -9259,7 +9259,7 @@ components:
           description: Sorted largest-creditor-first.
           type: array
           items:
-            $ref: '#/components/schemas/UserBalanceDto'
+            $ref: "#/components/schemas/UserBalanceDto"
       required:
         - balances
     SettleTransferDto:
@@ -9288,7 +9288,7 @@ components:
             non-zero balance holders.
           type: array
           items:
-            $ref: '#/components/schemas/SettleTransferDto'
+            $ref: "#/components/schemas/SettleTransferDto"
       required:
         - transfers
     CreateReviewRequestDto:
@@ -9415,7 +9415,7 @@ components:
         reviews:
           type: array
           items:
-            $ref: '#/components/schemas/ReviewDto'
+            $ref: "#/components/schemas/ReviewDto"
       required:
         - reviews
     RespondToReviewRequestDto:
@@ -9536,13 +9536,13 @@ components:
           type: string
           format: cuid
         reviews:
-          $ref: '#/components/schemas/ReviewBundleReviewsDto'
+          $ref: "#/components/schemas/ReviewBundleReviewsDto"
         votes:
-          $ref: '#/components/schemas/ReviewBundleVotesDto'
+          $ref: "#/components/schemas/ReviewBundleVotesDto"
         recentReviews:
           type: array
           items:
-            $ref: '#/components/schemas/RecentReviewDto'
+            $ref: "#/components/schemas/RecentReviewDto"
       required:
         - placeId
         - reviews
@@ -9554,13 +9554,13 @@ components:
         stayId:
           type: string
         reviews:
-          $ref: '#/components/schemas/ReviewBundleReviewsDto'
+          $ref: "#/components/schemas/ReviewBundleReviewsDto"
         votes:
-          $ref: '#/components/schemas/ReviewBundleVotesDto'
+          $ref: "#/components/schemas/ReviewBundleVotesDto"
         recentReviews:
           type: array
           items:
-            $ref: '#/components/schemas/RecentReviewDto'
+            $ref: "#/components/schemas/RecentReviewDto"
       required:
         - stayId
         - reviews
@@ -9572,13 +9572,13 @@ components:
         eateryId:
           type: string
         reviews:
-          $ref: '#/components/schemas/ReviewBundleReviewsDto'
+          $ref: "#/components/schemas/ReviewBundleReviewsDto"
         votes:
-          $ref: '#/components/schemas/ReviewBundleVotesDto'
+          $ref: "#/components/schemas/ReviewBundleVotesDto"
         recentReviews:
           type: array
           items:
-            $ref: '#/components/schemas/RecentReviewDto'
+            $ref: "#/components/schemas/RecentReviewDto"
       required:
         - eateryId
         - reviews
@@ -9591,13 +9591,13 @@ components:
           type: string
           format: cuid
         reviews:
-          $ref: '#/components/schemas/ReviewBundleReviewsDto'
+          $ref: "#/components/schemas/ReviewBundleReviewsDto"
         votes:
-          $ref: '#/components/schemas/ReviewBundleVotesDto'
+          $ref: "#/components/schemas/ReviewBundleVotesDto"
         recentReviews:
           type: array
           items:
-            $ref: '#/components/schemas/RecentReviewDto'
+            $ref: "#/components/schemas/RecentReviewDto"
       required:
         - agentId
         - reviews
@@ -9697,11 +9697,11 @@ components:
         displayName:
           type: string
         karma:
-          $ref: '#/components/schemas/UserKarmaDto'
+          $ref: "#/components/schemas/UserKarmaDto"
         recentReviews:
           type: array
           items:
-            $ref: '#/components/schemas/PublicReviewerRecentReviewDto'
+            $ref: "#/components/schemas/PublicReviewerRecentReviewDto"
       required:
         - userId
         - displayName
@@ -9712,8 +9712,8 @@ components:
       properties:
         kind:
           type: string
-          description: 'Activity discriminator: trip.created | trip.updated |
-            review.authored | memory_book.published | scam.reported | etc.'
+          description: "Activity discriminator: trip.created | trip.updated |
+            review.authored | memory_book.published | scam.reported | etc."
         occurredAt:
           type: string
           format: date-time
@@ -9733,7 +9733,7 @@ components:
           description: Caller's recent activity, newest-first.
           type: array
           items:
-            $ref: '#/components/schemas/FeedItemDto'
+            $ref: "#/components/schemas/FeedItemDto"
         nextBefore:
           type: object
           nullable: true
@@ -9849,10 +9849,10 @@ components:
       properties:
         subscription:
           nullable: true
-          description: '`null` when the caller has no Subscription row on file.'
+          description: "`null` when the caller has no Subscription row on file."
           type: object
           allOf:
-            - $ref: '#/components/schemas/CurrentSubscriptionDto'
+            - $ref: "#/components/schemas/CurrentSubscriptionDto"
       required:
         - subscription
     PortalUrlResponseDto:
@@ -9934,9 +9934,9 @@ components:
       type: object
       properties:
         entry:
-          $ref: '#/components/schemas/DiaryEntryDto'
+          $ref: "#/components/schemas/DiaryEntryDto"
         gamification:
-          $ref: '#/components/schemas/GamificationDeltaDto'
+          $ref: "#/components/schemas/GamificationDeltaDto"
       required:
         - entry
         - gamification
@@ -9946,7 +9946,7 @@ components:
         entries:
           type: array
           items:
-            $ref: '#/components/schemas/DiaryEntryDto'
+            $ref: "#/components/schemas/DiaryEntryDto"
       required:
         - entries
     BadgeViewDto:
@@ -9987,7 +9987,7 @@ components:
         badges:
           type: array
           items:
-            $ref: '#/components/schemas/BadgeViewDto'
+            $ref: "#/components/schemas/BadgeViewDto"
       required:
         - totalPoints
         - currentStreak

@@ -3,7 +3,7 @@
 // Regenerate via: pnpm --filter=@app/sdk sdk:gen
 import type {
   FollowControllerFollowersParams,
-  FollowControllerFollowingParams,
+  FollowControllerFollowingParams
 } from '../../schemas';
 
 import { apiFetch } from '../../../runtime/fetcher';
@@ -12,192 +12,227 @@ import { apiFetch } from '../../../runtime/fetcher';
  * @summary Follow a user (idempotent; self-follow 422; blocked pair 403).
  */
 export type followControllerFollowResponse200 = {
-  data: void;
-  status: 200;
-};
-
-export type followControllerFollowResponseSuccess = followControllerFollowResponse200 & {
+  data: void
+  status: 200
+}
+    
+export type followControllerFollowResponseSuccess = (followControllerFollowResponse200) & {
   headers: Headers;
 };
-export type followControllerFollowResponse = followControllerFollowResponseSuccess;
+;
 
-export const getFollowControllerFollowUrl = (id: string) => {
-  return `/api/v1/users/${id}/follow`;
-};
+export type followControllerFollowResponse = (followControllerFollowResponseSuccess)
 
-export const followControllerFollow = async (
-  id: string,
-  options?: RequestInit,
-): Promise<followControllerFollowResponse> => {
-  return apiFetch<followControllerFollowResponse>(getFollowControllerFollowUrl(id), {
+export const getFollowControllerFollowUrl = (id: string,) => {
+
+
+  
+
+  return `/api/v1/users/${id}/follow`
+}
+
+export const followControllerFollow = async (id: string, options?: RequestInit): Promise<followControllerFollowResponse> => {
+  
+  return apiFetch<followControllerFollowResponse>(getFollowControllerFollowUrl(id),
+  {      
     ...options,
-    method: 'POST',
-  });
-};
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Unfollow a user (idempotent).
  */
 export type followControllerUnfollowResponse200 = {
-  data: void;
-  status: 200;
-};
-
-export type followControllerUnfollowResponseSuccess = followControllerUnfollowResponse200 & {
+  data: void
+  status: 200
+}
+    
+export type followControllerUnfollowResponseSuccess = (followControllerUnfollowResponse200) & {
   headers: Headers;
 };
-export type followControllerUnfollowResponse = followControllerUnfollowResponseSuccess;
+;
 
-export const getFollowControllerUnfollowUrl = (id: string) => {
-  return `/api/v1/users/${id}/follow`;
-};
+export type followControllerUnfollowResponse = (followControllerUnfollowResponseSuccess)
 
-export const followControllerUnfollow = async (
-  id: string,
-  options?: RequestInit,
-): Promise<followControllerUnfollowResponse> => {
-  return apiFetch<followControllerUnfollowResponse>(getFollowControllerUnfollowUrl(id), {
+export const getFollowControllerUnfollowUrl = (id: string,) => {
+
+
+  
+
+  return `/api/v1/users/${id}/follow`
+}
+
+export const followControllerUnfollow = async (id: string, options?: RequestInit): Promise<followControllerUnfollowResponse> => {
+  
+  return apiFetch<followControllerUnfollowResponse>(getFollowControllerUnfollowUrl(id),
+  {      
     ...options,
-    method: 'DELETE',
-  });
-};
+    method: 'DELETE'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Block a user (idempotent; self-block 422).
  */
 export type followControllerBlockResponse200 = {
-  data: void;
-  status: 200;
-};
-
-export type followControllerBlockResponseSuccess = followControllerBlockResponse200 & {
+  data: void
+  status: 200
+}
+    
+export type followControllerBlockResponseSuccess = (followControllerBlockResponse200) & {
   headers: Headers;
 };
-export type followControllerBlockResponse = followControllerBlockResponseSuccess;
+;
 
-export const getFollowControllerBlockUrl = (id: string) => {
-  return `/api/v1/users/${id}/block`;
-};
+export type followControllerBlockResponse = (followControllerBlockResponseSuccess)
 
-export const followControllerBlock = async (
-  id: string,
-  options?: RequestInit,
-): Promise<followControllerBlockResponse> => {
-  return apiFetch<followControllerBlockResponse>(getFollowControllerBlockUrl(id), {
+export const getFollowControllerBlockUrl = (id: string,) => {
+
+
+  
+
+  return `/api/v1/users/${id}/block`
+}
+
+export const followControllerBlock = async (id: string, options?: RequestInit): Promise<followControllerBlockResponse> => {
+  
+  return apiFetch<followControllerBlockResponse>(getFollowControllerBlockUrl(id),
+  {      
     ...options,
-    method: 'POST',
-  });
-};
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Unblock a user (idempotent).
  */
 export type followControllerUnblockResponse200 = {
-  data: void;
-  status: 200;
-};
-
-export type followControllerUnblockResponseSuccess = followControllerUnblockResponse200 & {
+  data: void
+  status: 200
+}
+    
+export type followControllerUnblockResponseSuccess = (followControllerUnblockResponse200) & {
   headers: Headers;
 };
-export type followControllerUnblockResponse = followControllerUnblockResponseSuccess;
+;
 
-export const getFollowControllerUnblockUrl = (id: string) => {
-  return `/api/v1/users/${id}/block`;
-};
+export type followControllerUnblockResponse = (followControllerUnblockResponseSuccess)
 
-export const followControllerUnblock = async (
-  id: string,
-  options?: RequestInit,
-): Promise<followControllerUnblockResponse> => {
-  return apiFetch<followControllerUnblockResponse>(getFollowControllerUnblockUrl(id), {
+export const getFollowControllerUnblockUrl = (id: string,) => {
+
+
+  
+
+  return `/api/v1/users/${id}/block`
+}
+
+export const followControllerUnblock = async (id: string, options?: RequestInit): Promise<followControllerUnblockResponse> => {
+  
+  return apiFetch<followControllerUnblockResponse>(getFollowControllerUnblockUrl(id),
+  {      
     ...options,
-    method: 'DELETE',
-  });
-};
+    method: 'DELETE'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Users who follow :id (newest first). Block-filtered against the caller. Unknown user → empty list.
  */
 export type followControllerFollowersResponse200 = {
-  data: void;
-  status: 200;
-};
-
-export type followControllerFollowersResponseSuccess = followControllerFollowersResponse200 & {
+  data: void
+  status: 200
+}
+    
+export type followControllerFollowersResponseSuccess = (followControllerFollowersResponse200) & {
   headers: Headers;
 };
-export type followControllerFollowersResponse = followControllerFollowersResponseSuccess;
+;
 
-export const getFollowControllerFollowersUrl = (
-  id: string,
-  params?: FollowControllerFollowersParams,
-) => {
+export type followControllerFollowersResponse = (followControllerFollowersResponseSuccess)
+
+export const getFollowControllerFollowersUrl = (id: string,
+    params?: FollowControllerFollowersParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
+    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString());
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0
-    ? `/api/v1/users/${id}/followers?${stringifiedParams}`
-    : `/api/v1/users/${id}/followers`;
-};
+  return stringifiedParams.length > 0 ? `/api/v1/users/${id}/followers?${stringifiedParams}` : `/api/v1/users/${id}/followers`
+}
 
-export const followControllerFollowers = async (
-  id: string,
-  params?: FollowControllerFollowersParams,
-  options?: RequestInit,
-): Promise<followControllerFollowersResponse> => {
-  return apiFetch<followControllerFollowersResponse>(getFollowControllerFollowersUrl(id, params), {
+export const followControllerFollowers = async (id: string,
+    params?: FollowControllerFollowersParams, options?: RequestInit): Promise<followControllerFollowersResponse> => {
+  
+  return apiFetch<followControllerFollowersResponse>(getFollowControllerFollowersUrl(id,params),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Users that :id follows (newest first). Block-filtered against the caller. Unknown user → empty list.
  */
 export type followControllerFollowingResponse200 = {
-  data: void;
-  status: 200;
-};
-
-export type followControllerFollowingResponseSuccess = followControllerFollowingResponse200 & {
+  data: void
+  status: 200
+}
+    
+export type followControllerFollowingResponseSuccess = (followControllerFollowingResponse200) & {
   headers: Headers;
 };
-export type followControllerFollowingResponse = followControllerFollowingResponseSuccess;
+;
 
-export const getFollowControllerFollowingUrl = (
-  id: string,
-  params?: FollowControllerFollowingParams,
-) => {
+export type followControllerFollowingResponse = (followControllerFollowingResponseSuccess)
+
+export const getFollowControllerFollowingUrl = (id: string,
+    params?: FollowControllerFollowingParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
+    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString());
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0
-    ? `/api/v1/users/${id}/following?${stringifiedParams}`
-    : `/api/v1/users/${id}/following`;
-};
+  return stringifiedParams.length > 0 ? `/api/v1/users/${id}/following?${stringifiedParams}` : `/api/v1/users/${id}/following`
+}
 
-export const followControllerFollowing = async (
-  id: string,
-  params?: FollowControllerFollowingParams,
-  options?: RequestInit,
-): Promise<followControllerFollowingResponse> => {
-  return apiFetch<followControllerFollowingResponse>(getFollowControllerFollowingUrl(id, params), {
+export const followControllerFollowing = async (id: string,
+    params?: FollowControllerFollowingParams, options?: RequestInit): Promise<followControllerFollowingResponse> => {
+  
+  return apiFetch<followControllerFollowingResponse>(getFollowControllerFollowingUrl(id,params),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
+

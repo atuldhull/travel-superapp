@@ -5,3 +5,10 @@
 **/coverage/**
 **/build/**
 pnpm-lock.yaml
+
+# Generated artefacts — owned by the codegen pipeline ([D1] sdk:check).
+# If prettier reformats these, the gate compares pre-prettier (fresh
+# regen) to post-prettier (HEAD) and never converges. Same reason
+# pnpm-lock.yaml is ignored above.
+docs/api/openapi.yaml
+packages/sdk/src/generated/**

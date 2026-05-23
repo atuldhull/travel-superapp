@@ -12,7 +12,7 @@ import type {
   StorageStatsResponseDto,
   TrustedContactDto,
   UpdatePreferencesRequestDto,
-  UserDataExportResponseDto,
+  UserDataExportResponseDto
 } from '../../schemas';
 
 import { apiFetch } from '../../../runtime/fetcher';
@@ -21,428 +21,470 @@ import { apiFetch } from '../../../runtime/fetcher';
  * @summary V.UX.32 — caller-scoped storage stats per category. Powers the /account/privacy hub's 'we store: 24 trips, 130 photos…' panel.
  */
 export type accountControllerStorageStatsResponse200 = {
-  data: StorageStatsResponseDto;
-  status: 200;
+  data: StorageStatsResponseDto
+  status: 200
+}
+    
+export type accountControllerStorageStatsResponseSuccess = (accountControllerStorageStatsResponse200) & {
+  headers: Headers;
 };
+;
 
-export type accountControllerStorageStatsResponseSuccess =
-  accountControllerStorageStatsResponse200 & {
-    headers: Headers;
-  };
-export type accountControllerStorageStatsResponse = accountControllerStorageStatsResponseSuccess;
+export type accountControllerStorageStatsResponse = (accountControllerStorageStatsResponseSuccess)
 
 export const getAccountControllerStorageStatsUrl = () => {
-  return `/api/v1/account/stats`;
-};
 
-export const accountControllerStorageStats = async (
-  options?: RequestInit,
-): Promise<accountControllerStorageStatsResponse> => {
-  return apiFetch<accountControllerStorageStatsResponse>(getAccountControllerStorageStatsUrl(), {
+
+  
+
+  return `/api/v1/account/stats`
+}
+
+export const accountControllerStorageStats = async ( options?: RequestInit): Promise<accountControllerStorageStatsResponse> => {
+  
+  return apiFetch<accountControllerStorageStatsResponse>(getAccountControllerStorageStatsUrl(),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Full GDPR/DPDP/COPPA self-export bundle as a single JSON object. ~30 sections; sensitive fields stripped.
  */
 export type accountControllerExportMyDataResponse200 = {
-  data: UserDataExportResponseDto;
-  status: 200;
+  data: UserDataExportResponseDto
+  status: 200
+}
+    
+export type accountControllerExportMyDataResponseSuccess = (accountControllerExportMyDataResponse200) & {
+  headers: Headers;
 };
+;
 
-export type accountControllerExportMyDataResponseSuccess =
-  accountControllerExportMyDataResponse200 & {
-    headers: Headers;
-  };
-export type accountControllerExportMyDataResponse = accountControllerExportMyDataResponseSuccess;
+export type accountControllerExportMyDataResponse = (accountControllerExportMyDataResponseSuccess)
 
 export const getAccountControllerExportMyDataUrl = () => {
-  return `/api/v1/account/export`;
-};
 
-export const accountControllerExportMyData = async (
-  options?: RequestInit,
-): Promise<accountControllerExportMyDataResponse> => {
-  return apiFetch<accountControllerExportMyDataResponse>(getAccountControllerExportMyDataUrl(), {
+
+  
+
+  return `/api/v1/account/export`
+}
+
+export const accountControllerExportMyData = async ( options?: RequestInit): Promise<accountControllerExportMyDataResponse> => {
+  
+  return apiFetch<accountControllerExportMyDataResponse>(getAccountControllerExportMyDataUrl(),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary NDJSON variant of the export bundle — one `{type,data}` envelope per line. Content-Type: application/x-ndjson.
  */
 export type accountControllerExportMyDataNdjsonResponse200 = {
-  data: void;
-  status: 200;
+  data: void
+  status: 200
+}
+    
+export type accountControllerExportMyDataNdjsonResponseSuccess = (accountControllerExportMyDataNdjsonResponse200) & {
+  headers: Headers;
 };
+;
 
-export type accountControllerExportMyDataNdjsonResponseSuccess =
-  accountControllerExportMyDataNdjsonResponse200 & {
-    headers: Headers;
-  };
-export type accountControllerExportMyDataNdjsonResponse =
-  accountControllerExportMyDataNdjsonResponseSuccess;
+export type accountControllerExportMyDataNdjsonResponse = (accountControllerExportMyDataNdjsonResponseSuccess)
 
 export const getAccountControllerExportMyDataNdjsonUrl = () => {
-  return `/api/v1/account/export.ndjson`;
-};
 
-export const accountControllerExportMyDataNdjson = async (
-  options?: RequestInit,
-): Promise<accountControllerExportMyDataNdjsonResponse> => {
-  return apiFetch<accountControllerExportMyDataNdjsonResponse>(
-    getAccountControllerExportMyDataNdjsonUrl(),
-    {
-      ...options,
-      method: 'GET',
-    },
-  );
-};
+
+  
+
+  return `/api/v1/account/export.ndjson`
+}
+
+export const accountControllerExportMyDataNdjson = async ( options?: RequestInit): Promise<accountControllerExportMyDataNdjsonResponse> => {
+  
+  return apiFetch<accountControllerExportMyDataNdjsonResponse>(getAccountControllerExportMyDataNdjsonUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Soft-delete the caller's account + revoke all live sessions. GDPR Art. 17 / DPDP §12 right-to-erasure.
  */
 export type accountControllerDeleteMyAccountResponse204 = {
-  data: void;
-  status: 204;
+  data: void
+  status: 204
+}
+    
+export type accountControllerDeleteMyAccountResponseSuccess = (accountControllerDeleteMyAccountResponse204) & {
+  headers: Headers;
 };
+;
 
-export type accountControllerDeleteMyAccountResponseSuccess =
-  accountControllerDeleteMyAccountResponse204 & {
-    headers: Headers;
-  };
-export type accountControllerDeleteMyAccountResponse =
-  accountControllerDeleteMyAccountResponseSuccess;
+export type accountControllerDeleteMyAccountResponse = (accountControllerDeleteMyAccountResponseSuccess)
 
 export const getAccountControllerDeleteMyAccountUrl = () => {
-  return `/api/v1/account`;
-};
 
-export const accountControllerDeleteMyAccount = async (
-  options?: RequestInit,
-): Promise<accountControllerDeleteMyAccountResponse> => {
-  return apiFetch<accountControllerDeleteMyAccountResponse>(
-    getAccountControllerDeleteMyAccountUrl(),
-    {
-      ...options,
-      method: 'DELETE',
-    },
-  );
-};
+
+  
+
+  return `/api/v1/account`
+}
+
+export const accountControllerDeleteMyAccount = async ( options?: RequestInit): Promise<accountControllerDeleteMyAccountResponse> => {
+  
+  return apiFetch<accountControllerDeleteMyAccountResponse>(getAccountControllerDeleteMyAccountUrl(),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+);}
+
 
 /**
  * @summary V.UX.33 — restore a soft-deleted account within the 7-day window. Token from deletion-pending email or login response.
  */
 export type accountControllerReactivateResponse200 = {
-  data: ReactivateResponseDto;
-  status: 200;
-};
+  data: ReactivateResponseDto
+  status: 200
+}
 
 export type accountControllerReactivateResponse401 = {
-  data: void;
-  status: 401;
-};
+  data: void
+  status: 401
+}
 
 export type accountControllerReactivateResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type accountControllerReactivateResponseSuccess = accountControllerReactivateResponse200 & {
+  data: void
+  status: 404
+}
+    
+export type accountControllerReactivateResponseSuccess = (accountControllerReactivateResponse200) & {
   headers: Headers;
 };
-export type accountControllerReactivateResponseError = (
-  | accountControllerReactivateResponse401
-  | accountControllerReactivateResponse404
-) & {
+export type accountControllerReactivateResponseError = (accountControllerReactivateResponse401 | accountControllerReactivateResponse404) & {
   headers: Headers;
 };
 
-export type accountControllerReactivateResponse =
-  | accountControllerReactivateResponseSuccess
-  | accountControllerReactivateResponseError;
+export type accountControllerReactivateResponse = (accountControllerReactivateResponseSuccess | accountControllerReactivateResponseError)
 
 export const getAccountControllerReactivateUrl = () => {
-  return `/api/v1/account/reactivate`;
-};
 
-export const accountControllerReactivate = async (
-  reactivateRequestDto: ReactivateRequestDto,
-  options?: RequestInit,
-): Promise<accountControllerReactivateResponse> => {
-  return apiFetch<accountControllerReactivateResponse>(getAccountControllerReactivateUrl(), {
+
+  
+
+  return `/api/v1/account/reactivate`
+}
+
+export const accountControllerReactivate = async (reactivateRequestDto: ReactivateRequestDto, options?: RequestInit): Promise<accountControllerReactivateResponse> => {
+  
+  return apiFetch<accountControllerReactivateResponse>(getAccountControllerReactivateUrl(),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(reactivateRequestDto),
-  });
-};
+    body: JSON.stringify(
+      reactivateRequestDto,)
+  }
+);}
+
 
 /**
  * @summary V.UX.34 — submit a ban appeal. Always returns 200 regardless of registration / ban state.
  */
 export type accountControllerAppealResponse200 = {
-  data: void;
-  status: 200;
-};
+  data: void
+  status: 200
+}
 
 export type accountControllerAppealResponse422 = {
-  data: void;
-  status: 422;
-};
-
-export type accountControllerAppealResponseSuccess = accountControllerAppealResponse200 & {
+  data: void
+  status: 422
+}
+    
+export type accountControllerAppealResponseSuccess = (accountControllerAppealResponse200) & {
   headers: Headers;
 };
-export type accountControllerAppealResponseError = accountControllerAppealResponse422 & {
+export type accountControllerAppealResponseError = (accountControllerAppealResponse422) & {
   headers: Headers;
 };
 
-export type accountControllerAppealResponse =
-  | accountControllerAppealResponseSuccess
-  | accountControllerAppealResponseError;
+export type accountControllerAppealResponse = (accountControllerAppealResponseSuccess | accountControllerAppealResponseError)
 
 export const getAccountControllerAppealUrl = () => {
-  return `/api/v1/account/appeal`;
-};
 
-export const accountControllerAppeal = async (
-  appealRequestDto: AppealRequestDto,
-  options?: RequestInit,
-): Promise<accountControllerAppealResponse> => {
-  return apiFetch<accountControllerAppealResponse>(getAccountControllerAppealUrl(), {
+
+  
+
+  return `/api/v1/account/appeal`
+}
+
+export const accountControllerAppeal = async (appealRequestDto: AppealRequestDto, options?: RequestInit): Promise<accountControllerAppealResponse> => {
+  
+  return apiFetch<accountControllerAppealResponse>(getAccountControllerAppealUrl(),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(appealRequestDto),
-  });
-};
+    body: JSON.stringify(
+      appealRequestDto,)
+  }
+);}
+
 
 /**
  * @summary List the caller's pre-set safety contacts. Cap 3 per account.
  */
 export type trustedContactsControllerListResponse200 = {
-  data: ListTrustedContactsResponseDto;
-  status: 200;
+  data: ListTrustedContactsResponseDto
+  status: 200
+}
+    
+export type trustedContactsControllerListResponseSuccess = (trustedContactsControllerListResponse200) & {
+  headers: Headers;
 };
+;
 
-export type trustedContactsControllerListResponseSuccess =
-  trustedContactsControllerListResponse200 & {
-    headers: Headers;
-  };
-export type trustedContactsControllerListResponse = trustedContactsControllerListResponseSuccess;
+export type trustedContactsControllerListResponse = (trustedContactsControllerListResponseSuccess)
 
 export const getTrustedContactsControllerListUrl = () => {
-  return `/api/v1/account/trusted-contacts`;
-};
 
-export const trustedContactsControllerList = async (
-  options?: RequestInit,
-): Promise<trustedContactsControllerListResponse> => {
-  return apiFetch<trustedContactsControllerListResponse>(getTrustedContactsControllerListUrl(), {
+
+  
+
+  return `/api/v1/account/trusted-contacts`
+}
+
+export const trustedContactsControllerList = async ( options?: RequestInit): Promise<trustedContactsControllerListResponse> => {
+  
+  return apiFetch<trustedContactsControllerListResponse>(getTrustedContactsControllerListUrl(),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Add a trusted contact. Requires at least one of phone or email. 422 CONTACT_LIMIT_REACHED past 3.
  */
 export type trustedContactsControllerAddResponse201 = {
-  data: TrustedContactDto;
-  status: 201;
-};
+  data: TrustedContactDto
+  status: 201
+}
 
 export type trustedContactsControllerAddResponse422 = {
-  data: void;
-  status: 422;
+  data: void
+  status: 422
+}
+    
+export type trustedContactsControllerAddResponseSuccess = (trustedContactsControllerAddResponse201) & {
+  headers: Headers;
 };
-
-export type trustedContactsControllerAddResponseSuccess =
-  trustedContactsControllerAddResponse201 & {
-    headers: Headers;
-  };
-export type trustedContactsControllerAddResponseError = trustedContactsControllerAddResponse422 & {
+export type trustedContactsControllerAddResponseError = (trustedContactsControllerAddResponse422) & {
   headers: Headers;
 };
 
-export type trustedContactsControllerAddResponse =
-  | trustedContactsControllerAddResponseSuccess
-  | trustedContactsControllerAddResponseError;
+export type trustedContactsControllerAddResponse = (trustedContactsControllerAddResponseSuccess | trustedContactsControllerAddResponseError)
 
 export const getTrustedContactsControllerAddUrl = () => {
-  return `/api/v1/account/trusted-contacts`;
-};
 
-export const trustedContactsControllerAdd = async (
-  addTrustedContactRequestDto: AddTrustedContactRequestDto,
-  options?: RequestInit,
-): Promise<trustedContactsControllerAddResponse> => {
-  return apiFetch<trustedContactsControllerAddResponse>(getTrustedContactsControllerAddUrl(), {
+
+  
+
+  return `/api/v1/account/trusted-contacts`
+}
+
+export const trustedContactsControllerAdd = async (addTrustedContactRequestDto: AddTrustedContactRequestDto, options?: RequestInit): Promise<trustedContactsControllerAddResponse> => {
+  
+  return apiFetch<trustedContactsControllerAddResponse>(getTrustedContactsControllerAddUrl(),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(addTrustedContactRequestDto),
-  });
-};
+    body: JSON.stringify(
+      addTrustedContactRequestDto,)
+  }
+);}
+
 
 /**
  * @summary Delete one of the caller-owned trusted contacts.
  */
 export type trustedContactsControllerRemoveResponse204 = {
-  data: void;
-  status: 204;
-};
+  data: void
+  status: 204
+}
 
 export type trustedContactsControllerRemoveResponse404 = {
-  data: void;
-  status: 404;
+  data: void
+  status: 404
+}
+    
+export type trustedContactsControllerRemoveResponseSuccess = (trustedContactsControllerRemoveResponse204) & {
+  headers: Headers;
+};
+export type trustedContactsControllerRemoveResponseError = (trustedContactsControllerRemoveResponse404) & {
+  headers: Headers;
 };
 
-export type trustedContactsControllerRemoveResponseSuccess =
-  trustedContactsControllerRemoveResponse204 & {
-    headers: Headers;
-  };
-export type trustedContactsControllerRemoveResponseError =
-  trustedContactsControllerRemoveResponse404 & {
-    headers: Headers;
-  };
+export type trustedContactsControllerRemoveResponse = (trustedContactsControllerRemoveResponseSuccess | trustedContactsControllerRemoveResponseError)
 
-export type trustedContactsControllerRemoveResponse =
-  | trustedContactsControllerRemoveResponseSuccess
-  | trustedContactsControllerRemoveResponseError;
+export const getTrustedContactsControllerRemoveUrl = (id: string,) => {
 
-export const getTrustedContactsControllerRemoveUrl = (id: string) => {
-  return `/api/v1/account/trusted-contacts/${id}`;
-};
 
-export const trustedContactsControllerRemove = async (
-  id: string,
-  options?: RequestInit,
-): Promise<trustedContactsControllerRemoveResponse> => {
-  return apiFetch<trustedContactsControllerRemoveResponse>(
-    getTrustedContactsControllerRemoveUrl(id),
-    {
-      ...options,
-      method: 'DELETE',
-    },
-  );
-};
+  
+
+  return `/api/v1/account/trusted-contacts/${id}`
+}
+
+export const trustedContactsControllerRemove = async (id: string, options?: RequestInit): Promise<trustedContactsControllerRemoveResponse> => {
+  
+  return apiFetch<trustedContactsControllerRemoveResponse>(getTrustedContactsControllerRemoveUrl(id),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Caller's preferences. Returns a synthetic default shape if the user has never written any.
  */
 export type preferencesControllerGetMineResponse200 = {
-  data: PreferencesDto;
-  status: 200;
+  data: PreferencesDto
+  status: 200
+}
+    
+export type preferencesControllerGetMineResponseSuccess = (preferencesControllerGetMineResponse200) & {
+  headers: Headers;
 };
+;
 
-export type preferencesControllerGetMineResponseSuccess =
-  preferencesControllerGetMineResponse200 & {
-    headers: Headers;
-  };
-export type preferencesControllerGetMineResponse = preferencesControllerGetMineResponseSuccess;
+export type preferencesControllerGetMineResponse = (preferencesControllerGetMineResponseSuccess)
 
 export const getPreferencesControllerGetMineUrl = () => {
-  return `/api/v1/account/preferences`;
-};
 
-export const preferencesControllerGetMine = async (
-  options?: RequestInit,
-): Promise<preferencesControllerGetMineResponse> => {
-  return apiFetch<preferencesControllerGetMineResponse>(getPreferencesControllerGetMineUrl(), {
+
+  
+
+  return `/api/v1/account/preferences`
+}
+
+export const preferencesControllerGetMine = async ( options?: RequestInit): Promise<preferencesControllerGetMineResponse> => {
+  
+  return apiFetch<preferencesControllerGetMineResponse>(getPreferencesControllerGetMineUrl(),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Partial update of the caller-owned preferences. Idempotent upsert; empty body is a no-op.
  */
 export type preferencesControllerUpdateMineResponse200 = {
-  data: PreferencesDto;
-  status: 200;
-};
+  data: PreferencesDto
+  status: 200
+}
 
 export type preferencesControllerUpdateMineResponse422 = {
-  data: void;
-  status: 422;
+  data: void
+  status: 422
+}
+    
+export type preferencesControllerUpdateMineResponseSuccess = (preferencesControllerUpdateMineResponse200) & {
+  headers: Headers;
+};
+export type preferencesControllerUpdateMineResponseError = (preferencesControllerUpdateMineResponse422) & {
+  headers: Headers;
 };
 
-export type preferencesControllerUpdateMineResponseSuccess =
-  preferencesControllerUpdateMineResponse200 & {
-    headers: Headers;
-  };
-export type preferencesControllerUpdateMineResponseError =
-  preferencesControllerUpdateMineResponse422 & {
-    headers: Headers;
-  };
-
-export type preferencesControllerUpdateMineResponse =
-  | preferencesControllerUpdateMineResponseSuccess
-  | preferencesControllerUpdateMineResponseError;
+export type preferencesControllerUpdateMineResponse = (preferencesControllerUpdateMineResponseSuccess | preferencesControllerUpdateMineResponseError)
 
 export const getPreferencesControllerUpdateMineUrl = () => {
-  return `/api/v1/account/preferences`;
-};
 
-export const preferencesControllerUpdateMine = async (
-  updatePreferencesRequestDto: UpdatePreferencesRequestDto,
-  options?: RequestInit,
-): Promise<preferencesControllerUpdateMineResponse> => {
-  return apiFetch<preferencesControllerUpdateMineResponse>(
-    getPreferencesControllerUpdateMineUrl(),
-    {
-      ...options,
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', ...options?.headers },
-      body: JSON.stringify(updatePreferencesRequestDto),
-    },
-  );
-};
+
+  
+
+  return `/api/v1/account/preferences`
+}
+
+export const preferencesControllerUpdateMine = async (updatePreferencesRequestDto: UpdatePreferencesRequestDto, options?: RequestInit): Promise<preferencesControllerUpdateMineResponse> => {
+  
+  return apiFetch<preferencesControllerUpdateMineResponse>(getPreferencesControllerUpdateMineUrl(),
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updatePreferencesRequestDto,)
+  }
+);}
+
 
 /**
  * @summary Per-country connectivity info (mobile + fixed avg speeds, SIM cost, best carrier, power plugs). Public; seeded editorially.
  */
 export type connectivityControllerByCountryResponse200 = {
-  data: ConnectivityInfoDto;
-  status: 200;
-};
+  data: ConnectivityInfoDto
+  status: 200
+}
 
 export type connectivityControllerByCountryResponse404 = {
-  data: void;
-  status: 404;
+  data: void
+  status: 404
+}
+    
+export type connectivityControllerByCountryResponseSuccess = (connectivityControllerByCountryResponse200) & {
+  headers: Headers;
+};
+export type connectivityControllerByCountryResponseError = (connectivityControllerByCountryResponse404) & {
+  headers: Headers;
 };
 
-export type connectivityControllerByCountryResponseSuccess =
-  connectivityControllerByCountryResponse200 & {
-    headers: Headers;
-  };
-export type connectivityControllerByCountryResponseError =
-  connectivityControllerByCountryResponse404 & {
-    headers: Headers;
-  };
+export type connectivityControllerByCountryResponse = (connectivityControllerByCountryResponseSuccess | connectivityControllerByCountryResponseError)
 
-export type connectivityControllerByCountryResponse =
-  | connectivityControllerByCountryResponseSuccess
-  | connectivityControllerByCountryResponseError;
+export const getConnectivityControllerByCountryUrl = (countryCode: string,) => {
 
-export const getConnectivityControllerByCountryUrl = (countryCode: string) => {
-  return `/api/v1/connectivity/${countryCode}`;
-};
 
-export const connectivityControllerByCountry = async (
-  countryCode: string,
-  options?: RequestInit,
-): Promise<connectivityControllerByCountryResponse> => {
-  return apiFetch<connectivityControllerByCountryResponse>(
-    getConnectivityControllerByCountryUrl(countryCode),
-    {
-      ...options,
-      method: 'GET',
-    },
-  );
-};
+  
+
+  return `/api/v1/connectivity/${countryCode}`
+}
+
+export const connectivityControllerByCountry = async (countryCode: string, options?: RequestInit): Promise<connectivityControllerByCountryResponse> => {
+  
+  return apiFetch<connectivityControllerByCountryResponse>(getConnectivityControllerByCountryUrl(countryCode),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+

@@ -3,7 +3,7 @@
 // Regenerate via: pnpm --filter=@app/sdk sdk:gen
 
 export type NotificationsControllerListMineParams = {
-  limit: string;
-  channel: string;
-  includeArchived: string;
+limit: string;
+channel: string;
+includeArchived: string;
 };

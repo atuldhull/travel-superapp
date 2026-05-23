@@ -3,8 +3,8 @@
 // Regenerate via: pnpm --filter=@app/sdk sdk:gen
 
 export type FollowControllerFollowingParams = {
-  /**
-   * 1..200, default 100
-   */
-  limit?: string;
+/**
+ * 1..200, default 100
+ */
+limit?: string;
 };

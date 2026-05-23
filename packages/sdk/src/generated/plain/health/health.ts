@@ -5,98 +5,118 @@ import type {
   HealthControllerReady200,
   HealthControllerReady503,
   HealthControllerStartup200,
-  HealthControllerStartup503,
+  HealthControllerStartup503
 } from '../../schemas';
 
 import { apiFetch } from '../../../runtime/fetcher';
 
 export type healthControllerLiveResponse200 = {
-  data: void;
-  status: 200;
-};
-
-export type healthControllerLiveResponseSuccess = healthControllerLiveResponse200 & {
+  data: void
+  status: 200
+}
+    
+export type healthControllerLiveResponseSuccess = (healthControllerLiveResponse200) & {
   headers: Headers;
 };
-export type healthControllerLiveResponse = healthControllerLiveResponseSuccess;
+;
+
+export type healthControllerLiveResponse = (healthControllerLiveResponseSuccess)
 
 export const getHealthControllerLiveUrl = () => {
-  return `/health/live`;
-};
 
-export const healthControllerLive = async (
-  options?: RequestInit,
-): Promise<healthControllerLiveResponse> => {
-  return apiFetch<healthControllerLiveResponse>(getHealthControllerLiveUrl(), {
+
+  
+
+  return `/health/live`
+}
+
+export const healthControllerLive = async ( options?: RequestInit): Promise<healthControllerLiveResponse> => {
+  
+  return apiFetch<healthControllerLiveResponse>(getHealthControllerLiveUrl(),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 export type healthControllerReadyResponse200 = {
-  data: HealthControllerReady200;
-  status: 200;
-};
+  data: HealthControllerReady200
+  status: 200
+}
 
 export type healthControllerReadyResponse503 = {
-  data: HealthControllerReady503;
-  status: 503;
-};
-
-export type healthControllerReadyResponseSuccess = healthControllerReadyResponse200 & {
+  data: HealthControllerReady503
+  status: 503
+}
+    
+export type healthControllerReadyResponseSuccess = (healthControllerReadyResponse200) & {
   headers: Headers;
 };
-export type healthControllerReadyResponseError = healthControllerReadyResponse503 & {
+export type healthControllerReadyResponseError = (healthControllerReadyResponse503) & {
   headers: Headers;
 };
 
-export type healthControllerReadyResponse =
-  | healthControllerReadyResponseSuccess
-  | healthControllerReadyResponseError;
+export type healthControllerReadyResponse = (healthControllerReadyResponseSuccess | healthControllerReadyResponseError)
 
 export const getHealthControllerReadyUrl = () => {
-  return `/health/ready`;
-};
 
-export const healthControllerReady = async (
-  options?: RequestInit,
-): Promise<healthControllerReadyResponse> => {
-  return apiFetch<healthControllerReadyResponse>(getHealthControllerReadyUrl(), {
+
+  
+
+  return `/health/ready`
+}
+
+export const healthControllerReady = async ( options?: RequestInit): Promise<healthControllerReadyResponse> => {
+  
+  return apiFetch<healthControllerReadyResponse>(getHealthControllerReadyUrl(),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 export type healthControllerStartupResponse200 = {
-  data: HealthControllerStartup200;
-  status: 200;
-};
+  data: HealthControllerStartup200
+  status: 200
+}
 
 export type healthControllerStartupResponse503 = {
-  data: HealthControllerStartup503;
-  status: 503;
-};
-
-export type healthControllerStartupResponseSuccess = healthControllerStartupResponse200 & {
+  data: HealthControllerStartup503
+  status: 503
+}
+    
+export type healthControllerStartupResponseSuccess = (healthControllerStartupResponse200) & {
   headers: Headers;
 };
-export type healthControllerStartupResponseError = healthControllerStartupResponse503 & {
+export type healthControllerStartupResponseError = (healthControllerStartupResponse503) & {
   headers: Headers;
 };
 
-export type healthControllerStartupResponse =
-  | healthControllerStartupResponseSuccess
-  | healthControllerStartupResponseError;
+export type healthControllerStartupResponse = (healthControllerStartupResponseSuccess | healthControllerStartupResponseError)
 
 export const getHealthControllerStartupUrl = () => {
-  return `/health/startup`;
-};
 
-export const healthControllerStartup = async (
-  options?: RequestInit,
-): Promise<healthControllerStartupResponse> => {
-  return apiFetch<healthControllerStartupResponse>(getHealthControllerStartupUrl(), {
+
+  
+
+  return `/health/startup`
+}
+
+export const healthControllerStartup = async ( options?: RequestInit): Promise<healthControllerStartupResponse> => {
+  
+  return apiFetch<healthControllerStartupResponse>(getHealthControllerStartupUrl(),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
+

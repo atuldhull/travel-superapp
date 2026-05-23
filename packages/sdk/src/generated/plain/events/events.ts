@@ -5,7 +5,7 @@ import type {
   EventsControllerFestivalsParams,
   FestivalsDuringResponseDto,
   SearchEventsRequestDto,
-  SearchEventsResponseDto,
+  SearchEventsResponseDto
 } from '../../schemas';
 
 import { apiFetch } from '../../../runtime/fetcher';
@@ -14,88 +14,91 @@ import { apiFetch } from '../../../runtime/fetcher';
  * @summary Search events within a radius and date window.
  */
 export type eventsControllerSearchResponse200 = {
-  data: SearchEventsResponseDto;
-  status: 200;
-};
+  data: SearchEventsResponseDto
+  status: 200
+}
 
 export type eventsControllerSearchResponse422 = {
-  data: void;
-  status: 422;
-};
-
-export type eventsControllerSearchResponseSuccess = eventsControllerSearchResponse200 & {
+  data: void
+  status: 422
+}
+    
+export type eventsControllerSearchResponseSuccess = (eventsControllerSearchResponse200) & {
   headers: Headers;
 };
-export type eventsControllerSearchResponseError = eventsControllerSearchResponse422 & {
+export type eventsControllerSearchResponseError = (eventsControllerSearchResponse422) & {
   headers: Headers;
 };
 
-export type eventsControllerSearchResponse =
-  | eventsControllerSearchResponseSuccess
-  | eventsControllerSearchResponseError;
+export type eventsControllerSearchResponse = (eventsControllerSearchResponseSuccess | eventsControllerSearchResponseError)
 
 export const getEventsControllerSearchUrl = () => {
-  return `/api/v1/events/search`;
-};
 
-export const eventsControllerSearch = async (
-  searchEventsRequestDto: SearchEventsRequestDto,
-  options?: RequestInit,
-): Promise<eventsControllerSearchResponse> => {
-  return apiFetch<eventsControllerSearchResponse>(getEventsControllerSearchUrl(), {
+
+  
+
+  return `/api/v1/events/search`
+}
+
+export const eventsControllerSearch = async (searchEventsRequestDto: SearchEventsRequestDto, options?: RequestInit): Promise<eventsControllerSearchResponse> => {
+  
+  return apiFetch<eventsControllerSearchResponse>(getEventsControllerSearchUrl(),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(searchEventsRequestDto),
-  });
-};
+    body: JSON.stringify(
+      searchEventsRequestDto,)
+  }
+);}
+
 
 /**
  * @summary List festival events overlapping [from, to] near a centre. Powers the day-card overlay on trip pages.
  */
 export type eventsControllerFestivalsResponse200 = {
-  data: FestivalsDuringResponseDto;
-  status: 200;
-};
+  data: FestivalsDuringResponseDto
+  status: 200
+}
 
 export type eventsControllerFestivalsResponse422 = {
-  data: void;
-  status: 422;
-};
-
-export type eventsControllerFestivalsResponseSuccess = eventsControllerFestivalsResponse200 & {
+  data: void
+  status: 422
+}
+    
+export type eventsControllerFestivalsResponseSuccess = (eventsControllerFestivalsResponse200) & {
   headers: Headers;
 };
-export type eventsControllerFestivalsResponseError = eventsControllerFestivalsResponse422 & {
+export type eventsControllerFestivalsResponseError = (eventsControllerFestivalsResponse422) & {
   headers: Headers;
 };
 
-export type eventsControllerFestivalsResponse =
-  | eventsControllerFestivalsResponseSuccess
-  | eventsControllerFestivalsResponseError;
+export type eventsControllerFestivalsResponse = (eventsControllerFestivalsResponseSuccess | eventsControllerFestivalsResponseError)
 
-export const getEventsControllerFestivalsUrl = (params: EventsControllerFestivalsParams) => {
+export const getEventsControllerFestivalsUrl = (params: EventsControllerFestivalsParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
+    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString());
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0
-    ? `/api/v1/events/festivals?${stringifiedParams}`
-    : `/api/v1/events/festivals`;
-};
+  return stringifiedParams.length > 0 ? `/api/v1/events/festivals?${stringifiedParams}` : `/api/v1/events/festivals`
+}
 
-export const eventsControllerFestivals = async (
-  params: EventsControllerFestivalsParams,
-  options?: RequestInit,
-): Promise<eventsControllerFestivalsResponse> => {
-  return apiFetch<eventsControllerFestivalsResponse>(getEventsControllerFestivalsUrl(params), {
+export const eventsControllerFestivals = async (params: EventsControllerFestivalsParams, options?: RequestInit): Promise<eventsControllerFestivalsResponse> => {
+  
+  return apiFetch<eventsControllerFestivalsResponse>(getEventsControllerFestivalsUrl(params),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
+

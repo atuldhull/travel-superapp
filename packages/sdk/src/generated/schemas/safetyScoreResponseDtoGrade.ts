@@ -5,8 +5,8 @@
 /**
  * Letter grade derived from score.
  */
-export type SafetyScoreResponseDtoGrade =
-  (typeof SafetyScoreResponseDtoGrade)[keyof typeof SafetyScoreResponseDtoGrade];
+export type SafetyScoreResponseDtoGrade = typeof SafetyScoreResponseDtoGrade[keyof typeof SafetyScoreResponseDtoGrade];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const SafetyScoreResponseDtoGrade = {

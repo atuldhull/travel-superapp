@@ -21,7 +21,7 @@ import type {
   PublicMemoryBookWithAssetsResponseDto,
   ReorderBookAssetsRequestDto,
   UpdateAssetCaptionRequestDto,
-  UpdateMemoryBookRequestDto,
+  UpdateMemoryBookRequestDto
 } from '../../schemas';
 
 import { apiFetch } from '../../../runtime/fetcher';
@@ -30,725 +30,764 @@ import { apiFetch } from '../../../runtime/fetcher';
  * @summary Issue a presigned PUT URL for direct-to-S3 upload. Creates the MediaAsset row in `processing` status.
  */
 export type mediaControllerCreateUploadUrlResponse201 = {
-  data: CreateUploadUrlResponseDto;
-  status: 201;
+  data: CreateUploadUrlResponseDto
+  status: 201
+}
+    
+export type mediaControllerCreateUploadUrlResponseSuccess = (mediaControllerCreateUploadUrlResponse201) & {
+  headers: Headers;
 };
+;
 
-export type mediaControllerCreateUploadUrlResponseSuccess =
-  mediaControllerCreateUploadUrlResponse201 & {
-    headers: Headers;
-  };
-export type mediaControllerCreateUploadUrlResponse = mediaControllerCreateUploadUrlResponseSuccess;
+export type mediaControllerCreateUploadUrlResponse = (mediaControllerCreateUploadUrlResponseSuccess)
 
 export const getMediaControllerCreateUploadUrlUrl = () => {
-  return `/api/v1/media/upload-url`;
-};
 
-export const mediaControllerCreateUploadUrl = async (
-  createUploadUrlRequestDto: CreateUploadUrlRequestDto,
-  options?: RequestInit,
-): Promise<mediaControllerCreateUploadUrlResponse> => {
-  return apiFetch<mediaControllerCreateUploadUrlResponse>(getMediaControllerCreateUploadUrlUrl(), {
+
+  
+
+  return `/api/v1/media/upload-url`
+}
+
+export const mediaControllerCreateUploadUrl = async (createUploadUrlRequestDto: CreateUploadUrlRequestDto, options?: RequestInit): Promise<mediaControllerCreateUploadUrlResponse> => {
+  
+  return apiFetch<mediaControllerCreateUploadUrlResponse>(getMediaControllerCreateUploadUrlUrl(),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(createUploadUrlRequestDto),
-  });
-};
+    body: JSON.stringify(
+      createUploadUrlRequestDto,)
+  }
+);}
+
 
 /**
  * @summary Confirm upload landed (HEAD verifies bytes). Flips status to `ready`. Image kind also flips exifStripped.
  */
 export type mediaControllerConfirmResponse200 = {
-  data: MediaAssetDto;
-  status: 200;
-};
+  data: MediaAssetDto
+  status: 200
+}
 
 export type mediaControllerConfirmResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type mediaControllerConfirmResponseSuccess = mediaControllerConfirmResponse200 & {
+  data: void
+  status: 404
+}
+    
+export type mediaControllerConfirmResponseSuccess = (mediaControllerConfirmResponse200) & {
   headers: Headers;
 };
-export type mediaControllerConfirmResponseError = mediaControllerConfirmResponse404 & {
+export type mediaControllerConfirmResponseError = (mediaControllerConfirmResponse404) & {
   headers: Headers;
 };
 
-export type mediaControllerConfirmResponse =
-  | mediaControllerConfirmResponseSuccess
-  | mediaControllerConfirmResponseError;
+export type mediaControllerConfirmResponse = (mediaControllerConfirmResponseSuccess | mediaControllerConfirmResponseError)
 
-export const getMediaControllerConfirmUrl = (id: string) => {
-  return `/api/v1/media/${id}/confirm`;
-};
+export const getMediaControllerConfirmUrl = (id: string,) => {
 
-export const mediaControllerConfirm = async (
-  id: string,
-  options?: RequestInit,
-): Promise<mediaControllerConfirmResponse> => {
-  return apiFetch<mediaControllerConfirmResponse>(getMediaControllerConfirmUrl(id), {
+
+  
+
+  return `/api/v1/media/${id}/confirm`
+}
+
+export const mediaControllerConfirm = async (id: string, options?: RequestInit): Promise<mediaControllerConfirmResponse> => {
+  
+  return apiFetch<mediaControllerConfirmResponse>(getMediaControllerConfirmUrl(id),
+  {      
     ...options,
-    method: 'POST',
-  });
-};
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Short-lived presigned GET URL for the asset. Owner-gated.
  */
 export type mediaControllerDownloadUrlResponse200 = {
-  data: MediaDownloadUrlResponseDto;
-  status: 200;
-};
+  data: MediaDownloadUrlResponseDto
+  status: 200
+}
 
 export type mediaControllerDownloadUrlResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type mediaControllerDownloadUrlResponseSuccess = mediaControllerDownloadUrlResponse200 & {
+  data: void
+  status: 404
+}
+    
+export type mediaControllerDownloadUrlResponseSuccess = (mediaControllerDownloadUrlResponse200) & {
   headers: Headers;
 };
-export type mediaControllerDownloadUrlResponseError = mediaControllerDownloadUrlResponse404 & {
+export type mediaControllerDownloadUrlResponseError = (mediaControllerDownloadUrlResponse404) & {
   headers: Headers;
 };
 
-export type mediaControllerDownloadUrlResponse =
-  | mediaControllerDownloadUrlResponseSuccess
-  | mediaControllerDownloadUrlResponseError;
+export type mediaControllerDownloadUrlResponse = (mediaControllerDownloadUrlResponseSuccess | mediaControllerDownloadUrlResponseError)
 
-export const getMediaControllerDownloadUrlUrl = (id: string) => {
-  return `/api/v1/media/${id}/download-url`;
-};
+export const getMediaControllerDownloadUrlUrl = (id: string,) => {
 
-export const mediaControllerDownloadUrl = async (
-  id: string,
-  options?: RequestInit,
-): Promise<mediaControllerDownloadUrlResponse> => {
-  return apiFetch<mediaControllerDownloadUrlResponse>(getMediaControllerDownloadUrlUrl(id), {
+
+  
+
+  return `/api/v1/media/${id}/download-url`
+}
+
+export const mediaControllerDownloadUrl = async (id: string, options?: RequestInit): Promise<mediaControllerDownloadUrlResponse> => {
+  
+  return apiFetch<mediaControllerDownloadUrlResponse>(getMediaControllerDownloadUrlUrl(id),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Attach (`{tripId}`) or detach (`{tripId:null}`) the media to a trip. Double owner-gated.
  */
 export type mediaControllerAttachToTripResponse200 = {
-  data: MediaAssetDto;
-  status: 200;
-};
+  data: MediaAssetDto
+  status: 200
+}
 
 export type mediaControllerAttachToTripResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type mediaControllerAttachToTripResponseSuccess = mediaControllerAttachToTripResponse200 & {
+  data: void
+  status: 404
+}
+    
+export type mediaControllerAttachToTripResponseSuccess = (mediaControllerAttachToTripResponse200) & {
   headers: Headers;
 };
-export type mediaControllerAttachToTripResponseError = mediaControllerAttachToTripResponse404 & {
+export type mediaControllerAttachToTripResponseError = (mediaControllerAttachToTripResponse404) & {
   headers: Headers;
 };
 
-export type mediaControllerAttachToTripResponse =
-  | mediaControllerAttachToTripResponseSuccess
-  | mediaControllerAttachToTripResponseError;
+export type mediaControllerAttachToTripResponse = (mediaControllerAttachToTripResponseSuccess | mediaControllerAttachToTripResponseError)
 
-export const getMediaControllerAttachToTripUrl = (id: string) => {
-  return `/api/v1/media/${id}/trip`;
-};
+export const getMediaControllerAttachToTripUrl = (id: string,) => {
 
-export const mediaControllerAttachToTrip = async (
-  id: string,
-  attachMediaToTripRequestDto: AttachMediaToTripRequestDto,
-  options?: RequestInit,
-): Promise<mediaControllerAttachToTripResponse> => {
-  return apiFetch<mediaControllerAttachToTripResponse>(getMediaControllerAttachToTripUrl(id), {
+
+  
+
+  return `/api/v1/media/${id}/trip`
+}
+
+export const mediaControllerAttachToTrip = async (id: string,
+    attachMediaToTripRequestDto: AttachMediaToTripRequestDto, options?: RequestInit): Promise<mediaControllerAttachToTripResponse> => {
+  
+  return apiFetch<mediaControllerAttachToTripResponse>(getMediaControllerAttachToTripUrl(id),
+  {      
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(attachMediaToTripRequestDto),
-  });
-};
+    body: JSON.stringify(
+      attachMediaToTripRequestDto,)
+  }
+);}
+
 
 /**
  * @summary List the caller's `ready` media attached to a trip. ?limit=N (1..200, default 50).
  */
 export type mediaControllerListByTripResponse200 = {
-  data: ListTripMediaResponseDto;
-  status: 200;
-};
-
-export type mediaControllerListByTripResponseSuccess = mediaControllerListByTripResponse200 & {
+  data: ListTripMediaResponseDto
+  status: 200
+}
+    
+export type mediaControllerListByTripResponseSuccess = (mediaControllerListByTripResponse200) & {
   headers: Headers;
 };
-export type mediaControllerListByTripResponse = mediaControllerListByTripResponseSuccess;
+;
 
-export const getMediaControllerListByTripUrl = (
-  tripId: string,
-  params: MediaControllerListByTripParams,
-) => {
+export type mediaControllerListByTripResponse = (mediaControllerListByTripResponseSuccess)
+
+export const getMediaControllerListByTripUrl = (tripId: string,
+    params: MediaControllerListByTripParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
+    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString());
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0
-    ? `/api/v1/media/trip/${tripId}?${stringifiedParams}`
-    : `/api/v1/media/trip/${tripId}`;
-};
+  return stringifiedParams.length > 0 ? `/api/v1/media/trip/${tripId}?${stringifiedParams}` : `/api/v1/media/trip/${tripId}`
+}
 
-export const mediaControllerListByTrip = async (
-  tripId: string,
-  params: MediaControllerListByTripParams,
-  options?: RequestInit,
-): Promise<mediaControllerListByTripResponse> => {
-  return apiFetch<mediaControllerListByTripResponse>(
-    getMediaControllerListByTripUrl(tripId, params),
-    {
-      ...options,
-      method: 'GET',
-    },
-  );
-};
+export const mediaControllerListByTrip = async (tripId: string,
+    params: MediaControllerListByTripParams, options?: RequestInit): Promise<mediaControllerListByTripResponse> => {
+  
+  return apiFetch<mediaControllerListByTripResponse>(getMediaControllerListByTripUrl(tripId,params),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Attach (`{memoryBookId}`) or detach (`{memoryBookId:null}`) the media to a memory book. Double owner-gated.
  */
 export type mediaControllerAttachToBookResponse200 = {
-  data: MediaAssetDto;
-  status: 200;
-};
+  data: MediaAssetDto
+  status: 200
+}
 
 export type mediaControllerAttachToBookResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type mediaControllerAttachToBookResponseSuccess = mediaControllerAttachToBookResponse200 & {
+  data: void
+  status: 404
+}
+    
+export type mediaControllerAttachToBookResponseSuccess = (mediaControllerAttachToBookResponse200) & {
   headers: Headers;
 };
-export type mediaControllerAttachToBookResponseError = mediaControllerAttachToBookResponse404 & {
+export type mediaControllerAttachToBookResponseError = (mediaControllerAttachToBookResponse404) & {
   headers: Headers;
 };
 
-export type mediaControllerAttachToBookResponse =
-  | mediaControllerAttachToBookResponseSuccess
-  | mediaControllerAttachToBookResponseError;
+export type mediaControllerAttachToBookResponse = (mediaControllerAttachToBookResponseSuccess | mediaControllerAttachToBookResponseError)
 
-export const getMediaControllerAttachToBookUrl = (id: string) => {
-  return `/api/v1/media/${id}/memory-book`;
-};
+export const getMediaControllerAttachToBookUrl = (id: string,) => {
 
-export const mediaControllerAttachToBook = async (
-  id: string,
-  attachMediaToBookRequestDto: AttachMediaToBookRequestDto,
-  options?: RequestInit,
-): Promise<mediaControllerAttachToBookResponse> => {
-  return apiFetch<mediaControllerAttachToBookResponse>(getMediaControllerAttachToBookUrl(id), {
+
+  
+
+  return `/api/v1/media/${id}/memory-book`
+}
+
+export const mediaControllerAttachToBook = async (id: string,
+    attachMediaToBookRequestDto: AttachMediaToBookRequestDto, options?: RequestInit): Promise<mediaControllerAttachToBookResponse> => {
+  
+  return apiFetch<mediaControllerAttachToBookResponse>(getMediaControllerAttachToBookUrl(id),
+  {      
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(attachMediaToBookRequestDto),
-  });
-};
+    body: JSON.stringify(
+      attachMediaToBookRequestDto,)
+  }
+);}
+
 
 /**
  * @summary Public discovery — currently-published memory books across all users, ordered by publishedAt DESC.
  */
 export type memoryBookControllerFeaturedResponse200 = {
-  data: FeaturedMemoryBooksResponseDto;
-  status: 200;
+  data: FeaturedMemoryBooksResponseDto
+  status: 200
+}
+    
+export type memoryBookControllerFeaturedResponseSuccess = (memoryBookControllerFeaturedResponse200) & {
+  headers: Headers;
 };
+;
 
-export type memoryBookControllerFeaturedResponseSuccess =
-  memoryBookControllerFeaturedResponse200 & {
-    headers: Headers;
-  };
-export type memoryBookControllerFeaturedResponse = memoryBookControllerFeaturedResponseSuccess;
+export type memoryBookControllerFeaturedResponse = (memoryBookControllerFeaturedResponseSuccess)
 
-export const getMemoryBookControllerFeaturedUrl = (params: MemoryBookControllerFeaturedParams) => {
+export const getMemoryBookControllerFeaturedUrl = (params: MemoryBookControllerFeaturedParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
+    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString());
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0
-    ? `/api/v1/memory-books/featured?${stringifiedParams}`
-    : `/api/v1/memory-books/featured`;
-};
+  return stringifiedParams.length > 0 ? `/api/v1/memory-books/featured?${stringifiedParams}` : `/api/v1/memory-books/featured`
+}
 
-export const memoryBookControllerFeatured = async (
-  params: MemoryBookControllerFeaturedParams,
-  options?: RequestInit,
-): Promise<memoryBookControllerFeaturedResponse> => {
-  return apiFetch<memoryBookControllerFeaturedResponse>(
-    getMemoryBookControllerFeaturedUrl(params),
-    {
-      ...options,
-      method: 'GET',
-    },
-  );
-};
+export const memoryBookControllerFeatured = async (params: MemoryBookControllerFeaturedParams, options?: RequestInit): Promise<memoryBookControllerFeaturedResponse> => {
+  
+  return apiFetch<memoryBookControllerFeaturedResponse>(getMemoryBookControllerFeaturedUrl(params),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Public read of a published memory book by id. The cuid is the unguessable token.
  */
 export type memoryBookControllerGetPublicResponse200 = {
-  data: PublicMemoryBookWithAssetsResponseDto;
-  status: 200;
-};
+  data: PublicMemoryBookWithAssetsResponseDto
+  status: 200
+}
 
 export type memoryBookControllerGetPublicResponse404 = {
-  data: void;
-  status: 404;
+  data: void
+  status: 404
+}
+    
+export type memoryBookControllerGetPublicResponseSuccess = (memoryBookControllerGetPublicResponse200) & {
+  headers: Headers;
+};
+export type memoryBookControllerGetPublicResponseError = (memoryBookControllerGetPublicResponse404) & {
+  headers: Headers;
 };
 
-export type memoryBookControllerGetPublicResponseSuccess =
-  memoryBookControllerGetPublicResponse200 & {
-    headers: Headers;
-  };
-export type memoryBookControllerGetPublicResponseError =
-  memoryBookControllerGetPublicResponse404 & {
-    headers: Headers;
-  };
+export type memoryBookControllerGetPublicResponse = (memoryBookControllerGetPublicResponseSuccess | memoryBookControllerGetPublicResponseError)
 
-export type memoryBookControllerGetPublicResponse =
-  | memoryBookControllerGetPublicResponseSuccess
-  | memoryBookControllerGetPublicResponseError;
+export const getMemoryBookControllerGetPublicUrl = (id: string,) => {
 
-export const getMemoryBookControllerGetPublicUrl = (id: string) => {
-  return `/api/v1/memory-books/public/${id}`;
-};
 
-export const memoryBookControllerGetPublic = async (
-  id: string,
-  options?: RequestInit,
-): Promise<memoryBookControllerGetPublicResponse> => {
-  return apiFetch<memoryBookControllerGetPublicResponse>(getMemoryBookControllerGetPublicUrl(id), {
+  
+
+  return `/api/v1/memory-books/public/${id}`
+}
+
+export const memoryBookControllerGetPublic = async (id: string, options?: RequestInit): Promise<memoryBookControllerGetPublicResponse> => {
+  
+  return apiFetch<memoryBookControllerGetPublicResponse>(getMemoryBookControllerGetPublicUrl(id),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Public presigned download URL for a memory-book asset. Three-clause gate: book published + asset attached + asset ready.
  */
 export type memoryBookControllerGetPublicAssetDownloadUrlResponse200 = {
-  data: PublicDownloadUrlResponseDto;
-  status: 200;
-};
+  data: PublicDownloadUrlResponseDto
+  status: 200
+}
 
 export type memoryBookControllerGetPublicAssetDownloadUrlResponse404 = {
-  data: void;
-  status: 404;
+  data: void
+  status: 404
+}
+    
+export type memoryBookControllerGetPublicAssetDownloadUrlResponseSuccess = (memoryBookControllerGetPublicAssetDownloadUrlResponse200) & {
+  headers: Headers;
+};
+export type memoryBookControllerGetPublicAssetDownloadUrlResponseError = (memoryBookControllerGetPublicAssetDownloadUrlResponse404) & {
+  headers: Headers;
 };
 
-export type memoryBookControllerGetPublicAssetDownloadUrlResponseSuccess =
-  memoryBookControllerGetPublicAssetDownloadUrlResponse200 & {
-    headers: Headers;
-  };
-export type memoryBookControllerGetPublicAssetDownloadUrlResponseError =
-  memoryBookControllerGetPublicAssetDownloadUrlResponse404 & {
-    headers: Headers;
-  };
+export type memoryBookControllerGetPublicAssetDownloadUrlResponse = (memoryBookControllerGetPublicAssetDownloadUrlResponseSuccess | memoryBookControllerGetPublicAssetDownloadUrlResponseError)
 
-export type memoryBookControllerGetPublicAssetDownloadUrlResponse =
-  | memoryBookControllerGetPublicAssetDownloadUrlResponseSuccess
-  | memoryBookControllerGetPublicAssetDownloadUrlResponseError;
+export const getMemoryBookControllerGetPublicAssetDownloadUrlUrl = (id: string,
+    assetId: string,) => {
 
-export const getMemoryBookControllerGetPublicAssetDownloadUrlUrl = (
-  id: string,
-  assetId: string,
-) => {
-  return `/api/v1/memory-books/public/${id}/assets/${assetId}/download-url`;
-};
 
-export const memoryBookControllerGetPublicAssetDownloadUrl = async (
-  id: string,
-  assetId: string,
-  options?: RequestInit,
-): Promise<memoryBookControllerGetPublicAssetDownloadUrlResponse> => {
-  return apiFetch<memoryBookControllerGetPublicAssetDownloadUrlResponse>(
-    getMemoryBookControllerGetPublicAssetDownloadUrlUrl(id, assetId),
-    {
-      ...options,
-      method: 'GET',
-    },
-  );
-};
+  
+
+  return `/api/v1/memory-books/public/${id}/assets/${assetId}/download-url`
+}
+
+export const memoryBookControllerGetPublicAssetDownloadUrl = async (id: string,
+    assetId: string, options?: RequestInit): Promise<memoryBookControllerGetPublicAssetDownloadUrlResponse> => {
+  
+  return apiFetch<memoryBookControllerGetPublicAssetDownloadUrlResponse>(getMemoryBookControllerGetPublicAssetDownloadUrlUrl(id,assetId),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Create a memory book (draft). Owner = caller.
  */
 export type memoryBookControllerCreateResponse201 = {
-  data: MemoryBookDto;
-  status: 201;
-};
-
-export type memoryBookControllerCreateResponseSuccess = memoryBookControllerCreateResponse201 & {
+  data: MemoryBookDto
+  status: 201
+}
+    
+export type memoryBookControllerCreateResponseSuccess = (memoryBookControllerCreateResponse201) & {
   headers: Headers;
 };
-export type memoryBookControllerCreateResponse = memoryBookControllerCreateResponseSuccess;
+;
+
+export type memoryBookControllerCreateResponse = (memoryBookControllerCreateResponseSuccess)
 
 export const getMemoryBookControllerCreateUrl = () => {
-  return `/api/v1/memory-books`;
-};
 
-export const memoryBookControllerCreate = async (
-  createMemoryBookRequestDto: CreateMemoryBookRequestDto,
-  options?: RequestInit,
-): Promise<memoryBookControllerCreateResponse> => {
-  return apiFetch<memoryBookControllerCreateResponse>(getMemoryBookControllerCreateUrl(), {
+
+  
+
+  return `/api/v1/memory-books`
+}
+
+export const memoryBookControllerCreate = async (createMemoryBookRequestDto: CreateMemoryBookRequestDto, options?: RequestInit): Promise<memoryBookControllerCreateResponse> => {
+  
+  return apiFetch<memoryBookControllerCreateResponse>(getMemoryBookControllerCreateUrl(),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(createMemoryBookRequestDto),
-  });
-};
+    body: JSON.stringify(
+      createMemoryBookRequestDto,)
+  }
+);}
+
 
 /**
  * @summary List the caller's memory books, newest first. ?limit=N (1..200, default 50). Owner-scoped.
  */
 export type memoryBookControllerListResponse200 = {
-  data: ListMemoryBooksResponseDto;
-  status: 200;
-};
-
-export type memoryBookControllerListResponseSuccess = memoryBookControllerListResponse200 & {
+  data: ListMemoryBooksResponseDto
+  status: 200
+}
+    
+export type memoryBookControllerListResponseSuccess = (memoryBookControllerListResponse200) & {
   headers: Headers;
 };
-export type memoryBookControllerListResponse = memoryBookControllerListResponseSuccess;
+;
 
-export const getMemoryBookControllerListUrl = (params: MemoryBookControllerListParams) => {
+export type memoryBookControllerListResponse = (memoryBookControllerListResponseSuccess)
+
+export const getMemoryBookControllerListUrl = (params: MemoryBookControllerListParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
+    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString());
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0
-    ? `/api/v1/memory-books?${stringifiedParams}`
-    : `/api/v1/memory-books`;
-};
+  return stringifiedParams.length > 0 ? `/api/v1/memory-books?${stringifiedParams}` : `/api/v1/memory-books`
+}
 
-export const memoryBookControllerList = async (
-  params: MemoryBookControllerListParams,
-  options?: RequestInit,
-): Promise<memoryBookControllerListResponse> => {
-  return apiFetch<memoryBookControllerListResponse>(getMemoryBookControllerListUrl(params), {
+export const memoryBookControllerList = async (params: MemoryBookControllerListParams, options?: RequestInit): Promise<memoryBookControllerListResponse> => {
+  
+  return apiFetch<memoryBookControllerListResponse>(getMemoryBookControllerListUrl(params),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Get one of the caller-owned books + the attached asset ids.
  */
 export type memoryBookControllerGetOneResponse200 = {
-  data: MemoryBookWithAssetsResponseDto;
-  status: 200;
-};
+  data: MemoryBookWithAssetsResponseDto
+  status: 200
+}
 
 export type memoryBookControllerGetOneResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type memoryBookControllerGetOneResponseSuccess = memoryBookControllerGetOneResponse200 & {
+  data: void
+  status: 404
+}
+    
+export type memoryBookControllerGetOneResponseSuccess = (memoryBookControllerGetOneResponse200) & {
   headers: Headers;
 };
-export type memoryBookControllerGetOneResponseError = memoryBookControllerGetOneResponse404 & {
+export type memoryBookControllerGetOneResponseError = (memoryBookControllerGetOneResponse404) & {
   headers: Headers;
 };
 
-export type memoryBookControllerGetOneResponse =
-  | memoryBookControllerGetOneResponseSuccess
-  | memoryBookControllerGetOneResponseError;
+export type memoryBookControllerGetOneResponse = (memoryBookControllerGetOneResponseSuccess | memoryBookControllerGetOneResponseError)
 
-export const getMemoryBookControllerGetOneUrl = (id: string) => {
-  return `/api/v1/memory-books/${id}`;
-};
+export const getMemoryBookControllerGetOneUrl = (id: string,) => {
 
-export const memoryBookControllerGetOne = async (
-  id: string,
-  options?: RequestInit,
-): Promise<memoryBookControllerGetOneResponse> => {
-  return apiFetch<memoryBookControllerGetOneResponse>(getMemoryBookControllerGetOneUrl(id), {
+
+  
+
+  return `/api/v1/memory-books/${id}`
+}
+
+export const memoryBookControllerGetOne = async (id: string, options?: RequestInit): Promise<memoryBookControllerGetOneResponse> => {
+  
+  return apiFetch<memoryBookControllerGetOneResponse>(getMemoryBookControllerGetOneUrl(id),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Update one of the caller-owned books. Partial update.
  */
 export type memoryBookControllerUpdateResponse200 = {
-  data: MemoryBookDto;
-  status: 200;
-};
+  data: MemoryBookDto
+  status: 200
+}
 
 export type memoryBookControllerUpdateResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type memoryBookControllerUpdateResponseSuccess = memoryBookControllerUpdateResponse200 & {
+  data: void
+  status: 404
+}
+    
+export type memoryBookControllerUpdateResponseSuccess = (memoryBookControllerUpdateResponse200) & {
   headers: Headers;
 };
-export type memoryBookControllerUpdateResponseError = memoryBookControllerUpdateResponse404 & {
+export type memoryBookControllerUpdateResponseError = (memoryBookControllerUpdateResponse404) & {
   headers: Headers;
 };
 
-export type memoryBookControllerUpdateResponse =
-  | memoryBookControllerUpdateResponseSuccess
-  | memoryBookControllerUpdateResponseError;
+export type memoryBookControllerUpdateResponse = (memoryBookControllerUpdateResponseSuccess | memoryBookControllerUpdateResponseError)
 
-export const getMemoryBookControllerUpdateUrl = (id: string) => {
-  return `/api/v1/memory-books/${id}`;
-};
+export const getMemoryBookControllerUpdateUrl = (id: string,) => {
 
-export const memoryBookControllerUpdate = async (
-  id: string,
-  updateMemoryBookRequestDto: UpdateMemoryBookRequestDto,
-  options?: RequestInit,
-): Promise<memoryBookControllerUpdateResponse> => {
-  return apiFetch<memoryBookControllerUpdateResponse>(getMemoryBookControllerUpdateUrl(id), {
+
+  
+
+  return `/api/v1/memory-books/${id}`
+}
+
+export const memoryBookControllerUpdate = async (id: string,
+    updateMemoryBookRequestDto: UpdateMemoryBookRequestDto, options?: RequestInit): Promise<memoryBookControllerUpdateResponse> => {
+  
+  return apiFetch<memoryBookControllerUpdateResponse>(getMemoryBookControllerUpdateUrl(id),
+  {      
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(updateMemoryBookRequestDto),
-  });
-};
+    body: JSON.stringify(
+      updateMemoryBookRequestDto,)
+  }
+);}
+
 
 /**
  * @summary Delete one of the caller-owned books. SetNull on MediaAsset.memoryBookId.
  */
 export type memoryBookControllerRemoveResponse204 = {
-  data: void;
-  status: 204;
-};
+  data: void
+  status: 204
+}
 
 export type memoryBookControllerRemoveResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type memoryBookControllerRemoveResponseSuccess = memoryBookControllerRemoveResponse204 & {
+  data: void
+  status: 404
+}
+    
+export type memoryBookControllerRemoveResponseSuccess = (memoryBookControllerRemoveResponse204) & {
   headers: Headers;
 };
-export type memoryBookControllerRemoveResponseError = memoryBookControllerRemoveResponse404 & {
+export type memoryBookControllerRemoveResponseError = (memoryBookControllerRemoveResponse404) & {
   headers: Headers;
 };
 
-export type memoryBookControllerRemoveResponse =
-  | memoryBookControllerRemoveResponseSuccess
-  | memoryBookControllerRemoveResponseError;
+export type memoryBookControllerRemoveResponse = (memoryBookControllerRemoveResponseSuccess | memoryBookControllerRemoveResponseError)
 
-export const getMemoryBookControllerRemoveUrl = (id: string) => {
-  return `/api/v1/memory-books/${id}`;
-};
+export const getMemoryBookControllerRemoveUrl = (id: string,) => {
 
-export const memoryBookControllerRemove = async (
-  id: string,
-  options?: RequestInit,
-): Promise<memoryBookControllerRemoveResponse> => {
-  return apiFetch<memoryBookControllerRemoveResponse>(getMemoryBookControllerRemoveUrl(id), {
+
+  
+
+  return `/api/v1/memory-books/${id}`
+}
+
+export const memoryBookControllerRemove = async (id: string, options?: RequestInit): Promise<memoryBookControllerRemoveResponse> => {
+  
+  return apiFetch<memoryBookControllerRemoveResponse>(getMemoryBookControllerRemoveUrl(id),
+  {      
     ...options,
-    method: 'DELETE',
-  });
-};
+    method: 'DELETE'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Publish a book — flips publishedAt to now (idempotent).
  */
 export type memoryBookControllerPublishResponse200 = {
-  data: MemoryBookDto;
-  status: 200;
-};
+  data: MemoryBookDto
+  status: 200
+}
 
 export type memoryBookControllerPublishResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type memoryBookControllerPublishResponseSuccess = memoryBookControllerPublishResponse200 & {
+  data: void
+  status: 404
+}
+    
+export type memoryBookControllerPublishResponseSuccess = (memoryBookControllerPublishResponse200) & {
   headers: Headers;
 };
-export type memoryBookControllerPublishResponseError = memoryBookControllerPublishResponse404 & {
+export type memoryBookControllerPublishResponseError = (memoryBookControllerPublishResponse404) & {
   headers: Headers;
 };
 
-export type memoryBookControllerPublishResponse =
-  | memoryBookControllerPublishResponseSuccess
-  | memoryBookControllerPublishResponseError;
+export type memoryBookControllerPublishResponse = (memoryBookControllerPublishResponseSuccess | memoryBookControllerPublishResponseError)
 
-export const getMemoryBookControllerPublishUrl = (id: string) => {
-  return `/api/v1/memory-books/${id}/publish`;
-};
+export const getMemoryBookControllerPublishUrl = (id: string,) => {
 
-export const memoryBookControllerPublish = async (
-  id: string,
-  options?: RequestInit,
-): Promise<memoryBookControllerPublishResponse> => {
-  return apiFetch<memoryBookControllerPublishResponse>(getMemoryBookControllerPublishUrl(id), {
+
+  
+
+  return `/api/v1/memory-books/${id}/publish`
+}
+
+export const memoryBookControllerPublish = async (id: string, options?: RequestInit): Promise<memoryBookControllerPublishResponse> => {
+  
+  return apiFetch<memoryBookControllerPublishResponse>(getMemoryBookControllerPublishUrl(id),
+  {      
     ...options,
-    method: 'POST',
-  });
-};
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Unpublish a book — clears publishedAt (idempotent).
  */
 export type memoryBookControllerUnpublishResponse200 = {
-  data: MemoryBookDto;
-  status: 200;
-};
+  data: MemoryBookDto
+  status: 200
+}
 
 export type memoryBookControllerUnpublishResponse404 = {
-  data: void;
-  status: 404;
+  data: void
+  status: 404
+}
+    
+export type memoryBookControllerUnpublishResponseSuccess = (memoryBookControllerUnpublishResponse200) & {
+  headers: Headers;
+};
+export type memoryBookControllerUnpublishResponseError = (memoryBookControllerUnpublishResponse404) & {
+  headers: Headers;
 };
 
-export type memoryBookControllerUnpublishResponseSuccess =
-  memoryBookControllerUnpublishResponse200 & {
-    headers: Headers;
-  };
-export type memoryBookControllerUnpublishResponseError =
-  memoryBookControllerUnpublishResponse404 & {
-    headers: Headers;
-  };
+export type memoryBookControllerUnpublishResponse = (memoryBookControllerUnpublishResponseSuccess | memoryBookControllerUnpublishResponseError)
 
-export type memoryBookControllerUnpublishResponse =
-  | memoryBookControllerUnpublishResponseSuccess
-  | memoryBookControllerUnpublishResponseError;
+export const getMemoryBookControllerUnpublishUrl = (id: string,) => {
 
-export const getMemoryBookControllerUnpublishUrl = (id: string) => {
-  return `/api/v1/memory-books/${id}/unpublish`;
-};
 
-export const memoryBookControllerUnpublish = async (
-  id: string,
-  options?: RequestInit,
-): Promise<memoryBookControllerUnpublishResponse> => {
-  return apiFetch<memoryBookControllerUnpublishResponse>(getMemoryBookControllerUnpublishUrl(id), {
+  
+
+  return `/api/v1/memory-books/${id}/unpublish`
+}
+
+export const memoryBookControllerUnpublish = async (id: string, options?: RequestInit): Promise<memoryBookControllerUnpublishResponse> => {
+  
+  return apiFetch<memoryBookControllerUnpublishResponse>(getMemoryBookControllerUnpublishUrl(id),
+  {      
     ...options,
-    method: 'POST',
-  });
-};
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Set or clear an asset's caption (story-mode narrative). Owner-only.
  */
 export type memoryBookControllerUpdateAssetCaptionResponse200 = {
-  data: MediaAssetDto;
-  status: 200;
-};
+  data: MediaAssetDto
+  status: 200
+}
 
 export type memoryBookControllerUpdateAssetCaptionResponse404 = {
-  data: void;
-  status: 404;
+  data: void
+  status: 404
+}
+    
+export type memoryBookControllerUpdateAssetCaptionResponseSuccess = (memoryBookControllerUpdateAssetCaptionResponse200) & {
+  headers: Headers;
+};
+export type memoryBookControllerUpdateAssetCaptionResponseError = (memoryBookControllerUpdateAssetCaptionResponse404) & {
+  headers: Headers;
 };
 
-export type memoryBookControllerUpdateAssetCaptionResponseSuccess =
-  memoryBookControllerUpdateAssetCaptionResponse200 & {
-    headers: Headers;
-  };
-export type memoryBookControllerUpdateAssetCaptionResponseError =
-  memoryBookControllerUpdateAssetCaptionResponse404 & {
-    headers: Headers;
-  };
+export type memoryBookControllerUpdateAssetCaptionResponse = (memoryBookControllerUpdateAssetCaptionResponseSuccess | memoryBookControllerUpdateAssetCaptionResponseError)
 
-export type memoryBookControllerUpdateAssetCaptionResponse =
-  | memoryBookControllerUpdateAssetCaptionResponseSuccess
-  | memoryBookControllerUpdateAssetCaptionResponseError;
+export const getMemoryBookControllerUpdateAssetCaptionUrl = (id: string,
+    assetId: string,) => {
 
-export const getMemoryBookControllerUpdateAssetCaptionUrl = (id: string, assetId: string) => {
-  return `/api/v1/memory-books/${id}/assets/${assetId}/caption`;
-};
 
-export const memoryBookControllerUpdateAssetCaption = async (
-  id: string,
-  assetId: string,
-  updateAssetCaptionRequestDto: UpdateAssetCaptionRequestDto,
-  options?: RequestInit,
-): Promise<memoryBookControllerUpdateAssetCaptionResponse> => {
-  return apiFetch<memoryBookControllerUpdateAssetCaptionResponse>(
-    getMemoryBookControllerUpdateAssetCaptionUrl(id, assetId),
-    {
-      ...options,
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', ...options?.headers },
-      body: JSON.stringify(updateAssetCaptionRequestDto),
-    },
-  );
-};
+  
+
+  return `/api/v1/memory-books/${id}/assets/${assetId}/caption`
+}
+
+export const memoryBookControllerUpdateAssetCaption = async (id: string,
+    assetId: string,
+    updateAssetCaptionRequestDto: UpdateAssetCaptionRequestDto, options?: RequestInit): Promise<memoryBookControllerUpdateAssetCaptionResponse> => {
+  
+  return apiFetch<memoryBookControllerUpdateAssetCaptionResponse>(getMemoryBookControllerUpdateAssetCaptionUrl(id,assetId),
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateAssetCaptionRequestDto,)
+  }
+);}
+
 
 /**
  * @summary Persist asset ordering for the memory book. Body is the desired permutation of attached asset ids.
  */
 export type memoryBookControllerReorderAssetsResponse204 = {
-  data: void;
-  status: 204;
-};
+  data: void
+  status: 204
+}
 
 export type memoryBookControllerReorderAssetsResponse404 = {
-  data: void;
-  status: 404;
-};
+  data: void
+  status: 404
+}
 
 export type memoryBookControllerReorderAssetsResponse422 = {
-  data: void;
-  status: 422;
+  data: void
+  status: 422
+}
+    
+export type memoryBookControllerReorderAssetsResponseSuccess = (memoryBookControllerReorderAssetsResponse204) & {
+  headers: Headers;
 };
-
-export type memoryBookControllerReorderAssetsResponseSuccess =
-  memoryBookControllerReorderAssetsResponse204 & {
-    headers: Headers;
-  };
-export type memoryBookControllerReorderAssetsResponseError = (
-  | memoryBookControllerReorderAssetsResponse404
-  | memoryBookControllerReorderAssetsResponse422
-) & {
+export type memoryBookControllerReorderAssetsResponseError = (memoryBookControllerReorderAssetsResponse404 | memoryBookControllerReorderAssetsResponse422) & {
   headers: Headers;
 };
 
-export type memoryBookControllerReorderAssetsResponse =
-  | memoryBookControllerReorderAssetsResponseSuccess
-  | memoryBookControllerReorderAssetsResponseError;
+export type memoryBookControllerReorderAssetsResponse = (memoryBookControllerReorderAssetsResponseSuccess | memoryBookControllerReorderAssetsResponseError)
 
-export const getMemoryBookControllerReorderAssetsUrl = (id: string) => {
-  return `/api/v1/memory-books/${id}/asset-order`;
-};
+export const getMemoryBookControllerReorderAssetsUrl = (id: string,) => {
 
-export const memoryBookControllerReorderAssets = async (
-  id: string,
-  reorderBookAssetsRequestDto: ReorderBookAssetsRequestDto,
-  options?: RequestInit,
-): Promise<memoryBookControllerReorderAssetsResponse> => {
-  return apiFetch<memoryBookControllerReorderAssetsResponse>(
-    getMemoryBookControllerReorderAssetsUrl(id),
-    {
-      ...options,
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', ...options?.headers },
-      body: JSON.stringify(reorderBookAssetsRequestDto),
-    },
-  );
-};
+
+  
+
+  return `/api/v1/memory-books/${id}/asset-order`
+}
+
+export const memoryBookControllerReorderAssets = async (id: string,
+    reorderBookAssetsRequestDto: ReorderBookAssetsRequestDto, options?: RequestInit): Promise<memoryBookControllerReorderAssetsResponse> => {
+  
+  return apiFetch<memoryBookControllerReorderAssetsResponse>(getMemoryBookControllerReorderAssetsUrl(id),
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      reorderBookAssetsRequestDto,)
+  }
+);}
+
+

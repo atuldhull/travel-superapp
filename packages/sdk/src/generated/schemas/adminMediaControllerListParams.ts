@@ -3,9 +3,9 @@
 // Regenerate via: pnpm --filter=@app/sdk sdk:gen
 
 export type AdminMediaControllerListParams = {
-  ownerId: string;
-  kind: string;
-  status: string;
-  limit: string;
-  offset: string;
+ownerId: string;
+kind: string;
+status: string;
+limit: string;
+offset: string;
 };

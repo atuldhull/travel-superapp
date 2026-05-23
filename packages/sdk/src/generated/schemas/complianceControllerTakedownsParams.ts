@@ -3,6 +3,6 @@
 // Regenerate via: pnpm --filter=@app/sdk sdk:gen
 
 export type ComplianceControllerTakedownsParams = {
-  limit: string;
-  offset: string;
+limit: string;
+offset: string;
 };

@@ -27,7 +27,7 @@ import type {
   TripWithRoleResponseDto,
   UpdateDayItemsRequestDto,
   UpdateDayItemsResponseDto,
-  UpdateTripRequestDto,
+  UpdateTripRequestDto
 } from '../../schemas';
 
 import { apiFetch } from '../../../runtime/fetcher';
@@ -36,1268 +36,1410 @@ import { apiFetch } from '../../../runtime/fetcher';
  * @summary Create a trip draft from { title, center, radiusKm, startsOn?, endsOn? }
  */
 export type tripControllerCreateResponse201 = {
-  data: TripDto;
-  status: 201;
-};
-
-export type tripControllerCreateResponseSuccess = tripControllerCreateResponse201 & {
+  data: TripDto
+  status: 201
+}
+    
+export type tripControllerCreateResponseSuccess = (tripControllerCreateResponse201) & {
   headers: Headers;
 };
-export type tripControllerCreateResponse = tripControllerCreateResponseSuccess;
+;
+
+export type tripControllerCreateResponse = (tripControllerCreateResponseSuccess)
 
 export const getTripControllerCreateUrl = () => {
-  return `/api/v1/trips`;
-};
 
-export const tripControllerCreate = async (
-  createTripRequestDto: CreateTripRequestDto,
-  options?: RequestInit,
-): Promise<tripControllerCreateResponse> => {
-  return apiFetch<tripControllerCreateResponse>(getTripControllerCreateUrl(), {
+
+  
+
+  return `/api/v1/trips`
+}
+
+export const tripControllerCreate = async (createTripRequestDto: CreateTripRequestDto, options?: RequestInit): Promise<tripControllerCreateResponse> => {
+  
+  return apiFetch<tripControllerCreateResponse>(getTripControllerCreateUrl(),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(createTripRequestDto),
-  });
-};
+    body: JSON.stringify(
+      createTripRequestDto,)
+  }
+);}
+
 
 /**
  * @summary List the caller's trips, most-recent-first
  */
 export type tripControllerListResponse200 = {
-  data: ListTripsResponseDto;
-  status: 200;
-};
-
-export type tripControllerListResponseSuccess = tripControllerListResponse200 & {
+  data: ListTripsResponseDto
+  status: 200
+}
+    
+export type tripControllerListResponseSuccess = (tripControllerListResponse200) & {
   headers: Headers;
 };
-export type tripControllerListResponse = tripControllerListResponseSuccess;
+;
 
-export const getTripControllerListUrl = (params: TripControllerListParams) => {
+export type tripControllerListResponse = (tripControllerListResponseSuccess)
+
+export const getTripControllerListUrl = (params: TripControllerListParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
+    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString());
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/api/v1/trips?${stringifiedParams}` : `/api/v1/trips`;
-};
+  return stringifiedParams.length > 0 ? `/api/v1/trips?${stringifiedParams}` : `/api/v1/trips`
+}
 
-export const tripControllerList = async (
-  params: TripControllerListParams,
-  options?: RequestInit,
-): Promise<tripControllerListResponse> => {
-  return apiFetch<tripControllerListResponse>(getTripControllerListUrl(params), {
+export const tripControllerList = async (params: TripControllerListParams, options?: RequestInit): Promise<tripControllerListResponse> => {
+  
+  return apiFetch<tripControllerListResponse>(getTripControllerListUrl(params),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary V.UX.30 — destination suggestions seeded from caller's past trips. Empty history → 3 globally popular picks.
  */
 export type tripControllerSuggestionsResponse200 = {
-  data: void;
-  status: 200;
-};
-
-export type tripControllerSuggestionsResponseSuccess = tripControllerSuggestionsResponse200 & {
+  data: void
+  status: 200
+}
+    
+export type tripControllerSuggestionsResponseSuccess = (tripControllerSuggestionsResponse200) & {
   headers: Headers;
 };
-export type tripControllerSuggestionsResponse = tripControllerSuggestionsResponseSuccess;
+;
+
+export type tripControllerSuggestionsResponse = (tripControllerSuggestionsResponseSuccess)
 
 export const getTripControllerSuggestionsUrl = () => {
-  return `/api/v1/trips/suggestions`;
-};
 
-export const tripControllerSuggestions = async (
-  options?: RequestInit,
-): Promise<tripControllerSuggestionsResponse> => {
-  return apiFetch<tripControllerSuggestionsResponse>(getTripControllerSuggestionsUrl(), {
+
+  
+
+  return `/api/v1/trips/suggestions`
+}
+
+export const tripControllerSuggestions = async ( options?: RequestInit): Promise<tripControllerSuggestionsResponse> => {
+  
+  return apiFetch<tripControllerSuggestionsResponse>(getTripControllerSuggestionsUrl(),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary V.UX.30 — archive a trip (soft). Idempotent. Owner-gated; 404 on cross-user.
  */
 export type tripControllerArchiveResponse200 = {
-  data: TripDto;
-  status: 200;
-};
+  data: TripDto
+  status: 200
+}
 
 export type tripControllerArchiveResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type tripControllerArchiveResponseSuccess = tripControllerArchiveResponse200 & {
+  data: void
+  status: 404
+}
+    
+export type tripControllerArchiveResponseSuccess = (tripControllerArchiveResponse200) & {
   headers: Headers;
 };
-export type tripControllerArchiveResponseError = tripControllerArchiveResponse404 & {
+export type tripControllerArchiveResponseError = (tripControllerArchiveResponse404) & {
   headers: Headers;
 };
 
-export type tripControllerArchiveResponse =
-  | tripControllerArchiveResponseSuccess
-  | tripControllerArchiveResponseError;
+export type tripControllerArchiveResponse = (tripControllerArchiveResponseSuccess | tripControllerArchiveResponseError)
 
-export const getTripControllerArchiveUrl = (id: string) => {
-  return `/api/v1/trips/${id}/archive`;
-};
+export const getTripControllerArchiveUrl = (id: string,) => {
 
-export const tripControllerArchive = async (
-  id: string,
-  options?: RequestInit,
-): Promise<tripControllerArchiveResponse> => {
-  return apiFetch<tripControllerArchiveResponse>(getTripControllerArchiveUrl(id), {
+
+  
+
+  return `/api/v1/trips/${id}/archive`
+}
+
+export const tripControllerArchive = async (id: string, options?: RequestInit): Promise<tripControllerArchiveResponse> => {
+  
+  return apiFetch<tripControllerArchiveResponse>(getTripControllerArchiveUrl(id),
+  {      
     ...options,
-    method: 'POST',
-  });
-};
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary V.UX.30 — unarchive a trip. Idempotent. Owner-gated; 404 on cross-user.
  */
 export type tripControllerUnarchiveResponse200 = {
-  data: TripDto;
-  status: 200;
-};
+  data: TripDto
+  status: 200
+}
 
 export type tripControllerUnarchiveResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type tripControllerUnarchiveResponseSuccess = tripControllerUnarchiveResponse200 & {
+  data: void
+  status: 404
+}
+    
+export type tripControllerUnarchiveResponseSuccess = (tripControllerUnarchiveResponse200) & {
   headers: Headers;
 };
-export type tripControllerUnarchiveResponseError = tripControllerUnarchiveResponse404 & {
+export type tripControllerUnarchiveResponseError = (tripControllerUnarchiveResponse404) & {
   headers: Headers;
 };
 
-export type tripControllerUnarchiveResponse =
-  | tripControllerUnarchiveResponseSuccess
-  | tripControllerUnarchiveResponseError;
+export type tripControllerUnarchiveResponse = (tripControllerUnarchiveResponseSuccess | tripControllerUnarchiveResponseError)
 
-export const getTripControllerUnarchiveUrl = (id: string) => {
-  return `/api/v1/trips/${id}/unarchive`;
-};
+export const getTripControllerUnarchiveUrl = (id: string,) => {
 
-export const tripControllerUnarchive = async (
-  id: string,
-  options?: RequestInit,
-): Promise<tripControllerUnarchiveResponse> => {
-  return apiFetch<tripControllerUnarchiveResponse>(getTripControllerUnarchiveUrl(id), {
+
+  
+
+  return `/api/v1/trips/${id}/unarchive`
+}
+
+export const tripControllerUnarchive = async (id: string, options?: RequestInit): Promise<tripControllerUnarchiveResponse> => {
+  
+  return apiFetch<tripControllerUnarchiveResponse>(getTripControllerUnarchiveUrl(id),
+  {      
     ...options,
-    method: 'POST',
-  });
-};
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Fetch a single trip. Owner OR active collaborator (vote/expense). 404 otherwise (IDOR-safe).
  */
 export type tripControllerGetOneResponse200 = {
-  data: TripWithRoleResponseDto;
-  status: 200;
-};
+  data: TripWithRoleResponseDto
+  status: 200
+}
 
 export type tripControllerGetOneResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type tripControllerGetOneResponseSuccess = tripControllerGetOneResponse200 & {
+  data: void
+  status: 404
+}
+    
+export type tripControllerGetOneResponseSuccess = (tripControllerGetOneResponse200) & {
   headers: Headers;
 };
-export type tripControllerGetOneResponseError = tripControllerGetOneResponse404 & {
+export type tripControllerGetOneResponseError = (tripControllerGetOneResponse404) & {
   headers: Headers;
 };
 
-export type tripControllerGetOneResponse =
-  | tripControllerGetOneResponseSuccess
-  | tripControllerGetOneResponseError;
+export type tripControllerGetOneResponse = (tripControllerGetOneResponseSuccess | tripControllerGetOneResponseError)
 
-export const getTripControllerGetOneUrl = (id: string) => {
-  return `/api/v1/trips/${id}`;
-};
+export const getTripControllerGetOneUrl = (id: string,) => {
 
-export const tripControllerGetOne = async (
-  id: string,
-  options?: RequestInit,
-): Promise<tripControllerGetOneResponse> => {
-  return apiFetch<tripControllerGetOneResponse>(getTripControllerGetOneUrl(id), {
+
+  
+
+  return `/api/v1/trips/${id}`
+}
+
+export const tripControllerGetOne = async (id: string, options?: RequestInit): Promise<tripControllerGetOneResponse> => {
+  
+  return apiFetch<tripControllerGetOneResponse>(getTripControllerGetOneUrl(id),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Update a trip the caller owns. Partial body; only provided fields change.
  */
 export type tripControllerUpdateResponse200 = {
-  data: TripDto;
-  status: 200;
-};
+  data: TripDto
+  status: 200
+}
 
 export type tripControllerUpdateResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type tripControllerUpdateResponseSuccess = tripControllerUpdateResponse200 & {
+  data: void
+  status: 404
+}
+    
+export type tripControllerUpdateResponseSuccess = (tripControllerUpdateResponse200) & {
   headers: Headers;
 };
-export type tripControllerUpdateResponseError = tripControllerUpdateResponse404 & {
+export type tripControllerUpdateResponseError = (tripControllerUpdateResponse404) & {
   headers: Headers;
 };
 
-export type tripControllerUpdateResponse =
-  | tripControllerUpdateResponseSuccess
-  | tripControllerUpdateResponseError;
+export type tripControllerUpdateResponse = (tripControllerUpdateResponseSuccess | tripControllerUpdateResponseError)
 
-export const getTripControllerUpdateUrl = (id: string) => {
-  return `/api/v1/trips/${id}`;
-};
+export const getTripControllerUpdateUrl = (id: string,) => {
 
-export const tripControllerUpdate = async (
-  id: string,
-  updateTripRequestDto: UpdateTripRequestDto,
-  options?: RequestInit,
-): Promise<tripControllerUpdateResponse> => {
-  return apiFetch<tripControllerUpdateResponse>(getTripControllerUpdateUrl(id), {
+
+  
+
+  return `/api/v1/trips/${id}`
+}
+
+export const tripControllerUpdate = async (id: string,
+    updateTripRequestDto: UpdateTripRequestDto, options?: RequestInit): Promise<tripControllerUpdateResponse> => {
+  
+  return apiFetch<tripControllerUpdateResponse>(getTripControllerUpdateUrl(id),
+  {      
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(updateTripRequestDto),
-  });
-};
+    body: JSON.stringify(
+      updateTripRequestDto,)
+  }
+);}
+
 
 /**
  * @summary Delete a trip the caller owns. Cascades to itinerary days, items, shares.
  */
 export type tripControllerRemoveResponse204 = {
-  data: void;
-  status: 204;
-};
+  data: void
+  status: 204
+}
 
 export type tripControllerRemoveResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type tripControllerRemoveResponseSuccess = tripControllerRemoveResponse204 & {
+  data: void
+  status: 404
+}
+    
+export type tripControllerRemoveResponseSuccess = (tripControllerRemoveResponse204) & {
   headers: Headers;
 };
-export type tripControllerRemoveResponseError = tripControllerRemoveResponse404 & {
+export type tripControllerRemoveResponseError = (tripControllerRemoveResponse404) & {
   headers: Headers;
 };
 
-export type tripControllerRemoveResponse =
-  | tripControllerRemoveResponseSuccess
-  | tripControllerRemoveResponseError;
+export type tripControllerRemoveResponse = (tripControllerRemoveResponseSuccess | tripControllerRemoveResponseError)
 
-export const getTripControllerRemoveUrl = (id: string) => {
-  return `/api/v1/trips/${id}`;
-};
+export const getTripControllerRemoveUrl = (id: string,) => {
 
-export const tripControllerRemove = async (
-  id: string,
-  options?: RequestInit,
-): Promise<tripControllerRemoveResponse> => {
-  return apiFetch<tripControllerRemoveResponse>(getTripControllerRemoveUrl(id), {
+
+  
+
+  return `/api/v1/trips/${id}`
+}
+
+export const tripControllerRemove = async (id: string, options?: RequestInit): Promise<tripControllerRemoveResponse> => {
+  
+  return apiFetch<tripControllerRemoveResponse>(getTripControllerRemoveUrl(id),
+  {      
     ...options,
-    method: 'DELETE',
-  });
-};
+    method: 'DELETE'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Duplicate a trip the caller owns. Deep-copies title (+" (copy)"), center, radius, dates, itinerary days/items. New trip is `draft`.
  */
 export type tripControllerDuplicateResponse201 = {
-  data: TripDto;
-  status: 201;
-};
+  data: TripDto
+  status: 201
+}
 
 export type tripControllerDuplicateResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type tripControllerDuplicateResponseSuccess = tripControllerDuplicateResponse201 & {
+  data: void
+  status: 404
+}
+    
+export type tripControllerDuplicateResponseSuccess = (tripControllerDuplicateResponse201) & {
   headers: Headers;
 };
-export type tripControllerDuplicateResponseError = tripControllerDuplicateResponse404 & {
+export type tripControllerDuplicateResponseError = (tripControllerDuplicateResponse404) & {
   headers: Headers;
 };
 
-export type tripControllerDuplicateResponse =
-  | tripControllerDuplicateResponseSuccess
-  | tripControllerDuplicateResponseError;
+export type tripControllerDuplicateResponse = (tripControllerDuplicateResponseSuccess | tripControllerDuplicateResponseError)
 
-export const getTripControllerDuplicateUrl = (id: string) => {
-  return `/api/v1/trips/${id}/duplicate`;
-};
+export const getTripControllerDuplicateUrl = (id: string,) => {
 
-export const tripControllerDuplicate = async (
-  id: string,
-  options?: RequestInit,
-): Promise<tripControllerDuplicateResponse> => {
-  return apiFetch<tripControllerDuplicateResponse>(getTripControllerDuplicateUrl(id), {
+
+  
+
+  return `/api/v1/trips/${id}/duplicate`
+}
+
+export const tripControllerDuplicate = async (id: string, options?: RequestInit): Promise<tripControllerDuplicateResponse> => {
+  
+  return apiFetch<tripControllerDuplicateResponse>(getTripControllerDuplicateUrl(id),
+  {      
     ...options,
-    method: 'POST',
-  });
-};
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Lock the trip — freezes itinerary edits for share-collaborators; owner-only writes still work.
  */
 export type tripControllerLockResponse200 = {
-  data: TripDto;
-  status: 200;
-};
+  data: TripDto
+  status: 200
+}
 
 export type tripControllerLockResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type tripControllerLockResponseSuccess = tripControllerLockResponse200 & {
+  data: void
+  status: 404
+}
+    
+export type tripControllerLockResponseSuccess = (tripControllerLockResponse200) & {
   headers: Headers;
 };
-export type tripControllerLockResponseError = tripControllerLockResponse404 & {
+export type tripControllerLockResponseError = (tripControllerLockResponse404) & {
   headers: Headers;
 };
 
-export type tripControllerLockResponse =
-  | tripControllerLockResponseSuccess
-  | tripControllerLockResponseError;
+export type tripControllerLockResponse = (tripControllerLockResponseSuccess | tripControllerLockResponseError)
 
-export const getTripControllerLockUrl = (id: string) => {
-  return `/api/v1/trips/${id}/lock`;
-};
+export const getTripControllerLockUrl = (id: string,) => {
 
-export const tripControllerLock = async (
-  id: string,
-  options?: RequestInit,
-): Promise<tripControllerLockResponse> => {
-  return apiFetch<tripControllerLockResponse>(getTripControllerLockUrl(id), {
+
+  
+
+  return `/api/v1/trips/${id}/lock`
+}
+
+export const tripControllerLock = async (id: string, options?: RequestInit): Promise<tripControllerLockResponse> => {
+  
+  return apiFetch<tripControllerLockResponse>(getTripControllerLockUrl(id),
+  {      
     ...options,
-    method: 'POST',
-  });
-};
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Unlock the trip — restores share-collaborator edit access.
  */
 export type tripControllerUnlockResponse200 = {
-  data: TripDto;
-  status: 200;
-};
+  data: TripDto
+  status: 200
+}
 
 export type tripControllerUnlockResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type tripControllerUnlockResponseSuccess = tripControllerUnlockResponse200 & {
+  data: void
+  status: 404
+}
+    
+export type tripControllerUnlockResponseSuccess = (tripControllerUnlockResponse200) & {
   headers: Headers;
 };
-export type tripControllerUnlockResponseError = tripControllerUnlockResponse404 & {
+export type tripControllerUnlockResponseError = (tripControllerUnlockResponse404) & {
   headers: Headers;
 };
 
-export type tripControllerUnlockResponse =
-  | tripControllerUnlockResponseSuccess
-  | tripControllerUnlockResponseError;
+export type tripControllerUnlockResponse = (tripControllerUnlockResponseSuccess | tripControllerUnlockResponseError)
 
-export const getTripControllerUnlockUrl = (id: string) => {
-  return `/api/v1/trips/${id}/unlock`;
-};
+export const getTripControllerUnlockUrl = (id: string,) => {
 
-export const tripControllerUnlock = async (
-  id: string,
-  options?: RequestInit,
-): Promise<tripControllerUnlockResponse> => {
-  return apiFetch<tripControllerUnlockResponse>(getTripControllerUnlockUrl(id), {
+
+  
+
+  return `/api/v1/trips/${id}/unlock`
+}
+
+export const tripControllerUnlock = async (id: string, options?: RequestInit): Promise<tripControllerUnlockResponse> => {
+  
+  return apiFetch<tripControllerUnlockResponse>(getTripControllerUnlockUrl(id),
+  {      
     ...options,
-    method: 'POST',
-  });
-};
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Generate itinerary stub for the trip (one ItineraryDay per date in the range).
  */
 export type tripControllerBuildItineraryResponse200 = {
-  data: ItineraryListResponseDto;
-  status: 200;
-};
+  data: ItineraryListResponseDto
+  status: 200
+}
 
 export type tripControllerBuildItineraryResponse422 = {
-  data: void;
-  status: 422;
+  data: void
+  status: 422
+}
+    
+export type tripControllerBuildItineraryResponseSuccess = (tripControllerBuildItineraryResponse200) & {
+  headers: Headers;
 };
-
-export type tripControllerBuildItineraryResponseSuccess =
-  tripControllerBuildItineraryResponse200 & {
-    headers: Headers;
-  };
-export type tripControllerBuildItineraryResponseError = tripControllerBuildItineraryResponse422 & {
+export type tripControllerBuildItineraryResponseError = (tripControllerBuildItineraryResponse422) & {
   headers: Headers;
 };
 
-export type tripControllerBuildItineraryResponse =
-  | tripControllerBuildItineraryResponseSuccess
-  | tripControllerBuildItineraryResponseError;
+export type tripControllerBuildItineraryResponse = (tripControllerBuildItineraryResponseSuccess | tripControllerBuildItineraryResponseError)
 
-export const getTripControllerBuildItineraryUrl = (id: string) => {
-  return `/api/v1/trips/${id}/itinerary`;
-};
+export const getTripControllerBuildItineraryUrl = (id: string,) => {
 
-export const tripControllerBuildItinerary = async (
-  id: string,
-  options?: RequestInit,
-): Promise<tripControllerBuildItineraryResponse> => {
-  return apiFetch<tripControllerBuildItineraryResponse>(getTripControllerBuildItineraryUrl(id), {
+
+  
+
+  return `/api/v1/trips/${id}/itinerary`
+}
+
+export const tripControllerBuildItinerary = async (id: string, options?: RequestInit): Promise<tripControllerBuildItineraryResponse> => {
+  
+  return apiFetch<tripControllerBuildItineraryResponse>(getTripControllerBuildItineraryUrl(id),
+  {      
     ...options,
-    method: 'POST',
-  });
-};
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary List itinerary days + items for the trip the caller owns.
  */
 export type tripControllerGetItineraryResponse200 = {
-  data: ItineraryListResponseDto;
-  status: 200;
-};
+  data: ItineraryListResponseDto
+  status: 200
+}
 
 export type tripControllerGetItineraryResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type tripControllerGetItineraryResponseSuccess = tripControllerGetItineraryResponse200 & {
+  data: void
+  status: 404
+}
+    
+export type tripControllerGetItineraryResponseSuccess = (tripControllerGetItineraryResponse200) & {
   headers: Headers;
 };
-export type tripControllerGetItineraryResponseError = tripControllerGetItineraryResponse404 & {
+export type tripControllerGetItineraryResponseError = (tripControllerGetItineraryResponse404) & {
   headers: Headers;
 };
 
-export type tripControllerGetItineraryResponse =
-  | tripControllerGetItineraryResponseSuccess
-  | tripControllerGetItineraryResponseError;
+export type tripControllerGetItineraryResponse = (tripControllerGetItineraryResponseSuccess | tripControllerGetItineraryResponseError)
 
-export const getTripControllerGetItineraryUrl = (id: string) => {
-  return `/api/v1/trips/${id}/itinerary`;
-};
+export const getTripControllerGetItineraryUrl = (id: string,) => {
 
-export const tripControllerGetItinerary = async (
-  id: string,
-  options?: RequestInit,
-): Promise<tripControllerGetItineraryResponse> => {
-  return apiFetch<tripControllerGetItineraryResponse>(getTripControllerGetItineraryUrl(id), {
+
+  
+
+  return `/api/v1/trips/${id}/itinerary`
+}
+
+export const tripControllerGetItinerary = async (id: string, options?: RequestInit): Promise<tripControllerGetItineraryResponse> => {
+  
+  return apiFetch<tripControllerGetItineraryResponse>(getTripControllerGetItineraryUrl(id),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Public sample-plan demo for the landing page. NO auth, NO trip persisted — feeds the AI port directly.
  */
 export type tripControllerSamplePlanResponse200 = {
-  data: GenerateSamplePlanResponseDto;
-  status: 200;
-};
-
-export type tripControllerSamplePlanResponseSuccess = tripControllerSamplePlanResponse200 & {
+  data: GenerateSamplePlanResponseDto
+  status: 200
+}
+    
+export type tripControllerSamplePlanResponseSuccess = (tripControllerSamplePlanResponse200) & {
   headers: Headers;
 };
-export type tripControllerSamplePlanResponse = tripControllerSamplePlanResponseSuccess;
+;
+
+export type tripControllerSamplePlanResponse = (tripControllerSamplePlanResponseSuccess)
 
 export const getTripControllerSamplePlanUrl = () => {
-  return `/api/v1/trips/sample-plan`;
-};
 
-export const tripControllerSamplePlan = async (
-  generateSamplePlanRequestDto: GenerateSamplePlanRequestDto,
-  options?: RequestInit,
-): Promise<tripControllerSamplePlanResponse> => {
-  return apiFetch<tripControllerSamplePlanResponse>(getTripControllerSamplePlanUrl(), {
+
+  
+
+  return `/api/v1/trips/sample-plan`
+}
+
+export const tripControllerSamplePlan = async (generateSamplePlanRequestDto: GenerateSamplePlanRequestDto, options?: RequestInit): Promise<tripControllerSamplePlanResponse> => {
+  
+  return apiFetch<tripControllerSamplePlanResponse>(getTripControllerSamplePlanUrl(),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(generateSamplePlanRequestDto),
-  });
-};
+    body: JSON.stringify(
+      generateSamplePlanRequestDto,)
+  }
+);}
+
 
 /**
  * @summary Generate a free-form trip plan via the configured AI adapter (Anthropic / Gemini / Ollama / stub — see [POST.4]). Owner-only.
  */
 export type tripControllerPlanWithAiResponse200 = {
-  data: GeneratePlanWithAiResponseDto;
-  status: 200;
-};
+  data: GeneratePlanWithAiResponseDto
+  status: 200
+}
 
 export type tripControllerPlanWithAiResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type tripControllerPlanWithAiResponseSuccess = tripControllerPlanWithAiResponse200 & {
+  data: void
+  status: 404
+}
+    
+export type tripControllerPlanWithAiResponseSuccess = (tripControllerPlanWithAiResponse200) & {
   headers: Headers;
 };
-export type tripControllerPlanWithAiResponseError = tripControllerPlanWithAiResponse404 & {
+export type tripControllerPlanWithAiResponseError = (tripControllerPlanWithAiResponse404) & {
   headers: Headers;
 };
 
-export type tripControllerPlanWithAiResponse =
-  | tripControllerPlanWithAiResponseSuccess
-  | tripControllerPlanWithAiResponseError;
+export type tripControllerPlanWithAiResponse = (tripControllerPlanWithAiResponseSuccess | tripControllerPlanWithAiResponseError)
 
-export const getTripControllerPlanWithAiUrl = (id: string) => {
-  return `/api/v1/trips/${id}/plan-with-ai`;
-};
+export const getTripControllerPlanWithAiUrl = (id: string,) => {
 
-export const tripControllerPlanWithAi = async (
-  id: string,
-  options?: RequestInit,
-): Promise<tripControllerPlanWithAiResponse> => {
-  return apiFetch<tripControllerPlanWithAiResponse>(getTripControllerPlanWithAiUrl(id), {
+
+  
+
+  return `/api/v1/trips/${id}/plan-with-ai`
+}
+
+export const tripControllerPlanWithAi = async (id: string, options?: RequestInit): Promise<tripControllerPlanWithAiResponse> => {
+  
+  return apiFetch<tripControllerPlanWithAiResponse>(getTripControllerPlanWithAiUrl(id),
+  {      
     ...options,
-    method: 'POST',
-  });
-};
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Mint a share code so collaborators can view (or co-edit, if publicRead=false) the trip.
  */
 export type tripControllerShareResponse201 = {
-  data: TripShareResponseDto;
-  status: 201;
-};
+  data: TripShareResponseDto
+  status: 201
+}
 
 export type tripControllerShareResponse404 = {
-  data: void;
-  status: 404;
-};
+  data: void
+  status: 404
+}
 
 export type tripControllerShareResponse422 = {
-  data: void;
-  status: 422;
-};
-
-export type tripControllerShareResponseSuccess = tripControllerShareResponse201 & {
+  data: void
+  status: 422
+}
+    
+export type tripControllerShareResponseSuccess = (tripControllerShareResponse201) & {
   headers: Headers;
 };
-export type tripControllerShareResponseError = (
-  | tripControllerShareResponse404
-  | tripControllerShareResponse422
-) & {
+export type tripControllerShareResponseError = (tripControllerShareResponse404 | tripControllerShareResponse422) & {
   headers: Headers;
 };
 
-export type tripControllerShareResponse =
-  | tripControllerShareResponseSuccess
-  | tripControllerShareResponseError;
+export type tripControllerShareResponse = (tripControllerShareResponseSuccess | tripControllerShareResponseError)
 
-export const getTripControllerShareUrl = (id: string) => {
-  return `/api/v1/trips/${id}/share`;
-};
+export const getTripControllerShareUrl = (id: string,) => {
 
-export const tripControllerShare = async (
-  id: string,
-  createTripShareRequestDto: CreateTripShareRequestDto,
-  options?: RequestInit,
-): Promise<tripControllerShareResponse> => {
-  return apiFetch<tripControllerShareResponse>(getTripControllerShareUrl(id), {
+
+  
+
+  return `/api/v1/trips/${id}/share`
+}
+
+export const tripControllerShare = async (id: string,
+    createTripShareRequestDto: CreateTripShareRequestDto, options?: RequestInit): Promise<tripControllerShareResponse> => {
+  
+  return apiFetch<tripControllerShareResponse>(getTripControllerShareUrl(id),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(createTripShareRequestDto),
-  });
-};
+    body: JSON.stringify(
+      createTripShareRequestDto,)
+  }
+);}
+
 
 /**
  * @summary Public read of a shared trip by code. No auth required.
  */
 export type tripControllerGetSharedTripResponse200 = {
-  data: SharedTripDto;
-  status: 200;
-};
+  data: SharedTripDto
+  status: 200
+}
 
 export type tripControllerGetSharedTripResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type tripControllerGetSharedTripResponseSuccess = tripControllerGetSharedTripResponse200 & {
+  data: void
+  status: 404
+}
+    
+export type tripControllerGetSharedTripResponseSuccess = (tripControllerGetSharedTripResponse200) & {
   headers: Headers;
 };
-export type tripControllerGetSharedTripResponseError = tripControllerGetSharedTripResponse404 & {
+export type tripControllerGetSharedTripResponseError = (tripControllerGetSharedTripResponse404) & {
   headers: Headers;
 };
 
-export type tripControllerGetSharedTripResponse =
-  | tripControllerGetSharedTripResponseSuccess
-  | tripControllerGetSharedTripResponseError;
+export type tripControllerGetSharedTripResponse = (tripControllerGetSharedTripResponseSuccess | tripControllerGetSharedTripResponseError)
 
-export const getTripControllerGetSharedTripUrl = (code: string) => {
-  return `/api/v1/trips/shared/${code}`;
-};
+export const getTripControllerGetSharedTripUrl = (code: string,) => {
 
-export const tripControllerGetSharedTrip = async (
-  code: string,
-  options?: RequestInit,
-): Promise<tripControllerGetSharedTripResponse> => {
-  return apiFetch<tripControllerGetSharedTripResponse>(getTripControllerGetSharedTripUrl(code), {
+
+  
+
+  return `/api/v1/trips/shared/${code}`
+}
+
+export const tripControllerGetSharedTrip = async (code: string, options?: RequestInit): Promise<tripControllerGetSharedTripResponse> => {
+  
+  return apiFetch<tripControllerGetSharedTripResponse>(getTripControllerGetSharedTripUrl(code),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Clone a publicly-shared trip into the caller's account. Auth required.
  */
 export type tripControllerCloneSharedResponse201 = {
-  data: TripDto;
-  status: 201;
-};
+  data: TripDto
+  status: 201
+}
 
 export type tripControllerCloneSharedResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type tripControllerCloneSharedResponseSuccess = tripControllerCloneSharedResponse201 & {
+  data: void
+  status: 404
+}
+    
+export type tripControllerCloneSharedResponseSuccess = (tripControllerCloneSharedResponse201) & {
   headers: Headers;
 };
-export type tripControllerCloneSharedResponseError = tripControllerCloneSharedResponse404 & {
+export type tripControllerCloneSharedResponseError = (tripControllerCloneSharedResponse404) & {
   headers: Headers;
 };
 
-export type tripControllerCloneSharedResponse =
-  | tripControllerCloneSharedResponseSuccess
-  | tripControllerCloneSharedResponseError;
+export type tripControllerCloneSharedResponse = (tripControllerCloneSharedResponseSuccess | tripControllerCloneSharedResponseError)
 
-export const getTripControllerCloneSharedUrl = (code: string) => {
-  return `/api/v1/trips/shared/${code}/clone`;
-};
+export const getTripControllerCloneSharedUrl = (code: string,) => {
 
-export const tripControllerCloneShared = async (
-  code: string,
-  options?: RequestInit,
-): Promise<tripControllerCloneSharedResponse> => {
-  return apiFetch<tripControllerCloneSharedResponse>(getTripControllerCloneSharedUrl(code), {
+
+  
+
+  return `/api/v1/trips/shared/${code}/clone`
+}
+
+export const tripControllerCloneShared = async (code: string, options?: RequestInit): Promise<tripControllerCloneSharedResponse> => {
+  
+  return apiFetch<tripControllerCloneSharedResponse>(getTripControllerCloneSharedUrl(code),
+  {      
     ...options,
-    method: 'POST',
-  });
-};
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Trip overview composite — 7 sections (itinerary, weather, stays, eateries, events, transport, media). Per-section graceful degradation. 60s TTL cache.
  */
 export type tripControllerOverviewResponse200 = {
-  data: TripOverviewResponseDto;
-  status: 200;
-};
-
-export type tripControllerOverviewResponseSuccess = tripControllerOverviewResponse200 & {
+  data: TripOverviewResponseDto
+  status: 200
+}
+    
+export type tripControllerOverviewResponseSuccess = (tripControllerOverviewResponse200) & {
   headers: Headers;
 };
-export type tripControllerOverviewResponse = tripControllerOverviewResponseSuccess;
+;
 
-export const getTripControllerOverviewUrl = (id: string) => {
-  return `/api/v1/trips/${id}/overview`;
-};
+export type tripControllerOverviewResponse = (tripControllerOverviewResponseSuccess)
 
-export const tripControllerOverview = async (
-  id: string,
-  options?: RequestInit,
-): Promise<tripControllerOverviewResponse> => {
-  return apiFetch<tripControllerOverviewResponse>(getTripControllerOverviewUrl(id), {
+export const getTripControllerOverviewUrl = (id: string,) => {
+
+
+  
+
+  return `/api/v1/trips/${id}/overview`
+}
+
+export const tripControllerOverview = async (id: string, options?: RequestInit): Promise<tripControllerOverviewResponse> => {
+  
+  return apiFetch<tripControllerOverviewResponse>(getTripControllerOverviewUrl(id),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Eateries near the trip center. Optional cuisineTag + maxPriceTier filters.
  */
 export type tripControllerEateriesResponse200 = {
-  data: void;
-  status: 200;
-};
-
-export type tripControllerEateriesResponseSuccess = tripControllerEateriesResponse200 & {
+  data: void
+  status: 200
+}
+    
+export type tripControllerEateriesResponseSuccess = (tripControllerEateriesResponse200) & {
   headers: Headers;
 };
-export type tripControllerEateriesResponse = tripControllerEateriesResponseSuccess;
+;
 
-export const getTripControllerEateriesUrl = (id: string, params: TripControllerEateriesParams) => {
+export type tripControllerEateriesResponse = (tripControllerEateriesResponseSuccess)
+
+export const getTripControllerEateriesUrl = (id: string,
+    params: TripControllerEateriesParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
+    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString());
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0
-    ? `/api/v1/trips/${id}/eateries?${stringifiedParams}`
-    : `/api/v1/trips/${id}/eateries`;
-};
+  return stringifiedParams.length > 0 ? `/api/v1/trips/${id}/eateries?${stringifiedParams}` : `/api/v1/trips/${id}/eateries`
+}
 
-export const tripControllerEateries = async (
-  id: string,
-  params: TripControllerEateriesParams,
-  options?: RequestInit,
-): Promise<tripControllerEateriesResponse> => {
-  return apiFetch<tripControllerEateriesResponse>(getTripControllerEateriesUrl(id, params), {
+export const tripControllerEateries = async (id: string,
+    params: TripControllerEateriesParams, options?: RequestInit): Promise<tripControllerEateriesResponse> => {
+  
+  return apiFetch<tripControllerEateriesResponse>(getTripControllerEateriesUrl(id,params),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Events near the trip center during the trip date range. Requires startsOn + endsOn.
  */
 export type tripControllerEventsResponse422 = {
-  data: void;
-  status: 422;
-};
-export type tripControllerEventsResponseError = tripControllerEventsResponse422 & {
+  data: void
+  status: 422
+}
+    
+;
+export type tripControllerEventsResponseError = (tripControllerEventsResponse422) & {
   headers: Headers;
 };
 
-export type tripControllerEventsResponse = tripControllerEventsResponseError;
+export type tripControllerEventsResponse = (tripControllerEventsResponseError)
 
-export const getTripControllerEventsUrl = (id: string, params: TripControllerEventsParams) => {
+export const getTripControllerEventsUrl = (id: string,
+    params: TripControllerEventsParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
+    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString());
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0
-    ? `/api/v1/trips/${id}/events?${stringifiedParams}`
-    : `/api/v1/trips/${id}/events`;
-};
+  return stringifiedParams.length > 0 ? `/api/v1/trips/${id}/events?${stringifiedParams}` : `/api/v1/trips/${id}/events`
+}
 
-export const tripControllerEvents = async (
-  id: string,
-  params: TripControllerEventsParams,
-  options?: RequestInit,
-): Promise<tripControllerEventsResponse> => {
-  return apiFetch<tripControllerEventsResponse>(getTripControllerEventsUrl(id, params), {
+export const tripControllerEvents = async (id: string,
+    params: TripControllerEventsParams, options?: RequestInit): Promise<tripControllerEventsResponse> => {
+  
+  return apiFetch<tripControllerEventsResponse>(getTripControllerEventsUrl(id,params),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Stays near the trip center for the trip date range. Requires startsOn + endsOn.
  */
 export type tripControllerStaysResponse200 = {
-  data: void;
-  status: 200;
-};
-
-export type tripControllerStaysResponseSuccess = tripControllerStaysResponse200 & {
+  data: void
+  status: 200
+}
+    
+export type tripControllerStaysResponseSuccess = (tripControllerStaysResponse200) & {
   headers: Headers;
 };
-export type tripControllerStaysResponse = tripControllerStaysResponseSuccess;
+;
 
-export const getTripControllerStaysUrl = (id: string, params: TripControllerStaysParams) => {
+export type tripControllerStaysResponse = (tripControllerStaysResponseSuccess)
+
+export const getTripControllerStaysUrl = (id: string,
+    params: TripControllerStaysParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
+    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString());
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0
-    ? `/api/v1/trips/${id}/stays?${stringifiedParams}`
-    : `/api/v1/trips/${id}/stays`;
-};
+  return stringifiedParams.length > 0 ? `/api/v1/trips/${id}/stays?${stringifiedParams}` : `/api/v1/trips/${id}/stays`
+}
 
-export const tripControllerStays = async (
-  id: string,
-  params: TripControllerStaysParams,
-  options?: RequestInit,
-): Promise<tripControllerStaysResponse> => {
-  return apiFetch<tripControllerStaysResponse>(getTripControllerStaysUrl(id, params), {
+export const tripControllerStays = async (id: string,
+    params: TripControllerStaysParams, options?: RequestInit): Promise<tripControllerStaysResponse> => {
+  
+  return apiFetch<tripControllerStaysResponse>(getTripControllerStaysUrl(id,params),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Weather forecast for the trip center. Up to 16 days. TTL-cached.
  */
 export type tripControllerWeatherResponse200 = {
-  data: void;
-  status: 200;
-};
-
-export type tripControllerWeatherResponseSuccess = tripControllerWeatherResponse200 & {
+  data: void
+  status: 200
+}
+    
+export type tripControllerWeatherResponseSuccess = (tripControllerWeatherResponse200) & {
   headers: Headers;
 };
-export type tripControllerWeatherResponse = tripControllerWeatherResponseSuccess;
+;
 
-export const getTripControllerWeatherUrl = (id: string) => {
-  return `/api/v1/trips/${id}/weather`;
-};
+export type tripControllerWeatherResponse = (tripControllerWeatherResponseSuccess)
 
-export const tripControllerWeather = async (
-  id: string,
-  options?: RequestInit,
-): Promise<tripControllerWeatherResponse> => {
-  return apiFetch<tripControllerWeatherResponse>(getTripControllerWeatherUrl(id), {
+export const getTripControllerWeatherUrl = (id: string,) => {
+
+
+  
+
+  return `/api/v1/trips/${id}/weather`
+}
+
+export const tripControllerWeather = async (id: string, options?: RequestInit): Promise<tripControllerWeatherResponse> => {
+  
+  return apiFetch<tripControllerWeatherResponse>(getTripControllerWeatherUrl(id),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Just the trip center coords. Owner-gated, tiny.
  */
 export type tripControllerCenterResponse200 = {
-  data: TripControllerCenter200;
-  status: 200;
-};
+  data: TripControllerCenter200
+  status: 200
+}
 
 export type tripControllerCenterResponse401 = {
-  data: void;
-  status: 401;
-};
+  data: void
+  status: 401
+}
 
 export type tripControllerCenterResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type tripControllerCenterResponseSuccess = tripControllerCenterResponse200 & {
+  data: void
+  status: 404
+}
+    
+export type tripControllerCenterResponseSuccess = (tripControllerCenterResponse200) & {
   headers: Headers;
 };
-export type tripControllerCenterResponseError = (
-  | tripControllerCenterResponse401
-  | tripControllerCenterResponse404
-) & {
+export type tripControllerCenterResponseError = (tripControllerCenterResponse401 | tripControllerCenterResponse404) & {
   headers: Headers;
 };
 
-export type tripControllerCenterResponse =
-  | tripControllerCenterResponseSuccess
-  | tripControllerCenterResponseError;
+export type tripControllerCenterResponse = (tripControllerCenterResponseSuccess | tripControllerCenterResponseError)
 
-export const getTripControllerCenterUrl = (id: string) => {
-  return `/api/v1/trips/${id}/center`;
-};
+export const getTripControllerCenterUrl = (id: string,) => {
 
-export const tripControllerCenter = async (
-  id: string,
-  options?: RequestInit,
-): Promise<tripControllerCenterResponse> => {
-  return apiFetch<tripControllerCenterResponse>(getTripControllerCenterUrl(id), {
+
+  
+
+  return `/api/v1/trips/${id}/center`
+}
+
+export const tripControllerCenter = async (id: string, options?: RequestInit): Promise<tripControllerCenterResponse> => {
+  
+  return apiFetch<tripControllerCenterResponse>(getTripControllerCenterUrl(id),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Mark an itinerary item complete (G1 — Living Trip).
  */
 export type tripControllerCompleteItemResponse200 = {
-  data: void;
-  status: 200;
-};
+  data: void
+  status: 200
+}
 
 export type tripControllerCompleteItemResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type tripControllerCompleteItemResponseSuccess = tripControllerCompleteItemResponse200 & {
+  data: void
+  status: 404
+}
+    
+export type tripControllerCompleteItemResponseSuccess = (tripControllerCompleteItemResponse200) & {
   headers: Headers;
 };
-export type tripControllerCompleteItemResponseError = tripControllerCompleteItemResponse404 & {
+export type tripControllerCompleteItemResponseError = (tripControllerCompleteItemResponse404) & {
   headers: Headers;
 };
 
-export type tripControllerCompleteItemResponse =
-  | tripControllerCompleteItemResponseSuccess
-  | tripControllerCompleteItemResponseError;
+export type tripControllerCompleteItemResponse = (tripControllerCompleteItemResponseSuccess | tripControllerCompleteItemResponseError)
 
-export const getTripControllerCompleteItemUrl = (itemId: string) => {
-  return `/api/v1/trips/items/${itemId}/complete`;
-};
+export const getTripControllerCompleteItemUrl = (itemId: string,) => {
 
-export const tripControllerCompleteItem = async (
-  itemId: string,
-  options?: RequestInit,
-): Promise<tripControllerCompleteItemResponse> => {
-  return apiFetch<tripControllerCompleteItemResponse>(getTripControllerCompleteItemUrl(itemId), {
+
+  
+
+  return `/api/v1/trips/items/${itemId}/complete`
+}
+
+export const tripControllerCompleteItem = async (itemId: string, options?: RequestInit): Promise<tripControllerCompleteItemResponse> => {
+  
+  return apiFetch<tripControllerCompleteItemResponse>(getTripControllerCompleteItemUrl(itemId),
+  {      
     ...options,
-    method: 'POST',
-  });
-};
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Clear the completion mark on an itinerary item (G1).
  */
 export type tripControllerUncompleteItemResponse200 = {
-  data: void;
-  status: 200;
-};
+  data: void
+  status: 200
+}
 
 export type tripControllerUncompleteItemResponse404 = {
-  data: void;
-  status: 404;
+  data: void
+  status: 404
+}
+    
+export type tripControllerUncompleteItemResponseSuccess = (tripControllerUncompleteItemResponse200) & {
+  headers: Headers;
 };
-
-export type tripControllerUncompleteItemResponseSuccess =
-  tripControllerUncompleteItemResponse200 & {
-    headers: Headers;
-  };
-export type tripControllerUncompleteItemResponseError = tripControllerUncompleteItemResponse404 & {
+export type tripControllerUncompleteItemResponseError = (tripControllerUncompleteItemResponse404) & {
   headers: Headers;
 };
 
-export type tripControllerUncompleteItemResponse =
-  | tripControllerUncompleteItemResponseSuccess
-  | tripControllerUncompleteItemResponseError;
+export type tripControllerUncompleteItemResponse = (tripControllerUncompleteItemResponseSuccess | tripControllerUncompleteItemResponseError)
 
-export const getTripControllerUncompleteItemUrl = (itemId: string) => {
-  return `/api/v1/trips/items/${itemId}/uncomplete`;
-};
+export const getTripControllerUncompleteItemUrl = (itemId: string,) => {
 
-export const tripControllerUncompleteItem = async (
-  itemId: string,
-  options?: RequestInit,
-): Promise<tripControllerUncompleteItemResponse> => {
-  return apiFetch<tripControllerUncompleteItemResponse>(
-    getTripControllerUncompleteItemUrl(itemId),
-    {
-      ...options,
-      method: 'POST',
-    },
-  );
-};
+
+  
+
+  return `/api/v1/trips/items/${itemId}/uncomplete`
+}
+
+export const tripControllerUncompleteItem = async (itemId: string, options?: RequestInit): Promise<tripControllerUncompleteItemResponse> => {
+  
+  return apiFetch<tripControllerUncompleteItemResponse>(getTripControllerUncompleteItemUrl(itemId),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Shift every itinerary day for the trip by deltaDays (G4).
  */
 export type tripControllerShiftItineraryResponse200 = {
-  data: TripControllerShiftItinerary200;
-  status: 200;
-};
+  data: TripControllerShiftItinerary200
+  status: 200
+}
 
 export type tripControllerShiftItineraryResponse404 = {
-  data: void;
-  status: 404;
-};
+  data: void
+  status: 404
+}
 
 export type tripControllerShiftItineraryResponse422 = {
-  data: void;
-  status: 422;
+  data: void
+  status: 422
+}
+    
+export type tripControllerShiftItineraryResponseSuccess = (tripControllerShiftItineraryResponse200) & {
+  headers: Headers;
 };
-
-export type tripControllerShiftItineraryResponseSuccess =
-  tripControllerShiftItineraryResponse200 & {
-    headers: Headers;
-  };
-export type tripControllerShiftItineraryResponseError = (
-  | tripControllerShiftItineraryResponse404
-  | tripControllerShiftItineraryResponse422
-) & {
+export type tripControllerShiftItineraryResponseError = (tripControllerShiftItineraryResponse404 | tripControllerShiftItineraryResponse422) & {
   headers: Headers;
 };
 
-export type tripControllerShiftItineraryResponse =
-  | tripControllerShiftItineraryResponseSuccess
-  | tripControllerShiftItineraryResponseError;
+export type tripControllerShiftItineraryResponse = (tripControllerShiftItineraryResponseSuccess | tripControllerShiftItineraryResponseError)
 
-export const getTripControllerShiftItineraryUrl = (id: string) => {
-  return `/api/v1/trips/${id}/itinerary/shift`;
-};
+export const getTripControllerShiftItineraryUrl = (id: string,) => {
 
-export const tripControllerShiftItinerary = async (
-  id: string,
-  options?: RequestInit,
-): Promise<tripControllerShiftItineraryResponse> => {
-  return apiFetch<tripControllerShiftItineraryResponse>(getTripControllerShiftItineraryUrl(id), {
+
+  
+
+  return `/api/v1/trips/${id}/itinerary/shift`
+}
+
+export const tripControllerShiftItinerary = async (id: string, options?: RequestInit): Promise<tripControllerShiftItineraryResponse> => {
+  
+  return apiFetch<tripControllerShiftItineraryResponse>(getTripControllerShiftItineraryUrl(id),
+  {      
     ...options,
-    method: 'POST',
-  });
-};
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary List active share codes for the trip the caller owns.
  */
 export type tripControllerListSharesResponse200 = {
-  data: ListTripSharesResponseDto;
-  status: 200;
-};
-
-export type tripControllerListSharesResponseSuccess = tripControllerListSharesResponse200 & {
+  data: ListTripSharesResponseDto
+  status: 200
+}
+    
+export type tripControllerListSharesResponseSuccess = (tripControllerListSharesResponse200) & {
   headers: Headers;
 };
-export type tripControllerListSharesResponse = tripControllerListSharesResponseSuccess;
+;
 
-export const getTripControllerListSharesUrl = (id: string) => {
-  return `/api/v1/trips/${id}/shares`;
-};
+export type tripControllerListSharesResponse = (tripControllerListSharesResponseSuccess)
 
-export const tripControllerListShares = async (
-  id: string,
-  options?: RequestInit,
-): Promise<tripControllerListSharesResponse> => {
-  return apiFetch<tripControllerListSharesResponse>(getTripControllerListSharesUrl(id), {
+export const getTripControllerListSharesUrl = (id: string,) => {
+
+
+  
+
+  return `/api/v1/trips/${id}/shares`
+}
+
+export const tripControllerListShares = async (id: string, options?: RequestInit): Promise<tripControllerListSharesResponse> => {
+  
+  return apiFetch<tripControllerListSharesResponse>(getTripControllerListSharesUrl(id),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Revoke a share code. Owner-scoped.
  */
 export type tripControllerRevokeShareResponse204 = {
-  data: void;
-  status: 204;
-};
-
-export type tripControllerRevokeShareResponseSuccess = tripControllerRevokeShareResponse204 & {
+  data: void
+  status: 204
+}
+    
+export type tripControllerRevokeShareResponseSuccess = (tripControllerRevokeShareResponse204) & {
   headers: Headers;
 };
-export type tripControllerRevokeShareResponse = tripControllerRevokeShareResponseSuccess;
+;
 
-export const getTripControllerRevokeShareUrl = (id: unknown, code: string) => {
-  return `/api/v1/trips/${id}/share/${code}`;
-};
+export type tripControllerRevokeShareResponse = (tripControllerRevokeShareResponseSuccess)
 
-export const tripControllerRevokeShare = async (
-  id: unknown,
-  code: string,
-  options?: RequestInit,
-): Promise<tripControllerRevokeShareResponse> => {
-  return apiFetch<tripControllerRevokeShareResponse>(getTripControllerRevokeShareUrl(id, code), {
+export const getTripControllerRevokeShareUrl = (id: unknown,
+    code: string,) => {
+
+
+  
+
+  return `/api/v1/trips/${id}/share/${code}`
+}
+
+export const tripControllerRevokeShare = async (id: unknown,
+    code: string, options?: RequestInit): Promise<tripControllerRevokeShareResponse> => {
+  
+  return apiFetch<tripControllerRevokeShareResponse>(getTripControllerRevokeShareUrl(id,code),
+  {      
     ...options,
-    method: 'DELETE',
-  });
-};
+    method: 'DELETE'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Compute transport legs between consecutive itinerary items.
  */
 export type tripControllerTransportLegsResponse200 = {
-  data: void;
-  status: 200;
-};
-
-export type tripControllerTransportLegsResponseSuccess = tripControllerTransportLegsResponse200 & {
+  data: void
+  status: 200
+}
+    
+export type tripControllerTransportLegsResponseSuccess = (tripControllerTransportLegsResponse200) & {
   headers: Headers;
 };
-export type tripControllerTransportLegsResponse = tripControllerTransportLegsResponseSuccess;
+;
 
-export const getTripControllerTransportLegsUrl = (id: string) => {
-  return `/api/v1/trips/${id}/transport-legs`;
-};
+export type tripControllerTransportLegsResponse = (tripControllerTransportLegsResponseSuccess)
 
-export const tripControllerTransportLegs = async (
-  id: string,
-  options?: RequestInit,
-): Promise<tripControllerTransportLegsResponse> => {
-  return apiFetch<tripControllerTransportLegsResponse>(getTripControllerTransportLegsUrl(id), {
+export const getTripControllerTransportLegsUrl = (id: string,) => {
+
+
+  
+
+  return `/api/v1/trips/${id}/transport-legs`
+}
+
+export const tripControllerTransportLegs = async (id: string, options?: RequestInit): Promise<tripControllerTransportLegsResponse> => {
+  
+  return apiFetch<tripControllerTransportLegsResponse>(getTripControllerTransportLegsUrl(id),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Suggest up to 6 ranked places near the trip's center. Optional category filter. Persists candidates to Place.
  */
 export type tripControllerPlaceSuggestionsResponse200 = {
-  data: SuggestPlacesForTripResponseDto;
-  status: 200;
-};
+  data: SuggestPlacesForTripResponseDto
+  status: 200
+}
 
 export type tripControllerPlaceSuggestionsResponse404 = {
-  data: void;
-  status: 404;
+  data: void
+  status: 404
+}
+    
+export type tripControllerPlaceSuggestionsResponseSuccess = (tripControllerPlaceSuggestionsResponse200) & {
+  headers: Headers;
+};
+export type tripControllerPlaceSuggestionsResponseError = (tripControllerPlaceSuggestionsResponse404) & {
+  headers: Headers;
 };
 
-export type tripControllerPlaceSuggestionsResponseSuccess =
-  tripControllerPlaceSuggestionsResponse200 & {
-    headers: Headers;
-  };
-export type tripControllerPlaceSuggestionsResponseError =
-  tripControllerPlaceSuggestionsResponse404 & {
-    headers: Headers;
-  };
+export type tripControllerPlaceSuggestionsResponse = (tripControllerPlaceSuggestionsResponseSuccess | tripControllerPlaceSuggestionsResponseError)
 
-export type tripControllerPlaceSuggestionsResponse =
-  | tripControllerPlaceSuggestionsResponseSuccess
-  | tripControllerPlaceSuggestionsResponseError;
+export const getTripControllerPlaceSuggestionsUrl = (id: string,) => {
 
-export const getTripControllerPlaceSuggestionsUrl = (id: string) => {
-  return `/api/v1/trips/${id}/place-suggestions`;
-};
 
-export const tripControllerPlaceSuggestions = async (
-  id: string,
-  suggestPlacesForTripRequestDto: SuggestPlacesForTripRequestDto,
-  options?: RequestInit,
-): Promise<tripControllerPlaceSuggestionsResponse> => {
-  return apiFetch<tripControllerPlaceSuggestionsResponse>(
-    getTripControllerPlaceSuggestionsUrl(id),
-    {
-      ...options,
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...options?.headers },
-      body: JSON.stringify(suggestPlacesForTripRequestDto),
-    },
-  );
-};
+  
+
+  return `/api/v1/trips/${id}/place-suggestions`
+}
+
+export const tripControllerPlaceSuggestions = async (id: string,
+    suggestPlacesForTripRequestDto: SuggestPlacesForTripRequestDto, options?: RequestInit): Promise<tripControllerPlaceSuggestionsResponse> => {
+  
+  return apiFetch<tripControllerPlaceSuggestionsResponse>(getTripControllerPlaceSuggestionsUrl(id),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      suggestPlacesForTripRequestDto,)
+  }
+);}
+
 
 /**
  * @summary Replace items in an itinerary day. Owner OR active TripShare may write.
  */
 export type tripControllerUpdateDayResponse200 = {
-  data: UpdateDayItemsResponseDto;
-  status: 200;
-};
+  data: UpdateDayItemsResponseDto
+  status: 200
+}
 
 export type tripControllerUpdateDayResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type tripControllerUpdateDayResponseSuccess = tripControllerUpdateDayResponse200 & {
+  data: void
+  status: 404
+}
+    
+export type tripControllerUpdateDayResponseSuccess = (tripControllerUpdateDayResponse200) & {
   headers: Headers;
 };
-export type tripControllerUpdateDayResponseError = tripControllerUpdateDayResponse404 & {
+export type tripControllerUpdateDayResponseError = (tripControllerUpdateDayResponse404) & {
   headers: Headers;
 };
 
-export type tripControllerUpdateDayResponse =
-  | tripControllerUpdateDayResponseSuccess
-  | tripControllerUpdateDayResponseError;
+export type tripControllerUpdateDayResponse = (tripControllerUpdateDayResponseSuccess | tripControllerUpdateDayResponseError)
 
-export const getTripControllerUpdateDayUrl = (tripId: string, dayId: string) => {
-  return `/api/v1/trips/${tripId}/itinerary/${dayId}`;
-};
+export const getTripControllerUpdateDayUrl = (tripId: string,
+    dayId: string,) => {
 
-export const tripControllerUpdateDay = async (
-  tripId: string,
-  dayId: string,
-  updateDayItemsRequestDto: UpdateDayItemsRequestDto,
-  options?: RequestInit,
-): Promise<tripControllerUpdateDayResponse> => {
-  return apiFetch<tripControllerUpdateDayResponse>(getTripControllerUpdateDayUrl(tripId, dayId), {
+
+  
+
+  return `/api/v1/trips/${tripId}/itinerary/${dayId}`
+}
+
+export const tripControllerUpdateDay = async (tripId: string,
+    dayId: string,
+    updateDayItemsRequestDto: UpdateDayItemsRequestDto, options?: RequestInit): Promise<tripControllerUpdateDayResponse> => {
+  
+  return apiFetch<tripControllerUpdateDayResponse>(getTripControllerUpdateDayUrl(tripId,dayId),
+  {      
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(updateDayItemsRequestDto),
-  });
-};
+    body: JSON.stringify(
+      updateDayItemsRequestDto,)
+  }
+);}
+
 
 /**
  * @summary Reorder a day's items to minimise travel time (greedy NN over the routing provider). Owner OR active share.
  */
 export type tripControllerOptimizeDayResponse200 = {
-  data: OptimizeDayRouteResponseDto;
-  status: 200;
-};
+  data: OptimizeDayRouteResponseDto
+  status: 200
+}
 
 export type tripControllerOptimizeDayResponse404 = {
-  data: void;
-  status: 404;
-};
-
-export type tripControllerOptimizeDayResponseSuccess = tripControllerOptimizeDayResponse200 & {
+  data: void
+  status: 404
+}
+    
+export type tripControllerOptimizeDayResponseSuccess = (tripControllerOptimizeDayResponse200) & {
   headers: Headers;
 };
-export type tripControllerOptimizeDayResponseError = tripControllerOptimizeDayResponse404 & {
+export type tripControllerOptimizeDayResponseError = (tripControllerOptimizeDayResponse404) & {
   headers: Headers;
 };
 
-export type tripControllerOptimizeDayResponse =
-  | tripControllerOptimizeDayResponseSuccess
-  | tripControllerOptimizeDayResponseError;
+export type tripControllerOptimizeDayResponse = (tripControllerOptimizeDayResponseSuccess | tripControllerOptimizeDayResponseError)
 
-export const getTripControllerOptimizeDayUrl = (tripId: string, dayId: string) => {
-  return `/api/v1/trips/${tripId}/days/${dayId}/optimize`;
-};
+export const getTripControllerOptimizeDayUrl = (tripId: string,
+    dayId: string,) => {
 
-export const tripControllerOptimizeDay = async (
-  tripId: string,
-  dayId: string,
-  options?: RequestInit,
-): Promise<tripControllerOptimizeDayResponse> => {
-  return apiFetch<tripControllerOptimizeDayResponse>(
-    getTripControllerOptimizeDayUrl(tripId, dayId),
-    {
-      ...options,
-      method: 'POST',
-    },
-  );
-};
+
+  
+
+  return `/api/v1/trips/${tripId}/days/${dayId}/optimize`
+}
+
+export const tripControllerOptimizeDay = async (tripId: string,
+    dayId: string, options?: RequestInit): Promise<tripControllerOptimizeDayResponse> => {
+  
+  return apiFetch<tripControllerOptimizeDayResponse>(getTripControllerOptimizeDayUrl(tripId,dayId),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Coords for a day's routable items, in current order. Powers the V.UX.6 RouteMap.
  */
 export type tripControllerDayRouteCoordsResponse200 = {
-  data: DayRouteCoordsResponseDto;
-  status: 200;
-};
+  data: DayRouteCoordsResponseDto
+  status: 200
+}
 
 export type tripControllerDayRouteCoordsResponse404 = {
-  data: void;
-  status: 404;
+  data: void
+  status: 404
+}
+    
+export type tripControllerDayRouteCoordsResponseSuccess = (tripControllerDayRouteCoordsResponse200) & {
+  headers: Headers;
 };
-
-export type tripControllerDayRouteCoordsResponseSuccess =
-  tripControllerDayRouteCoordsResponse200 & {
-    headers: Headers;
-  };
-export type tripControllerDayRouteCoordsResponseError = tripControllerDayRouteCoordsResponse404 & {
+export type tripControllerDayRouteCoordsResponseError = (tripControllerDayRouteCoordsResponse404) & {
   headers: Headers;
 };
 
-export type tripControllerDayRouteCoordsResponse =
-  | tripControllerDayRouteCoordsResponseSuccess
-  | tripControllerDayRouteCoordsResponseError;
+export type tripControllerDayRouteCoordsResponse = (tripControllerDayRouteCoordsResponseSuccess | tripControllerDayRouteCoordsResponseError)
 
-export const getTripControllerDayRouteCoordsUrl = (tripId: string, dayId: string) => {
-  return `/api/v1/trips/${tripId}/days/${dayId}/route-coords`;
-};
+export const getTripControllerDayRouteCoordsUrl = (tripId: string,
+    dayId: string,) => {
 
-export const tripControllerDayRouteCoords = async (
-  tripId: string,
-  dayId: string,
-  options?: RequestInit,
-): Promise<tripControllerDayRouteCoordsResponse> => {
-  return apiFetch<tripControllerDayRouteCoordsResponse>(
-    getTripControllerDayRouteCoordsUrl(tripId, dayId),
-    {
-      ...options,
-      method: 'GET',
-    },
-  );
-};
+
+  
+
+  return `/api/v1/trips/${tripId}/days/${dayId}/route-coords`
+}
+
+export const tripControllerDayRouteCoords = async (tripId: string,
+    dayId: string, options?: RequestInit): Promise<tripControllerDayRouteCoordsResponse> => {
+  
+  return apiFetch<tripControllerDayRouteCoordsResponse>(getTripControllerDayRouteCoordsUrl(tripId,dayId),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
