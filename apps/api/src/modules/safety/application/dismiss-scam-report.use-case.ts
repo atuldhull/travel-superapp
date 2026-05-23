@@ -17,8 +17,11 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { NotFoundError } from '@app/errors';
-import { ADMIN_AUDIT_LOG_REPOSITORY, type AdminAuditLogRepository } from '../../admin';
-import { recordAdminAction } from '../../admin/application/record-admin-action.helper';
+import {
+  ADMIN_AUDIT_LOG_REPOSITORY,
+  recordAdminAction,
+  type AdminAuditLogRepository,
+} from '../../admin';
 import { SCAM_REPORT_REPOSITORY, type ScamReportRepository } from './ports/scam-report.repository';
 
 export interface DismissScamReportCommand {

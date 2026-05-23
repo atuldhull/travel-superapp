@@ -17,3 +17,10 @@ export * from './application/ports/place.repository';
 // for response shapes; trip orchestrators read `PlaceWithDistance`
 // for nearby queries.
 export type { Place, PlaceWithDistance } from './domain/place.entity';
+
+// Public composition surface — Trip orchestrates Places for
+// near-me-now + the federated place-suggestion / ingestion flow
+// used during plan generation.
+export { FederatedSearchPlacesUseCase } from './application/federated-search-places.use-case';
+export { IngestFederatedResultsUseCase } from './application/ingest-federated-results.use-case';
+export { SearchPlacesUseCase } from './application/search-places.use-case';
