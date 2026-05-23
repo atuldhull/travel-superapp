@@ -17,8 +17,3 @@ export * from './application/ports/admin-user-query';
 export * from './application/ports/preferences.repository';
 export * from './application/ports/trusted-contact.repository';
 export * from './application/ports/user-data-aggregator';
-
-// Public constant — admin's retention-stats use-case reads the
-// same default-window value the soft-deleted-user purger uses,
-// so the two stay in lock-step. Lives at the policy layer.
-export { DEFAULT_RETENTION_DAYS } from './application/purge-soft-deleted-users.use-case';

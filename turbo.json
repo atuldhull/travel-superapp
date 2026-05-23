@@ -21,6 +21,9 @@
     "arch": {
       "inputs": ["src/**", ".dependency-cruiser.cjs"]
     },
+    "cycles": {
+      "inputs": ["src/**"]
+    },
     "typecheck": {
       "dependsOn": ["^build"]
     },
