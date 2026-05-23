@@ -1,18 +1,20 @@
 # Full CI pipeline — runs on every PR + every push to main.
 #
-# Three parallel jobs: lint, typecheck, integration-tests. Each one
-# bootstraps pnpm + caches node_modules, then runs the appropriate
-# Turbo task scope. The `tests` job additionally boots Postgres /
-# Redis / MinIO via GitHub services so integration tests that hit
-# real Docker dependencies pass on the runner without a separate
-# `docker compose up` step.
+# Four parallel jobs: lint, typecheck, arch, integration-tests.
+# Each one bootstraps pnpm + caches node_modules, then runs the
+# appropriate Turbo task scope. The `tests` job additionally boots
+# Postgres / Redis / MinIO via GitHub services so integration
+# tests that hit real Docker dependencies pass on the runner
+# without a separate `docker compose up` step.
 #
 # Phase-0 smoke (`phase-0-smoke.yml`) stays as a separate, narrower
 # gate — that file pre-dates this one and runs a faster boundary
 # check. This file IS the broader pipeline that prompt
 # `[IV.18.1.x]` reserved as a follow-up.
 #
-# Installed by prompt [IV.18.19.1].
+# Installed by prompt [IV.18.19.1]; `arch` job added by [E1] to
+# enforce the architecture gates (dep-cruiser + madge + SDK drift)
+# the road-to-10 review called for.
 
 name: ci
 
@@ -99,6 +101,72 @@ jobs:
 
       - name: Typecheck
         run: pnpm turbo run typecheck
+
+  # ──────────────────────────────────────────────────────────────
+  # Architecture gates ([E1]) — three checks, all expected to be
+  # cheap (no DB, no Redis) so the job stays sub-2-minutes:
+  #
+  #   1. `pnpm arch`       — dependency-cruiser enforces hex layer
+  #                         rules + no-cross-module-{infra,interface,
+  #                         deep-import} + no-circular (with the
+  #                         forwardRef `.module.ts` `viaNot` skip).
+  #   2. `pnpm cycles`     — madge --circular as a parallel, runtime-
+  #                         shape cycle detector (different tool, same
+  #                         posture as dep-cruiser's no-circular).
+  #                         Defense in depth for the payments-style
+  #                         ESM-fatal cycle.
+  #   3. `pnpm sdk:check`  — regenerates docs/api/openapi.yaml and
+  #                         packages/sdk/src/generated/, then
+  #                         `git diff --exit-code` over both. Stops
+  #                         the controller-changed-without-regen drift
+  #                         from accumulating; enforces the single-
+  #                         client story from ADR-015.
+  #
+  # sdk:check boots AppModule via `api:openapi`, so we need the
+  # Prisma client + @app/* dist builds + a writable working tree.
+  # ──────────────────────────────────────────────────────────────
+  arch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.3
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        # `api:openapi` (run inside sdk:check) loads AppModule, which
+        # imports PrismaService. Without a generated client the boot
+        # crashes before the OpenAPI export step runs.
+        run: pnpm --filter=api run db:generate
+
+      - name: Build dist'd workspace packages
+        run: pnpm turbo run build --filter='@app/*'
+
+      - name: Dep-cruiser
+        run: pnpm arch
+
+      - name: Madge — circular imports
+        run: pnpm cycles
+
+      - name: SDK drift gate
+        # Refuses to merge if `docs/api/openapi.yaml` or the orval-
+        # generated SDK has drifted from the live controller surface.
+        # The script regenerates both, then `git diff --exit-code`s.
+        run: pnpm sdk:check
 
   # ──────────────────────────────────────────────────────────────
   # Integration tests — boot Postgres + Redis + MinIO as GitHub
