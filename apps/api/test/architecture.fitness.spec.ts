@@ -1,0 +1,164 @@
+/**
+ * Architecture fitness functions — structural invariants the
+ * `dependency-cruiser` rules (`.dependency-cruiser.cjs`) don't catch.
+ *
+ * dependency-cruiser enforces the EDGES of the clean/hex graph (which
+ * layer may import which); this spec enforces the SHAPE of the graph
+ * (every module is laid out the same way, every port is declared the
+ * same way) and bans two specific decay patterns the lint config
+ * doesn't have a rule for — bare `console.*` and `as any`.
+ *
+ * Together they make CLAUDE.md #9 + #10 mechanical: a violation is a
+ * red CI build, not a code-review nit.
+ *
+ *   1. Module shape           — every `src/modules/<m>/` has a sibling
+ *                              `<m>.module.ts` and the standard
+ *                              clean-hex layer subdirs.
+ *   2. Port declaration shape — every `application/ports/*.ts` exports
+ *                              at least one `Symbol(...)` DI token AND
+ *                              at least one `interface` / `type` —
+ *                              i.e. a token paired with the contract
+ *                              it tokenises.
+ *   3. No `console.*`         — production code uses `@app/logger`
+ *                              (CLAUDE.md #9), never the global
+ *                              `console`.
+ *   4. No `as any`            — CLAUDE.md #9 bans `any`; this catches
+ *                              the cast that smuggles it back in.
+ *
+ * Installed by prompt [A6.1] — architecture road-to-10.
+ */
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { join, relative } from 'node:path';
+
+/** Walk a directory recursively, yielding every `*.ts` file path
+ *  (POSIX-separator) relative to `root`. */
+function* walkTs(root: string, current = root): Generator<string> {
+  for (const entry of readdirSync(current)) {
+    const abs = join(current, entry);
+    const stat = statSync(abs);
+    if (stat.isDirectory()) {
+      yield* walkTs(root, abs);
+      continue;
+    }
+    if (entry.endsWith('.ts') && !entry.endsWith('.d.ts')) {
+      yield relative(root, abs).split('\\').join('/');
+    }
+  }
+}
+
+const API_SRC = join(__dirname, '..', 'src');
+const MODULES_DIR = join(API_SRC, 'modules');
+
+/** Modules that LEGITIMATELY skip a layer subdir — payments has no
+ *  `domain/` because it's a thin Stripe DTO surface; everything else
+ *  must have all four layer dirs. Keep this list TINY and DOCUMENTED;
+ *  growing it is a smell. */
+const LAYER_EXCEPTIONS: Record<string, ReadonlySet<string>> = {
+  payments: new Set(['domain']),
+};
+
+describe('architecture fitness — module shape', () => {
+  const modules = readdirSync(MODULES_DIR).filter((name) =>
+    statSync(join(MODULES_DIR, name)).isDirectory(),
+  );
+
+  it('discovers at least one module (smoke)', () => {
+    expect(modules.length).toBeGreaterThan(0);
+  });
+
+  it.each(modules)('module %s has a sibling <m>.module.ts composition root', (mod) => {
+    const moduleFile = join(MODULES_DIR, mod, `${mod}.module.ts`);
+    expect(() => statSync(moduleFile)).not.toThrow();
+  });
+
+  it.each(modules)('module %s has the standard clean-hex layer subdirs', (mod) => {
+    const required = ['application', 'infrastructure', 'interface', 'domain'];
+    const except = LAYER_EXCEPTIONS[mod] ?? new Set<string>();
+    for (const layer of required) {
+      if (except.has(layer)) continue;
+      const layerDir = join(MODULES_DIR, mod, layer);
+      const exists = (() => {
+        try {
+          return statSync(layerDir).isDirectory();
+        } catch {
+          return false;
+        }
+      })();
+      expect({ module: mod, layer, exists }).toEqual({ module: mod, layer, exists: true });
+    }
+  });
+});
+
+describe('architecture fitness — port declarations', () => {
+  // Every `application/ports/*.ts` is a port file. The convention is:
+  //   - export const X_Y_Z = Symbol('XYZ');   // DI token
+  //   - export interface XYZ { ... }          // (or `export type`)
+  // Without the token, Nest can't inject it; without the type, callers
+  // can't depend on a contract. A file with only one is half-built.
+  const portFiles: string[] = [];
+  for (const mod of readdirSync(MODULES_DIR)) {
+    const portsDir = join(MODULES_DIR, mod, 'application', 'ports');
+    try {
+      if (!statSync(portsDir).isDirectory()) continue;
+    } catch {
+      continue;
+    }
+    for (const entry of readdirSync(portsDir)) {
+      if (!entry.endsWith('.ts') || entry.endsWith('.d.ts')) continue;
+      portFiles.push(join(portsDir, entry));
+    }
+  }
+
+  it('discovers port files (smoke)', () => {
+    expect(portFiles.length).toBeGreaterThan(10);
+  });
+
+  it.each(portFiles)('%s exports both a Symbol DI token and a type/interface', (file) => {
+    const source = readFileSync(file, 'utf8');
+    // `export const FOO = Symbol(...)` — match a top-level Symbol-typed token.
+    const hasSymbolToken = /export\s+const\s+[A-Z][A-Z0-9_]*\s*=\s*Symbol\s*\(/m.test(source);
+    // Either `export interface Foo` or `export type Foo`.
+    const hasContractType = /export\s+(interface|type)\s+[A-Z][A-Za-z0-9_]*/m.test(source);
+    expect({ file: relative(API_SRC, file), hasSymbolToken, hasContractType }).toEqual({
+      file: relative(API_SRC, file),
+      hasSymbolToken: true,
+      hasContractType: true,
+    });
+  });
+});
+
+describe('architecture fitness — banned patterns', () => {
+  // Walk every src/**/*.ts once; flag forbidden patterns. Test files
+  // (which legitimately use `console.*` in fixture seeders and `as
+  // any` in mock-shaping) are not under src/, so this scope is right.
+  const srcFiles = [...walkTs(API_SRC)];
+
+  it('discovers source files (smoke)', () => {
+    expect(srcFiles.length).toBeGreaterThan(100);
+  });
+
+  it('no `console.*` calls in src — use @app/logger (CLAUDE.md #9)', () => {
+    const offenders: string[] = [];
+    for (const rel of srcFiles) {
+      const source = readFileSync(join(API_SRC, rel), 'utf8');
+      // Match the global `console.<method>(` — qualified `this.console`
+      // or `obj.console` is not the global and is filtered by the `\b`.
+      if (/\bconsole\.(log|warn|error|info|debug|trace)\s*\(/m.test(source)) {
+        offenders.push(rel);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it('no `as any` casts in src — CLAUDE.md #9 bans `any`', () => {
+    const offenders: string[] = [];
+    for (const rel of srcFiles) {
+      const source = readFileSync(join(API_SRC, rel), 'utf8');
+      // `as any` with word-boundary on the right so `as anybody` etc. is fine.
+      if (/\bas\s+any\b/m.test(source)) {
+        offenders.push(rel);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+});
