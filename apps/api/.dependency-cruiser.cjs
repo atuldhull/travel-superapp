@@ -74,6 +74,65 @@ module.exports = {
       },
     },
     {
+      name: 'no-cross-module-deep-import',
+      comment:
+        "Every module's public API is its `index.ts` barrel — it re-exports the NestJS module " +
+        'class plus every application port. Cross-module consumers MUST go through the barrel; ' +
+        "reaching into another module's domain/application/infrastructure/interface bypasses " +
+        "the contract. The barrel explicitly enumerates what's public; everything else is " +
+        'private implementation detail. Installed by [B2]; the `pathNot` allowlist below holds ' +
+        'the files that still deep-import while [B3]/[B4] burn them down; [B5] removes the ' +
+        'allowlist and the rule becomes uniformly strict.',
+      severity: 'error',
+      from: {
+        path: '^src/modules/([^/]+)/',
+        // Files still on legacy deep imports — to be migrated in
+        // [B3] (domain) / [B4] (orchestration). When this list is
+        // empty, [B5] drops the pathNot and the rule is fully strict.
+        pathNot: [
+          // [B3] — domain-layer cross-module imports
+          '^src/modules/notifications/application/handlers/agent-replan-proposed\\.handler\\.ts$',
+          '^src/modules/notifications/application/handlers/itinerary-ready\\.handler\\.ts$',
+          '^src/modules/notifications/application/handlers/session-issued\\.handler\\.ts$',
+          '^src/modules/notifications/application/handlers/sos-triggered\\.handler\\.ts$',
+          '^src/modules/notifications/application/handlers/trip-commented\\.handler\\.ts$',
+          '^src/modules/notifications/application/handlers/trip-locked\\.handler\\.ts$',
+          '^src/modules/notifications/application/handlers/user-followed\\.handler\\.ts$',
+          '^src/modules/agent/application/handlers/trip-itinerary-watch\\.handler\\.ts$',
+          '^src/modules/feed/application/publish-trip\\.use-case\\.ts$',
+          '^src/modules/admin/application/admin-create-place\\.use-case\\.ts$',
+          '^src/modules/admin/interface/admin\\.controller\\.ts$',
+          '^src/modules/identity/interface/auth\\.controller\\.ts$',
+          // [B4] — trip-as-orchestrator + admin-helper cross-module imports
+          '^src/modules/trip/application/admin-archive-trip\\.use-case\\.ts$',
+          '^src/modules/trip/application/admin-delete-trip\\.use-case\\.ts$',
+          '^src/modules/trip/application/get-trip-eateries\\.use-case\\.ts$',
+          '^src/modules/trip/application/get-trip-events\\.use-case\\.ts$',
+          '^src/modules/trip/application/get-trip-overview\\.use-case\\.ts$',
+          '^src/modules/trip/application/get-trip-stays\\.use-case\\.ts$',
+          '^src/modules/trip/application/get-trip-transport-legs\\.use-case\\.ts$',
+          '^src/modules/trip/application/get-trip-weather\\.use-case\\.ts$',
+          '^src/modules/trip/application/near-me-now\\.use-case\\.ts$',
+          '^src/modules/trip/application/optimize-day-route\\.use-case\\.ts$',
+          '^src/modules/trip/application/suggest-places-for-trip\\.use-case\\.ts$',
+          '^src/modules/trip/interface/trip\\.controller\\.ts$',
+          '^src/modules/account/application/admin-ban-user\\.use-case\\.ts$',
+          '^src/modules/account/application/admin-unban-user\\.use-case\\.ts$',
+          '^src/modules/admin/application/get-retention-stats\\.use-case\\.ts$',
+          '^src/modules/media/application/admin-delete-media\\.use-case\\.ts$',
+          '^src/modules/safety/application/admin-resolve-sos\\.use-case\\.ts$',
+          '^src/modules/safety/application/dismiss-scam-report\\.use-case\\.ts$',
+          '^src/modules/safety/application/verify-scam-report\\.use-case\\.ts$',
+        ],
+      },
+      to: {
+        path: '^src/modules/[^/]+/',
+        // Allowed cross-module targets: same-module (always) OR the
+        // public barrel (`<m>/index.ts`).
+        pathNot: ['^src/modules/$1/', '^src/modules/[^/]+/index\\.ts$'],
+      },
+    },
+    {
       name: 'no-circular',
       comment:
         'A circular import breaks module-init order (esbuild/ESM trips on it where CJS ' +
