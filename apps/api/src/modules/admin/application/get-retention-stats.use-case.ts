@@ -6,7 +6,7 @@
  * will actually delete.
  */
 import { Inject, Injectable } from '@nestjs/common';
-import { DEFAULT_RETENTION_DAYS } from '../../account';
+import { DEFAULT_RETENTION_DAYS } from '../../../common/policy/retention-policy';
 import {
   COMPLIANCE_QUERIES_PORT,
   type ComplianceQueries,
