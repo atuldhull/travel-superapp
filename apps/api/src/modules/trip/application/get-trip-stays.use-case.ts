@@ -19,8 +19,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { NotFoundError, ValidationError } from '@app/errors';
 import { GeoQueries } from '../../../common/db/geo-queries';
-import { SearchStaysUseCase } from '../../stays/application/search-stays.use-case';
-import type { StayListing } from '../../stays/domain/stay-listing.entity';
+import { SearchStaysUseCase, type StayListing } from '../../stays';
 import { TRIP_REPOSITORY, type TripRepository } from './ports/trip.repository';
 
 const STAY_SEARCH_MAX_RADIUS_KM = 50;

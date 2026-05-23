@@ -25,8 +25,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { NotFoundError } from '@app/errors';
 import { GeoQueries } from '../../../common/db/geo-queries';
-import { FederatedSearchPlacesUseCase } from '../../places/application/federated-search-places.use-case';
-import { IngestFederatedResultsUseCase } from '../../places/application/ingest-federated-results.use-case';
+import { FederatedSearchPlacesUseCase, IngestFederatedResultsUseCase } from '../../places';
 import { TRIP_REPOSITORY, type TripRepository } from './ports/trip.repository';
 
 const SUGGESTION_MAX_RADIUS_KM = 30;

@@ -24,16 +24,10 @@
  */
 import { Injectable } from '@nestjs/common';
 import { isDomainError, ValidationError } from '@app/errors';
-import type { PlaceWithDistance } from '../../places/domain/place.entity';
-import { SearchPlacesUseCase } from '../../places/application/search-places.use-case';
-import {
-  GetSafetyScoreUseCase,
-  type SafetyScore,
-} from '../../safety/application/get-safety-score.use-case';
-import { GetRoutesUseCase } from '../../transport/application/get-routes.use-case';
-import type { RouteLeg } from '../../transport/domain/route-leg.entity';
-import { GetForecastUseCase } from '../../weather/application/get-forecast.use-case';
-import type { WeatherForecast } from '../../weather/domain/weather-forecast.entity';
+import { SearchPlacesUseCase, type PlaceWithDistance } from '../../places';
+import { GetSafetyScoreUseCase, type SafetyScore } from '../../safety';
+import { GetRoutesUseCase, type RouteLeg } from '../../transport';
+import { GetForecastUseCase, type WeatherForecast } from '../../weather';
 import { GeoQueries } from '../../../common/db/geo-queries';
 
 const NEAR_ME_RADIUS_DEFAULT_KM = 3;

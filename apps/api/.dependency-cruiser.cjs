@@ -86,36 +86,11 @@ module.exports = {
       severity: 'error',
       from: {
         path: '^src/modules/([^/]+)/',
-        // Files still on legacy deep imports — to be migrated in
-        // [B3] (domain) / [B4] (orchestration). When this list is
-        // empty, [B5] drops the pathNot and the rule is fully strict.
-        pathNot: [
-          // [B3] — domain-layer cross-module imports (all migrated; allowlist
-          // empty for this group). Event payload types are now re-exported
-          // from each producer module's barrel; `Trip` + `Place` entity
-          // types likewise. `SeedSampleTripUseCase` exposed on the trip
-          // barrel as a public composition seam for identity onboarding.
-          // [B4] — trip-as-orchestrator + admin-helper cross-module imports
-          '^src/modules/trip/application/admin-archive-trip\\.use-case\\.ts$',
-          '^src/modules/trip/application/admin-delete-trip\\.use-case\\.ts$',
-          '^src/modules/trip/application/get-trip-eateries\\.use-case\\.ts$',
-          '^src/modules/trip/application/get-trip-events\\.use-case\\.ts$',
-          '^src/modules/trip/application/get-trip-overview\\.use-case\\.ts$',
-          '^src/modules/trip/application/get-trip-stays\\.use-case\\.ts$',
-          '^src/modules/trip/application/get-trip-transport-legs\\.use-case\\.ts$',
-          '^src/modules/trip/application/get-trip-weather\\.use-case\\.ts$',
-          '^src/modules/trip/application/near-me-now\\.use-case\\.ts$',
-          '^src/modules/trip/application/optimize-day-route\\.use-case\\.ts$',
-          '^src/modules/trip/application/suggest-places-for-trip\\.use-case\\.ts$',
-          '^src/modules/trip/interface/trip\\.controller\\.ts$',
-          '^src/modules/account/application/admin-ban-user\\.use-case\\.ts$',
-          '^src/modules/account/application/admin-unban-user\\.use-case\\.ts$',
-          '^src/modules/admin/application/get-retention-stats\\.use-case\\.ts$',
-          '^src/modules/media/application/admin-delete-media\\.use-case\\.ts$',
-          '^src/modules/safety/application/admin-resolve-sos\\.use-case\\.ts$',
-          '^src/modules/safety/application/dismiss-scam-report\\.use-case\\.ts$',
-          '^src/modules/safety/application/verify-scam-report\\.use-case\\.ts$',
-        ],
+        // Burndown allowlist empty — every file in the codebase now
+        // depends on cross-module siblings only through their public
+        // `index.ts` barrel. [B5] removes this empty `pathNot` and
+        // the surrounding "burn-down" wording in the rule comment.
+        pathNot: [],
       },
       to: {
         path: '^src/modules/[^/]+/',

@@ -18,3 +18,8 @@ export * from './application/ports/sos-event.repository';
 // Public event payload types — notifications handlers fan SOS
 // alerts out to trusted contacts. `makeSafetyEvent` stays private.
 export type { SosTriggeredEvent, SosTriggeredPayload } from './domain/safety.events';
+
+// Public composition surface — Trip's near-me-now reads the
+// safety score for the user's current coordinates.
+export { GetSafetyScoreUseCase } from './application/get-safety-score.use-case';
+export type { SafetyScore } from './application/get-safety-score.use-case';

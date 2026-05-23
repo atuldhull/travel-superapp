@@ -18,8 +18,11 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { UserNotFoundError, ValidationError } from '@app/errors';
-import { ADMIN_AUDIT_LOG_REPOSITORY, type AdminAuditLogRepository } from '../../admin';
-import { recordAdminAction } from '../../admin/application/record-admin-action.helper';
+import {
+  ADMIN_AUDIT_LOG_REPOSITORY,
+  recordAdminAction,
+  type AdminAuditLogRepository,
+} from '../../admin';
 import { ACCOUNT_DELETER, type AccountDeleter } from './ports/account-deleter';
 
 const REASON_MIN = 1;
