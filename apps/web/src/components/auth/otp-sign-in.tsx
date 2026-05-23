@@ -17,7 +17,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { apiFetch } from '@app/sdk';
+import { authControllerOtpRequest, authControllerOtpVerify } from '@app/sdk';
 import { Button } from '../ui/button';
 import { Field } from '../ui/input';
 import { AuthError } from './auth-shell';
@@ -61,11 +61,7 @@ export function OtpSignIn({ onSignedIn }: OtpSignInProps) {
     setBusy(true);
     setError(null);
     try {
-      await apiFetch('/api/v1/auth/otp/request', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ channel, destination: destination.trim() }),
-      });
+      await authControllerOtpRequest({ channel, destination: destination.trim() });
       setStep('verify');
       setCooldown(RESEND_COOLDOWN_S);
       setInfo(
@@ -93,11 +89,11 @@ export function OtpSignIn({ onSignedIn }: OtpSignInProps) {
     setBusy(true);
     setError(null);
     try {
-      const res = (await apiFetch('/api/v1/auth/otp/verify', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ channel, destination: destination.trim(), code }),
-      })) as VerifyEnvelope;
+      const res = (await authControllerOtpVerify({
+        channel,
+        destination: destination.trim(),
+        code,
+      })) as unknown as VerifyEnvelope;
       const token = res.data.accessToken;
       setAccessToken(token);
       await onSignedIn(token);

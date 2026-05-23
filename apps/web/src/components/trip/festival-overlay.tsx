@@ -19,7 +19,11 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { apiFetch, type FestivalsDuringResponseDto } from '@app/sdk';
+import {
+  eventsControllerFestivals,
+  type EventsControllerFestivalsParams,
+  type FestivalsDuringResponseDto,
+} from '@app/sdk';
 import { useAuthToken } from '../../lib/use-auth-token';
 
 interface FestivalEntry {
@@ -65,20 +69,20 @@ export function useFestivalsByDate(opts: {
     );
   }, [token]);
 
-  // Orval skipped query-param generation for the festivals route's
-  // ApiQuery decorators in some configurations; call apiFetch
-  // directly so the contract is unambiguous.
+  // V.UX.22 — orval emitted the festival route's query params correctly
+  // (post-A4 regen); route through the generated SDK function. Response
+  // type stays cast until ADR-015's @ApiResponse rollout types it.
   type Envelope = { data: FestivalsDuringResponseDto; status: number; headers: Headers };
   const enabled = token !== null && coords !== null && opts.fromIso !== null && opts.toIso !== null;
   const query = useQuery<Envelope>({
     queryKey: ['events/festivals', coords?.lat, coords?.lng, opts.fromIso, opts.toIso],
     queryFn: () =>
-      apiFetch<Envelope>(
-        `/api/v1/events/festivals?lat=${coords!.lat}&lng=${coords!.lng}&from=${encodeURIComponent(
-          opts.fromIso!,
-        )}&to=${encodeURIComponent(opts.toIso!)}`,
-        { method: 'GET' },
-      ),
+      eventsControllerFestivals({
+        lat: String(coords!.lat),
+        lng: String(coords!.lng),
+        from: opts.fromIso!,
+        to: opts.toIso!,
+      } as unknown as EventsControllerFestivalsParams) as unknown as Promise<Envelope>,
     enabled,
     retry: false,
   });

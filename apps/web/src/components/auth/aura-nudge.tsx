@@ -17,7 +17,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Sparkles, X } from 'lucide-react';
-import { apiFetch } from '@app/sdk';
+import { preferencesControllerGetMine } from '@app/sdk';
 import { useAuthBootComplete, useAuthToken } from '../../lib/use-auth-token';
 import { getAuraDraft } from '../../lib/travel-aura';
 
@@ -46,7 +46,7 @@ export function AuraNudge() {
     let alive = true;
     void (async () => {
       try {
-        const res = (await apiFetch('/api/v1/account/preferences', { method: 'GET' })) as {
+        const res = (await preferencesControllerGetMine()) as unknown as {
           data?: { travelAura?: string | null };
         };
         if (alive && !res?.data?.travelAura) setShow(true);

@@ -17,7 +17,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  apiFetch,
+  tripControllerSamplePlan,
   useTripControllerSamplePlan,
   type GenerateSamplePlanRequestDto,
   type GenerateSamplePlanResponseDto,
@@ -153,21 +153,15 @@ export function SampleTripDemo() {
     setChat((c) => [...c, { role: 'you', text: msg }]);
     const preset = CITY_PRESETS[selectedIdx]!;
     try {
-      const res = await apiFetch<{
+      const res = (await tripControllerSamplePlan({
+        title: preset.title,
+        center: preset.center,
+        radiusKm,
+        instruction: msg,
+        priorPlan: planResult.plan,
+      } as unknown as Parameters<typeof tripControllerSamplePlan>[0])) as unknown as {
         data: GenerateSamplePlanResponseDto;
-        status: number;
-        headers: Headers;
-      }>('/api/v1/trips/sample-plan', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          title: preset.title,
-          center: preset.center,
-          radiusKm,
-          instruction: msg,
-          priorPlan: planResult.plan,
-        }),
-      });
+      };
       setPlanResult(res.data);
       setPlanRadius(radiusKm);
       setFromCache(false);
