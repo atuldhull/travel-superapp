@@ -5,7 +5,8 @@
 /**
  * Media type discriminator.
  */
-export type MediaAssetDtoKind = (typeof MediaAssetDtoKind)[keyof typeof MediaAssetDtoKind];
+export type MediaAssetDtoKind = typeof MediaAssetDtoKind[keyof typeof MediaAssetDtoKind];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const MediaAssetDtoKind = {

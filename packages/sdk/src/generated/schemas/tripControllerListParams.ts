@@ -3,6 +3,6 @@
 // Regenerate via: pnpm --filter=@app/sdk sdk:gen
 
 export type TripControllerListParams = {
-  limit: string;
-  archived: string;
+limit: string;
+archived: string;
 };

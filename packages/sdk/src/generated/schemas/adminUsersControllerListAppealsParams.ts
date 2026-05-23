@@ -3,7 +3,7 @@
 // Regenerate via: pnpm --filter=@app/sdk sdk:gen
 
 export type AdminUsersControllerListAppealsParams = {
-  status: string;
-  limit: string;
-  offset: string;
+status: string;
+limit: string;
+offset: string;
 };

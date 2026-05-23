@@ -5,8 +5,8 @@
 /**
  * Always 'ok'. Doesn't reveal whether the email is registered.
  */
-export type MagicLinkRequestResponseDtoStatus =
-  (typeof MagicLinkRequestResponseDtoStatus)[keyof typeof MagicLinkRequestResponseDtoStatus];
+export type MagicLinkRequestResponseDtoStatus = typeof MagicLinkRequestResponseDtoStatus[keyof typeof MagicLinkRequestResponseDtoStatus];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const MagicLinkRequestResponseDtoStatus = {

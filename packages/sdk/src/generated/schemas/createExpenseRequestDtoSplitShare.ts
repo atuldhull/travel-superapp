@@ -5,4 +5,4 @@
 /**
  * Map of userId → split share. Sum must be ~1.0.
  */
-export type CreateExpenseRequestDtoSplitShare = { [key: string]: number };
+export type CreateExpenseRequestDtoSplitShare = {[key: string]: number};

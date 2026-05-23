@@ -3,6 +3,6 @@
 // Regenerate via: pnpm --filter=@app/sdk sdk:gen
 
 export type AdminScamModerationControllerListParams = {
-  verified: string;
-  limit: string;
+verified: string;
+limit: string;
 };

@@ -3,6 +3,6 @@
 // Regenerate via: pnpm --filter=@app/sdk sdk:gen
 
 export type DiaryControllerListParams = {
-  tripId: string;
-  limit: string;
+tripId: string;
+limit: string;
 };

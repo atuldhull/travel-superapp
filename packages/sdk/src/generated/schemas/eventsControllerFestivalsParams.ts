@@ -3,15 +3,15 @@
 // Regenerate via: pnpm --filter=@app/sdk sdk:gen
 
 export type EventsControllerFestivalsParams = {
-  /**
-   * ISO-8601 datetime.
-   */
-  to: string;
-  /**
-   * ISO-8601 datetime.
-   */
-  from: string;
-  radiusKm?: number;
-  lng: number;
-  lat: number;
+/**
+ * ISO-8601 datetime.
+ */
+to: string;
+/**
+ * ISO-8601 datetime.
+ */
+from: string;
+radiusKm?: number;
+lng: number;
+lat: number;
 };

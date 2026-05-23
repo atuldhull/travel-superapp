@@ -4,6 +4,4 @@
 import type { OverviewItinerarySuccessDto } from './overviewItinerarySuccessDto';
 import type { OverviewSectionFailureDto } from './overviewSectionFailureDto';
 
-export type TripOverviewResponseDtoItinerary =
-  | OverviewItinerarySuccessDto
-  | OverviewSectionFailureDto;
+export type TripOverviewResponseDtoItinerary = OverviewItinerarySuccessDto | OverviewSectionFailureDto;

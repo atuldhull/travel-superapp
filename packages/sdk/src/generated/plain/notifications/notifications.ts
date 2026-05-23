@@ -11,7 +11,7 @@ import type {
   SubscribePushRequestDto,
   UnreadCountResponseDto,
   UnsubscribePushRequestDto,
-  UpdateNotificationPreferencesRequestDto,
+  UpdateNotificationPreferencesRequestDto
 } from '../../schemas';
 
 import { apiFetch } from '../../../runtime/fetcher';
@@ -20,452 +20,450 @@ import { apiFetch } from '../../../runtime/fetcher';
  * @summary Returns { unread: N } for the home-screen badge. Single indexed COUNT — cheap.
  */
 export type notificationsControllerUnreadCountResponse200 = {
-  data: UnreadCountResponseDto;
-  status: 200;
+  data: UnreadCountResponseDto
+  status: 200
+}
+    
+export type notificationsControllerUnreadCountResponseSuccess = (notificationsControllerUnreadCountResponse200) & {
+  headers: Headers;
 };
+;
 
-export type notificationsControllerUnreadCountResponseSuccess =
-  notificationsControllerUnreadCountResponse200 & {
-    headers: Headers;
-  };
-export type notificationsControllerUnreadCountResponse =
-  notificationsControllerUnreadCountResponseSuccess;
+export type notificationsControllerUnreadCountResponse = (notificationsControllerUnreadCountResponseSuccess)
 
 export const getNotificationsControllerUnreadCountUrl = () => {
-  return `/api/v1/notifications/me/unread-count`;
-};
 
-export const notificationsControllerUnreadCount = async (
-  options?: RequestInit,
-): Promise<notificationsControllerUnreadCountResponse> => {
-  return apiFetch<notificationsControllerUnreadCountResponse>(
-    getNotificationsControllerUnreadCountUrl(),
-    {
-      ...options,
-      method: 'GET',
-    },
-  );
-};
+
+  
+
+  return `/api/v1/notifications/me/unread-count`
+}
+
+export const notificationsControllerUnreadCount = async ( options?: RequestInit): Promise<notificationsControllerUnreadCountResponse> => {
+  
+  return apiFetch<notificationsControllerUnreadCountResponse>(getNotificationsControllerUnreadCountUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary List the caller's recent notifications. Optional ?channel=push|email|sms narrows to one delivery channel.
  */
 export type notificationsControllerListMineResponse200 = {
-  data: ListMyNotificationsResponseDto;
-  status: 200;
-};
+  data: ListMyNotificationsResponseDto
+  status: 200
+}
 
 export type notificationsControllerListMineResponse400 = {
-  data: void;
-  status: 400;
+  data: void
+  status: 400
+}
+    
+export type notificationsControllerListMineResponseSuccess = (notificationsControllerListMineResponse200) & {
+  headers: Headers;
+};
+export type notificationsControllerListMineResponseError = (notificationsControllerListMineResponse400) & {
+  headers: Headers;
 };
 
-export type notificationsControllerListMineResponseSuccess =
-  notificationsControllerListMineResponse200 & {
-    headers: Headers;
-  };
-export type notificationsControllerListMineResponseError =
-  notificationsControllerListMineResponse400 & {
-    headers: Headers;
-  };
+export type notificationsControllerListMineResponse = (notificationsControllerListMineResponseSuccess | notificationsControllerListMineResponseError)
 
-export type notificationsControllerListMineResponse =
-  | notificationsControllerListMineResponseSuccess
-  | notificationsControllerListMineResponseError;
-
-export const getNotificationsControllerListMineUrl = (
-  params: NotificationsControllerListMineParams,
-) => {
+export const getNotificationsControllerListMineUrl = (params: NotificationsControllerListMineParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
+    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString());
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0
-    ? `/api/v1/notifications/me?${stringifiedParams}`
-    : `/api/v1/notifications/me`;
-};
+  return stringifiedParams.length > 0 ? `/api/v1/notifications/me?${stringifiedParams}` : `/api/v1/notifications/me`
+}
 
-export const notificationsControllerListMine = async (
-  params: NotificationsControllerListMineParams,
-  options?: RequestInit,
-): Promise<notificationsControllerListMineResponse> => {
-  return apiFetch<notificationsControllerListMineResponse>(
-    getNotificationsControllerListMineUrl(params),
-    {
-      ...options,
-      method: 'GET',
-    },
-  );
-};
+export const notificationsControllerListMine = async (params: NotificationsControllerListMineParams, options?: RequestInit): Promise<notificationsControllerListMineResponse> => {
+  
+  return apiFetch<notificationsControllerListMineResponse>(getNotificationsControllerListMineUrl(params),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Mark every unread row as read. Returns { marked: N }. Idempotent (second call returns 0).
  */
 export type notificationsControllerMarkAllReadResponse200 = {
-  data: MarkAllReadResponseDto;
-  status: 200;
+  data: MarkAllReadResponseDto
+  status: 200
+}
+    
+export type notificationsControllerMarkAllReadResponseSuccess = (notificationsControllerMarkAllReadResponse200) & {
+  headers: Headers;
 };
+;
 
-export type notificationsControllerMarkAllReadResponseSuccess =
-  notificationsControllerMarkAllReadResponse200 & {
-    headers: Headers;
-  };
-export type notificationsControllerMarkAllReadResponse =
-  notificationsControllerMarkAllReadResponseSuccess;
+export type notificationsControllerMarkAllReadResponse = (notificationsControllerMarkAllReadResponseSuccess)
 
 export const getNotificationsControllerMarkAllReadUrl = () => {
-  return `/api/v1/notifications/read-all`;
-};
 
-export const notificationsControllerMarkAllRead = async (
-  options?: RequestInit,
-): Promise<notificationsControllerMarkAllReadResponse> => {
-  return apiFetch<notificationsControllerMarkAllReadResponse>(
-    getNotificationsControllerMarkAllReadUrl(),
-    {
-      ...options,
-      method: 'POST',
-    },
-  );
-};
+
+  
+
+  return `/api/v1/notifications/read-all`
+}
+
+export const notificationsControllerMarkAllRead = async ( options?: RequestInit): Promise<notificationsControllerMarkAllReadResponse> => {
+  
+  return apiFetch<notificationsControllerMarkAllReadResponse>(getNotificationsControllerMarkAllReadUrl(),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Mark one notification as read. Owner-gated; 404 on cross-user / missing.
  */
 export type notificationsControllerMarkReadResponse200 = {
-  data: NotificationLogDto;
-  status: 200;
-};
+  data: NotificationLogDto
+  status: 200
+}
 
 export type notificationsControllerMarkReadResponse404 = {
-  data: void;
-  status: 404;
+  data: void
+  status: 404
+}
+    
+export type notificationsControllerMarkReadResponseSuccess = (notificationsControllerMarkReadResponse200) & {
+  headers: Headers;
+};
+export type notificationsControllerMarkReadResponseError = (notificationsControllerMarkReadResponse404) & {
+  headers: Headers;
 };
 
-export type notificationsControllerMarkReadResponseSuccess =
-  notificationsControllerMarkReadResponse200 & {
-    headers: Headers;
-  };
-export type notificationsControllerMarkReadResponseError =
-  notificationsControllerMarkReadResponse404 & {
-    headers: Headers;
-  };
+export type notificationsControllerMarkReadResponse = (notificationsControllerMarkReadResponseSuccess | notificationsControllerMarkReadResponseError)
 
-export type notificationsControllerMarkReadResponse =
-  | notificationsControllerMarkReadResponseSuccess
-  | notificationsControllerMarkReadResponseError;
+export const getNotificationsControllerMarkReadUrl = (id: string,) => {
 
-export const getNotificationsControllerMarkReadUrl = (id: string) => {
-  return `/api/v1/notifications/${id}/read`;
-};
 
-export const notificationsControllerMarkRead = async (
-  id: string,
-  options?: RequestInit,
-): Promise<notificationsControllerMarkReadResponse> => {
-  return apiFetch<notificationsControllerMarkReadResponse>(
-    getNotificationsControllerMarkReadUrl(id),
-    {
-      ...options,
-      method: 'POST',
-    },
-  );
-};
+  
+
+  return `/api/v1/notifications/${id}/read`
+}
+
+export const notificationsControllerMarkRead = async (id: string, options?: RequestInit): Promise<notificationsControllerMarkReadResponse> => {
+  
+  return apiFetch<notificationsControllerMarkReadResponse>(getNotificationsControllerMarkReadUrl(id),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Mark one notification as UNread (symmetric to /read). Owner-gated.
  */
 export type notificationsControllerMarkUnreadResponse200 = {
-  data: NotificationLogDto;
-  status: 200;
-};
+  data: NotificationLogDto
+  status: 200
+}
 
 export type notificationsControllerMarkUnreadResponse404 = {
-  data: void;
-  status: 404;
+  data: void
+  status: 404
+}
+    
+export type notificationsControllerMarkUnreadResponseSuccess = (notificationsControllerMarkUnreadResponse200) & {
+  headers: Headers;
+};
+export type notificationsControllerMarkUnreadResponseError = (notificationsControllerMarkUnreadResponse404) & {
+  headers: Headers;
 };
 
-export type notificationsControllerMarkUnreadResponseSuccess =
-  notificationsControllerMarkUnreadResponse200 & {
-    headers: Headers;
-  };
-export type notificationsControllerMarkUnreadResponseError =
-  notificationsControllerMarkUnreadResponse404 & {
-    headers: Headers;
-  };
+export type notificationsControllerMarkUnreadResponse = (notificationsControllerMarkUnreadResponseSuccess | notificationsControllerMarkUnreadResponseError)
 
-export type notificationsControllerMarkUnreadResponse =
-  | notificationsControllerMarkUnreadResponseSuccess
-  | notificationsControllerMarkUnreadResponseError;
+export const getNotificationsControllerMarkUnreadUrl = (id: string,) => {
 
-export const getNotificationsControllerMarkUnreadUrl = (id: string) => {
-  return `/api/v1/notifications/${id}/unread`;
-};
 
-export const notificationsControllerMarkUnread = async (
-  id: string,
-  options?: RequestInit,
-): Promise<notificationsControllerMarkUnreadResponse> => {
-  return apiFetch<notificationsControllerMarkUnreadResponse>(
-    getNotificationsControllerMarkUnreadUrl(id),
-    {
-      ...options,
-      method: 'POST',
-    },
-  );
-};
+  
+
+  return `/api/v1/notifications/${id}/unread`
+}
+
+export const notificationsControllerMarkUnread = async (id: string, options?: RequestInit): Promise<notificationsControllerMarkUnreadResponse> => {
+  
+  return apiFetch<notificationsControllerMarkUnreadResponse>(getNotificationsControllerMarkUnreadUrl(id),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Hard-delete a notification (inbox prune). Owner-gated; 404 on cross-user / missing.
  */
 export type notificationsControllerRemoveResponse204 = {
-  data: void;
-  status: 204;
-};
+  data: void
+  status: 204
+}
 
 export type notificationsControllerRemoveResponse404 = {
-  data: void;
-  status: 404;
+  data: void
+  status: 404
+}
+    
+export type notificationsControllerRemoveResponseSuccess = (notificationsControllerRemoveResponse204) & {
+  headers: Headers;
+};
+export type notificationsControllerRemoveResponseError = (notificationsControllerRemoveResponse404) & {
+  headers: Headers;
 };
 
-export type notificationsControllerRemoveResponseSuccess =
-  notificationsControllerRemoveResponse204 & {
-    headers: Headers;
-  };
-export type notificationsControllerRemoveResponseError =
-  notificationsControllerRemoveResponse404 & {
-    headers: Headers;
-  };
+export type notificationsControllerRemoveResponse = (notificationsControllerRemoveResponseSuccess | notificationsControllerRemoveResponseError)
 
-export type notificationsControllerRemoveResponse =
-  | notificationsControllerRemoveResponseSuccess
-  | notificationsControllerRemoveResponseError;
+export const getNotificationsControllerRemoveUrl = (id: string,) => {
 
-export const getNotificationsControllerRemoveUrl = (id: string) => {
-  return `/api/v1/notifications/${id}`;
-};
 
-export const notificationsControllerRemove = async (
-  id: string,
-  options?: RequestInit,
-): Promise<notificationsControllerRemoveResponse> => {
-  return apiFetch<notificationsControllerRemoveResponse>(getNotificationsControllerRemoveUrl(id), {
+  
+
+  return `/api/v1/notifications/${id}`
+}
+
+export const notificationsControllerRemove = async (id: string, options?: RequestInit): Promise<notificationsControllerRemoveResponse> => {
+  
+  return apiFetch<notificationsControllerRemoveResponse>(getNotificationsControllerRemoveUrl(id),
+  {      
     ...options,
-    method: 'DELETE',
-  });
-};
+    method: 'DELETE'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Soft-archive a notification (swipe-to-archive). Owner-gated; 404 on cross-user / missing. Idempotent.
  */
 export type notificationsControllerArchiveResponse204 = {
-  data: void;
-  status: 204;
-};
+  data: void
+  status: 204
+}
 
 export type notificationsControllerArchiveResponse404 = {
-  data: void;
-  status: 404;
+  data: void
+  status: 404
+}
+    
+export type notificationsControllerArchiveResponseSuccess = (notificationsControllerArchiveResponse204) & {
+  headers: Headers;
+};
+export type notificationsControllerArchiveResponseError = (notificationsControllerArchiveResponse404) & {
+  headers: Headers;
 };
 
-export type notificationsControllerArchiveResponseSuccess =
-  notificationsControllerArchiveResponse204 & {
-    headers: Headers;
-  };
-export type notificationsControllerArchiveResponseError =
-  notificationsControllerArchiveResponse404 & {
-    headers: Headers;
-  };
+export type notificationsControllerArchiveResponse = (notificationsControllerArchiveResponseSuccess | notificationsControllerArchiveResponseError)
 
-export type notificationsControllerArchiveResponse =
-  | notificationsControllerArchiveResponseSuccess
-  | notificationsControllerArchiveResponseError;
+export const getNotificationsControllerArchiveUrl = (id: string,) => {
 
-export const getNotificationsControllerArchiveUrl = (id: string) => {
-  return `/api/v1/notifications/${id}/archive`;
-};
 
-export const notificationsControllerArchive = async (
-  id: string,
-  options?: RequestInit,
-): Promise<notificationsControllerArchiveResponse> => {
-  return apiFetch<notificationsControllerArchiveResponse>(
-    getNotificationsControllerArchiveUrl(id),
-    {
-      ...options,
-      method: 'POST',
-    },
-  );
-};
+  
+
+  return `/api/v1/notifications/${id}/archive`
+}
+
+export const notificationsControllerArchive = async (id: string, options?: RequestInit): Promise<notificationsControllerArchiveResponse> => {
+  
+  return apiFetch<notificationsControllerArchiveResponse>(getNotificationsControllerArchiveUrl(id),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Caller's notification preferences. Returns a default shape if the user has never written one.
  */
 export type notificationPreferencesControllerGetMineResponse200 = {
-  data: NotificationPreferencesDto;
-  status: 200;
+  data: NotificationPreferencesDto
+  status: 200
+}
+    
+export type notificationPreferencesControllerGetMineResponseSuccess = (notificationPreferencesControllerGetMineResponse200) & {
+  headers: Headers;
 };
+;
 
-export type notificationPreferencesControllerGetMineResponseSuccess =
-  notificationPreferencesControllerGetMineResponse200 & {
-    headers: Headers;
-  };
-export type notificationPreferencesControllerGetMineResponse =
-  notificationPreferencesControllerGetMineResponseSuccess;
+export type notificationPreferencesControllerGetMineResponse = (notificationPreferencesControllerGetMineResponseSuccess)
 
 export const getNotificationPreferencesControllerGetMineUrl = () => {
-  return `/api/v1/notifications/preferences`;
-};
 
-export const notificationPreferencesControllerGetMine = async (
-  options?: RequestInit,
-): Promise<notificationPreferencesControllerGetMineResponse> => {
-  return apiFetch<notificationPreferencesControllerGetMineResponse>(
-    getNotificationPreferencesControllerGetMineUrl(),
-    {
-      ...options,
-      method: 'GET',
-    },
-  );
-};
+
+  
+
+  return `/api/v1/notifications/preferences`
+}
+
+export const notificationPreferencesControllerGetMine = async ( options?: RequestInit): Promise<notificationPreferencesControllerGetMineResponse> => {
+  
+  return apiFetch<notificationPreferencesControllerGetMineResponse>(getNotificationPreferencesControllerGetMineUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Partial upsert of the caller-owned notification prefs. Idempotent. Empty body is a no-op.
  */
 export type notificationPreferencesControllerUpdateMineResponse200 = {
-  data: NotificationPreferencesDto;
-  status: 200;
-};
+  data: NotificationPreferencesDto
+  status: 200
+}
 
 export type notificationPreferencesControllerUpdateMineResponse422 = {
-  data: void;
-  status: 422;
+  data: void
+  status: 422
+}
+    
+export type notificationPreferencesControllerUpdateMineResponseSuccess = (notificationPreferencesControllerUpdateMineResponse200) & {
+  headers: Headers;
+};
+export type notificationPreferencesControllerUpdateMineResponseError = (notificationPreferencesControllerUpdateMineResponse422) & {
+  headers: Headers;
 };
 
-export type notificationPreferencesControllerUpdateMineResponseSuccess =
-  notificationPreferencesControllerUpdateMineResponse200 & {
-    headers: Headers;
-  };
-export type notificationPreferencesControllerUpdateMineResponseError =
-  notificationPreferencesControllerUpdateMineResponse422 & {
-    headers: Headers;
-  };
-
-export type notificationPreferencesControllerUpdateMineResponse =
-  | notificationPreferencesControllerUpdateMineResponseSuccess
-  | notificationPreferencesControllerUpdateMineResponseError;
+export type notificationPreferencesControllerUpdateMineResponse = (notificationPreferencesControllerUpdateMineResponseSuccess | notificationPreferencesControllerUpdateMineResponseError)
 
 export const getNotificationPreferencesControllerUpdateMineUrl = () => {
-  return `/api/v1/notifications/preferences`;
-};
 
-export const notificationPreferencesControllerUpdateMine = async (
-  updateNotificationPreferencesRequestDto: UpdateNotificationPreferencesRequestDto,
-  options?: RequestInit,
-): Promise<notificationPreferencesControllerUpdateMineResponse> => {
-  return apiFetch<notificationPreferencesControllerUpdateMineResponse>(
-    getNotificationPreferencesControllerUpdateMineUrl(),
-    {
-      ...options,
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', ...options?.headers },
-      body: JSON.stringify(updateNotificationPreferencesRequestDto),
-    },
-  );
-};
+
+  
+
+  return `/api/v1/notifications/preferences`
+}
+
+export const notificationPreferencesControllerUpdateMine = async (updateNotificationPreferencesRequestDto: UpdateNotificationPreferencesRequestDto, options?: RequestInit): Promise<notificationPreferencesControllerUpdateMineResponse> => {
+  
+  return apiFetch<notificationPreferencesControllerUpdateMineResponse>(getNotificationPreferencesControllerUpdateMineUrl(),
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateNotificationPreferencesRequestDto,)
+  }
+);}
+
 
 /**
  * @summary Register or refresh a Web Push subscription. Idempotent on endpoint — re-subscribing the same browser takes ownership.
  */
 export type pushSubscriptionsControllerSubscribeResponse201 = {
-  data: PushSubscriptionDto;
-  status: 201;
-};
+  data: PushSubscriptionDto
+  status: 201
+}
 
 export type pushSubscriptionsControllerSubscribeResponse422 = {
-  data: void;
-  status: 422;
+  data: void
+  status: 422
+}
+    
+export type pushSubscriptionsControllerSubscribeResponseSuccess = (pushSubscriptionsControllerSubscribeResponse201) & {
+  headers: Headers;
+};
+export type pushSubscriptionsControllerSubscribeResponseError = (pushSubscriptionsControllerSubscribeResponse422) & {
+  headers: Headers;
 };
 
-export type pushSubscriptionsControllerSubscribeResponseSuccess =
-  pushSubscriptionsControllerSubscribeResponse201 & {
-    headers: Headers;
-  };
-export type pushSubscriptionsControllerSubscribeResponseError =
-  pushSubscriptionsControllerSubscribeResponse422 & {
-    headers: Headers;
-  };
-
-export type pushSubscriptionsControllerSubscribeResponse =
-  | pushSubscriptionsControllerSubscribeResponseSuccess
-  | pushSubscriptionsControllerSubscribeResponseError;
+export type pushSubscriptionsControllerSubscribeResponse = (pushSubscriptionsControllerSubscribeResponseSuccess | pushSubscriptionsControllerSubscribeResponseError)
 
 export const getPushSubscriptionsControllerSubscribeUrl = () => {
-  return `/api/v1/notifications/push/subscribe`;
-};
 
-export const pushSubscriptionsControllerSubscribe = async (
-  subscribePushRequestDto: SubscribePushRequestDto,
-  options?: RequestInit,
-): Promise<pushSubscriptionsControllerSubscribeResponse> => {
-  return apiFetch<pushSubscriptionsControllerSubscribeResponse>(
-    getPushSubscriptionsControllerSubscribeUrl(),
-    {
-      ...options,
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...options?.headers },
-      body: JSON.stringify(subscribePushRequestDto),
-    },
-  );
-};
+
+  
+
+  return `/api/v1/notifications/push/subscribe`
+}
+
+export const pushSubscriptionsControllerSubscribe = async (subscribePushRequestDto: SubscribePushRequestDto, options?: RequestInit): Promise<pushSubscriptionsControllerSubscribeResponse> => {
+  
+  return apiFetch<pushSubscriptionsControllerSubscribeResponse>(getPushSubscriptionsControllerSubscribeUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      subscribePushRequestDto,)
+  }
+);}
+
 
 /**
  * @summary Owner-scoped Web Push unsubscribe. 404 if the endpoint is not registered to caller.
  */
 export type pushSubscriptionsControllerUnsubscribeResponse204 = {
-  data: void;
-  status: 204;
-};
+  data: void
+  status: 204
+}
 
 export type pushSubscriptionsControllerUnsubscribeResponse404 = {
-  data: void;
-  status: 404;
+  data: void
+  status: 404
+}
+    
+export type pushSubscriptionsControllerUnsubscribeResponseSuccess = (pushSubscriptionsControllerUnsubscribeResponse204) & {
+  headers: Headers;
+};
+export type pushSubscriptionsControllerUnsubscribeResponseError = (pushSubscriptionsControllerUnsubscribeResponse404) & {
+  headers: Headers;
 };
 
-export type pushSubscriptionsControllerUnsubscribeResponseSuccess =
-  pushSubscriptionsControllerUnsubscribeResponse204 & {
-    headers: Headers;
-  };
-export type pushSubscriptionsControllerUnsubscribeResponseError =
-  pushSubscriptionsControllerUnsubscribeResponse404 & {
-    headers: Headers;
-  };
-
-export type pushSubscriptionsControllerUnsubscribeResponse =
-  | pushSubscriptionsControllerUnsubscribeResponseSuccess
-  | pushSubscriptionsControllerUnsubscribeResponseError;
+export type pushSubscriptionsControllerUnsubscribeResponse = (pushSubscriptionsControllerUnsubscribeResponseSuccess | pushSubscriptionsControllerUnsubscribeResponseError)
 
 export const getPushSubscriptionsControllerUnsubscribeUrl = () => {
-  return `/api/v1/notifications/push/subscribe`;
-};
 
-export const pushSubscriptionsControllerUnsubscribe = async (
-  unsubscribePushRequestDto: UnsubscribePushRequestDto,
-  options?: RequestInit,
-): Promise<pushSubscriptionsControllerUnsubscribeResponse> => {
-  return apiFetch<pushSubscriptionsControllerUnsubscribeResponse>(
-    getPushSubscriptionsControllerUnsubscribeUrl(),
-    {
-      ...options,
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json', ...options?.headers },
-      body: JSON.stringify(unsubscribePushRequestDto),
-    },
-  );
-};
+
+  
+
+  return `/api/v1/notifications/push/subscribe`
+}
+
+export const pushSubscriptionsControllerUnsubscribe = async (unsubscribePushRequestDto: UnsubscribePushRequestDto, options?: RequestInit): Promise<pushSubscriptionsControllerUnsubscribeResponse> => {
+  
+  return apiFetch<pushSubscriptionsControllerUnsubscribeResponse>(getPushSubscriptionsControllerUnsubscribeUrl(),
+  {      
+    ...options,
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      unsubscribePushRequestDto,)
+  }
+);}
+
+

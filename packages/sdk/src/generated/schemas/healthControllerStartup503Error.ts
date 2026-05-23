@@ -5,9 +5,7 @@
 /**
  * @nullable
  */
-export type HealthControllerStartup503Error = {
-  [key: string]: {
-    status: string;
-    [key: string]: unknown;
-  };
-} | null;
+export type HealthControllerStartup503Error = {[key: string]: {
+  status: string;
+  [key: string]: unknown;
+ }} | null;

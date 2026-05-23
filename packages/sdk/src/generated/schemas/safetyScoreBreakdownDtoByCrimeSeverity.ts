@@ -5,4 +5,4 @@
 /**
  * Crime counts bucketed by severity.
  */
-export type SafetyScoreBreakdownDtoByCrimeSeverity = { [key: string]: number };
+export type SafetyScoreBreakdownDtoByCrimeSeverity = {[key: string]: number};

@@ -4,24 +4,34 @@
 import { apiFetch } from '../../../runtime/fetcher';
 
 export type metricsControllerScrapeResponse200 = {
-  data: void;
-  status: 200;
-};
-
-export type metricsControllerScrapeResponseSuccess = metricsControllerScrapeResponse200 & {
+  data: void
+  status: 200
+}
+    
+export type metricsControllerScrapeResponseSuccess = (metricsControllerScrapeResponse200) & {
   headers: Headers;
 };
-export type metricsControllerScrapeResponse = metricsControllerScrapeResponseSuccess;
+;
+
+export type metricsControllerScrapeResponse = (metricsControllerScrapeResponseSuccess)
 
 export const getMetricsControllerScrapeUrl = () => {
-  return `/metrics`;
-};
 
-export const metricsControllerScrape = async (
-  options?: RequestInit,
-): Promise<metricsControllerScrapeResponse> => {
-  return apiFetch<metricsControllerScrapeResponse>(getMetricsControllerScrapeUrl(), {
+
+  
+
+  return `/metrics`
+}
+
+export const metricsControllerScrape = async ( options?: RequestInit): Promise<metricsControllerScrapeResponse> => {
+  
+  return apiFetch<metricsControllerScrapeResponse>(getMetricsControllerScrapeUrl(),
+  {      
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+    
+    
+  }
+);}
+
+

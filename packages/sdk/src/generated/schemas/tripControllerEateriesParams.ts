@@ -3,6 +3,6 @@
 // Regenerate via: pnpm --filter=@app/sdk sdk:gen
 
 export type TripControllerEateriesParams = {
-  cuisineTag: string;
-  maxPriceTier: string;
+cuisineTag: string;
+maxPriceTier: string;
 };

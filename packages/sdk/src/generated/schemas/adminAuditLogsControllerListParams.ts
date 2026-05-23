@@ -3,10 +3,10 @@
 // Regenerate via: pnpm --filter=@app/sdk sdk:gen
 
 export type AdminAuditLogsControllerListParams = {
-  actorId: string;
-  targetType: string;
-  targetId: string;
-  action: string;
-  limit: string;
-  offset: string;
+actorId: string;
+targetType: string;
+targetId: string;
+action: string;
+limit: string;
+offset: string;
 };

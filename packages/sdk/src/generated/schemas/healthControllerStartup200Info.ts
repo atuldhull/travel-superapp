@@ -5,9 +5,7 @@
 /**
  * @nullable
  */
-export type HealthControllerStartup200Info = {
-  [key: string]: {
-    status: string;
-    [key: string]: unknown;
-  };
-} | null;
+export type HealthControllerStartup200Info = {[key: string]: {
+  status: string;
+  [key: string]: unknown;
+ }} | null;

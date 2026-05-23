@@ -5,8 +5,8 @@
 /**
  * Always 'ok'. Doesn't reveal whether the email is registered.
  */
-export type PasswordResetRequestResponseDtoStatus =
-  (typeof PasswordResetRequestResponseDtoStatus)[keyof typeof PasswordResetRequestResponseDtoStatus];
+export type PasswordResetRequestResponseDtoStatus = typeof PasswordResetRequestResponseDtoStatus[keyof typeof PasswordResetRequestResponseDtoStatus];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const PasswordResetRequestResponseDtoStatus = {

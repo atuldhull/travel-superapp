@@ -5,7 +5,7 @@ import type {
   CheckoutSessionResponseDto,
   CurrentSubscriptionResponseDto,
   PortalUrlResponseDto,
-  WebhookAckResponseDto,
+  WebhookAckResponseDto
 } from '../../schemas';
 
 import { apiFetch } from '../../../runtime/fetcher';
@@ -14,148 +14,165 @@ import { apiFetch } from '../../../runtime/fetcher';
  * @summary Create a Stripe Checkout session for the Premium tier. Auth-only.
  */
 export type paymentsControllerCheckoutResponse200 = {
-  data: CheckoutSessionResponseDto;
-  status: 200;
-};
+  data: CheckoutSessionResponseDto
+  status: 200
+}
 
 export type paymentsControllerCheckoutResponse503 = {
-  data: void;
-  status: 503;
-};
-
-export type paymentsControllerCheckoutResponseSuccess = paymentsControllerCheckoutResponse200 & {
+  data: void
+  status: 503
+}
+    
+export type paymentsControllerCheckoutResponseSuccess = (paymentsControllerCheckoutResponse200) & {
   headers: Headers;
 };
-export type paymentsControllerCheckoutResponseError = paymentsControllerCheckoutResponse503 & {
+export type paymentsControllerCheckoutResponseError = (paymentsControllerCheckoutResponse503) & {
   headers: Headers;
 };
 
-export type paymentsControllerCheckoutResponse =
-  | paymentsControllerCheckoutResponseSuccess
-  | paymentsControllerCheckoutResponseError;
+export type paymentsControllerCheckoutResponse = (paymentsControllerCheckoutResponseSuccess | paymentsControllerCheckoutResponseError)
 
 export const getPaymentsControllerCheckoutUrl = () => {
-  return `/api/v1/payments/checkout`;
-};
 
-export const paymentsControllerCheckout = async (
-  options?: RequestInit,
-): Promise<paymentsControllerCheckoutResponse> => {
-  return apiFetch<paymentsControllerCheckoutResponse>(getPaymentsControllerCheckoutUrl(), {
+
+  
+
+  return `/api/v1/payments/checkout`
+}
+
+export const paymentsControllerCheckout = async ( options?: RequestInit): Promise<paymentsControllerCheckoutResponse> => {
+  
+  return apiFetch<paymentsControllerCheckoutResponse>(getPaymentsControllerCheckoutUrl(),
+  {      
     ...options,
-    method: 'POST',
-  });
-};
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Stripe webhook. Public + raw body (signature-verified).
  */
 export type paymentsControllerWebhookResponse200 = {
-  data: WebhookAckResponseDto;
-  status: 200;
-};
+  data: WebhookAckResponseDto
+  status: 200
+}
 
 export type paymentsControllerWebhookResponse400 = {
-  data: void;
-  status: 400;
-};
+  data: void
+  status: 400
+}
 
 export type paymentsControllerWebhookResponse503 = {
-  data: void;
-  status: 503;
-};
-
-export type paymentsControllerWebhookResponseSuccess = paymentsControllerWebhookResponse200 & {
+  data: void
+  status: 503
+}
+    
+export type paymentsControllerWebhookResponseSuccess = (paymentsControllerWebhookResponse200) & {
   headers: Headers;
 };
-export type paymentsControllerWebhookResponseError = (
-  | paymentsControllerWebhookResponse400
-  | paymentsControllerWebhookResponse503
-) & {
+export type paymentsControllerWebhookResponseError = (paymentsControllerWebhookResponse400 | paymentsControllerWebhookResponse503) & {
   headers: Headers;
 };
 
-export type paymentsControllerWebhookResponse =
-  | paymentsControllerWebhookResponseSuccess
-  | paymentsControllerWebhookResponseError;
+export type paymentsControllerWebhookResponse = (paymentsControllerWebhookResponseSuccess | paymentsControllerWebhookResponseError)
 
 export const getPaymentsControllerWebhookUrl = () => {
-  return `/api/v1/payments/webhook`;
-};
 
-export const paymentsControllerWebhook = async (
-  options?: RequestInit,
-): Promise<paymentsControllerWebhookResponse> => {
-  return apiFetch<paymentsControllerWebhookResponse>(getPaymentsControllerWebhookUrl(), {
+
+  
+
+  return `/api/v1/payments/webhook`
+}
+
+export const paymentsControllerWebhook = async ( options?: RequestInit): Promise<paymentsControllerWebhookResponse> => {
+  
+  return apiFetch<paymentsControllerWebhookResponse>(getPaymentsControllerWebhookUrl(),
+  {      
     ...options,
-    method: 'POST',
-  });
-};
+    method: 'POST'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Current Premium subscription for the calling user (or null).
  */
 export type paymentsControllerMySubscriptionResponse200 = {
-  data: CurrentSubscriptionResponseDto;
-  status: 200;
+  data: CurrentSubscriptionResponseDto
+  status: 200
+}
+    
+export type paymentsControllerMySubscriptionResponseSuccess = (paymentsControllerMySubscriptionResponse200) & {
+  headers: Headers;
 };
+;
 
-export type paymentsControllerMySubscriptionResponseSuccess =
-  paymentsControllerMySubscriptionResponse200 & {
-    headers: Headers;
-  };
-export type paymentsControllerMySubscriptionResponse =
-  paymentsControllerMySubscriptionResponseSuccess;
+export type paymentsControllerMySubscriptionResponse = (paymentsControllerMySubscriptionResponseSuccess)
 
 export const getPaymentsControllerMySubscriptionUrl = () => {
-  return `/api/v1/payments/me/subscription`;
-};
 
-export const paymentsControllerMySubscription = async (
-  options?: RequestInit,
-): Promise<paymentsControllerMySubscriptionResponse> => {
-  return apiFetch<paymentsControllerMySubscriptionResponse>(
-    getPaymentsControllerMySubscriptionUrl(),
-    {
-      ...options,
-      method: 'GET',
-    },
-  );
-};
+
+  
+
+  return `/api/v1/payments/me/subscription`
+}
+
+export const paymentsControllerMySubscription = async ( options?: RequestInit): Promise<paymentsControllerMySubscriptionResponse> => {
+  
+  return apiFetch<paymentsControllerMySubscriptionResponse>(getPaymentsControllerMySubscriptionUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * @summary Mint a one-time Stripe Customer Portal URL for the caller.
  */
 export type paymentsControllerPortalUrlResponse200 = {
-  data: PortalUrlResponseDto;
-  status: 200;
-};
+  data: PortalUrlResponseDto
+  status: 200
+}
 
 export type paymentsControllerPortalUrlResponse503 = {
-  data: void;
-  status: 503;
-};
-
-export type paymentsControllerPortalUrlResponseSuccess = paymentsControllerPortalUrlResponse200 & {
+  data: void
+  status: 503
+}
+    
+export type paymentsControllerPortalUrlResponseSuccess = (paymentsControllerPortalUrlResponse200) & {
   headers: Headers;
 };
-export type paymentsControllerPortalUrlResponseError = paymentsControllerPortalUrlResponse503 & {
+export type paymentsControllerPortalUrlResponseError = (paymentsControllerPortalUrlResponse503) & {
   headers: Headers;
 };
 
-export type paymentsControllerPortalUrlResponse =
-  | paymentsControllerPortalUrlResponseSuccess
-  | paymentsControllerPortalUrlResponseError;
+export type paymentsControllerPortalUrlResponse = (paymentsControllerPortalUrlResponseSuccess | paymentsControllerPortalUrlResponseError)
 
 export const getPaymentsControllerPortalUrlUrl = () => {
-  return `/api/v1/payments/me/portal-url`;
-};
 
-export const paymentsControllerPortalUrl = async (
-  options?: RequestInit,
-): Promise<paymentsControllerPortalUrlResponse> => {
-  return apiFetch<paymentsControllerPortalUrlResponse>(getPaymentsControllerPortalUrlUrl(), {
+
+  
+
+  return `/api/v1/payments/me/portal-url`
+}
+
+export const paymentsControllerPortalUrl = async ( options?: RequestInit): Promise<paymentsControllerPortalUrlResponse> => {
+  
+  return apiFetch<paymentsControllerPortalUrlResponse>(getPaymentsControllerPortalUrlUrl(),
+  {      
     ...options,
-    method: 'POST',
-  });
-};
+    method: 'POST'
+    
+    
+  }
+);}
+
+
