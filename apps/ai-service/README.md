@@ -14,8 +14,13 @@ This app is explicitly excluded from `pnpm-workspace.yaml` (`!apps/ai-service`).
 
 ## Contract
 
-See `docs/services/ai-service/contract.md` once prompt `[II.7.3]` creates it.
+The contract is defined in TWO places that must stay in sync:
+
+- **Prose form:** [`docs/services/ai-service/contract.md`](../../docs/services/ai-service/contract.md) — transport (gRPC + REST), endpoints, SLOs, failure / circuit-breaker policy, runbook pointer.
+- **Code form (single source of truth):** [`packages/shared-types/src/ai-service/`](../../packages/shared-types/src/ai-service/) — Zod schemas + inferred TS types. Import via `@app/shared-types/ai-service`. The Python service will mirror these as pydantic models via codegen in **[IV.18.2.11]**.
+
+When this service is built, generate the pydantic models from the Zod schemas; do not hand-write a Python copy. Drift between doc / TS / pydantic is the failure mode this layout is designed to prevent.
 
 ## Placeholder
 
-Real code lands in **[IV.18.2.11]**. Until then, this folder is intentionally empty.
+Real Python code lands in **[IV.18.2.11]**. Until then, this folder holds only the contract pointer above; the schemas are already authored in `@app/shared-types` so the boundary is concrete from the TS side today.
