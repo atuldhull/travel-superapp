@@ -10,7 +10,7 @@ import { Inject, Injectable, OnApplicationBootstrap, OnModuleDestroy } from '@ne
 import { EVENT_BUS, type EventBus, type Subscription } from '@app/events';
 import { createLogger } from '@app/logger';
 import { NOTIFICATION_SENDER, type NotificationSender } from '../ports/notification-sender';
-import type { TripItineraryGeneratedPayload } from '../../../trip/domain/trip.events';
+import type { TripItineraryGeneratedPayload } from '../../../trip';
 
 const log = createLogger('notifications.itinerary-ready');
 

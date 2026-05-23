@@ -62,7 +62,7 @@ import {
 import { ConsumePasswordResetUseCase } from '../../identity/application/consume-password-reset.use-case';
 import { RequestMagicLinkUseCase } from '../../identity/application/request-magic-link.use-case';
 import { RequestPasswordResetUseCase } from '../../identity/application/request-password-reset.use-case';
-import { SeedSampleTripUseCase } from '../../trip/application/seed-sample-trip.use-case';
+import { SeedSampleTripUseCase } from '../../trip';
 import { SignInWithOAuthUseCase } from '../../identity/application/sign-in-with-oauth.use-case';
 import {
   LoginBodySchema,

@@ -16,8 +16,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { NotFoundError } from '@app/errors';
 import { createLogger, type AppLogger } from '@app/logger';
 import { GeoQueries } from '../../../common/db/geo-queries';
-import { TRIP_REPOSITORY, type TripRepository } from '../../trip';
-import type { Trip } from '../../trip/domain/trip.entity';
+import { TRIP_REPOSITORY, type Trip, type TripRepository } from '../../trip';
 import {
   assertPublishable,
   exposeGeo,

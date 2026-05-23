@@ -16,7 +16,7 @@ import { EVENT_BUS, type EventBus, type Subscription } from '@app/events';
 import { createLogger } from '@app/logger';
 import { PrismaService } from '../../../../common/db/prisma.service';
 import { NOTIFICATION_SENDER, type NotificationSender } from '../ports/notification-sender';
-import type { TripCommentedPayload } from '../../../social/domain/social.events';
+import type { TripCommentedPayload } from '../../../social';
 
 const log = createLogger('notifications.trip-commented');
 

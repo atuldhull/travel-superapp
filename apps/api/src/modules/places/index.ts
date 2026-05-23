@@ -12,3 +12,8 @@ export { PlacesModule } from './places.module';
 export * from './application/ports/place-provider';
 export * from './application/ports/place-search-cache';
 export * from './application/ports/place.repository';
+
+// Public domain types — admin place-curation flows read `Place`
+// for response shapes; trip orchestrators read `PlaceWithDistance`
+// for nearby queries.
+export type { Place, PlaceWithDistance } from './domain/place.entity';

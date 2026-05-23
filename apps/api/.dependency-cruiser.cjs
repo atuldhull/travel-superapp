@@ -90,19 +90,11 @@ module.exports = {
         // [B3] (domain) / [B4] (orchestration). When this list is
         // empty, [B5] drops the pathNot and the rule is fully strict.
         pathNot: [
-          // [B3] — domain-layer cross-module imports
-          '^src/modules/notifications/application/handlers/agent-replan-proposed\\.handler\\.ts$',
-          '^src/modules/notifications/application/handlers/itinerary-ready\\.handler\\.ts$',
-          '^src/modules/notifications/application/handlers/session-issued\\.handler\\.ts$',
-          '^src/modules/notifications/application/handlers/sos-triggered\\.handler\\.ts$',
-          '^src/modules/notifications/application/handlers/trip-commented\\.handler\\.ts$',
-          '^src/modules/notifications/application/handlers/trip-locked\\.handler\\.ts$',
-          '^src/modules/notifications/application/handlers/user-followed\\.handler\\.ts$',
-          '^src/modules/agent/application/handlers/trip-itinerary-watch\\.handler\\.ts$',
-          '^src/modules/feed/application/publish-trip\\.use-case\\.ts$',
-          '^src/modules/admin/application/admin-create-place\\.use-case\\.ts$',
-          '^src/modules/admin/interface/admin\\.controller\\.ts$',
-          '^src/modules/identity/interface/auth\\.controller\\.ts$',
+          // [B3] — domain-layer cross-module imports (all migrated; allowlist
+          // empty for this group). Event payload types are now re-exported
+          // from each producer module's barrel; `Trip` + `Place` entity
+          // types likewise. `SeedSampleTripUseCase` exposed on the trip
+          // barrel as a public composition seam for identity onboarding.
           // [B4] — trip-as-orchestrator + admin-helper cross-module imports
           '^src/modules/trip/application/admin-archive-trip\\.use-case\\.ts$',
           '^src/modules/trip/application/admin-delete-trip\\.use-case\\.ts$',
