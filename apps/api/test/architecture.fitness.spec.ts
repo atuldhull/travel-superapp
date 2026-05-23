@@ -24,11 +24,27 @@
  *                              `console`.
  *   4. No `as any`            — CLAUDE.md #9 bans `any`; this catches
  *                              the cast that smuggles it back in.
+ *   5. Zero non-module cycles — `madge --circular` over apps/api/src
+ *                              excluding `<m>.module.ts` files. Catches
+ *                              the payments-style ESM-fatal cycle that
+ *                              dep-cruiser's `viaNot` rule also flags;
+ *                              having TWO independent detectors removes
+ *                              single-point-of-failure for the most
+ *                              expensive failure mode we have on record
+ *                              (a runtime crash on `tsx`).
  *
  * Installed by prompt [A6.1] — architecture road-to-10.
+ * Madge cycle invariant added in [C3].
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
+// `madge` ships no TS types (only an outdated `@types/madge@5` exists);
+// declare the slice we use locally instead of depending on it.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const madge = require('madge') as (
+  path: string,
+  config: { fileExtensions?: readonly string[]; excludeRegExp?: readonly RegExp[] },
+) => Promise<{ circular: () => readonly (readonly string[])[] }>;
 
 /** Walk a directory recursively, yielding every `*.ts` file path
  *  (POSIX-separator) relative to `root`. */
@@ -161,4 +177,32 @@ describe('architecture fitness — banned patterns', () => {
     }
     expect(offenders).toEqual([]);
   });
+});
+
+describe('architecture fitness — cycle detection (madge)', () => {
+  // `madge --circular` is the OUTSIDE-LOOKING-IN cycle detector — it
+  // walks the resolved TS/JS graph the same way Node would at run-
+  // time, so it catches the same cycles esbuild / tsx would choke on.
+  //
+  // We exclude `<m>.module.ts` files: NestJS module-graph cycles are
+  // the sanctioned `forwardRef()` pattern, the same exclusion the
+  // dep-cruiser `no-circular` rule applies via `viaNot`. Cycles whose
+  // path passes through any non-module file are still surfaced — that
+  // includes the payments dev-server incident that triggered this
+  // check in the first place.
+  //
+  // Runtime: ~4-6s on the current api graph (660 files); cheaper
+  // than the existing e2e suites, well within fitness-spec budget.
+
+  it('zero non-module cycles under apps/api/src', async () => {
+    const result = await madge(API_SRC, {
+      fileExtensions: ['ts'],
+      excludeRegExp: [/\.module\.ts$/],
+    });
+    const cycles = result.circular();
+    // Format each cycle as a single readable string so a failure
+    // message names every node on the cycle, not just a node-count.
+    const formatted = cycles.map((cycle: readonly string[]) => cycle.join(' -> '));
+    expect(formatted).toEqual([]);
+  }, 30_000);
 });

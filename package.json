@@ -15,6 +15,7 @@
     "build": "turbo run build",
     "lint": "turbo run lint",
     "arch": "turbo run arch",
+    "cycles": "turbo run cycles",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "test:integration": "turbo run test:integration",

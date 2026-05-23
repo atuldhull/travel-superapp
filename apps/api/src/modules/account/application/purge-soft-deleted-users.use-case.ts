@@ -17,9 +17,8 @@
  * Installed by prompt [IV.18.16.3].
  */
 import { Inject, Injectable } from '@nestjs/common';
+import { DEFAULT_RETENTION_DAYS } from '../../../common/policy/retention-policy';
 import { ACCOUNT_PURGER, type AccountPurger } from './ports/account-purger';
-
-export const DEFAULT_RETENTION_DAYS = 7;
 
 export interface PurgeSoftDeletedUsersCommand {
   /** Override for tests; defaults to `DEFAULT_RETENTION_DAYS` (7). */
