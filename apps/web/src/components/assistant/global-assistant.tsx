@@ -36,7 +36,11 @@ import {
   X,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { apiFetch, type GenerateSamplePlanResponseDto } from '@app/sdk';
+import {
+  tripControllerCreate,
+  tripControllerSamplePlan,
+  type GenerateSamplePlanResponseDto,
+} from '@app/sdk';
 import { searchPlaces } from '../../lib/geocode';
 import { useAuthToken } from '../../lib/use-auth-token';
 import { useSpeechRecognition, useSpeechSynthesis } from '../../lib/use-speech';
@@ -416,20 +420,14 @@ export function GlobalAssistant() {
     center: { lat: number; lng: number },
     instruction?: string,
   ) {
-    const res = await apiFetch<{
+    const res = (await tripControllerSamplePlan({
+      title,
+      center,
+      radiusKm: RADIUS_KM,
+      ...(instruction ? { instruction, priorPlan: ctxRef.current?.plan ?? '' } : {}),
+    } as unknown as Parameters<typeof tripControllerSamplePlan>[0])) as unknown as {
       data: GenerateSamplePlanResponseDto;
-      status: number;
-      headers: Headers;
-    }>('/api/v1/trips/sample-plan', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        title,
-        center,
-        radiusKm: RADIUS_KM,
-        ...(instruction ? { instruction, priorPlan: ctxRef.current?.plan ?? '' } : {}),
-      }),
-    });
+    };
     const d = res.data;
     const p: unknown = d?.plan;
     if (d?.provider) {
@@ -469,19 +467,13 @@ export function GlobalAssistant() {
     setSaving(true);
     setSaveErr(null);
     try {
-      const res = await apiFetch<{
+      const res = (await tripControllerCreate({
+        title: ctxRef.current.title,
+        center: { lng: ctxRef.current.center.lng, lat: ctxRef.current.center.lat },
+        radiusKm: RADIUS_KM,
+      } as unknown as Parameters<typeof tripControllerCreate>[0])) as unknown as {
         data: { id?: string };
-        status: number;
-        headers: Headers;
-      }>('/api/v1/trips', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          title: ctxRef.current.title,
-          center: { lng: ctxRef.current.center.lng, lat: ctxRef.current.center.lat },
-          radiusKm: RADIUS_KM,
-        }),
-      });
+      };
       const id = res.data?.id;
       if (typeof id === 'string' && id.length > 0) {
         say('ai', `Saved as a draft trip — opening it now. You can re-plan or edit dates there.`);

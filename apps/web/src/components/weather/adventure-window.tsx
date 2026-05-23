@@ -20,7 +20,12 @@
 
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { apiFetch, type HourlyForecastDto, type HourlyWeatherForecastResponseDto } from '@app/sdk';
+import {
+  apiFetch,
+  getWeatherControllerHourlyUrl,
+  type HourlyForecastDto,
+  type HourlyWeatherForecastResponseDto,
+} from '@app/sdk';
 import { Card, CardHeader, CardSubtitle, CardTitle } from '../ui/card';
 import { Skeleton } from '../ui/skeleton';
 import { useAuthToken } from '../../lib/use-auth-token';
@@ -88,9 +93,12 @@ export function AdventureWindow() {
     );
   }, [token]);
 
-  // Orval skipped query-param generation for the hourly route (the
-  // Zod-validated `@Query()` shape doesn't surface in OpenAPI as
-  // typed parameters), so we call apiFetch directly with the URL.
+  // Orval-@Query() limitation: the hourly route's Zod-validated
+  // `@Query()` shape doesn't surface in OpenAPI as typed params, so
+  // the generated `weatherControllerHourly` function doesn't accept
+  // them. Build the URL via the SDK's getter + call the SDK's
+  // `apiFetch` runtime — all plumbing still lives in `@app/sdk`, no
+  // raw URL strings. ADR-015 tracks the proper @ApiQuery rollout.
   type HourlyEnvelope = {
     data: HourlyWeatherForecastResponseDto;
     status: number;
@@ -100,7 +108,7 @@ export function AdventureWindow() {
     queryKey: ['weather/hourly', coords?.lat, coords?.lng],
     queryFn: () =>
       apiFetch<HourlyEnvelope>(
-        `/api/v1/weather/forecast/hourly?lat=${coords!.lat}&lng=${coords!.lng}&hours=24`,
+        `${getWeatherControllerHourlyUrl()}?lat=${coords!.lat}&lng=${coords!.lng}&hours=24`,
         { method: 'GET' },
       ),
     enabled: token !== null && coords !== null,

@@ -43,7 +43,8 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  apiFetch,
+  countryPrimerControllerGet,
+  emergencyNumbersControllerGet,
   tripControllerOverview,
   useNotificationsControllerListMine,
   useTripControllerList,
@@ -606,14 +607,8 @@ export default function HomePage() {
           return;
         }
         const [emergencyR, primerR] = await Promise.allSettled([
-          apiFetch<{ data: SafetyEmergency; status: number; headers: Headers }>(
-            `/api/v1/safety/emergency-numbers/${cc}`,
-            { method: 'GET' },
-          ),
-          apiFetch<{ data: SafetyPrimer; status: number; headers: Headers }>(
-            `/api/v1/safety/country-primer/${cc}`,
-            { method: 'GET' },
-          ),
+          emergencyNumbersControllerGet(cc) as unknown as Promise<{ data: SafetyEmergency }>,
+          countryPrimerControllerGet(cc) as unknown as Promise<{ data: SafetyPrimer }>,
         ]);
         if (!alive) return;
         if (emergencyR.status !== 'fulfilled' || !emergencyR.value.data) {

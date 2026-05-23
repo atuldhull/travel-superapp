@@ -1,18 +1,17 @@
 /**
  * Phase 3 (G1) — "Living Trip" completion checkbox for a single
  * ItineraryItem. Optimistic toggle: flip immediately, fire the
- * apiFetch, revert on error.
+ * SDK request, revert on error.
  *
- * Honest scope: the SDK isn't regen'd yet (documented orval seam),
- * so the routes hit `apiFetch`-direct rather than a generated hook.
- * The DTO change on the API side (additive `completedAt` field)
- * IS present, but consumers read it via the cast on the parent
- * component since the orval cache is stale.
+ * Routes through `tripControllerCompleteItem` / `tripControllerUncompleteItem`
+ * from the generated SDK ([E2 part 2]). The response shape is cast at the
+ * boundary until ADR-015's `@ApiResponse` decorator rollout types the
+ * SDK return value.
  */
 'use client';
 
 import { useState } from 'react';
-import { apiFetch } from '@app/sdk';
+import { tripControllerCompleteItem, tripControllerUncompleteItem } from '@app/sdk';
 import { Check } from 'lucide-react';
 
 interface Props {
@@ -33,14 +32,11 @@ export function ItemCheckbox({ itemId, initialCompletedAt }: Props) {
     setCompletedAt(checked ? null : new Date().toISOString());
     setSaving(true);
     try {
-      const route = checked
-        ? `/api/v1/trips/items/${itemId}/uncomplete`
-        : `/api/v1/trips/items/${itemId}/complete`;
-      const res = await apiFetch<{
+      const res = (await (checked
+        ? tripControllerUncompleteItem(itemId)
+        : tripControllerCompleteItem(itemId))) as unknown as {
         data: { id: string; completedAt: string | null };
-        status: number;
-        headers: Headers;
-      }>(route, { method: 'POST' });
+      };
       if (res.data && (res.data.completedAt === null || typeof res.data.completedAt === 'string')) {
         // Sync to the canonical timestamp from the server.
         setCompletedAt(res.data.completedAt);

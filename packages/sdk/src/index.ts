@@ -39,13 +39,58 @@ export {
 } from './generated/plain/social/social';
 
 // Same shape for `notifications` (web-push-subscribe) and `trip`
-// (use-trip-center) — both barrels are react-query-exported above so
-// only the specific plain fetchers go via named export here.
+// (use-trip-center + global-assistant + trips/new + item-checkbox) —
+// both barrels are react-query-exported above so only the specific
+// plain fetchers go via named export here.
 export {
   pushSubscriptionsControllerSubscribe,
   pushSubscriptionsControllerUnsubscribe,
 } from './generated/plain/notifications/notifications';
-export { tripControllerCenter } from './generated/plain/trip/trip';
+export {
+  tripControllerCenter,
+  tripControllerCompleteItem,
+  tripControllerCreate,
+  tripControllerPlanWithAi,
+  tripControllerSamplePlan,
+  tripControllerShiftItinerary,
+  tripControllerUncompleteItem,
+} from './generated/plain/trip/trip';
+
+// Payments (billing + pricing pages) and identity (otp-sign-in) tags:
+// only the fetchers actually consumed are surfaced. [E2 part 2]
+export {
+  paymentsControllerCheckout,
+  paymentsControllerMySubscription,
+  paymentsControllerPortalUrl,
+} from './generated/plain/payments/payments';
+export {
+  authControllerOtpRequest,
+  authControllerOtpVerify,
+} from './generated/plain/identity/identity';
+
+// Safety country-primer + emergency numbers (home + trips/new) and
+// account preferences (aura-nudge) and events festivals (festival-
+// overlay) — named to avoid colliding with their react-query barrels.
+export {
+  countryPrimerControllerGet,
+  emergencyNumbersControllerGet,
+} from './generated/plain/safety/safety';
+export {
+  preferencesControllerGetMine,
+  preferencesControllerUpdateMine,
+} from './generated/plain/account/account';
+// `EventsControllerFestivalsParams` is already exported as a schema
+// type further below (`V.UX.22` block); just surface the function.
+export { eventsControllerFestivals } from './generated/plain/events/events';
+
+// Weather URL builders — the controller's `@Query()` is Zod-validated
+// rather than `@ApiQuery()`-decorated, so orval doesn't emit a typed
+// params arg. Consumers compose the URL via the getter + call apiFetch
+// directly. Documented exception per ADR-015.
+export {
+  getWeatherControllerForecastUrl,
+  getWeatherControllerHourlyUrl,
+} from './generated/plain/weather/weather';
 
 // React Query hooks per OpenAPI tag. Add tags here as the web/mobile
 // surface starts consuming them — this keeps the public API explicit

@@ -27,7 +27,7 @@ import {
   useAuthControllerOnboardingComplete,
   useTripControllerCreate,
   useTripControllerPlanWithAi,
-  apiFetch,
+  preferencesControllerUpdateMine,
   type OnboardingCompleteRequestDto,
   type CreateTripRequestDto,
   type TripDto,
@@ -159,17 +159,13 @@ export default function OnboardingPage() {
     // apiFetch (PATCH /account/preferences) — the field is additive so
     // no SDK regen. Fire-and-forget: a failure must not block setup.
     saveAuraDraft(draft);
-    void apiFetch('/api/v1/account/preferences', {
-      method: 'PATCH',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        travelAura: draft.aura,
-        homeLabel: draft.home?.label ?? null,
-        homeLat: draft.home?.lat ?? null,
-        homeLng: draft.home?.lng ?? null,
-        travelInterests: [...draft.interests],
-      }),
-    }).catch(() => {
+    void preferencesControllerUpdateMine({
+      travelAura: draft.aura,
+      homeLabel: draft.home?.label ?? null,
+      homeLat: draft.home?.lat ?? null,
+      homeLng: draft.home?.lng ?? null,
+      travelInterests: [...draft.interests],
+    } as unknown as Parameters<typeof preferencesControllerUpdateMine>[0]).catch(() => {
       /* offline / transient — the localStorage draft still carries it */
     });
     setPhase('trip');
