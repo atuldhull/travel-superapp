@@ -20,11 +20,13 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { ValidationError } from '@app/errors';
-import { TRIP_REPOSITORY, type TripRepository } from '../../trip/application/ports/trip.repository';
 import {
+  TRIP_REPOSITORY,
   TRIP_SHARE_REPOSITORY,
+  type TripRepository,
   type TripShareRepository,
-} from '../../trip/application/ports/trip-share.repository';
+} from '../../trip';
+
 import type { Review, ReviewTargetType } from '../domain/review.entity';
 import { assertCanVote as assertTripAccess } from './cast-vote.use-case';
 import { REVIEW_REPOSITORY, type ReviewRepository } from './ports/review.repository';

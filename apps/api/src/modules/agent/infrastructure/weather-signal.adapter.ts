@@ -13,10 +13,7 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { createLogger, type AppLogger } from '@app/logger';
-import {
-  WEATHER_PROVIDER,
-  type WeatherProvider,
-} from '../../weather/application/ports/weather-provider';
+import { WEATHER_PROVIDER, type WeatherProvider } from '../../weather';
 import type {
   SignalSnapshot,
   SignalSource,

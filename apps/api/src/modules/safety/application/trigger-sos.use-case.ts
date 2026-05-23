@@ -18,10 +18,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { EVENT_BUS, type EventBus } from '@app/events';
 import { ValidationError } from '@app/errors';
 import { createLogger, getTraceContext } from '@app/logger';
-import {
-  TRUSTED_CONTACT_REPOSITORY,
-  type TrustedContactRepository,
-} from '../../account/application/ports/trusted-contact.repository';
+import { TRUSTED_CONTACT_REPOSITORY, type TrustedContactRepository } from '../../account';
 import type { SosEvent } from '../domain/sos-event.entity';
 import { makeSafetyEvent, type SosTriggeredEvent } from '../domain/safety.events';
 import { CONTACT_NOTIFIER_PORT, type ContactNotifier } from './ports/contact-notifier.port';

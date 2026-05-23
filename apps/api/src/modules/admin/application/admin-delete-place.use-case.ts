@@ -10,10 +10,7 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { NotFoundError } from '@app/errors';
-import {
-  PLACE_REPOSITORY,
-  type PlaceRepository,
-} from '../../places/application/ports/place.repository';
+import { PLACE_REPOSITORY, type PlaceRepository } from '../../places';
 
 @Injectable()
 export class AdminDeletePlaceUseCase {

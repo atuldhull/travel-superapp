@@ -9,10 +9,7 @@
  * Installed by prompt [POST.2A.4].
  */
 import { Inject, Injectable } from '@nestjs/common';
-import {
-  TRIP_PLANNER_PORT,
-  type TripPlannerPort,
-} from '../../trip/application/ports/trip-planner.port';
+import { TRIP_PLANNER_PORT, type TripPlannerPort } from '../../trip';
 import type {
   DraftReplanInput,
   DraftReplanResult,
