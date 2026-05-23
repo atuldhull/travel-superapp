@@ -19,8 +19,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { NotFoundError, ValidationError } from '@app/errors';
 import { GeoQueries } from '../../../common/db/geo-queries';
-import { SearchEventsUseCase } from '../../events/application/search-events.use-case';
-import type { EventListing } from '../../events/domain/event-listing.entity';
+import { SearchEventsUseCase, type EventListing } from '../../events';
 import { TRIP_REPOSITORY, type TripRepository } from './ports/trip.repository';
 
 const EVENTS_MAX_RADIUS_KM = 30;

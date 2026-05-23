@@ -21,8 +21,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { NotFoundError } from '@app/errors';
 import { GeoQueries } from '../../../common/db/geo-queries';
-import { GetForecastUseCase } from '../../weather/application/get-forecast.use-case';
-import type { WeatherForecast } from '../../weather/domain/weather-forecast.entity';
+import { GetForecastUseCase, type WeatherForecast } from '../../weather';
 import { TRIP_REPOSITORY, type TripRepository } from './ports/trip.repository';
 import { daysInclusive } from './generate-itinerary-stub.use-case';
 

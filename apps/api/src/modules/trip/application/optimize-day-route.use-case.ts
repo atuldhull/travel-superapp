@@ -29,8 +29,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { isDomainError, NotFoundError } from '@app/errors';
 import { GeoQueries } from '../../../common/db/geo-queries';
-import { GetRoutesUseCase } from '../../transport/application/get-routes.use-case';
-import type { RouteLeg } from '../../transport/domain/route-leg.entity';
+import { GetRoutesUseCase, type RouteLeg } from '../../transport';
 import type { ItineraryDay, ItineraryItem } from '../domain/itinerary.entity';
 import {
   ITINERARY_REPOSITORY,

@@ -11,3 +11,8 @@ export { StaysModule } from './stays.module';
 
 export * from './application/ports/stay-cache';
 export * from './application/ports/stay-provider';
+
+// Public composition surface — Trip orchestrates Stays into the
+// trip overview composite.
+export { SearchStaysUseCase } from './application/search-stays.use-case';
+export type { StayListing } from './domain/stay-listing.entity';

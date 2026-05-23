@@ -22,8 +22,11 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { NotFoundError } from '@app/errors';
-import { ADMIN_AUDIT_LOG_REPOSITORY, type AdminAuditLogRepository } from '../../admin';
-import { recordAdminAction } from '../../admin/application/record-admin-action.helper';
+import {
+  ADMIN_AUDIT_LOG_REPOSITORY,
+  recordAdminAction,
+  type AdminAuditLogRepository,
+} from '../../admin';
 import { MEDIA_ASSET_REPOSITORY, type MediaAssetRepository } from './ports/media-asset.repository';
 
 export interface AdminDeleteMediaCommand {

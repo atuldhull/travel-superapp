@@ -22,14 +22,10 @@
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { NotFoundError } from '@app/errors';
 import { GeoQueries } from '../../../common/db/geo-queries';
-import { SearchEventsUseCase } from '../../events/application/search-events.use-case';
-import type { EventListing } from '../../events/domain/event-listing.entity';
-import { SearchEateriesUseCase } from '../../food/application/search-eateries.use-case';
-import type { EateryListing } from '../../food/domain/eatery-listing.entity';
-import { SearchStaysUseCase } from '../../stays/application/search-stays.use-case';
-import type { StayListing } from '../../stays/domain/stay-listing.entity';
-import { GetForecastUseCase } from '../../weather/application/get-forecast.use-case';
-import type { WeatherForecast } from '../../weather/domain/weather-forecast.entity';
+import { SearchEventsUseCase, type EventListing } from '../../events';
+import { SearchEateriesUseCase, type EateryListing } from '../../food';
+import { SearchStaysUseCase, type StayListing } from '../../stays';
+import { GetForecastUseCase, type WeatherForecast } from '../../weather';
 import type { ItineraryDay } from '../domain/itinerary.entity';
 import type { Trip } from '../domain/trip.entity';
 import { daysInclusive } from './generate-itinerary-stub.use-case';

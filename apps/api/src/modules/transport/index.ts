@@ -13,3 +13,8 @@ export * from './application/ports/navigation-provider';
 export * from './application/ports/routing-cache';
 export * from './application/ports/routing-provider';
 export * from './application/ports/traffic-provider';
+
+// Public composition surface — Trip orchestrates Transport for
+// per-day routing legs + near-me-now route shaping.
+export { GetRoutesUseCase } from './application/get-routes.use-case';
+export type { RouteLeg } from './domain/route-leg.entity';

@@ -11,3 +11,8 @@ export { EventsModule } from './events.module';
 
 export * from './application/ports/event-cache';
 export * from './application/ports/event-provider';
+
+// Public composition surface — Trip orchestrates Events into the
+// trip overview composite.
+export { SearchEventsUseCase } from './application/search-events.use-case';
+export type { EventListing } from './domain/event-listing.entity';

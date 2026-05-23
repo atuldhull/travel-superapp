@@ -17,8 +17,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { NotFoundError } from '@app/errors';
 import { GeoQueries } from '../../../common/db/geo-queries';
-import { SearchEateriesUseCase } from '../../food/application/search-eateries.use-case';
-import type { EateryListing } from '../../food/domain/eatery-listing.entity';
+import { SearchEateriesUseCase, type EateryListing } from '../../food';
 import { TRIP_REPOSITORY, type TripRepository } from './ports/trip.repository';
 
 const EATERY_SEARCH_MAX_RADIUS_KM = 25;

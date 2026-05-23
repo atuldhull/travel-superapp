@@ -11,3 +11,8 @@ export { WeatherModule } from './weather.module';
 
 export * from './application/ports/weather-cache';
 export * from './application/ports/weather-provider';
+
+// Public composition surface — Trip orchestrates Weather into the
+// trip overview composite + the near-me-now nearby query.
+export { GetForecastUseCase } from './application/get-forecast.use-case';
+export type { WeatherForecast } from './domain/weather-forecast.entity';
