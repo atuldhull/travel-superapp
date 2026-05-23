@@ -77,21 +77,13 @@ module.exports = {
       name: 'no-cross-module-deep-import',
       comment:
         "Every module's public API is its `index.ts` barrel — it re-exports the NestJS module " +
-        'class plus every application port. Cross-module consumers MUST go through the barrel; ' +
-        "reaching into another module's domain/application/infrastructure/interface bypasses " +
-        "the contract. The barrel explicitly enumerates what's public; everything else is " +
-        'private implementation detail. Installed by [B2]; the `pathNot` allowlist below holds ' +
-        'the files that still deep-import while [B3]/[B4] burn them down; [B5] removes the ' +
-        'allowlist and the rule becomes uniformly strict.',
+        'class plus every application port plus whatever domain types / use-cases the module ' +
+        'has chosen to expose as its public surface. Cross-module consumers MUST go through ' +
+        "the barrel; reaching into another module's domain/application/infrastructure/interface " +
+        "bypasses the contract. The barrel explicitly enumerates what's public; everything " +
+        'else is private implementation detail. The rule runs strict — there is no allowlist.',
       severity: 'error',
-      from: {
-        path: '^src/modules/([^/]+)/',
-        // Burndown allowlist empty — every file in the codebase now
-        // depends on cross-module siblings only through their public
-        // `index.ts` barrel. [B5] removes this empty `pathNot` and
-        // the surrounding "burn-down" wording in the rule comment.
-        pathNot: [],
-      },
+      from: { path: '^src/modules/([^/]+)/' },
       to: {
         path: '^src/modules/[^/]+/',
         // Allowed cross-module targets: same-module (always) OR the
