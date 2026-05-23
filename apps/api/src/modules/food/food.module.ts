@@ -14,7 +14,7 @@
  * Installed by prompt [IV.18.7.1].
  */
 import { forwardRef, Module } from '@nestjs/common';
-import { TripModule } from '../trip';
+import { TripModule } from '../trip/trip.module';
 import { AddDishReportUseCase } from './application/add-dish-report.use-case';
 import { BuildFoodCrawlUseCase } from './application/build-food-crawl.use-case';
 import { ListDishesForEateryUseCase } from './application/list-dishes-for-eatery.use-case';

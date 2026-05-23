@@ -76,19 +76,27 @@ module.exports = {
     {
       name: 'no-cross-module-deep-import',
       comment:
-        "Every module's public API is its `index.ts` barrel — it re-exports the NestJS module " +
-        'class plus every application port plus whatever domain types / use-cases the module ' +
-        'has chosen to expose as its public surface. Cross-module consumers MUST go through ' +
-        "the barrel; reaching into another module's domain/application/infrastructure/interface " +
-        "bypasses the contract. The barrel explicitly enumerates what's public; everything " +
-        'else is private implementation detail. The rule runs strict — there is no allowlist.',
+        "Every module's public API is its `index.ts` barrel — it re-exports application ports " +
+        'plus whatever domain types / use-cases the module has chosen to expose. Cross-module ' +
+        "consumers MUST go through the barrel; reaching into another module's domain/application/" +
+        "infrastructure/interface bypasses the contract. ONE exception: a sibling module's NestJS " +
+        'composition root (`<m>.module.ts`) IS a sanctioned cross-module target — barrel re-exports ' +
+        'of the module class trigger a CJS partial-module cycle that bricks AppModule bootstrap ' +
+        'with "Cannot read properties of undefined (reading \'provide\')" ([C4]). The barrel ' +
+        're-exports CODE; the .module file IS the DI graph entry.',
       severity: 'error',
       from: { path: '^src/modules/([^/]+)/' },
       to: {
         path: '^src/modules/[^/]+/',
-        // Allowed cross-module targets: same-module (always) OR the
-        // public barrel (`<m>/index.ts`).
-        pathNot: ['^src/modules/$1/', '^src/modules/[^/]+/index\\.ts$'],
+        // Allowed cross-module targets:
+        //   - same-module (always)
+        //   - the public barrel (`<m>/index.ts`)
+        //   - the composition root (`<m>/<m>.module.ts`) — DI-only, [C4]
+        pathNot: [
+          '^src/modules/$1/',
+          '^src/modules/[^/]+/index\\.ts$',
+          '^src/modules/[^/]+/[^/]+\\.module\\.ts$',
+        ],
       },
     },
     {
