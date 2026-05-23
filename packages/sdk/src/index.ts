@@ -17,6 +17,36 @@
  */
 export { apiFetch, configureSdk, type ApiError } from './runtime/fetcher';
 
+// Plain (non-React) generated fetchers for the tags that the post-
+// 2.0 typed facade in `apps/web/src/lib/two-oh-api.ts` wraps: feed,
+// social-graph, diary, agent, transport, and the comments slice of
+// social. Surfacing the plain functions through the barrel lets the
+// facade route every call through generated SDK code instead of raw
+// `apiFetch` ([E2]). React Query hooks for these same tags are
+// re-exported further below.
+export * from './generated/plain/feed/feed';
+export * from './generated/plain/social-graph/social-graph';
+export * from './generated/plain/diary/diary';
+export * from './generated/plain/agent/agent';
+export * from './generated/plain/transport/transport';
+// Plain `social` can't be star-exported — it shares DTO names with the
+// already-star-exported react-query/social barrel. Re-export the
+// specific comment fetchers the facade needs by name.
+export {
+  commentsControllerCreate,
+  commentsControllerList,
+  commentsControllerRemove,
+} from './generated/plain/social/social';
+
+// Same shape for `notifications` (web-push-subscribe) and `trip`
+// (use-trip-center) — both barrels are react-query-exported above so
+// only the specific plain fetchers go via named export here.
+export {
+  pushSubscriptionsControllerSubscribe,
+  pushSubscriptionsControllerUnsubscribe,
+} from './generated/plain/notifications/notifications';
+export { tripControllerCenter } from './generated/plain/trip/trip';
+
 // React Query hooks per OpenAPI tag. Add tags here as the web/mobile
 // surface starts consuming them — this keeps the public API explicit
 // rather than star-exporting every generated symbol at once.

@@ -10,9 +10,17 @@
  * at runtime; absence skips subscription so dev without VAPID keys
  * Just Works for the rest of the inbox UI.
  *
+ * Routes through the orval-generated `pushSubscriptionsController*`
+ * functions ([E2]); both endpoints have proper `@ApiBody` decorators
+ * (V.UX.26 shipped them), so the typing is strong here — no cast at
+ * the boundary.
+ *
  * Installed by prompt [V.UX.26].
  */
-import { apiFetch } from '@app/sdk';
+import {
+  pushSubscriptionsControllerSubscribe,
+  pushSubscriptionsControllerUnsubscribe,
+} from '@app/sdk';
 
 export type WebPushSubscribeResult =
   | { kind: 'subscribed'; endpoint: string }
@@ -46,17 +54,10 @@ export async function ensureWebPushSubscription(): Promise<WebPushSubscribeResul
     if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) {
       return { kind: 'error', message: 'Subscription missing endpoint or keys' };
     }
-    await apiFetch<{ data: unknown; status: number; headers: Headers }>(
-      '/api/v1/notifications/push/subscribe',
-      {
-        method: 'POST',
-        body: JSON.stringify({
-          endpoint: json.endpoint,
-          keys: { p256dh: json.keys.p256dh, auth: json.keys.auth },
-        }),
-        headers: { 'content-type': 'application/json' },
-      },
-    );
+    await pushSubscriptionsControllerSubscribe({
+      endpoint: json.endpoint,
+      keys: { p256dh: json.keys.p256dh, auth: json.keys.auth },
+    });
     return { kind: 'subscribed', endpoint: json.endpoint };
   } catch (err) {
     return { kind: 'error', message: err instanceof Error ? err.message : String(err) };
@@ -73,14 +74,7 @@ export async function unsubscribeWebPush(): Promise<void> {
   const endpoint = sub.endpoint;
   await sub.unsubscribe();
   try {
-    await apiFetch<{ data: unknown; status: number; headers: Headers }>(
-      '/api/v1/notifications/push/subscribe',
-      {
-        method: 'DELETE',
-        body: JSON.stringify({ endpoint }),
-        headers: { 'content-type': 'application/json' },
-      },
-    );
+    await pushSubscriptionsControllerUnsubscribe({ endpoint });
   } catch {
     /* best-effort; the server-side row will be reaped on the next 410 */
   }
