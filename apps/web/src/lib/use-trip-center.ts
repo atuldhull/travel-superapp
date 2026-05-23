@@ -4,8 +4,10 @@
  *
  * Lifted out of `home/page.tsx` (Phase 2 polish F9) so any surface
  * that wants to seed the global assistant with `{ title, center }`
- * reads from a single helper. apiFetch-direct (no SDK regen — same
- * documented seam as the rest of the 2.0 surfaces).
+ * reads from a single helper. Routes through the orval-generated
+ * `tripControllerCenter` ([E2]); the response shape is cast at the
+ * boundary until ADR-015's `@ApiResponse` decorator rollout types
+ * the SDK return value.
  *
  * Honest scope: a fetch failure or invalid coords → null. The caller
  * decides what to render in that state (typically: hide the
@@ -14,7 +16,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { apiFetch } from '@app/sdk';
+import { tripControllerCenter } from '@app/sdk';
 
 export interface TripCenter {
   readonly lat: number;
@@ -32,13 +34,9 @@ export function useTripCenter(tripId: string | null | undefined): TripCenter | n
     let alive = true;
     void (async () => {
       try {
-        const res = await apiFetch<{
-          data: { lat: number; lng: number };
-          status: number;
-          headers: Headers;
-        }>(`/api/v1/trips/${tripId}/center`, { method: 'GET' });
+        const res = await tripControllerCenter(tripId);
         if (!alive) return;
-        const d = res.data;
+        const d = res.data as { lat?: unknown; lng?: unknown } | undefined;
         if (
           d &&
           typeof d.lat === 'number' &&
