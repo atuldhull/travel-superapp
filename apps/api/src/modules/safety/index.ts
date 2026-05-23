@@ -14,3 +14,7 @@ export * from './application/ports/contact-notifier.port';
 export * from './application/ports/crime-incident.repository';
 export * from './application/ports/scam-report.repository';
 export * from './application/ports/sos-event.repository';
+
+// Public event payload types — notifications handlers fan SOS
+// alerts out to trusted contacts. `makeSafetyEvent` stays private.
+export type { SosTriggeredEvent, SosTriggeredPayload } from './domain/safety.events';

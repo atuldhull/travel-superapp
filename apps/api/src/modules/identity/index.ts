@@ -22,3 +22,8 @@ export * from './application/ports/token.service';
 export * from './application/ports/totp.port';
 export * from './application/ports/user-oauth-identity.repository';
 export * from './application/ports/user.repository';
+
+// Public event payload types — notifications handlers read
+// SessionIssuedPayload off the bus to drive welcome / new-device
+// alerts. `makeSessionEvent` stays private to identity.
+export type { SessionIssuedEvent, SessionIssuedPayload } from './domain/session.events';

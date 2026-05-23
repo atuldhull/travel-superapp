@@ -20,7 +20,7 @@ import { Inject, Injectable, OnApplicationBootstrap, OnModuleDestroy } from '@ne
 import { EVENT_BUS, type EventBus, type Subscription } from '@app/events';
 import { createLogger } from '@app/logger';
 import { NOTIFICATION_SENDER, type NotificationSender } from '../ports/notification-sender';
-import type { SosTriggeredPayload } from '../../../safety/domain/safety.events';
+import type { SosTriggeredPayload } from '../../../safety';
 
 const log = createLogger('notifications.sos-triggered');
 

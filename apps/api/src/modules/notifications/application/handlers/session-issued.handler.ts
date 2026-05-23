@@ -21,7 +21,7 @@ import { Inject, Injectable, OnApplicationBootstrap, OnModuleDestroy } from '@ne
 import { EVENT_BUS, type EventBus, type Subscription } from '@app/events';
 import { createLogger } from '@app/logger';
 import { NOTIFICATION_SENDER, type NotificationSender } from '../ports/notification-sender';
-import type { SessionIssuedPayload } from '../../../identity/domain/session.events';
+import type { SessionIssuedPayload } from '../../../identity';
 
 const log = createLogger('notifications.session-issued');
 
