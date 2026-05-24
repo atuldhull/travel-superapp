@@ -30,6 +30,7 @@ import { AppModule } from '../src/app.module';
 import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { PrismaService } from '../src/common/db/prisma.service';
+import { registerUser as registerViaFactory, TEST_PASSWORD } from './factories';
 
 const TEST_PREFIX = 'account-delete-e2e';
 
@@ -70,6 +71,10 @@ describe('DELETE /account (integration, requires Docker Postgres)', () => {
     await moduleRef.close();
   });
 
+  // [I1] thin wrapper — delegates to the factory + adds the per-
+  // suite prefix so cleanup `where: startsWith(TEST_PREFIX)` still
+  // hits this suite's rows. The factory handles the Date.now()-free
+  // unique email + refresh cookie extraction once for every test.
   async function registerUser(suffix: string): Promise<{
     userId: string;
     accessToken: string;
@@ -77,26 +82,19 @@ describe('DELETE /account (integration, requires Docker Postgres)', () => {
     password: string;
     refreshCookie: string;
   }> {
-    const email = `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`;
-    const password = 'correct-horse-battery-staple';
-    const res = await app.inject({
-      method: 'POST',
-      url: '/api/v1/auth/register',
-      payload: { email, password, displayName: `${TEST_PREFIX}-${suffix}` },
-    });
-    expect(res.statusCode).toBe(201);
-    const body = JSON.parse(res.body) as { userId: string; accessToken: string };
-    const setCookies = res.headers['set-cookie'];
-    const cookie = Array.isArray(setCookies)
-      ? (setCookies.find((c) => c.startsWith('refresh_token=')) ?? '')
-      : typeof setCookies === 'string' && setCookies.startsWith('refresh_token=')
-        ? setCookies
-        : '';
-    expect(cookie).not.toBe('');
-    // Strip cookie attributes — tests need just `name=value`.
-    const refreshCookie = cookie.split(';')[0]!;
-    return { ...body, email, password, refreshCookie };
+    const u = await registerViaFactory(app, { prefix: TEST_PREFIX, hint: suffix });
+    return {
+      userId: u.userId,
+      accessToken: u.accessToken,
+      email: u.email,
+      password: u.password,
+      refreshCookie: u.refreshCookie,
+    };
   }
+
+  // Silences the unused-import warning until the test wants to
+  // assert the password directly.
+  void TEST_PASSWORD;
 
   it('DELETE /account without bearer → 401', async () => {
     if (!dbReachable) return;
