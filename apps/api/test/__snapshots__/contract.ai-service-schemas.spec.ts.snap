@@ -1,0 +1,24 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`contract — ai-service JSON Schemas inventory snapshot — every emitted schema is accounted for 1`] = `
+[
+  "crowd.CrowdDensity.schema.json",
+  "crowd.CrowdPredictFeatures.schema.json",
+  "crowd.CrowdPredictRequest.schema.json",
+  "crowd.CrowdPredictResponse.schema.json",
+  "embeddings.EmbeddingsPurpose.schema.json",
+  "embeddings.EmbeddingsRequest.schema.json",
+  "embeddings.EmbeddingsResponse.schema.json",
+  "fake-review.FakeReviewLabel.schema.json",
+  "fake-review.FakeReviewScoreInputReview.schema.json",
+  "fake-review.FakeReviewScoreRequest.schema.json",
+  "fake-review.FakeReviewScoreResponse.schema.json",
+  "fake-review.FakeReviewScoreResult.schema.json",
+  "health.AiServiceHealthResponse.schema.json",
+  "stt.STTChunk.schema.json",
+  "stt.STTPartial.schema.json",
+  "translate.TranslateDomain.schema.json",
+  "translate.TranslateRequest.schema.json",
+  "translate.TranslateResponse.schema.json",
+]
+`;
