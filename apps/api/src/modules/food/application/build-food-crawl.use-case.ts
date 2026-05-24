@@ -23,6 +23,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { NotFoundError, ValidationError } from '@app/errors';
 import { GeoQueries } from '../../../common/db/geo-queries';
+import { haversineMeters } from '../../../common/geo/haversine';
 import { TRIP_REPOSITORY, type TripRepository } from '../../trip';
 
 const WALKING_SPEED_MPS = 1.4;
@@ -143,20 +144,5 @@ function dedup(ids: readonly string[]): string[] {
   return out;
 }
 
-/**
- * Great-circle distance in metres between two WGS-84 points. Used
- * here for walking-distance estimation only — the canonical
- * geodesic is still PostGIS `ST_Distance(::geography)` for any
- * persisted measurement.
- */
-function haversineMeters(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
-  const R = 6_371_000;
-  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
-  const dLng = ((b.lng - a.lng) * Math.PI) / 180;
-  const lat1 = (a.lat * Math.PI) / 180;
-  const lat2 = (b.lat * Math.PI) / 180;
-  const sinDLat = Math.sin(dLat / 2);
-  const sinDLng = Math.sin(dLng / 2);
-  const h = sinDLat * sinDLat + Math.cos(lat1) * Math.cos(lat2) * sinDLng * sinDLng;
-  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
-}
+// [J2] haversine implementation lives in apps/api/src/common/geo/haversine.ts;
+// imported above to deduplicate with get-routes.use-case.ts.

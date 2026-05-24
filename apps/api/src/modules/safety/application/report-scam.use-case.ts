@@ -10,7 +10,7 @@
  * Installed by prompt [IV.18.11.1].
  */
 import { Inject, Injectable } from '@nestjs/common';
-import { ValidationError } from '@app/errors';
+import { assertValidCoordinates } from '../../../common/geo/haversine';
 import { ScamReport, type ScamSeverity } from '../domain/scam-report.entity';
 import { SCAM_REPORT_REPOSITORY, type ScamReportRepository } from './ports/scam-report.repository';
 
@@ -29,24 +29,9 @@ export class ReportScamUseCase {
   constructor(@Inject(SCAM_REPORT_REPOSITORY) private readonly reports: ScamReportRepository) {}
 
   async execute(cmd: ReportScamCommand): Promise<ScamReport> {
-    // Coordinate range stays here — it's a geo concern, not an entity
-    // field (PostGIS column is Unsupported on the domain interface).
-    if (!Number.isFinite(cmd.lat) || cmd.lat < -90 || cmd.lat > 90) {
-      throw new ValidationError(
-        'Latitude out of range',
-        { lat: ['must be between -90 and 90'] },
-        { lat: cmd.lat },
-        'INVALID_COORDINATES',
-      );
-    }
-    if (!Number.isFinite(cmd.lng) || cmd.lng < -180 || cmd.lng > 180) {
-      throw new ValidationError(
-        'Longitude out of range',
-        { lng: ['must be between -180 and 180'] },
-        { lng: cmd.lng },
-        'INVALID_COORDINATES',
-      );
-    }
+    // [J2] coordinate range guard lives in common/geo/haversine.ts;
+    // shared with trigger-sos + future geo callers.
+    assertValidCoordinates(cmd.lat, cmd.lng);
     // Domain-side invariants (S1-S5 — [G4.2]).
     const input = ScamReport.create({
       reporterId: cmd.reporterId,
