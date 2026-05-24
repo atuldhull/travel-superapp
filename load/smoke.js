@@ -40,18 +40,21 @@ export const options = {
     { duration: '30s', target: 0 }, // ramp down
   ],
   thresholds: {
-    // Global: 95th percentile under 500ms; <1% errors.
-    http_req_duration: ['p(95)<500'],
+    // Global: p95 + p99 + error rate. p99 is the gate the review
+    // explicitly called out — the tail latency that defines user-
+    // perceived speed for the 1% who hit the slowest path. p99 ≤
+    // 2× p95 is the operational expectation; if p99 spikes without
+    // p95 moving, it's a hot-shard / lock-contention smell.
+    http_req_duration: ['p(95)<500', 'p(99)<1000'],
     http_req_failed: ['rate<0.01'],
     // Health readiness must be near-perfect during a smoke.
     'http_req_failed{endpoint:health_ready}': ['rate<0.001'],
-    // Each individual endpoint's p95 — bumped a bit for the heavier
-    // /feed/public and /featured which hit Postgres + render JSON.
-    'http_req_duration{endpoint:health_live}': ['p(95)<50'],
-    'http_req_duration{endpoint:health_ready}': ['p(95)<150'],
-    'http_req_duration{endpoint:metrics}': ['p(95)<100'],
-    'http_req_duration{endpoint:featured}': ['p(95)<500'],
-    'http_req_duration{endpoint:feed_public}': ['p(95)<500'],
+    // Per-endpoint p95 + p99 budgets.
+    'http_req_duration{endpoint:health_live}': ['p(95)<50', 'p(99)<100'],
+    'http_req_duration{endpoint:health_ready}': ['p(95)<150', 'p(99)<300'],
+    'http_req_duration{endpoint:metrics}': ['p(95)<100', 'p(99)<200'],
+    'http_req_duration{endpoint:featured}': ['p(95)<500', 'p(99)<1000'],
+    'http_req_duration{endpoint:feed_public}': ['p(95)<500', 'p(99)<1000'],
   },
 };
 
