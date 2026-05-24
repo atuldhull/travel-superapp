@@ -11,7 +11,7 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { ValidationError } from '@app/errors';
-import type { ScamReport, ScamSeverity } from '../domain/scam-report.entity';
+import { ScamReport, type ScamSeverity } from '../domain/scam-report.entity';
 import { SCAM_REPORT_REPOSITORY, type ScamReportRepository } from './ports/scam-report.repository';
 
 export interface ReportScamCommand {
@@ -29,6 +29,8 @@ export class ReportScamUseCase {
   constructor(@Inject(SCAM_REPORT_REPOSITORY) private readonly reports: ScamReportRepository) {}
 
   async execute(cmd: ReportScamCommand): Promise<ScamReport> {
+    // Coordinate range stays here — it's a geo concern, not an entity
+    // field (PostGIS column is Unsupported on the domain interface).
     if (!Number.isFinite(cmd.lat) || cmd.lat < -90 || cmd.lat > 90) {
       throw new ValidationError(
         'Latitude out of range',
@@ -45,15 +47,23 @@ export class ReportScamUseCase {
         'INVALID_COORDINATES',
       );
     }
-
-    return this.reports.report({
+    // Domain-side invariants (S1-S5 — [G4.2]).
+    const input = ScamReport.create({
       reporterId: cmd.reporterId,
       category: cmd.category,
       severity: cmd.severity,
-      lat: cmd.lat,
-      lng: cmd.lng,
       description: cmd.description,
       ...(cmd.evidenceUrls ? { evidenceUrls: cmd.evidenceUrls } : {}),
+    });
+
+    return this.reports.report({
+      reporterId: input.reporterId,
+      category: input.category,
+      severity: input.severity,
+      lat: cmd.lat,
+      lng: cmd.lng,
+      description: input.description,
+      ...(input.evidenceUrls ? { evidenceUrls: input.evidenceUrls } : {}),
     });
   }
 }

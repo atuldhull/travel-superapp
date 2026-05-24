@@ -14,7 +14,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { SosEvent as PrismaSosEvent } from '@prisma/client';
 import { GeoQueries } from '../../../common/db/geo-queries';
 import { PrismaService } from '../../../common/db/prisma.service';
-import type { SosEvent } from '../domain/sos-event.entity';
+import { SosEvent } from '../domain/sos-event.entity';
 import type {
   AdminResolveSosInput,
   AdminSosListInput,
@@ -89,12 +89,12 @@ export class PrismaSosEventRepository implements SosEventRepository {
 }
 
 function toDomain(row: PrismaSosEvent): SosEvent {
-  return {
+  return SosEvent.fromPersistence({
     id: row.id,
     userId: row.userId,
     trigger: row.trigger,
     resolvedAt: row.resolvedAt,
     resolutionNote: row.resolutionNote,
     createdAt: row.createdAt,
-  };
+  });
 }
