@@ -261,25 +261,69 @@ describe('architecture fitness — cycle detection (madge)', () => {
   // walks the resolved TS/JS graph the same way Node would at run-
   // time, so it catches the same cycles esbuild / tsx would choke on.
   //
-  // We exclude `<m>.module.ts` files: NestJS module-graph cycles are
-  // the sanctioned `forwardRef()` pattern, the same exclusion the
-  // dep-cruiser `no-circular` rule applies via `viaNot`. Cycles whose
-  // path passes through any non-module file are still surfaced — that
-  // includes the payments dev-server incident that triggered this
-  // check in the first place.
+  // [G1]: we used to exclude `<m>.module.ts` wholesale (because Nest's
+  // `forwardRef()` is sanctioned), but that hid NEW module-class
+  // cycles. Posture is now an explicit allowlist: every forwardRef
+  // cycle in the tree must appear in `ALLOWED_FORWARD_REF_CYCLES`
+  // below (mirror copy in `apps/api/scripts/check-cycles.cjs`). A new
+  // cycle = a deliberate decision logged here, not an invisible
+  // default. A removed cycle = trim the allowlist in the same PR.
   //
   // Runtime: ~4-6s on the current api graph (660 files); cheaper
   // than the existing e2e suites, well within fitness-spec budget.
 
-  it('zero non-module cycles under apps/api/src', async () => {
-    const result = await madge(API_SRC, {
-      fileExtensions: ['ts'],
-      excludeRegExp: [/\.module\.ts$/],
-    });
+  /** Mirror of the script's allowlist. Each entry is a 2-cycle between
+   *  two `*.module.ts` files; the trio of trip↔X cycles below ship
+   *  with sanctioned `forwardRef(() => XModule)` calls. */
+  const ALLOWED_FORWARD_REF_CYCLES: ReadonlyArray<readonly [string, string]> = [
+    ['modules/food/food.module.ts', 'modules/trip/trip.module.ts'],
+    ['modules/media/media.module.ts', 'modules/trip/trip.module.ts'],
+    ['modules/safety/safety.module.ts', 'modules/trip/trip.module.ts'],
+  ];
+
+  /** Sort + join makes a stable key that works for any 2-cycle
+   *  regardless of which direction madge reports it in. None of the
+   *  sanctioned cycles are 3+ today; if one is ever added, switch to
+   *  rotation-based normalisation. */
+  function normalise(cycle: readonly string[]): string {
+    return [...cycle].sort().join(' ⇄ ');
+  }
+
+  it('every cycle under apps/api/src is on the sanctioned forwardRef allowlist', async () => {
+    const result = await madge(API_SRC, { fileExtensions: ['ts'] });
     const cycles = result.circular();
-    // Format each cycle as a single readable string so a failure
-    // message names every node on the cycle, not just a node-count.
-    const formatted = cycles.map((cycle: readonly string[]) => cycle.join(' -> '));
-    expect(formatted).toEqual([]);
+
+    const allowedKeys = new Set(ALLOWED_FORWARD_REF_CYCLES.map((c) => normalise(c)));
+    const unsanctioned = cycles
+      .filter((c: readonly string[]) => !allowedKeys.has(normalise(c)))
+      .map((c: readonly string[]) => c.join(' -> '));
+    expect(unsanctioned).toEqual([]);
   }, 30_000);
+
+  it('every allowlisted forwardRef cycle is still present (no stale entries)', async () => {
+    const result = await madge(API_SRC, { fileExtensions: ['ts'] });
+    const present = new Set(result.circular().map((c: readonly string[]) => normalise(c)));
+    const stale = ALLOWED_FORWARD_REF_CYCLES.map((c) => normalise(c)).filter(
+      (k) => !present.has(k),
+    );
+    expect(stale).toEqual([]);
+  }, 30_000);
+
+  it('normalise() is direction-agnostic for 2-cycles (smoke)', () => {
+    expect(normalise(['a.ts', 'b.ts'])).toBe(normalise(['b.ts', 'a.ts']));
+  });
+
+  it('an off-allowlist synthetic cycle would fail the gate (smoke)', () => {
+    const fakeCycles = [
+      ['modules/trip/trip.module.ts', 'modules/food/food.module.ts'], // allowed
+      ['modules/payments/payments.module.ts', 'modules/auth/auth.module.ts'], // NOT allowed
+    ];
+    const allowedKeys = new Set(ALLOWED_FORWARD_REF_CYCLES.map((c) => normalise(c)));
+    const unsanctioned = fakeCycles
+      .filter((c) => !allowedKeys.has(normalise(c)))
+      .map((c) => c.join(' -> '));
+    expect(unsanctioned).toEqual([
+      'modules/payments/payments.module.ts -> modules/auth/auth.module.ts',
+    ]);
+  });
 });
