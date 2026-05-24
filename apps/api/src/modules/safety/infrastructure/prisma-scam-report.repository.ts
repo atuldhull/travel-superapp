@@ -16,10 +16,10 @@ import {
   type ScamReportWithDistance as GeoScamWithDistance,
 } from '../../../common/db/geo-queries';
 import { PrismaService } from '../../../common/db/prisma.service';
-import type {
+import {
   ScamReport,
-  ScamReportWithDistance,
-  ScamSeverity,
+  type ScamReportWithDistance,
+  type ScamSeverity,
 } from '../domain/scam-report.entity';
 import type {
   FindNearbyScamsInput,
@@ -134,7 +134,7 @@ export class PrismaScamReportRepository implements ScamReportRepository {
 }
 
 function toDomain(row: PrismaScamReport): ScamReport {
-  return {
+  return ScamReport.fromPersistence({
     id: row.id,
     reporterId: row.reporterId,
     category: row.category,
@@ -144,12 +144,21 @@ function toDomain(row: PrismaScamReport): ScamReport {
     verified: row.verified,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
-  };
+  });
 }
 
 function toDomainWithDistance(row: GeoScamWithDistance): ScamReportWithDistance {
+  const domain = toDomain(row);
   return {
-    ...toDomain(row),
+    id: domain.id,
+    reporterId: domain.reporterId,
+    category: domain.category,
+    severity: domain.severity,
+    description: domain.description,
+    evidenceUrls: domain.evidenceUrls,
+    verified: domain.verified,
+    createdAt: domain.createdAt,
+    updatedAt: domain.updatedAt,
     distanceMeters: row.distanceMeters,
   };
 }
