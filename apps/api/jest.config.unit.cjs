@@ -36,11 +36,14 @@ module.exports = {
   testEnvironment: 'node',
   rootDir: '.',
   // Every entity-unit spec lives at test/<entity>-entity.unit.spec.ts;
-  // also include the trip-transitions pure-function spec which
-  // shares the same "no infra" posture.
+  // also include the trip-transitions pure-function spec, the
+  // [I1] factory smoke specs, and the [I2] property-based specs
+  // (`*-entity.property.spec.ts`) — all share the "no infra" posture.
   testMatch: [
     '<rootDir>/test/**/*-entity.unit.spec.ts',
+    '<rootDir>/test/**/*-entity.property.spec.ts',
     '<rootDir>/test/trip-transitions.unit.spec.ts',
+    '<rootDir>/test/factories.unit.spec.ts',
   ],
   setupFiles: ['<rootDir>/test/setup.ts'],
   collectCoverage: true,
