@@ -33,6 +33,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.91.1",
     "@app/auth": "workspace:*",
+    "@app/clock": "workspace:*",
     "@app/config": "workspace:*",
     "@app/errors": "workspace:*",
     "@app/events": "workspace:*",
