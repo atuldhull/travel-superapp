@@ -219,6 +219,50 @@ jobs:
           path: apps/api/coverage/unit
 
   # ──────────────────────────────────────────────────────────────
+  # Mutation testing ([H2]) — Stryker runs against the same 11
+  # domain entities the coverage gate covers. Catches the
+  # "line-executed-but-untested" gap that pure coverage misses.
+  # Gated at ≥80% mutation score (global); current run is 81.01%
+  # in ~5m35s. Reports lcov + html as artifacts so PR review can
+  # browse the killed/survived mutant list.
+  #
+  # Runs in its own job so a flaky mutation run doesn't gate the
+  # rest of the pipeline. Worth its own job because mutation
+  # testing is the strongest signal we have that the test suite
+  # is actually load-bearing.
+  # ──────────────────────────────────────────────────────────────
+  mutation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.3
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Stryker mutation gate
+        run: pnpm --filter=api mutate
+
+      - name: Upload mutation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-report
+          path: apps/api/reports/mutation
+
+  # ──────────────────────────────────────────────────────────────
   # Integration tests — boot Postgres + Redis + MinIO as GitHub
   # service containers, then run jest. Env values mirror
   # `phase-0-smoke.yml` so the same setup.ts works.
