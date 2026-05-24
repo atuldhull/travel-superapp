@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src test",
     "arch": "depcruise src --config .dependency-cruiser.cjs",
-    "cycles": "madge --circular --extensions ts --exclude \"\\.module\\.ts$\" src",
+    "cycles": "node scripts/check-cycles.cjs",
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
     "prisma": "prisma",
