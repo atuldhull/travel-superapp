@@ -57,7 +57,6 @@ describe('Scam search verifiedOnly filter (integration, requires Postgres)', () 
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
@@ -139,7 +138,6 @@ describe('Scam search verifiedOnly filter (integration, requires Postgres)', () 
   }
 
   it('default search (no verifiedOnly) returns BOTH verified + unverified reports', async () => {
-    if (!dbReachable) return;
     const reporter = await registerUser('both-reporter');
     const searcher = await registerUser('both-searcher');
     const unverifiedId = await submitReport(
@@ -166,7 +164,6 @@ describe('Scam search verifiedOnly filter (integration, requires Postgres)', () 
   });
 
   it('verifiedOnly=true restricts to admin-verified reports only', async () => {
-    if (!dbReachable) return;
     const reporter = await registerUser('filter-reporter');
     const searcher = await registerUser('filter-searcher');
     const unverifiedId = await submitReport(
@@ -194,7 +191,6 @@ describe('Scam search verifiedOnly filter (integration, requires Postgres)', () 
   });
 
   it('verifiedOnly=true with no verified reports in the area → empty list', async () => {
-    if (!dbReachable) return;
     const reporter = await registerUser('empty-reporter');
     const searcher = await registerUser('empty-searcher');
     await submitReport(reporter.accessToken, `${TEST_PREFIX}: only unverified here.`);
@@ -205,7 +201,6 @@ describe('Scam search verifiedOnly filter (integration, requires Postgres)', () 
   });
 
   it('verifiedOnly=false behaves like absent (returns both)', async () => {
-    if (!dbReachable) return;
     const reporter = await registerUser('false-reporter');
     const searcher = await registerUser('false-searcher');
     const unverifiedId = await submitReport(

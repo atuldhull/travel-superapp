@@ -61,7 +61,6 @@ describe('Social expenses (integration, requires Postgres)', () => {
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     // User cascade-deletes Trip + Expense + TripShare rows.
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
@@ -114,7 +113,6 @@ describe('Social expenses (integration, requires Postgres)', () => {
   }
 
   it('POST /trips/:tripId/expenses without a bearer → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/trips/some-trip/expenses',
@@ -128,7 +126,6 @@ describe('Social expenses (integration, requires Postgres)', () => {
   });
 
   it('owner records an expense; list + balances reflect the 2-way split', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('owner');
     const bob = await registerUser('collab');
     const tripId = await createTrip(alice.accessToken);
@@ -174,7 +171,6 @@ describe('Social expenses (integration, requires Postgres)', () => {
   });
 
   it('three-way unequal split produces exact balances', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('a3');
     const bob = await registerUser('b3');
     const carol = await registerUser('c3');
@@ -209,7 +205,6 @@ describe('Social expenses (integration, requires Postgres)', () => {
   });
 
   it('non-owner with no share → 404 (auth gate)', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('a-closed');
     const stranger = await registerUser('s-closed');
     const tripId = await createTrip(alice.accessToken);
@@ -230,7 +225,6 @@ describe('Social expenses (integration, requires Postgres)', () => {
   });
 
   it('non-payer cannot delete someone else’s expense → 404 EXPENSE_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('a-del');
     const bob = await registerUser('b-del');
     const tripId = await createTrip(alice.accessToken);
@@ -276,7 +270,6 @@ describe('Social expenses (integration, requires Postgres)', () => {
   });
 
   it('splitShare sum != 1.0 → 422 INVALID_SPLIT', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('badsum');
     const bob = await registerUser('badsum2');
     const tripId = await createTrip(alice.accessToken);
@@ -296,7 +289,6 @@ describe('Social expenses (integration, requires Postgres)', () => {
   });
 
   it('payer missing from splitShare → 422 INVALID_SPLIT', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('nopay');
     const bob = await registerUser('nopay2');
     const tripId = await createTrip(alice.accessToken);
@@ -317,7 +309,6 @@ describe('Social expenses (integration, requires Postgres)', () => {
   });
 
   it('invalid amount shape (letters) → 422 VALIDATION_FAILED or INVALID_AMOUNT', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('badamount');
     const tripId = await createTrip(alice.accessToken);
     const res = await app.inject({
@@ -336,7 +327,6 @@ describe('Social expenses (integration, requires Postgres)', () => {
   });
 
   it('multiple expenses accumulate into a single balance ledger', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('multi-a');
     const bob = await registerUser('multi-b');
     const tripId = await createTrip(alice.accessToken);

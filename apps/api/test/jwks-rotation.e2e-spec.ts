@@ -51,7 +51,6 @@ describe('JWKS rotation (integration, requires Postgres + Redis)', () => {
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
@@ -97,7 +96,6 @@ describe('JWKS rotation (integration, requires Postgres + Redis)', () => {
   }
 
   it('POST /admin/identity/jwks/rotate without a bearer → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/admin/identity/jwks/rotate',
@@ -108,7 +106,6 @@ describe('JWKS rotation (integration, requires Postgres + Redis)', () => {
   });
 
   it('non-admin bearer → 403 ROLE_FORBIDDEN', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('user');
     const res = await app.inject({
       method: 'POST',
@@ -121,7 +118,6 @@ describe('JWKS rotation (integration, requires Postgres + Redis)', () => {
   });
 
   it('admin rotates access ring → new kid issued; old kid retained in previous', async () => {
-    if (!dbReachable) return;
     const { userId, accessToken } = await registerUser('adminrotate');
     const kidBefore = kidOf(accessToken);
     await promoteToAdmin(userId);
@@ -192,7 +188,6 @@ describe('JWKS rotation (integration, requires Postgres + Redis)', () => {
   });
 
   it('tokens issued before rotation still verify after rotation (previous key retained)', async () => {
-    if (!dbReachable) return;
     // User registers → gets a token signed with the current kid.
     const alice = await registerUser('preroll');
     const preRollKid = kidOf(alice.accessToken);
@@ -235,7 +230,6 @@ describe('JWKS rotation (integration, requires Postgres + Redis)', () => {
   });
 
   it('tokens issued after rotation use the new kid', async () => {
-    if (!dbReachable) return;
     const adminEmail = `${TEST_PREFIX}-post-admin-${uniqueSuffix()}@example.com`;
     const adminReg = await app.inject({
       method: 'POST',
@@ -270,7 +264,6 @@ describe('JWKS rotation (integration, requires Postgres + Redis)', () => {
   });
 
   it('invalid ring → 422 INVALID_RING', async () => {
-    if (!dbReachable) return;
     const adminEmail = `${TEST_PREFIX}-bad-${uniqueSuffix()}@example.com`;
     const adminReg = await app.inject({
       method: 'POST',
@@ -300,7 +293,6 @@ describe('JWKS rotation (integration, requires Postgres + Redis)', () => {
   });
 
   it('GET /admin/identity/jwks/kids returns every kid in both rings', async () => {
-    if (!dbReachable) return;
     const adminEmail = `${TEST_PREFIX}-kids-${uniqueSuffix()}@example.com`;
     const adminReg = await app.inject({
       method: 'POST',

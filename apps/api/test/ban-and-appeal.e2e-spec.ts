@@ -59,7 +59,6 @@ describe('V.UX.34 ban + appeal (integration, requires Docker Postgres)', () => {
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.banAppeal.deleteMany({});
     await prisma.user.deleteMany({ where: { displayName: { startsWith: TEST_PREFIX } } });
   });
@@ -102,7 +101,6 @@ describe('V.UX.34 ban + appeal (integration, requires Docker Postgres)', () => {
   }
 
   it('Ban without reason → 422 VALIDATION_FAILED', async () => {
-    if (!dbReachable) return;
     const adminToken = await loginAsAdmin('no-reason');
     const target = await registerUser('no-reason-target');
     const res = await app.inject({
@@ -115,7 +113,6 @@ describe('V.UX.34 ban + appeal (integration, requires Docker Postgres)', () => {
   });
 
   it('Login on banned account → 401 ACCOUNT_BANNED with reason', async () => {
-    if (!dbReachable) return;
     const adminToken = await loginAsAdmin('login-ban');
     const target = await registerUser('login-target');
     const reason = 'Posted spam in trip reviews.';
@@ -141,7 +138,6 @@ describe('V.UX.34 ban + appeal (integration, requires Docker Postgres)', () => {
   });
 
   it('Appeal happy path → row created with status=pending', async () => {
-    if (!dbReachable) return;
     const adminToken = await loginAsAdmin('appeal-happy');
     const target = await registerUser('appeal-target');
     await app.inject({
@@ -165,7 +161,6 @@ describe('V.UX.34 ban + appeal (integration, requires Docker Postgres)', () => {
   });
 
   it('Appeal for unknown / non-banned email → 200, no row', async () => {
-    if (!dbReachable) return;
     const before = await prisma.banAppeal.count();
     const res = await app.inject({
       method: 'POST',
@@ -181,7 +176,6 @@ describe('V.UX.34 ban + appeal (integration, requires Docker Postgres)', () => {
   });
 
   it('Appeal: 4th submission within an hour → no new row (rate-limit)', async () => {
-    if (!dbReachable) return;
     const adminToken = await loginAsAdmin('appeal-rl');
     const target = await registerUser('appeal-rl-target');
     await app.inject({
@@ -217,7 +211,6 @@ describe('V.UX.34 ban + appeal (integration, requires Docker Postgres)', () => {
   });
 
   it('Admin GET /admin/users/appeals returns pending submissions', async () => {
-    if (!dbReachable) return;
     const adminToken = await loginAsAdmin('appeals-list');
     const target = await registerUser('appeal-listed');
     await app.inject({

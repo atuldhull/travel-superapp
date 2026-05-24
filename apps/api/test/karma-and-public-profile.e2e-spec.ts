@@ -72,7 +72,6 @@ describe('V.UX.25 karma + public profile (integration, requires Docker Postgres)
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.helpfulVote.deleteMany({
       where: { voter: { displayName: { startsWith: TEST_PREFIX } } },
     });
@@ -116,7 +115,6 @@ describe('V.UX.25 karma + public profile (integration, requires Docker Postgres)
   }
 
   it('POST /reviews/:id/helpful without bearer → 401 UNAUTHENTICATED', async () => {
-    if (!dbReachable) return;
     const author = await registerAndGetToken('a-anon');
     const reviewId = await seedReview(author.userId, 'anon');
     const res = await app.inject({
@@ -128,7 +126,6 @@ describe('V.UX.25 karma + public profile (integration, requires Docker Postgres)
   });
 
   it('Self helpful-vote → 403 HELPFUL_VOTE_SELF', async () => {
-    if (!dbReachable) return;
     const author = await registerAndGetToken('a-self');
     const reviewId = await seedReview(author.userId, 'self');
     const res = await app.inject({
@@ -141,7 +138,6 @@ describe('V.UX.25 karma + public profile (integration, requires Docker Postgres)
   });
 
   it('Happy-path helpful vote bumps author karma score by +2', async () => {
-    if (!dbReachable) return;
     const author = await registerAndGetToken('a-happy');
     const voter = await registerAndGetToken('v-happy');
     const reviewId = await seedReview(author.userId, 'happy');
@@ -171,7 +167,6 @@ describe('V.UX.25 karma + public profile (integration, requires Docker Postgres)
   });
 
   it('Re-vote returns outcome=duplicate + helpfulCount unchanged', async () => {
-    if (!dbReachable) return;
     const author = await registerAndGetToken('a-dup');
     const voter = await registerAndGetToken('v-dup');
     const reviewId = await seedReview(author.userId, 'dup');
@@ -195,7 +190,6 @@ describe('V.UX.25 karma + public profile (integration, requires Docker Postgres)
   });
 
   it('GET /users/:userId/profile is public + returns recent reviews', async () => {
-    if (!dbReachable) return;
     const author = await registerAndGetToken('a-pub');
     await seedReview(author.userId, 'pub-1');
     await seedReview(author.userId, 'pub-2');
@@ -214,7 +208,6 @@ describe('V.UX.25 karma + public profile (integration, requires Docker Postgres)
   });
 
   it('GET /users/:userId/profile on unknown userId → 404 USER_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'GET',
       url: '/api/v1/users/cl000nonexistent00user00/profile',

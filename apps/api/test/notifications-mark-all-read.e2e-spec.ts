@@ -48,7 +48,6 @@ describe('POST /notifications/read-all (integration, requires Docker Postgres)',
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
@@ -91,14 +90,12 @@ describe('POST /notifications/read-all (integration, requires Docker Postgres)',
   }
 
   it('POST /notifications/read-all without bearer → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({ method: 'POST', url: '/api/v1/notifications/read-all' });
     expect(res.statusCode).toBe(401);
     expect(JSON.parse(res.body).code).toBe('UNAUTHENTICATED');
   });
 
   it('happy path → marks every unread row; idempotent on a second call', async () => {
-    if (!dbReachable) return;
     const { userId, accessToken } = await registerUser('happy');
     // Registration mints 1 notification (session_issued). Add 3 more.
     await seedUnread(userId, 3);
@@ -129,7 +126,6 @@ describe('POST /notifications/read-all (integration, requires Docker Postgres)',
   });
 
   it('cross-user isolation: Bob’s read-all leaves Alice’s rows unread', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('alice');
     const bob = await registerUser('bob');
     await seedUnread(alice.userId, 5);
@@ -159,7 +155,6 @@ describe('POST /notifications/read-all (integration, requires Docker Postgres)',
   });
 
   it('empty inbox → 200 { marked: 0 } (NOT 404)', async () => {
-    if (!dbReachable) return;
     const { userId, accessToken } = await registerUser('empty');
     // Mark the registration-time row read first so the inbox has zero unread.
     await prisma.notificationLog.updateMany({

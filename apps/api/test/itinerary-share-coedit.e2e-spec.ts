@@ -57,7 +57,6 @@ describe('Itinerary share co-edit (integration, requires Docker Postgres)', () =
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
@@ -135,7 +134,6 @@ describe('Itinerary share co-edit (integration, requires Docker Postgres)', () =
   }
 
   it('owner can still PATCH their own day (regression)', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('owner-regress');
     const { tripId, dayId } = await createTripWithItinerary(alice.accessToken);
 
@@ -144,7 +142,6 @@ describe('Itinerary share co-edit (integration, requires Docker Postgres)', () =
   });
 
   it('non-owner with active share → 200 (collab edit allowed)', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('alice');
     const bob = await registerUser('bob');
     const { tripId, dayId } = await createTripWithItinerary(alice.accessToken);
@@ -158,7 +155,6 @@ describe('Itinerary share co-edit (integration, requires Docker Postgres)', () =
   });
 
   it('non-owner with NO active share → 404 TRIP_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('owner-noshare');
     const bob = await registerUser('stranger');
     const { tripId, dayId } = await createTripWithItinerary(alice.accessToken);
@@ -170,7 +166,6 @@ describe('Itinerary share co-edit (integration, requires Docker Postgres)', () =
   });
 
   it('cross-trip dayId leak defence: dayId belongs to a different trip → 404', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('alice-cross');
     const bob = await registerUser('bob-cross');
     // Alice creates two trips. trip A has a share (Bob can co-edit
@@ -187,7 +182,6 @@ describe('Itinerary share co-edit (integration, requires Docker Postgres)', () =
   });
 
   it('PATCH without bearer → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'PATCH',
       url: '/api/v1/trips/some-trip/itinerary/some-day',

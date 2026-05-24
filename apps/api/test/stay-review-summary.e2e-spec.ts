@@ -66,7 +66,6 @@ describe('GET /stays/:id/review-summary (integration, requires Docker Postgres)'
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
@@ -115,7 +114,6 @@ describe('GET /stays/:id/review-summary (integration, requires Docker Postgres)'
   }
 
   it('@Public(): no bearer + empty stay → all-zero shape; votes always zero', async () => {
-    if (!dbReachable) return;
     const stayId = `${TEST_PREFIX}-empty-${uniqueSuffix()}`;
     const { status, body } = await getSummary(stayId);
     expect(status).toBe(200);
@@ -130,7 +128,6 @@ describe('GET /stays/:id/review-summary (integration, requires Docker Postgres)'
   });
 
   it('stay with reviews → correct aggregates + recent; votes still zero', async () => {
-    if (!dbReachable) return;
     const stayId = `${TEST_PREFIX}-rich-${uniqueSuffix()}`;
     const a = await registerUser('a');
     const b = await registerUser('b');
@@ -156,7 +153,6 @@ describe('GET /stays/:id/review-summary (integration, requires Docker Postgres)'
   });
 
   it('cross-target isolation between stay A and stay B', async () => {
-    if (!dbReachable) return;
     const stayA = `${TEST_PREFIX}-A-${uniqueSuffix()}`;
     const stayB = `${TEST_PREFIX}-B-${uniqueSuffix()}`;
     const u = await registerUser('iso');
@@ -170,7 +166,6 @@ describe('GET /stays/:id/review-summary (integration, requires Docker Postgres)'
   });
 
   it('stay reviews do NOT leak into the place review summary (different targetType)', async () => {
-    if (!dbReachable) return;
     // Same opaque id used for both stayId and placeId — proves
     // the endpoints filter by targetType, not just targetId.
     const sharedId = `${TEST_PREFIX}-shared-${uniqueSuffix()}`;

@@ -61,7 +61,6 @@ describe('Social votes (integration, requires Postgres)', () => {
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.place.deleteMany({
       where: { sourceKey: { startsWith: TEST_PREFIX } },
     });
@@ -147,7 +146,6 @@ describe('Social votes (integration, requires Postgres)', () => {
   }
 
   it('POST /trips/:tripId/votes without a bearer → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/trips/some-trip/votes',
@@ -157,7 +155,6 @@ describe('Social votes (integration, requires Postgres)', () => {
   });
 
   it('owner can cast a vote; GET shows it with mine populated', async () => {
-    if (!dbReachable) return;
     const owner = await registerUser('owner');
     const { tripId, itemId } = await createTripWithItem(owner.accessToken);
 
@@ -186,7 +183,6 @@ describe('Social votes (integration, requires Postgres)', () => {
   });
 
   it('non-owner cannot vote on a trip that has no active share → 404', async () => {
-    if (!dbReachable) return;
     const owner = await registerUser('o-closed');
     const stranger = await registerUser('s-closed');
     const { tripId, itemId } = await createTripWithItem(owner.accessToken);
@@ -202,7 +198,6 @@ describe('Social votes (integration, requires Postgres)', () => {
   });
 
   it('non-owner CAN vote once the trip has an active share', async () => {
-    if (!dbReachable) return;
     const owner = await registerUser('o-open');
     const collaborator = await registerUser('collab');
     const { tripId, itemId } = await createTripWithItem(owner.accessToken);
@@ -241,7 +236,6 @@ describe('Social votes (integration, requires Postgres)', () => {
   });
 
   it('recasting a vote (upsert) replaces the value in place, not a new row', async () => {
-    if (!dbReachable) return;
     const owner = await registerUser('recast');
     const { tripId, itemId } = await createTripWithItem(owner.accessToken);
 
@@ -272,7 +266,6 @@ describe('Social votes (integration, requires Postgres)', () => {
   });
 
   it('DELETE removes the caller’s vote; subsequent GET no longer shows mine', async () => {
-    if (!dbReachable) return;
     const owner = await registerUser('revoke');
     const { tripId, itemId } = await createTripWithItem(owner.accessToken);
 
@@ -301,7 +294,6 @@ describe('Social votes (integration, requires Postgres)', () => {
   });
 
   it('DELETE a vote that never existed → 404 VOTE_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const owner = await registerUser('del-missing');
     const { tripId, itemId } = await createTripWithItem(owner.accessToken);
 
@@ -316,7 +308,6 @@ describe('Social votes (integration, requires Postgres)', () => {
   });
 
   it('revoking the trip share closes voting for non-owners', async () => {
-    if (!dbReachable) return;
     const owner = await registerUser('o-rev');
     const collaborator = await registerUser('c-rev');
     const { tripId, itemId } = await createTripWithItem(owner.accessToken);
@@ -350,7 +341,6 @@ describe('Social votes (integration, requires Postgres)', () => {
   });
 
   it('invalid value (e.g. 2) → 422 VALIDATION_FAILED', async () => {
-    if (!dbReachable) return;
     const owner = await registerUser('bad-value');
     const { tripId, itemId } = await createTripWithItem(owner.accessToken);
     const res = await app.inject({

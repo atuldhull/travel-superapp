@@ -69,7 +69,6 @@ describe('Adventure Diary (integration, requires Docker Postgres + Redis)', () =
   }
 
   it('without a bearer → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/diary/entries',
@@ -79,7 +78,6 @@ describe('Adventure Diary (integration, requires Docker Postgres + Redis)', () =
   });
 
   it('first entry → 55 pts, streak 1, First Steps badge', async () => {
-    if (!dbReachable) return;
     const tok = await token('first');
     const res = await app.inject({
       method: 'POST',
@@ -105,7 +103,6 @@ describe('Adventure Diary (integration, requires Docker Postgres + Redis)', () =
   });
 
   it('substantial + AI + trip-linked entry scores the full bonus', async () => {
-    if (!dbReachable) return;
     const tok = await token('full');
     const longBody = 'x'.repeat(300);
     const res = await app.inject({
@@ -121,7 +118,6 @@ describe('Adventure Diary (integration, requires Docker Postgres + Redis)', () =
   });
 
   it('lists entries newest-first + gamification view exposes the shelf', async () => {
-    if (!dbReachable) return;
     const tok = await token('list');
     await app.inject({
       method: 'POST',
@@ -155,7 +151,6 @@ describe('Adventure Diary (integration, requires Docker Postgres + Redis)', () =
   });
 
   it('AI assist: polish cleans prose, prompt yields 3 suggestions', async () => {
-    if (!dbReachable) return;
     const tok = await token('assist');
     const polish = await app.inject({
       method: 'POST',
@@ -183,7 +178,6 @@ describe('Adventure Diary (integration, requires Docker Postgres + Redis)', () =
   });
 
   it('polish without text → 422 DIARY_ASSIST_NEEDS_TEXT', async () => {
-    if (!dbReachable) return;
     const tok = await token('notext');
     const res = await app.inject({
       method: 'POST',
@@ -196,7 +190,6 @@ describe('Adventure Diary (integration, requires Docker Postgres + Redis)', () =
   });
 
   it('empty title → 422 validation', async () => {
-    if (!dbReachable) return;
     const tok = await token('badtitle');
     const res = await app.inject({
       method: 'POST',

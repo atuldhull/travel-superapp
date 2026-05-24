@@ -115,7 +115,6 @@ describe('V.UX.10 shared-trip public surfaces (integration)', () => {
   }
 
   it('clone — auth required; result owned by caller; deep-copies days', async () => {
-    if (!dbReachable) return;
     const { code } = await ownerCreatesShareableTrip();
     const recipient = await registerUser('recipient');
 
@@ -149,7 +148,6 @@ describe('V.UX.10 shared-trip public surfaces (integration)', () => {
   });
 
   it('clone — bad code → 404 SHARE_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const recipient = await registerUser('bad');
     const res = await app.inject({
       method: 'POST',
@@ -160,7 +158,6 @@ describe('V.UX.10 shared-trip public surfaces (integration)', () => {
   });
 
   it('heart — anonymous bumps counter; GET reflects', async () => {
-    if (!dbReachable) return;
     const { code, tripId } = await ownerCreatesShareableTrip();
 
     const initialGet = await app.inject({
@@ -189,7 +186,6 @@ describe('V.UX.10 shared-trip public surfaces (integration)', () => {
   });
 
   it('heart — bad code → 404', async () => {
-    if (!dbReachable) return;
     const heart = await app.inject({
       method: 'POST',
       url: '/api/v1/trips/shared/totally-fake/heart',

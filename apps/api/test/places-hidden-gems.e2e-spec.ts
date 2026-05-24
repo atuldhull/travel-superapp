@@ -79,7 +79,6 @@ describe('POST /places/hidden-gems (integration, requires Docker Postgres)', () 
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.review.deleteMany({
       where: { body: { startsWith: TEST_PREFIX } },
     });
@@ -157,7 +156,6 @@ describe('POST /places/hidden-gems (integration, requires Docker Postgres)', () 
   }
 
   it('POST without bearer → 401 UNAUTHENTICATED', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/places/hidden-gems',
@@ -168,7 +166,6 @@ describe('POST /places/hidden-gems (integration, requires Docker Postgres)', () 
   });
 
   it('radiusKm > 300 → 422 INVALID_RADIUS', async () => {
-    if (!dbReachable) return;
     const token = await registerAndGetToken('over');
     const res = await app.inject({
       method: 'POST',
@@ -181,7 +178,6 @@ describe('POST /places/hidden-gems (integration, requires Docker Postgres)', () 
   });
 
   it('empty area returns 200 with empty list', async () => {
-    if (!dbReachable) return;
     const token = await registerAndGetToken('empty');
     const res = await app.inject({
       method: 'POST',
@@ -195,8 +191,6 @@ describe('POST /places/hidden-gems (integration, requires Docker Postgres)', () 
   });
 
   it('filters places to the gem zone (5..50 reviews) and sorts by avg rating desc', async () => {
-    if (!dbReachable) return;
-
     const placeA = await seedPlace('A-zero');
     const placeB = await seedPlace('B-below');
     const placeC = await seedPlace('C-top');
@@ -245,8 +239,6 @@ describe('POST /places/hidden-gems (integration, requires Docker Postgres)', () 
   });
 
   it('limit clamps the result count', async () => {
-    if (!dbReachable) return;
-
     const placeA = await seedPlace('A-lim');
     const placeB = await seedPlace('B-lim');
     await seedReviews(placeA, [5, 5, 5, 5, 5, 5, 5]);

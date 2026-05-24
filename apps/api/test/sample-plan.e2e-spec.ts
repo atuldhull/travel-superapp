@@ -88,7 +88,6 @@ describe('Trip × sample-plan (public, integration)', () => {
   };
 
   it('200 with no auth + threads body into the planner port', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/trips/sample-plan',
@@ -111,7 +110,6 @@ describe('Trip × sample-plan (public, integration)', () => {
   });
 
   it('threads optional instruction + priorPlan into the planner port (refine path)', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/trips/sample-plan',
@@ -129,7 +127,6 @@ describe('Trip × sample-plan (public, integration)', () => {
   });
 
   it('422 INVALID_INPUT on missing center', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/trips/sample-plan',
@@ -141,7 +138,6 @@ describe('Trip × sample-plan (public, integration)', () => {
   });
 
   it('422 INVALID_INPUT on radiusKm > 200', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/trips/sample-plan',
@@ -153,7 +149,6 @@ describe('Trip × sample-plan (public, integration)', () => {
   });
 
   it('422 INVALID_INPUT on instruction > 400 chars', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/trips/sample-plan',

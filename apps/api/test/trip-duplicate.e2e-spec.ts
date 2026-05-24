@@ -102,7 +102,6 @@ describe('Trip duplicate (integration, requires Docker Postgres + Redis)', () =>
   }
 
   it('duplicates title (+ " (copy)"), radius, dates as a fresh draft', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('basic');
     const original = await createTrip(accessToken, {
       title: 'Q3 Bangalore offsite',
@@ -129,7 +128,6 @@ describe('Trip duplicate (integration, requires Docker Postgres + Redis)', () =>
   });
 
   it('deep-copies itinerary days + items', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('itin');
     const original = await createTrip(accessToken, {
       startsOn: '2026-09-01T00:00:00.000Z',
@@ -164,7 +162,6 @@ describe('Trip duplicate (integration, requires Docker Postgres + Redis)', () =>
   });
 
   it('non-owner → 404 TRIP_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('alice');
     const bob = await registerUser('bob');
     const original = await createTrip(alice.accessToken);
@@ -180,7 +177,6 @@ describe('Trip duplicate (integration, requires Docker Postgres + Redis)', () =>
   });
 
   it('unauthenticated → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/trips/whatever/duplicate',
@@ -190,7 +186,6 @@ describe('Trip duplicate (integration, requires Docker Postgres + Redis)', () =>
   });
 
   it('duplicate of dateless trip works (no itinerary)', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('dateless');
     const original = await createTrip(accessToken);
 

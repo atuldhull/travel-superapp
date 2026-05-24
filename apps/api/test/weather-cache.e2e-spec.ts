@@ -157,7 +157,6 @@ describe('Weather cache (integration, requires Docker Postgres + Redis)', () => 
   }
 
   it('identical requests hit the cache on the 2nd call — upstream called once', async () => {
-    if (!dbReachable) return;
     const tok = await token('hit');
     // Suite-local coord unique to this test.
     const lat = 41.234;
@@ -173,7 +172,6 @@ describe('Weather cache (integration, requires Docker Postgres + Redis)', () => 
   });
 
   it('different coords → independent cache entries (upstream called twice)', async () => {
-    if (!dbReachable) return;
     const tok = await token('coords');
     // Two remote, pairwise-unique coords.
     await fetchForecast(tok, 42.345, 65.678, 3);
@@ -182,7 +180,6 @@ describe('Weather cache (integration, requires Docker Postgres + Redis)', () => 
   });
 
   it('different days → independent cache entries (upstream called twice)', async () => {
-    if (!dbReachable) return;
     const tok = await token('days');
     const lat = 39.876;
     const lng = -62.543;
@@ -192,7 +189,6 @@ describe('Weather cache (integration, requires Docker Postgres + Redis)', () => 
   });
 
   it('coords within ~110m collapse onto the same cache entry (3-decimal precision)', async () => {
-    if (!dbReachable) return;
     const tok = await token('precision');
     // lat.toFixed(3) treats these as the same key.
     await fetchForecast(tok, 38.1234, 54.4321, 4);

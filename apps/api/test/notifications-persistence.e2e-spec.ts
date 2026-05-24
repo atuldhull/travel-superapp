@@ -56,7 +56,6 @@ describe('Notifications persistence + GET /notifications/me (integration)', () =
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     sender.drainSent();
     // User cascade-deletes NotificationLog rows.
     await prisma.user.deleteMany({
@@ -86,14 +85,12 @@ describe('Notifications persistence + GET /notifications/me (integration)', () =
   }
 
   it('GET /notifications/me without a bearer → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({ method: 'GET', url: '/api/v1/notifications/me' });
     expect(res.statusCode).toBe(401);
     expect(JSON.parse(res.body).code).toBe('UNAUTHENTICATED');
   });
 
   it('register triggers Identity.SessionIssued → row appears in NotificationLog + GET /me', async () => {
-    if (!dbReachable) return;
     const { userId, accessToken } = await registerUser('reg');
 
     const list = await app.inject({
@@ -119,7 +116,6 @@ describe('Notifications persistence + GET /notifications/me (integration)', () =
   });
 
   it('POST /safety/sos triggers Safety.SosTriggered → SosTriggeredHandler → push row', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('sos');
 
     const triggered = await app.inject({
@@ -152,7 +148,6 @@ describe('Notifications persistence + GET /notifications/me (integration)', () =
   });
 
   it('GET /notifications/me returns only my own rows (no cross-user leak)', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('alice');
     const bob = await registerUser('bob');
 
@@ -185,7 +180,6 @@ describe('Notifications persistence + GET /notifications/me (integration)', () =
   });
 
   it('limit query param caps results', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('limit');
 
     // Trigger 3 SOS events.

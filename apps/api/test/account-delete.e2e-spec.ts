@@ -60,7 +60,6 @@ describe('DELETE /account (integration, requires Docker Postgres)', () => {
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
@@ -97,14 +96,12 @@ describe('DELETE /account (integration, requires Docker Postgres)', () => {
   void TEST_PASSWORD;
 
   it('DELETE /account without bearer → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({ method: 'DELETE', url: '/api/v1/account' });
     expect(res.statusCode).toBe(401);
     expect(JSON.parse(res.body).code).toBe('UNAUTHENTICATED');
   });
 
   it('happy path → 204; User.deletedAt set; live sessions revoked', async () => {
-    if (!dbReachable) return;
     const { userId, accessToken } = await registerUser('happy');
 
     // Sanity — user exists and has at least one live session.
@@ -132,7 +129,6 @@ describe('DELETE /account (integration, requires Docker Postgres)', () => {
   });
 
   it('after delete → login with same credentials → 401 ACCOUNT_DELETION_PENDING (V.UX.33)', async () => {
-    if (!dbReachable) return;
     const { accessToken, email, password } = await registerUser('login-after');
 
     await app.inject({
@@ -160,7 +156,6 @@ describe('DELETE /account (integration, requires Docker Postgres)', () => {
   });
 
   it('after delete → /refresh fails (session revoked)', async () => {
-    if (!dbReachable) return;
     const { accessToken, refreshCookie } = await registerUser('refresh-after');
 
     await app.inject({
@@ -183,7 +178,6 @@ describe('DELETE /account (integration, requires Docker Postgres)', () => {
   });
 
   it('cross-user isolation: Alice’s delete leaves Bob untouched', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('alice');
     const bob = await registerUser('bob');
 
@@ -213,7 +207,6 @@ describe('DELETE /account (integration, requires Docker Postgres)', () => {
   });
 
   it('idempotent guard: a second delete with the same (still-valid) access token → 404', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('idem');
 
     const first = await app.inject({

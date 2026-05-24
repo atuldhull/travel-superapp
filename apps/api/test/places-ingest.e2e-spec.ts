@@ -136,7 +136,6 @@ describe('Places federated ingest write-through (integration, requires Postgres 
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
@@ -165,7 +164,6 @@ describe('Places federated ingest write-through (integration, requires Postgres 
   }
 
   it('ingest=true persists rows + returns canonical placeId per result', async () => {
-    if (!dbReachable) return;
     const tok = await token('ingest');
     const res = await app.inject({
       method: 'POST',
@@ -198,7 +196,6 @@ describe('Places federated ingest write-through (integration, requires Postgres 
   });
 
   it('repeat ingest is idempotent — no duplicate rows, created=false on second pass', async () => {
-    if (!dbReachable) return;
     const tok = await token('idem');
     const payload = {
       center: ANCHOR,
@@ -240,7 +237,6 @@ describe('Places federated ingest write-through (integration, requires Postgres 
   });
 
   it('default (no ingest flag) does NOT write through — DB row count stays 0', async () => {
-    if (!dbReachable) return;
     const tok = await token('readonly');
     const res = await app.inject({
       method: 'POST',
@@ -264,7 +260,6 @@ describe('Places federated ingest write-through (integration, requires Postgres 
   });
 
   it('ingested rows are findable via POST /places/search (canonical catalog read)', async () => {
-    if (!dbReachable) return;
     const tok = await token('roundtrip');
 
     // 1) Federated ingest.
@@ -295,7 +290,6 @@ describe('Places federated ingest write-through (integration, requires Postgres 
   });
 
   it('ingest with category filter only persists matching results', async () => {
-    if (!dbReachable) return;
     const tok = await token('catfilter');
     const res = await app.inject({
       method: 'POST',

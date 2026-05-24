@@ -51,7 +51,6 @@ describe('DELETE /notifications/:id (integration, requires Docker Postgres)', ()
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
@@ -88,7 +87,6 @@ describe('DELETE /notifications/:id (integration, requires Docker Postgres)', ()
   }
 
   it('DELETE without bearer → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'DELETE',
       url: '/api/v1/notifications/some-id',
@@ -97,7 +95,6 @@ describe('DELETE /notifications/:id (integration, requires Docker Postgres)', ()
   });
 
   it('owner delete → 204; row is gone from list', async () => {
-    if (!dbReachable) return;
     const u = await registerUser('owner');
     const rows = await listMine(u.accessToken);
     expect(rows.length).toBeGreaterThanOrEqual(1);
@@ -115,7 +112,6 @@ describe('DELETE /notifications/:id (integration, requires Docker Postgres)', ()
   });
 
   it('cross-user delete → 404 NOTIFICATION_NOT_FOUND (IDOR-safe)', async () => {
-    if (!dbReachable) return;
     const owner = await registerUser('victim');
     const attacker = await registerUser('attacker');
 
@@ -137,7 +133,6 @@ describe('DELETE /notifications/:id (integration, requires Docker Postgres)', ()
   });
 
   it('unknown id → 404 NOTIFICATION_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const u = await registerUser('missing');
     const del = await app.inject({
       method: 'DELETE',

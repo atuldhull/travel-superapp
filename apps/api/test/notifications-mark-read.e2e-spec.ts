@@ -46,7 +46,6 @@ describe('POST /notifications/:id/read (integration, requires Docker Postgres)',
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
@@ -92,7 +91,6 @@ describe('POST /notifications/:id/read (integration, requires Docker Postgres)',
   }
 
   it('POST /notifications/:id/read without a bearer → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/notifications/some-id/read',
@@ -102,7 +100,6 @@ describe('POST /notifications/:id/read (integration, requires Docker Postgres)',
   });
 
   it('happy path → flips read=true; subsequent GET /me reflects it', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('happy');
     const id = await sessionIssuedNotificationId(accessToken);
 
@@ -129,7 +126,6 @@ describe('POST /notifications/:id/read (integration, requires Docker Postgres)',
   });
 
   it('unknown id → 404 NOTIFICATION_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('missing');
     const res = await app.inject({
       method: 'POST',
@@ -141,7 +137,6 @@ describe('POST /notifications/:id/read (integration, requires Docker Postgres)',
   });
 
   it('cross-user: Bob marks Alice’s → 404 NOTIFICATION_NOT_FOUND (IDOR defence)', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('alice');
     const bob = await registerUser('bob');
     const aliceId = await sessionIssuedNotificationId(alice.accessToken);
@@ -167,7 +162,6 @@ describe('POST /notifications/:id/read (integration, requires Docker Postgres)',
   });
 
   it('idempotent: a second mark-read call still returns 200 + read=true', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('idem');
     const id = await sessionIssuedNotificationId(accessToken);
 

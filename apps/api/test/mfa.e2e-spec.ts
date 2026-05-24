@@ -57,7 +57,6 @@ describe('MFA lifecycle (integration, requires Docker Postgres)', () => {
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
@@ -90,7 +89,6 @@ describe('MFA lifecycle (integration, requires Docker Postgres)', () => {
   }
 
   it('full enrollment: setup → verify → enabled; login without code → MFA_REQUIRED; with code → 200', async () => {
-    if (!dbReachable) return;
     const { email, password, userId, accessToken } = await registerUser('enrol');
 
     // 1. Setup issues a secret.
@@ -159,7 +157,6 @@ describe('MFA lifecycle (integration, requires Docker Postgres)', () => {
   });
 
   it('disable: wrong code rejected; correct code clears mfaEnabled', async () => {
-    if (!dbReachable) return;
     const { userId, accessToken } = await registerUser('disable');
 
     // Enroll.
@@ -202,7 +199,6 @@ describe('MFA lifecycle (integration, requires Docker Postgres)', () => {
   });
 
   it('setup is rejected when MFA already enabled', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('already-on');
 
     const setup1 = await app.inject({
@@ -228,7 +224,6 @@ describe('MFA lifecycle (integration, requires Docker Postgres)', () => {
   });
 
   it('mfa endpoints require authentication (401 without bearer)', async () => {
-    if (!dbReachable) return;
     const setup = await app.inject({ method: 'POST', url: '/api/v1/auth/mfa/setup' });
     expect(setup.statusCode).toBe(401);
 

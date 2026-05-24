@@ -64,7 +64,6 @@ describe('GET /votes/summary (integration, requires Docker Postgres)', () => {
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     // User cascade-deletes Trip + Vote rows.
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
@@ -136,7 +135,6 @@ describe('GET /votes/summary (integration, requires Docker Postgres)', () => {
   }
 
   it('empty target → 200 with all zeros (NOT 404)', async () => {
-    if (!dbReachable) return;
     const targetId = `${TEST_PREFIX}-empty-${uniqueSuffix()}`;
     const { status, body } = await getSummary(targetId);
     expect(status).toBe(200);
@@ -153,7 +151,6 @@ describe('GET /votes/summary (integration, requires Docker Postgres)', () => {
   });
 
   it('mix of +1/0/-1 votes → correct up/meh/down/score', async () => {
-    if (!dbReachable) return;
     const targetId = `${TEST_PREFIX}-rich-${uniqueSuffix()}`;
     const a = await registerUser('a');
     const b = await registerUser('b');
@@ -182,7 +179,6 @@ describe('GET /votes/summary (integration, requires Docker Postgres)', () => {
   });
 
   it('cross-target isolation: A’s votes don’t affect B’s summary', async () => {
-    if (!dbReachable) return;
     const targetA = `${TEST_PREFIX}-A-${uniqueSuffix()}`;
     const targetB = `${TEST_PREFIX}-B-${uniqueSuffix()}`;
     const u = await registerUser('iso');
@@ -199,14 +195,12 @@ describe('GET /votes/summary (integration, requires Docker Postgres)', () => {
   });
 
   it('missing query params → 400 VALIDATION_FAILED', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({ method: 'GET', url: '/api/v1/votes/summary' });
     expect(res.statusCode).toBe(400);
     expect(JSON.parse(res.body).code).toBe('VALIDATION_FAILED');
   });
 
   it('unknown targetType → 400 VALIDATION_FAILED', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'GET',
       url: '/api/v1/votes/summary?targetType=bogus&targetId=x',
@@ -216,7 +210,6 @@ describe('GET /votes/summary (integration, requires Docker Postgres)', () => {
   });
 
   it('@Public(): no bearer required', async () => {
-    if (!dbReachable) return;
     const targetId = `${TEST_PREFIX}-public-${uniqueSuffix()}`;
     const res = await app.inject({
       method: 'GET',

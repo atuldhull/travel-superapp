@@ -56,7 +56,6 @@ describe('GET /feed/trips/:tripId/buddies (integration, requires Docker Postgres
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({ where: { displayName: { startsWith: TEST_PREFIX } } });
   });
 
@@ -122,13 +121,11 @@ describe('GET /feed/trips/:tripId/buddies (integration, requires Docker Postgres
   }
 
   it('no bearer → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({ method: 'GET', url: '/api/v1/feed/trips/x/buddies' });
     expect(res.statusCode).toBe(401);
   });
 
   it('non-owner source trip → 404 TRIP_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const owner = await registerUser('owner');
     const stranger = await registerUser('stranger');
     const tripId = await createTrip(owner.accessToken, NEAR);
@@ -142,7 +139,6 @@ describe('GET /feed/trips/:tripId/buddies (integration, requires Docker Postgres
   });
 
   it('matches a nearby PUBLIC trip, skips a far one', async () => {
-    if (!dbReachable) return;
     const me = await registerUser('me');
     const neighbour = await registerUser('neighbour');
     const distant = await registerUser('distant');
@@ -158,7 +154,6 @@ describe('GET /feed/trips/:tripId/buddies (integration, requires Docker Postgres
   });
 
   it('does not match a FOLLOWERS-only nearby trip', async () => {
-    if (!dbReachable) return;
     const me = await registerUser('me2');
     const neighbour = await registerUser('neighbour2');
 

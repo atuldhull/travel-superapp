@@ -155,7 +155,6 @@ describe('Trip × Eateries (integration, requires Docker Postgres + Redis)', () 
   }
 
   it('GET /trips/:id/eateries passes trip.center + trip.radiusKm to the provider', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('ok');
     const trip = await createTrip(accessToken);
 
@@ -178,7 +177,6 @@ describe('Trip × Eateries (integration, requires Docker Postgres + Redis)', () 
   });
 
   it('query filters (?cuisineTag + ?maxPriceTier) flow through to the provider', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('filters');
     const trip = await createTrip(accessToken);
 
@@ -192,7 +190,6 @@ describe('Trip × Eateries (integration, requires Docker Postgres + Redis)', () 
   });
 
   it('trip.radiusKm > 25 is clamped to 25 at the provider call', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('clamp');
     const trip = await createTrip(accessToken, { radiusKm: 250 });
 
@@ -205,7 +202,6 @@ describe('Trip × Eateries (integration, requires Docker Postgres + Redis)', () 
   });
 
   it('trip without dates still works (dates are NOT required for eatery search)', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('no-dates');
     const trip = await createTrip(accessToken); // no dates
 
@@ -224,7 +220,6 @@ describe('Trip × Eateries (integration, requires Docker Postgres + Redis)', () 
   });
 
   it('non-owner → 404 TRIP_NOT_FOUND (provider never invoked)', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('alice');
     const bob = await registerUser('bob');
     const trip = await createTrip(alice.accessToken);
@@ -240,7 +235,6 @@ describe('Trip × Eateries (integration, requires Docker Postgres + Redis)', () 
   });
 
   it('unauthenticated → 401 UNAUTHENTICATED', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'GET',
       url: '/api/v1/trips/whatever/eateries',

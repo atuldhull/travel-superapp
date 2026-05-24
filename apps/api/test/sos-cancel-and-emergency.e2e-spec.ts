@@ -54,7 +54,6 @@ describe('V.UX.35 SOS cancel + emergency numbers (integration, requires Docker P
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.sosEvent.deleteMany({
       where: { user: { displayName: { startsWith: TEST_PREFIX } } },
     });
@@ -92,7 +91,6 @@ describe('V.UX.35 SOS cancel + emergency numbers (integration, requires Docker P
   }
 
   it('Cancel happy path → 200 + cancelled_by_user note', async () => {
-    if (!dbReachable) return;
     const u = await registerUser('cancel');
     const id = await trigger(u.accessToken);
     const res = await app.inject({
@@ -106,7 +104,6 @@ describe('V.UX.35 SOS cancel + emergency numbers (integration, requires Docker P
   });
 
   it('Cross-user cancel → 404 SOS_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const owner = await registerUser('owner');
     const stranger = await registerUser('stranger');
     const id = await trigger(owner.accessToken);
@@ -120,7 +117,6 @@ describe('V.UX.35 SOS cancel + emergency numbers (integration, requires Docker P
   });
 
   it('Re-cancel after resolved → 404 SOS_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const u = await registerUser('replay');
     const id = await trigger(u.accessToken);
     const first = await app.inject({
@@ -142,7 +138,6 @@ describe('V.UX.35 SOS cancel + emergency numbers (integration, requires Docker P
     // app still needs to have BOOTED — a down Postgres makes
     // `app.init()` unhealthy and every request 500s. Guard like the
     // SOS tests above so an infra outage SKIPS rather than false-fails.
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'GET',
       url: '/api/v1/safety/emergency-numbers/US',
@@ -154,14 +149,12 @@ describe('V.UX.35 SOS cancel + emergency numbers (integration, requires Docker P
   });
 
   it('Public emergency lookup: case-insensitive (gb → GB)', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({ method: 'GET', url: '/api/v1/safety/emergency-numbers/gb' });
     expect(res.statusCode).toBe(200);
     expect((JSON.parse(res.body) as { countryCode: string }).countryCode).toBe('GB');
   });
 
   it('Unknown country → 404 EMERGENCY_INFO_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({ method: 'GET', url: '/api/v1/safety/emergency-numbers/ZZ' });
     expect(res.statusCode).toBe(404);
     expect(JSON.parse(res.body).code).toBe('EMERGENCY_INFO_NOT_FOUND');

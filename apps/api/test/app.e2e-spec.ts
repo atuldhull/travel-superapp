@@ -51,7 +51,6 @@ describe('apps/api bootstrap (e2e)', () => {
 
   describe('GET /health/live (bare, outside /api/v1 prefix)', () => {
     it('returns 200 and the expected shape', async () => {
-      if (!dbReachable) return;
       const res = await app.inject({ method: 'GET', url: '/health/live' });
       expect(res.statusCode).toBe(200);
       const body = res.json() as Record<string, unknown>;
@@ -62,7 +61,6 @@ describe('apps/api bootstrap (e2e)', () => {
     });
 
     it('also 200 at /api/v1/health/live would be wrong — it should NOT exist there', async () => {
-      if (!dbReachable) return;
       const res = await app.inject({ method: 'GET', url: '/api/v1/health/live' });
       expect(res.statusCode).toBe(404);
     });
@@ -70,13 +68,11 @@ describe('apps/api bootstrap (e2e)', () => {
 
   describe('unknown route', () => {
     it('returns 404 under the /api/v1 prefix', async () => {
-      if (!dbReachable) return;
       const res = await app.inject({ method: 'GET', url: '/api/v1/does-not-exist' });
       expect(res.statusCode).toBe(404);
     });
 
     it('returns 404 at the bare root', async () => {
-      if (!dbReachable) return;
       const res = await app.inject({ method: 'GET', url: '/does-not-exist' });
       expect(res.statusCode).toBe(404);
     });

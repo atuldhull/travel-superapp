@@ -97,7 +97,6 @@ describe('Trip lock/unlock (integration, requires Docker Postgres + Redis)', () 
   }
 
   it('owner locks → status=published; unlocks → status=draft', async () => {
-    if (!dbReachable) return;
     const owner = await registerUser('owner');
     const trip = await createTrip(owner.accessToken);
     expect(trip.status).toBe('draft');
@@ -120,7 +119,6 @@ describe('Trip lock/unlock (integration, requires Docker Postgres + Redis)', () 
   });
 
   it('non-owner → 404 TRIP_NOT_FOUND on lock', async () => {
-    if (!dbReachable) return;
     const owner = await registerUser('alice');
     const stranger = await registerUser('bob');
     const trip = await createTrip(owner.accessToken);
@@ -135,7 +133,6 @@ describe('Trip lock/unlock (integration, requires Docker Postgres + Redis)', () 
   });
 
   it('locked trip — share-collaborator day-item edit → 404', async () => {
-    if (!dbReachable) return;
     const owner = await registerUser('owner2');
     const collab = await registerUser('collab');
     const trip = await createTrip(owner.accessToken);
@@ -197,7 +194,6 @@ describe('Trip lock/unlock (integration, requires Docker Postgres + Redis)', () 
   });
 
   it('lock is idempotent — relocking returns 200 status=published', async () => {
-    if (!dbReachable) return;
     const owner = await registerUser('idem');
     const trip = await createTrip(owner.accessToken);
 

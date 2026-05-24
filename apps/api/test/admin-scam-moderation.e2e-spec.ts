@@ -60,7 +60,6 @@ describe('Admin scam-report moderation (integration, requires Postgres)', () => 
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     // User cascade-deletes ScamReport rows.
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
@@ -130,7 +129,6 @@ describe('Admin scam-report moderation (integration, requires Postgres)', () => 
   }
 
   it('GET /admin/safety/scam-reports without a bearer → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'GET',
       url: '/api/v1/admin/safety/scam-reports',
@@ -140,7 +138,6 @@ describe('Admin scam-report moderation (integration, requires Postgres)', () => 
   });
 
   it('non-admin bearer → 403 ROLE_FORBIDDEN', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('user');
     const res = await app.inject({
       method: 'GET',
@@ -152,7 +149,6 @@ describe('Admin scam-report moderation (integration, requires Postgres)', () => 
   });
 
   it('admin sees user-submitted reports in the pending queue', async () => {
-    if (!dbReachable) return;
     const user = await registerUser('submitter');
     const reportId = await submitScamReport(user.accessToken, 'pending');
     const adminToken = await loginAsAdmin('admin-list');
@@ -170,7 +166,6 @@ describe('Admin scam-report moderation (integration, requires Postgres)', () => 
   });
 
   it('verify flips verified=true; subsequent list (default pending) no longer shows it', async () => {
-    if (!dbReachable) return;
     const user = await registerUser('verify-submitter');
     const reportId = await submitScamReport(user.accessToken, 'verify');
     const adminToken = await loginAsAdmin('admin-verify');
@@ -203,7 +198,6 @@ describe('Admin scam-report moderation (integration, requires Postgres)', () => 
   });
 
   it('unverify reverses a prior verify', async () => {
-    if (!dbReachable) return;
     const user = await registerUser('unverify-submitter');
     const reportId = await submitScamReport(user.accessToken, 'unverify');
     const adminToken = await loginAsAdmin('admin-unverify');
@@ -223,7 +217,6 @@ describe('Admin scam-report moderation (integration, requires Postgres)', () => 
   });
 
   it('dismiss (DELETE) removes the row; public search no longer finds it', async () => {
-    if (!dbReachable) return;
     const user = await registerUser('dismiss-submitter');
     const reportId = await submitScamReport(user.accessToken, 'dismiss');
     const adminToken = await loginAsAdmin('admin-dismiss');
@@ -247,7 +240,6 @@ describe('Admin scam-report moderation (integration, requires Postgres)', () => 
   });
 
   it('verify unknown id → 404 SCAM_REPORT_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const adminToken = await loginAsAdmin('admin-missing');
     const res = await app.inject({
       method: 'POST',
@@ -259,7 +251,6 @@ describe('Admin scam-report moderation (integration, requires Postgres)', () => 
   });
 
   it('dismiss unknown id → 404 SCAM_REPORT_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const adminToken = await loginAsAdmin('admin-missing-del');
     const res = await app.inject({
       method: 'DELETE',

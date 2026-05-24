@@ -73,7 +73,6 @@ describe('Transport navigation (integration, requires Docker Postgres + Redis)',
   }
 
   it('without a bearer → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/transport/navigation',
@@ -83,7 +82,6 @@ describe('Transport navigation (integration, requires Docker Postgres + Redis)',
   });
 
   it('returns 3 flavours; fastest has a closure → recommended is a clear alternative', async () => {
-    if (!dbReachable) return;
     const tok = await token('ok');
     const res = await app.inject({
       method: 'POST',
@@ -121,7 +119,6 @@ describe('Transport navigation (integration, requires Docker Postgres + Redis)',
   });
 
   it('waypoints lengthen the drawn geometry', async () => {
-    if (!dbReachable) return;
     const tok = await token('via');
     const res = await app.inject({
       method: 'POST',
@@ -141,7 +138,6 @@ describe('Transport navigation (integration, requires Docker Postgres + Redis)',
   });
 
   it('origin === destination with no waypoints → 422 SAME_ORIGIN_DESTINATION', async () => {
-    if (!dbReachable) return;
     const tok = await token('same');
     const res = await app.inject({
       method: 'POST',
@@ -154,7 +150,6 @@ describe('Transport navigation (integration, requires Docker Postgres + Redis)',
   });
 
   it('invalid lat → 422 VALIDATION_FAILED (Zod blocks first)', async () => {
-    if (!dbReachable) return;
     const tok = await token('bad-lat');
     const res = await app.inject({
       method: 'POST',
@@ -167,7 +162,6 @@ describe('Transport navigation (integration, requires Docker Postgres + Redis)',
   });
 
   it('> 8 waypoints → 422 VALIDATION_FAILED (Zod max)', async () => {
-    if (!dbReachable) return;
     const tok = await token('too-many');
     const res = await app.inject({
       method: 'POST',

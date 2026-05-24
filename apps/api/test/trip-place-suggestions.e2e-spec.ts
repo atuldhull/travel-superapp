@@ -102,7 +102,6 @@ describe('Trip × Place Suggestions (integration, requires Docker Postgres + Red
   }
 
   it('returns ranked suggestions with persisted placeIds', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('ok');
     const trip = await createTrip(accessToken);
 
@@ -137,7 +136,6 @@ describe('Trip × Place Suggestions (integration, requires Docker Postgres + Red
   });
 
   it('category filter narrows results to a single category', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('cat');
     const trip = await createTrip(accessToken);
 
@@ -155,7 +153,6 @@ describe('Trip × Place Suggestions (integration, requires Docker Postgres + Red
   });
 
   it('non-owner → 404 TRIP_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('alice');
     const bob = await registerUser('bob');
     const trip = await createTrip(alice.accessToken);
@@ -171,7 +168,6 @@ describe('Trip × Place Suggestions (integration, requires Docker Postgres + Red
   });
 
   it('unauthenticated → 401 UNAUTHENTICATED', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/trips/whatever/place-suggestions',
@@ -182,7 +178,6 @@ describe('Trip × Place Suggestions (integration, requires Docker Postgres + Red
   });
 
   it('repeated calls re-use the same Place rows (idempotent ingest)', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('idem');
     const trip = await createTrip(accessToken);
 

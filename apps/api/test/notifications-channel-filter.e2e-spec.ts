@@ -72,7 +72,6 @@ describe('GET /notifications/me?channel= (integration, requires Docker Postgres)
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     sender.drainSent();
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
@@ -118,7 +117,6 @@ describe('GET /notifications/me?channel= (integration, requires Docker Postgres)
   }
 
   it('no channel param → returns the union of channels (regression)', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerAndSos('union');
     const body = await list(accessToken);
     const channels = new Set(body.notifications.map((n) => n.channel));
@@ -128,7 +126,6 @@ describe('GET /notifications/me?channel= (integration, requires Docker Postgres)
   });
 
   it('?channel=push → returns only push rows', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerAndSos('push');
     const body = await list(accessToken, '?channel=push');
     expect(body.notifications.length).toBeGreaterThanOrEqual(1);
@@ -136,7 +133,6 @@ describe('GET /notifications/me?channel= (integration, requires Docker Postgres)
   });
 
   it('?channel=email → returns only email rows', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerAndSos('email');
     const body = await list(accessToken, '?channel=email');
     expect(body.notifications.length).toBeGreaterThanOrEqual(1);
@@ -144,7 +140,6 @@ describe('GET /notifications/me?channel= (integration, requires Docker Postgres)
   });
 
   it('?channel=bogus → 400 VALIDATION_FAILED', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerAndSos('bad');
     const res = await app.inject({
       method: 'GET',
@@ -156,7 +151,6 @@ describe('GET /notifications/me?channel= (integration, requires Docker Postgres)
   });
 
   it('?channel=sms → returns empty list (no sms rows in fixture)', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerAndSos('sms');
     const body = await list(accessToken, '?channel=sms');
     expect(body.notifications).toEqual([]);

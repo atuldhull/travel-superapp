@@ -67,7 +67,6 @@ describe('GET /eateries/:id/review-summary (integration, requires Docker Postgre
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
@@ -116,7 +115,6 @@ describe('GET /eateries/:id/review-summary (integration, requires Docker Postgre
   }
 
   it('@Public(): no bearer + empty eatery → all-zero shape; votes always zero', async () => {
-    if (!dbReachable) return;
     const eateryId = `${TEST_PREFIX}-empty-${uniqueSuffix()}`;
     const { status, body } = await getSummary(eateryId);
     expect(status).toBe(200);
@@ -131,7 +129,6 @@ describe('GET /eateries/:id/review-summary (integration, requires Docker Postgre
   });
 
   it('eatery with reviews → correct aggregates + recent; votes still zero', async () => {
-    if (!dbReachable) return;
     const eateryId = `${TEST_PREFIX}-rich-${uniqueSuffix()}`;
     const a = await registerUser('a');
     const b = await registerUser('b');
@@ -156,7 +153,6 @@ describe('GET /eateries/:id/review-summary (integration, requires Docker Postgre
   });
 
   it('cross-target isolation between eatery A and eatery B', async () => {
-    if (!dbReachable) return;
     const eateryA = `${TEST_PREFIX}-A-${uniqueSuffix()}`;
     const eateryB = `${TEST_PREFIX}-B-${uniqueSuffix()}`;
     const u = await registerUser('iso');
@@ -170,7 +166,6 @@ describe('GET /eateries/:id/review-summary (integration, requires Docker Postgre
   });
 
   it('eatery reviews do NOT leak into stay or place review summaries (different targetType)', async () => {
-    if (!dbReachable) return;
     const sharedId = `${TEST_PREFIX}-shared-${uniqueSuffix()}`;
     const u = await registerUser('cross');
     await postEateryReview(u.accessToken, sharedId, 5, 'Eatery review only.');

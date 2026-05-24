@@ -62,7 +62,6 @@ describe('Admin trip moderation (integration, requires Docker Postgres)', () => 
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
@@ -128,13 +127,11 @@ describe('Admin trip moderation (integration, requires Docker Postgres)', () => 
   }
 
   it('GET /admin/trips without bearer → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({ method: 'GET', url: '/api/v1/admin/trips' });
     expect(res.statusCode).toBe(401);
   });
 
   it('non-admin → 403', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('non-admin');
     const res = await app.inject({
       method: 'GET',
@@ -145,7 +142,6 @@ describe('Admin trip moderation (integration, requires Docker Postgres)', () => 
   });
 
   it('?q=substring filters by title (case-insensitive); cross-user', async () => {
-    if (!dbReachable) return;
     const adminToken = await loginAsAdmin('list-admin');
     const alice = await registerUser('alice');
     const bob = await registerUser('bob');
@@ -161,7 +157,6 @@ describe('Admin trip moderation (integration, requires Docker Postgres)', () => 
   });
 
   it('?status=archived filters by status', async () => {
-    if (!dbReachable) return;
     const adminToken = await loginAsAdmin('status-admin');
     const u = await registerUser('status-user');
     const tripId = await createTrip(u.accessToken, `${TEST_PREFIX}-status-test`);
@@ -175,7 +170,6 @@ describe('Admin trip moderation (integration, requires Docker Postgres)', () => 
   });
 
   it('archive flips status; trip row + itinerary day still present (soft moderation)', async () => {
-    if (!dbReachable) return;
     const adminToken = await loginAsAdmin('archive-admin');
     const u = await registerUser('archive-target');
     // Create with dates so itinerary generation succeeds and we can
@@ -219,7 +213,6 @@ describe('Admin trip moderation (integration, requires Docker Postgres)', () => 
   });
 
   it('delete cascades: trip row + itinerary days + items wiped', async () => {
-    if (!dbReachable) return;
     const adminToken = await loginAsAdmin('delete-admin');
     const u = await registerUser('delete-target');
     // Trip with dates so itinerary generation succeeds.
@@ -260,7 +253,6 @@ describe('Admin trip moderation (integration, requires Docker Postgres)', () => 
   });
 
   it('archive on missing trip → 404 TRIP_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const adminToken = await loginAsAdmin('archive-404');
     const res = await app.inject({
       method: 'POST',
@@ -272,7 +264,6 @@ describe('Admin trip moderation (integration, requires Docker Postgres)', () => 
   });
 
   it('delete on missing trip → 404 TRIP_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const adminToken = await loginAsAdmin('delete-404');
     const res = await app.inject({
       method: 'DELETE',
@@ -284,7 +275,6 @@ describe('Admin trip moderation (integration, requires Docker Postgres)', () => 
   });
 
   it('unknown status param → 400 VALIDATION_FAILED', async () => {
-    if (!dbReachable) return;
     const adminToken = await loginAsAdmin('bad-status');
     const res = await app.inject({
       method: 'GET',
@@ -296,7 +286,6 @@ describe('Admin trip moderation (integration, requires Docker Postgres)', () => 
   });
 
   it('non-admin caller can’t archive', async () => {
-    if (!dbReachable) return;
     const attacker = await registerUser('attacker');
     const target = await registerUser('victim');
     const tripId = await createTrip(target.accessToken, `${TEST_PREFIX}-untouched`);

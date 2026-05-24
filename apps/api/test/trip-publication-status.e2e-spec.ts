@@ -61,7 +61,6 @@ describe('GET /feed/trips/:tripId/publish (integration, requires Docker Postgres
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({ where: { displayName: { startsWith: TEST_PREFIX } } });
   });
 
@@ -114,7 +113,6 @@ describe('GET /feed/trips/:tripId/publish (integration, requires Docker Postgres
   }
 
   it('no bearer → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'GET',
       url: '/api/v1/feed/trips/some-trip/publish',
@@ -123,7 +121,6 @@ describe('GET /feed/trips/:tripId/publish (integration, requires Docker Postgres
   });
 
   it('non-owner → 404 TRIP_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const owner = await registerUser('owner-a');
     const stranger = await registerUser('stranger');
     const tripId = await createTrip(owner.accessToken);
@@ -137,7 +134,6 @@ describe('GET /feed/trips/:tripId/publish (integration, requires Docker Postgres
   });
 
   it('never-published trip → { published: false, PRIVATE }', async () => {
-    if (!dbReachable) return;
     const owner = await registerUser('owner-b');
     const tripId = await createTrip(owner.accessToken);
     const body = await getStatus(owner.accessToken, tripId);
@@ -147,7 +143,6 @@ describe('GET /feed/trips/:tripId/publish (integration, requires Docker Postgres
   });
 
   it('published trip → { published: true, visibility, publishedAt }', async () => {
-    if (!dbReachable) return;
     const owner = await registerUser('owner-c');
     const tripId = await createTrip(owner.accessToken);
     await markEnded(tripId);
@@ -167,7 +162,6 @@ describe('GET /feed/trips/:tripId/publish (integration, requires Docker Postgres
   });
 
   it('unpublished after publish → { published: false }', async () => {
-    if (!dbReachable) return;
     const owner = await registerUser('owner-d');
     const tripId = await createTrip(owner.accessToken);
     await markEnded(tripId);

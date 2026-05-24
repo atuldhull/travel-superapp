@@ -83,8 +83,6 @@ describe('VectorQueries (integration, requires Docker Postgres)', () => {
   });
 
   it('findSimilar returns the 5 nearest placeIds in ascending-distance order', async () => {
-    if (!dbReachable) return;
-
     const targetIdx = 42;
     const target = makeVector(targetIdx);
 
@@ -109,8 +107,6 @@ describe('VectorQueries (integration, requires Docker Postgres)', () => {
   });
 
   it('upsertEmbedding replaces an existing row in place (1:1 placeId constraint)', async () => {
-    if (!dbReachable) return;
-
     const idx = 7;
     const placeId = placeIdByIdx.get(idx)!;
 
@@ -135,13 +131,11 @@ describe('VectorQueries (integration, requires Docker Postgres)', () => {
   });
 
   it('rejects wrong-dimension vectors at the client boundary', async () => {
-    if (!dbReachable) return;
     await expect(vec.upsertEmbedding('whatever', [0.1, 0.2, 0.3])).rejects.toThrow(/1024-dim/);
     await expect(vec.findSimilar([0.1, 0.2, 0.3], 5)).rejects.toThrow(/1024-dim/);
   });
 
   it('rejects non-positive limits', async () => {
-    if (!dbReachable) return;
     await expect(vec.findSimilar(makeVector(0), 0)).rejects.toThrow(/positive integer/);
     await expect(vec.findSimilar(makeVector(0), -3)).rejects.toThrow(/positive integer/);
   });

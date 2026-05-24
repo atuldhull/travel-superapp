@@ -76,7 +76,6 @@ describe('V.UX.33 reactivation flow (integration, requires Docker Postgres)', ()
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({ where: { displayName: { startsWith: TEST_PREFIX } } });
   });
 
@@ -118,7 +117,6 @@ describe('V.UX.33 reactivation flow (integration, requires Docker Postgres)', ()
   }
 
   it('Login on soft-deleted account → 401 ACCOUNT_DELETION_PENDING + token in context', async () => {
-    if (!dbReachable) return;
     const { email } = await registerUser('pending');
     await softDelete(email, 'correct-horse-battery-staple');
 
@@ -139,7 +137,6 @@ describe('V.UX.33 reactivation flow (integration, requires Docker Postgres)', ()
   });
 
   it('Reactivate restores account; subsequent login succeeds', async () => {
-    if (!dbReachable) return;
     const { email } = await registerUser('restore');
     await softDelete(email, 'correct-horse-battery-staple');
     const tokenFromEmail = readReactivationTokenFromMail(email);
@@ -160,7 +157,6 @@ describe('V.UX.33 reactivation flow (integration, requires Docker Postgres)', ()
   });
 
   it('Re-clicking reactivation link → 404 ACCOUNT_NOT_RECOVERABLE', async () => {
-    if (!dbReachable) return;
     const { email } = await registerUser('replay');
     await softDelete(email, 'correct-horse-battery-staple');
     const tokenFromEmail = readReactivationTokenFromMail(email);
@@ -180,7 +176,6 @@ describe('V.UX.33 reactivation flow (integration, requires Docker Postgres)', ()
   });
 
   it('Tampered token → 401 REACTIVATION_INVALID', async () => {
-    if (!dbReachable) return;
     const { email } = await registerUser('tamper');
     await softDelete(email, 'correct-horse-battery-staple');
     const valid = readReactivationTokenFromMail(email);
@@ -196,7 +191,6 @@ describe('V.UX.33 reactivation flow (integration, requires Docker Postgres)', ()
   });
 
   it('Past 7-day window → /login returns INVALID_CREDENTIALS', async () => {
-    if (!dbReachable) return;
     const { userId, email } = await registerUser('window-past');
     await softDelete(email, 'correct-horse-battery-staple');
     // Backdate deletedAt past the 7-day cutoff.
@@ -213,7 +207,6 @@ describe('V.UX.33 reactivation flow (integration, requires Docker Postgres)', ()
   });
 
   it('DELETE /account sends deletion-pending email with reactivate URL', async () => {
-    if (!dbReachable) return;
     const { email } = await registerUser('email');
     await softDelete(email, 'correct-horse-battery-staple');
     const sent = getAllStubMessages();

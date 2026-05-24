@@ -58,7 +58,6 @@ describe('V.UX.32 storage stats (integration, requires Docker Postgres)', () => 
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.trip.deleteMany({
       where: { user: { displayName: { startsWith: TEST_PREFIX } } },
     });
@@ -85,13 +84,11 @@ describe('V.UX.32 storage stats (integration, requires Docker Postgres)', () => 
   }
 
   it('GET /account/stats without bearer → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({ method: 'GET', url: '/api/v1/account/stats' });
     expect(res.statusCode).toBe(401);
   });
 
   it('Fresh user → all zeros + computedAt populated', async () => {
-    if (!dbReachable) return;
     const u = await registerAndGetToken('fresh');
     const res = await app.inject({
       method: 'GET',
@@ -109,7 +106,6 @@ describe('V.UX.32 storage stats (integration, requires Docker Postgres)', () => 
   });
 
   it('After creating a trip → trips=1', async () => {
-    if (!dbReachable) return;
     const u = await registerAndGetToken('with-trip');
     const create = await app.inject({
       method: 'POST',
