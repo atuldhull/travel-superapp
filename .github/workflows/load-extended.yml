@@ -1,0 +1,124 @@
+# Extended load tests ([J3]) — stress (13 min) and soak (70 min)
+# don't fit inside PR CI. Two ways to run them:
+#
+#   1. `workflow_dispatch` — manual button in the GitHub UI; pick
+#      which scenario to run. Useful when triaging a perf regression.
+#   2. Nightly cron — automated, soak only. The trend graph in the
+#      uploaded report shows memory + p99 drift over weeks.
+#
+# Both scenarios boot the API + Postgres + Redis from scratch (same
+# setup as the smoke job in ci.yml `load`). NOT wired as a PR gate
+# — these tests are observational, not pass/fail signals on every
+# code change.
+name: load (stress + soak)
+
+on:
+  workflow_dispatch:
+    inputs:
+      scenario:
+        description: 'Which load scenario to run'
+        required: true
+        default: 'stress'
+        type: choice
+        options:
+          - stress
+          - soak
+  schedule:
+    # Nightly soak at 03:30 UTC — well off the PR-merge window.
+    # The cron only runs `soak`; stress is dispatch-only.
+    - cron: '30 3 * * *'
+
+concurrency:
+  # Don't stack two long-running load tests.
+  group: load-extended-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  load-extended:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: travel
+          POSTGRES_PASSWORD: travel_dev
+          POSTGRES_DB: travel_dev
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U travel -d travel_dev"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+      redis:
+        image: redis:7.4-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://travel:travel_dev@127.0.0.1:5432/travel_dev?schema=public
+      DIRECT_URL: postgresql://travel:travel_dev@127.0.0.1:5432/travel_dev?schema=public
+      REDIS_URL: redis://127.0.0.1:6379
+      API_BASE: http://127.0.0.1:3000
+      # Nightly cron always runs soak; manual dispatch honors the input.
+      SCENARIO: ${{ github.event.inputs.scenario || 'soak' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.3
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Build workspace packages
+        run: pnpm turbo run build --filter='@app/*'
+
+      - name: Prisma migrate
+        run: pnpm --filter=api run db:migrate:deploy
+
+      - name: Boot API (background)
+        run: pnpm --filter=api dev &
+        env:
+          NODE_ENV: development
+
+      - name: Wait for /health/ready
+        run: |
+          for i in {1..60}; do
+            if curl -sf http://127.0.0.1:3000/api/v1/health/ready > /dev/null; then
+              echo "API ready."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "API did not become ready in 120s." >&2
+          exit 1
+
+      - name: Run k6 ${{ env.SCENARIO }}
+        run: k6 run --env API_BASE=$API_BASE --summary-export=summary-$SCENARIO.json load/$SCENARIO.js
+
+      - name: Upload summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-${{ env.SCENARIO }}-summary
+          path: summary-${{ env.SCENARIO }}.json
+          retention-days: 30
