@@ -27,7 +27,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConflictError, NotFoundError } from '@app/errors';
 import { createLogger, type AppLogger } from '@app/logger';
-import type { MediaAsset } from '../domain/media-asset.entity';
+import { MediaAsset } from '../domain/media-asset.entity';
 import { IMAGE_PROCESSOR_PORT, type ImageProcessorPort } from './ports/image-processor.port';
 import {
   MEDIA_ASSET_REPOSITORY,
@@ -59,6 +59,10 @@ export class ConfirmUploadUseCase {
     if (existing.status === 'ready') {
       return existing;
     }
+    // [G4.3] state-machine gate: blocks failed → ready (markReady on
+    // the repo doesn't WHERE-clause the current status, so without
+    // this the failed→ready transition would silently succeed).
+    MediaAsset.assertCanMarkReady(existing);
     const landed = await this.storage.objectExists(existing.s3KeyRaw);
     if (!landed) {
       throw new ConflictError(

@@ -7,7 +7,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { TrustedContact as PrismaTrustedContact } from '@prisma/client';
 import { PrismaService } from '../../../common/db/prisma.service';
-import type { TrustedContact } from '../domain/trusted-contact.entity';
+import { TrustedContact } from '../domain/trusted-contact.entity';
 import type {
   CreateTrustedContactInput,
   TrustedContactRepository,
@@ -50,7 +50,7 @@ export class PrismaTrustedContactRepository implements TrustedContactRepository 
 }
 
 function toDomain(row: PrismaTrustedContact): TrustedContact {
-  return {
+  return TrustedContact.fromPersistence({
     id: row.id,
     userId: row.userId,
     name: row.name,
@@ -58,5 +58,5 @@ function toDomain(row: PrismaTrustedContact): TrustedContact {
     email: row.email,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
-  };
+  });
 }
