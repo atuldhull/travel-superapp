@@ -177,6 +177,48 @@ jobs:
         run: pnpm shared-types:check
 
   # ──────────────────────────────────────────────────────────────
+  # Domain-unit coverage gate ([H1]) — runs ONLY the pure-domain
+  # `*-entity.unit.spec.ts` + `trip-transitions.unit.spec.ts`
+  # specs (no Postgres / Redis / S3 needed), with a per-file ≥80%
+  # threshold on every metric for every file under
+  # `src/modules/**/domain/`. Makes the long-standing CLAUDE.md
+  # "domain ≥ 80%" promise mechanical: a regression below the
+  # threshold (or a new domain file landing without a unit spec)
+  # fails the gate. Runs in its own job so coverage numbers post
+  # to the PR even when the heavier integration job is queued.
+  # ──────────────────────────────────────────────────────────────
+  coverage-domain:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.3
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Domain unit-coverage gate
+        run: pnpm --filter=api cover:unit
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-domain
+          path: apps/api/coverage/unit
+
+  # ──────────────────────────────────────────────────────────────
   # Integration tests — boot Postgres + Redis + MinIO as GitHub
   # service containers, then run jest. Env values mirror
   # `phase-0-smoke.yml` so the same setup.ts works.

@@ -128,5 +128,22 @@ describe('trip-transitions (unit)', () => {
       expect(out).not.toBe(original);
       expect(original.status).toBe('draft');
     });
+
+    it('default `now` parameter stamps a fresh Date (covers default branch)', () => {
+      // [H1] coverage gate caught these as 50%-branch uncovered: each
+      // mark* function has `now: Date = new Date()`; the test suite
+      // above always passes `now` explicitly. Exercise the default
+      // path so the gate stays at 100%.
+      const before = Date.now();
+      const a = markLocked(trip({ status: 'draft' }));
+      const b = markUnlocked(trip({ status: 'published' }));
+      const c = markArchived(trip({ archivedAt: null }));
+      const d = markUnarchived(trip({ archivedAt: new Date('2026-04-01') }));
+      const after = Date.now();
+      for (const out of [a, b, c, d]) {
+        expect(out.updatedAt.getTime()).toBeGreaterThanOrEqual(before);
+        expect(out.updatedAt.getTime()).toBeLessThanOrEqual(after);
+      }
+    });
   });
 });
