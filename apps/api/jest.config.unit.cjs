@@ -24,6 +24,13 @@
  *
  * Installed by [H1].
  */
+// Absolute path to the workspace packages dir — required so the
+// moduleNameMapper survives Stryker's sandbox copy ([H2]). Inside
+// the sandbox `<rootDir>` resolves to `.stryker-tmp/sandbox-XXXX/`,
+// where `../../packages` doesn't exist.
+const path = require('node:path');
+const PACKAGES = path.resolve(__dirname, '..', '..', 'packages');
+
 /** @type {import('jest').Config} */
 module.exports = {
   testEnvironment: 'node',
@@ -68,12 +75,12 @@ module.exports = {
     },
   },
   moduleNameMapper: {
-    '^@app/config$': '<rootDir>/../../packages/config/src/index.ts',
-    '^@app/config/(.*)$': '<rootDir>/../../packages/config/src/$1',
-    '^@app/errors$': '<rootDir>/../../packages/errors/src/index.ts',
-    '^@app/errors/(.*)$': '<rootDir>/../../packages/errors/src/$1',
-    '^@app/logger$': '<rootDir>/../../packages/logger/src/index.ts',
-    '^@app/logger/(.*)$': '<rootDir>/../../packages/logger/src/$1',
+    '^@app/config$': `${PACKAGES}/config/src/index.ts`,
+    '^@app/config/(.*)$': `${PACKAGES}/config/src/$1`,
+    '^@app/errors$': `${PACKAGES}/errors/src/index.ts`,
+    '^@app/errors/(.*)$': `${PACKAGES}/errors/src/$1`,
+    '^@app/logger$': `${PACKAGES}/logger/src/index.ts`,
+    '^@app/logger/(.*)$': `${PACKAGES}/logger/src/$1`,
   },
   transform: {
     '^.+\\.tsx?$': [

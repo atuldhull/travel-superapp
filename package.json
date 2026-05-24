@@ -21,6 +21,8 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "test:integration": "turbo run test:integration",
+    "cover:unit": "pnpm --filter=api cover:unit",
+    "mutate": "pnpm --filter=api mutate",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky"
