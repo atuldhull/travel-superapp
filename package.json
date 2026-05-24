@@ -17,6 +17,7 @@
     "arch": "turbo run arch",
     "cycles": "turbo run cycles",
     "sdk:check": "node scripts/sdk-check.cjs",
+    "shared-types:check": "node scripts/shared-types-check.cjs",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "test:integration": "turbo run test:integration",

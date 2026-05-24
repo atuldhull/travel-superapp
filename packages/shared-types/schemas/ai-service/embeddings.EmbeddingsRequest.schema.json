@@ -1,0 +1,34 @@
+{
+  "$ref": "#/definitions/EmbeddingsRequest",
+  "definitions": {
+    "EmbeddingsRequest": {
+      "type": "object",
+      "properties": {
+        "inputs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "minItems": 1,
+          "maxItems": 64
+        },
+        "purpose": {
+          "type": "string",
+          "enum": [
+            "place",
+            "review",
+            "query"
+          ]
+        }
+      },
+      "required": [
+        "inputs",
+        "purpose"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

@@ -1,0 +1,23 @@
+{
+  "$ref": "#/definitions/CrowdPredictRequest",
+  "definitions": {
+    "CrowdPredictRequest": {
+      "type": "object",
+      "properties": {
+        "placeId": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "placeId",
+        "timestamp"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}
