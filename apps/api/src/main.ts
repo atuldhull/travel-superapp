@@ -32,6 +32,7 @@ import { AppNestLoggerService, createLogger } from '@app/logger';
 import { AppModule } from './app.module';
 import { AllExceptionFilter } from './common/filters/all-exception.filter';
 import { DomainExceptionFilter } from './common/filters/domain-exception.filter';
+import { registerDeprecationHook } from './common/deprecation/register-deprecation-hook';
 import { registerHttpMetricsMiddleware } from './common/metrics/http-metrics.middleware';
 import { MetricsService } from './common/metrics/metrics.service';
 import { registerSecurity } from './common/security/security.register';
@@ -115,6 +116,14 @@ async function bootstrap(): Promise<void> {
   //     onResponse hooks observe `http_request_duration_seconds`
   //     labeled by method/route/status. Added by `[IV.18.10.8]`.
   await registerHttpMetricsMiddleware(app, app.get(MetricsService));
+
+  // 6e. RFC 8594 deprecation header bag — adds `Deprecation` +
+  //     `Sunset` + `Link rel="deprecation"` to every response served
+  //     from a route listed in `common/deprecation/deprecated-
+  //     routes.ts`. Registry is empty today; mechanism is wired so
+  //     the FIRST entry starts emitting headers without further
+  //     changes ([F2] / [ADR-016]).
+  await registerDeprecationHook(app);
 
   // 7. Shutdown hooks so SIGTERM drains in-flight requests cleanly (Fly.io / k8s).
   app.enableShutdownHooks();
