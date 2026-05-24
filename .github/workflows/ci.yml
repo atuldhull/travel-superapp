@@ -665,7 +665,14 @@ jobs:
         run: pnpm --filter=api run db:migrate:deploy
 
       - name: Run integration tests
-        run: pnpm --filter=api test -- --ci --runInBand
+        # [L3] dropped `--runInBand` — [L1]'s per-worker schema
+        # isolation makes parallel safe; runInBand was the
+        # max_connections-exhaustion workaround documented in the
+        # `feedback_postgres_max_connections_runinband` memory.
+        # `--ci` keeps strict snapshot + no-watch posture. We pin
+        # `--maxWorkers=4` to stay under the GH runner's CPU + match
+        # the 8 pre-migrated schemas the globalSetup creates.
+        run: pnpm --filter=api test -- --ci --maxWorkers=4
 
       - name: Summary
         if: always()
