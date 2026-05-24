@@ -10,13 +10,13 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { Agent as PrismaAgent, Review as PrismaReview } from '@prisma/client';
 import { PrismaService } from '../../../common/db/prisma.service';
 import type { AgentMatch } from '../domain/agent-match.entity';
-import type {
-  AgentBookingSummary,
-  AgentEarningsSummary,
-  AgentEscrowState,
-  AgentKycStatus,
+import {
   AgentProfile,
-  AgentReviewWithResponse,
+  type AgentBookingSummary,
+  type AgentEarningsSummary,
+  type AgentEscrowState,
+  type AgentKycStatus,
+  type AgentReviewWithResponse,
 } from '../domain/agent-profile.entity';
 import type {
   AgentRepository,
@@ -143,7 +143,7 @@ function toMatch(row: PrismaAgent): AgentMatch {
 }
 
 function toProfile(row: PrismaAgent): AgentProfile {
-  return {
+  return AgentProfile.fromPersistence({
     id: row.id,
     userId: row.userId,
     displayName: row.displayName,
@@ -156,7 +156,7 @@ function toProfile(row: PrismaAgent): AgentProfile {
     ratingCount: row.ratingCount,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
-  };
+  });
 }
 
 function toReview(row: PrismaReview): AgentReviewWithResponse {

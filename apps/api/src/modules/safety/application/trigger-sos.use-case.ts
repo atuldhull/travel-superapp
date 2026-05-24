@@ -19,7 +19,7 @@ import { EVENT_BUS, type EventBus } from '@app/events';
 import { ValidationError } from '@app/errors';
 import { createLogger, getTraceContext } from '@app/logger';
 import { TRUSTED_CONTACT_REPOSITORY, type TrustedContactRepository } from '../../account';
-import type { SosEvent } from '../domain/sos-event.entity';
+import { SosEvent } from '../domain/sos-event.entity';
 import { makeSafetyEvent, type SosTriggeredEvent } from '../domain/safety.events';
 import { CONTACT_NOTIFIER_PORT, type ContactNotifier } from './ports/contact-notifier.port';
 import { SOS_EVENT_REPOSITORY, type SosEventRepository } from './ports/sos-event.repository';
@@ -59,10 +59,12 @@ export class TriggerSosUseCase {
         'INVALID_COORDINATES',
       );
     }
+    // Domain-side invariants (O1/O2 — [G4.2]).
+    const input = SosEvent.create({ userId: cmd.userId, trigger: cmd.trigger });
 
     const created = await this.sos.create({
-      userId: cmd.userId,
-      trigger: cmd.trigger,
+      userId: input.userId,
+      trigger: input.trigger,
       lat: cmd.lat,
       lng: cmd.lng,
     });
