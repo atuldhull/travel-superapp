@@ -1,0 +1,153 @@
+# Dev-server smoke ([L5]) — every PR boots `pnpm --filter=api dev`
+# and `pnpm --filter=web dev` against a real Postgres + Redis,
+# probes /health/ready, and asserts both servers can serve a real
+# request before they're killed.
+#
+# Why: the review's "`pnpm dev` was silently broken (the tsx crash)"
+# was the canonical reliability gap — type checks + unit tests
+# passed, integration tests passed, but dev-mode didn't even
+# boot. CI never noticed because no job tested boot. This one does.
+#
+# Hermetic — boots its own Postgres + Redis service containers,
+# applies migrations, then races the dev servers against a 90s
+# wait-for-port loop. If a dev server crashes during boot, the
+# `wait` step fails with the tail of the server log.
+name: dev-server smoke
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: dev-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: travel
+          POSTGRES_PASSWORD: travel_dev
+          POSTGRES_DB: travel_dev
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U travel -d travel_dev"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+      redis:
+        image: redis:7.4-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://travel:travel_dev@127.0.0.1:5432/travel_dev?schema=public
+      DIRECT_URL: postgresql://travel:travel_dev@127.0.0.1:5432/travel_dev?schema=public
+      REDIS_URL: redis://127.0.0.1:6379
+      NODE_ENV: development
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.3
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build workspace packages
+        run: pnpm turbo run build --filter='@app/*'
+
+      - name: Generate Prisma client
+        run: pnpm --filter=api run db:generate
+
+      - name: Apply migrations
+        run: pnpm --filter=api run db:migrate:deploy
+
+      - name: Boot api in background
+        run: |
+          mkdir -p .dev-smoke-logs
+          pnpm --filter=api dev > .dev-smoke-logs/api.log 2>&1 &
+          echo $! > .dev-smoke-logs/api.pid
+
+      - name: Boot web in background
+        run: |
+          pnpm --filter=web dev > .dev-smoke-logs/web.log 2>&1 &
+          echo $! > .dev-smoke-logs/web.pid
+
+      - name: Wait for api /health/ready
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf "http://127.0.0.1:3000/api/v1/health/ready" > /dev/null; then
+              echo "[smoke] api ready in ${i}s"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::api did not become ready in 120s. Last 100 log lines:"
+          tail -100 .dev-smoke-logs/api.log
+          exit 1
+
+      - name: Wait for web /
+        run: |
+          for i in $(seq 1 45); do
+            # 200 OR 404 both mean "Next is serving" — root may be
+            # an empty marketing page in some env-var matrices.
+            code=$(curl -sf -o /dev/null -w "%{http_code}" "http://127.0.0.1:3001/" || echo 0)
+            if [ "$code" = "200" ] || [ "$code" = "404" ]; then
+              echo "[smoke] web ready in ${i}s (HTTP $code)"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::web did not become ready in 90s. Last 100 log lines:"
+          tail -100 .dev-smoke-logs/web.log
+          exit 1
+
+      - name: Probe a real api route
+        run: |
+          # /api/v1/health/live is bare-bones; /metrics exercises the
+          # Prometheus middleware path. Hit both to widen the smoke.
+          curl -sf "http://127.0.0.1:3000/api/v1/health/live" | grep -q '"status"' \
+            && echo "[smoke] api /health/live OK"
+          curl -sf "http://127.0.0.1:3000/metrics" | grep -q "^# HELP" \
+            && echo "[smoke] api /metrics OK"
+
+      - name: Stop dev servers
+        if: always()
+        run: |
+          for f in .dev-smoke-logs/api.pid .dev-smoke-logs/web.pid; do
+            [ -f "$f" ] && kill -TERM "$(cat $f)" 2>/dev/null || true
+          done
+
+      - name: Upload dev logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dev-smoke-logs
+          path: .dev-smoke-logs/
+          retention-days: 7
