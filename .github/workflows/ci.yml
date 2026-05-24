@@ -432,6 +432,104 @@ jobs:
         continue-on-error: true
 
   # ──────────────────────────────────────────────────────────────
+  # k6 smoke load test ([I7]) — 20 VUs × ~4 min against the hot
+  # no-auth endpoints (health, /metrics, /featured, /feed/public).
+  # Thresholds gate p95 latency + error rate per endpoint; a 10×
+  # regression on any of them fails the gate.
+  #
+  # Optional: when `K6_CLOUD_TOKEN` is set in repo secrets, results
+  # also upload to Grafana Cloud k6 for trend tracking + saved-run
+  # comparison. Inert without the key. See load/README.md.
+  # ──────────────────────────────────────────────────────────────
+  load:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: travel
+          POSTGRES_PASSWORD: travel_dev
+          POSTGRES_DB: travel_dev
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U travel -d travel_dev"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+      redis:
+        image: redis:7.4-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://travel:travel_dev@127.0.0.1:5432/travel_dev?schema=public
+      DIRECT_URL: postgresql://travel:travel_dev@127.0.0.1:5432/travel_dev?schema=public
+      REDIS_URL: redis://127.0.0.1:6379
+      API_BASE: http://127.0.0.1:3000
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.3
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Build workspace packages
+        run: pnpm turbo run build --filter='@app/*'
+
+      - name: Prisma migrate
+        run: pnpm --filter=api run db:migrate:deploy
+
+      - name: Boot API (background)
+        run: pnpm --filter=api dev &
+        env:
+          NODE_ENV: development
+
+      - name: Wait for /health/ready
+        run: |
+          for i in {1..60}; do
+            if curl -sf http://127.0.0.1:3000/api/v1/health/ready > /dev/null; then
+              echo "API is ready."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "API did not become ready in 120s." >&2
+          exit 1
+
+      - name: k6 smoke (LOCAL gate)
+        if: ${{ env.K6_CLOUD_TOKEN == '' }}
+        run: k6 run --env API_BASE=$API_BASE load/smoke.js
+
+      - name: k6 smoke (cloud, optional)
+        if: ${{ env.K6_CLOUD_TOKEN != '' }}
+        env:
+          K6_CLOUD_TOKEN: ${{ secrets.K6_CLOUD_TOKEN }}
+        run: |
+          k6 cloud login --token "$K6_CLOUD_TOKEN"
+          k6 cloud --env API_BASE=$API_BASE load/smoke.js
+
+  # ──────────────────────────────────────────────────────────────
   # Integration tests — boot Postgres + Redis + MinIO as GitHub
   # service containers, then run jest. Env values mirror
   # `phase-0-smoke.yml` so the same setup.ts works.
