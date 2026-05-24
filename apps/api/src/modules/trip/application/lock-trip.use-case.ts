@@ -14,6 +14,10 @@
  * trip / wrong owner collapses to 404 `TRIP_NOT_FOUND`, same IDOR-
  * safe shape every other Trip endpoint uses.
  *
+ * [F4]: the "can this trip transition?" gate lives in
+ * `domain/trip-transitions.ts` now — the use-case is a coordinator,
+ * not the rule keeper.
+ *
  * Installed by prompt [V.UX.8].
  */
 import { Inject, Injectable } from '@nestjs/common';
@@ -22,6 +26,12 @@ import { NotFoundError } from '@app/errors';
 import { getTraceContext } from '@app/logger';
 import type { Trip } from '../domain/trip.entity';
 import { makeEvent, type TripLockedEvent } from '../domain/trip.events';
+import {
+  assertCanLock,
+  assertCanUnlock,
+  markLocked,
+  markUnlocked,
+} from '../domain/trip-transitions';
 import { TRIP_REPOSITORY, type TripRepository } from './ports/trip.repository';
 
 @Injectable()
@@ -36,7 +46,9 @@ export class LockTripUseCase {
     if (!trip) {
       throw new NotFoundError(`Trip not found: ${tripId}`, { tripId }, 'TRIP_NOT_FOUND');
     }
-    if (trip.status === 'published') return trip;
+    // Domain-side gate: throws TRIP_ARCHIVED if archived ([F4]).
+    assertCanLock(trip);
+    if (trip.status === 'published') return trip; // already-locked idempotency
     await this.trips.updateStatus(tripId, 'published');
 
     // V.UX.9: notify active collaborators that the trip is now
@@ -48,7 +60,7 @@ export class LockTripUseCase {
     );
     await this.events.publish(evt);
 
-    return { ...trip, status: 'published', updatedAt: new Date() };
+    return markLocked(trip);
   }
 }
 
@@ -61,8 +73,10 @@ export class UnlockTripUseCase {
     if (!trip) {
       throw new NotFoundError(`Trip not found: ${tripId}`, { tripId }, 'TRIP_NOT_FOUND');
     }
-    if (trip.status === 'draft') return trip;
+    // Domain-side gate: throws TRIP_ARCHIVED if archived ([F4]).
+    assertCanUnlock(trip);
+    if (trip.status === 'draft') return trip; // already-unlocked idempotency
     await this.trips.updateStatus(tripId, 'draft');
-    return { ...trip, status: 'draft', updatedAt: new Date() };
+    return markUnlocked(trip);
   }
 }

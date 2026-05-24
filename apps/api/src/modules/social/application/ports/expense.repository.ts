@@ -6,20 +6,11 @@
  *
  * Installed by prompt [IV.18.12.4].
  */
-import type { Expense, SplitShareMap } from '../../domain/expense.entity';
-
-export interface CreateExpenseInput {
-  readonly tripId: string;
-  readonly paidById: string;
-  /** Always a 2-dp fixed-string ("12.50"). Adapter converts to
-   *  Prisma.Decimal on insert; use-case validates shape + sign. */
-  readonly amountUsd: string;
-  /** ISO 4217 3-letter code. Storage is `VARCHAR(3)` — uppercase
-   *  at the adapter boundary. */
-  readonly currency: string;
-  readonly note: string | null;
-  readonly splitShare: SplitShareMap;
-}
+// `CreateExpenseInput` lives on the entity now — invariants moved
+// there in [F4]. Re-export for backwards compat so existing imports
+// (`from '../ports/expense.repository'`) still resolve.
+export type { CreateExpenseInput } from '../../domain/expense.entity';
+import type { CreateExpenseInput, Expense } from '../../domain/expense.entity';
 
 export interface ExpenseRepository {
   create(input: CreateExpenseInput): Promise<Expense>;

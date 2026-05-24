@@ -10,7 +10,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Prisma, type Expense as PrismaExpense } from '@prisma/client';
 import { PrismaService } from '../../../common/db/prisma.service';
-import type { Expense, SplitShareMap } from '../domain/expense.entity';
+import { Expense, type SplitShareMap } from '../domain/expense.entity';
 import type {
   CreateExpenseInput,
   ExpenseRepository,
@@ -68,7 +68,7 @@ export class PrismaExpenseRepository implements ExpenseRepository {
 }
 
 function toDomain(row: PrismaExpense): Expense {
-  return {
+  return Expense.fromPersistence({
     id: row.id,
     tripId: row.tripId,
     paidById: row.paidById,
@@ -80,5 +80,5 @@ function toDomain(row: PrismaExpense): Expense {
     splitShare: (row.splitShare ?? {}) as SplitShareMap,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
-  };
+  });
 }
