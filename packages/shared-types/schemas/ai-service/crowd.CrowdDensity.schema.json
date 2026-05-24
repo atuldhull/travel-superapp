@@ -1,0 +1,15 @@
+{
+  "$ref": "#/definitions/CrowdDensity",
+  "definitions": {
+    "CrowdDensity": {
+      "type": "string",
+      "enum": [
+        "empty",
+        "light",
+        "busy",
+        "packed"
+      ]
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

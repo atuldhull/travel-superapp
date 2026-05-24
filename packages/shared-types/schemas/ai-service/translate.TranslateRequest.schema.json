@@ -1,0 +1,41 @@
+{
+  "$ref": "#/definitions/TranslateRequest",
+  "definitions": {
+    "TranslateRequest": {
+      "type": "object",
+      "properties": {
+        "sourceLang": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 2
+        },
+        "targetLang": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 2
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "domain": {
+          "type": "string",
+          "enum": [
+            "general",
+            "food",
+            "navigation",
+            "safety"
+          ]
+        }
+      },
+      "required": [
+        "sourceLang",
+        "targetLang",
+        "text"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

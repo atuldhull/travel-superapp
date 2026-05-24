@@ -1,0 +1,33 @@
+{
+  "$ref": "#/definitions/EmbeddingsResponse",
+  "definitions": {
+    "EmbeddingsResponse": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "string"
+        },
+        "dimensions": {
+          "type": "number",
+          "const": 1024
+        },
+        "embeddings": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        }
+      },
+      "required": [
+        "model",
+        "dimensions",
+        "embeddings"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

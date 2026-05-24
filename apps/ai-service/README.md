@@ -12,15 +12,30 @@ Python 3.12 + FastAPI + Ray Serve sidecar. Hosts the ML stack:
 
 This app is explicitly excluded from `pnpm-workspace.yaml` (`!apps/ai-service`). Python tooling (pyproject.toml, uv / poetry, tests, Docker) is scaffolded in prompt **[IV.18.2.11]**.
 
-## Contract
+## Contract — bilingual handoff
 
-The contract is defined in TWO places that must stay in sync:
+The contract is defined in THREE places, each derived from the one above it; drift is gated by CI ([D1] sdk:check + [F3] shared-types:check):
 
-- **Prose form:** [`docs/services/ai-service/contract.md`](../../docs/services/ai-service/contract.md) — transport (gRPC + REST), endpoints, SLOs, failure / circuit-breaker policy, runbook pointer.
-- **Code form (single source of truth):** [`packages/shared-types/src/ai-service/`](../../packages/shared-types/src/ai-service/) — Zod schemas + inferred TS types. Import via `@app/shared-types/ai-service`. The Python service will mirror these as pydantic models via codegen in **[IV.18.2.11]**.
+| #   | File                                                                                                        | Form                                   | Authoring                                                                                                  |
+| --- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| 1   | [`docs/services/ai-service/contract.md`](../../docs/services/ai-service/contract.md)                        | Prose (humans)                         | Hand-written; cross-checked against #2 by `contract-drift.fitness.spec.ts`                                 |
+| 2   | [`packages/shared-types/src/ai-service/*.ts`](../../packages/shared-types/src/ai-service/)                  | Zod schemas (TS source of truth)       | Hand-written; `import { TranslateRequest } from '@app/shared-types/ai-service'`                            |
+| 3   | [`packages/shared-types/schemas/ai-service/*.schema.json`](../../packages/shared-types/schemas/ai-service/) | JSON Schema (language-neutral handoff) | **Generated** by `pnpm --filter=@app/shared-types schemas:emit`; gated by `pnpm shared-types:check` ([F3]) |
 
-When this service is built, generate the pydantic models from the Zod schemas; do not hand-write a Python copy. Drift between doc / TS / pydantic is the failure mode this layout is designed to prevent.
+### Python side (when [IV.18.2.11] ships)
+
+The Python service consumes the JSON Schemas in #3 directly — it never sees the TS / Zod. Pydantic models are minted with zero hand-written code:
+
+```bash
+pip install datamodel-code-generator
+datamodel-codegen \
+  --input ../../packages/shared-types/schemas/ai-service \
+  --input-file-type jsonschema \
+  --output ai_service/schemas
+```
+
+That command is what closes the "single contract, both sides" loop the road-to-10 review called out. Run it in CI after `pip install`; commit the generated pydantic files into `apps/ai-service/ai_service/schemas/`; treat them like the SDK's `packages/sdk/src/generated/` — codegen output, prettier-ignored, drift-gated.
 
 ## Placeholder
 
-Real Python code lands in **[IV.18.2.11]**. Until then, this folder holds only the contract pointer above; the schemas are already authored in `@app/shared-types` so the boundary is concrete from the TS side today.
+Real Python code lands in **[IV.18.2.11]**. Until then, this folder holds only the contract pointer above; the TS Zod sources + emitted JSON Schemas are already concrete from the Node side today, so the Python build just runs the `datamodel-codegen` command above to bootstrap its own typed boundary — no hand-translation step.

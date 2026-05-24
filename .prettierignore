@@ -12,3 +12,4 @@ pnpm-lock.yaml
 # pnpm-lock.yaml is ignored above.
 docs/api/openapi.yaml
 packages/sdk/src/generated/**
+packages/shared-types/schemas/**
