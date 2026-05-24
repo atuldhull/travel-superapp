@@ -29,6 +29,7 @@ export type SplitShareMap = Readonly<Record<string, number>>;
 
 /** Amount string the entity accepts (and the DB stores). Lets the
  *  unit tests + the use-case talk in the same currency. */
+// eslint-disable-next-line security/detect-unsafe-regex -- bounded: `\d+` + optional `(\.\d{1,2})?` has no overlapping repetition, no catastrophic-backtracking path. The use-case also length-caps via I2 (amount ≤ 99,999,999.99), so input length is bounded.
 const AMOUNT_REGEX = /^\d+(\.\d{1,2})?$/;
 const MAX_AMOUNT = 99_999_999.99;
 const CURRENCY_REGEX = /^[A-Z]{3}$/;

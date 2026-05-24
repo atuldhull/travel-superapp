@@ -66,6 +66,7 @@ export class LlmDiaryAssistant implements DiaryAiAssistant {
     if (input.mode === 'prompt') {
       const suggestions = text
         .split('\n')
+        // eslint-disable-next-line security/detect-unsafe-regex -- two simple character-class repetitions, neither shares overlap; bounded by per-line length cap upstream
         .map((l) => l.replace(/^\s*(?:[-*\d.)]+\s*)?/, '').trim())
         .filter((l) => l.length > 0)
         .slice(0, 3);

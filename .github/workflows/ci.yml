@@ -263,6 +263,59 @@ jobs:
           path: apps/api/reports/mutation
 
   # ──────────────────────────────────────────────────────────────
+  # Security ([I3]) — two gates, both free, both keyless:
+  #
+  #   1. `pnpm audit --audit-level=critical` (BLOCK). 0 today;
+  #      any critical CVE filed against a transitive dep fails
+  #      the merge.
+  #   2. `pnpm audit --audit-level=high` (INFORMATIONAL). 17 today
+  #      (transitive @aws-sdk + ws + fast-xml-parser); posts to
+  #      logs without failing the build so the backlog is visible
+  #      but doesn't block on third-party upstream cadence.
+  #   3. Semgrep SAST. The `auto` config bundles p/owasp-top-ten +
+  #      p/typescript + p/nodejsscan rule packs (MIT, OSS, no
+  #      account needed). Blocks on findings. Run `semgrep --config
+  #      auto` locally to reproduce.
+  # ──────────────────────────────────────────────────────────────
+  security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.3
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: CVE gate — critical (BLOCK)
+        run: pnpm audit:critical
+
+      - name: CVE gate — high (informational)
+        run: pnpm audit:high
+
+      - name: Semgrep SAST
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: >-
+            p/owasp-top-ten
+            p/typescript
+            p/nodejsscan
+
+  # ──────────────────────────────────────────────────────────────
   # Integration tests — boot Postgres + Redis + MinIO as GitHub
   # service containers, then run jest. Env values mirror
   # `phase-0-smoke.yml` so the same setup.ts works.
