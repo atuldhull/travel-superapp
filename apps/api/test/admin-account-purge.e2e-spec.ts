@@ -48,7 +48,6 @@ describe('POST /admin/account-purge (integration, requires Docker Postgres)', ()
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
@@ -93,13 +92,11 @@ describe('POST /admin/account-purge (integration, requires Docker Postgres)', ()
   }
 
   it('without bearer → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({ method: 'POST', url: '/api/v1/admin/account-purge' });
     expect(res.statusCode).toBe(401);
   });
 
   it('non-admin → 403', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('non-admin');
     const res = await app.inject({
       method: 'POST',
@@ -110,7 +107,6 @@ describe('POST /admin/account-purge (integration, requires Docker Postgres)', ()
   });
 
   it('admin → 200 { ok: true } and sweeps eligible soft-deleted rows', async () => {
-    if (!dbReachable) return;
     const adminToken = await loginAsAdmin('purge-admin');
     // Seed a user, soft-delete + backdate to 8 days ago so it's
     // past the retention window.
@@ -134,7 +130,6 @@ describe('POST /admin/account-purge (integration, requires Docker Postgres)', ()
   });
 
   it('idempotent: a second admin call still returns ok', async () => {
-    if (!dbReachable) return;
     const adminToken = await loginAsAdmin('idempotent');
     const first = await app.inject({
       method: 'POST',

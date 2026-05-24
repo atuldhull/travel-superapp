@@ -87,7 +87,6 @@ describe('V.UX.20 dishes + food-crawl (integration, requires Docker Postgres)', 
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.dish.deleteMany({ where: { name: { startsWith: TEST_PREFIX } } });
     await prisma.$executeRaw`DELETE FROM "Eatery" WHERE name LIKE ${TEST_PREFIX + '%'}`;
     await prisma.user.deleteMany({ where: { displayName: { startsWith: TEST_PREFIX } } });
@@ -139,7 +138,6 @@ describe('V.UX.20 dishes + food-crawl (integration, requires Docker Postgres)', 
   }
 
   it('GET on unknown eatery → 404 EATERY_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'GET',
       url: '/api/v1/eateries/cl000nonexistent000id00/dishes',
@@ -149,7 +147,6 @@ describe('V.UX.20 dishes + food-crawl (integration, requires Docker Postgres)', 
   });
 
   it('POST without bearer → 401 UNAUTHENTICATED', async () => {
-    if (!dbReachable) return;
     const eateryId = await seedEatery('e1', ANCHOR.lat, ANCHOR.lng);
     const res = await app.inject({
       method: 'POST',
@@ -161,7 +158,6 @@ describe('V.UX.20 dishes + food-crawl (integration, requires Docker Postgres)', 
   });
 
   it('POST happy path → 201 echoes priceUsd as 2-decimal string + photo + caption', async () => {
-    if (!dbReachable) return;
     const eateryId = await seedEatery('e2', ANCHOR.lat, ANCHOR.lng);
     const { accessToken, userId } = await registerAndGetToken('rep');
     const res = await app.inject({
@@ -186,7 +182,6 @@ describe('V.UX.20 dishes + food-crawl (integration, requires Docker Postgres)', 
   });
 
   it('GET after 2 reports returns newest-first', async () => {
-    if (!dbReachable) return;
     const eateryId = await seedEatery('e3', ANCHOR.lat, ANCHOR.lng);
     const { accessToken } = await registerAndGetToken('list');
     await app.inject({
@@ -216,7 +211,6 @@ describe('V.UX.20 dishes + food-crawl (integration, requires Docker Postgres)', 
   });
 
   it('POST with priceUsd=0 → 422 INVALID_DISH_PRICE', async () => {
-    if (!dbReachable) return;
     const eateryId = await seedEatery('e4', ANCHOR.lat, ANCHOR.lng);
     const { accessToken } = await registerAndGetToken('zero');
     const res = await app.inject({
@@ -233,7 +227,6 @@ describe('V.UX.20 dishes + food-crawl (integration, requires Docker Postgres)', 
   });
 
   it('food-crawl owner gate: non-owner → 404 TRIP_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const owner = await registerAndGetToken('owner');
     const tripId = await createTrip(owner.accessToken);
     const stranger = await registerAndGetToken('stranger');
@@ -252,7 +245,6 @@ describe('V.UX.20 dishes + food-crawl (integration, requires Docker Postgres)', 
   });
 
   it('food-crawl with 1 stop → 422 (Zod min(2))', async () => {
-    if (!dbReachable) return;
     const owner = await registerAndGetToken('one');
     const tripId = await createTrip(owner.accessToken);
     const a = await seedEatery('crawl-1', ANCHOR.lat, ANCHOR.lng);
@@ -266,7 +258,6 @@ describe('V.UX.20 dishes + food-crawl (integration, requires Docker Postgres)', 
   });
 
   it('food-crawl happy path: 3 stops in roughly-collinear order', async () => {
-    if (!dbReachable) return;
     const owner = await registerAndGetToken('happy');
     const tripId = await createTrip(owner.accessToken);
 

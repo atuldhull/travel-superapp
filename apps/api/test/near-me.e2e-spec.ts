@@ -98,7 +98,6 @@ describe('Near me now (integration, requires Docker Postgres + Redis)', () => {
   }
 
   it('happy path: returns up to 5 places + weather + safety', async () => {
-    if (!dbReachable) return;
     await seedPlace('a', REMOTE.lat + 0.001, REMOTE.lng + 0.001);
     await seedPlace('b', REMOTE.lat + 0.002, REMOTE.lng + 0.002, 'cafe');
     await seedPlace('c', REMOTE.lat + 0.005, REMOTE.lng + 0.005, 'park');
@@ -136,7 +135,6 @@ describe('Near me now (integration, requires Docker Postgres + Redis)', () => {
   });
 
   it('clamps radius above 10km to 10', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/near-me',
@@ -146,7 +144,6 @@ describe('Near me now (integration, requires Docker Postgres + Redis)', () => {
   });
 
   it('rejects out-of-range coords with 422 VALIDATION_FAILED', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/near-me',
@@ -157,7 +154,6 @@ describe('Near me now (integration, requires Docker Postgres + Redis)', () => {
   });
 
   it('public endpoint — no auth required', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/near-me',

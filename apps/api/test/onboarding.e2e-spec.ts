@@ -52,7 +52,6 @@ describe('Onboarding flow (integration, requires Docker Postgres)', () => {
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     // Trips first (FK to User), then users.
     await prisma.trip.deleteMany({
       where: { user: { displayName: { startsWith: TEST_PREFIX } } },
@@ -109,14 +108,12 @@ describe('Onboarding flow (integration, requires Docker Postgres)', () => {
   }
 
   it('fresh user → whoami.hasSeenOnboarding=false', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('fresh');
     const me = await whoami(accessToken);
     expect(me.hasSeenOnboarding).toBe(false);
   });
 
   it('onboarding/complete with empty body → flag flips, NO sample seeded', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('flag-only');
     const res = await app.inject({
       method: 'POST',
@@ -135,7 +132,6 @@ describe('Onboarding flow (integration, requires Docker Postgres)', () => {
   });
 
   it('onboarding/complete with seedSample=true → seeds a Sample trip; idempotent on re-call', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('seed');
     const first = await app.inject({
       method: 'POST',
@@ -162,7 +158,6 @@ describe('Onboarding flow (integration, requires Docker Postgres)', () => {
   });
 
   it('user with existing trips + seedSample=true → flag flips, no extra trip', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('has-trip');
     // Create a real trip first.
     const create = await app.inject({
@@ -187,7 +182,6 @@ describe('Onboarding flow (integration, requires Docker Postgres)', () => {
   });
 
   it('unauthenticated → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/onboarding/complete',

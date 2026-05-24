@@ -139,7 +139,6 @@ describe('Trip optimize day route (integration, requires Docker Postgres + Redis
   }
 
   it('reorders the day and reports before/after seconds', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('happy');
     // Three coords at increasing offsets from the trip anchor. The
     // current order goes anchor → far → mid → close (sub-optimal);
@@ -171,7 +170,6 @@ describe('Trip optimize day route (integration, requires Docker Postgres + Redis
   });
 
   it('day with one routable item is a no-op', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('single');
     const lone = await seedPlace('lone', REMOTE.lat + 0.01, REMOTE.lng + 0.01);
     const { tripId, dayId } = await createTripWithDay(accessToken, [lone]);
@@ -187,7 +185,6 @@ describe('Trip optimize day route (integration, requires Docker Postgres + Redis
   });
 
   it('non-owner without share → 404 TRIP_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('alice');
     const bob = await registerUser('bob');
     const a = await seedPlace('a', REMOTE.lat + 0.01, REMOTE.lng + 0.01);
@@ -203,7 +200,6 @@ describe('Trip optimize day route (integration, requires Docker Postgres + Redis
   });
 
   it('unauthenticated → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/trips/whatever/days/whatever/optimize',

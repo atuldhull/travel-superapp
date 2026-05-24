@@ -83,7 +83,6 @@ describe('V.UX.24 agent dashboard + review response (integration, requires Docke
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.review.deleteMany({ where: { body: { startsWith: TEST_PREFIX } } });
     await prisma.escrowHold.deleteMany({
       where: { stripePaymentIntent: { startsWith: TEST_PREFIX } },
@@ -154,7 +153,6 @@ describe('V.UX.24 agent dashboard + review response (integration, requires Docke
 
   // 1. Non-agent role on /agent/me → 403.
   it('Non-agent caller hits 403 ROLE_FORBIDDEN on /agent/me', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerAndGetToken('basic');
     const res = await app.inject({
       method: 'GET',
@@ -167,7 +165,6 @@ describe('V.UX.24 agent dashboard + review response (integration, requires Docke
 
   // 2. Agent role w/ no Agent row → 404 AGENT_PROFILE_NOT_FOUND.
   it('Agent role w/o an Agent row → 404 AGENT_PROFILE_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const u = await registerAndGetToken('orphan-agent');
     const token = await promoteToAgentAndRelogin({ userId: u.userId, email: u.email });
     const res = await app.inject({
@@ -181,7 +178,6 @@ describe('V.UX.24 agent dashboard + review response (integration, requires Docke
 
   // 3. Profile round-trip via PATCH.
   it('GET + PATCH /agent/me round-trips bio + languages + regions', async () => {
-    if (!dbReachable) return;
     const u = await registerAndGetToken('full');
     const token = await promoteToAgentAndRelogin({ userId: u.userId, email: u.email });
     await seedAgentRow({ userId: u.userId, suffix: 'full' });
@@ -213,7 +209,6 @@ describe('V.UX.24 agent dashboard + review response (integration, requires Docke
 
   // 4. Dashboard composite.
   it('GET /agent/me/dashboard returns booking + earnings sum + review', async () => {
-    if (!dbReachable) return;
     const guest = await registerAndGetToken('guest');
     const u = await registerAndGetToken('dash');
     const token = await promoteToAgentAndRelogin({ userId: u.userId, email: u.email });
@@ -260,7 +255,6 @@ describe('V.UX.24 agent dashboard + review response (integration, requires Docke
 
   // 5. POST /reviews/:id/response — happy path then 409 on re-submit.
   it('Review response is one-shot (second call → 409 REVIEW_RESPONSE_LOCKED)', async () => {
-    if (!dbReachable) return;
     const guest = await registerAndGetToken('rev-guest');
     const u = await registerAndGetToken('rev-agent');
     const token = await promoteToAgentAndRelogin({ userId: u.userId, email: u.email });
@@ -299,7 +293,6 @@ describe('V.UX.24 agent dashboard + review response (integration, requires Docke
 
   // 6. Cross-agent / wrong-target → 403.
   it('Responding to a review that is not about the caller → 403 REVIEW_RESPONSE_FORBIDDEN', async () => {
-    if (!dbReachable) return;
     const guest = await registerAndGetToken('xa-guest');
     const u = await registerAndGetToken('xa-agent');
     const token = await promoteToAgentAndRelogin({ userId: u.userId, email: u.email });

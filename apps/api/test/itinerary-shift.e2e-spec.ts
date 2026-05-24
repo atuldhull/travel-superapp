@@ -101,7 +101,6 @@ describe('Trip × itinerary shift (G4, integration)', () => {
   }
 
   it('shifts every day forward by 7 days and returns the row count', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('shift');
     const { tripId, dayDates } = await createTripWithDays(accessToken);
 
@@ -134,7 +133,6 @@ describe('Trip × itinerary shift (G4, integration)', () => {
   });
 
   it('deltaDays=0 is a no-op (shifted=0)', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('noop');
     const { tripId } = await createTripWithDays(accessToken);
 
@@ -149,7 +147,6 @@ describe('Trip × itinerary shift (G4, integration)', () => {
   });
 
   it('422 INVALID_INPUT when deltaDays > 365', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('range');
     const { tripId } = await createTripWithDays(accessToken);
 
@@ -163,7 +160,6 @@ describe('Trip × itinerary shift (G4, integration)', () => {
   });
 
   it('IDOR: non-owner → 404 TRIP_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('alice');
     const bob = await registerUser('bob');
     const { tripId } = await createTripWithDays(alice.accessToken);
@@ -179,7 +175,6 @@ describe('Trip × itinerary shift (G4, integration)', () => {
   });
 
   it('unauthenticated → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/trips/whatever/itinerary/shift',

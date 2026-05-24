@@ -86,7 +86,6 @@ describe('Auth guards (integration, requires Docker Postgres)', () => {
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
@@ -117,7 +116,6 @@ describe('Auth guards (integration, requires Docker Postgres)', () => {
   }
 
   it('public routes — /health/live + /auth/register — are reachable without a token', async () => {
-    if (!dbReachable) return;
     const live = await app.inject({ method: 'GET', url: '/health/live' });
     expect(live.statusCode).toBe(200);
 
@@ -134,14 +132,12 @@ describe('Auth guards (integration, requires Docker Postgres)', () => {
   });
 
   it('protected /auth/me — missing bearer → 401 UNAUTHENTICATED', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({ method: 'GET', url: '/api/v1/auth/me' });
     expect(res.statusCode).toBe(401);
     expect(JSON.parse(res.body).code).toBe('UNAUTHENTICATED');
   });
 
   it('protected /auth/me — malformed Authorization → 401 UNAUTHENTICATED', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'GET',
       url: '/api/v1/auth/me',
@@ -152,7 +148,6 @@ describe('Auth guards (integration, requires Docker Postgres)', () => {
   });
 
   it('protected /auth/me — bogus bearer token → 401 UNAUTHENTICATED', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'GET',
       url: '/api/v1/auth/me',
@@ -163,7 +158,6 @@ describe('Auth guards (integration, requires Docker Postgres)', () => {
   });
 
   it('protected /auth/me — valid access token → 200 with {sub, sid, role}', async () => {
-    if (!dbReachable) return;
     const { userId, accessToken } = await registerAndGetToken('me-ok');
     const res = await app.inject({
       method: 'GET',
@@ -178,7 +172,6 @@ describe('Auth guards (integration, requires Docker Postgres)', () => {
   });
 
   it('RolesGuard — @Roles("admin") on a `user` token → 403 ROLE_FORBIDDEN', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerAndGetToken('role-user');
     const res = await app.inject({
       method: 'GET',
@@ -192,7 +185,6 @@ describe('Auth guards (integration, requires Docker Postgres)', () => {
   });
 
   it('RolesGuard — @Roles("admin") on an admin-minted token → 200', async () => {
-    if (!dbReachable) return;
     // Mint a synthetic admin token directly through the TokenService
     // port — we don't expose an admin-create endpoint yet, so this is
     // the appropriate seam for exercising the role path.
@@ -212,7 +204,6 @@ describe('Auth guards (integration, requires Docker Postgres)', () => {
   });
 
   it('@CurrentUser() — protected route without @Roles still reads req.user', async () => {
-    if (!dbReachable) return;
     const { userId, accessToken } = await registerAndGetToken('current-user');
     const res = await app.inject({
       method: 'GET',

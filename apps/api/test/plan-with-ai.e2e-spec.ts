@@ -130,7 +130,6 @@ describe('Trip × plan-with-ai + center (integration, requires Docker Postgres)'
 
   describe('POST /trips/:id/plan-with-ai', () => {
     it('threads body.instruction into the planner port', async () => {
-      if (!dbReachable) return;
       const { accessToken } = await registerUser('inst');
       const trip = await createTrip(accessToken);
 
@@ -154,7 +153,6 @@ describe('Trip × plan-with-ai + center (integration, requires Docker Postgres)'
     });
 
     it('tolerates a bodyless call (the onboarding caller pattern)', async () => {
-      if (!dbReachable) return;
       const { accessToken } = await registerUser('nobody');
       const trip = await createTrip(accessToken);
 
@@ -170,7 +168,6 @@ describe('Trip × plan-with-ai + center (integration, requires Docker Postgres)'
     });
 
     it('tolerates a garbage body and ignores the instruction', async () => {
-      if (!dbReachable) return;
       const { accessToken } = await registerUser('garbage');
       const trip = await createTrip(accessToken);
 
@@ -188,7 +185,6 @@ describe('Trip × plan-with-ai + center (integration, requires Docker Postgres)'
     });
 
     it('trims + caps instruction at 600 chars before threading', async () => {
-      if (!dbReachable) return;
       const { accessToken } = await registerUser('cap');
       const trip = await createTrip(accessToken);
 
@@ -209,7 +205,6 @@ describe('Trip × plan-with-ai + center (integration, requires Docker Postgres)'
     });
 
     it('non-owner → 404 TRIP_NOT_FOUND (IDOR defence)', async () => {
-      if (!dbReachable) return;
       const alice = await registerUser('alice');
       const bob = await registerUser('bob');
       const trip = await createTrip(alice.accessToken);
@@ -225,7 +220,6 @@ describe('Trip × plan-with-ai + center (integration, requires Docker Postgres)'
     });
 
     it('unauthenticated → 401 UNAUTHENTICATED', async () => {
-      if (!dbReachable) return;
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/trips/whatever/plan-with-ai',
@@ -238,7 +232,6 @@ describe('Trip × plan-with-ai + center (integration, requires Docker Postgres)'
 
   describe('GET /trips/:id/center (Phase 2 polish F2)', () => {
     it('returns the trip center coords', async () => {
-      if (!dbReachable) return;
       const { accessToken } = await registerUser('center');
       const trip = await createTrip(accessToken);
 
@@ -254,7 +247,6 @@ describe('Trip × plan-with-ai + center (integration, requires Docker Postgres)'
     });
 
     it('non-owner → 404 TRIP_NOT_FOUND', async () => {
-      if (!dbReachable) return;
       const alice = await registerUser('center-alice');
       const bob = await registerUser('center-bob');
       const trip = await createTrip(alice.accessToken);
@@ -269,7 +261,6 @@ describe('Trip × plan-with-ai + center (integration, requires Docker Postgres)'
     });
 
     it('unauthenticated → 401 UNAUTHENTICATED', async () => {
-      if (!dbReachable) return;
       const res = await app.inject({
         method: 'GET',
         url: '/api/v1/trips/whatever/center',

@@ -67,7 +67,6 @@ describe('GET /feed/me (integration, requires Docker Postgres)', () => {
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
@@ -162,14 +161,12 @@ describe('GET /feed/me (integration, requires Docker Postgres)', () => {
   }
 
   it('GET /feed/me without bearer → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({ method: 'GET', url: '/api/v1/feed/me' });
     expect(res.statusCode).toBe(401);
     expect(JSON.parse(res.body).code).toBe('UNAUTHENTICATED');
   });
 
   it('empty user → 200 { items: [], nextBefore: null }', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('empty');
     const body = await getFeed(accessToken);
     expect(body.items).toEqual([]);
@@ -177,7 +174,6 @@ describe('GET /feed/me (integration, requires Docker Postgres)', () => {
   });
 
   it('rich user → all 4 kinds present, sorted desc by occurredAt', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('rich');
     // Sequence with small gaps so timestamps strictly order.
     await createTrip(accessToken);
@@ -206,7 +202,6 @@ describe('GET /feed/me (integration, requires Docker Postgres)', () => {
   });
 
   it('cursor pagination: limit=2 + before=cursor → strictly older items', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('paginate');
     // 5 reviews with small gaps so each gets a distinct createdAt.
     for (let i = 0; i < 5; i++) {
@@ -239,7 +234,6 @@ describe('GET /feed/me (integration, requires Docker Postgres)', () => {
   });
 
   it('cross-user isolation: Bob’s feed never sees Alice’s activity', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('alice');
     const bob = await registerUser('bob');
     // Alice generates activity; Bob stays quiet.

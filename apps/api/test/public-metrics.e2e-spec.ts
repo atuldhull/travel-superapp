@@ -54,7 +54,6 @@ describe('V.UX.40 — Public metrics endpoint (integration, requires Docker Post
   });
 
   it('GET /metrics-public is public + returns the sanitized 3-counter shape', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({ method: 'GET', url: '/api/v1/metrics-public' });
     expect(res.statusCode).toBe(200);
     const body = JSON.parse(res.body) as MetricsResp;
@@ -70,7 +69,6 @@ describe('V.UX.40 — Public metrics endpoint (integration, requires Docker Post
   });
 
   it('caches for 5 minutes — second call returns same computedAt', async () => {
-    if (!dbReachable) return;
     const first = await app.inject({ method: 'GET', url: '/api/v1/metrics-public' });
     const second = await app.inject({ method: 'GET', url: '/api/v1/metrics-public' });
     const a = JSON.parse(first.body) as MetricsResp;

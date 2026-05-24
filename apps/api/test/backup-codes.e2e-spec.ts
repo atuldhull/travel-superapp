@@ -53,7 +53,6 @@ describe('MFA backup codes (integration, requires Docker Postgres)', () => {
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
@@ -113,7 +112,6 @@ describe('MFA backup codes (integration, requires Docker Postgres)', () => {
   }
 
   it('enrolment returns 10 unique 8-char alphanumeric backup codes', async () => {
-    if (!dbReachable) return;
     const { userId, backupCodes } = await enrollUser('enrol');
 
     expect(backupCodes).toHaveLength(10);
@@ -133,7 +131,6 @@ describe('MFA backup codes (integration, requires Docker Postgres)', () => {
   });
 
   it('login with a backup code succeeds and marks that code consumed', async () => {
-    if (!dbReachable) return;
     const { email, password, userId, backupCodes } = await enrollUser('consume');
     const code = backupCodes[0]!;
 
@@ -152,7 +149,6 @@ describe('MFA backup codes (integration, requires Docker Postgres)', () => {
   });
 
   it('replaying a consumed backup code returns 401 INVALID_MFA', async () => {
-    if (!dbReachable) return;
     const { email, password, backupCodes } = await enrollUser('replay');
     const code = backupCodes[0]!;
 
@@ -175,7 +171,6 @@ describe('MFA backup codes (integration, requires Docker Postgres)', () => {
   });
 
   it('TOTP code still works after backup codes are issued (parallel factors)', async () => {
-    if (!dbReachable) return;
     const { email, password, totpSecret, userId } = await enrollUser('parallel');
     const loginRes = await app.inject({
       method: 'POST',
@@ -192,7 +187,6 @@ describe('MFA backup codes (integration, requires Docker Postgres)', () => {
   });
 
   it('regenerate rotates codes — old ones no longer work, new ones do', async () => {
-    if (!dbReachable) return;
     const {
       email,
       password,
@@ -236,7 +230,6 @@ describe('MFA backup codes (integration, requires Docker Postgres)', () => {
   });
 
   it('regenerate with a wrong TOTP → 401 INVALID_MFA', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await enrollUser('regen-deny');
     const res = await app.inject({
       method: 'POST',
@@ -249,7 +242,6 @@ describe('MFA backup codes (integration, requires Docker Postgres)', () => {
   });
 
   it('disabling MFA clears every backup code', async () => {
-    if (!dbReachable) return;
     const { userId, accessToken, totpSecret } = await enrollUser('disable');
 
     const disable = await app.inject({

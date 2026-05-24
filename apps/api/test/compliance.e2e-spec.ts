@@ -61,7 +61,6 @@ describe('V.UX.37 — Compliance dashboard (integration, requires Docker Postgre
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     const ourUsers = await prisma.user.findMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
       select: { id: true },
@@ -118,13 +117,11 @@ describe('V.UX.37 — Compliance dashboard (integration, requires Docker Postgre
   }
 
   it('GET /compliance/retention without bearer → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({ method: 'GET', url: '/api/v1/compliance/retention' });
     expect(res.statusCode).toBe(401);
   });
 
   it('regular user → 403 on /compliance/retention', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('regular');
     const res = await app.inject({
       method: 'GET',
@@ -135,7 +132,6 @@ describe('V.UX.37 — Compliance dashboard (integration, requires Docker Postgre
   });
 
   it('compliance role → retention dashboard with seeded soft-delete count', async () => {
-    if (!dbReachable) return;
     const compliance = await loginAsRole('compliance-actor', 'compliance');
     const victim = await registerUser('soft-deleted');
     await prisma.user.update({
@@ -156,7 +152,6 @@ describe('V.UX.37 — Compliance dashboard (integration, requires Docker Postgre
   });
 
   it('admin role can also read /compliance/retention', async () => {
-    if (!dbReachable) return;
     const admin = await loginAsRole('admin-actor', 'admin');
     const res = await app.inject({
       method: 'GET',
@@ -167,7 +162,6 @@ describe('V.UX.37 — Compliance dashboard (integration, requires Docker Postgre
   });
 
   it('takedowns list includes delete_media but excludes ban', async () => {
-    if (!dbReachable) return;
     const compliance = await loginAsRole('takedown-reader', 'compliance');
     const admin = await loginAsRole('takedown-actor', 'admin');
 

@@ -74,7 +74,6 @@ describe('PATCH day items (integration, requires Docker Postgres)', () => {
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.place.deleteMany({
       where: { sourceKey: { startsWith: SOURCE_PREFIX } },
     });
@@ -146,7 +145,6 @@ describe('PATCH day items (integration, requires Docker Postgres)', () => {
   }
 
   it('reorder: same placeIds with new positions → persisted', async () => {
-    if (!dbReachable) return;
     const token = await registerAndGetToken('reorder');
     const { tripId, dayId, placeIds } = await createTripWithItinerary(token, 3);
 
@@ -169,7 +167,6 @@ describe('PATCH day items (integration, requires Docker Postgres)', () => {
   });
 
   it('remove: subset leaves only those items', async () => {
-    if (!dbReachable) return;
     const token = await registerAndGetToken('remove');
     const { tripId, dayId, placeIds } = await createTripWithItinerary(token, 3);
 
@@ -186,7 +183,6 @@ describe('PATCH day items (integration, requires Docker Postgres)', () => {
   });
 
   it('add: new placeIds with free-form notes and a null-placeId activity', async () => {
-    if (!dbReachable) return;
     const token = await registerAndGetToken('add');
     const { tripId, dayId, placeIds } = await createTripWithItinerary(token, 3);
 
@@ -211,7 +207,6 @@ describe('PATCH day items (integration, requires Docker Postgres)', () => {
   });
 
   it('wipe: empty array leaves the day with no items', async () => {
-    if (!dbReachable) return;
     const token = await registerAndGetToken('wipe');
     const { tripId, dayId } = await createTripWithItinerary(token, 3);
 
@@ -227,7 +222,6 @@ describe('PATCH day items (integration, requires Docker Postgres)', () => {
   });
 
   it('day belongs to another user → 404 TRIP_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const aliceToken = await registerAndGetToken('alice');
     const bobToken = await registerAndGetToken('bob');
     const { tripId, dayId, placeIds } = await createTripWithItinerary(aliceToken, 1);
@@ -243,7 +237,6 @@ describe('PATCH day items (integration, requires Docker Postgres)', () => {
   });
 
   it('day belongs to a different trip of the same user → 404', async () => {
-    if (!dbReachable) return;
     const token = await registerAndGetToken('wrong-trip');
     const trip1 = await createTripWithItinerary(token, 1);
     const trip2 = await createTripWithItinerary(token, 1);
@@ -260,7 +253,6 @@ describe('PATCH day items (integration, requires Docker Postgres)', () => {
   });
 
   it('non-existent placeId → 404 PLACE_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const token = await registerAndGetToken('bad-place');
     const { tripId, dayId } = await createTripWithItinerary(token, 1);
 
@@ -277,7 +269,6 @@ describe('PATCH day items (integration, requires Docker Postgres)', () => {
   });
 
   it('duplicate positions → 422 DUPLICATE_POSITION', async () => {
-    if (!dbReachable) return;
     const token = await registerAndGetToken('dup-pos');
     const { tripId, dayId, placeIds } = await createTripWithItinerary(token, 2);
 
@@ -297,7 +288,6 @@ describe('PATCH day items (integration, requires Docker Postgres)', () => {
   });
 
   it('> 20 items → 422 VALIDATION_FAILED (Zod cap)', async () => {
-    if (!dbReachable) return;
     const token = await registerAndGetToken('too-many');
     const { tripId, dayId } = await createTripWithItinerary(token, 1);
     const items = Array.from({ length: 21 }, (_, i) => ({ position: i + 1, placeId: null }));
@@ -312,7 +302,6 @@ describe('PATCH day items (integration, requires Docker Postgres)', () => {
   });
 
   it('unauthenticated → 401 UNAUTHENTICATED', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'PATCH',
       url: '/api/v1/trips/fake-trip/itinerary/fake-day',

@@ -169,7 +169,6 @@ describe('Food module (integration, requires Docker Postgres + Redis)', () => {
   }
 
   it('POST /eateries/search without a bearer → 401 UNAUTHENTICATED', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/eateries/search',
@@ -180,7 +179,6 @@ describe('Food module (integration, requires Docker Postgres + Redis)', () => {
   });
 
   it('happy path → 200 with listings + provider input echoed', async () => {
-    if (!dbReachable) return;
     const tok = await token('ok');
     const res = await app.inject({
       method: 'POST',
@@ -201,7 +199,6 @@ describe('Food module (integration, requires Docker Postgres + Redis)', () => {
   });
 
   it('cuisineTag filter flows through to the provider + narrows results', async () => {
-    if (!dbReachable) return;
     const tok = await token('cuisine');
     const res = await app.inject({
       method: 'POST',
@@ -219,7 +216,6 @@ describe('Food module (integration, requires Docker Postgres + Redis)', () => {
   });
 
   it('maxPriceTier filter caps results to ≤ tier', async () => {
-    if (!dbReachable) return;
     const tok = await token('price');
     const res = await app.inject({
       method: 'POST',
@@ -236,7 +232,6 @@ describe('Food module (integration, requires Docker Postgres + Redis)', () => {
   });
 
   it('radius > 25km → 422 INVALID_RADIUS', async () => {
-    if (!dbReachable) return;
     const tok = await token('bad-radius');
     const res = await app.inject({
       method: 'POST',
@@ -249,7 +244,6 @@ describe('Food module (integration, requires Docker Postgres + Redis)', () => {
   });
 
   it('maxPriceTier=6 → 422 VALIDATION_FAILED (Zod blocks at DTO)', async () => {
-    if (!dbReachable) return;
     const tok = await token('bad-tier');
     const res = await app.inject({
       method: 'POST',
@@ -263,7 +257,6 @@ describe('Food module (integration, requires Docker Postgres + Redis)', () => {
   });
 
   it('cache hit: identical search → upstream called once across 3 HTTP requests', async () => {
-    if (!dbReachable) return;
     const tok = await token('cache-hit');
     const payload = basePayload({ center: { lat: 11.111, lng: -148.222 } });
     for (const _ of [1, 2, 3]) {
@@ -280,7 +273,6 @@ describe('Food module (integration, requires Docker Postgres + Redis)', () => {
   });
 
   it('cache miss: different cuisineTag → separate upstream call', async () => {
-    if (!dbReachable) return;
     const tok = await token('cache-cuisine');
     await app.inject({
       method: 'POST',

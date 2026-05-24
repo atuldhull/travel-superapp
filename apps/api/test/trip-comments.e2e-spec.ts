@@ -62,7 +62,6 @@ describe('Trip comments (integration, requires Docker Postgres)', () => {
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.tripComment.deleteMany({ where: { body: { startsWith: TEST_PREFIX } } });
     await prisma.user.deleteMany({ where: { displayName: { startsWith: TEST_PREFIX } } });
   });
@@ -131,7 +130,6 @@ describe('Trip comments (integration, requires Docker Postgres)', () => {
   }
 
   it('no bearer → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/trips/whatever/comments',
@@ -141,7 +139,6 @@ describe('Trip comments (integration, requires Docker Postgres)', () => {
   });
 
   it('comment on a never-published trip → 404 TRIP_NOT_COMMENTABLE', async () => {
-    if (!dbReachable) return;
     const owner = await registerUser('owner1');
     const tripId = await createTrip(owner.accessToken);
     const res = await postComment(owner.accessToken, tripId, `${TEST_PREFIX} hello`);
@@ -150,7 +147,6 @@ describe('Trip comments (integration, requires Docker Postgres)', () => {
   });
 
   it('comment on a published trip → 201; thread GET returns it named', async () => {
-    if (!dbReachable) return;
     const owner = await registerUser('owner2');
     const visitor = await registerUser('visitor');
     const tripId = await createTrip(owner.accessToken);
@@ -167,7 +163,6 @@ describe('Trip comments (integration, requires Docker Postgres)', () => {
   });
 
   it('a blocked commenter is rejected (403)', async () => {
-    if (!dbReachable) return;
     const owner = await registerUser('owner3');
     const hater = await registerUser('hater');
     const tripId = await createTrip(owner.accessToken);
@@ -186,7 +181,6 @@ describe('Trip comments (integration, requires Docker Postgres)', () => {
   });
 
   it('author deletes own; stranger 404s; trip owner can moderate', async () => {
-    if (!dbReachable) return;
     const owner = await registerUser('owner4');
     const commenter = await registerUser('commenter');
     const stranger = await registerUser('stranger');

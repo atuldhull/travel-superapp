@@ -60,7 +60,6 @@ describe('Session hardening (integration, requires Docker Postgres)', () => {
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
@@ -74,8 +73,6 @@ describe('Session hardening (integration, requires Docker Postgres)', () => {
   });
 
   it(`concurrency cap — the ${MAX_SESSIONS_PER_USER + 1}th login revokes the oldest, newest ${MAX_SESSIONS_PER_USER} stay live`, async () => {
-    if (!dbReachable) return;
-
     const email = `${TEST_PREFIX}-cap-${uniqueSuffix()}@example.com`;
     const password = 'correct-horse-battery-staple';
 
@@ -130,8 +127,6 @@ describe('Session hardening (integration, requires Docker Postgres)', () => {
   }, 15_000);
 
   it('device-fingerprint binding — /refresh from a different UA cascades and revokes ALL sessions', async () => {
-    if (!dbReachable) return;
-
     const email = `${TEST_PREFIX}-dfp-${uniqueSuffix()}@example.com`;
     const password = 'correct-horse-battery-staple';
 
@@ -178,8 +173,6 @@ describe('Session hardening (integration, requires Docker Postgres)', () => {
   });
 
   it('device-fingerprint binding — same UA across register + refresh still works normally', async () => {
-    if (!dbReachable) return;
-
     const email = `${TEST_PREFIX}-dfp-ok-${uniqueSuffix()}@example.com`;
     const reg = await app.inject({
       method: 'POST',

@@ -252,7 +252,6 @@ describe('Trip overview (integration, requires Docker Postgres + Redis)', () => 
   };
 
   it('bundles all five sections ok:true when trip has dates + itinerary generated', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('full');
     const trip = await createTrip(accessToken, {
       startsOn: '2026-12-01',
@@ -294,7 +293,6 @@ describe('Trip overview (integration, requires Docker Postgres + Redis)', () => 
   });
 
   it('dateless trip → stays + events sections ok:false with TRIP_DATES_REQUIRED, rest still ok', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('no-dates');
     const trip = await createTrip(accessToken); // no dates
 
@@ -323,7 +321,6 @@ describe('Trip overview (integration, requires Docker Postgres + Redis)', () => 
   });
 
   it('weather provider failure → weather section ok:false, other sections unaffected', async () => {
-    if (!dbReachable) return;
     weatherStub.shouldFail = true;
     const { accessToken } = await registerUser('weather-fail');
     const trip = await createTrip(accessToken, {
@@ -350,7 +347,6 @@ describe('Trip overview (integration, requires Docker Postgres + Redis)', () => 
   });
 
   it('non-owner → 404 TRIP_NOT_FOUND, whole response fails (not partial)', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('alice');
     const bob = await registerUser('bob');
     const trip = await createTrip(alice.accessToken, {
@@ -370,7 +366,6 @@ describe('Trip overview (integration, requires Docker Postgres + Redis)', () => 
   });
 
   it('unauthenticated → 401 UNAUTHENTICATED', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'GET',
       url: '/api/v1/trips/whatever/overview',

@@ -54,7 +54,6 @@ describe('Notifications subscribers (integration, requires Docker Postgres)', ()
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     sender.drainSent();
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
@@ -87,7 +86,6 @@ describe('Notifications subscribers (integration, requires Docker Postgres)', ()
   }
 
   it('POST /auth/register triggers SessionIssuedHandler → email stub', async () => {
-    if (!dbReachable) return;
     const { userId } = await registerUser('reg');
     const sent = sender.peekSent();
     const emails = sent.filter((s) => s.templateKey === 'session_issued_new_device');
@@ -102,7 +100,6 @@ describe('Notifications subscribers (integration, requires Docker Postgres)', ()
   });
 
   it('POST /trips/:id/itinerary triggers ItineraryReadyHandler → push stub with dayCount', async () => {
-    if (!dbReachable) return;
     const { accessToken, userId } = await registerUser('itin');
 
     const create = await app.inject({
@@ -142,7 +139,6 @@ describe('Notifications subscribers (integration, requires Docker Postgres)', ()
   });
 
   it('re-generating itinerary emits a second notification (subscribers are not debounced)', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('redo');
 
     const create = await app.inject({
@@ -177,7 +173,6 @@ describe('Notifications subscribers (integration, requires Docker Postgres)', ()
   });
 
   it('one login flow only triggers ONE session-issued notification (one event, one handler call)', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('one');
     sender.drainSent();
     void accessToken;

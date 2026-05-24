@@ -59,7 +59,6 @@ describe('Trip module (integration, requires Docker Postgres)', () => {
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
@@ -97,7 +96,6 @@ describe('Trip module (integration, requires Docker Postgres)', () => {
   const VICTORIA = { lat: 51.4952, lng: -0.1441 };
 
   it('POST /trips without a bearer → 401 UNAUTHENTICATED', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/trips',
@@ -108,7 +106,6 @@ describe('Trip module (integration, requires Docker Postgres)', () => {
   });
 
   it('POST /trips creates a draft row with PostGIS center populated', async () => {
-    if (!dbReachable) return;
     const { userId, accessToken } = await registerUser('create');
     const res = await app.inject({
       method: 'POST',
@@ -147,7 +144,6 @@ describe('Trip module (integration, requires Docker Postgres)', () => {
   });
 
   it('radius > 500 km → 422 INVALID_RADIUS', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('radius-big');
     const res = await app.inject({
       method: 'POST',
@@ -160,7 +156,6 @@ describe('Trip module (integration, requires Docker Postgres)', () => {
   });
 
   it('radius <= 0 → 422 from Zod (VALIDATION_FAILED on zero, positive check)', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('radius-zero');
     const res = await app.inject({
       method: 'POST',
@@ -176,7 +171,6 @@ describe('Trip module (integration, requires Docker Postgres)', () => {
   });
 
   it('startsOn > endsOn → 422 INVALID_DATE_RANGE', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('bad-range');
     const res = await app.inject({
       method: 'POST',
@@ -195,7 +189,6 @@ describe('Trip module (integration, requires Docker Postgres)', () => {
   });
 
   it('GET /trips lists only my own trips (no cross-user leak)', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('alice');
     const bob = await registerUser('bob');
 
@@ -224,7 +217,6 @@ describe('Trip module (integration, requires Docker Postgres)', () => {
   });
 
   it("GET /trips/:id of another user's trip → 404 TRIP_NOT_FOUND (IDOR defence)", async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('a-idor');
     const bob = await registerUser('b-idor');
 

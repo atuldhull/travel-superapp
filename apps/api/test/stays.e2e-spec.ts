@@ -160,7 +160,6 @@ describe('Stays module (integration, requires Docker Postgres + Redis)', () => {
   }
 
   it('POST /stays/search without a bearer → 401 UNAUTHENTICATED', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/stays/search',
@@ -171,7 +170,6 @@ describe('Stays module (integration, requires Docker Postgres + Redis)', () => {
   });
 
   it('POST /stays/search happy path → 200 + provider sees the command', async () => {
-    if (!dbReachable) return;
     const tok = await token('ok');
     const res = await app.inject({
       method: 'POST',
@@ -196,7 +194,6 @@ describe('Stays module (integration, requires Docker Postgres + Redis)', () => {
   });
 
   it('defaults guests to 1 when absent', async () => {
-    if (!dbReachable) return;
     const tok = await token('default-guests');
     await app.inject({
       method: 'POST',
@@ -212,7 +209,6 @@ describe('Stays module (integration, requires Docker Postgres + Redis)', () => {
   });
 
   it('radius > 50km → 422 INVALID_RADIUS', async () => {
-    if (!dbReachable) return;
     const tok = await token('bad-radius');
     const res = await app.inject({
       method: 'POST',
@@ -225,7 +221,6 @@ describe('Stays module (integration, requires Docker Postgres + Redis)', () => {
   });
 
   it('checkOut ≤ checkIn → 422 INVALID_DATE_RANGE', async () => {
-    if (!dbReachable) return;
     const tok = await token('bad-dates');
     const res = await app.inject({
       method: 'POST',
@@ -238,7 +233,6 @@ describe('Stays module (integration, requires Docker Postgres + Redis)', () => {
   });
 
   it('date range > 90 nights → 422 INVALID_DATE_RANGE', async () => {
-    if (!dbReachable) return;
     const tok = await token('long-range');
     // V.UX.23 — cap bumped from 30 to 90 nights so the digital-nomad
     // long-stay searches are valid. Push past 90 here (~120 nights).
@@ -253,7 +247,6 @@ describe('Stays module (integration, requires Docker Postgres + Redis)', () => {
   });
 
   it('cache hit: identical search → upstream called once, 3 HTTP calls served', async () => {
-    if (!dbReachable) return;
     const tok = await token('cache-hit');
     const payload = basePayload({ center: { lat: 28.111, lng: -108.222 } });
 
@@ -271,7 +264,6 @@ describe('Stays module (integration, requires Docker Postgres + Redis)', () => {
   });
 
   it('cache miss on different dates: upstream called twice', async () => {
-    if (!dbReachable) return;
     const tok = await token('cache-dates');
     await app.inject({
       method: 'POST',

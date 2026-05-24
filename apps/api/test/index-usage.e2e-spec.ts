@@ -76,8 +76,6 @@ describe('Index usage acceptance [III.12.4] (integration, requires Docker Postgr
   });
 
   it('every expected index exists in pg_indexes', async () => {
-    if (!dbReachable) return;
-
     const rows = await prisma.$queryRaw<{ indexname: string }[]>`
       SELECT indexname
       FROM pg_indexes
@@ -90,8 +88,6 @@ describe('Index usage acceptance [III.12.4] (integration, requires Docker Postgr
   });
 
   it('EXPLAIN on a radius query hits Place_coordinates_gist', async () => {
-    if (!dbReachable) return;
-
     // Seed a small grid so the planner sees >0 rows. Then ANALYZE to
     // refresh the stats — without that, the planner's defaults may
     // route to a seq-scan on a tiny table. With forced `enable_seqscan

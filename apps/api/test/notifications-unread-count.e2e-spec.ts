@@ -53,7 +53,6 @@ describe('GET /notifications/me/unread-count (integration, requires Docker Postg
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
@@ -105,7 +104,6 @@ describe('GET /notifications/me/unread-count (integration, requires Docker Postg
   }
 
   it('without bearer → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'GET',
       url: '/api/v1/notifications/me/unread-count',
@@ -115,7 +113,6 @@ describe('GET /notifications/me/unread-count (integration, requires Docker Postg
   });
 
   it('empty inbox → { unread: 0 }', async () => {
-    if (!dbReachable) return;
     const { userId, accessToken } = await registerUser('empty');
     // Mark the registration-time session_issued row read so the
     // inbox starts at zero.
@@ -128,7 +125,6 @@ describe('GET /notifications/me/unread-count (integration, requires Docker Postg
   });
 
   it('counts unread including the registration-time row + seeded extras', async () => {
-    if (!dbReachable) return;
     const { userId, accessToken } = await registerUser('count');
     // Registration mints 1 (session_issued).
     const baseline = await getUnread(accessToken);
@@ -140,7 +136,6 @@ describe('GET /notifications/me/unread-count (integration, requires Docker Postg
   });
 
   it('after mark-all-read → { unread: 0 }', async () => {
-    if (!dbReachable) return;
     const { userId, accessToken } = await registerUser('postmark');
     await seedUnread(userId, 3);
     // mark-all-read endpoint flips every unread row.
@@ -154,7 +149,6 @@ describe('GET /notifications/me/unread-count (integration, requires Docker Postg
   });
 
   it('cross-user isolation: Alice’s unread doesn’t leak into Bob’s count', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('alice');
     const bob = await registerUser('bob');
     await seedUnread(alice.userId, 7);

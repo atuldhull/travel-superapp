@@ -88,7 +88,6 @@ describe('Trip × Transport (integration, requires Postgres + Redis)', () => {
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.place.deleteMany({
       where: { sourceKey: { startsWith: SOURCE_PREFIX } },
     });
@@ -171,7 +170,6 @@ describe('Trip × Transport (integration, requires Postgres + Redis)', () => {
   }
 
   it('GET /trips/:id/transport-legs without a bearer → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'GET',
       url: '/api/v1/trips/some-trip/transport-legs',
@@ -180,7 +178,6 @@ describe('Trip × Transport (integration, requires Postgres + Redis)', () => {
   });
 
   it('non-owner / unknown trip → 404 TRIP_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const tok = await registerAndGetToken('idor');
     const res = await app.inject({
       method: 'GET',
@@ -192,7 +189,6 @@ describe('Trip × Transport (integration, requires Postgres + Redis)', () => {
   });
 
   it('day with no items → empty legs array', async () => {
-    if (!dbReachable) return;
     const tok = await registerAndGetToken('empty');
     const { tripId } = await makeTripWithDay(tok);
     const res = await app.inject({
@@ -206,7 +202,6 @@ describe('Trip × Transport (integration, requires Postgres + Redis)', () => {
   });
 
   it('happy path: 3 items pinned to Places → 2 consecutive legs with all 7 modes', async () => {
-    if (!dbReachable) return;
     const tok = await registerAndGetToken('happy');
     const { tripId, dayId } = await makeTripWithDay(tok);
     const p1 = await seedPlace('a', 0, 0);
@@ -238,7 +233,6 @@ describe('Trip × Transport (integration, requires Postgres + Redis)', () => {
   });
 
   it('a free-form item (placeId=null) is skipped — leg jumps over it', async () => {
-    if (!dbReachable) return;
     const tok = await registerAndGetToken('skip');
     const { tripId, dayId } = await makeTripWithDay(tok);
     const p1 = await seedPlace('s1', 0, 0);
@@ -262,7 +256,6 @@ describe('Trip × Transport (integration, requires Postgres + Redis)', () => {
   });
 
   it('two consecutive items at the same place are silently skipped', async () => {
-    if (!dbReachable) return;
     const tok = await registerAndGetToken('same');
     const { tripId, dayId } = await makeTripWithDay(tok);
     const same = await seedPlace('same', 0, 0);
@@ -287,7 +280,6 @@ describe('Trip × Transport (integration, requires Postgres + Redis)', () => {
   });
 
   it('GET /trips/:id/overview now includes a transport section with the legs', async () => {
-    if (!dbReachable) return;
     const tok = await registerAndGetToken('overview');
     const { tripId, dayId } = await makeTripWithDay(tok);
     const p1 = await seedPlace('o1', 0, 0);

@@ -48,7 +48,6 @@ describe('Trip sharing (integration, requires Docker Postgres)', () => {
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
@@ -102,7 +101,6 @@ describe('Trip sharing (integration, requires Docker Postgres)', () => {
   }
 
   it('POST /trips/:id/share mints a code; public GET /trips/shared/:code returns metadata + owner name', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('alice');
     const trip = await createTrip(alice.accessToken, 'Alpine getaway');
 
@@ -153,7 +151,6 @@ describe('Trip sharing (integration, requires Docker Postgres)', () => {
   });
 
   it('GET /trips/shared/:code includes itinerary days once the owner has generated one', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('with-itin');
     const trip = await createTrip(alice.accessToken, 'With itinerary');
 
@@ -191,7 +188,6 @@ describe('Trip sharing (integration, requires Docker Postgres)', () => {
   });
 
   it('DELETE /trips/:id/share/:code by owner → 204; resolve after → 404 SHARE_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('revoke-ok');
     const trip = await createTrip(alice.accessToken, 'Revoke test');
 
@@ -219,7 +215,6 @@ describe('Trip sharing (integration, requires Docker Postgres)', () => {
   });
 
   it('DELETE /trips/:id/share/:code by non-owner → 404 SHARE_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('a-rev-idor');
     const bob = await registerUser('b-rev-idor');
     const trip = await createTrip(alice.accessToken, 'Alice revoke IDOR');
@@ -250,7 +245,6 @@ describe('Trip sharing (integration, requires Docker Postgres)', () => {
   });
 
   it('DELETE /trips/:id/share/:code for an unknown code → 404 SHARE_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('rev-404');
     const res = await app.inject({
       method: 'DELETE',
@@ -262,7 +256,6 @@ describe('Trip sharing (integration, requires Docker Postgres)', () => {
   });
 
   it('GET /trips/:id/shares lists every code the owner minted, newest first, with publicRead state', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('list-ok');
     const trip = await createTrip(alice.accessToken, 'List test');
 
@@ -313,7 +306,6 @@ describe('Trip sharing (integration, requires Docker Postgres)', () => {
   });
 
   it('GET /trips/:id/shares on a non-owner → 404 TRIP_NOT_FOUND (no enumeration leak)', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('a-list-idor');
     const bob = await registerUser('b-list-idor');
     const trip = await createTrip(alice.accessToken, 'Alice private list');
@@ -335,7 +327,6 @@ describe('Trip sharing (integration, requires Docker Postgres)', () => {
   });
 
   it('GET /trips/:id/shares without a bearer → 401 UNAUTHENTICATED', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'GET',
       url: '/api/v1/trips/whatever/shares',
@@ -345,7 +336,6 @@ describe('Trip sharing (integration, requires Docker Postgres)', () => {
   });
 
   it('GET /trips/:id/shares on a trip with no shares → 200 with empty array', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('list-empty');
     const trip = await createTrip(accessToken, 'Unshared trip');
 
@@ -359,7 +349,6 @@ describe('Trip sharing (integration, requires Docker Postgres)', () => {
   });
 
   it('DELETE /trips/:id/share/:code twice → second call returns 404 (idempotent from client POV)', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('rev-twice');
     const trip = await createTrip(alice.accessToken, 'Revoke twice');
     const mint = await app.inject({
@@ -391,7 +380,6 @@ describe('Trip sharing (integration, requires Docker Postgres)', () => {
   });
 
   it('POST /trips/:id/share by a non-owner → 404 TRIP_NOT_FOUND (IDOR + existence probe defence)', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('a-idor');
     const bob = await registerUser('b-idor');
     const trip = await createTrip(alice.accessToken, 'Alice private');
@@ -407,7 +395,6 @@ describe('Trip sharing (integration, requires Docker Postgres)', () => {
   });
 
   it('POST /trips/:id/share without a bearer → 401 UNAUTHENTICATED', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/trips/nope/share',
@@ -418,7 +405,6 @@ describe('Trip sharing (integration, requires Docker Postgres)', () => {
   });
 
   it('POST /trips/:id/share with a past expiresAt → 422 INVALID_EXPIRY', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('past-exp');
     const trip = await createTrip(accessToken, 'Past expiry test');
     const res = await app.inject({
@@ -432,7 +418,6 @@ describe('Trip sharing (integration, requires Docker Postgres)', () => {
   });
 
   it('GET /trips/shared/:code with an unknown code → 404 SHARE_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'GET',
       url: '/api/v1/trips/shared/does-not-exist-xx',
@@ -442,7 +427,6 @@ describe('Trip sharing (integration, requires Docker Postgres)', () => {
   });
 
   it('GET /trips/shared/:code with an expired share → 404 SHARE_EXPIRED', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('expired');
     const trip = await createTrip(alice.accessToken, 'Expired trip');
 
@@ -472,7 +456,6 @@ describe('Trip sharing (integration, requires Docker Postgres)', () => {
   });
 
   it('deleting the trip cascades the TripShare row (recipient sees 404)', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('cascade');
     const trip = await createTrip(alice.accessToken, 'Cascade test');
 

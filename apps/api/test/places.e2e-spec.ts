@@ -61,7 +61,6 @@ describe('Places search (integration, requires Docker Postgres)', () => {
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.place.deleteMany({
       where: { sourceKey: { startsWith: SOURCE_PREFIX } },
     });
@@ -117,7 +116,6 @@ describe('Places search (integration, requires Docker Postgres)', () => {
   }
 
   it('POST /places/search without a bearer → 401 UNAUTHENTICATED', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/places/search',
@@ -128,7 +126,6 @@ describe('Places search (integration, requires Docker Postgres)', () => {
   });
 
   it('5km search around Victoria returns 2 places ordered by ascending distance', async () => {
-    if (!dbReachable) return;
     const token = await registerAndGetToken('happy');
     await seedPlaces();
 
@@ -157,7 +154,6 @@ describe('Places search (integration, requires Docker Postgres)', () => {
   });
 
   it('category filter narrows results', async () => {
-    if (!dbReachable) return;
     const token = await registerAndGetToken('category');
     await seedPlaces();
 
@@ -176,7 +172,6 @@ describe('Places search (integration, requires Docker Postgres)', () => {
   });
 
   it('radius > 50 km → 422 INVALID_RADIUS', async () => {
-    if (!dbReachable) return;
     const token = await registerAndGetToken('big-radius');
     const res = await app.inject({
       method: 'POST',
@@ -189,7 +184,6 @@ describe('Places search (integration, requires Docker Postgres)', () => {
   });
 
   it('radius ≤ 0 → 422 (Zod or use-case; both correct)', async () => {
-    if (!dbReachable) return;
     const token = await registerAndGetToken('zero-radius');
     const res = await app.inject({
       method: 'POST',
@@ -203,7 +197,6 @@ describe('Places search (integration, requires Docker Postgres)', () => {
   });
 
   it('empty radius (no seeded places nearby) returns empty array, not 404', async () => {
-    if (!dbReachable) return;
     const token = await registerAndGetToken('empty');
     // Nothing seeded for this test's own prefix, but there may be rows
     // from other suites. Use a remote point so we confidently get zero.
@@ -218,7 +211,6 @@ describe('Places search (integration, requires Docker Postgres)', () => {
   });
 
   it('limit clamps the result set', async () => {
-    if (!dbReachable) return;
     const token = await registerAndGetToken('limit');
     // Seed 4 places all within 5 km of Victoria.
     for (let i = 0; i < 4; i++) {

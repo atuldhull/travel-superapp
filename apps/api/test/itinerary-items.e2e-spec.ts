@@ -66,7 +66,6 @@ describe('Itinerary items (integration, requires Docker Postgres)', () => {
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.place.deleteMany({
       where: { sourceKey: { startsWith: SOURCE_PREFIX } },
     });
@@ -134,7 +133,6 @@ describe('Itinerary items (integration, requires Docker Postgres)', () => {
   }
 
   it('3-day trip with 9 seeded places → 3 items per day, round-robin distribution', async () => {
-    if (!dbReachable) return;
     const token = await registerAndGetToken('full');
     const seededIds = await seedPlacesNearby(9);
     const tripId = await createTrip(token, {
@@ -174,7 +172,6 @@ describe('Itinerary items (integration, requires Docker Postgres)', () => {
   });
 
   it('2-day trip with only 3 seeded places → day 1 gets 2 items, day 2 gets 1 (round-robin)', async () => {
-    if (!dbReachable) return;
     const token = await registerAndGetToken('scarce');
     await seedPlacesNearby(3);
     const tripId = await createTrip(token, {
@@ -196,7 +193,6 @@ describe('Itinerary items (integration, requires Docker Postgres)', () => {
   });
 
   it('no places nearby → days are created with empty items (back-compat with pre-Places generator)', async () => {
-    if (!dbReachable) return;
     const token = await registerAndGetToken('barren');
     // Seed places far from the trip center — outside 5km.
     await geo.insertPlace({
@@ -225,7 +221,6 @@ describe('Itinerary items (integration, requires Docker Postgres)', () => {
   });
 
   it('GET /trips/:id/itinerary returns days with items nested', async () => {
-    if (!dbReachable) return;
     const token = await registerAndGetToken('read');
     await seedPlacesNearby(2);
     const tripId = await createTrip(token, {
@@ -249,7 +244,6 @@ describe('Itinerary items (integration, requires Docker Postgres)', () => {
   });
 
   it('re-generating the itinerary wipes old items (no duplicate rows)', async () => {
-    if (!dbReachable) return;
     const token = await registerAndGetToken('replan');
     await seedPlacesNearby(6);
     const tripId = await createTrip(token, {

@@ -65,7 +65,6 @@ describe('Admin user moderation (integration, requires Docker Postgres)', () => 
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
@@ -116,13 +115,11 @@ describe('Admin user moderation (integration, requires Docker Postgres)', () => 
   }
 
   it('GET /admin/users without bearer → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({ method: 'GET', url: '/api/v1/admin/users' });
     expect(res.statusCode).toBe(401);
   });
 
   it('non-admin caller → 403', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('non-admin');
     const res = await app.inject({
       method: 'GET',
@@ -133,7 +130,6 @@ describe('Admin user moderation (integration, requires Docker Postgres)', () => 
   });
 
   it('admin list with no filters returns paginated users + total', async () => {
-    if (!dbReachable) return;
     const adminToken = await loginAsAdmin('list-admin');
     await registerUser('alice');
     await registerUser('bob');
@@ -152,7 +148,6 @@ describe('Admin user moderation (integration, requires Docker Postgres)', () => 
   });
 
   it('?role=admin returns only admins', async () => {
-    if (!dbReachable) return;
     const adminToken = await loginAsAdmin('role-admin');
     await registerUser('regular');
 
@@ -167,7 +162,6 @@ describe('Admin user moderation (integration, requires Docker Postgres)', () => 
   });
 
   it('?deleted=true returns only soft-deleted users', async () => {
-    if (!dbReachable) return;
     const adminToken = await loginAsAdmin('deleted-filter');
     const banned = await registerUser('to-ban');
     await prisma.user.update({
@@ -186,7 +180,6 @@ describe('Admin user moderation (integration, requires Docker Postgres)', () => 
   });
 
   it('?q=alice does case-insensitive substring match on displayName', async () => {
-    if (!dbReachable) return;
     const adminToken = await loginAsAdmin('q-search');
     const alice = await registerUser('alice-case-test');
     await registerUser('bob-distinct');
@@ -197,7 +190,6 @@ describe('Admin user moderation (integration, requires Docker Postgres)', () => 
   });
 
   it('ban (V.UX.34): target user is banned + sessions revoked + login fails with ACCOUNT_BANNED', async () => {
-    if (!dbReachable) return;
     const adminToken = await loginAsAdmin('banner');
     const target = await registerUser('ban-target');
     // Sanity — sessions are live.
@@ -238,7 +230,6 @@ describe('Admin user moderation (integration, requires Docker Postgres)', () => 
   });
 
   it('ban (V.UX.34): idempotent — second ban on already-banned user refreshes reason', async () => {
-    if (!dbReachable) return;
     const adminToken = await loginAsAdmin('idem-ban');
     const target = await registerUser('idem-target');
 
@@ -263,7 +254,6 @@ describe('Admin user moderation (integration, requires Docker Postgres)', () => 
   });
 
   it('unban (V.UX.34): clears bannedAt; user can log in again', async () => {
-    if (!dbReachable) return;
     const adminToken = await loginAsAdmin('unbanner');
     const target = await registerUser('unban-target');
 
@@ -295,7 +285,6 @@ describe('Admin user moderation (integration, requires Docker Postgres)', () => 
   });
 
   it('unban: target who was never banned → 404', async () => {
-    if (!dbReachable) return;
     const adminToken = await loginAsAdmin('unban-active');
     const target = await registerUser('always-active');
 
@@ -309,7 +298,6 @@ describe('Admin user moderation (integration, requires Docker Postgres)', () => 
   });
 
   it('non-admin caller can’t ban', async () => {
-    if (!dbReachable) return;
     const attacker = await registerUser('attacker');
     const target = await registerUser('victim');
 

@@ -55,7 +55,6 @@ describe('Social notifications (integration, requires Docker Postgres)', () => {
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({ where: { displayName: { startsWith: TEST_PREFIX } } });
   });
 
@@ -121,7 +120,6 @@ describe('Social notifications (integration, requires Docker Postgres)', () => {
   }
 
   it('following a user notifies the followee', async () => {
-    if (!dbReachable) return;
     const fan = await registerUser('fan');
     const star = await registerUser('star');
     expect(await follow(fan.accessToken, star.userId)).toBe(200);
@@ -131,7 +129,6 @@ describe('Social notifications (integration, requires Docker Postgres)', () => {
   });
 
   it('a repeat-follow does not create a second notification', async () => {
-    if (!dbReachable) return;
     const fan = await registerUser('fan2');
     const star = await registerUser('star2');
     await follow(fan.accessToken, star.userId);
@@ -142,7 +139,6 @@ describe('Social notifications (integration, requires Docker Postgres)', () => {
   });
 
   it('commenting on a published trip notifies the trip author', async () => {
-    if (!dbReachable) return;
     const owner = await registerUser('owner');
     const commenter = await registerUser('commenter');
     const tripId = await publishedTrip(owner.accessToken);
@@ -160,7 +156,6 @@ describe('Social notifications (integration, requires Docker Postgres)', () => {
   });
 
   it('the author commenting on their own trip → no notification', async () => {
-    if (!dbReachable) return;
     const owner = await registerUser('solo');
     const tripId = await publishedTrip(owner.accessToken);
 

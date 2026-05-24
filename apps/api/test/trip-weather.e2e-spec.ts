@@ -137,7 +137,6 @@ describe('Trip × Weather (integration, requires Docker Postgres)', () => {
   }
 
   it('GET /trips/:id/weather passes trip.center + trip-duration days to the provider', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('ok');
     const trip = await createTrip(accessToken, {
       startsOn: '2026-08-01',
@@ -163,7 +162,6 @@ describe('Trip × Weather (integration, requires Docker Postgres)', () => {
   });
 
   it('defaults to 7 days when the trip has no startsOn/endsOn', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('default');
     const trip = await createTrip(accessToken);
 
@@ -176,7 +174,6 @@ describe('Trip × Weather (integration, requires Docker Postgres)', () => {
   });
 
   it('clamps trip duration > 16 days to 16 (Open-Meteo ceiling)', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('clamp');
     const trip = await createTrip(accessToken, {
       startsOn: '2026-08-01',
@@ -192,7 +189,6 @@ describe('Trip × Weather (integration, requires Docker Postgres)', () => {
   });
 
   it('non-owner → 404 TRIP_NOT_FOUND (IDOR defence)', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('alice');
     const bob = await registerUser('bob');
     const trip = await createTrip(alice.accessToken);
@@ -209,7 +205,6 @@ describe('Trip × Weather (integration, requires Docker Postgres)', () => {
   });
 
   it('missing trip id → 404 TRIP_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('missing');
     const res = await app.inject({
       method: 'GET',
@@ -222,7 +217,6 @@ describe('Trip × Weather (integration, requires Docker Postgres)', () => {
   });
 
   it('unauthenticated → 401 UNAUTHENTICATED', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'GET',
       url: '/api/v1/trips/whatever/weather',

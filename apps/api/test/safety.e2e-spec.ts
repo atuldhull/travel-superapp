@@ -52,7 +52,6 @@ describe('Safety scam reports (integration, requires Docker Postgres)', () => {
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     // User cascade-deletes the reporter's ScamReport rows.
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
@@ -102,7 +101,6 @@ describe('Safety scam reports (integration, requires Docker Postgres)', () => {
   }
 
   it('POST /safety/scam-reports without a bearer → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/safety/scam-reports',
@@ -113,7 +111,6 @@ describe('Safety scam reports (integration, requires Docker Postgres)', () => {
   });
 
   it('happy path: create report + find it in nearby search', async () => {
-    if (!dbReachable) return;
     const { userId, accessToken } = await registerUser('happy');
 
     const createdRes = await app.inject({
@@ -157,7 +154,6 @@ describe('Safety scam reports (integration, requires Docker Postgres)', () => {
   });
 
   it('reports are visible across users (community-safety feature)', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('alice');
     const bob = await registerUser('bob');
 
@@ -186,7 +182,6 @@ describe('Safety scam reports (integration, requires Docker Postgres)', () => {
   });
 
   it('minSeverity filter threshold: high excludes low/medium', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('sev');
 
     // Seed 4 reports at unique coords so radius=0.5km finds all.
@@ -227,7 +222,6 @@ describe('Safety scam reports (integration, requires Docker Postgres)', () => {
   });
 
   it('category filter narrows to exact match', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('cat');
 
     await app.inject({
@@ -265,7 +259,6 @@ describe('Safety scam reports (integration, requires Docker Postgres)', () => {
   });
 
   it('description shorter than 10 chars → 422 VALIDATION_FAILED', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('short');
     const res = await app.inject({
       method: 'POST',
@@ -278,7 +271,6 @@ describe('Safety scam reports (integration, requires Docker Postgres)', () => {
   });
 
   it('search radius > 50km → 422 INVALID_RADIUS', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('big-r');
     const res = await app.inject({
       method: 'POST',
@@ -291,7 +283,6 @@ describe('Safety scam reports (integration, requires Docker Postgres)', () => {
   });
 
   it('invalid severity → 422 VALIDATION_FAILED (Zod enum)', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('bad-sev');
     const res = await app.inject({
       method: 'POST',

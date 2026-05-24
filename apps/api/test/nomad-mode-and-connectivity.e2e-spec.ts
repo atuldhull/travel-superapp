@@ -96,7 +96,6 @@ describe('V.UX.23 nomad mode + connectivity (integration, requires Docker Postgr
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({ where: { displayName: { startsWith: TEST_PREFIX } } });
   });
 
@@ -120,7 +119,6 @@ describe('V.UX.23 nomad mode + connectivity (integration, requires Docker Postgr
   }
 
   it('PATCH /account/preferences nomadMode=true round-trips on subsequent GETs', async () => {
-    if (!dbReachable) return;
     const token = await registerAndGetToken('prefs');
 
     // First GET returns the synthetic default shape with nomadMode=false.
@@ -152,7 +150,6 @@ describe('V.UX.23 nomad mode + connectivity (integration, requires Docker Postgr
   });
 
   it('POST /stays/search with stayType=monthly returns only the nomad-loft fixture', async () => {
-    if (!dbReachable) return;
     const token = await registerAndGetToken('stay-monthly');
     const res = await app.inject({
       method: 'POST',
@@ -174,7 +171,6 @@ describe('V.UX.23 nomad mode + connectivity (integration, requires Docker Postgr
   });
 
   it('POST /stays/search with minWifiSpeedMbps=100 drops slow + unknown wifi listings', async () => {
-    if (!dbReachable) return;
     const token = await registerAndGetToken('stay-wifi');
     const res = await app.inject({
       method: 'POST',
@@ -199,7 +195,6 @@ describe('V.UX.23 nomad mode + connectivity (integration, requires Docker Postgr
   });
 
   it('POST /stays/search accepts a 60-night long-stay window (V.UX.23 cap bumped from 30)', async () => {
-    if (!dbReachable) return;
     const token = await registerAndGetToken('stay-long');
     const res = await app.inject({
       method: 'POST',
@@ -216,7 +211,6 @@ describe('V.UX.23 nomad mode + connectivity (integration, requires Docker Postgr
   });
 
   it('GET /connectivity/:countryCode is public, case-insensitive, and returns the seed', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'GET',
       url: '/api/v1/connectivity/PT',
@@ -231,7 +225,6 @@ describe('V.UX.23 nomad mode + connectivity (integration, requires Docker Postgr
   });
 
   it('GET /connectivity/:countryCode 404s on unseeded countries', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'GET',
       url: '/api/v1/connectivity/zz',

@@ -72,7 +72,6 @@ describe('Safety score (integration, requires Postgres)', () => {
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.crimeIncident.deleteMany({
       where: { source: { startsWith: SOURCE_PREFIX } },
     });
@@ -147,7 +146,6 @@ describe('Safety score (integration, requires Postgres)', () => {
   }
 
   it('POST /safety/score without a bearer → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/safety/score',
@@ -158,7 +156,6 @@ describe('Safety score (integration, requires Postgres)', () => {
   });
 
   it('empty area → score 100, grade A, empty breakdown', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('clean');
     const r = await getScore(accessToken, { center: ANCHOR });
     expect(r.score).toBe(100);
@@ -169,7 +166,6 @@ describe('Safety score (integration, requires Postgres)', () => {
   });
 
   it('one medium crime → score drops by exactly 20 (2 × 10)', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('onecrime');
     await seedCrime({ severity: 'medium' });
     const r = await getScore(accessToken, { center: ANCHOR });
@@ -181,7 +177,6 @@ describe('Safety score (integration, requires Postgres)', () => {
   });
 
   it('one critical crime + one high scam → mixed penalty, grade C', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('mixed');
     await seedCrime({ severity: 'critical' });
     await seedScam(accessToken, { severity: 'high' });
@@ -197,7 +192,6 @@ describe('Safety score (integration, requires Postgres)', () => {
   });
 
   it('many high-severity incidents → score bottoms at 0 (grade F)', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('manysev');
     // 4 criticals = 160 penalty; clamps to 0.
     for (let i = 0; i < 4; i++) {
@@ -210,7 +204,6 @@ describe('Safety score (integration, requires Postgres)', () => {
   });
 
   it('incidents outside the radius don’t count', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('outside');
     // 100km away (well outside 2km default).
     await seedCrime({ severity: 'critical', latOffset: 0.9, lngOffset: 0 });
@@ -220,7 +213,6 @@ describe('Safety score (integration, requires Postgres)', () => {
   });
 
   it('radiusKm > 10 → 422 INVALID_RADIUS', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('badradius');
     const res = await app.inject({
       method: 'POST',
@@ -233,7 +225,6 @@ describe('Safety score (integration, requires Postgres)', () => {
   });
 
   it('SOS events are NOT factored into the score (privacy invariant)', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('sos');
     // Trigger an SOS at the score's query coord.
     const sos = await app.inject({

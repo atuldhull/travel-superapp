@@ -66,7 +66,6 @@ describe('OAuth sign-in (integration, requires Docker Postgres)', () => {
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
@@ -80,7 +79,6 @@ describe('OAuth sign-in (integration, requires Docker Postgres)', () => {
   });
 
   it('unknown provider → 401 OAUTH_PROVIDER_UNKNOWN', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/oauth/does-not-exist',
@@ -96,7 +94,6 @@ describe('OAuth sign-in (integration, requires Docker Postgres)', () => {
   });
 
   it('apple provider gated on env — unregistered in test (no APPLE_CLIENT_ID) → 401 OAUTH_PROVIDER_UNKNOWN', async () => {
-    if (!dbReachable) return;
     // Sanity: APPLE_CLIENT_ID isn't set in test/setup.ts, so the
     // factory registry never registers the Apple adapter. The route
     // still exists (path param routing), but the registry lookup
@@ -118,7 +115,6 @@ describe('OAuth sign-in (integration, requires Docker Postgres)', () => {
   });
 
   it('first sign-in creates a new user + issues a session (returns access token + cookie)', async () => {
-    if (!dbReachable) return;
     const email = `${TEST_PREFIX}-new-${uniqueSuffix()}@example.com`;
     const providerUserId = `pu-${uniqueSuffix()}`;
     const res = await app.inject({
@@ -161,7 +157,6 @@ describe('OAuth sign-in (integration, requires Docker Postgres)', () => {
   });
 
   it('second sign-in with same (provider, providerUserId) → same userId (existing-link path)', async () => {
-    if (!dbReachable) return;
     const email = `${TEST_PREFIX}-repeat-${uniqueSuffix()}@example.com`;
     const providerUserId = `pu-repeat-${uniqueSuffix()}`;
     const token = mockToken({
@@ -194,7 +189,6 @@ describe('OAuth sign-in (integration, requires Docker Postgres)', () => {
   });
 
   it('OAuth sign-in for a user who registered by email/password → auto-links by email', async () => {
-    if (!dbReachable) return;
     const email = `${TEST_PREFIX}-link-${uniqueSuffix()}@example.com`;
 
     // Register via password flow first.
@@ -233,7 +227,6 @@ describe('OAuth sign-in (integration, requires Docker Postgres)', () => {
   });
 
   it('malformed idToken JSON → 401 OAUTH_INVALID_TOKEN', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/oauth/mock',
@@ -244,7 +237,6 @@ describe('OAuth sign-in (integration, requires Docker Postgres)', () => {
   });
 
   it('token with emailVerified=false → 401 OAUTH_EMAIL_UNVERIFIED', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/oauth/mock',
@@ -261,7 +253,6 @@ describe('OAuth sign-in (integration, requires Docker Postgres)', () => {
   });
 
   it('missing idToken → 422 VALIDATION_FAILED', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/oauth/mock',

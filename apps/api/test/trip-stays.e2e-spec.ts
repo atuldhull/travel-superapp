@@ -160,7 +160,6 @@ describe('Trip × Stays (integration, requires Docker Postgres + Redis)', () => 
   }
 
   it('GET /trips/:id/stays passes trip.center + trip dates to the provider', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('ok');
     const trip = await createTrip(accessToken, {
       startsOn: '2026-11-01',
@@ -187,7 +186,6 @@ describe('Trip × Stays (integration, requires Docker Postgres + Redis)', () => 
   });
 
   it('?guests=3 flows through to the provider', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('guests');
     const trip = await createTrip(accessToken, {
       startsOn: '2026-11-10',
@@ -203,7 +201,6 @@ describe('Trip × Stays (integration, requires Docker Postgres + Redis)', () => 
   });
 
   it('trip.radiusKm > 50 is clamped to 50 at the provider call', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('clamp');
     const trip = await createTrip(accessToken, {
       startsOn: '2026-11-20',
@@ -220,7 +217,6 @@ describe('Trip × Stays (integration, requires Docker Postgres + Redis)', () => 
   });
 
   it('trip without startsOn/endsOn → 422 TRIP_DATES_REQUIRED (provider not called)', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('no-dates');
     const trip = await createTrip(accessToken); // no dates
 
@@ -235,7 +231,6 @@ describe('Trip × Stays (integration, requires Docker Postgres + Redis)', () => 
   });
 
   it('non-owner → 404 TRIP_NOT_FOUND (provider never called)', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('alice');
     const bob = await registerUser('bob');
     const trip = await createTrip(alice.accessToken, {
@@ -254,7 +249,6 @@ describe('Trip × Stays (integration, requires Docker Postgres + Redis)', () => 
   });
 
   it('unauthenticated → 401 UNAUTHENTICATED', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'GET',
       url: '/api/v1/trips/whatever/stays',

@@ -92,7 +92,6 @@ describe('Transport module (integration, requires Docker Postgres + Redis)', () 
   }
 
   it('POST /transport/routes without a bearer → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/transport/routes',
@@ -106,7 +105,6 @@ describe('Transport module (integration, requires Docker Postgres + Redis)', () 
   });
 
   it('happy path — 5km trip returns all 7 modes (walk still in range)', async () => {
-    if (!dbReachable) return;
     const tok = await token('ok');
     const res = await app.inject({
       method: 'POST',
@@ -136,7 +134,6 @@ describe('Transport module (integration, requires Docker Postgres + Redis)', () 
   });
 
   it('long trip (50 km) omits walk (>20km cap) but keeps car/taxi/transit', async () => {
-    if (!dbReachable) return;
     const tok = await token('long');
     const res = await app.inject({
       method: 'POST',
@@ -158,7 +155,6 @@ describe('Transport module (integration, requires Docker Postgres + Redis)', () 
   });
 
   it('modes filter narrows the response', async () => {
-    if (!dbReachable) return;
     const tok = await token('filter');
     const res = await app.inject({
       method: 'POST',
@@ -176,7 +172,6 @@ describe('Transport module (integration, requires Docker Postgres + Redis)', () 
   });
 
   it('origin === destination → 422 SAME_ORIGIN_DESTINATION', async () => {
-    if (!dbReachable) return;
     const tok = await token('same');
     const res = await app.inject({
       method: 'POST',
@@ -192,7 +187,6 @@ describe('Transport module (integration, requires Docker Postgres + Redis)', () 
   });
 
   it('straight-line > 500km → 422 ROUTE_TOO_LONG', async () => {
-    if (!dbReachable) return;
     const tok = await token('too-long');
     const res = await app.inject({
       method: 'POST',
@@ -209,7 +203,6 @@ describe('Transport module (integration, requires Docker Postgres + Redis)', () 
   });
 
   it('invalid lat → 422 VALIDATION_FAILED (Zod blocks first)', async () => {
-    if (!dbReachable) return;
     const tok = await token('bad-lat');
     const res = await app.inject({
       method: 'POST',
@@ -225,7 +218,6 @@ describe('Transport module (integration, requires Docker Postgres + Redis)', () 
   });
 
   it('unknown mode → 422 VALIDATION_FAILED (Zod enum)', async () => {
-    if (!dbReachable) return;
     const tok = await token('bad-mode');
     const res = await app.inject({
       method: 'POST',
