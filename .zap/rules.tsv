@@ -1,0 +1,11 @@
+# OWASP ZAP per-rule overrides ([J4]).
+#
+# Format (tab-separated, no header):
+#   <RULE_ID>\t<IGNORE|WARN|FAIL>\t<comment>
+#
+# Rule IDs are listed at https://www.zaproxy.org/docs/alerts/.
+#
+# Start posture: empty. Every ZAP baseline finding fails the merge
+# until we have evidence a specific rule is a false-positive against
+# this codebase. Add an override here with the reasoning when
+# downgrading from FAIL → WARN/IGNORE.
