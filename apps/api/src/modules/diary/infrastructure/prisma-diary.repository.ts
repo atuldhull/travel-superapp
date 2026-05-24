@@ -6,11 +6,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { DiaryEntry as PrismaDiaryEntry } from '@prisma/client';
 import { PrismaService } from '../../../common/db/prisma.service';
-import type { DiaryEntry, NewDiaryEntry } from '../domain/diary-entry.entity';
+import { DiaryEntry, type NewDiaryEntry } from '../domain/diary-entry.entity';
 import type { DiaryRepository, ListDiaryQuery } from '../application/ports/diary.repository';
 
 function toDomain(r: PrismaDiaryEntry): DiaryEntry {
-  return {
+  return DiaryEntry.fromPersistence({
     id: r.id,
     userId: r.userId,
     tripId: r.tripId,
@@ -21,7 +21,7 @@ function toDomain(r: PrismaDiaryEntry): DiaryEntry {
     entryDate: r.entryDate,
     createdAt: r.createdAt,
     updatedAt: r.updatedAt,
-  };
+  });
 }
 
 @Injectable()
