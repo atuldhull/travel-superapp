@@ -7,6 +7,11 @@ module.exports = {
     '<rootDir>/test/**/*.e2e-spec.ts',
     '<rootDir>/test/**/*.smoke.ts',
   ],
+  // [L6] quarantine. Tests under `test/quarantine/` run INFORMATIONALLY
+  // in their own job — known-flaky cases that shouldn't block PRs
+  // while we root-cause them. The main testPathIgnorePatterns kicks
+  // them out of the default run.
+  testPathIgnorePatterns: ['/node_modules/', '<rootDir>/test/quarantine/'],
   setupFiles: ['<rootDir>/test/setup.ts'],
   // [L1] globalSetup decides between Docker compose / CI services /
   // Testcontainers and writes DATABASE_URL + REDIS_URL into the env;
