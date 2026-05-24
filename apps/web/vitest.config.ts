@@ -37,9 +37,16 @@ export default defineConfig({
       // Add new entries as tests land — same lockstep posture as
       // apps/api/jest.config.unit.cjs.
       include: [
+        // I5 starter
         'src/components/ui/badge.tsx',
         'src/components/ui/button.tsx',
         'src/components/ui/empty-state.tsx',
+        // K2 expansion — form primitives + layout + loading states
+        'src/components/ui/card.tsx',
+        'src/components/ui/input.tsx',
+        'src/components/ui/relative-time.tsx',
+        'src/components/ui/select.tsx',
+        'src/components/ui/skeleton.tsx',
       ],
       thresholds: {
         perFile: true,
