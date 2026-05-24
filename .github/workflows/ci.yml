@@ -316,6 +316,46 @@ jobs:
             p/nodejsscan
 
   # ──────────────────────────────────────────────────────────────
+  # Web component tests ([I5]) — Vitest + React Testing Library +
+  # vitest-axe against the `components/ui/` primitives. Hermetic
+  # (jsdom env, no API, no Next runtime, no browser), runs in
+  # sub-5s wall clock. Coverage gated per-file ≥80% on whatever
+  # components have tests — current starter set is button + badge
+  # + empty-state at 100%. Adding a new component to
+  # `components/ui/` without a matching test fails the gate.
+  # ──────────────────────────────────────────────────────────────
+  web-components:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.3
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Web component coverage gate
+        run: pnpm --filter=web cover:unit
+
+      - name: Upload web coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-web-components
+          path: apps/web/coverage/unit
+
+  # ──────────────────────────────────────────────────────────────
   # Integration tests — boot Postgres + Redis + MinIO as GitHub
   # service containers, then run jest. Env values mirror
   # `phase-0-smoke.yml` so the same setup.ts works.
