@@ -176,6 +176,12 @@ importers:
       '@types/web-push':
         specifier: ^3.6.0
         version: 3.6.4
+      ajv:
+        specifier: ^8.17.0
+        version: 8.18.0
+      ajv-formats:
+        specifier: ^3.0.1
+        version: 3.0.1(ajv@8.18.0)
       dependency-cruiser:
         specifier: 17.4.0
         version: 17.4.0

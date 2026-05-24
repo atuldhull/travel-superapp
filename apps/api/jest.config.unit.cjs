@@ -44,6 +44,7 @@ module.exports = {
     '<rootDir>/test/**/*-entity.property.spec.ts',
     '<rootDir>/test/trip-transitions.unit.spec.ts',
     '<rootDir>/test/factories.unit.spec.ts',
+    '<rootDir>/test/contract.*.spec.ts',
   ],
   setupFiles: ['<rootDir>/test/setup.ts'],
   collectCoverage: true,
