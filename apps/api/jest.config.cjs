@@ -8,6 +8,13 @@ module.exports = {
     '<rootDir>/test/**/*.smoke.ts',
   ],
   setupFiles: ['<rootDir>/test/setup.ts'],
+  // [L1] globalSetup decides between Docker compose / CI services /
+  // Testcontainers and writes DATABASE_URL + REDIS_URL into the env;
+  // it also pre-creates per-worker Postgres schemas (test_w1..8) and
+  // runs `prisma migrate deploy` on each. globalTeardown stops any
+  // Testcontainers started during globalSetup.
+  globalSetup: '<rootDir>/test/global-setup.ts',
+  globalTeardown: '<rootDir>/test/global-teardown.ts',
   collectCoverageFrom: ['src/**/*.ts', '!src/**/*.d.ts', '!src/main.ts'],
   coverageReporters: ['text', 'lcov'],
   moduleNameMapper: {
