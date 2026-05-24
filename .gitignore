@@ -32,13 +32,17 @@ desktop.ini
 .idea/
 *.swp
 
-# Test / coverage / mutation testing
+# Test / coverage / mutation testing / E2E
 coverage/
 .nyc_output/
 playwright-report/
 test-results/
 .stryker-tmp/
 **/reports/mutation/
+# Playwright produces an HTML report + per-test traces; baselines
+# (e2e/**/__snapshots__/) ARE tracked because they're the contract.
+apps/web/playwright-report/
+apps/web/test-results/
 
 # Expo / RN
 .expo/
