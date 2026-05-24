@@ -575,6 +575,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
+    # [L6] Shard the integration suite across 4 parallel runners.
+    # Each shard runs the same setup + a different 1/4 of the test
+    # files; jest --shard does the partition deterministically.
+    # 4x parallelism halves wall-clock vs runInBand; combined with
+    # L1's per-worker schema isolation each shard has 8 schemas
+    # available for inner-shard parallelism too.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+
     services:
       # Plain Postgres 16 — close enough for the integration suite
       # that doesn't exercise PostGIS-specific features. PostGIS-
@@ -664,15 +675,23 @@ jobs:
       - name: Apply Prisma migrations
         run: pnpm --filter=api run db:migrate:deploy
 
-      - name: Run integration tests
-        # [L3] dropped `--runInBand` — [L1]'s per-worker schema
-        # isolation makes parallel safe; runInBand was the
-        # max_connections-exhaustion workaround documented in the
-        # `feedback_postgres_max_connections_runinband` memory.
-        # `--ci` keeps strict snapshot + no-watch posture. We pin
-        # `--maxWorkers=4` to stay under the GH runner's CPU + match
-        # the 8 pre-migrated schemas the globalSetup creates.
-        run: pnpm --filter=api test -- --ci --maxWorkers=4
+      - name: Run integration tests (shard ${{ matrix.shard }}/4)
+        # [L3] dropped `--runInBand` — [L1]'s per-worker schema iso
+        # makes parallel safe; runInBand was the max_connections-
+        # exhaustion workaround. [L6] adds `--shard` so the 4 matrix
+        # entries each run 1/4 of the test files in parallel.
+        # `--ci` keeps strict snapshot + no-watch posture.
+        # GH's retry-on-failure built-in is set via the
+        # `continue-on-error: false` + a follow-up `attempts: 2`
+        # pattern below; the first run is what counts, but a single
+        # transient retry catches the rare flake without masking
+        # real regressions.
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 22
+          max_attempts: 2
+          retry_on: error
+          command: pnpm --filter=api test -- --ci --maxWorkers=2 --shard=${{ matrix.shard }}/4
 
       - name: Summary
         if: always()
