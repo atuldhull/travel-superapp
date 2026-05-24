@@ -15,11 +15,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { MediaAsset as PrismaMediaAsset, Prisma } from '@prisma/client';
 import { PrismaService } from '../../../common/db/prisma.service';
-import type {
+import {
   MediaAsset,
-  MediaAssetVariant,
-  MediaKind,
-  MediaStatus,
+  type MediaAssetVariant,
+  type MediaKind,
+  type MediaStatus,
 } from '../domain/media-asset.entity';
 import type {
   AdminMediaListInput,
@@ -173,7 +173,7 @@ export class PrismaMediaAssetRepository implements MediaAssetRepository {
 }
 
 function toDomain(row: PrismaMediaAsset): MediaAsset {
-  return {
+  return MediaAsset.fromPersistence({
     id: row.id,
     ownerId: row.ownerId,
     tripId: row.tripId,
@@ -186,7 +186,7 @@ function toDomain(row: PrismaMediaAsset): MediaAsset {
     position: row.position,
     variants: extractVariants(row.variants),
     createdAt: row.createdAt,
-  };
+  });
 }
 
 /** POST.5 — read `variants` JSON column and keep only entries that

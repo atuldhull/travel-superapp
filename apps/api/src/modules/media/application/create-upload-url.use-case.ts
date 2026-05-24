@@ -15,7 +15,7 @@
  */
 import { randomBytes } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
-import type { MediaAsset, MediaKind } from '../domain/media-asset.entity';
+import { MediaAsset, type MediaKind } from '../domain/media-asset.entity';
 import { MEDIA_ASSET_REPOSITORY, type MediaAssetRepository } from './ports/media-asset.repository';
 import { STORAGE_PROVIDER, type StorageProvider } from './ports/storage-provider';
 
@@ -51,12 +51,14 @@ export class CreateUploadUrlUseCase {
     const idSegment = randomBytes(8).toString('hex');
     const key = `${ownerSegment}/${idSegment}/${suffix}`;
 
-    const asset = await this.repo.create({
+    // Domain-side invariants (M1/M2/M3 — [G4.3]).
+    const input = MediaAsset.create({
       ownerId: cmd.ownerId,
       tripId: cmd.tripId,
       kind: cmd.kind,
       s3KeyRaw: key,
     });
+    const asset = await this.repo.create(input);
 
     const uploadUrl = await this.storage.createPresignedUploadUrl({
       key,
