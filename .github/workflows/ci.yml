@@ -371,7 +371,39 @@ jobs:
   # ──────────────────────────────────────────────────────────────
   e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
+
+    # [J5] booting Postgres + Redis here lets Playwright's webServer
+    # array (apps/web/playwright.config.ts) start the API alongside
+    # the web app, so authenticated flows have a real backend to
+    # exercise.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: travel
+          POSTGRES_PASSWORD: travel_dev
+          POSTGRES_DB: travel_dev
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U travel -d travel_dev"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+      redis:
+        image: redis:7.4-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://travel:travel_dev@127.0.0.1:5432/travel_dev?schema=public
+      DIRECT_URL: postgresql://travel:travel_dev@127.0.0.1:5432/travel_dev?schema=public
+      REDIS_URL: redis://127.0.0.1:6379
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -401,6 +433,11 @@ jobs:
 
       - name: Generate Prisma client
         run: pnpm --filter=api run db:generate
+
+      - name: Prisma migrate
+        # Required so the API's first /health/ready probe succeeds —
+        # ready depends on every migration being applied.
+        run: pnpm --filter=api run db:migrate:deploy
 
       - name: Playwright E2E
         run: pnpm --filter=web e2e
