@@ -58,13 +58,26 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  webServer: {
-    // `next dev` starts faster than `next build && next start` and
-    // sidesteps the prod env-var matrix. Production-mode parity is
-    // a follow-up gate.
-    command: 'pnpm dev',
-    url: HOST,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
+  // Two-server orchestration ([J5]): boot the API alongside the web
+  // app so authenticated flows can register, log in, and exercise
+  // protected routes end-to-end. The API needs Postgres + Redis
+  // already up — locally via `pnpm dev:up`, in CI via GitHub
+  // service containers on the `e2e` job.
+  webServer: [
+    {
+      command: 'pnpm --filter=api dev',
+      // Hit a real endpoint, not just the port — /health/ready
+      // includes Postgres + Redis ping, which is what every
+      // authenticated flow actually depends on.
+      url: 'http://127.0.0.1:3000/api/v1/health/ready',
+      reuseExistingServer: !process.env.CI,
+      timeout: 180_000,
+    },
+    {
+      command: 'pnpm --filter=web dev',
+      url: HOST,
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+    },
+  ],
 });
