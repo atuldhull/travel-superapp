@@ -1,17 +1,26 @@
 # Load tests
 
-[k6](https://k6.io) load tests for the API. Two postures:
+[k6](https://k6.io) load tests for the API. Three postures:
 
-| Script                   | Posture                           | Run when                          |
-| ------------------------ | --------------------------------- | --------------------------------- |
-| [`smoke.js`](./smoke.js) | 20 VUs · 4 min · p95<500ms        | Every PR (CI `load` job)          |
-| _(future)_ `stress.js`   | 200 VUs · 15 min · find the cliff | On-demand via `workflow_dispatch` |
-| _(future)_ `soak.js`     | 50 VUs · 30 min · memory growth   | Nightly                           |
+| Script                     | Posture                                     | Run when                                                                 |
+| -------------------------- | ------------------------------------------- | ------------------------------------------------------------------------ |
+| [`smoke.js`](./smoke.js)   | 20 VUs · 4 min · p95<500ms + p99<1000ms     | Every PR (CI `load` job in `ci.yml`)                                     |
+| [`stress.js`](./stress.js) | 0→100→200→400 VUs · 13 min · find the cliff | `workflow_dispatch` (manual) in `load-extended.yml`                      |
+| [`soak.js`](./soak.js)     | 50 VUs · 70 min · find slow leaks           | Nightly cron at 03:30 UTC (+ `workflow_dispatch`) in `load-extended.yml` |
 
-`smoke.js` is the only one wired into PR CI today. It catches a 10×
-p95 regression on the hot, no-auth endpoints (health, /featured,
-/feed/public, /metrics) the moment it lands instead of finding it
-from a customer ticket.
+`smoke.js` is the only PR-gating one. It catches a 10× p99 regression
+on the hot, no-auth endpoints (health, /featured, /feed/public,
+/metrics) the moment it lands instead of finding it from a customer
+ticket. p99 (not just p95) is gated because the review explicitly
+called it out — p99 is the tail that defines user-perceived speed.
+
+`stress.js` finds the breaking point — useful before a launch /
+marketing push. Run it with the "stress" `workflow_dispatch` input.
+
+`soak.js` is the slow-leak detector. Memory growth, FD exhaustion,
+Prisma pool drift, Redis key-space bloat — none of those show up in
+a 4-minute smoke. The nightly cron produces a 70-min trend; reviewer
+eyeballs the summary artifact for regressions over weeks.
 
 ## Run locally
 
