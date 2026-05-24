@@ -179,6 +179,83 @@ describe('architecture fitness — banned patterns', () => {
   });
 });
 
+describe('architecture fitness — file size (god-object proxy)', () => {
+  // Pragmatic ceiling-based check, not a class-size analyzer. A
+  // single .ts file growing past the per-tier limit below is a
+  // strong signal that something is doing too much and should be
+  // split — controller routes broken out, use-case logic pushed
+  // into entities ([F4]), DTOs decomposed.
+  //
+  // Thresholds calibrated against the current tree (2026-05-24):
+  //   - Worst overall: trip.controller.ts (1229) — sanctioned HTTP edge
+  //   - Worst use-case: get-local-emergency.use-case.ts (702)
+  //   - Worst DTO: trip-response.dto.ts (679)
+  //
+  // Limits give modest headroom over today's worst case so existing
+  // code passes, but a NEW file blowing past these (e.g., a 2000-line
+  // use-case) fails CI. Tightening the limits is a follow-up gated
+  // on real refactors.
+  const LIMITS = {
+    controller: 1400, // *.controller.ts under interface/
+    useCase: 800, // *.use-case.ts under application/
+    dto: 800, // dto/ directory files
+    domain: 500, // everything in domain/
+    default: 700, // anything else under src/
+  } as const;
+
+  function limitFor(rel: string): number {
+    if (rel.includes('/interface/dto/') || rel.endsWith('.dto.ts')) return LIMITS.dto;
+    if (rel.endsWith('.controller.ts')) return LIMITS.controller;
+    if (rel.endsWith('.use-case.ts')) return LIMITS.useCase;
+    if (/\/domain\//.test(rel)) return LIMITS.domain;
+    return LIMITS.default;
+  }
+
+  const srcFiles = [...walkTs(API_SRC)];
+
+  it('every src .ts file is within its tier limit (no god objects)', () => {
+    const offenders: Array<{ file: string; lines: number; limit: number }> = [];
+    for (const rel of srcFiles) {
+      const source = readFileSync(join(API_SRC, rel), 'utf8');
+      const lines = source.split(/\r?\n/).length;
+      const limit = limitFor(rel);
+      if (lines > limit) {
+        offenders.push({ file: rel, lines, limit });
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+});
+
+describe('architecture fitness — layer presence per module', () => {
+  // Anemia smoke: a module without ANY domain file is the literal
+  // "data-bag + use-case" anti-pattern the F4 work targets. We do NOT
+  // gate on layer-size ratios — current ratios are all anemic by
+  // best-practice standards (per-module domain/{rest-of-module} is
+  // 1:25..1:50 across the codebase). That's exactly what F4 begins
+  // to fix; gating on it now would block every PR. This invariant
+  // catches only the LITERALLY anemic case: a module with zero
+  // domain files.
+  const modules = readdirSync(MODULES_DIR).filter((name) =>
+    statSync(join(MODULES_DIR, name)).isDirectory(),
+  );
+
+  it.each(modules)('module %s has at least one domain .ts file (or is layer-exempted)', (mod) => {
+    const except = LAYER_EXCEPTIONS[mod] ?? new Set<string>();
+    if (except.has('domain')) return;
+    const domainDir = join(MODULES_DIR, mod, 'domain');
+    let count = 0;
+    try {
+      count = readdirSync(domainDir).filter(
+        (n) => n.endsWith('.ts') && !n.endsWith('.d.ts'),
+      ).length;
+    } catch {
+      count = 0;
+    }
+    expect(count).toBeGreaterThan(0);
+  });
+});
+
 describe('architecture fitness — cycle detection (madge)', () => {
   // `madge --circular` is the OUTSIDE-LOOKING-IN cycle detector — it
   // walks the resolved TS/JS graph the same way Node would at run-
