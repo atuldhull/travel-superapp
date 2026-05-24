@@ -10,21 +10,21 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { TripComment as PrismaTripComment } from '@prisma/client';
 import { PrismaService } from '../../../common/db/prisma.service';
-import type { TripComment, TripCommentWithAuthor } from '../domain/trip-comment.entity';
+import { TripComment, type TripCommentWithAuthor } from '../domain/trip-comment.entity';
 import type {
   CommentRepository,
   CreateCommentInput,
 } from '../application/ports/comment.repository';
 
 function toDomain(row: PrismaTripComment): TripComment {
-  return {
+  return TripComment.fromPersistence({
     id: row.id,
     tripId: row.tripId,
     authorId: row.authorId,
     body: row.body,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
-  };
+  });
 }
 
 @Injectable()

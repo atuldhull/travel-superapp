@@ -10,16 +10,14 @@
  * `verifiedBooking` flow can tighten this for booking-scoped
  * reviews (Stay via a real booking, Eatery via a reservation).
  *
- * Validation:
- *   - `rating` ∈ [1, 5] integer.
- *   - `body` non-empty, ≤ 5000 chars (reasonable ceiling — longer
- *     reviews are blog posts, not reviews).
- *   - `language` exactly 2 lowercase ISO-639-1 letters.
+ * [G4.1]: the 3 input invariants (rating ∈ [1,5], body 1..5000 after
+ * trim, language ISO-639-1) moved onto `Review.create(input)`. The
+ * use-case is now: gate (trip access + block) → `Review.create()` →
+ * `repo.create()`.
  *
- * Installed by prompt [IV.18.12.5].
+ * Installed by prompt [IV.18.12.5]; slimmed by [G4.1].
  */
 import { Inject, Injectable } from '@nestjs/common';
-import { ValidationError } from '@app/errors';
 import {
   TRIP_REPOSITORY,
   TRIP_SHARE_REPOSITORY,
@@ -27,13 +25,11 @@ import {
   type TripShareRepository,
 } from '../../trip';
 
-import type { Review, ReviewTargetType } from '../domain/review.entity';
+import { Review, type ReviewTargetType } from '../domain/review.entity';
 import { assertCanVote as assertTripAccess } from './cast-vote.use-case';
 import { REVIEW_REPOSITORY, type ReviewRepository } from './ports/review.repository';
 import { BLOCK_REPOSITORY, type BlockRepository } from './ports/block.repository';
 import { assertNotBlocked } from './block-user.use-case';
-
-const LANGUAGE_REGEX = /^[a-z]{2}$/;
 
 export interface CreateReviewCommand {
   readonly authorId: string;
@@ -55,63 +51,20 @@ export class CreateReviewUseCase {
   ) {}
 
   async execute(cmd: CreateReviewCommand): Promise<Review> {
-    this.validate(cmd);
-    if (cmd.tripId !== null) {
+    // Domain-side invariant check + normalisation (R1/R2/R3 — [G4.1]).
+    const input = Review.create(cmd);
+    if (input.tripId !== null) {
       // Trip-attached reviews need the same collab access as
       // voting / expenses.
-      await assertTripAccess(this.trips, this.shares, cmd.tripId, cmd.authorId);
+      await assertTripAccess(this.trips, this.shares, input.tripId, input.authorId);
       // POST.2B.1 — block gate alongside the access gate (the
       // trip-attached path; non-trip review targets are a later
       // refinement, same scope call as the anonymous-hearts N/A).
-      const trip = await this.trips.findById(cmd.tripId);
-      if (trip && trip.userId !== cmd.authorId) {
-        await assertNotBlocked(this.blocks, cmd.authorId, trip.userId);
+      const trip = await this.trips.findById(input.tripId);
+      if (trip && trip.userId !== input.authorId) {
+        await assertNotBlocked(this.blocks, input.authorId, trip.userId);
       }
     }
-    return this.reviews.create({
-      authorId: cmd.authorId,
-      tripId: cmd.tripId,
-      targetType: cmd.targetType,
-      targetId: cmd.targetId,
-      rating: cmd.rating,
-      body: cmd.body.trim(),
-      language: cmd.language.toLowerCase(),
-    });
-  }
-
-  private validate(cmd: CreateReviewCommand): void {
-    if (!Number.isInteger(cmd.rating) || cmd.rating < 1 || cmd.rating > 5) {
-      throw new ValidationError(
-        'Rating must be an integer between 1 and 5',
-        { rating: ['must be integer in [1, 5]'] },
-        { rating: cmd.rating },
-        'INVALID_RATING',
-      );
-    }
-    const bodyTrimmed = cmd.body.trim();
-    if (bodyTrimmed.length === 0) {
-      throw new ValidationError(
-        'Review body cannot be empty',
-        { body: ['must be non-empty'] },
-        {},
-        'INVALID_REVIEW_BODY',
-      );
-    }
-    if (bodyTrimmed.length > 5000) {
-      throw new ValidationError(
-        'Review body too long',
-        { body: [`must be ≤ 5000 chars (got ${bodyTrimmed.length})`] },
-        { length: bodyTrimmed.length },
-        'INVALID_REVIEW_BODY',
-      );
-    }
-    if (!LANGUAGE_REGEX.test(cmd.language.toLowerCase())) {
-      throw new ValidationError(
-        'Language must be a 2-letter ISO 639-1 code',
-        { language: ['must be 2 lowercase letters'] },
-        { language: cmd.language },
-        'INVALID_LANGUAGE',
-      );
-    }
+    return this.reviews.create(input);
   }
 }

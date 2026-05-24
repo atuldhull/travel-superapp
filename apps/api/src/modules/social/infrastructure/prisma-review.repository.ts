@@ -7,7 +7,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { Review as PrismaReview } from '@prisma/client';
 import { PrismaService } from '../../../common/db/prisma.service';
-import type { Review, ReviewTargetType } from '../domain/review.entity';
+import { Review, type ReviewTargetType } from '../domain/review.entity';
 import type {
   CreateReviewInput,
   ListByTargetInput,
@@ -121,7 +121,9 @@ export class PrismaReviewRepository implements ReviewRepository {
 }
 
 function toDomain(row: PrismaReview): Review {
-  return {
+  // [G4.1] persistence reconstruction routes through the entity's
+  // static factory so the cast surface lives on the domain, not infra.
+  return Review.fromPersistence({
     id: row.id,
     authorId: row.authorId,
     tripId: row.tripId,
@@ -135,5 +137,5 @@ function toDomain(row: PrismaReview): Review {
     responseAt: row.responseAt,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
-  };
+  });
 }

@@ -28,7 +28,7 @@ import {
   type TripShareRepository,
 } from '../../trip';
 
-import type { Vote, VoteTargetType, VoteValue } from '../domain/vote.entity';
+import { Vote, type VoteTargetType, type VoteValue } from '../domain/vote.entity';
 import { VOTE_REPOSITORY, type VoteRepository } from './ports/vote.repository';
 import { BLOCK_REPOSITORY, type BlockRepository } from './ports/block.repository';
 import { assertNotBlocked } from './block-user.use-case';
@@ -51,21 +51,17 @@ export class CastVoteUseCase {
   ) {}
 
   async execute(cmd: CastVoteCommand): Promise<Vote> {
-    await assertCanVote(this.trips, this.shares, cmd.tripId, cmd.userId);
+    // Domain-side discriminant + non-empty checks (V1/V2/V3 — [G4.1]).
+    const input = Vote.create(cmd);
+    await assertCanVote(this.trips, this.shares, input.tripId, input.userId);
     // POST.2B.1 — a block in either direction between the voter and
     // the trip owner refuses the interaction (alongside the existing
     // access gate, not a new layer).
-    const trip = await this.trips.findById(cmd.tripId);
-    if (trip && trip.userId !== cmd.userId) {
-      await assertNotBlocked(this.blocks, cmd.userId, trip.userId);
+    const trip = await this.trips.findById(input.tripId);
+    if (trip && trip.userId !== input.userId) {
+      await assertNotBlocked(this.blocks, input.userId, trip.userId);
     }
-    return this.votes.upsert({
-      tripId: cmd.tripId,
-      userId: cmd.userId,
-      targetType: cmd.targetType,
-      targetId: cmd.targetId,
-      value: cmd.value,
-    });
+    return this.votes.upsert(input);
   }
 }
 
