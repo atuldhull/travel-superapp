@@ -32,11 +32,13 @@ desktop.ini
 .idea/
 *.swp
 
-# Test / coverage
+# Test / coverage / mutation testing
 coverage/
 .nyc_output/
 playwright-report/
 test-results/
+.stryker-tmp/
+reports/mutation/
 
 # Expo / RN
 .expo/
