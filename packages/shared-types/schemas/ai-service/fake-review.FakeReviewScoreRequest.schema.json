@@ -1,0 +1,47 @@
+{
+  "$ref": "#/definitions/FakeReviewScoreRequest",
+  "definitions": {
+    "FakeReviewScoreRequest": {
+      "type": "object",
+      "properties": {
+        "reviews": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "authorId": {
+                "type": "string"
+              },
+              "body": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 8000
+              },
+              "postedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "id",
+              "authorId",
+              "body",
+              "postedAt"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 1,
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "reviews"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

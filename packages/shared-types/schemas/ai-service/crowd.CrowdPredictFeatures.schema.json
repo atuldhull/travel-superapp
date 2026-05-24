@@ -1,0 +1,26 @@
+{
+  "$ref": "#/definitions/CrowdPredictFeatures",
+  "definitions": {
+    "CrowdPredictFeatures": {
+      "type": "object",
+      "properties": {
+        "dayOfWeek": {
+          "type": "number"
+        },
+        "hourOfDay": {
+          "type": "number"
+        },
+        "isHoliday": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "dayOfWeek",
+        "hourOfDay",
+        "isHoliday"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

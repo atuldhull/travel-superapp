@@ -1,0 +1,32 @@
+{
+  "$ref": "#/definitions/STTChunk",
+  "definitions": {
+    "STTChunk": {
+      "type": "object",
+      "properties": {
+        "audio": {
+          "anyOf": [
+            {},
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "sampleRateHz": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "final": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "audio",
+        "sampleRateHz",
+        "final"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

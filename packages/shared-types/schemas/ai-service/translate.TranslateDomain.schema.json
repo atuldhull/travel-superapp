@@ -1,0 +1,15 @@
+{
+  "$ref": "#/definitions/TranslateDomain",
+  "definitions": {
+    "TranslateDomain": {
+      "type": "string",
+      "enum": [
+        "general",
+        "food",
+        "navigation",
+        "safety"
+      ]
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

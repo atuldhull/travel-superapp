@@ -1,0 +1,38 @@
+{
+  "$ref": "#/definitions/AiServiceHealthResponse",
+  "definitions": {
+    "AiServiceHealthResponse": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "const": "ok"
+        },
+        "ray": {
+          "type": "object",
+          "properties": {
+            "replicas": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "healthy": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "replicas",
+            "healthy"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "status",
+        "ray"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

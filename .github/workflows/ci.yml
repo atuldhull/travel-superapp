@@ -168,6 +168,14 @@ jobs:
         # The script regenerates both, then `git diff --exit-code`s.
         run: pnpm sdk:check
 
+      - name: Shared-types drift gate
+        # Refuses to merge if `packages/shared-types/schemas/ai-service/`
+        # has drifted from the Zod sources. The Python ai-service
+        # consumes those JSON Schemas via datamodel-code-generator,
+        # so a stale schema = a broken contract on the FastAPI side.
+        # ([F3])
+        run: pnpm shared-types:check
+
   # ──────────────────────────────────────────────────────────────
   # Integration tests — boot Postgres + Redis + MinIO as GitHub
   # service containers, then run jest. Env values mirror
