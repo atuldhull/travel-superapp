@@ -11,7 +11,10 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "cover:unit": "vitest run --coverage"
+    "cover:unit": "vitest run --coverage",
+    "e2e": "playwright test",
+    "e2e:install": "playwright install --with-deps chromium",
+    "e2e:update": "playwright test --update-snapshots"
   },
   "dependencies": {
     "@app/sdk": "workspace:*",
@@ -41,7 +44,9 @@
     "yet-another-react-lightbox": "^3.21.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.10.0",
     "@axe-core/react": "^4.10.0",
+    "@playwright/test": "^1.49.0",
     "@tailwindcss/postcss": "^4.0.0",
     "@testing-library/jest-dom": "^6.6.0",
     "@testing-library/react": "^16.1.0",
