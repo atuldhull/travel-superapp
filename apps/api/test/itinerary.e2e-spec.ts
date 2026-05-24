@@ -55,7 +55,6 @@ describe('Trip itinerary stub (integration, requires Docker Postgres)', () => {
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
@@ -112,7 +111,6 @@ describe('Trip itinerary stub (integration, requires Docker Postgres)', () => {
   }
 
   it('POST /trips/:id/itinerary returns one day per date, numbered 1..N', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('happy');
     const tripId = await createTrip(accessToken, {
       title: 'London 3-day',
@@ -142,7 +140,6 @@ describe('Trip itinerary stub (integration, requires Docker Postgres)', () => {
   });
 
   it('trip without startsOn + endsOn → 422 ITINERARY_DATES_REQUIRED', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('no-dates');
     const tripId = await createTrip(accessToken, { title: 'undated' });
 
@@ -156,7 +153,6 @@ describe('Trip itinerary stub (integration, requires Docker Postgres)', () => {
   });
 
   it("another user's trip → 404 TRIP_NOT_FOUND", async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('alice');
     const bob = await registerUser('bob');
     const tripId = await createTrip(alice.accessToken, {
@@ -175,7 +171,6 @@ describe('Trip itinerary stub (integration, requires Docker Postgres)', () => {
   });
 
   it('re-generating wipes + re-creates without duplicate rows', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('replan');
     const tripId = await createTrip(accessToken, {
       title: 'replan',
@@ -196,7 +191,6 @@ describe('Trip itinerary stub (integration, requires Docker Postgres)', () => {
   });
 
   it('GET /trips/:id/itinerary returns the generated days', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('read');
     const tripId = await createTrip(accessToken, {
       title: 'read-back',
@@ -219,7 +213,6 @@ describe('Trip itinerary stub (integration, requires Docker Postgres)', () => {
   });
 
   it('trip length > 90 days → 422 TRIP_TOO_LONG', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('toolong');
     const tripId = await createTrip(accessToken, {
       title: 'sabbatical',
@@ -236,7 +229,6 @@ describe('Trip itinerary stub (integration, requires Docker Postgres)', () => {
   });
 
   it('unauthenticated → 401 UNAUTHENTICATED', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/trips/some-id/itinerary',

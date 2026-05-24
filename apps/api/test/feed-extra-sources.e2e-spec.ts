@@ -64,7 +64,6 @@ describe('Feed extra sources (integration, requires Docker Postgres)', () => {
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
@@ -111,7 +110,6 @@ describe('Feed extra sources (integration, requires Docker Postgres)', () => {
   }
 
   it('SOS-triggered surfaces in the feed with resolvedAt payload', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('sos');
     const sosRes = await app.inject({
       method: 'POST',
@@ -132,7 +130,6 @@ describe('Feed extra sources (integration, requires Docker Postgres)', () => {
   });
 
   it('expense_added surfaces in the feed with 2-decimal amount string', async () => {
-    if (!dbReachable) return;
     const { userId, accessToken } = await registerUser('expense');
     const tripId = await createTrip(accessToken);
     // Seed an Expense directly — the cast-flow has trip-collab gating
@@ -158,7 +155,6 @@ describe('Feed extra sources (integration, requires Docker Postgres)', () => {
   });
 
   it('vote_cast (+1/-1) surfaces in feed; abstain (value=0) excluded', async () => {
-    if (!dbReachable) return;
     const { userId, accessToken } = await registerUser('vote');
     const tripId = await createTrip(accessToken);
     const tripIdAbstain = await createTrip(accessToken);
@@ -199,7 +195,6 @@ describe('Feed extra sources (integration, requires Docker Postgres)', () => {
   });
 
   it('cross-user isolation holds for the 3 new sources', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('alice');
     const bob = await registerUser('bob');
     // Alice generates one of each new kind.

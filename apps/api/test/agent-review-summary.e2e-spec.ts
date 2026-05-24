@@ -71,7 +71,6 @@ describe('GET /agents/:id/review-summary (integration, requires Docker Postgres)
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
@@ -120,7 +119,6 @@ describe('GET /agents/:id/review-summary (integration, requires Docker Postgres)
   }
 
   it('@Public(): no bearer + empty agent → all-zero shape; votes always zero', async () => {
-    if (!dbReachable) return;
     const agentId = `${TEST_PREFIX}-empty-${uniqueSuffix()}`;
     const { status, body } = await getSummary(agentId);
     expect(status).toBe(200);
@@ -135,7 +133,6 @@ describe('GET /agents/:id/review-summary (integration, requires Docker Postgres)
   });
 
   it('agent with reviews → correct aggregates + recent; votes still zero', async () => {
-    if (!dbReachable) return;
     const agentId = `${TEST_PREFIX}-rich-${uniqueSuffix()}`;
     const a = await registerUser('a');
     const b = await registerUser('b');
@@ -165,7 +162,6 @@ describe('GET /agents/:id/review-summary (integration, requires Docker Postgres)
   });
 
   it('cross-target isolation between agent A and agent B', async () => {
-    if (!dbReachable) return;
     const agentA = `${TEST_PREFIX}-A-${uniqueSuffix()}`;
     const agentB = `${TEST_PREFIX}-B-${uniqueSuffix()}`;
     const u = await registerUser('iso');
@@ -179,7 +175,6 @@ describe('GET /agents/:id/review-summary (integration, requires Docker Postgres)
   });
 
   it('agent reviews do NOT leak into eatery / stay / place review summaries (4-way targetType isolation)', async () => {
-    if (!dbReachable) return;
     const sharedId = `${TEST_PREFIX}-shared-${uniqueSuffix()}`;
     const u = await registerUser('cross');
     await postAgentReview(u.accessToken, sharedId, 5, 'Agent review only.');

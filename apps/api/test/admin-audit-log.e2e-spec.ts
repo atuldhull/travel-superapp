@@ -63,7 +63,6 @@ describe('V.UX.36 — Admin audit log (integration, requires Docker Postgres)', 
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     // V.UX.36 — wipe audit rows tied to actors created by this suite,
     // then drop those users + their child trips/scam reports/sos.
     const ourUsers = await prisma.user.findMany({
@@ -130,13 +129,11 @@ describe('V.UX.36 — Admin audit log (integration, requires Docker Postgres)', 
   }
 
   it('GET /admin/audit-logs without bearer → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({ method: 'GET', url: '/api/v1/admin/audit-logs' });
     expect(res.statusCode).toBe(401);
   });
 
   it('non-admin caller → 403', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('non-admin');
     const res = await app.inject({
       method: 'GET',
@@ -147,7 +144,6 @@ describe('V.UX.36 — Admin audit log (integration, requires Docker Postgres)', 
   });
 
   it('ban a user → audit row {targetType:user, action:ban, context:{reason}}', async () => {
-    if (!dbReachable) return;
     const admin = await loginAsAdmin('ban-actor');
     const target = await registerUser('ban-target');
 
@@ -172,7 +168,6 @@ describe('V.UX.36 — Admin audit log (integration, requires Docker Postgres)', 
   });
 
   it('verify-scam writes one {action:verify_scam, context:{verified:true}}', async () => {
-    if (!dbReachable) return;
     const admin = await loginAsAdmin('verify-actor');
     const reporter = await registerUser('reporter');
 
@@ -209,7 +204,6 @@ describe('V.UX.36 — Admin audit log (integration, requires Docker Postgres)', 
   });
 
   it('resolve-sos writes one {action:resolve_sos, context:{note}}', async () => {
-    if (!dbReachable) return;
     const admin = await loginAsAdmin('sos-actor');
     const victim = await registerUser('sos-victim');
 
@@ -241,7 +235,6 @@ describe('V.UX.36 — Admin audit log (integration, requires Docker Postgres)', 
   });
 
   it('filters: ?action=ban scopes the list to ban rows only', async () => {
-    if (!dbReachable) return;
     const admin = await loginAsAdmin('filter-actor');
     const target1 = await registerUser('filter-target-1');
     const target2 = await registerUser('filter-target-2');

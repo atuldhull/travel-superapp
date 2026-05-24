@@ -57,7 +57,6 @@ describe('GET /memory-books/featured (integration, requires Docker Postgres)', (
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
@@ -107,7 +106,6 @@ describe('GET /memory-books/featured (integration, requires Docker Postgres)', (
   }
 
   it('@Public(): no bearer + empty database → 200 with empty list', async () => {
-    if (!dbReachable) return;
     // Don't seed anything from this suite. Pre-existing rows from
     // other tests may exist; we only check the contract — list is
     // an array (possibly empty) and the route is reachable without
@@ -118,7 +116,6 @@ describe('GET /memory-books/featured (integration, requires Docker Postgres)', (
   });
 
   it('excludes unpublished books', async () => {
-    if (!dbReachable) return;
     const u = await registerUser('unpub');
     // Create but DO NOT publish.
     const create = await app.inject({
@@ -135,7 +132,6 @@ describe('GET /memory-books/featured (integration, requires Docker Postgres)', (
   });
 
   it('lists published books across multiple users', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('alice');
     const bob = await registerUser('bob');
     const aliceBookId = await createAndPublishBook(
@@ -153,7 +149,6 @@ describe('GET /memory-books/featured (integration, requires Docker Postgres)', (
   });
 
   it('orders by publishedAt DESC (newest first)', async () => {
-    if (!dbReachable) return;
     const u = await registerUser('ordered');
     const oldId = await createAndPublishBook(u.accessToken, `${TEST_PREFIX}-old-${uniqueSuffix()}`);
     // Slight wait to ensure publishedAt timestamps differ at ms granularity.
@@ -170,7 +165,6 @@ describe('GET /memory-books/featured (integration, requires Docker Postgres)', (
   });
 
   it('?limit=1 clamps the result count', async () => {
-    if (!dbReachable) return;
     const u = await registerUser('limit');
     await createAndPublishBook(u.accessToken, `${TEST_PREFIX}-limit-1-${uniqueSuffix()}`);
     await createAndPublishBook(u.accessToken, `${TEST_PREFIX}-limit-2-${uniqueSuffix()}`);

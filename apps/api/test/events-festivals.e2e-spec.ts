@@ -85,7 +85,6 @@ describe('GET /api/v1/events/festivals (integration, requires Docker Postgres + 
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({ where: { displayName: { startsWith: TEST_PREFIX } } });
   });
 
@@ -115,7 +114,6 @@ describe('GET /api/v1/events/festivals (integration, requires Docker Postgres + 
   }
 
   it('GET without bearer → 401 UNAUTHENTICATED', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'GET',
       url: url({
@@ -130,7 +128,6 @@ describe('GET /api/v1/events/festivals (integration, requires Docker Postgres + 
   });
 
   it('window covering the festival returns the Diwali fixture', async () => {
-    if (!dbReachable) return;
     const token = await registerAndGetToken('hit');
     // Mock provider's diwali fixture starts at from + 24h. A 7-day
     // window from 2026-09-01 wraps it.
@@ -155,7 +152,6 @@ describe('GET /api/v1/events/festivals (integration, requires Docker Postgres + 
   });
 
   it('two-hour window before the festival starts returns an empty list', async () => {
-    if (!dbReachable) return;
     const token = await registerAndGetToken('miss');
     const res = await app.inject({
       method: 'GET',
@@ -173,7 +169,6 @@ describe('GET /api/v1/events/festivals (integration, requires Docker Postgres + 
   });
 
   it('radiusKm > 30 → 422 INVALID_RADIUS', async () => {
-    if (!dbReachable) return;
     const token = await registerAndGetToken('rad');
     const res = await app.inject({
       method: 'GET',
@@ -191,7 +186,6 @@ describe('GET /api/v1/events/festivals (integration, requires Docker Postgres + 
   });
 
   it('to <= from → 422 INVALID_DATE_RANGE', async () => {
-    if (!dbReachable) return;
     const token = await registerAndGetToken('range');
     const res = await app.inject({
       method: 'GET',

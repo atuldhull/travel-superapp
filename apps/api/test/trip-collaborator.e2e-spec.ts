@@ -80,7 +80,6 @@ describe('Trip collaborator surface (integration, requires Docker Postgres + Red
   }
 
   it('owner-only — non-participant gets 404; collaborator (via vote) gets {role, ownerDisplayName}', async () => {
-    if (!dbReachable) return;
     const owner = await registerUser('owner');
     const collab = await registerUser('collab');
     const stranger = await registerUser('stranger');

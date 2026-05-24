@@ -57,7 +57,6 @@ describe('Passwordless OTP sign-in (integration, requires Docker Postgres)', () 
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.loginCode.deleteMany({});
     await prisma.user.deleteMany({ where: { displayName: 'Traveler' } });
   });
@@ -74,7 +73,6 @@ describe('Passwordless OTP sign-in (integration, requires Docker Postgres)', () 
   };
 
   it('email: request → 200 + code mailed; verify → token + refresh cookie + /auth/me', async () => {
-    if (!dbReachable) return;
     const destination = uniqueEmail('otp-e2e');
 
     const reqRes = await app.inject({
@@ -117,7 +115,6 @@ describe('Passwordless OTP sign-in (integration, requires Docker Postgres)', () 
   });
 
   it('phone: request → code via SMS; verify → 200 creates a phone-only user', async () => {
-    if (!dbReachable) return;
     const destination = `+1999${String(Date.now()).slice(-7)}`;
 
     const reqRes = await app.inject({
@@ -141,7 +138,6 @@ describe('Passwordless OTP sign-in (integration, requires Docker Postgres)', () 
   });
 
   it('wrong code → 401 LOGIN_CODE_INVALID', async () => {
-    if (!dbReachable) return;
     const destination = uniqueEmail('otp-wrong');
     await app.inject({
       method: 'POST',
@@ -158,7 +154,6 @@ describe('Passwordless OTP sign-in (integration, requires Docker Postgres)', () 
   });
 
   it('soft rate-limit: 6th request in the window mints no new code', async () => {
-    if (!dbReachable) return;
     const destination = uniqueEmail('otp-rl');
     for (let i = 0; i < 5; i += 1) {
       await app.inject({

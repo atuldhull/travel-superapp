@@ -55,7 +55,6 @@ describe('GET /feed/people (integration, requires Docker Postgres)', () => {
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({ where: { displayName: { startsWith: TEST_PREFIX } } });
   });
 
@@ -122,13 +121,11 @@ describe('GET /feed/people (integration, requires Docker Postgres)', () => {
   }
 
   it('no bearer → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({ method: 'GET', url: '/api/v1/feed/people' });
     expect(res.statusCode).toBe(401);
   });
 
   it('suggests an author who published a PUBLIC trip', async () => {
-    if (!dbReachable) return;
     const author = await registerUser('author');
     const viewer = await registerUser('viewer');
     await publishTrip(author.accessToken, 'PUBLIC');
@@ -141,7 +138,6 @@ describe('GET /feed/people (integration, requires Docker Postgres)', () => {
   });
 
   it('does not suggest the author to themselves', async () => {
-    if (!dbReachable) return;
     const author = await registerUser('solo');
     await publishTrip(author.accessToken, 'PUBLIC');
 
@@ -150,7 +146,6 @@ describe('GET /feed/people (integration, requires Docker Postgres)', () => {
   });
 
   it('excludes an already-followed author', async () => {
-    if (!dbReachable) return;
     const author = await registerUser('known');
     const viewer = await registerUser('fan');
     await publishTrip(author.accessToken, 'PUBLIC');
@@ -161,7 +156,6 @@ describe('GET /feed/people (integration, requires Docker Postgres)', () => {
   });
 
   it('does not suggest a FOLLOWERS-only author (PUBLIC trips only)', async () => {
-    if (!dbReachable) return;
     const author = await registerUser('private-ish');
     const viewer = await registerUser('viewer2');
     await publishTrip(author.accessToken, 'FOLLOWERS');

@@ -56,7 +56,6 @@ describe('GET /users/:id/(followers|following) (integration, requires Docker Pos
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({ where: { displayName: { startsWith: TEST_PREFIX } } });
   });
 
@@ -112,13 +111,11 @@ describe('GET /users/:id/(followers|following) (integration, requires Docker Pos
   }
 
   it('no bearer → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({ method: 'GET', url: '/api/v1/users/whoever/followers' });
     expect(res.statusCode).toBe(401);
   });
 
   it('followers list reflects who followed the target', async () => {
-    if (!dbReachable) return;
     const star = await registerUser('star');
     const fan1 = await registerUser('fan1');
     const fan2 = await registerUser('fan2');
@@ -135,7 +132,6 @@ describe('GET /users/:id/(followers|following) (integration, requires Docker Pos
   });
 
   it('following list reflects who the target follows', async () => {
-    if (!dbReachable) return;
     const explorer = await registerUser('explorer');
     const a = await registerUser('idol-a');
     const b = await registerUser('idol-b');
@@ -147,7 +143,6 @@ describe('GET /users/:id/(followers|following) (integration, requires Docker Pos
   });
 
   it('block filter — a user blocked-with the viewer is omitted', async () => {
-    if (!dbReachable) return;
     const star = await registerUser('star2');
     const fan = await registerUser('fan-ok');
     const troll = await registerUser('troll');
@@ -163,7 +158,6 @@ describe('GET /users/:id/(followers|following) (integration, requires Docker Pos
   });
 
   it('unknown user → 200 { users: [] }', async () => {
-    if (!dbReachable) return;
     const viewer = await registerUser('viewer');
     const followers = await list(viewer.accessToken, 'nonexistent-user-id', 'followers');
     expect(followers).toEqual([]);

@@ -72,7 +72,6 @@ describe('GET /places/:id/review-summary (integration, requires Docker Postgres)
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.place.deleteMany({
       where: { sourceKey: { startsWith: TEST_PREFIX } },
     });
@@ -163,7 +162,6 @@ describe('GET /places/:id/review-summary (integration, requires Docker Postgres)
   }
 
   it('@Public(): no bearer required + empty place → all-zero shape', async () => {
-    if (!dbReachable) return;
     const placeId = await createPlace('empty');
     const { status, body } = await getSummary(placeId);
     expect(status).toBe(200);
@@ -176,7 +174,6 @@ describe('GET /places/:id/review-summary (integration, requires Docker Postgres)
   });
 
   it('place with reviews + votes returns correct aggregates + recent', async () => {
-    if (!dbReachable) return;
     const placeId = await createPlace('rich');
     const a = await registerUser('a');
     const b = await registerUser('b');
@@ -217,7 +214,6 @@ describe('GET /places/:id/review-summary (integration, requires Docker Postgres)
   });
 
   it('recentReviews capped at 5; reviews.count reflects all', async () => {
-    if (!dbReachable) return;
     const placeId = await createPlace('capped');
     // 7 different authors so the unique-key constraint
     // (tripId, userId, targetType, targetId) doesn't bite — each
@@ -233,7 +229,6 @@ describe('GET /places/:id/review-summary (integration, requires Docker Postgres)
   });
 
   it('cross-target isolation: place A doesn’t leak into place B', async () => {
-    if (!dbReachable) return;
     const placeA = await createPlace('A');
     const placeB = await createPlace('B');
     const u = await registerUser('iso');
@@ -248,7 +243,6 @@ describe('GET /places/:id/review-summary (integration, requires Docker Postgres)
   });
 
   it('returns the placeId echoed in the response (clients can validate)', async () => {
-    if (!dbReachable) return;
     const placeId = await createPlace('echo');
     const { body } = await getSummary(placeId);
     expect(body.placeId).toBe(placeId);

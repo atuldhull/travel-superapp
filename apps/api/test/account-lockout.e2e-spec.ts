@@ -61,7 +61,6 @@ describe('Account lockout (integration, requires Docker Postgres + Redis)', () =
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
@@ -104,7 +103,6 @@ describe('Account lockout (integration, requires Docker Postgres + Redis)', () =
   }
 
   it(`${MAX_FAILED_LOGIN_ATTEMPTS + 1}th login attempt returns 429 ACCOUNT_LOCKED with Retry-After`, async () => {
-    if (!dbReachable) return;
     const { email } = await registerUser('trip-limit');
 
     // N wrong attempts — each returns 401 INVALID_CREDENTIALS.
@@ -134,7 +132,6 @@ describe('Account lockout (integration, requires Docker Postgres + Redis)', () =
   }, 30_000);
 
   it('successful login resets the counter', async () => {
-    if (!dbReachable) return;
     const { email, password } = await registerUser('reset');
 
     // Burn 4 failures (one short of the cap).
@@ -151,7 +148,6 @@ describe('Account lockout (integration, requires Docker Postgres + Redis)', () =
   });
 
   it('lockout applies to unknown emails too (prevents timing enumeration)', async () => {
-    if (!dbReachable) return;
     const email = `${TEST_PREFIX}-ghost-${uniqueSuffix()}@example.com`;
     // Fresh counter — test isolation.
     await counter.reset(hashEmail(email));
@@ -170,7 +166,6 @@ describe('Account lockout (integration, requires Docker Postgres + Redis)', () =
   });
 
   it('counter increments even on INVALID_MFA — attacker with leaked password still gets locked', async () => {
-    if (!dbReachable) return;
     const { email, password, userId } = await registerUser('mfa-fail');
 
     // Enable MFA via the counter-testing shortcut: flip the DB

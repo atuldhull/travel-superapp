@@ -54,7 +54,6 @@ describe('Trip PATCH + DELETE (integration, requires Docker Postgres)', () => {
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
@@ -106,7 +105,6 @@ describe('Trip PATCH + DELETE (integration, requires Docker Postgres)', () => {
   }
 
   it('PATCH updates title + radius + dates and bumps version', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('patch-ok');
     const tripId = await createTrip(accessToken, { title: 'old' });
 
@@ -129,7 +127,6 @@ describe('Trip PATCH + DELETE (integration, requires Docker Postgres)', () => {
   });
 
   it('empty patch body → 422 VALIDATION_FAILED', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('empty');
     const tripId = await createTrip(accessToken);
     const res = await app.inject({
@@ -143,7 +140,6 @@ describe('Trip PATCH + DELETE (integration, requires Docker Postgres)', () => {
   });
 
   it('PATCH radius > 500 → 422 INVALID_RADIUS', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('bad-radius');
     const tripId = await createTrip(accessToken);
     const res = await app.inject({
@@ -157,7 +153,6 @@ describe('Trip PATCH + DELETE (integration, requires Docker Postgres)', () => {
   });
 
   it('PATCH with startsOn > stored endsOn → 422 INVALID_DATE_RANGE', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('bad-range');
     const tripId = await createTrip(accessToken, {
       startsOn: '2026-08-01',
@@ -174,7 +169,6 @@ describe('Trip PATCH + DELETE (integration, requires Docker Postgres)', () => {
   });
 
   it('date change wipes existing itinerary rows', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('wipe-itin');
     const tripId = await createTrip(accessToken, {
       startsOn: '2026-08-01',
@@ -202,7 +196,6 @@ describe('Trip PATCH + DELETE (integration, requires Docker Postgres)', () => {
   });
 
   it("PATCH another user's trip → 404 TRIP_NOT_FOUND", async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('a-idor');
     const bob = await registerUser('b-idor');
     const tripId = await createTrip(alice.accessToken, { title: 'alice' });
@@ -217,7 +210,6 @@ describe('Trip PATCH + DELETE (integration, requires Docker Postgres)', () => {
   });
 
   it('unauthenticated PATCH → 401 UNAUTHENTICATED', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'PATCH',
       url: '/api/v1/trips/any-id',
@@ -228,7 +220,6 @@ describe('Trip PATCH + DELETE (integration, requires Docker Postgres)', () => {
   });
 
   it('DELETE own trip → 204, row + cascaded itinerary gone', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('del-ok');
     const tripId = await createTrip(accessToken, {
       startsOn: '2026-08-01',
@@ -254,7 +245,6 @@ describe('Trip PATCH + DELETE (integration, requires Docker Postgres)', () => {
   });
 
   it('DELETE twice → second returns 404', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('del-twice');
     const tripId = await createTrip(accessToken);
 
@@ -275,7 +265,6 @@ describe('Trip PATCH + DELETE (integration, requires Docker Postgres)', () => {
   });
 
   it("DELETE another user's trip → 404", async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('a-del');
     const bob = await registerUser('b-del');
     const tripId = await createTrip(alice.accessToken);

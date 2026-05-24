@@ -117,7 +117,6 @@ describe('Trip settle-up route (integration, requires Docker Postgres + Redis)',
   }
 
   it('owner with one self-paid expense → empty transfer plan (paid 100% of own share)', async () => {
-    if (!dbReachable) return;
     const owner = await registerUser('owner');
     const trip = await app.inject({
       method: 'POST',
@@ -151,7 +150,6 @@ describe('Trip settle-up route (integration, requires Docker Postgres + Redis)',
   });
 
   it('non-owner-without-share → 404 TRIP_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const owner = await registerUser('a');
     const stranger = await registerUser('b');
     const trip = await app.inject({

@@ -64,7 +64,6 @@ describe('Admin SOS dashboard (integration, requires Docker Postgres)', () => {
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     // User cascade-deletes SosEvent rows.
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
@@ -131,13 +130,11 @@ describe('Admin SOS dashboard (integration, requires Docker Postgres)', () => {
   }
 
   it('GET /admin/safety/sos-events without bearer → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({ method: 'GET', url: '/api/v1/admin/safety/sos-events' });
     expect(res.statusCode).toBe(401);
   });
 
   it('non-admin → 403', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('non-admin');
     const res = await app.inject({
       method: 'GET',
@@ -148,7 +145,6 @@ describe('Admin SOS dashboard (integration, requires Docker Postgres)', () => {
   });
 
   it('?status=active returns only unresolved events; admin sees ALL users’ events', async () => {
-    if (!dbReachable) return;
     const adminToken = await loginAsAdmin('list-admin');
     const alice = await registerUser('alice');
     const bob = await registerUser('bob');
@@ -172,7 +168,6 @@ describe('Admin SOS dashboard (integration, requires Docker Postgres)', () => {
   });
 
   it('?status=resolved returns only resolved events', async () => {
-    if (!dbReachable) return;
     const adminToken = await loginAsAdmin('resolved-filter');
     const alice = await registerUser('alice-r');
     const bob = await registerUser('bob-r');
@@ -193,7 +188,6 @@ describe('Admin SOS dashboard (integration, requires Docker Postgres)', () => {
   });
 
   it('unknown status → 400 VALIDATION_FAILED', async () => {
-    if (!dbReachable) return;
     const adminToken = await loginAsAdmin('bad-status');
     const res = await app.inject({
       method: 'GET',
@@ -205,7 +199,6 @@ describe('Admin SOS dashboard (integration, requires Docker Postgres)', () => {
   });
 
   it('admin resolve sets resolvedAt + note on someone else’s SOS', async () => {
-    if (!dbReachable) return;
     const adminToken = await loginAsAdmin('resolver');
     const target = await registerUser('target');
     const sosId = await triggerSos(target.accessToken);
@@ -228,7 +221,6 @@ describe('Admin SOS dashboard (integration, requires Docker Postgres)', () => {
   });
 
   it('admin resolve on already-resolved → 404 SOS_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const adminToken = await loginAsAdmin('double-resolve');
     const target = await registerUser('target-dr');
     const sosId = await triggerSos(target.accessToken);

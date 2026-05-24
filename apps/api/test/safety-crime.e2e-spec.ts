@@ -66,7 +66,6 @@ describe('Safety crime-layer (integration, requires Postgres)', () => {
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.crimeIncident.deleteMany({
       where: { source: { startsWith: SOURCE_PREFIX } },
     });
@@ -113,7 +112,6 @@ describe('Safety crime-layer (integration, requires Postgres)', () => {
   }
 
   it('POST /safety/crimes/search without a bearer → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/safety/crimes/search',
@@ -124,7 +122,6 @@ describe('Safety crime-layer (integration, requires Postgres)', () => {
   });
 
   it('empty DB → 200 with empty incidents list', async () => {
-    if (!dbReachable) return;
     const tok = await token('empty');
     const res = await app.inject({
       method: 'POST',
@@ -137,7 +134,6 @@ describe('Safety crime-layer (integration, requires Postgres)', () => {
   });
 
   it('seeded rows → ordered by distance asc within radius', async () => {
-    if (!dbReachable) return;
     const tok = await token('ordered');
     const closeId = await seedIncident({ category: 'theft', latOffset: 0.001, lngOffset: 0.001 });
     const midId = await seedIncident({ category: 'theft', latOffset: 0.01, lngOffset: 0.01 });
@@ -160,7 +156,6 @@ describe('Safety crime-layer (integration, requires Postgres)', () => {
   });
 
   it('category filter narrows to matching rows only', async () => {
-    if (!dbReachable) return;
     const tok = await token('catfilter');
     const theftId = await seedIncident({ category: 'theft', latOffset: 0.001, lngOffset: 0.001 });
     await seedIncident({ category: 'assault', latOffset: 0.002, lngOffset: 0.002 });
@@ -177,7 +172,6 @@ describe('Safety crime-layer (integration, requires Postgres)', () => {
   });
 
   it('minSeverity filter is threshold-style (medium → medium/high/critical)', async () => {
-    if (!dbReachable) return;
     const tok = await token('sevfilter');
     await seedIncident({
       category: 'theft',
@@ -210,7 +204,6 @@ describe('Safety crime-layer (integration, requires Postgres)', () => {
   });
 
   it('sinceDays window excludes older incidents', async () => {
-    if (!dbReachable) return;
     const tok = await token('since');
     const recentId = await seedIncident({
       category: 'theft',
@@ -238,7 +231,6 @@ describe('Safety crime-layer (integration, requires Postgres)', () => {
   });
 
   it('radiusKm > 50 → 422 INVALID_RADIUS', async () => {
-    if (!dbReachable) return;
     const tok = await token('badradius');
     const res = await app.inject({
       method: 'POST',
@@ -251,7 +243,6 @@ describe('Safety crime-layer (integration, requires Postgres)', () => {
   });
 
   it('limit caps response length', async () => {
-    if (!dbReachable) return;
     const tok = await token('limit');
     for (let i = 0; i < 5; i++) {
       await seedIncident({

@@ -82,7 +82,6 @@ describe('V.UX.26 inbox archive + per-category prefs + push (integration, requir
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.pushSubscription.deleteMany({
       where: { user: { displayName: { startsWith: TEST_PREFIX } } },
     });
@@ -133,7 +132,6 @@ describe('V.UX.26 inbox archive + per-category prefs + push (integration, requir
   }
 
   it('POST /notifications/:id/archive without bearer → 401', async () => {
-    if (!dbReachable) return;
     const u = await registerAndGetToken('archive-anon');
     const id = await seedNotification(u.userId, 'session_issued');
     const res = await app.inject({
@@ -144,7 +142,6 @@ describe('V.UX.26 inbox archive + per-category prefs + push (integration, requir
   });
 
   it('Archive removes row from default lister; ?includeArchived=true returns it', async () => {
-    if (!dbReachable) return;
     const u = await registerAndGetToken('archive-happy');
     const id = await seedNotification(u.userId, 'session_issued');
 
@@ -184,7 +181,6 @@ describe('V.UX.26 inbox archive + per-category prefs + push (integration, requir
   });
 
   it('Per-category opt-out makes the sender write a suppressed row', async () => {
-    if (!dbReachable) return;
     const u = await registerAndGetToken('prefs-cat');
 
     const patch = await app.inject({
@@ -217,7 +213,6 @@ describe('V.UX.26 inbox archive + per-category prefs + push (integration, requir
   });
 
   it('Push subscribe + unsubscribe round-trip', async () => {
-    if (!dbReachable) return;
     const u = await registerAndGetToken('push-rt');
     const endpoint = `https://example.com/push/${TEST_PREFIX}-${uniqueSuffix()}`;
 
@@ -249,7 +244,6 @@ describe('V.UX.26 inbox archive + per-category prefs + push (integration, requir
   });
 
   it('Weekly digest sends to email-eligible users + advances lastDigestSentAt', async () => {
-    if (!dbReachable) return;
     const u = await registerAndGetToken('digest-on');
     // Seed prefs row so listEligibleForDigest finds the user.
     await prisma.notificationPreference.upsert({
@@ -283,7 +277,6 @@ describe('V.UX.26 inbox archive + per-category prefs + push (integration, requir
   });
 
   it('categoriesDisabled including digest removes the user from the digest sweep', async () => {
-    if (!dbReachable) return;
     const u = await registerAndGetToken('digest-off');
     await prisma.notificationPreference.upsert({
       where: { userId: u.userId },

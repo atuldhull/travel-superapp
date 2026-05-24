@@ -49,7 +49,6 @@ describe('GeoQueries (integration, requires Docker Postgres)', () => {
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.place.deleteMany({
       where: { sourceKey: { startsWith: SOURCE_PREFIX } },
     });
@@ -125,8 +124,6 @@ describe('GeoQueries (integration, requires Docker Postgres)', () => {
   });
 
   it('filters by category when provided', async () => {
-    if (!dbReachable) return;
-
     await geo.insertPlace({
       sourceKey: `${SOURCE_PREFIX}-hyde-park`,
       name: 'Hyde Park',
@@ -154,8 +151,6 @@ describe('GeoQueries (integration, requires Docker Postgres)', () => {
   });
 
   it('updatePlaceCoordinates moves a place and the query sees the new position', async () => {
-    if (!dbReachable) return;
-
     const place = await geo.insertPlace({
       sourceKey: `${SOURCE_PREFIX}-windsor`,
       name: 'Windsor Castle',
@@ -185,7 +180,6 @@ describe('GeoQueries (integration, requires Docker Postgres)', () => {
   });
 
   it('updatePlaceCoordinates returns 0 when no row matches', async () => {
-    if (!dbReachable) return;
     const updated = await geo.updatePlaceCoordinates('place-does-not-exist', 0, 0);
     expect(updated).toBe(0);
   });

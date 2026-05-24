@@ -54,7 +54,6 @@ describe('promote-admin CLI (integration, requires Docker Postgres)', () => {
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
@@ -87,7 +86,6 @@ describe('promote-admin CLI (integration, requires Docker Postgres)', () => {
   }
 
   it('promoteUserToAdmin flips role from user → admin and writes the row', async () => {
-    if (!dbReachable) return;
     const { userId, email } = await registerUser('core-ok');
 
     const result = await promoteUserToAdmin(prisma, email);
@@ -106,7 +104,6 @@ describe('promote-admin CLI (integration, requires Docker Postgres)', () => {
   });
 
   it('second call on an admin user returns ALREADY_ADMIN without touching the row', async () => {
-    if (!dbReachable) return;
     const { userId, email } = await registerUser('idempotent');
     await promoteUserToAdmin(prisma, email);
 
@@ -126,13 +123,11 @@ describe('promote-admin CLI (integration, requires Docker Postgres)', () => {
   });
 
   it('USER_NOT_FOUND when no matching emailHash exists', async () => {
-    if (!dbReachable) return;
     const result = await promoteUserToAdmin(prisma, uniqueEmail('nobody'));
     expect(result.kind).toBe('USER_NOT_FOUND');
   });
 
   it('runCli happy path: exit 0 + PROMOTED', async () => {
-    if (!dbReachable) return;
     const { userId, email } = await registerUser('cli-ok');
     const { exitCode, result } = await runCli([email], { prisma });
     expect(exitCode).toBe(0);
@@ -145,21 +140,18 @@ describe('promote-admin CLI (integration, requires Docker Postgres)', () => {
   });
 
   it('runCli with unknown email: exit 1 + USER_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const { exitCode, result } = await runCli([uniqueEmail('ghost')], { prisma });
     expect(exitCode).toBe(1);
     expect(result.kind).toBe('USER_NOT_FOUND');
   });
 
   it('runCli with zero args: exit 1 + USAGE_ERROR', async () => {
-    if (!dbReachable) return;
     const { exitCode, result } = await runCli([], { prisma });
     expect(exitCode).toBe(1);
     expect(result.kind).toBe('USAGE_ERROR');
   });
 
   it('runCli with a malformed email: exit 1 + USAGE_ERROR', async () => {
-    if (!dbReachable) return;
     const { exitCode, result } = await runCli(['not-an-email'], { prisma });
     expect(exitCode).toBe(1);
     expect(result.kind).toBe('USAGE_ERROR');

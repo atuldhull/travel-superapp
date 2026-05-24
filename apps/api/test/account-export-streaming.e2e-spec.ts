@@ -57,7 +57,6 @@ describe('GET /account/export.ndjson (integration, requires Docker Postgres)', (
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
@@ -90,13 +89,11 @@ describe('GET /account/export.ndjson (integration, requires Docker Postgres)', (
   }
 
   it('without bearer → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({ method: 'GET', url: '/api/v1/account/export.ndjson' });
     expect(res.statusCode).toBe(401);
   });
 
   it('returns application/x-ndjson with valid line-by-line envelopes', async () => {
-    if (!dbReachable) return;
     const u = await registerUser('happy');
     const res = await app.inject({
       method: 'GET',
@@ -115,7 +112,6 @@ describe('GET /account/export.ndjson (integration, requires Docker Postgres)', (
   });
 
   it('first line is metadata with caller userId; second line is user', async () => {
-    if (!dbReachable) return;
     const u = await registerUser('order');
     const res = await app.inject({
       method: 'GET',
@@ -131,7 +127,6 @@ describe('GET /account/export.ndjson (integration, requires Docker Postgres)', (
   });
 
   it('every line is a complete JSON object terminated by \\n (no array wrap, no trailing comma)', async () => {
-    if (!dbReachable) return;
     const u = await registerUser('format');
     const res = await app.inject({
       method: 'GET',

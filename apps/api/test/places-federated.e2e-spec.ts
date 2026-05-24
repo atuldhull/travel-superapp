@@ -156,7 +156,6 @@ describe('Places federated search (integration, requires Docker Postgres + Redis
   }
 
   it('POST /places/federated-search without a bearer → 401 UNAUTHENTICATED', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/places/federated-search',
@@ -167,7 +166,6 @@ describe('Places federated search (integration, requires Docker Postgres + Redis
   });
 
   it('happy path → 200 with provider results + provider input echoed', async () => {
-    if (!dbReachable) return;
     const tok = await token('ok');
     const res = await app.inject({
       method: 'POST',
@@ -190,7 +188,6 @@ describe('Places federated search (integration, requires Docker Postgres + Redis
   });
 
   it('category filter flows through + narrows results', async () => {
-    if (!dbReachable) return;
     const tok = await token('category');
     const res = await app.inject({
       method: 'POST',
@@ -208,7 +205,6 @@ describe('Places federated search (integration, requires Docker Postgres + Redis
   });
 
   it('radius > 50km → 422 INVALID_RADIUS', async () => {
-    if (!dbReachable) return;
     const tok = await token('bad-radius');
     const res = await app.inject({
       method: 'POST',
@@ -221,7 +217,6 @@ describe('Places federated search (integration, requires Docker Postgres + Redis
   });
 
   it('lat out of range → 422 VALIDATION_FAILED (Zod blocks first)', async () => {
-    if (!dbReachable) return;
     const tok = await token('bad-lat');
     const res = await app.inject({
       method: 'POST',
@@ -234,7 +229,6 @@ describe('Places federated search (integration, requires Docker Postgres + Redis
   });
 
   it('cache hit: identical search → upstream called once across 3 HTTP requests', async () => {
-    if (!dbReachable) return;
     const tok = await token('cache-hit');
     const payload = basePayload({ center: { lat: 8.111, lng: 134.222 } });
     for (const _ of [1, 2, 3]) {
@@ -251,7 +245,6 @@ describe('Places federated search (integration, requires Docker Postgres + Redis
   });
 
   it('cache miss on different category → separate upstream call', async () => {
-    if (!dbReachable) return;
     const tok = await token('cache-category');
     await app.inject({
       method: 'POST',

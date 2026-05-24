@@ -62,7 +62,6 @@ describe('Admin module (integration, requires Docker Postgres)', () => {
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     // Wipe any Places this suite created first (FKs cascade to any
     // itinerary items, but none should exist for this coord — still,
     // delete-by-sourceKey is the right scoping primitive).
@@ -137,7 +136,6 @@ describe('Admin module (integration, requires Docker Postgres)', () => {
   }
 
   it('POST /admin/places without a bearer → 401 UNAUTHENTICATED', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/admin/places',
@@ -148,7 +146,6 @@ describe('Admin module (integration, requires Docker Postgres)', () => {
   });
 
   it('POST /admin/places with a non-admin bearer → 403 ROLE_FORBIDDEN', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('non-admin');
     const res = await app.inject({
       method: 'POST',
@@ -163,7 +160,6 @@ describe('Admin module (integration, requires Docker Postgres)', () => {
   });
 
   it('POST /admin/places with an admin bearer → 201 + row exists in DB', async () => {
-    if (!dbReachable) return;
     const { userId, email } = await registerUser('create-ok');
     const { accessToken } = await promoteAndReLogin(userId, email);
     const body = placeBody('create-ok');
@@ -197,7 +193,6 @@ describe('Admin module (integration, requires Docker Postgres)', () => {
   });
 
   it('DELETE /admin/places/:id with admin bearer → 204 + row gone', async () => {
-    if (!dbReachable) return;
     const { userId, email } = await registerUser('delete-ok');
     const { accessToken } = await promoteAndReLogin(userId, email);
     const body = placeBody('delete-ok');
@@ -222,7 +217,6 @@ describe('Admin module (integration, requires Docker Postgres)', () => {
   });
 
   it('DELETE /admin/places/:id for a missing id → 404 PLACE_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const { userId, email } = await registerUser('delete-404');
     const { accessToken } = await promoteAndReLogin(userId, email);
 
@@ -236,7 +230,6 @@ describe('Admin module (integration, requires Docker Postgres)', () => {
   });
 
   it('DELETE /admin/places/:id with a non-admin bearer → 403 ROLE_FORBIDDEN', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('delete-403');
     const res = await app.inject({
       method: 'DELETE',

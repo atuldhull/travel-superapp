@@ -68,7 +68,6 @@ describe('V.UX.31 password-reset flow (integration, requires Docker Postgres)', 
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.passwordResetToken.deleteMany({});
     await prisma.user.deleteMany({ where: { displayName: { startsWith: TEST_PREFIX } } });
   });
@@ -90,7 +89,6 @@ describe('V.UX.31 password-reset flow (integration, requires Docker Postgres)', 
   }
 
   it('Request returns ok even for unknown emails (enumeration-safe)', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/password-reset/request',
@@ -101,7 +99,6 @@ describe('V.UX.31 password-reset flow (integration, requires Docker Postgres)', 
   });
 
   it('Happy path: request → consume → login with new password', async () => {
-    if (!dbReachable) return;
     const { email } = await registerUser('happy');
     const req = await app.inject({
       method: 'POST',
@@ -137,7 +134,6 @@ describe('V.UX.31 password-reset flow (integration, requires Docker Postgres)', 
   });
 
   it('Re-consuming the same token → 401 RESET_TOKEN_INVALID', async () => {
-    if (!dbReachable) return;
     const { email } = await registerUser('replay');
     await app.inject({
       method: 'POST',
@@ -161,7 +157,6 @@ describe('V.UX.31 password-reset flow (integration, requires Docker Postgres)', 
   });
 
   it('Weak password → 422 (Zod min-length rejection)', async () => {
-    if (!dbReachable) return;
     const { email } = await registerUser('weak');
     await app.inject({
       method: 'POST',
@@ -178,7 +173,6 @@ describe('V.UX.31 password-reset flow (integration, requires Docker Postgres)', 
   });
 
   it('Soft rate-limit: 6th request in 15 min mints no new token', async () => {
-    if (!dbReachable) return;
     const { email } = await registerUser('limit');
     for (let i = 0; i < 5; i++) {
       const r = await app.inject({

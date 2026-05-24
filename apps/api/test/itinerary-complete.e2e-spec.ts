@@ -122,7 +122,6 @@ describe('Itinerary item completion (G1, integration)', () => {
   }
 
   it('round-trip: complete then uncomplete sets + clears completedAt', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('round');
     const { itemId } = await createTripWithItem(accessToken);
 
@@ -146,7 +145,6 @@ describe('Itinerary item completion (G1, integration)', () => {
   });
 
   it('IDOR: another user marking the same item complete gets 404 ITEM_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('alice');
     const bob = await registerUser('bob');
     const { itemId } = await createTripWithItem(alice.accessToken);
@@ -161,7 +159,6 @@ describe('Itinerary item completion (G1, integration)', () => {
   });
 
   it('missing itemId → 404 ITEM_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('missing');
     const res = await app.inject({
       method: 'POST',
@@ -173,7 +170,6 @@ describe('Itinerary item completion (G1, integration)', () => {
   });
 
   it('unauthenticated → 401 UNAUTHENTICATED', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/trips/items/whatever/complete',

@@ -60,7 +60,6 @@ describe('GET /reviews/summary (integration, requires Docker Postgres)', () => {
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
@@ -109,7 +108,6 @@ describe('GET /reviews/summary (integration, requires Docker Postgres)', () => {
   }
 
   it('empty target → 200 with zero-filled shape (no 404)', async () => {
-    if (!dbReachable) return;
     // Suite-local id keeps parallel runs independent.
     const targetId = `${TEST_PREFIX}-empty-${uniqueSuffix()}`;
     const { status, body } = await getSummary(targetId);
@@ -122,7 +120,6 @@ describe('GET /reviews/summary (integration, requires Docker Postgres)', () => {
   });
 
   it('5 reviews of varying ratings → correct count + average + histogram', async () => {
-    if (!dbReachable) return;
     const targetId = `${TEST_PREFIX}-rich-${uniqueSuffix()}`;
     // Three different authors so unique-key constraints (if any) don't bite.
     // Ratings: 5,5,4,3,1 → average 3.6.
@@ -143,7 +140,6 @@ describe('GET /reviews/summary (integration, requires Docker Postgres)', () => {
   });
 
   it('cross-target isolation: A’s reviews do not leak into B’s summary', async () => {
-    if (!dbReachable) return;
     const targetA = `${TEST_PREFIX}-A-${uniqueSuffix()}`;
     const targetB = `${TEST_PREFIX}-B-${uniqueSuffix()}`;
     const u = await registerUser('iso');
@@ -158,14 +154,12 @@ describe('GET /reviews/summary (integration, requires Docker Postgres)', () => {
   });
 
   it('missing query params → 400 VALIDATION_FAILED', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({ method: 'GET', url: '/api/v1/reviews/summary' });
     expect(res.statusCode).toBe(400);
     expect(JSON.parse(res.body).code).toBe('VALIDATION_FAILED');
   });
 
   it('unknown targetType → 400 VALIDATION_FAILED', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'GET',
       url: '/api/v1/reviews/summary?targetType=bogus&targetId=x',
@@ -175,7 +169,6 @@ describe('GET /reviews/summary (integration, requires Docker Postgres)', () => {
   });
 
   it('@Public(): no bearer required', async () => {
-    if (!dbReachable) return;
     const targetId = `${TEST_PREFIX}-public-${uniqueSuffix()}`;
     const res = await app.inject({
       method: 'GET',

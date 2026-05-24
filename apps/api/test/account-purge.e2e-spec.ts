@@ -61,7 +61,6 @@ describe('Hard-delete cron sweep (integration, requires Docker Postgres)', () =>
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
@@ -99,7 +98,6 @@ describe('Hard-delete cron sweep (integration, requires Docker Postgres)', () =>
   }
 
   it('user soft-deleted older than 7d → purged + cascades wipe dependents', async () => {
-    if (!dbReachable) return;
     const { userId, accessToken } = await registerUser('eligible');
     // Seed a Trip via the API (PostGIS column needs the API path).
     const tripRes = await app.inject({
@@ -140,7 +138,6 @@ describe('Hard-delete cron sweep (integration, requires Docker Postgres)', () =>
   });
 
   it('user soft-deleted within retention window → still present', async () => {
-    if (!dbReachable) return;
     const { userId } = await registerUser('fresh');
     // 3 days < 7 days retention window.
     await softDeleteAndBackdate(userId, 3);
@@ -156,7 +153,6 @@ describe('Hard-delete cron sweep (integration, requires Docker Postgres)', () =>
   });
 
   it('active user (deletedAt null) → never purged', async () => {
-    if (!dbReachable) return;
     const { userId } = await registerUser('active');
     // Don't soft-delete. Run the sweep.
     await purgeUc.execute();
@@ -166,7 +162,6 @@ describe('Hard-delete cron sweep (integration, requires Docker Postgres)', () =>
   });
 
   it('idempotent: a second sweep within the same retention window returns purged=0', async () => {
-    if (!dbReachable) return;
     const { userId } = await registerUser('idem');
     await softDeleteAndBackdate(userId, 8);
 
@@ -183,7 +178,6 @@ describe('Hard-delete cron sweep (integration, requires Docker Postgres)', () =>
   });
 
   it('mixed cohort: 1 eligible + 1 fresh + 1 active → exactly the eligible row dies', async () => {
-    if (!dbReachable) return;
     const eligible = await registerUser('mix-elig');
     const fresh = await registerUser('mix-fresh');
     const active = await registerUser('mix-active');

@@ -60,7 +60,6 @@ describe('Social reviews (integration, requires Postgres)', () => {
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     // User cascade-deletes Trip + Review rows.
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
@@ -102,7 +101,6 @@ describe('Social reviews (integration, requires Postgres)', () => {
   }
 
   it('POST /reviews without a bearer → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/reviews',
@@ -117,7 +115,6 @@ describe('Social reviews (integration, requires Postgres)', () => {
   });
 
   it('standalone review (tripId absent) works for any authed user', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('standalone');
     const res = await app.inject({
       method: 'POST',
@@ -139,7 +136,6 @@ describe('Social reviews (integration, requires Postgres)', () => {
   });
 
   it('trip-attached review: author must own the trip OR have collab access', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('t-owner');
     const stranger = await registerUser('t-stranger');
     const tripId = await createTrip(alice.accessToken);
@@ -177,7 +173,6 @@ describe('Social reviews (integration, requires Postgres)', () => {
   });
 
   it('listing by target returns every review on that target, most-recent-first', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('l-a');
     const bob = await registerUser('l-b');
     const targetId = `${TEST_PREFIX}-place-list`;
@@ -220,7 +215,6 @@ describe('Social reviews (integration, requires Postgres)', () => {
   });
 
   it('missing required query params on GET → 400 VALIDATION_FAILED', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('miss-q');
     const res = await app.inject({
       method: 'GET',
@@ -232,7 +226,6 @@ describe('Social reviews (integration, requires Postgres)', () => {
   });
 
   it('GET /reviews/mine returns only the caller’s own reviews', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('mine-a');
     const bob = await registerUser('mine-b');
     await app.inject({
@@ -270,7 +263,6 @@ describe('Social reviews (integration, requires Postgres)', () => {
   });
 
   it('author can delete their own review; non-author → 404', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('del-a');
     const bob = await registerUser('del-b');
     const create = await app.inject({
@@ -305,7 +297,6 @@ describe('Social reviews (integration, requires Postgres)', () => {
   });
 
   it('rating out of [1,5] → 422 INVALID_RATING', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('bad-rating');
     const res = await app.inject({
       method: 'POST',
@@ -324,7 +315,6 @@ describe('Social reviews (integration, requires Postgres)', () => {
   });
 
   it('empty body → 422 VALIDATION_FAILED (Zod min(1))', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('empty-body');
     const res = await app.inject({
       method: 'POST',
@@ -342,7 +332,6 @@ describe('Social reviews (integration, requires Postgres)', () => {
   });
 
   it('a user can post multiple reviews on the same target (no unique constraint)', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('multi');
     const targetId = `${TEST_PREFIX}-multi-target`;
     for (let i = 0; i < 3; i++) {

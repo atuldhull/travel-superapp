@@ -66,7 +66,6 @@ describe('Admin media moderation (integration, requires Docker Postgres)', () =>
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
@@ -137,13 +136,11 @@ describe('Admin media moderation (integration, requires Docker Postgres)', () =>
   }
 
   it('GET /admin/media without bearer → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({ method: 'GET', url: '/api/v1/admin/media' });
     expect(res.statusCode).toBe(401);
   });
 
   it('non-admin → 403', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('non-admin');
     const res = await app.inject({
       method: 'GET',
@@ -154,7 +151,6 @@ describe('Admin media moderation (integration, requires Docker Postgres)', () =>
   });
 
   it('admin list cross-user with ?ownerId filter narrows to that user', async () => {
-    if (!dbReachable) return;
     const adminToken = await loginAsAdmin('list-admin');
     const alice = await registerUser('alice');
     const bob = await registerUser('bob');
@@ -168,7 +164,6 @@ describe('Admin media moderation (integration, requires Docker Postgres)', () =>
   });
 
   it('?kind=image filters by kind', async () => {
-    if (!dbReachable) return;
     const adminToken = await loginAsAdmin('kind-admin');
     const u = await registerUser('kind-target');
     await seedMedia(u.userId, 'img', { kind: 'image' });
@@ -180,7 +175,6 @@ describe('Admin media moderation (integration, requires Docker Postgres)', () =>
   });
 
   it('?status=processing filters by status', async () => {
-    if (!dbReachable) return;
     const adminToken = await loginAsAdmin('status-admin');
     const u = await registerUser('status-target');
     const procId = await seedMedia(u.userId, 'pending', { status: 'processing' });
@@ -193,7 +187,6 @@ describe('Admin media moderation (integration, requires Docker Postgres)', () =>
   });
 
   it('admin delete: row gone; attached trip survives via SetNull', async () => {
-    if (!dbReachable) return;
     const adminToken = await loginAsAdmin('delete-admin');
     const u = await registerUser('delete-target');
     // Trip via API (PostGIS).
@@ -230,7 +223,6 @@ describe('Admin media moderation (integration, requires Docker Postgres)', () =>
   });
 
   it('admin delete on missing id → 404 MEDIA_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const adminToken = await loginAsAdmin('delete-404');
     const res = await app.inject({
       method: 'DELETE',
@@ -242,7 +234,6 @@ describe('Admin media moderation (integration, requires Docker Postgres)', () =>
   });
 
   it('unknown kind / status param → 400 VALIDATION_FAILED', async () => {
-    if (!dbReachable) return;
     const adminToken = await loginAsAdmin('bad-filter');
     const k = await app.inject({
       method: 'GET',
@@ -262,7 +253,6 @@ describe('Admin media moderation (integration, requires Docker Postgres)', () =>
   });
 
   it('non-admin caller can’t delete', async () => {
-    if (!dbReachable) return;
     const attacker = await registerUser('attacker');
     const target = await registerUser('victim');
     const mediaId = await seedMedia(target.userId, 'untouched');

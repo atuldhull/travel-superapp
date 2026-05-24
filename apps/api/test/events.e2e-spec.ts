@@ -96,7 +96,6 @@ describe('Domain event emission (integration, requires Docker Postgres + Redis)'
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
@@ -129,7 +128,6 @@ describe('Domain event emission (integration, requires Docker Postgres + Redis)'
   }
 
   it('POST /auth/register emits Identity.SessionIssued with traceId', async () => {
-    if (!dbReachable) return;
     const { userId } = await registerUser('session');
     const sessionEvents = recorded.filter((r) => r.name === 'Identity.SessionIssued');
     expect(sessionEvents).toHaveLength(1);
@@ -145,7 +143,6 @@ describe('Domain event emission (integration, requires Docker Postgres + Redis)'
   });
 
   it('POST /trips emits Trip.TripDrafted with the new trip id + userId', async () => {
-    if (!dbReachable) return;
     const { userId, accessToken } = await registerUser('draft');
     const res = await app.inject({
       method: 'POST',
@@ -172,7 +169,6 @@ describe('Domain event emission (integration, requires Docker Postgres + Redis)'
   });
 
   it('PATCH /trips/:id emits Trip.TripUpdated with changedFields', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('update');
     const create = await app.inject({
       method: 'POST',
@@ -204,7 +200,6 @@ describe('Domain event emission (integration, requires Docker Postgres + Redis)'
   });
 
   it('PATCH with no effective change (same value) emits NO TripUpdated event', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('noop');
     const create = await app.inject({
       method: 'POST',
@@ -226,7 +221,6 @@ describe('Domain event emission (integration, requires Docker Postgres + Redis)'
   });
 
   it('POST /trips/:id/itinerary emits Trip.ItineraryGenerated with dayCount', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('itin');
     const create = await app.inject({
       method: 'POST',
@@ -258,7 +252,6 @@ describe('Domain event emission (integration, requires Docker Postgres + Redis)'
   });
 
   it('DELETE /trips/:id emits Trip.TripDeleted', async () => {
-    if (!dbReachable) return;
     const { userId, accessToken } = await registerUser('del');
     const create = await app.inject({
       method: 'POST',
@@ -284,7 +277,6 @@ describe('Domain event emission (integration, requires Docker Postgres + Redis)'
   });
 
   it('events are emitted AFTER the DB write settles — DELETE does not emit on 404', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('ghost-del');
     resetRecording();
     // Delete a trip that doesn't exist.

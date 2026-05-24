@@ -52,7 +52,6 @@ describe('POST /notifications/:id/unread (integration, requires Docker Postgres)
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
@@ -93,7 +92,6 @@ describe('POST /notifications/:id/unread (integration, requires Docker Postgres)
   }
 
   it('without bearer → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/notifications/some-id/unread',
@@ -103,7 +101,6 @@ describe('POST /notifications/:id/unread (integration, requires Docker Postgres)
   });
 
   it('happy path → flips read=false; unread-count increments', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('happy');
     const id = await sessionIssuedNotificationId(accessToken);
 
@@ -143,7 +140,6 @@ describe('POST /notifications/:id/unread (integration, requires Docker Postgres)
   });
 
   it('IDOR defence: Bob marks Alice’s notification unread → 404 NOTIFICATION_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('alice');
     const bob = await registerUser('bob');
     const aliceId = await sessionIssuedNotificationId(alice.accessToken);
@@ -158,7 +154,6 @@ describe('POST /notifications/:id/unread (integration, requires Docker Postgres)
   });
 
   it('idempotent: marking an already-unread row → still 200, read=false', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('idem');
     const id = await sessionIssuedNotificationId(accessToken);
     // The row starts unread (registration default). Mark unread anyway.
@@ -172,7 +167,6 @@ describe('POST /notifications/:id/unread (integration, requires Docker Postgres)
   });
 
   it('unknown id → 404 NOTIFICATION_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('missing');
     const res = await app.inject({
       method: 'POST',

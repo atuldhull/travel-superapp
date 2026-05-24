@@ -37,7 +37,6 @@ describe('Pull-feed visibility + block filters (e2e, requires Postgres)', () => 
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.tripPublication.deleteMany({ where: { authorId: A } });
     await prisma.follow.deleteMany({ where: { followerId: B, followeeId: A } });
     await prisma.userBlock.deleteMany({ where: { OR: [{ blockerId: A }, { blockerId: B }] } });
@@ -59,7 +58,6 @@ describe('Pull-feed visibility + block filters (e2e, requires Postgres)', () => 
   }
 
   it('non-follower sees only PUBLIC; PRIVATE never appears', async () => {
-    if (!dbReachable) return;
     await seedThreePubs();
     const { items } = await getFeed.execute({ viewerId: B, limit: 50 });
     const mine = items.filter((p) => p.authorId === A).map((p) => p.tripId);
@@ -67,7 +65,6 @@ describe('Pull-feed visibility + block filters (e2e, requires Postgres)', () => 
   });
 
   it('follower sees PUBLIC + FOLLOWERS, still not PRIVATE', async () => {
-    if (!dbReachable) return;
     await seedThreePubs();
     await prisma.follow.create({ data: { followerId: B, followeeId: A } });
     const { items } = await getFeed.execute({ viewerId: B, limit: 50 });
@@ -79,7 +76,6 @@ describe('Pull-feed visibility + block filters (e2e, requires Postgres)', () => 
   });
 
   it('a block (either direction) hides ALL of the author from the feed', async () => {
-    if (!dbReachable) return;
     await seedThreePubs();
     await prisma.follow.create({ data: { followerId: B, followeeId: A } });
     await prisma.userBlock.create({ data: { blockerId: A, blockedId: B } });

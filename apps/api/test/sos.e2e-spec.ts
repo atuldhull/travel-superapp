@@ -45,7 +45,6 @@ describe('Safety SOS (integration, requires Docker Postgres)', () => {
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     // User cascade-deletes the SosEvent rows.
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
@@ -77,7 +76,6 @@ describe('Safety SOS (integration, requires Docker Postgres)', () => {
   }
 
   it('POST /safety/sos without a bearer → 401', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/safety/sos',
@@ -88,7 +86,6 @@ describe('Safety SOS (integration, requires Docker Postgres)', () => {
   });
 
   it('trigger → list finds it (unresolved); resolve → list shows resolvedAt', async () => {
-    if (!dbReachable) return;
     const { userId, accessToken } = await registerUser('flow');
 
     const triggered = await app.inject({
@@ -151,7 +148,6 @@ describe('Safety SOS (integration, requires Docker Postgres)', () => {
   });
 
   it('list returns only my own SOS events (no cross-user leak)', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('alice');
     const bob = await registerUser('bob');
 
@@ -182,7 +178,6 @@ describe('Safety SOS (integration, requires Docker Postgres)', () => {
   });
 
   it('resolve by non-owner → 404 SOS_NOT_FOUND (IDOR defence)', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('a-idor');
     const bob = await registerUser('b-idor');
 
@@ -217,7 +212,6 @@ describe('Safety SOS (integration, requires Docker Postgres)', () => {
   });
 
   it('resolve twice → second call returns 404 (already resolved)', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('twice');
 
     const triggered = await app.inject({
@@ -247,7 +241,6 @@ describe('Safety SOS (integration, requires Docker Postgres)', () => {
   });
 
   it('resolve unknown id → 404 SOS_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('missing');
     const res = await app.inject({
       method: 'POST',
@@ -260,7 +253,6 @@ describe('Safety SOS (integration, requires Docker Postgres)', () => {
   });
 
   it('lat out of range → 422 VALIDATION_FAILED (Zod)', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('bad-lat');
     const res = await app.inject({
       method: 'POST',

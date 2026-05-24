@@ -71,7 +71,6 @@ describe('V.UX.30 trip archive + suggestions + welcome-back (integration, requir
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     await prisma.trip.deleteMany({
       where: { user: { displayName: { startsWith: TEST_PREFIX } } },
     });
@@ -113,7 +112,6 @@ describe('V.UX.30 trip archive + suggestions + welcome-back (integration, requir
   }
 
   it('POST /trips/:id/archive without bearer → 401', async () => {
-    if (!dbReachable) return;
     const u = await registerAndGetToken('archive-anon');
     const id = await createTrip(u.accessToken, `${TEST_PREFIX}-anon`);
     const res = await app.inject({
@@ -124,7 +122,6 @@ describe('V.UX.30 trip archive + suggestions + welcome-back (integration, requir
   });
 
   it('Archive removes from default list; ?archived=true returns it; Unarchive flips back', async () => {
-    if (!dbReachable) return;
     const u = await registerAndGetToken('archive-happy');
     const id = await createTrip(u.accessToken, `${TEST_PREFIX}-happy`);
 
@@ -160,7 +157,6 @@ describe('V.UX.30 trip archive + suggestions + welcome-back (integration, requir
   });
 
   it('Cross-user archive → 404 TRIP_NOT_FOUND', async () => {
-    if (!dbReachable) return;
     const owner = await registerAndGetToken('owner');
     const stranger = await registerAndGetToken('stranger');
     const id = await createTrip(owner.accessToken, `${TEST_PREFIX}-cross`);
@@ -174,7 +170,6 @@ describe('V.UX.30 trip archive + suggestions + welcome-back (integration, requir
   });
 
   it('Auto-archive sweep stamps trips older than 365 days, leaves recent ones', async () => {
-    if (!dbReachable) return;
     const u = await registerAndGetToken('sweep');
     const oldId = await createTrip(u.accessToken, `${TEST_PREFIX}-old`);
     const recentId = await createTrip(u.accessToken, `${TEST_PREFIX}-recent`);
@@ -192,7 +187,6 @@ describe('V.UX.30 trip archive + suggestions + welcome-back (integration, requir
   });
 
   it('GET /trips/suggestions returns 3 entries (anchor=null when no history)', async () => {
-    if (!dbReachable) return;
     const u = await registerAndGetToken('suggest');
     const res = await app.inject({
       method: 'GET',
@@ -209,7 +203,6 @@ describe('V.UX.30 trip archive + suggestions + welcome-back (integration, requir
   });
 
   it('/auth/me advances previousSeenAt after a >1h gap', async () => {
-    if (!dbReachable) return;
     const u = await registerAndGetToken('seen');
     // First /auth/me — establishes lastSeenAt; previousSeenAt still null.
     const first = await app.inject({

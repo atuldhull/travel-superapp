@@ -173,7 +173,6 @@ describe('Events module (integration, requires Docker Postgres + Redis)', () => 
   }
 
   it('POST /events/search without a bearer → 401 UNAUTHENTICATED', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/events/search',
@@ -184,7 +183,6 @@ describe('Events module (integration, requires Docker Postgres + Redis)', () => 
   });
 
   it('happy path → 200 with events + provider input echoed', async () => {
-    if (!dbReachable) return;
     const tok = await token('ok');
     const res = await app.inject({
       method: 'POST',
@@ -205,7 +203,6 @@ describe('Events module (integration, requires Docker Postgres + Redis)', () => 
   });
 
   it('category filter flows through + narrows results', async () => {
-    if (!dbReachable) return;
     const tok = await token('cat');
     const res = await app.inject({
       method: 'POST',
@@ -223,7 +220,6 @@ describe('Events module (integration, requires Docker Postgres + Redis)', () => 
   });
 
   it('radius > 30km → 422 INVALID_RADIUS', async () => {
-    if (!dbReachable) return;
     const tok = await token('bad-radius');
     const res = await app.inject({
       method: 'POST',
@@ -236,7 +232,6 @@ describe('Events module (integration, requires Docker Postgres + Redis)', () => 
   });
 
   it('to ≤ from → 422 INVALID_DATE_RANGE', async () => {
-    if (!dbReachable) return;
     const tok = await token('bad-range');
     const res = await app.inject({
       method: 'POST',
@@ -252,7 +247,6 @@ describe('Events module (integration, requires Docker Postgres + Redis)', () => 
   });
 
   it('window > 90 days → 422 INVALID_DATE_RANGE', async () => {
-    if (!dbReachable) return;
     const tok = await token('long-window');
     const res = await app.inject({
       method: 'POST',
@@ -268,7 +262,6 @@ describe('Events module (integration, requires Docker Postgres + Redis)', () => 
   });
 
   it('cache hit: identical search → upstream called once across 3 HTTP requests', async () => {
-    if (!dbReachable) return;
     const tok = await token('cache-hit');
     const payload = basePayload({ center: { lat: 21.111, lng: -86.222 } });
     for (const _ of [1, 2, 3]) {
@@ -285,7 +278,6 @@ describe('Events module (integration, requires Docker Postgres + Redis)', () => 
   });
 
   it('cache miss: different window → separate upstream call', async () => {
-    if (!dbReachable) return;
     const tok = await token('cache-window');
     await app.inject({
       method: 'POST',

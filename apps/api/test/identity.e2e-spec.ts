@@ -64,7 +64,6 @@ describe('Identity auth flow (integration, requires Docker Postgres)', () => {
   });
 
   afterEach(async () => {
-    if (!dbReachable) return;
     // Tear down users created in this spec (sessions cascade via FK).
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_EMAIL_PREFIX } },
@@ -105,7 +104,6 @@ describe('Identity auth flow (integration, requires Docker Postgres)', () => {
   }
 
   it('registers, sets httpOnly refresh cookie, returns access token', async () => {
-    if (!dbReachable) return;
     const { userId, refreshCookie, accessToken } = await registerUser('register');
     expect(userId).toMatch(/^c[a-z0-9]+$/); // cuid
     expect(refreshCookie.value.length).toBeGreaterThan(20);
@@ -113,7 +111,6 @@ describe('Identity auth flow (integration, requires Docker Postgres)', () => {
   });
 
   it('rejects login with wrong password using a uniform error code', async () => {
-    if (!dbReachable) return;
     const email = `${TEST_EMAIL_PREFIX}-wrongpw-${uniqueSuffix()}@example.com`;
     const reg = await app.inject({
       method: 'POST',
@@ -147,7 +144,6 @@ describe('Identity auth flow (integration, requires Docker Postgres)', () => {
   });
 
   it('refresh rotates the session — old cookie no longer works, new one does', async () => {
-    if (!dbReachable) return;
     const { refreshCookie } = await registerUser('rotate');
 
     const refresh1 = await app.inject({
@@ -172,7 +168,6 @@ describe('Identity auth flow (integration, requires Docker Postgres)', () => {
   });
 
   it('REUSE CASCADE: replaying an already-rotated refresh token revokes ALL sessions for that user', async () => {
-    if (!dbReachable) return;
     const { userId, refreshCookie } = await registerUser('cascade');
 
     // Open a second session via /login so we can prove the cascade
@@ -226,7 +221,6 @@ describe('Identity auth flow (integration, requires Docker Postgres)', () => {
   });
 
   it('logout clears the cookie and revokes the session idempotently', async () => {
-    if (!dbReachable) return;
     const { userId, refreshCookie } = await registerUser('logout');
 
     const logout = await app.inject({

@@ -157,7 +157,6 @@ describe('Trip × Events (integration, requires Docker Postgres + Redis)', () =>
   }
 
   it('GET /trips/:id/events passes trip.center + trip dates (full-day bounds) to the provider', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('ok');
     const trip = await createTrip(accessToken, {
       startsOn: '2026-08-01',
@@ -185,7 +184,6 @@ describe('Trip × Events (integration, requires Docker Postgres + Redis)', () =>
   });
 
   it('?category=music flows through to the provider', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('category');
     const trip = await createTrip(accessToken, {
       startsOn: '2026-09-01',
@@ -201,7 +199,6 @@ describe('Trip × Events (integration, requires Docker Postgres + Redis)', () =>
   });
 
   it('trip.radiusKm > 30 is clamped to 30 at the provider call', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('clamp');
     const trip = await createTrip(accessToken, {
       startsOn: '2026-10-01',
@@ -218,7 +215,6 @@ describe('Trip × Events (integration, requires Docker Postgres + Redis)', () =>
   });
 
   it('trip without dates → 422 TRIP_DATES_REQUIRED (provider never called)', async () => {
-    if (!dbReachable) return;
     const { accessToken } = await registerUser('no-dates');
     const trip = await createTrip(accessToken); // no dates
 
@@ -233,7 +229,6 @@ describe('Trip × Events (integration, requires Docker Postgres + Redis)', () =>
   });
 
   it('non-owner → 404 TRIP_NOT_FOUND (provider never called)', async () => {
-    if (!dbReachable) return;
     const alice = await registerUser('alice');
     const bob = await registerUser('bob');
     const trip = await createTrip(alice.accessToken, {
@@ -252,7 +247,6 @@ describe('Trip × Events (integration, requires Docker Postgres + Redis)', () =>
   });
 
   it('unauthenticated → 401 UNAUTHENTICATED (provider never called)', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'GET',
       url: '/api/v1/trips/whatever/events',

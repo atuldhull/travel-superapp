@@ -153,7 +153,6 @@ describe('Weather module (integration, requires Docker Postgres)', () => {
   }
 
   it('GET /weather/forecast without a bearer → 401 UNAUTHENTICATED', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'GET',
       url: '/api/v1/weather/forecast?lat=51.5&lng=-0.14',
@@ -163,7 +162,6 @@ describe('Weather module (integration, requires Docker Postgres)', () => {
   });
 
   it('GET /weather/forecast with valid coords → 200 + passes lat/lng/days to the provider', async () => {
-    if (!dbReachable) return;
     const token = await accessToken('ok');
 
     const res = await app.inject({
@@ -195,7 +193,6 @@ describe('Weather module (integration, requires Docker Postgres)', () => {
   });
 
   it('defaults `days` to 7 when the query param is absent', async () => {
-    if (!dbReachable) return;
     const token = await accessToken('default-days');
     await app.inject({
       method: 'GET',
@@ -206,7 +203,6 @@ describe('Weather module (integration, requires Docker Postgres)', () => {
   });
 
   it('clamps `days` above 16 to 16 (Open-Meteo ceiling)', async () => {
-    if (!dbReachable) return;
     const token = await accessToken('clamp');
     await app.inject({
       method: 'GET',
@@ -217,7 +213,6 @@ describe('Weather module (integration, requires Docker Postgres)', () => {
   });
 
   it('rejects lat > 90 with 422 VALIDATION_FAILED', async () => {
-    if (!dbReachable) return;
     const token = await accessToken('bad-lat');
     const res = await app.inject({
       method: 'GET',
@@ -229,7 +224,6 @@ describe('Weather module (integration, requires Docker Postgres)', () => {
   });
 
   it('rejects non-numeric lng with 422 VALIDATION_FAILED', async () => {
-    if (!dbReachable) return;
     const token = await accessToken('bad-lng');
     const res = await app.inject({
       method: 'GET',
@@ -241,7 +235,6 @@ describe('Weather module (integration, requires Docker Postgres)', () => {
   });
 
   it('upstream provider failure → 502 EXTERNAL_SERVICE_FAILED (or WEATHER_PROVIDER_UNAVAILABLE)', async () => {
-    if (!dbReachable) return;
     const token = await accessToken('upstream-fail');
     stub.nextError = new (await import('@app/errors')).ExternalServiceError(
       'open-meteo',
@@ -261,7 +254,6 @@ describe('Weather module (integration, requires Docker Postgres)', () => {
 
   // V.UX.21 — hourly forecast surface for the adventure persona.
   it('GET /weather/forecast/hourly without bearer → 401 UNAUTHENTICATED', async () => {
-    if (!dbReachable) return;
     const res = await app.inject({
       method: 'GET',
       url: '/api/v1/weather/forecast/hourly?lat=10&lng=10',
@@ -271,7 +263,6 @@ describe('Weather module (integration, requires Docker Postgres)', () => {
   });
 
   it('GET /weather/forecast/hourly returns 24 hourly buckets with the expected fields', async () => {
-    if (!dbReachable) return;
     const token = await accessToken('hourly-default');
     const res = await app.inject({
       method: 'GET',
@@ -294,7 +285,6 @@ describe('Weather module (integration, requires Docker Postgres)', () => {
   });
 
   it('clamps `hours` above 48 to 48', async () => {
-    if (!dbReachable) return;
     const token = await accessToken('hourly-clamp');
     const res = await app.inject({
       method: 'GET',
@@ -308,7 +298,6 @@ describe('Weather module (integration, requires Docker Postgres)', () => {
   });
 
   it('rejects lat > 90 with 422 VALIDATION_FAILED on the hourly endpoint', async () => {
-    if (!dbReachable) return;
     const token = await accessToken('hourly-bad-lat');
     const res = await app.inject({
       method: 'GET',
@@ -319,7 +308,6 @@ describe('Weather module (integration, requires Docker Postgres)', () => {
   });
 
   it('hourly upstream failure → 502 WEATHER_PROVIDER_UNAVAILABLE', async () => {
-    if (!dbReachable) return;
     const token = await accessToken('hourly-fail');
     stub.nextError = new (await import('@app/errors')).ExternalServiceError(
       'open-meteo',
