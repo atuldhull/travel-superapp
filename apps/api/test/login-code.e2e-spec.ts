@@ -24,6 +24,7 @@ import {
   clearStubSms,
   getLastStubSms,
 } from '../src/modules/identity/infrastructure/stub-sms-sender.adapter';
+import { uniqueEmail } from './factories';
 
 describe('Passwordless OTP sign-in (integration, requires Docker Postgres)', () => {
   let moduleRef: TestingModule;
@@ -74,7 +75,7 @@ describe('Passwordless OTP sign-in (integration, requires Docker Postgres)', () 
 
   it('email: request → 200 + code mailed; verify → token + refresh cookie + /auth/me', async () => {
     if (!dbReachable) return;
-    const destination = `otp-e2e-${Date.now()}@example.com`;
+    const destination = uniqueEmail('otp-e2e');
 
     const reqRes = await app.inject({
       method: 'POST',
@@ -141,7 +142,7 @@ describe('Passwordless OTP sign-in (integration, requires Docker Postgres)', () 
 
   it('wrong code → 401 LOGIN_CODE_INVALID', async () => {
     if (!dbReachable) return;
-    const destination = `otp-wrong-${Date.now()}@example.com`;
+    const destination = uniqueEmail('otp-wrong');
     await app.inject({
       method: 'POST',
       url: '/api/v1/auth/otp/request',
@@ -158,7 +159,7 @@ describe('Passwordless OTP sign-in (integration, requires Docker Postgres)', () 
 
   it('soft rate-limit: 6th request in the window mints no new code', async () => {
     if (!dbReachable) return;
-    const destination = `otp-rl-${Date.now()}@example.com`;
+    const destination = uniqueEmail('otp-rl');
     for (let i = 0; i < 5; i += 1) {
       await app.inject({
         method: 'POST',

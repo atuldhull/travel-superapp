@@ -27,6 +27,7 @@ import { DomainExceptionFilter } from '../src/common/filters/domain-exception.fi
 import { GeoQueries } from '../src/common/db/geo-queries';
 import { PrismaService } from '../src/common/db/prisma.service';
 import type { RouteLeg } from '../src/modules/transport/domain/route-leg.entity';
+import { uniqueEmail, uniqueSuffix } from './factories';
 
 const SOURCE_PREFIX = 'trip-transport-e2e';
 // Suite-local trip center (mid-Atlantic, no collision with other Trip suites).
@@ -108,7 +109,7 @@ describe('Trip × Transport (integration, requires Postgres + Redis)', () => {
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: `${SOURCE_PREFIX}-${suffix}-${Date.now()}@example.com`,
+        email: uniqueEmail(`${SOURCE_PREFIX}-${suffix}`),
         password: 'correct-horse-battery-staple',
         displayName: `${SOURCE_PREFIX}-${suffix}`,
       },
@@ -119,7 +120,7 @@ describe('Trip × Transport (integration, requires Postgres + Redis)', () => {
 
   async function seedPlace(suffix: string, latOffset: number, lngOffset: number): Promise<string> {
     const row = await geo.insertPlace({
-      sourceKey: `${SOURCE_PREFIX}-${suffix}-${Date.now()}-${Math.random()}`,
+      sourceKey: `${SOURCE_PREFIX}-${suffix}-${uniqueSuffix()}`,
       name: `seed-${suffix}`,
       category: 'park',
       lat: CENTER.lat + latOffset,

@@ -18,6 +18,7 @@ import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { GeoQueries } from '../src/common/db/geo-queries';
 import { PrismaService } from '../src/common/db/prisma.service';
+import { uniqueEmail, uniqueSuffix } from './factories';
 
 const TEST_PREFIX = 'social-votes-e2e';
 const CENTER = { lat: 34.5678, lng: 123.4567 };
@@ -80,7 +81,7 @@ describe('Social votes (integration, requires Postgres)', () => {
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`,
+        email: uniqueEmail(`${TEST_PREFIX}-${suffix}`),
         password: 'correct-horse-battery-staple',
         displayName: `${TEST_PREFIX}-${suffix}`,
       },
@@ -94,7 +95,7 @@ describe('Social votes (integration, requires Postgres)', () => {
   ): Promise<{ tripId: string; dayId: string; itemId: string; placeId: string }> {
     // Seed a Place so the itinerary item has something to point to.
     const place = await geo.insertPlace({
-      sourceKey: `${TEST_PREFIX}-place-${Date.now()}-${Math.random()}`,
+      sourceKey: `${TEST_PREFIX}-place-${uniqueSuffix()}`,
       name: `${TEST_PREFIX}-place`,
       category: 'museum',
       lat: CENTER.lat,

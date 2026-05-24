@@ -29,6 +29,7 @@ import {
   getAllStubMessages,
   getLastStubMessage,
 } from '../src/common/mailer/stub-mailer.adapter';
+import { uniqueEmail } from './factories';
 
 const TEST_PREFIX = 'magic-link-e2e';
 
@@ -82,7 +83,7 @@ describe('Magic-link sign-in (integration, requires Docker Postgres)', () => {
   });
 
   function uniqueEmail(suffix: string): string {
-    return `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`;
+    return uniqueEmail(`${TEST_PREFIX}-${suffix}`);
   }
 
   /** Pull the magic-link token out of the most recent stubbed email. */

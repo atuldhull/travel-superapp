@@ -22,6 +22,7 @@ import type {
 } from '../src/modules/places/application/ports/place-provider';
 import type { FederatedPlaceResult } from '../src/modules/places/domain/federated-place-result.entity';
 import { MockPlaceProvider } from '../src/modules/places/infrastructure/mock-place-provider';
+import { uniqueEmail } from './factories';
 
 const TEST_PREFIX = 'places-fed-e2e';
 
@@ -131,7 +132,7 @@ describe('Places federated search (integration, requires Docker Postgres + Redis
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`,
+        email: uniqueEmail(`${TEST_PREFIX}-${suffix}`),
         password: 'correct-horse-battery-staple',
         displayName: `${TEST_PREFIX}-${suffix}`,
       },

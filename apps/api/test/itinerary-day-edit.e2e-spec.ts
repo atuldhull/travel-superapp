@@ -29,6 +29,7 @@ import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { GeoQueries } from '../src/common/db/geo-queries';
 import { PrismaService } from '../src/common/db/prisma.service';
+import { uniqueEmail, uniqueSuffix } from './factories';
 
 const SOURCE_PREFIX = 'day-edit-e2e';
 // Suite-local trip center (no other suite seeds near this coord).
@@ -94,7 +95,7 @@ describe('PATCH day items (integration, requires Docker Postgres)', () => {
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: `${SOURCE_PREFIX}-${suffix}-${Date.now()}@example.com`,
+        email: uniqueEmail(`${SOURCE_PREFIX}-${suffix}`),
         password: 'correct-horse-battery-staple',
         displayName: `${SOURCE_PREFIX}-${suffix}`,
       },
@@ -111,7 +112,7 @@ describe('PATCH day items (integration, requires Docker Postgres)', () => {
     const placeIds: string[] = [];
     for (let i = 0; i < nPlaces; i++) {
       const row = await geo.insertPlace({
-        sourceKey: `${SOURCE_PREFIX}-p${i}-${Date.now()}-${Math.random()}`,
+        sourceKey: `${SOURCE_PREFIX}-p${i}-${uniqueSuffix()}`,
         name: `seed-${i}`,
         category: 'park',
         lat: CENTER.lat + i * 0.0005,

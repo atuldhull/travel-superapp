@@ -13,6 +13,7 @@ import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { GeoQueries } from '../src/common/db/geo-queries';
 import { PrismaService } from '../src/common/db/prisma.service';
+import { uniqueEmail, uniqueSuffix } from './factories';
 
 const TEST_PREFIX = 'trip-optimize-e2e';
 // North-Pacific remote anchor; collision-free with other Trip suites.
@@ -80,7 +81,7 @@ describe('Trip optimize day route (integration, requires Docker Postgres + Redis
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`,
+        email: uniqueEmail(`${TEST_PREFIX}-${suffix}`),
         password: 'correct-horse-battery-staple',
         displayName: `${TEST_PREFIX}-${suffix}`,
       },
@@ -91,7 +92,7 @@ describe('Trip optimize day route (integration, requires Docker Postgres + Redis
 
   async function seedPlace(slug: string, lat: number, lng: number): Promise<string> {
     const place = await geo.insertPlace({
-      sourceKey: `${TEST_PREFIX}-${slug}-${Date.now()}-${Math.random()}`,
+      sourceKey: `${TEST_PREFIX}-${slug}-${uniqueSuffix()}`,
       name: slug,
       category: 'attraction',
       lat,

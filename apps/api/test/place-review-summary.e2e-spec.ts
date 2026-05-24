@@ -25,6 +25,7 @@ import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { GeoQueries } from '../src/common/db/geo-queries';
 import { PrismaService } from '../src/common/db/prisma.service';
+import { uniqueEmail, uniqueSuffix } from './factories';
 
 const TEST_PREFIX = 'place-review-summary-e2e';
 const COORD = { lat: 60.1699, lng: 24.9384 };
@@ -90,7 +91,7 @@ describe('GET /places/:id/review-summary (integration, requires Docker Postgres)
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`,
+        email: uniqueEmail(`${TEST_PREFIX}-${suffix}`),
         password: 'correct-horse-battery-staple',
         displayName: `${TEST_PREFIX}-${suffix}`,
       },
@@ -112,7 +113,7 @@ describe('GET /places/:id/review-summary (integration, requires Docker Postgres)
 
   async function createPlace(suffix: string): Promise<string> {
     const place = await geo.insertPlace({
-      sourceKey: `${TEST_PREFIX}-${suffix}-${Date.now()}-${Math.random()}`,
+      sourceKey: `${TEST_PREFIX}-${suffix}-${uniqueSuffix()}`,
       name: `${TEST_PREFIX}-${suffix}`,
       category: 'museum',
       lat: COORD.lat,

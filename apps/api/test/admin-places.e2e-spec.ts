@@ -26,6 +26,7 @@ import { AppModule } from '../src/app.module';
 import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { PrismaService } from '../src/common/db/prisma.service';
+import { uniqueEmail, uniqueSuffix } from './factories';
 
 const TEST_PREFIX = 'admin-e2e';
 const SOURCE_PREFIX = 'admin-e2e:';
@@ -83,7 +84,7 @@ describe('Admin module (integration, requires Docker Postgres)', () => {
     email: string;
     accessToken: string;
   }> {
-    const email = `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`;
+    const email = uniqueEmail(`${TEST_PREFIX}-${suffix}`);
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/register',
@@ -123,7 +124,7 @@ describe('Admin module (integration, requires Docker Postgres)', () => {
 
   function placeBody(suffix: string): Record<string, unknown> {
     return {
-      sourceKey: `${SOURCE_PREFIX}${suffix}-${Date.now()}`,
+      sourceKey: `${SOURCE_PREFIX}${suffix}-${uniqueSuffix()}`,
       name: `Admin seed ${suffix}`,
       category: 'landmark',
       lat: REMOTE.lat,

@@ -22,6 +22,7 @@ import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { PrismaService } from '../src/common/db/prisma.service';
 import { LoggingNotificationSender } from '../src/modules/notifications/infrastructure/logging-notification-sender';
+import { uniqueEmail } from './factories';
 
 const TEST_PREFIX = 'notif-persist-e2e';
 // Suite-local coord (see memory/feedback_unique_test_coords.md).
@@ -75,7 +76,7 @@ describe('Notifications persistence + GET /notifications/me (integration)', () =
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`,
+        email: uniqueEmail(`${TEST_PREFIX}-${suffix}`),
         password: 'correct-horse-battery-staple',
         displayName: `${TEST_PREFIX}-${suffix}`,
       },

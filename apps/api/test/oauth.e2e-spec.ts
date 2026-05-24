@@ -22,6 +22,7 @@ import { AppModule } from '../src/app.module';
 import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { PrismaService } from '../src/common/db/prisma.service';
+import { uniqueSuffix } from './factories';
 
 const TEST_PREFIX = 'oauth-e2e';
 
@@ -118,8 +119,8 @@ describe('OAuth sign-in (integration, requires Docker Postgres)', () => {
 
   it('first sign-in creates a new user + issues a session (returns access token + cookie)', async () => {
     if (!dbReachable) return;
-    const email = `${TEST_PREFIX}-new-${Date.now()}@example.com`;
-    const providerUserId = `pu-${Date.now()}`;
+    const email = `${TEST_PREFIX}-new-${uniqueSuffix()}@example.com`;
+    const providerUserId = `pu-${uniqueSuffix()}`;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/oauth/mock',
@@ -161,8 +162,8 @@ describe('OAuth sign-in (integration, requires Docker Postgres)', () => {
 
   it('second sign-in with same (provider, providerUserId) → same userId (existing-link path)', async () => {
     if (!dbReachable) return;
-    const email = `${TEST_PREFIX}-repeat-${Date.now()}@example.com`;
-    const providerUserId = `pu-repeat-${Date.now()}`;
+    const email = `${TEST_PREFIX}-repeat-${uniqueSuffix()}@example.com`;
+    const providerUserId = `pu-repeat-${uniqueSuffix()}`;
     const token = mockToken({
       providerUserId,
       email,
@@ -194,7 +195,7 @@ describe('OAuth sign-in (integration, requires Docker Postgres)', () => {
 
   it('OAuth sign-in for a user who registered by email/password → auto-links by email', async () => {
     if (!dbReachable) return;
-    const email = `${TEST_PREFIX}-link-${Date.now()}@example.com`;
+    const email = `${TEST_PREFIX}-link-${uniqueSuffix()}@example.com`;
 
     // Register via password flow first.
     const reg = await app.inject({
@@ -210,7 +211,7 @@ describe('OAuth sign-in (integration, requires Docker Postgres)', () => {
     const passwordUserId = (JSON.parse(reg.body) as { userId: string }).userId;
 
     // Now sign in via OAuth with the SAME email.
-    const providerUserId = `pu-link-${Date.now()}`;
+    const providerUserId = `pu-link-${uniqueSuffix()}`;
     const oauth = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/oauth/mock',
@@ -249,8 +250,8 @@ describe('OAuth sign-in (integration, requires Docker Postgres)', () => {
       url: '/api/v1/auth/oauth/mock',
       payload: {
         idToken: mockToken({
-          providerUserId: `pu-unv-${Date.now()}`,
-          email: `${TEST_PREFIX}-unv-${Date.now()}@example.com`,
+          providerUserId: `pu-unv-${uniqueSuffix()}`,
+          email: `${TEST_PREFIX}-unv-${uniqueSuffix()}@example.com`,
           emailVerified: false,
         }),
       },

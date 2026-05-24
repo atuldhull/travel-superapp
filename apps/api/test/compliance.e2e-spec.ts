@@ -20,6 +20,7 @@ import { AppModule } from '../src/app.module';
 import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { PrismaService } from '../src/common/db/prisma.service';
+import { uniqueSuffix } from './factories';
 
 const TEST_PREFIX = 'compliance-e2e';
 
@@ -84,7 +85,7 @@ describe('V.UX.37 — Compliance dashboard (integration, requires Docker Postgre
     email: string;
     password: string;
   }> {
-    const email = `${TEST_PREFIX}-${suffix}-${Date.now()}-${Math.random()
+    const email = `${TEST_PREFIX}-${suffix}-${uniqueSuffix()}-${Math.random()
       .toString(36)
       .slice(2, 8)}@example.com`;
     const password = 'correct-horse-battery-staple';
@@ -173,8 +174,8 @@ describe('V.UX.37 — Compliance dashboard (integration, requires Docker Postgre
     // Seed: one delete_media audit row + one ban audit row, both
     // performed by `admin`. Takedown list must include the first
     // and exclude the second.
-    const mediaTargetId = `media-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const userTargetId = `user-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const mediaTargetId = `media-${uniqueSuffix()}`;
+    const userTargetId = `user-${uniqueSuffix()}`;
     await prisma.adminAuditLog.createMany({
       data: [
         {

@@ -24,6 +24,7 @@ import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { PrismaService } from '../src/common/db/prisma.service';
 import { promoteUserToAdmin, runCli } from '../scripts/promote-admin';
+import { uniqueEmail } from './factories';
 
 const TEST_PREFIX = 'promote-e2e';
 
@@ -70,7 +71,7 @@ describe('promote-admin CLI (integration, requires Docker Postgres)', () => {
     userId: string;
     email: string;
   }> {
-    const email = `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`;
+    const email = uniqueEmail(`${TEST_PREFIX}-${suffix}`);
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/register',
@@ -126,7 +127,7 @@ describe('promote-admin CLI (integration, requires Docker Postgres)', () => {
 
   it('USER_NOT_FOUND when no matching emailHash exists', async () => {
     if (!dbReachable) return;
-    const result = await promoteUserToAdmin(prisma, `nobody-${Date.now()}@example.com`);
+    const result = await promoteUserToAdmin(prisma, uniqueEmail('nobody'));
     expect(result.kind).toBe('USER_NOT_FOUND');
   });
 
@@ -145,7 +146,7 @@ describe('promote-admin CLI (integration, requires Docker Postgres)', () => {
 
   it('runCli with unknown email: exit 1 + USER_NOT_FOUND', async () => {
     if (!dbReachable) return;
-    const { exitCode, result } = await runCli([`ghost-${Date.now()}@example.com`], { prisma });
+    const { exitCode, result } = await runCli([uniqueEmail('ghost')], { prisma });
     expect(exitCode).toBe(1);
     expect(result.kind).toBe('USER_NOT_FOUND');
   });

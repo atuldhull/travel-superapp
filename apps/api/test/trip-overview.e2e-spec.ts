@@ -41,6 +41,7 @@ import {
   type WeatherProvider,
 } from '../src/modules/weather/application/ports/weather-provider';
 import type { WeatherForecast } from '../src/modules/weather/domain/weather-forecast.entity';
+import { uniqueEmail } from './factories';
 
 const TEST_PREFIX = 'overview-e2e';
 // Remote South Atlantic coord — no overlap with other suites.
@@ -212,7 +213,7 @@ describe('Trip overview (integration, requires Docker Postgres + Redis)', () => 
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`,
+        email: uniqueEmail(`${TEST_PREFIX}-${suffix}`),
         password: 'correct-horse-battery-staple',
         displayName: `${TEST_PREFIX}-${suffix}`,
       },

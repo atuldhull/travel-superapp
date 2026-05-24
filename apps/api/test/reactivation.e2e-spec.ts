@@ -24,6 +24,7 @@ import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { PrismaService } from '../src/common/db/prisma.service';
 import { clearStubMessages, getAllStubMessages } from '../src/common/mailer/stub-mailer.adapter';
+import { uniqueEmail } from './factories';
 
 const TEST_PREFIX = 'reactivation-e2e';
 
@@ -85,7 +86,7 @@ describe('V.UX.33 reactivation flow (integration, requires Docker Postgres)', ()
   });
 
   async function registerUser(suffix: string): Promise<{ userId: string; email: string }> {
-    const email = `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`;
+    const email = uniqueEmail(`${TEST_PREFIX}-${suffix}`);
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/register',

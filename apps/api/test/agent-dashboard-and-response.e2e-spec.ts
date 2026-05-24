@@ -24,6 +24,7 @@ import { AppModule } from '../src/app.module';
 import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { PrismaService } from '../src/common/db/prisma.service';
+import { uniqueEmail, uniqueSuffix } from './factories';
 
 const TEST_PREFIX = 'agent-dashboard-e2e';
 
@@ -97,7 +98,7 @@ describe('V.UX.24 agent dashboard + review response (integration, requires Docke
   });
 
   async function registerAndGetToken(suffix: string): Promise<RegisterRes & { email: string }> {
-    const email = `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`;
+    const email = uniqueEmail(`${TEST_PREFIX}-${suffix}`);
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/register',
@@ -225,7 +226,7 @@ describe('V.UX.24 agent dashboard + review response (integration, requires Docke
         agentId,
         amountUsd: '250.00',
         currency: 'USD',
-        stripePaymentIntent: `${TEST_PREFIX}-pi-${Date.now()}`,
+        stripePaymentIntent: `${TEST_PREFIX}-pi-${uniqueSuffix()}`,
         state: 'released',
       },
     });

@@ -20,6 +20,7 @@ import { AppModule } from '../src/app.module';
 import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { PrismaService } from '../src/common/db/prisma.service';
+import { uniqueEmail, uniqueSuffix } from './factories';
 
 const TEST_PREFIX = 'memory-books-featured-e2e';
 
@@ -72,7 +73,7 @@ describe('GET /memory-books/featured (integration, requires Docker Postgres)', (
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`,
+        email: uniqueEmail(`${TEST_PREFIX}-${suffix}`),
         password: 'correct-horse-battery-staple',
         displayName: `${TEST_PREFIX}-${suffix}`,
       },
@@ -124,7 +125,7 @@ describe('GET /memory-books/featured (integration, requires Docker Postgres)', (
       method: 'POST',
       url: '/api/v1/memory-books',
       headers: { authorization: `Bearer ${u.accessToken}` },
-      payload: { title: `${TEST_PREFIX}-unpublished-${Date.now()}` },
+      payload: { title: `${TEST_PREFIX}-unpublished-${uniqueSuffix()}` },
     });
     expect(create.statusCode).toBe(201);
     const unpubId = (JSON.parse(create.body) as { id: string }).id;
@@ -139,11 +140,11 @@ describe('GET /memory-books/featured (integration, requires Docker Postgres)', (
     const bob = await registerUser('bob');
     const aliceBookId = await createAndPublishBook(
       alice.accessToken,
-      `${TEST_PREFIX}-alice-${Date.now()}`,
+      `${TEST_PREFIX}-alice-${uniqueSuffix()}`,
     );
     const bobBookId = await createAndPublishBook(
       bob.accessToken,
-      `${TEST_PREFIX}-bob-${Date.now()}`,
+      `${TEST_PREFIX}-bob-${uniqueSuffix()}`,
     );
 
     const list = await fetchFeatured();
@@ -154,10 +155,10 @@ describe('GET /memory-books/featured (integration, requires Docker Postgres)', (
   it('orders by publishedAt DESC (newest first)', async () => {
     if (!dbReachable) return;
     const u = await registerUser('ordered');
-    const oldId = await createAndPublishBook(u.accessToken, `${TEST_PREFIX}-old-${Date.now()}`);
+    const oldId = await createAndPublishBook(u.accessToken, `${TEST_PREFIX}-old-${uniqueSuffix()}`);
     // Slight wait to ensure publishedAt timestamps differ at ms granularity.
     await new Promise((r) => setTimeout(r, 50));
-    const newId = await createAndPublishBook(u.accessToken, `${TEST_PREFIX}-new-${Date.now()}`);
+    const newId = await createAndPublishBook(u.accessToken, `${TEST_PREFIX}-new-${uniqueSuffix()}`);
 
     const list = await fetchFeatured();
     const oldIdx = list.findIndex((b) => b.id === oldId);
@@ -171,8 +172,8 @@ describe('GET /memory-books/featured (integration, requires Docker Postgres)', (
   it('?limit=1 clamps the result count', async () => {
     if (!dbReachable) return;
     const u = await registerUser('limit');
-    await createAndPublishBook(u.accessToken, `${TEST_PREFIX}-limit-1-${Date.now()}`);
-    await createAndPublishBook(u.accessToken, `${TEST_PREFIX}-limit-2-${Date.now()}`);
+    await createAndPublishBook(u.accessToken, `${TEST_PREFIX}-limit-1-${uniqueSuffix()}`);
+    await createAndPublishBook(u.accessToken, `${TEST_PREFIX}-limit-2-${uniqueSuffix()}`);
 
     const list = await fetchFeatured('?limit=1');
     expect(list).toHaveLength(1);
