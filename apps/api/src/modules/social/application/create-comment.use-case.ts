@@ -7,16 +7,16 @@
  *   - the commenter must not be in a block relationship with the
  *     trip's author (reuses `assertNotBlocked`, the same gate the
  *     review / vote use-cases run);
- *   - body is non-empty and ≤ MAX_COMMENT_LENGTH after trim.
+ *   - body invariants (non-empty + ≤ MAX_COMMENT_LENGTH after trim)
+ *     live on `TripComment.create()` — [G4.1].
  *
- * Installed by prompt [J4].
+ * Installed by prompt [J4]; entity-validated by [G4.1].
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { EVENT_BUS, type EventBus } from '@app/events';
-import { NotFoundError, ValidationError } from '@app/errors';
+import { NotFoundError } from '@app/errors';
 import { getTraceContext } from '@app/logger';
-import type { TripComment } from '../domain/trip-comment.entity';
-import { MAX_COMMENT_LENGTH } from '../domain/trip-comment.entity';
+import { TripComment } from '../domain/trip-comment.entity';
 import { makeEvent, type TripCommentedEvent } from '../domain/social.events';
 import { COMMENT_REPOSITORY, type CommentRepository } from './ports/comment.repository';
 import { BLOCK_REPOSITORY, type BlockRepository } from './ports/block.repository';
@@ -37,56 +37,37 @@ export class CreateCommentUseCase {
   ) {}
 
   async execute(cmd: CreateCommentCommand): Promise<TripComment> {
-    const body = cmd.body.trim();
-    if (body.length === 0) {
-      throw new ValidationError(
-        'Comment cannot be empty',
-        { body: ['must be non-empty'] },
-        {},
-        'INVALID_COMMENT_BODY',
-      );
-    }
-    if (body.length > MAX_COMMENT_LENGTH) {
-      throw new ValidationError(
-        'Comment too long',
-        { body: [`must be ≤ ${MAX_COMMENT_LENGTH} chars (got ${body.length})`] },
-        { length: body.length },
-        'INVALID_COMMENT_BODY',
-      );
-    }
+    // Domain-side body invariants (T1/T2 — [G4.1]).
+    const input = TripComment.create(cmd);
 
     // Publish gate — only published, non-PRIVATE trips are commentable.
-    const trip = await this.comments.findCommentableTrip(cmd.tripId);
+    const trip = await this.comments.findCommentableTrip(input.tripId);
     if (!trip) {
       throw new NotFoundError(
         'Trip is not open for comments',
-        { tripId: cmd.tripId },
+        { tripId: input.tripId },
         'TRIP_NOT_COMMENTABLE',
       );
     }
 
     // Block gate — skip when the commenter IS the trip author
     // (you can always comment on your own published trip).
-    if (trip.authorId !== cmd.authorId) {
-      await assertNotBlocked(this.blocks, cmd.authorId, trip.authorId);
+    if (trip.authorId !== input.authorId) {
+      await assertNotBlocked(this.blocks, input.authorId, trip.authorId);
     }
 
-    const comment = await this.comments.create({
-      tripId: cmd.tripId,
-      authorId: cmd.authorId,
-      body,
-    });
+    const comment = await this.comments.create(input);
 
     // J6 — notify the trip's author. The handler skips self-comments,
     // but we also skip emitting one to keep the bus quiet.
-    if (trip.authorId !== cmd.authorId) {
+    if (trip.authorId !== input.authorId) {
       const evt: TripCommentedEvent = makeEvent(
         'Social.TripCommented',
         {
-          tripId: cmd.tripId,
+          tripId: input.tripId,
           commentId: comment.id,
           tripAuthorId: trip.authorId,
-          commenterId: cmd.authorId,
+          commenterId: input.authorId,
         },
         getTraceContext()?.traceId ? { traceId: getTraceContext()!.traceId } : {},
       );
