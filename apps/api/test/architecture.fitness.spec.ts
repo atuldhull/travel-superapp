@@ -256,6 +256,76 @@ describe('architecture fitness — layer presence per module', () => {
   });
 });
 
+describe('architecture fitness — layer-size balance', () => {
+  // [G3] A module dominated by one layer is structurally suspect:
+  //   - >75% application = use-case sprawl that should be pushed into
+  //     domain ([F4] is the active campaign).
+  //   - >75% interface   = controller god; routes should delegate.
+  //   - >75% infrastructure = persistence/adapter sprawl; missing port
+  //     boundary.
+  //   - >75% domain      = unusual (good kind of unusual) — would only
+  //     trip if the whole rest of the module was empty stubs.
+  //
+  // 75% is a SOFT ceiling; worst current module is payments at 51.7%
+  // (sanctioned no-domain-layer), then notifications at 50.5%. The
+  // gate's job is to prevent a future regression where one layer
+  // doubles while the others stay flat — that's the anemia signal.
+  //
+  // We DO NOT gate domain/{rest-of-module} ratio (CLAUDE.md targets a
+  // hex-ideal high domain share, but every existing module is 1-10%
+  // domain — gating that today would block every PR). The companion
+  // "layer presence" check above already catches the literally-zero
+  // case; the per-entity F4/G4 sweep is the real lever for raising
+  // domain share over time.
+  const LAYERS = ['domain', 'application', 'infrastructure', 'interface'] as const;
+  const MAX_LAYER_SHARE = 0.75;
+
+  function locOf(file: string): number {
+    return readFileSync(file, 'utf8').split(/\r?\n/).length;
+  }
+
+  function walkAll(dir: string): string[] {
+    const out: string[] = [];
+    let entries: readonly string[];
+    try {
+      entries = readdirSync(dir);
+    } catch {
+      return out;
+    }
+    for (const e of entries) {
+      const abs = join(dir, e);
+      const stat = statSync(abs);
+      if (stat.isDirectory()) out.push(...walkAll(abs));
+      else if (e.endsWith('.ts') && !e.endsWith('.d.ts')) out.push(abs);
+    }
+    return out;
+  }
+
+  const modules = readdirSync(MODULES_DIR).filter((name) =>
+    statSync(join(MODULES_DIR, name)).isDirectory(),
+  );
+
+  it.each(modules)('module %s: no single layer exceeds 75% of total module LOC', (mod) => {
+    const byLayer: Record<string, number> = {};
+    let total = 0;
+    for (const layer of LAYERS) {
+      const layerDir = join(MODULES_DIR, mod, layer);
+      const sum = walkAll(layerDir).reduce((acc, f) => acc + locOf(f), 0);
+      byLayer[layer] = sum;
+      total += sum;
+    }
+    if (total === 0) return; // empty module — caught by other invariants
+    const offenders: Array<{ layer: string; share: string }> = [];
+    for (const layer of LAYERS) {
+      const share = byLayer[layer] / total;
+      if (share > MAX_LAYER_SHARE) {
+        offenders.push({ layer, share: (share * 100).toFixed(1) + '%' });
+      }
+    }
+    expect({ module: mod, offenders }).toEqual({ module: mod, offenders: [] });
+  });
+});
+
 describe('architecture fitness — cycle detection (madge)', () => {
   // `madge --circular` is the OUTSIDE-LOOKING-IN cycle detector — it
   // walks the resolved TS/JS graph the same way Node would at run-
