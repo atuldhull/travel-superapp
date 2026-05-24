@@ -16,18 +16,13 @@
  * Installed for the adventure-diary feature.
  */
 import { Inject, Injectable } from '@nestjs/common';
-import { ValidationError } from '@app/errors';
-import type { DiaryEntry } from '../domain/diary-entry.entity';
+import { DiaryEntry } from '../domain/diary-entry.entity';
 import { applyEntry, type GamificationState } from '../domain/gamification';
 import { DIARY_REPOSITORY, type DiaryRepository } from './ports/diary.repository';
 import {
   GAMIFICATION_REPOSITORY,
   type GamificationRepository,
 } from './ports/gamification.repository';
-
-const MAX_TITLE = 200;
-const MAX_BODY = 20_000;
-const MAX_MOOD = 40;
 
 export interface CreateDiaryEntryCommand {
   readonly userId: string;
@@ -56,68 +51,25 @@ export class CreateDiaryEntryUseCase {
   ) {}
 
   async execute(cmd: CreateDiaryEntryCommand): Promise<CreateDiaryEntryResult> {
-    const title = cmd.title.trim();
-    const body = cmd.body.trim();
-    if (title.length === 0 || title.length > MAX_TITLE) {
-      throw new ValidationError(
-        'Title must be 1–200 characters',
-        { title: ['1–200 characters'] },
-        { length: title.length },
-        'INVALID_DIARY_TITLE',
-      );
-    }
-    if (body.length === 0 || body.length > MAX_BODY) {
-      throw new ValidationError(
-        'Body must be 1–20000 characters',
-        { body: ['1–20000 characters'] },
-        { length: body.length },
-        'INVALID_DIARY_BODY',
-      );
-    }
-    const mood = cmd.mood?.trim() || null;
-    if (mood && mood.length > MAX_MOOD) {
-      throw new ValidationError(
-        'Mood too long',
-        { mood: [`at most ${MAX_MOOD} characters`] },
-        { length: mood.length },
-        'INVALID_DIARY_MOOD',
-      );
-    }
-    const entryDate = cmd.entryDate ? new Date(cmd.entryDate) : new Date();
-    if (Number.isNaN(entryDate.getTime())) {
-      throw new ValidationError(
-        'entryDate is not a valid date',
-        { entryDate: ['must be an ISO date'] },
-        { entryDate: cmd.entryDate },
-        'INVALID_DIARY_DATE',
-      );
-    }
-    const aiAssisted = cmd.aiAssisted === true;
+    // Domain-side invariants + normalisation (D1-D4 — [G4.4]).
+    const normalised = DiaryEntry.create(cmd);
 
-    const entry = await this.diary.create({
-      userId: cmd.userId,
-      tripId: cmd.tripId ?? null,
-      title,
-      body,
-      mood,
-      aiAssisted,
-      entryDate,
-    });
+    const entry = await this.diary.create(normalised);
 
-    const snap = await this.game.snapshot(cmd.userId);
+    const snap = await this.game.snapshot(normalised.userId);
     const award = applyEntry(
       snap,
       {
-        entryDate,
-        bodyLength: body.length,
-        aiAssisted,
-        hasTrip: Boolean(cmd.tripId),
+        entryDate: normalised.entryDate,
+        bodyLength: normalised.body.length,
+        aiAssisted: normalised.aiAssisted,
+        hasTrip: Boolean(normalised.tripId),
       },
       new Set(snap.earnedBadgeKeys),
     );
 
     await this.game.applyAward({
-      userId: cmd.userId,
+      userId: normalised.userId,
       next: award.next,
       newlyEarnedBadges: award.newlyEarnedBadges,
     });
