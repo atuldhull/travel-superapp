@@ -8,7 +8,7 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { ValidationError } from '@app/errors';
-import type { TrustedContact } from '../domain/trusted-contact.entity';
+import { TrustedContact } from '../domain/trusted-contact.entity';
 import {
   TRUSTED_CONTACT_REPOSITORY,
   type TrustedContactRepository,
@@ -30,18 +30,12 @@ export class AddTrustedContactUseCase {
   ) {}
 
   async execute(cmd: AddTrustedContactCommand): Promise<TrustedContact> {
-    const phone = cmd.phone?.trim() ? cmd.phone.trim() : null;
-    const email = cmd.email?.trim() ? cmd.email.trim() : null;
-    if (!phone && !email) {
-      throw new ValidationError(
-        'A trusted contact needs at least a phone or an email',
-        { phone: ['or email is required'], email: ['or phone is required'] },
-        {},
-        'CONTACT_CHANNEL_REQUIRED',
-      );
-    }
+    // Domain-side invariants (C1-C5 — [G4.3]). Trim/coerce + the
+    // "channel required" rule live on the entity now.
+    const input = TrustedContact.create(cmd);
 
-    const count = await this.repo.countForUser(cmd.userId);
+    // Per-user cap stays here — needs the repo to count siblings.
+    const count = await this.repo.countForUser(input.userId);
     if (count >= MAX_CONTACTS_PER_USER) {
       throw new ValidationError(
         `At most ${MAX_CONTACTS_PER_USER} trusted contacts per account`,
@@ -51,11 +45,6 @@ export class AddTrustedContactUseCase {
       );
     }
 
-    return this.repo.create({
-      userId: cmd.userId,
-      name: cmd.name.trim(),
-      phone,
-      email,
-    });
+    return this.repo.create(input);
   }
 }
