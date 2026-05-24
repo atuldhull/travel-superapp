@@ -9,7 +9,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { Vote as PrismaVote } from '@prisma/client';
 import { PrismaService } from '../../../common/db/prisma.service';
-import type { Vote, VoteTargetType, VoteValue } from '../domain/vote.entity';
+import { Vote, type VoteTargetType, type VoteValue } from '../domain/vote.entity';
 import type {
   DeleteVoteInput,
   FindVoteInput,
@@ -104,7 +104,7 @@ export class PrismaVoteRepository implements VoteRepository {
 }
 
 function toDomain(row: PrismaVote): Vote {
-  return {
+  return Vote.fromPersistence({
     id: row.id,
     tripId: row.tripId,
     userId: row.userId,
@@ -112,5 +112,5 @@ function toDomain(row: PrismaVote): Vote {
     targetId: row.targetId,
     value: row.value as VoteValue,
     createdAt: row.createdAt,
-  };
+  });
 }

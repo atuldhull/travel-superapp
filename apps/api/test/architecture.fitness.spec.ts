@@ -317,7 +317,8 @@ describe('architecture fitness — layer-size balance', () => {
     if (total === 0) return; // empty module — caught by other invariants
     const offenders: Array<{ layer: string; share: string }> = [];
     for (const layer of LAYERS) {
-      const share = byLayer[layer] / total;
+      const layerLoc = byLayer[layer] ?? 0;
+      const share = layerLoc / total;
       if (share > MAX_LAYER_SHARE) {
         offenders.push({ layer, share: (share * 100).toFixed(1) + '%' });
       }
