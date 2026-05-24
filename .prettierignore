@@ -13,3 +13,4 @@ pnpm-lock.yaml
 docs/api/openapi.yaml
 packages/sdk/src/generated/**
 packages/shared-types/schemas/**
+apps/ai-service/ai_service/schemas/**
