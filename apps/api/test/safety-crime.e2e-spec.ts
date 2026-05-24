@@ -19,6 +19,7 @@ import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { GeoQueries } from '../src/common/db/geo-queries';
 import { PrismaService } from '../src/common/db/prisma.service';
+import { uniqueEmail, uniqueSuffix } from './factories';
 
 const SOURCE_PREFIX = 'crime-e2e';
 // Mid-South-Atlantic — no other Safety suite seeds near here.
@@ -84,7 +85,7 @@ describe('Safety crime-layer (integration, requires Postgres)', () => {
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: `${SOURCE_PREFIX}-${suffix}-${Date.now()}@example.com`,
+        email: uniqueEmail(`${SOURCE_PREFIX}-${suffix}`),
         password: 'correct-horse-battery-staple',
         displayName: `${SOURCE_PREFIX}-${suffix}`,
       },
@@ -101,7 +102,7 @@ describe('Safety crime-layer (integration, requires Postgres)', () => {
     reportedAt?: Date;
   }): Promise<string> {
     const row = await geo.insertCrimeIncident({
-      source: `${SOURCE_PREFIX}-${opts.category}-${Date.now()}-${Math.random()}`,
+      source: `${SOURCE_PREFIX}-${opts.category}-${uniqueSuffix()}`,
       category: opts.category,
       ...(opts.severity ? { severity: opts.severity } : {}),
       lat: ANCHOR.lat + opts.latOffset,

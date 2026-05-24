@@ -24,6 +24,7 @@ import type {
 } from '../src/modules/events/application/ports/event-provider';
 import type { EventListing } from '../src/modules/events/domain/event-listing.entity';
 import { MockEventProvider } from '../src/modules/events/infrastructure/mock-event-provider';
+import { uniqueEmail } from './factories';
 
 const TEST_PREFIX = 'events-search-e2e';
 
@@ -144,7 +145,7 @@ describe('Events module (integration, requires Docker Postgres + Redis)', () => 
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`,
+        email: uniqueEmail(`${TEST_PREFIX}-${suffix}`),
         password: 'correct-horse-battery-staple',
         displayName: `${TEST_PREFIX}-${suffix}`,
       },

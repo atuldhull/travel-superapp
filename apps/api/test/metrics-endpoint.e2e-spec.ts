@@ -22,6 +22,7 @@ import { AppModule } from '../src/app.module';
 import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { TripBalancesCache } from '../src/modules/social/infrastructure/trip-balances-cache';
+import { uniqueSuffix } from './factories';
 
 describe('GET /metrics (integration, requires Docker Redis)', () => {
   let moduleRef: TestingModule;
@@ -96,7 +97,7 @@ describe('GET /metrics (integration, requires Docker Redis)', () => {
     const beforeHits = parseGauge(before.body, 'cache_hit_total', 'trip-balances') ?? 0;
 
     // Warm + hit.
-    const key = `metrics-test-warm-${Date.now()}-${Math.random()}`;
+    const key = `metrics-test-warm-${uniqueSuffix()}`;
     await cache.set(key, [], 60);
     await cache.get(key);
 

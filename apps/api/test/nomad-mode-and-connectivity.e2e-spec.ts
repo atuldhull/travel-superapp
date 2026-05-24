@@ -24,6 +24,7 @@ import { AppModule } from '../src/app.module';
 import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { PrismaService } from '../src/common/db/prisma.service';
+import { uniqueEmail } from './factories';
 
 const TEST_PREFIX = 'nomad-mode-e2e';
 // Suite-local remote coord — outside any other suite's PostGIS rows.
@@ -109,7 +110,7 @@ describe('V.UX.23 nomad mode + connectivity (integration, requires Docker Postgr
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`,
+        email: uniqueEmail(`${TEST_PREFIX}-${suffix}`),
         password: 'correct-horse-battery-staple',
         displayName: `${TEST_PREFIX}-${suffix}`,
       },

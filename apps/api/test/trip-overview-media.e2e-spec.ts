@@ -26,6 +26,7 @@ import { AppModule } from '../src/app.module';
 import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { PrismaService } from '../src/common/db/prisma.service';
+import { uniqueEmail, uniqueSuffix } from './factories';
 
 const TEST_PREFIX = 'overview-media-e2e';
 // Suite-local Pacific coord — keeps parallel suites independent.
@@ -91,7 +92,7 @@ describe('GET /trips/:id/overview — media section ([IV.18.12.10])', () => {
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`,
+        email: uniqueEmail(`${TEST_PREFIX}-${suffix}`),
         password: 'correct-horse-battery-staple',
         displayName: `${TEST_PREFIX}-${suffix}`,
       },
@@ -131,7 +132,7 @@ describe('GET /trips/:id/overview — media section ([IV.18.12.10])', () => {
           tripId,
           kind: 'image',
           status: 'ready',
-          s3KeyRaw: `${TEST_PREFIX}/${suffix}/${i}-${Date.now()}-${Math.random()}`,
+          s3KeyRaw: `${TEST_PREFIX}/${suffix}/${i}-${uniqueSuffix()}`,
         },
       });
       ids.push(row.id);

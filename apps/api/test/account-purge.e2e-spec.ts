@@ -28,6 +28,7 @@ import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { PrismaService } from '../src/common/db/prisma.service';
 import { PurgeSoftDeletedUsersUseCase } from '../src/modules/account/application/purge-soft-deleted-users.use-case';
+import { uniqueEmail } from './factories';
 
 const TEST_PREFIX = 'account-purge-e2e';
 const COORD = { lat: 35.6762, lng: 139.6503 };
@@ -76,7 +77,7 @@ describe('Hard-delete cron sweep (integration, requires Docker Postgres)', () =>
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`,
+        email: uniqueEmail(`${TEST_PREFIX}-${suffix}`),
         password: 'correct-horse-battery-staple',
         displayName: `${TEST_PREFIX}-${suffix}`,
       },

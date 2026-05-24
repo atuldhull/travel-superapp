@@ -20,6 +20,7 @@ import { AppModule } from '../src/app.module';
 import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { PrismaService } from '../src/common/db/prisma.service';
+import { uniqueSuffix } from './factories';
 
 const TEST_PREFIX = 'social-notif-e2e';
 const COORD = { lat: 13.7563, lng: 100.5018 };
@@ -68,7 +69,7 @@ describe('Social notifications (integration, requires Docker Postgres)', () => {
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: `${TEST_PREFIX}-${suffix}-${Date.now()}-${Math.random()}@example.com`,
+        email: `${TEST_PREFIX}-${suffix}-${uniqueSuffix()}@example.com`,
         password: 'correct-horse-battery-staple',
         displayName: `${TEST_PREFIX}-${suffix}`,
       },

@@ -35,6 +35,7 @@ import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { GeoQueries } from '../src/common/db/geo-queries';
 import { PrismaService } from '../src/common/db/prisma.service';
+import { uniqueEmail, uniqueSuffix } from './factories';
 
 const TEST_PREFIX = 'places-hidden-gems-e2e';
 const ANCHOR = { lat: 5.6789, lng: -163.4321 };
@@ -100,7 +101,7 @@ describe('POST /places/hidden-gems (integration, requires Docker Postgres)', () 
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`,
+        email: uniqueEmail(`${TEST_PREFIX}-${suffix}`),
         password: 'correct-horse-battery-staple',
         displayName: `${TEST_PREFIX}-${suffix}`,
       },
@@ -121,7 +122,7 @@ describe('POST /places/hidden-gems (integration, requires Docker Postgres)', () 
     if (existing) return existing.id;
     const created = await prisma.user.create({
       data: {
-        emailHash: `${TEST_PREFIX}-author-hash-${Date.now()}`,
+        emailHash: `${TEST_PREFIX}-author-hash-${uniqueSuffix()}`,
         emailEncrypted: Buffer.from(email, 'utf8'),
         passwordHash: 'x',
         displayName: `${TEST_PREFIX}-author`,
@@ -132,7 +133,7 @@ describe('POST /places/hidden-gems (integration, requires Docker Postgres)', () 
 
   async function seedPlace(name: string): Promise<string> {
     const p = await geo.insertPlace({
-      sourceKey: `${TEST_PREFIX}-${name}-${Date.now()}-${Math.random()}`,
+      sourceKey: `${TEST_PREFIX}-${name}-${uniqueSuffix()}`,
       name: `${TEST_PREFIX}-${name}`,
       category: 'cafe',
       lat: ANCHOR.lat + (Math.random() - 0.5) * 0.001,

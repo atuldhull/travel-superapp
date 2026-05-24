@@ -18,6 +18,7 @@ import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { PrismaService } from '../src/common/db/prisma.service';
 import { LoggingNotificationSender } from '../src/modules/notifications/infrastructure/logging-notification-sender';
+import { uniqueEmail } from './factories';
 
 const TEST_PREFIX = 'notif-e2e';
 // Suite-local coord — avoids cross-suite Place contamination in the
@@ -75,7 +76,7 @@ describe('Notifications subscribers (integration, requires Docker Postgres)', ()
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`,
+        email: uniqueEmail(`${TEST_PREFIX}-${suffix}`),
         password: 'correct-horse-battery-staple',
         displayName: `${TEST_PREFIX}-${suffix}`,
       },

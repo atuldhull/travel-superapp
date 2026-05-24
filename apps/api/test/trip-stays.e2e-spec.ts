@@ -23,6 +23,7 @@ import type {
 } from '../src/modules/stays/application/ports/stay-provider';
 import type { StayListing } from '../src/modules/stays/domain/stay-listing.entity';
 import { MockStayProvider } from '../src/modules/stays/infrastructure/mock-stay-provider';
+import { uniqueEmail } from './factories';
 
 const TEST_PREFIX = 'trip-stays-e2e';
 // Mid-Arctic coord — unique vs every other Trip-related suite.
@@ -128,7 +129,7 @@ describe('Trip × Stays (integration, requires Docker Postgres + Redis)', () => 
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`,
+        email: uniqueEmail(`${TEST_PREFIX}-${suffix}`),
         password: 'correct-horse-battery-staple',
         displayName: `${TEST_PREFIX}-${suffix}`,
       },

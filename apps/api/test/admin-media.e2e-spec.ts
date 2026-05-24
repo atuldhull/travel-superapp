@@ -21,6 +21,7 @@ import { AppModule } from '../src/app.module';
 import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { PrismaService } from '../src/common/db/prisma.service';
+import { uniqueEmail, uniqueSuffix } from './factories';
 
 const TEST_PREFIX = 'admin-media-e2e';
 const COORD = { lat: 37.7749, lng: -122.4194 };
@@ -82,7 +83,7 @@ describe('Admin media moderation (integration, requires Docker Postgres)', () =>
     email: string;
     password: string;
   }> {
-    const email = `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`;
+    const email = uniqueEmail(`${TEST_PREFIX}-${suffix}`);
     const password = 'correct-horse-battery-staple';
     const res = await app.inject({
       method: 'POST',
@@ -119,7 +120,7 @@ describe('Admin media moderation (integration, requires Docker Postgres)', () =>
         ownerId,
         kind: overrides.kind ?? 'image',
         status: overrides.status ?? 'ready',
-        s3KeyRaw: `${TEST_PREFIX}/${suffix}/${Date.now()}-${Math.random()}`,
+        s3KeyRaw: `${TEST_PREFIX}/${suffix}/${uniqueSuffix()}`,
       },
     });
     return row.id;
@@ -211,7 +212,7 @@ describe('Admin media moderation (integration, requires Docker Postgres)', () =>
         tripId,
         kind: 'image',
         status: 'ready',
-        s3KeyRaw: `${TEST_PREFIX}/delete-with-trip/${Date.now()}-${Math.random()}`,
+        s3KeyRaw: `${TEST_PREFIX}/delete-with-trip/${uniqueSuffix()}`,
       },
     });
 

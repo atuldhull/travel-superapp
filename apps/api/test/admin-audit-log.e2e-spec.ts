@@ -18,6 +18,7 @@ import { AppModule } from '../src/app.module';
 import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { PrismaService } from '../src/common/db/prisma.service';
+import { uniqueSuffix } from './factories';
 
 const TEST_PREFIX = 'admin-audit-e2e';
 
@@ -90,7 +91,7 @@ describe('V.UX.36 — Admin audit log (integration, requires Docker Postgres)', 
     email: string;
     password: string;
   }> {
-    const email = `${TEST_PREFIX}-${suffix}-${Date.now()}-${Math.random()
+    const email = `${TEST_PREFIX}-${suffix}-${uniqueSuffix()}-${Math.random()
       .toString(36)
       .slice(2, 8)}@example.com`;
     const password = 'correct-horse-battery-staple';
@@ -178,7 +179,7 @@ describe('V.UX.36 — Admin audit log (integration, requires Docker Postgres)', 
     // Seed a scam report directly via Prisma (bypassing PostGIS to keep
     // the test simple — the public scam-report endpoint requires
     // GeoQueries which isn't strictly necessary for an audit-log test).
-    const reportId = `scam-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const reportId = `scam-${uniqueSuffix()}`;
     await prisma.$executeRaw`
       INSERT INTO "ScamReport"
         ("id", "reporterId", "category", "severity", "description",
@@ -212,7 +213,7 @@ describe('V.UX.36 — Admin audit log (integration, requires Docker Postgres)', 
     const admin = await loginAsAdmin('sos-actor');
     const victim = await registerUser('sos-victim');
 
-    const sosId = `sos-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const sosId = `sos-${uniqueSuffix()}`;
     await prisma.$executeRaw`
       INSERT INTO "SosEvent"
         ("id", "userId", "trigger", "coordinates", "createdAt")

@@ -23,6 +23,7 @@ import { AppModule } from '../src/app.module';
 import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { PrismaService } from '../src/common/db/prisma.service';
+import { uniqueEmail } from './factories';
 
 const TEST_PREFIX = 'mfa-e2e';
 
@@ -75,7 +76,7 @@ describe('MFA lifecycle (integration, requires Docker Postgres)', () => {
     userId: string;
     accessToken: string;
   }> {
-    const email = `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`;
+    const email = uniqueEmail(`${TEST_PREFIX}-${suffix}`);
     const password = 'correct-horse-battery-staple';
     const res = await app.inject({
       method: 'POST',

@@ -18,6 +18,7 @@ import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { PrismaService } from '../src/common/db/prisma.service';
 import { GeoQueries } from '../src/common/db/geo-queries';
+import { uniqueEmail, uniqueSuffix } from './factories';
 
 const TEST_PREFIX = 'concierge-e2e';
 
@@ -78,7 +79,7 @@ describe('Concierge agent-match + curatedOnly (V.UX.17 — integration)', () => 
   async function registerUser(
     suffix: string,
   ): Promise<{ userId: string; accessToken: string; email: string; password: string }> {
-    const email = `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`;
+    const email = uniqueEmail(`${TEST_PREFIX}-${suffix}`);
     const password = 'correct-horse-battery-staple';
     const res = await app.inject({
       method: 'POST',
@@ -273,14 +274,14 @@ describe('Concierge agent-match + curatedOnly (V.UX.17 — integration)', () => 
     const me = await loginAsPremium('curated');
 
     const curated = await geo.insertPlace({
-      sourceKey: `${TEST_PREFIX}:curated-${Date.now()}`,
+      sourceKey: `${TEST_PREFIX}:curated-${uniqueSuffix()}`,
       name: 'Hand-picked Bistro',
       category: 'restaurant',
       lat,
       lng,
     });
     const generic = await geo.insertPlace({
-      sourceKey: `${TEST_PREFIX}:generic-${Date.now()}`,
+      sourceKey: `${TEST_PREFIX}:generic-${uniqueSuffix()}`,
       name: 'Chain Hotel',
       category: 'restaurant',
       lat: lat + 0.002,

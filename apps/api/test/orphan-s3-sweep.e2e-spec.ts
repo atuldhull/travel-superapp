@@ -29,6 +29,7 @@ import { PrismaService } from '../src/common/db/prisma.service';
 import { OrphanS3SweepUseCase } from '../src/modules/media/application/orphan-s3-sweep.use-case';
 import { STORAGE_PROVIDER } from '../src/modules/media/application/ports/storage-provider';
 import type { StorageProvider } from '../src/modules/media/application/ports/storage-provider';
+import { uniqueEmail, uniqueSuffix } from './factories';
 
 const TEST_PREFIX = 'orphan-sweep-e2e';
 
@@ -92,7 +93,7 @@ describe('OrphanS3SweepUseCase (integration, requires Docker MinIO + Postgres)',
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`,
+        email: uniqueEmail(`${TEST_PREFIX}-${suffix}`),
         password: 'correct-horse-battery-staple',
         displayName: `${TEST_PREFIX}-${suffix}`,
       },
@@ -105,8 +106,8 @@ describe('OrphanS3SweepUseCase (integration, requires Docker MinIO + Postgres)',
     if (!infraReachable) return;
     const user = await registerUser('mixed');
 
-    const orphanKey = `${TEST_PREFIX}/orphan/${Date.now()}-${Math.random()}`;
-    const referencedKey = `${TEST_PREFIX}/referenced/${Date.now()}-${Math.random()}`;
+    const orphanKey = `${TEST_PREFIX}/orphan/${uniqueSuffix()}`;
+    const referencedKey = `${TEST_PREFIX}/referenced/${uniqueSuffix()}`;
 
     // Drop both keys directly into the bucket.
     await putBytes(orphanKey);
@@ -140,7 +141,7 @@ describe('OrphanS3SweepUseCase (integration, requires Docker MinIO + Postgres)',
   it('idempotent: a second sweep on the same state is a no-op for our keys', async () => {
     if (!infraReachable) return;
     const user = await registerUser('idemp');
-    const referencedKey = `${TEST_PREFIX}/idemp-ref/${Date.now()}-${Math.random()}`;
+    const referencedKey = `${TEST_PREFIX}/idemp-ref/${uniqueSuffix()}`;
     await putBytes(referencedKey);
     await prisma.mediaAsset.create({
       data: {

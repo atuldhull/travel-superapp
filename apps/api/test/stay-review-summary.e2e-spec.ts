@@ -22,6 +22,7 @@ import { AppModule } from '../src/app.module';
 import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { PrismaService } from '../src/common/db/prisma.service';
+import { uniqueEmail, uniqueSuffix } from './factories';
 
 const TEST_PREFIX = 'stay-review-summary-e2e';
 
@@ -81,7 +82,7 @@ describe('GET /stays/:id/review-summary (integration, requires Docker Postgres)'
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`,
+        email: uniqueEmail(`${TEST_PREFIX}-${suffix}`),
         password: 'correct-horse-battery-staple',
         displayName: `${TEST_PREFIX}-${suffix}`,
       },
@@ -115,7 +116,7 @@ describe('GET /stays/:id/review-summary (integration, requires Docker Postgres)'
 
   it('@Public(): no bearer + empty stay → all-zero shape; votes always zero', async () => {
     if (!dbReachable) return;
-    const stayId = `${TEST_PREFIX}-empty-${Date.now()}`;
+    const stayId = `${TEST_PREFIX}-empty-${uniqueSuffix()}`;
     const { status, body } = await getSummary(stayId);
     expect(status).toBe(200);
     expect(body.stayId).toBe(stayId);
@@ -130,7 +131,7 @@ describe('GET /stays/:id/review-summary (integration, requires Docker Postgres)'
 
   it('stay with reviews → correct aggregates + recent; votes still zero', async () => {
     if (!dbReachable) return;
-    const stayId = `${TEST_PREFIX}-rich-${Date.now()}`;
+    const stayId = `${TEST_PREFIX}-rich-${uniqueSuffix()}`;
     const a = await registerUser('a');
     const b = await registerUser('b');
     const c = await registerUser('c');
@@ -156,8 +157,8 @@ describe('GET /stays/:id/review-summary (integration, requires Docker Postgres)'
 
   it('cross-target isolation between stay A and stay B', async () => {
     if (!dbReachable) return;
-    const stayA = `${TEST_PREFIX}-A-${Date.now()}`;
-    const stayB = `${TEST_PREFIX}-B-${Date.now()}`;
+    const stayA = `${TEST_PREFIX}-A-${uniqueSuffix()}`;
+    const stayB = `${TEST_PREFIX}-B-${uniqueSuffix()}`;
     const u = await registerUser('iso');
     await postStayReview(u.accessToken, stayA, 5, 'A is great.');
     await postStayReview(u.accessToken, stayA, 4, 'Second review on A.');
@@ -172,7 +173,7 @@ describe('GET /stays/:id/review-summary (integration, requires Docker Postgres)'
     if (!dbReachable) return;
     // Same opaque id used for both stayId and placeId — proves
     // the endpoints filter by targetType, not just targetId.
-    const sharedId = `${TEST_PREFIX}-shared-${Date.now()}`;
+    const sharedId = `${TEST_PREFIX}-shared-${uniqueSuffix()}`;
     const u = await registerUser('cross');
     await postStayReview(u.accessToken, sharedId, 5, 'Stay review only.');
 

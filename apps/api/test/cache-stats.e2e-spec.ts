@@ -22,6 +22,7 @@ import { AppModule } from '../src/app.module';
 import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { TripBalancesCache } from '../src/modules/social/infrastructure/trip-balances-cache';
+import { uniqueSuffix } from './factories';
 
 describe('TypedRedisCache.getStats() (integration, requires Docker Redis)', () => {
   let moduleRef: TestingModule;
@@ -66,7 +67,7 @@ describe('TypedRedisCache.getStats() (integration, requires Docker Redis)', () =
   it('cold get on an unknown key increments misses (not hits)', async () => {
     if (!infraReachable) return;
     const before = cache.getStats();
-    const unknownKey = `cache-stats-test-unknown-${Date.now()}-${Math.random()}`;
+    const unknownKey = `cache-stats-test-unknown-${uniqueSuffix()}`;
     const result = await cache.get(unknownKey);
     expect(result).toBeNull();
     const after = cache.getStats();
@@ -76,7 +77,7 @@ describe('TypedRedisCache.getStats() (integration, requires Docker Redis)', () =
 
   it('warmed key increments hits (not misses) on subsequent get', async () => {
     if (!infraReachable) return;
-    const key = `cache-stats-test-warm-${Date.now()}-${Math.random()}`;
+    const key = `cache-stats-test-warm-${uniqueSuffix()}`;
     await cache.set(key, [], 60);
     const before = cache.getStats();
     const result = await cache.get(key);
@@ -90,9 +91,9 @@ describe('TypedRedisCache.getStats() (integration, requires Docker Redis)', () =
     if (!infraReachable) return;
     const before = cache.getStats();
     // 2 misses + 1 hit (after warm).
-    await cache.get(`monotonic-miss-1-${Date.now()}-${Math.random()}`);
-    await cache.get(`monotonic-miss-2-${Date.now()}-${Math.random()}`);
-    const warmKey = `monotonic-warm-${Date.now()}-${Math.random()}`;
+    await cache.get(`monotonic-miss-1-${uniqueSuffix()}`);
+    await cache.get(`monotonic-miss-2-${uniqueSuffix()}`);
+    const warmKey = `monotonic-warm-${uniqueSuffix()}`;
     await cache.set(warmKey, [], 60);
     await cache.get(warmKey);
     const after = cache.getStats();
