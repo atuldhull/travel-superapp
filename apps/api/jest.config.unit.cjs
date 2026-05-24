@@ -45,6 +45,7 @@ module.exports = {
     '<rootDir>/test/trip-transitions.unit.spec.ts',
     '<rootDir>/test/factories.unit.spec.ts',
     '<rootDir>/test/contract.*.spec.ts',
+    '<rootDir>/test/geo-math.property.spec.ts',
   ],
   setupFiles: ['<rootDir>/test/setup.ts'],
   collectCoverage: true,
@@ -64,6 +65,7 @@ module.exports = {
     'src/modules/diary/domain/diary-entry.entity.ts',
     'src/modules/trip/domain/itinerary.entity.ts',
     'src/modules/trip/domain/trip-transitions.ts',
+    'src/common/geo/haversine.ts',
   ],
   coverageReporters: ['text', 'text-summary', 'lcov', 'json-summary'],
   coverageDirectory: 'coverage/unit',
@@ -72,6 +74,12 @@ module.exports = {
   // CLAUDE.md self-check #3 ("domain ≥ 80%") is now mechanical.
   coverageThreshold: {
     './src/modules/**/domain/*.ts': {
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80,
+    },
+    './src/common/geo/haversine.ts': {
       branches: 80,
       functions: 80,
       lines: 80,

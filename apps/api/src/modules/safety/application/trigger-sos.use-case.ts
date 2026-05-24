@@ -16,8 +16,8 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { EVENT_BUS, type EventBus } from '@app/events';
-import { ValidationError } from '@app/errors';
 import { createLogger, getTraceContext } from '@app/logger';
+import { assertValidCoordinates } from '../../../common/geo/haversine';
 import { TRUSTED_CONTACT_REPOSITORY, type TrustedContactRepository } from '../../account';
 import { SosEvent } from '../domain/sos-event.entity';
 import { makeSafetyEvent, type SosTriggeredEvent } from '../domain/safety.events';
@@ -43,22 +43,8 @@ export class TriggerSosUseCase {
   ) {}
 
   async execute(cmd: TriggerSosCommand): Promise<SosEvent> {
-    if (!Number.isFinite(cmd.lat) || cmd.lat < -90 || cmd.lat > 90) {
-      throw new ValidationError(
-        'Latitude out of range',
-        { lat: ['must be between -90 and 90'] },
-        { lat: cmd.lat },
-        'INVALID_COORDINATES',
-      );
-    }
-    if (!Number.isFinite(cmd.lng) || cmd.lng < -180 || cmd.lng > 180) {
-      throw new ValidationError(
-        'Longitude out of range',
-        { lng: ['must be between -180 and 180'] },
-        { lng: cmd.lng },
-        'INVALID_COORDINATES',
-      );
-    }
+    // [J2] shared geo guard.
+    assertValidCoordinates(cmd.lat, cmd.lng);
     // Domain-side invariants (O1/O2 — [G4.2]).
     const input = SosEvent.create({ userId: cmd.userId, trigger: cmd.trigger });
 

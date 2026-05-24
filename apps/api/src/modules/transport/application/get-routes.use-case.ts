@@ -13,11 +13,14 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { ValidationError } from '@app/errors';
+import { haversineKm } from '../../../common/geo/haversine';
 import type { RouteLeg, TransportMode } from '../domain/route-leg.entity';
 import { ROUTING_PROVIDER, type RoutingProvider } from './ports/routing-provider';
 
 const MAX_STRAIGHT_LINE_KM = 500;
-const EARTH_RADIUS_KM = 6371;
+// [J2] EARTH_RADIUS_KM constant + haversineKm() implementation
+// extracted to apps/api/src/common/geo/haversine.ts. The straight-
+// line cap below now goes through the shared helper.
 
 export interface GetRoutesCommand {
   readonly origin: { readonly lat: number; readonly lng: number };
@@ -81,15 +84,4 @@ function assertCoord(field: string, value: number, min: number, max: number): vo
   }
 }
 
-function haversineKm(
-  a: { readonly lat: number; readonly lng: number },
-  b: { readonly lat: number; readonly lng: number },
-): number {
-  const toRad = (deg: number): number => (deg * Math.PI) / 180;
-  const dLat = toRad(b.lat - a.lat);
-  const dLng = toRad(b.lng - a.lng);
-  const h =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
-  return 2 * EARTH_RADIUS_KM * Math.asin(Math.min(1, Math.sqrt(h)));
-}
+// [J2] haversineKm() lives in common/geo/haversine.ts.
