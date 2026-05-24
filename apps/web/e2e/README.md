@@ -1,16 +1,21 @@
 # Playwright E2E
 
-| Spec                    | Auth | What it tests                                             |
-| ----------------------- | ---- | --------------------------------------------------------- |
-| `landing.spec.ts`       | —    | `/` loads · axe-clean · visual baseline (above-the-fold)  |
-| `accessibility.spec.ts` | —    | `/accessibility` loads · axe-clean                        |
-| `help.spec.ts`          | —    | `/help` loads · axe-clean · visual baseline (full page)   |
-| `auth-flow.spec.ts`     | UI   | Signup form → `/trips` redirect · register page axe-clean |
-| `trip-flow.spec.ts`     | UI   | Signup → `/trips` → `/trips/new` composer reachable       |
+| Spec                    | Auth | What it tests                                                |
+| ----------------------- | ---- | ------------------------------------------------------------ |
+| `landing.spec.ts`       | —    | `/` loads · axe-clean · visual baseline (above-the-fold)     |
+| `accessibility.spec.ts` | —    | `/accessibility` loads · axe-clean                           |
+| `help.spec.ts`          | —    | `/help` loads · axe-clean · visual baseline (full page)      |
+| `auth-flow.spec.ts`     | UI   | Signup form → `/trips` redirect · register page axe-clean    |
+| `login-flow.spec.ts`    | UI   | API-registered user logs in via /login form → `/trips` · axe |
+| `trip-flow.spec.ts`     | UI   | Signup → `/trips` → `/trips/new` composer reachable          |
+| `trips-empty.spec.ts`   | UI   | Fresh user sees empty state OR "new trip" CTA on `/trips`    |
+| `account-flow.spec.ts`  | UI   | Signup → `/account` settings renders · `/account` axe-clean  |
 
 Each test gets a unique account via
 [`helpers/auth.ts`](./helpers/auth.ts) (crypto-random email; no
-`Date.now()` collisions).
+`Date.now()` collisions). `helpers/auth.ts` also exports
+`registerViaApi()` for tests that want a session without driving
+the signup form (e.g. `login-flow.spec.ts`).
 
 ## Running locally
 
