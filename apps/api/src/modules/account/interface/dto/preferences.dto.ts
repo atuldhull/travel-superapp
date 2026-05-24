@@ -22,6 +22,7 @@ export const UpdatePreferencesBodySchema = z.object({
   dailyBudgetUsd: z
     .string()
     .trim()
+    // eslint-disable-next-line security/detect-unsafe-regex -- bounded \d{1,6} + optional (\.\d{1,2})?; no overlapping repetition
     .regex(/^\d{1,6}(\.\d{1,2})?$/, 'must be a non-negative number with up to 2 decimals')
     .nullable()
     .optional(),

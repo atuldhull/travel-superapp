@@ -24,8 +24,9 @@ export interface EmailParts {
   readonly htmlBody: string;
 }
 
-const INK = '#0c0d12';
-const INK_2 = '#15172210';
+// [I3] removed two unused color constants (INK = '#0c0d12', INK_2 =
+// '#15172210') that were lint-erroring on main since the original
+// email-template landed. The shell() builder uses GOLD / GOLD_DK only.
 const GOLD = '#cdab63';
 const GOLD_DK = '#b3873b';
 

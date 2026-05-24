@@ -16,6 +16,7 @@
  */
 import tseslint from 'typescript-eslint';
 import globals from 'globals';
+import securityPlugin from 'eslint-plugin-security';
 
 export default tseslint.config(
   {
@@ -32,6 +33,14 @@ export default tseslint.config(
     ],
   },
   ...tseslint.configs.recommended,
+  // [I3] eslint-plugin-security — catches well-known JS/TS smells at
+  // PR-author time, complementing the Semgrep CI gate (which catches
+  // the same patterns again as a backstop, plus the OWASP rule set
+  // semgrep ships). Most rules are `warn` by default in this plugin;
+  // we promote the high-confidence ones to `error` and leave the
+  // noisier ones (e.g. detect-non-literal-fs-filename — fires on
+  // every legitimate `fs.readFile(path)` call) at `warn`.
+  securityPlugin.configs.recommended,
   {
     languageOptions: {
       globals: {
@@ -51,6 +60,15 @@ export default tseslint.config(
       'no-console': ['error', { allow: ['warn', 'error'] }],
       'no-debugger': 'error',
       eqeqeq: ['error', 'always'],
+      // [I3] elevate high-confidence security rules from warn → error.
+      // `eval`, unsafe RegExp, `new Buffer()`, child-process eval —
+      // these have zero legitimate uses in this codebase.
+      'security/detect-eval-with-expression': 'error',
+      'security/detect-new-buffer': 'error',
+      'security/detect-pseudoRandomBytes': 'error',
+      'security/detect-unsafe-regex': 'error',
+      'security/detect-child-process': 'error',
+      'security/detect-disable-mustache-escape': 'error',
     },
   },
 );
