@@ -38,7 +38,7 @@ coverage/
 playwright-report/
 test-results/
 .stryker-tmp/
-reports/mutation/
+**/reports/mutation/
 
 # Expo / RN
 .expo/
