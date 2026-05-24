@@ -9,7 +9,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { ItineraryDay as PrismaDay, ItineraryItem as PrismaItem } from '@prisma/client';
 import { PrismaService } from '../../../common/db/prisma.service';
-import type { ItineraryDay, ItineraryItem } from '../domain/itinerary.entity';
+import { ItineraryItem, type ItineraryDay } from '../domain/itinerary.entity';
 import type {
   CreateDayInput,
   CreateItemInput,
@@ -184,7 +184,7 @@ function toDayDomain(row: PrismaDayWithItems): ItineraryDay {
 }
 
 function toItemDomain(row: PrismaItem): ItineraryItem {
-  return {
+  return ItineraryItem.fromPersistence({
     id: row.id,
     dayId: row.dayId,
     position: row.position,
@@ -196,5 +196,5 @@ function toItemDomain(row: PrismaItem): ItineraryItem {
     updatedAt: row.updatedAt,
     // Phase 3 (G1) — completion checkmark surfaced to the domain.
     completedAt: row.completedAt,
-  };
+  });
 }
