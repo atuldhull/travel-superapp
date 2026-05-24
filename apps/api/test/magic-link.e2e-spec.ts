@@ -82,7 +82,13 @@ describe('Magic-link sign-in (integration, requires Docker Postgres)', () => {
     await moduleRef.close();
   });
 
-  function uniqueEmail(suffix: string): string {
+  // [K1] this file used to define a local `uniqueEmail(suffix)`
+  // wrapper that prepended TEST_PREFIX. After the J1 codemod swept
+  // the call sites, the local function shadowed the factory import +
+  // recursed into itself (infinite loop). The imported uniqueEmail
+  // from './factories' takes the same prefix-string and produces the
+  // unique slug; we keep a thin wrapper so call sites stay readable.
+  function uniqueEmailFor(suffix: string): string {
     return uniqueEmail(`${TEST_PREFIX}-${suffix}`);
   }
 
@@ -97,7 +103,7 @@ describe('Magic-link sign-in (integration, requires Docker Postgres)', () => {
 
   it('request → 200 ok; one email queued in stub mailer', async () => {
     if (!dbReachable) return;
-    const email = uniqueEmail('request-200');
+    const email = uniqueEmailFor('request-200');
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/magic-link/request',
@@ -113,7 +119,7 @@ describe('Magic-link sign-in (integration, requires Docker Postgres)', () => {
 
   it('happy path: request → consume → access token + refresh cookie + /auth/me works', async () => {
     if (!dbReachable) return;
-    const email = uniqueEmail('happy');
+    const email = uniqueEmailFor('happy');
     await app.inject({
       method: 'POST',
       url: '/api/v1/auth/magic-link/request',
@@ -149,7 +155,7 @@ describe('Magic-link sign-in (integration, requires Docker Postgres)', () => {
 
   it('single-use: consuming the same token twice → second call 401 MAGIC_LINK_INVALID', async () => {
     if (!dbReachable) return;
-    const email = uniqueEmail('single-use');
+    const email = uniqueEmailFor('single-use');
     await app.inject({
       method: 'POST',
       url: '/api/v1/auth/magic-link/request',
@@ -176,7 +182,7 @@ describe('Magic-link sign-in (integration, requires Docker Postgres)', () => {
   it('existing password-user signs in via magic link without duplicate row', async () => {
     if (!dbReachable) return;
     // Register first via password.
-    const email = uniqueEmail('existing-user');
+    const email = uniqueEmailFor('existing-user');
     const reg = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/register',
@@ -207,7 +213,7 @@ describe('Magic-link sign-in (integration, requires Docker Postgres)', () => {
 
   it('expired token → 401 MAGIC_LINK_INVALID', async () => {
     if (!dbReachable) return;
-    const email = uniqueEmail('expired');
+    const email = uniqueEmailFor('expired');
     await app.inject({
       method: 'POST',
       url: '/api/v1/auth/magic-link/request',
@@ -256,7 +262,7 @@ describe('Magic-link sign-in (integration, requires Docker Postgres)', () => {
 
   it('soft rate-limit: 6th request in 15-min window is silently no-oped', async () => {
     if (!dbReachable) return;
-    const email = uniqueEmail('rate-limit');
+    const email = uniqueEmailFor('rate-limit');
     for (let i = 0; i < 5; i++) {
       const res = await app.inject({
         method: 'POST',
