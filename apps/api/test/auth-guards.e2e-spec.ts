@@ -33,6 +33,7 @@ import {
   TOKEN_SERVICE,
   type TokenService,
 } from '../src/modules/identity/application/ports/token.service';
+import { uniqueEmail, uniqueSuffix } from './factories';
 
 // Synthetic test-only admin surface. Lives here (not in src/) so the
 // production build never ships an unauthenticated admin probe.
@@ -105,7 +106,7 @@ describe('Auth guards (integration, requires Docker Postgres)', () => {
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`,
+        email: uniqueEmail(`${TEST_PREFIX}-${suffix}`),
         password: 'correct-horse-battery-staple',
         displayName: `${TEST_PREFIX}-${suffix}`,
       },
@@ -124,7 +125,7 @@ describe('Auth guards (integration, requires Docker Postgres)', () => {
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: `${TEST_PREFIX}-public-${Date.now()}@example.com`,
+        email: `${TEST_PREFIX}-public-${uniqueSuffix()}@example.com`,
         password: 'correct-horse-battery-staple',
         displayName: `${TEST_PREFIX}-public`,
       },

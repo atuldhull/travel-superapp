@@ -23,6 +23,7 @@ import type {
 } from '../src/modules/food/application/ports/eatery-provider';
 import type { EateryListing } from '../src/modules/food/domain/eatery-listing.entity';
 import { MockEateryProvider } from '../src/modules/food/infrastructure/mock-eatery-provider';
+import { uniqueEmail } from './factories';
 
 const TEST_PREFIX = 'trip-eateries-e2e';
 // Mid-Indian-Ocean coord — no collision with other Trip suites.
@@ -124,7 +125,7 @@ describe('Trip × Eateries (integration, requires Docker Postgres + Redis)', () 
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`,
+        email: uniqueEmail(`${TEST_PREFIX}-${suffix}`),
         password: 'correct-horse-battery-staple',
         displayName: `${TEST_PREFIX}-${suffix}`,
       },

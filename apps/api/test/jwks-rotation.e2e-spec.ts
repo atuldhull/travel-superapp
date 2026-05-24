@@ -21,6 +21,7 @@ import { AppModule } from '../src/app.module';
 import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { PrismaService } from '../src/common/db/prisma.service';
+import { uniqueEmail, uniqueSuffix } from './factories';
 
 const TEST_PREFIX = 'jwks-rotation-e2e';
 
@@ -68,7 +69,7 @@ describe('JWKS rotation (integration, requires Postgres + Redis)', () => {
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`,
+        email: uniqueEmail(`${TEST_PREFIX}-${suffix}`),
         password: 'correct-horse-battery-staple',
         displayName: `${TEST_PREFIX}-${suffix}`,
       },
@@ -149,7 +150,7 @@ describe('JWKS rotation (integration, requires Postgres + Redis)', () => {
     // issued — but register returns a token at creation. So: use
     // DB update + a fresh register whose returned token already
     // reflects the post-update row.
-    const adminEmail = `${TEST_PREFIX}-admin2-${Date.now()}@example.com`;
+    const adminEmail = `${TEST_PREFIX}-admin2-${uniqueSuffix()}@example.com`;
     const adminRes = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/register',
@@ -197,7 +198,7 @@ describe('JWKS rotation (integration, requires Postgres + Redis)', () => {
     const preRollKid = kidOf(alice.accessToken);
 
     // Admin rotates the access ring.
-    const adminEmail = `${TEST_PREFIX}-pre-admin-${Date.now()}@example.com`;
+    const adminEmail = `${TEST_PREFIX}-pre-admin-${uniqueSuffix()}@example.com`;
     const adminReg = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/register',
@@ -235,7 +236,7 @@ describe('JWKS rotation (integration, requires Postgres + Redis)', () => {
 
   it('tokens issued after rotation use the new kid', async () => {
     if (!dbReachable) return;
-    const adminEmail = `${TEST_PREFIX}-post-admin-${Date.now()}@example.com`;
+    const adminEmail = `${TEST_PREFIX}-post-admin-${uniqueSuffix()}@example.com`;
     const adminReg = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/register',
@@ -270,7 +271,7 @@ describe('JWKS rotation (integration, requires Postgres + Redis)', () => {
 
   it('invalid ring → 422 INVALID_RING', async () => {
     if (!dbReachable) return;
-    const adminEmail = `${TEST_PREFIX}-bad-${Date.now()}@example.com`;
+    const adminEmail = `${TEST_PREFIX}-bad-${uniqueSuffix()}@example.com`;
     const adminReg = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/register',
@@ -300,7 +301,7 @@ describe('JWKS rotation (integration, requires Postgres + Redis)', () => {
 
   it('GET /admin/identity/jwks/kids returns every kid in both rings', async () => {
     if (!dbReachable) return;
-    const adminEmail = `${TEST_PREFIX}-kids-${Date.now()}@example.com`;
+    const adminEmail = `${TEST_PREFIX}-kids-${uniqueSuffix()}@example.com`;
     const adminReg = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/register',

@@ -17,6 +17,7 @@ import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { GeoQueries } from '../src/common/db/geo-queries';
 import { PrismaService } from '../src/common/db/prisma.service';
+import { uniqueSuffix } from './factories';
 
 const TEST_PREFIX = 'near-me-e2e';
 // Lone South-Atlantic anchor — collision-free with other geo tests.
@@ -88,7 +89,7 @@ describe('Near me now (integration, requires Docker Postgres + Redis)', () => {
     category = 'attraction',
   ): Promise<void> {
     await geo.insertPlace({
-      sourceKey: `${TEST_PREFIX}-${slug}-${Date.now()}-${Math.random()}`,
+      sourceKey: `${TEST_PREFIX}-${slug}-${uniqueSuffix()}`,
       name: `${TEST_PREFIX}-${slug}`,
       category,
       lat,

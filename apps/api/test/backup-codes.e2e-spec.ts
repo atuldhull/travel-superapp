@@ -19,6 +19,7 @@ import { AppModule } from '../src/app.module';
 import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { PrismaService } from '../src/common/db/prisma.service';
+import { uniqueEmail } from './factories';
 
 const TEST_PREFIX = 'backup-e2e';
 
@@ -78,7 +79,7 @@ describe('MFA backup codes (integration, requires Docker Postgres)', () => {
     totpSecret: string;
     backupCodes: readonly string[];
   }> {
-    const email = `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`;
+    const email = uniqueEmail(`${TEST_PREFIX}-${suffix}`);
     const password = 'correct-horse-battery-staple';
     const reg = await app.inject({
       method: 'POST',

@@ -25,6 +25,7 @@ import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { GeoQueries } from '../src/common/db/geo-queries';
 import { PrismaService } from '../src/common/db/prisma.service';
+import { uniqueEmail } from './factories';
 
 const SOURCE_PREFIX = 'places-e2e';
 const VICTORIA = { lat: 51.4952, lng: -0.1441 };
@@ -81,7 +82,7 @@ describe('Places search (integration, requires Docker Postgres)', () => {
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: `${SOURCE_PREFIX}-${suffix}-${Date.now()}@example.com`,
+        email: uniqueEmail(`${SOURCE_PREFIX}-${suffix}`),
         password: 'correct-horse-battery-staple',
         displayName: `${SOURCE_PREFIX}-${suffix}`,
       },

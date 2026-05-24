@@ -29,6 +29,7 @@ import type {
   HourlyWeatherForecast,
   WeatherForecast,
 } from '../src/modules/weather/domain/weather-forecast.entity';
+import { uniqueEmail } from './factories';
 
 const TEST_PREFIX = 'weather-e2e';
 
@@ -142,7 +143,7 @@ describe('Weather module (integration, requires Docker Postgres)', () => {
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`,
+        email: uniqueEmail(`${TEST_PREFIX}-${suffix}`),
         password: 'correct-horse-battery-staple',
         displayName: `${TEST_PREFIX}-${suffix}`,
       },

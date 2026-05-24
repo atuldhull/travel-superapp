@@ -17,6 +17,7 @@ import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { PrismaService } from '../src/common/db/prisma.service';
 import { MAX_SESSIONS_PER_USER } from '../src/modules/identity/application/issue-session.use-case';
+import { uniqueSuffix } from './factories';
 
 const TEST_PREFIX = 'session-hardening-e2e';
 
@@ -75,7 +76,7 @@ describe('Session hardening (integration, requires Docker Postgres)', () => {
   it(`concurrency cap — the ${MAX_SESSIONS_PER_USER + 1}th login revokes the oldest, newest ${MAX_SESSIONS_PER_USER} stay live`, async () => {
     if (!dbReachable) return;
 
-    const email = `${TEST_PREFIX}-cap-${Date.now()}@example.com`;
+    const email = `${TEST_PREFIX}-cap-${uniqueSuffix()}@example.com`;
     const password = 'correct-horse-battery-staple';
 
     // First session = register.
@@ -131,7 +132,7 @@ describe('Session hardening (integration, requires Docker Postgres)', () => {
   it('device-fingerprint binding — /refresh from a different UA cascades and revokes ALL sessions', async () => {
     if (!dbReachable) return;
 
-    const email = `${TEST_PREFIX}-dfp-${Date.now()}@example.com`;
+    const email = `${TEST_PREFIX}-dfp-${uniqueSuffix()}@example.com`;
     const password = 'correct-horse-battery-staple';
 
     const reg = await app.inject({
@@ -179,7 +180,7 @@ describe('Session hardening (integration, requires Docker Postgres)', () => {
   it('device-fingerprint binding — same UA across register + refresh still works normally', async () => {
     if (!dbReachable) return;
 
-    const email = `${TEST_PREFIX}-dfp-ok-${Date.now()}@example.com`;
+    const email = `${TEST_PREFIX}-dfp-ok-${uniqueSuffix()}@example.com`;
     const reg = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/register',

@@ -20,6 +20,7 @@ import { AppModule } from '../src/app.module';
 import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { PrismaService } from '../src/common/db/prisma.service';
+import { uniqueEmail } from './factories';
 
 const TEST_PREFIX = 'scam-mod-e2e';
 // Empty slab of the Pacific — no other scam suite seeds here.
@@ -76,7 +77,7 @@ describe('Admin scam-report moderation (integration, requires Postgres)', () => 
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`,
+        email: uniqueEmail(`${TEST_PREFIX}-${suffix}`),
         password: 'correct-horse-battery-staple',
         displayName: `${TEST_PREFIX}-${suffix}`,
       },
@@ -90,7 +91,7 @@ describe('Admin scam-report moderation (integration, requires Postgres)', () => 
   }
 
   async function loginAsAdmin(suffix: string): Promise<string> {
-    const email = `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`;
+    const email = uniqueEmail(`${TEST_PREFIX}-${suffix}`);
     const reg = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/register',

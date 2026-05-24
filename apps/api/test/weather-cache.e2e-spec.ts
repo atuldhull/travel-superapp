@@ -30,6 +30,7 @@ import type {
 } from '../src/modules/weather/application/ports/weather-provider';
 import type { WeatherForecast } from '../src/modules/weather/domain/weather-forecast.entity';
 import { OpenMeteoWeatherProvider } from '../src/modules/weather/infrastructure/open-meteo-provider';
+import { uniqueEmail } from './factories';
 
 const TEST_PREFIX = 'weather-cache-e2e';
 
@@ -132,7 +133,7 @@ describe('Weather cache (integration, requires Docker Postgres + Redis)', () => 
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`,
+        email: uniqueEmail(`${TEST_PREFIX}-${suffix}`),
         password: 'correct-horse-battery-staple',
         displayName: `${TEST_PREFIX}-${suffix}`,
       },

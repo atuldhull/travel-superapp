@@ -31,6 +31,7 @@ import type {
 } from '../src/modules/places/application/ports/place-provider';
 import type { FederatedPlaceResult } from '../src/modules/places/domain/federated-place-result.entity';
 import { MockPlaceProvider } from '../src/modules/places/infrastructure/mock-place-provider';
+import { uniqueEmail } from './factories';
 
 const TEST_PREFIX = 'places-ingest-e2e';
 // Suite-local coord — far from other suites' anchors (see
@@ -154,7 +155,7 @@ describe('Places federated ingest write-through (integration, requires Postgres 
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`,
+        email: uniqueEmail(`${TEST_PREFIX}-${suffix}`),
         password: 'correct-horse-battery-staple',
         displayName: `${TEST_PREFIX}-${suffix}`,
       },

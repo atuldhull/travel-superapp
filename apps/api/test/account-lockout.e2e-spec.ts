@@ -29,6 +29,7 @@ import {
   type FailedLoginCounter,
 } from '../src/modules/identity/application/ports/failed-login-counter';
 import { hashEmail } from '../src/common/crypto/email-hash';
+import { uniqueEmail, uniqueSuffix } from './factories';
 
 const TEST_PREFIX = 'lockout-e2e';
 
@@ -77,7 +78,7 @@ describe('Account lockout (integration, requires Docker Postgres + Redis)', () =
     suffix: string,
     password = 'correct-horse-battery-staple',
   ): Promise<{ email: string; password: string; userId: string }> {
-    const email = `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`;
+    const email = uniqueEmail(`${TEST_PREFIX}-${suffix}`);
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/register',
@@ -151,7 +152,7 @@ describe('Account lockout (integration, requires Docker Postgres + Redis)', () =
 
   it('lockout applies to unknown emails too (prevents timing enumeration)', async () => {
     if (!dbReachable) return;
-    const email = `${TEST_PREFIX}-ghost-${Date.now()}@example.com`;
+    const email = `${TEST_PREFIX}-ghost-${uniqueSuffix()}@example.com`;
     // Fresh counter — test isolation.
     await counter.reset(hashEmail(email));
 

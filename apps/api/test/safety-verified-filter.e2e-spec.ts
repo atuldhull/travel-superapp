@@ -20,6 +20,7 @@ import { AppModule } from '../src/app.module';
 import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { PrismaService } from '../src/common/db/prisma.service';
+import { uniqueEmail } from './factories';
 
 const TEST_PREFIX = 'scam-vfilter-e2e';
 // Empty Arctic quadrant — no other scam test seeds near here.
@@ -72,7 +73,7 @@ describe('Scam search verifiedOnly filter (integration, requires Postgres)', () 
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`,
+        email: uniqueEmail(`${TEST_PREFIX}-${suffix}`),
         password: 'correct-horse-battery-staple',
         displayName: `${TEST_PREFIX}-${suffix}`,
       },
@@ -86,7 +87,7 @@ describe('Scam search verifiedOnly filter (integration, requires Postgres)', () 
   }
 
   async function loginAsAdmin(suffix: string): Promise<string> {
-    const email = `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`;
+    const email = uniqueEmail(`${TEST_PREFIX}-${suffix}`);
     const reg = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/register',

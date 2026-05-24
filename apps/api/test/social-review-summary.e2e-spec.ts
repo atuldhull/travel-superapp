@@ -22,6 +22,7 @@ import { AppModule } from '../src/app.module';
 import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { PrismaService } from '../src/common/db/prisma.service';
+import { uniqueEmail, uniqueSuffix } from './factories';
 
 const TEST_PREFIX = 'review-summary-e2e';
 
@@ -75,7 +76,7 @@ describe('GET /reviews/summary (integration, requires Docker Postgres)', () => {
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`,
+        email: uniqueEmail(`${TEST_PREFIX}-${suffix}`),
         password: 'correct-horse-battery-staple',
         displayName: `${TEST_PREFIX}-${suffix}`,
       },
@@ -110,7 +111,7 @@ describe('GET /reviews/summary (integration, requires Docker Postgres)', () => {
   it('empty target → 200 with zero-filled shape (no 404)', async () => {
     if (!dbReachable) return;
     // Suite-local id keeps parallel runs independent.
-    const targetId = `${TEST_PREFIX}-empty-${Date.now()}`;
+    const targetId = `${TEST_PREFIX}-empty-${uniqueSuffix()}`;
     const { status, body } = await getSummary(targetId);
     expect(status).toBe(200);
     expect(body.targetType).toBe('place');
@@ -122,7 +123,7 @@ describe('GET /reviews/summary (integration, requires Docker Postgres)', () => {
 
   it('5 reviews of varying ratings → correct count + average + histogram', async () => {
     if (!dbReachable) return;
-    const targetId = `${TEST_PREFIX}-rich-${Date.now()}`;
+    const targetId = `${TEST_PREFIX}-rich-${uniqueSuffix()}`;
     // Three different authors so unique-key constraints (if any) don't bite.
     // Ratings: 5,5,4,3,1 → average 3.6.
     const a = await registerUser('a');
@@ -143,8 +144,8 @@ describe('GET /reviews/summary (integration, requires Docker Postgres)', () => {
 
   it('cross-target isolation: A’s reviews do not leak into B’s summary', async () => {
     if (!dbReachable) return;
-    const targetA = `${TEST_PREFIX}-A-${Date.now()}`;
-    const targetB = `${TEST_PREFIX}-B-${Date.now()}`;
+    const targetA = `${TEST_PREFIX}-A-${uniqueSuffix()}`;
+    const targetB = `${TEST_PREFIX}-B-${uniqueSuffix()}`;
     const u = await registerUser('iso');
     await postReview(u.accessToken, targetA, 5);
     await postReview(u.accessToken, targetA, 4);
@@ -175,7 +176,7 @@ describe('GET /reviews/summary (integration, requires Docker Postgres)', () => {
 
   it('@Public(): no bearer required', async () => {
     if (!dbReachable) return;
-    const targetId = `${TEST_PREFIX}-public-${Date.now()}`;
+    const targetId = `${TEST_PREFIX}-public-${uniqueSuffix()}`;
     const res = await app.inject({
       method: 'GET',
       url: `/api/v1/reviews/summary?targetType=place&targetId=${targetId}`,

@@ -24,6 +24,7 @@ import { AppModule } from '../src/app.module';
 import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { PrismaService } from '../src/common/db/prisma.service';
+import { uniqueEmail, uniqueSuffix } from './factories';
 
 const TEST_PREFIX = 'feed-e2e';
 // Suite-local Mediterranean coord — keeps parallel suites independent.
@@ -82,7 +83,7 @@ describe('GET /feed/me (integration, requires Docker Postgres)', () => {
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`,
+        email: uniqueEmail(`${TEST_PREFIX}-${suffix}`),
         password: 'correct-horse-battery-staple',
         displayName: `${TEST_PREFIX}-${suffix}`,
       },
@@ -181,7 +182,7 @@ describe('GET /feed/me (integration, requires Docker Postgres)', () => {
     // Sequence with small gaps so timestamps strictly order.
     await createTrip(accessToken);
     await new Promise((r) => setTimeout(r, 30));
-    await postReview(accessToken, `${TEST_PREFIX}-target-${Date.now()}`);
+    await postReview(accessToken, `${TEST_PREFIX}-target-${uniqueSuffix()}`);
     await new Promise((r) => setTimeout(r, 30));
     await createAndPublishMemoryBook(accessToken);
     await new Promise((r) => setTimeout(r, 30));
@@ -209,7 +210,7 @@ describe('GET /feed/me (integration, requires Docker Postgres)', () => {
     const { accessToken } = await registerUser('paginate');
     // 5 reviews with small gaps so each gets a distinct createdAt.
     for (let i = 0; i < 5; i++) {
-      await postReview(accessToken, `${TEST_PREFIX}-p-${Date.now()}-${i}`, 3);
+      await postReview(accessToken, `${TEST_PREFIX}-p-${uniqueSuffix()}-${i}`, 3);
       await new Promise((r) => setTimeout(r, 25));
     }
 
@@ -243,7 +244,7 @@ describe('GET /feed/me (integration, requires Docker Postgres)', () => {
     const bob = await registerUser('bob');
     // Alice generates activity; Bob stays quiet.
     await createTrip(alice.accessToken);
-    await postReview(alice.accessToken, `${TEST_PREFIX}-x-${Date.now()}`);
+    await postReview(alice.accessToken, `${TEST_PREFIX}-x-${uniqueSuffix()}`);
     await fileScamReport(alice.accessToken);
 
     const bobFeed = await getFeed(bob.accessToken);

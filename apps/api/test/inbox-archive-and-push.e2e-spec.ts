@@ -27,6 +27,7 @@ import { DomainExceptionFilter } from '../src/common/filters/domain-exception.fi
 import { PrismaService } from '../src/common/db/prisma.service';
 import { LoggingNotificationSender } from '../src/modules/notifications/infrastructure/logging-notification-sender';
 import { SendWeeklyDigestUseCase } from '../src/modules/notifications/application/send-weekly-digest.use-case';
+import { uniqueEmail, uniqueSuffix } from './factories';
 
 const TEST_PREFIX = 'inbox-archive-push-e2e';
 
@@ -104,7 +105,7 @@ describe('V.UX.26 inbox archive + per-category prefs + push (integration, requir
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`,
+        email: uniqueEmail(`${TEST_PREFIX}-${suffix}`),
         password: 'correct-horse-battery-staple',
         displayName: `${TEST_PREFIX}-${suffix}`,
       },
@@ -218,7 +219,7 @@ describe('V.UX.26 inbox archive + per-category prefs + push (integration, requir
   it('Push subscribe + unsubscribe round-trip', async () => {
     if (!dbReachable) return;
     const u = await registerAndGetToken('push-rt');
-    const endpoint = `https://example.com/push/${TEST_PREFIX}-${Date.now()}`;
+    const endpoint = `https://example.com/push/${TEST_PREFIX}-${uniqueSuffix()}`;
 
     const sub = await app.inject({
       method: 'POST',

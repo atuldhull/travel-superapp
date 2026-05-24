@@ -23,6 +23,7 @@ import { AppModule } from '../src/app.module';
 import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { PrismaService } from '../src/common/db/prisma.service';
+import { uniqueEmail, uniqueSuffix } from './factories';
 
 const TEST_PREFIX = 'eatery-review-summary-e2e';
 
@@ -82,7 +83,7 @@ describe('GET /eateries/:id/review-summary (integration, requires Docker Postgre
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`,
+        email: uniqueEmail(`${TEST_PREFIX}-${suffix}`),
         password: 'correct-horse-battery-staple',
         displayName: `${TEST_PREFIX}-${suffix}`,
       },
@@ -116,7 +117,7 @@ describe('GET /eateries/:id/review-summary (integration, requires Docker Postgre
 
   it('@Public(): no bearer + empty eatery → all-zero shape; votes always zero', async () => {
     if (!dbReachable) return;
-    const eateryId = `${TEST_PREFIX}-empty-${Date.now()}`;
+    const eateryId = `${TEST_PREFIX}-empty-${uniqueSuffix()}`;
     const { status, body } = await getSummary(eateryId);
     expect(status).toBe(200);
     expect(body.eateryId).toBe(eateryId);
@@ -131,7 +132,7 @@ describe('GET /eateries/:id/review-summary (integration, requires Docker Postgre
 
   it('eatery with reviews → correct aggregates + recent; votes still zero', async () => {
     if (!dbReachable) return;
-    const eateryId = `${TEST_PREFIX}-rich-${Date.now()}`;
+    const eateryId = `${TEST_PREFIX}-rich-${uniqueSuffix()}`;
     const a = await registerUser('a');
     const b = await registerUser('b');
     const c = await registerUser('c');
@@ -156,8 +157,8 @@ describe('GET /eateries/:id/review-summary (integration, requires Docker Postgre
 
   it('cross-target isolation between eatery A and eatery B', async () => {
     if (!dbReachable) return;
-    const eateryA = `${TEST_PREFIX}-A-${Date.now()}`;
-    const eateryB = `${TEST_PREFIX}-B-${Date.now()}`;
+    const eateryA = `${TEST_PREFIX}-A-${uniqueSuffix()}`;
+    const eateryB = `${TEST_PREFIX}-B-${uniqueSuffix()}`;
     const u = await registerUser('iso');
     await postEateryReview(u.accessToken, eateryA, 5, 'A is amazing.');
     await postEateryReview(u.accessToken, eateryA, 4, 'Second review on A.');
@@ -170,7 +171,7 @@ describe('GET /eateries/:id/review-summary (integration, requires Docker Postgre
 
   it('eatery reviews do NOT leak into stay or place review summaries (different targetType)', async () => {
     if (!dbReachable) return;
-    const sharedId = `${TEST_PREFIX}-shared-${Date.now()}`;
+    const sharedId = `${TEST_PREFIX}-shared-${uniqueSuffix()}`;
     const u = await registerUser('cross');
     await postEateryReview(u.accessToken, sharedId, 5, 'Eatery review only.');
 

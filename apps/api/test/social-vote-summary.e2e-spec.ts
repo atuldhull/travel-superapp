@@ -21,6 +21,7 @@ import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { GeoQueries } from '../src/common/db/geo-queries';
 import { PrismaService } from '../src/common/db/prisma.service';
+import { uniqueEmail, uniqueSuffix } from './factories';
 
 const TEST_PREFIX = 'vote-summary-e2e';
 // Suite-local coord — keeps parallel geo tests independent.
@@ -80,7 +81,7 @@ describe('GET /votes/summary (integration, requires Docker Postgres)', () => {
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`,
+        email: uniqueEmail(`${TEST_PREFIX}-${suffix}`),
         password: 'correct-horse-battery-staple',
         displayName: `${TEST_PREFIX}-${suffix}`,
       },
@@ -136,7 +137,7 @@ describe('GET /votes/summary (integration, requires Docker Postgres)', () => {
 
   it('empty target → 200 with all zeros (NOT 404)', async () => {
     if (!dbReachable) return;
-    const targetId = `${TEST_PREFIX}-empty-${Date.now()}`;
+    const targetId = `${TEST_PREFIX}-empty-${uniqueSuffix()}`;
     const { status, body } = await getSummary(targetId);
     expect(status).toBe(200);
     expect(body).toEqual({
@@ -153,7 +154,7 @@ describe('GET /votes/summary (integration, requires Docker Postgres)', () => {
 
   it('mix of +1/0/-1 votes → correct up/meh/down/score', async () => {
     if (!dbReachable) return;
-    const targetId = `${TEST_PREFIX}-rich-${Date.now()}`;
+    const targetId = `${TEST_PREFIX}-rich-${uniqueSuffix()}`;
     const a = await registerUser('a');
     const b = await registerUser('b');
     const c = await registerUser('c');
@@ -182,8 +183,8 @@ describe('GET /votes/summary (integration, requires Docker Postgres)', () => {
 
   it('cross-target isolation: A’s votes don’t affect B’s summary', async () => {
     if (!dbReachable) return;
-    const targetA = `${TEST_PREFIX}-A-${Date.now()}`;
-    const targetB = `${TEST_PREFIX}-B-${Date.now()}`;
+    const targetA = `${TEST_PREFIX}-A-${uniqueSuffix()}`;
+    const targetB = `${TEST_PREFIX}-B-${uniqueSuffix()}`;
     const u = await registerUser('iso');
     const trip = await createTrip(u.accessToken, 'iso-trip');
     await seedVote(trip, u.userId, targetA, 1);
@@ -216,7 +217,7 @@ describe('GET /votes/summary (integration, requires Docker Postgres)', () => {
 
   it('@Public(): no bearer required', async () => {
     if (!dbReachable) return;
-    const targetId = `${TEST_PREFIX}-public-${Date.now()}`;
+    const targetId = `${TEST_PREFIX}-public-${uniqueSuffix()}`;
     const res = await app.inject({
       method: 'GET',
       url: `/api/v1/votes/summary?targetType=itinerary_item&targetId=${targetId}`,

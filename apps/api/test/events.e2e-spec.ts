@@ -27,6 +27,7 @@ import { AllExceptionFilter } from '../src/common/filters/all-exception.filter';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { PrismaService } from '../src/common/db/prisma.service';
 import { registerTraceMiddleware } from '../src/common/trace/register-trace-middleware';
+import { uniqueEmail } from './factories';
 
 const TEST_PREFIX = 'events-e2e';
 const VICTORIA = { lat: 51.4952, lng: -0.1441 };
@@ -117,7 +118,7 @@ describe('Domain event emission (integration, requires Docker Postgres + Redis)'
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: `${TEST_PREFIX}-${suffix}-${Date.now()}@example.com`,
+        email: uniqueEmail(`${TEST_PREFIX}-${suffix}`),
         password: 'correct-horse-battery-staple',
         displayName: `${TEST_PREFIX}-${suffix}`,
       },
