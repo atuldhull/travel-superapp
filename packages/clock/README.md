@@ -31,8 +31,13 @@ class PublishTripUseCase {
   }
 }
 
-// Composition root — bind the token to the production singleton.
-{ provide: CLOCK, useValue: SYSTEM_CLOCK }
+// Composition root — wired GLOBALLY in apps/api by `ClockModule`
+// (apps/api/src/common/clock/clock.module.ts), so every feature
+// module gets CLOCK without an explicit import. Just inject it.
+//
+// If you're wiring a different Nest app (worker, ai-service-node),
+// register the provider once at the composition root:
+//   { provide: CLOCK, useValue: SYSTEM_CLOCK }
 
 // Tests — bind to a controllable FakeClock and roll time forward.
 const clock = makeFakeClock(new Date('2026-05-24T12:00:00Z'));

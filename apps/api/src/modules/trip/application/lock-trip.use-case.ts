@@ -21,6 +21,7 @@
  * Installed by prompt [V.UX.8].
  */
 import { Inject, Injectable } from '@nestjs/common';
+import { CLOCK, type Clock } from '@app/clock';
 import { EVENT_BUS, type EventBus } from '@app/events';
 import { NotFoundError } from '@app/errors';
 import { getTraceContext } from '@app/logger';
@@ -39,6 +40,10 @@ export class LockTripUseCase {
   constructor(
     @Inject(TRIP_REPOSITORY) private readonly trips: TripRepository,
     @Inject(EVENT_BUS) private readonly events: EventBus,
+    // [M2] Clock injection — replaces the implicit `new Date()` that
+    // markLocked() defaults to. Tests bind a FakeClock to deterministically
+    // drive the `updatedAt` stamp.
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   async execute(tripId: string, userId: string): Promise<Trip> {
@@ -60,13 +65,16 @@ export class LockTripUseCase {
     );
     await this.events.publish(evt);
 
-    return markLocked(trip);
+    return markLocked(trip, this.clock.now());
   }
 }
 
 @Injectable()
 export class UnlockTripUseCase {
-  constructor(@Inject(TRIP_REPOSITORY) private readonly trips: TripRepository) {}
+  constructor(
+    @Inject(TRIP_REPOSITORY) private readonly trips: TripRepository,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {}
 
   async execute(tripId: string, userId: string): Promise<Trip> {
     const trip = await this.trips.findByIdForUser(tripId, userId);
@@ -77,6 +85,6 @@ export class UnlockTripUseCase {
     assertCanUnlock(trip);
     if (trip.status === 'draft') return trip; // already-unlocked idempotency
     await this.trips.updateStatus(tripId, 'draft');
-    return markUnlocked(trip);
+    return markUnlocked(trip, this.clock.now());
   }
 }
