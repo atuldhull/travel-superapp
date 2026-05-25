@@ -1,157 +1,327 @@
-# POST.10 — Production deploy gate.
+# Deploy ([N4]) — full CI/CD chain with health-gated rollback.
 #
-# Fires ONLY on tag push `v*.*.*` (semver release tags). Every regular
-# branch push and PR run is ignored — that keeps the deploy surface
-# small + obvious. The workflow needs three secrets in GitHub repo
-# settings before it can actually deploy:
+# Supersedes the POST.10 tag-only deploy. Three trigger paths:
 #
-#   - FLY_API_TOKEN          (Fly.io personal access token)
-#   - FLY_APP_API            (e.g. `travel-api-prod`)
-#   - FLY_APP_WEB            (e.g. `travel-web-prod`)
+#   1. push to `main`            → deploy-staging (after gates green)
+#   2. workflow_dispatch         → deploy-staging OR deploy-production
+#   3. push tag `v*.*.*`         → deploy-production (release-cut path)
 #
-# Without those secrets the deploy steps fail loudly with a clear
-# message rather than silently no-op'ing. Add them via
-# Settings → Secrets and variables → Actions before the first
-# `git tag v0.1.0 && git push --tags`.
+# The chain enforces:
 #
-# Source-map upload to Sentry (when SENTRY_AUTH_TOKEN is set in the
-# workflow env) happens implicitly during `pnpm --filter=web build`
-# via withSentryConfig — no separate step here.
+#   gates:   wait for `ci` + `dev-server-smoke` + `security` workflows
+#            to be green on THIS SHA. No deploy-on-red.
+#   build:   handled inside `flyctl deploy --remote-only` (no separate
+#            registry step — Fly's builder caches the layers).
+#   deploy:  staging uses `--strategy rolling`; production uses
+#            `--strategy bluegreen` so the old machine set keeps
+#            serving until ALL new machines pass /health/ready.
+#   smoke:   external probes against /health/ready + /health/live +
+#            /metrics. Probes from OUTSIDE Fly's network so we catch
+#            "Fly thinks I'm healthy but edge/CDN/DNS is broken"
+#            failure modes that the in-cluster health checks miss.
+#   rollback: on smoke failure, `flyctl releases rollback` flips to
+#            the pre-deploy release captured at step 1.
+#
+# Auto-rollback semantics: Fly itself aborts the deploy when any new
+# machine fails its own /health/ready check during the rolling /
+# bluegreen swap. The external smoke step here is a SECOND gate that
+# catches network-layer breakage Fly can't see; on its failure we
+# explicitly call `flyctl releases rollback` to restore traffic.
+#
+# Required GitHub repo secrets:
+#   FLY_API_TOKEN          — `flyctl tokens create deploy` (90d rotation)
+#   FLY_APP_API_STAGING    — defaults to "travel-api-staging" if unset
+#   FLY_APP_API_PROD       — defaults to "travel-api-prod" if unset
+#
+# Required repo VARIABLES (Settings → Variables — not secrets — these are URLs):
+#   STAGING_BASE_URL       e.g. https://travel-api-staging.fly.dev
+#   PROD_BASE_URL          e.g. https://travel-api-prod.fly.dev
+#
+# Required GitHub Environments:
+#   staging      — no required reviewers; pushes to main auto-deploy.
+#   production   — 1+ required reviewer + 5-min wait timer (abort window).
 
 name: deploy
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
+    branches: [main]
+    tags: ['v*.*.*']
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'staging | production'
+        required: true
+        type: choice
+        default: staging
+        options: [staging, production]
+
+concurrency:
+  # One deploy at a time per ENV. The group key separates staging and
+  # prod so a prod hotfix doesn't get cancelled by a fresh staging
+  # push. `cancel-in-progress: false` because killing mid-deploy can
+  # leave Fly in a half-swapped state.
+  group: deploy-${{ github.event.inputs.target || (startsWith(github.ref, 'refs/tags/') && 'production' || 'staging') }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  deployments: write # to mark GH "Environment" deployments active/inactive
 
 jobs:
-  validate:
-    name: 'Validate before deploy'
+  # ───────────────────────────────────────────────────────────────────
+  # GATES — wait for upstream workflows to be green on THIS SHA.
+  # ───────────────────────────────────────────────────────────────────
+  gates:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - name: Wait for ci (integration tests, all 4 shards)
+        uses: lewagon/wait-on-check-action@v1.3.4
         with:
-          version: 10
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: 'pnpm'
-      - run: pnpm install --frozen-lockfile
-      - name: Build internal packages
-        run: pnpm -r --filter='@app/*' build
-      - name: Typecheck
-        run: pnpm -r --filter='./apps/*' --filter='./packages/*' typecheck
-      - name: Lint
-        run: pnpm --filter=api --filter=@app/config run lint
-      # Tests run against the existing CI workflow's matrix — this
-      # job just verifies the headline-set is green before we burn
-      # a Fly deploy slot.
+          ref: ${{ github.sha }}
+          check-name: tests
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 20
+          allowed-conclusions: success
 
-  deploy-api:
-    name: 'Deploy api → Fly.io'
-    needs: validate
+      - name: Wait for dev-server-smoke
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.sha }}
+          check-name: smoke
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 20
+          allowed-conclusions: success
+
+      - name: Wait for security (audit + Semgrep)
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.sha }}
+          check-name: security
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 20
+          allowed-conclusions: success
+
+  # ───────────────────────────────────────────────────────────────────
+  # STAGING — auto on push to main, or explicit dispatch.
+  # ───────────────────────────────────────────────────────────────────
+  deploy-staging:
+    needs: gates
+    if: |
+      github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/')
+      || (github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'staging')
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    concurrency:
-      group: deploy-api-${{ github.ref }}
-      cancel-in-progress: false
+    environment:
+      name: staging
+      url: ${{ vars.STAGING_BASE_URL }}
+    env:
+      FLY_APP: ${{ secrets.FLY_APP_API_STAGING || 'travel-api-staging' }}
+      BASE_URL: ${{ vars.STAGING_BASE_URL }}
+
     steps:
       - uses: actions/checkout@v4
-      - name: Verify FLY_API_TOKEN is set
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-        run: |
-          if [ -z "${FLY_API_TOKEN:-}" ]; then
-            echo "::error::FLY_API_TOKEN secret is not set. Configure it in repo Settings → Secrets before tagging." >&2
-            exit 1
-          fi
       - uses: superfly/flyctl-actions/setup-flyctl@master
-      - name: 'Fly deploy api'
+
+      - name: Verify FLY_API_TOKEN + base url
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-          FLY_APP_API: ${{ secrets.FLY_APP_API }}
         run: |
-          flyctl deploy --remote-only \
-            --app "${FLY_APP_API}" \
+          [ -n "$FLY_API_TOKEN" ] || { echo "::error::FLY_API_TOKEN unset"; exit 1; }
+          [ -n "$BASE_URL" ]      || { echo "::error::vars.STAGING_BASE_URL unset"; exit 1; }
+
+      - name: Capture pre-deploy release id (for rollback)
+        id: pre
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          previous=$(flyctl releases --app "$FLY_APP" --json | jq -r '.[0].id // empty')
+          echo "previous_release=$previous" >> "$GITHUB_OUTPUT"
+          echo "Previous release: ${previous:-<none — first deploy>}"
+
+      - name: Deploy (rolling)
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          flyctl deploy \
+            --app "$FLY_APP" \
             --config apps/api/fly.toml \
-            --dockerfile apps/api/Dockerfile
+            --dockerfile apps/api/Dockerfile \
+            --remote-only \
+            --strategy rolling \
+            --wait-timeout 300 \
+            --release-command-timeout 60
 
-  deploy-web:
-    name: 'Deploy web → Fly.io'
-    needs: validate
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    concurrency:
-      group: deploy-web-${{ github.ref }}
-      cancel-in-progress: false
-    steps:
-      - uses: actions/checkout@v4
-      - name: Verify FLY_API_TOKEN is set
+      - name: Smoke — external probes
+        id: smoke
+        run: |
+          set +e
+          # /health/ready — full readiness (Postgres + Redis). 60s with
+          # 2s back-off so a still-warming machine isn't false-flagged.
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /tmp/ready.json -w '%{http_code}' "$BASE_URL/api/v1/health/ready")
+            [ "$code" = "200" ] && break
+            sleep 2
+          done
+          if [ "$code" != "200" ]; then
+            echo "::error::staging /health/ready returned HTTP $code after 60s"
+            cat /tmp/ready.json
+            exit 1
+          fi
+          # Lightweight checks that don't touch dependencies — they
+          # catch "the http surface broke" classes of failure.
+          curl -fsS "$BASE_URL/api/v1/health/live" | grep -q '"status"' \
+            || { echo "::error::/health/live failed"; exit 1; }
+          curl -fsS "$BASE_URL/metrics" | grep -q '^# HELP' \
+            || { echo "::error::/metrics didn't return prom format"; exit 1; }
+          echo "::notice::staging smoke green"
+
+      - name: Rollback on smoke failure
+        if: failure() && steps.smoke.conclusion == 'failure' && steps.pre.outputs.previous_release != ''
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: |
-          if [ -z "${FLY_API_TOKEN:-}" ]; then
-            echo "::error::FLY_API_TOKEN secret is not set." >&2
-            exit 1
-          fi
+          echo "::warning::staging smoke failed — rolling back to ${{ steps.pre.outputs.previous_release }}"
+          flyctl releases rollback "${{ steps.pre.outputs.previous_release }}" --app "$FLY_APP"
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Staging deploy"
+            echo ""
+            echo "- App:   \`$FLY_APP\`"
+            echo "- URL:   $BASE_URL"
+            echo "- SHA:   ${{ github.sha }}"
+            if [ "${{ job.status }}" = "success" ]; then
+              echo "- ✅ Deployed + smoke green."
+            else
+              echo "- ❌ FAILED. Rollback attempted to ${{ steps.pre.outputs.previous_release }}."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ───────────────────────────────────────────────────────────────────
+  # PRODUCTION — workflow_dispatch (manual) OR tag push.
+  # GitHub Environment `production` enforces reviewer approval.
+  # ───────────────────────────────────────────────────────────────────
+  deploy-production:
+    needs: gates
+    if: |
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'production')
+      || startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment:
+      name: production
+      url: ${{ vars.PROD_BASE_URL }}
+    env:
+      FLY_APP: ${{ secrets.FLY_APP_API_PROD || 'travel-api-prod' }}
+      BASE_URL: ${{ vars.PROD_BASE_URL }}
+
+    steps:
+      - uses: actions/checkout@v4
       - uses: superfly/flyctl-actions/setup-flyctl@master
-      - name: 'Fly deploy web'
+
+      - name: Verify FLY_API_TOKEN + base url
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-          FLY_APP_WEB: ${{ secrets.FLY_APP_WEB }}
-          # Source-map upload to Sentry during `next build` — only
-          # runs when this token is set in repo secrets.
+        run: |
+          [ -n "$FLY_API_TOKEN" ] || { echo "::error::FLY_API_TOKEN unset"; exit 1; }
+          [ -n "$BASE_URL" ]      || { echo "::error::vars.PROD_BASE_URL unset"; exit 1; }
+
+      - name: Capture pre-deploy release id (for rollback)
+        id: pre
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          previous=$(flyctl releases --app "$FLY_APP" --json | jq -r '.[0].id // empty')
+          echo "previous_release=$previous" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy (blue-green)
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT_WEB: ${{ secrets.SENTRY_PROJECT_WEB }}
         run: |
-          flyctl deploy --remote-only \
-            --app "${FLY_APP_WEB}" \
-            --config apps/web/fly.toml \
-            --dockerfile apps/web/Dockerfile
+          # bluegreen: provisions parallel machine set, waits for ALL
+          # new machines to pass /health/ready, then drains traffic
+          # from the old set. Old set survives if ANY new machine
+          # fails the check — zero-downtime by construction.
+          flyctl deploy \
+            --app "$FLY_APP" \
+            --config apps/api/fly.toml \
+            --dockerfile apps/api/Dockerfile \
+            --remote-only \
+            --strategy bluegreen \
+            --wait-timeout 600 \
+            --release-command-timeout 90
 
-  notify:
-    name: 'Notify on success'
-    needs: [deploy-api, deploy-web]
-    runs-on: ubuntu-latest
-    if: success()
-    steps:
-      - uses: actions/checkout@v4
-      - name: 'Comment on release tag'
+      - name: Smoke — external probes (production)
+        id: smoke
+        run: |
+          set +e
+          for i in $(seq 1 45); do
+            code=$(curl -s -o /tmp/ready.json -w '%{http_code}' "$BASE_URL/api/v1/health/ready")
+            [ "$code" = "200" ] && break
+            sleep 2
+          done
+          if [ "$code" != "200" ]; then
+            echo "::error::prod /health/ready returned HTTP $code after 90s"
+            cat /tmp/ready.json
+            exit 1
+          fi
+          curl -fsS "$BASE_URL/api/v1/health/live" | grep -q '"status"' \
+            || { echo "::error::/health/live failed"; exit 1; }
+          curl -fsS "$BASE_URL/metrics" | grep -q '^# HELP' \
+            || { echo "::error::/metrics didn't return prom format"; exit 1; }
+          echo "::notice::prod smoke green"
+
+      - name: Rollback on smoke failure
+        if: failure() && steps.smoke.conclusion == 'failure' && steps.pre.outputs.previous_release != ''
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          echo "::warning::prod smoke failed — rolling back to ${{ steps.pre.outputs.previous_release }}"
+          flyctl releases rollback "${{ steps.pre.outputs.previous_release }}" --app "$FLY_APP"
+
+      - name: Annotate release (if tag push)
+        if: startsWith(github.ref, 'refs/tags/') && job.status == 'success'
         uses: actions/github-script@v7
         with:
           script: |
             const tag = context.ref.replace('refs/tags/', '');
             const body = [
-              `🚀 **${tag}** deployed to Fly.io`,
+              `🚀 **${tag}** deployed to production`,
               ``,
-              `- api: https://${process.env.FLY_APP_API || 'travel-api-prod'}.fly.dev`,
-              `- web: https://${process.env.FLY_APP_WEB || 'travel-web-prod'}.fly.dev`,
-              ``,
-              `Watch errors in Sentry, traces in Honeycomb.`,
+              `- api: ${{ vars.PROD_BASE_URL }}`,
+              `- SHA: ${context.sha}`,
+              `- Strategy: blue-green; smoke probes external`,
             ].join('\n');
-            // The tag itself doesn't have a comments API, but the
-            // associated release does. Find or create the release
-            // and post the body there.
             try {
               const { data: release } = await github.rest.repos.getReleaseByTag({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                tag,
+                owner: context.repo.owner, repo: context.repo.repo, tag,
               });
               await github.rest.repos.updateRelease({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
+                owner: context.repo.owner, repo: context.repo.repo,
                 release_id: release.id,
                 body: (release.body ?? '') + '\n\n' + body,
               });
-            } catch {
-              // No release yet — log only.
-              console.log(body);
-            }
-        env:
-          FLY_APP_API: ${{ secrets.FLY_APP_API }}
-          FLY_APP_WEB: ${{ secrets.FLY_APP_WEB }}
+            } catch (_) { console.log(body); }
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Production deploy"
+            echo ""
+            echo "- App:   \`$FLY_APP\`"
+            echo "- URL:   $BASE_URL"
+            echo "- SHA:   ${{ github.sha }}"
+            echo "- Strategy: blue-green"
+            if [ "${{ job.status }}" = "success" ]; then
+              echo "- ✅ Deployed + smoke green."
+            else
+              echo "- ❌ FAILED. Auto-rollback to ${{ steps.pre.outputs.previous_release }} attempted."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
