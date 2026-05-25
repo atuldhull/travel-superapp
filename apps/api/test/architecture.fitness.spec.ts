@@ -179,6 +179,67 @@ describe('architecture fitness — banned patterns', () => {
   });
 });
 
+describe('architecture fitness — shutdown hooks present ([M1])', () => {
+  // L1 + L3 dropped --runInBand AND --forceExit by giving every
+  // long-lived handle a real teardown. THESE invariants stop the
+  // regression: a new file that holds a Redis socket / interval /
+  // PrismaClient WITHOUT wiring its destroy hook would silently
+  // require --forceExit again. Failing CI here forces the author
+  // to add the teardown at the same commit.
+  //
+  // Three rules, one per resource family:
+  //   1. `new Redis(`            → file MUST implement `OnModuleDestroy`
+  //                                AND call `.quit()` somewhere.
+  //   2. `setInterval(`          → file MUST also have a `clearInterval(`.
+  //   3. Scheduler interface     → file MUST skip in NODE_ENV==='test'
+  //                                so Jest doesn't have to chase a 24h
+  //                                timer down on every spec.
+  const srcFiles = [...walkTs(API_SRC)];
+
+  it('every file owning an ioredis client implements OnModuleDestroy + .quit()', () => {
+    const offenders: Array<{ file: string; reason: string }> = [];
+    for (const rel of srcFiles) {
+      const source = readFileSync(join(API_SRC, rel), 'utf8');
+      if (!/\bnew\s+Redis\s*\(/.test(source)) continue;
+      if (!/\bOnModuleDestroy\b/.test(source)) {
+        offenders.push({ file: rel, reason: 'no OnModuleDestroy' });
+        continue;
+      }
+      if (!/\.quit\s*\(/.test(source)) {
+        offenders.push({ file: rel, reason: 'no .quit() call' });
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it('every setInterval owner also calls clearInterval (no orphan timers)', () => {
+    const offenders: string[] = [];
+    for (const rel of srcFiles) {
+      const source = readFileSync(join(API_SRC, rel), 'utf8');
+      if (!/\bsetInterval\s*\(/.test(source)) continue;
+      if (!/\bclearInterval\s*\(/.test(source)) {
+        offenders.push(rel);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("every *.scheduler.ts skips itself when NODE_ENV==='test' (no 24h timer leaks)", () => {
+    const offenders: string[] = [];
+    for (const rel of srcFiles) {
+      if (!rel.endsWith('.scheduler.ts')) continue;
+      const source = readFileSync(join(API_SRC, rel), 'utf8');
+      // Either form is allowed: explicit `=== 'test'` or
+      // `!== 'test'`-then-bail. We just need SOMETHING that gates
+      // the timer on NODE_ENV.
+      if (!/NODE_ENV.+['"]test['"]/.test(source)) {
+        offenders.push(rel);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+});
+
 describe('architecture fitness — file size (god-object proxy)', () => {
   // Pragmatic ceiling-based check, not a class-size analyzer. A
   // single .ts file growing past the per-tier limit below is a
