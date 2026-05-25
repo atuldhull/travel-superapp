@@ -31,6 +31,7 @@ import { ConfigService } from '@nestjs/config';
 import type { Env } from '@app/config';
 import { createLogger, type AppLogger } from '@app/logger';
 import { CLOCK, type Clock } from '@app/clock';
+import { CircuitBreaker, callExternal } from '@app/resilience';
 import type {
   ContactNotifier,
   SosNotificationPayload,
@@ -59,6 +60,7 @@ export class TwilioContactNotifierAdapter implements ContactNotifier {
   private readonly logger: AppLogger = createLogger('safety.twilio');
   private dailyCount = 0;
   private dailyWindowStart = this.clock.nowMs();
+  private readonly breaker: CircuitBreaker;
 
   constructor(
     @Inject(ConfigService) config: ConfigService<Env, true>,
@@ -68,18 +70,22 @@ export class TwilioContactNotifierAdapter implements ContactNotifier {
     const token = config.get('TWILIO_AUTH_TOKEN', { infer: true });
     const from = config.get('TWILIO_FROM_NUMBER', { infer: true });
     if (!sid || !token || !from) {
-      // Should never happen — the SafetyModule factory only
-      // instantiates this adapter when all 3 vars are set.
       throw new Error(
         'TwilioContactNotifierAdapter requires TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN + TWILIO_FROM_NUMBER',
       );
     }
-    // Dynamic require keeps the twilio SDK out of the static
-    // require graph when this adapter is never instantiated.
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const Twilio = require('twilio') as (sid: string, token: string) => TwilioClient;
     this.client = Twilio(sid, token);
     this.fromNumber = from;
+    this.breaker = new CircuitBreaker({
+      name: 'twilio-sos',
+      clock,
+      failureThreshold: 5,
+      openMs: 60_000,
+      onTransition: (from2, to, name) =>
+        this.logger.warn({ from: from2, to, name }, 'circuit_state_change'),
+    });
   }
 
   async notify(payload: SosNotificationPayload): Promise<void> {
@@ -104,11 +110,15 @@ export class TwilioContactNotifierAdapter implements ContactNotifier {
     }
     const body = this.composeSmsBody(payload);
     try {
-      const result = await this.client.messages.create({
-        to: payload.phone,
-        from: this.fromNumber,
-        body,
-      });
+      const result = await callExternal(
+        () =>
+          this.client.messages.create({
+            to: payload.phone!,
+            from: this.fromNumber,
+            body,
+          }),
+        { breaker: this.breaker, timeoutMs: 10_000, label: 'twilio-sos.create' },
+      );
       this.logger.info(
         {
           contactName: payload.contactName,

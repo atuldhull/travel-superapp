@@ -19,6 +19,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { createLogger, type AppLogger } from '@app/logger';
 import { CLOCK, type Clock } from '@app/clock';
+import { CircuitBreaker, callExternal } from '@app/resilience';
 import type {
   SignalSnapshot,
   SignalSource,
@@ -50,18 +51,34 @@ function noChange(): SignalSnapshot {
 @Injectable()
 export class OpenSkyFlightAdapter implements SignalSource {
   private readonly logger: AppLogger = createLogger('agent.signal.flight');
+  private readonly breaker: CircuitBreaker;
 
   constructor(
     private readonly baseUrl: string,
     @Inject(CLOCK) private readonly clock: Clock,
-  ) {}
+  ) {
+    // [O1] OpenSky is anonymous + best-effort; the adapter already
+    // collapses every failure into `noChange()`. Breaker just stops
+    // hammering the upstream when it's clearly degraded.
+    this.breaker = new CircuitBreaker({
+      name: 'opensky',
+      clock,
+      failureThreshold: 5,
+      openMs: 60_000,
+      onTransition: (from, to, name) =>
+        this.logger.warn({ from, to, name }, 'circuit_state_change'),
+    });
+  }
 
   async snapshot(query: SignalSourceQuery): Promise<SignalSnapshot> {
     const url = buildStatesUrl(this.baseUrl, query.lat, query.lng);
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
     try {
-      const res = await fetch(url, { signal: ctrl.signal });
+      const res = await callExternal(() => fetch(url, { signal: ctrl.signal }), {
+        breaker: this.breaker,
+        label: 'opensky.states/all',
+      });
       if (!res.ok) {
         this.logger.warn({ status: res.status }, 'flight_signal_degraded');
         return noChange();

@@ -309,3 +309,47 @@ function sleep(ms: number): Promise<void> {
 export function makeCircuitBreaker(opts: CircuitBreakerOptions): CircuitBreaker {
   return new CircuitBreaker(opts);
 }
+
+// ─── HELPER: callExternal ──────────────────────────────────────────────
+
+export interface ExternalCallOptions {
+  /** Per-adapter breaker (one instance shared across calls of that adapter). */
+  readonly breaker: CircuitBreaker;
+  /** Time budget for the inner call. Pass `undefined` to disable. */
+  readonly timeoutMs?: number;
+  /** Label surfaced in TimeoutError + circuit logs. */
+  readonly label: string;
+  /**
+   * Optional mapper that runs ONLY when the breaker is OPEN. Lets the
+   * adapter translate `CircuitOpenError` into its domain error class
+   * (e.g. `ExternalServiceError`) so callers don't have to thread a
+   * new error type. The mapper MUST throw — its return is `never`.
+   */
+  readonly onCircuitOpen?: (err: CircuitOpenError) => never;
+}
+
+/**
+ * Wrap an external call (`fetch`, an AWS / Stripe / Twilio SDK method,
+ * etc.) with a circuit breaker + optional timeout in one expression.
+ * Keeps adapter call-sites to ~3 lines instead of the ~25-line
+ * try/exec/catch dance.
+ *
+ * Every external adapter under `apps/api/src/modules/*\/infrastructure/*`
+ * uses this. The fitness function
+ * `external adapters wrapped in circuit breaker` enforces it on CI.
+ */
+export async function callExternal<T>(fn: () => Promise<T>, opts: ExternalCallOptions): Promise<T> {
+  try {
+    return await opts.breaker.exec(() =>
+      opts.timeoutMs != null ? withTimeout(fn(), opts.timeoutMs, opts.label) : fn(),
+    );
+  } catch (err) {
+    if (err instanceof CircuitOpenError && opts.onCircuitOpen) {
+      // The mapper throws; the `throw err` below is unreachable but
+      // TypeScript needs the trailing `throw` for the control-flow
+      // analyzer to type this branch correctly.
+      opts.onCircuitOpen(err);
+    }
+    throw err;
+  }
+}

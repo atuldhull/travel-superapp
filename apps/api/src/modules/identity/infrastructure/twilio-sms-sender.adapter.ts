@@ -16,6 +16,7 @@ import { ConfigService } from '@nestjs/config';
 import type { Env } from '@app/config';
 import { createLogger, type AppLogger } from '@app/logger';
 import { CLOCK, type Clock } from '@app/clock';
+import { CircuitBreaker, callExternal } from '@app/resilience';
 import type { SmsMessage, SmsSender } from '../application/ports/sms-sender.port';
 
 const DAILY_SMS_CAP = 200;
@@ -37,6 +38,7 @@ export class TwilioSmsSenderAdapter implements SmsSender {
   private readonly logger: AppLogger = createLogger('identity.twilio-sms');
   private dailyCount = 0;
   private dailyWindowStart = this.clock.nowMs();
+  private readonly breaker: CircuitBreaker;
 
   constructor(
     @Inject(ConfigService) config: ConfigService<Env, true>,
@@ -54,6 +56,16 @@ export class TwilioSmsSenderAdapter implements SmsSender {
     const Twilio = require('twilio') as (sid: string, token: string) => TwilioClient;
     this.client = Twilio(sid, token);
     this.fromNumber = from;
+    // [O1] 5 fails / 60s open. Twilio errors are expensive (each
+    // counts against the cost-cap); breaker shortcuts the spam.
+    this.breaker = new CircuitBreaker({
+      name: 'twilio-sms',
+      clock,
+      failureThreshold: 5,
+      openMs: 60_000,
+      onTransition: (from2, to, name) =>
+        this.logger.warn({ from: from2, to, name }, 'circuit_state_change'),
+    });
   }
 
   async send(message: SmsMessage): Promise<void> {
@@ -65,11 +77,15 @@ export class TwilioSmsSenderAdapter implements SmsSender {
       return;
     }
     try {
-      const result = await this.client.messages.create({
-        to: message.to,
-        from: this.fromNumber,
-        body: message.body,
-      });
+      const result = await callExternal(
+        () =>
+          this.client.messages.create({
+            to: message.to,
+            from: this.fromNumber,
+            body: message.body,
+          }),
+        { breaker: this.breaker, timeoutMs: 10_000, label: 'twilio-sms.create' },
+      );
       this.logger.info({ twilioMessageId: result.sid, status: result.status }, 'login_sms_sent');
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);

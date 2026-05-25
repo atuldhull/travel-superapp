@@ -23,6 +23,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { createLogger, type AppLogger } from '@app/logger';
 import { CLOCK, type Clock } from '@app/clock';
+import { CircuitBreaker, callExternal } from '@app/resilience';
 import type { EmbeddingPort } from '../application/ports/embedding.port';
 
 const REQUEST_TIMEOUT_MS = 30_000;
@@ -36,6 +37,7 @@ interface OllamaEmbeddingResponse {
 export class OllamaEmbeddingAdapter implements EmbeddingPort {
   private readonly logger: AppLogger = createLogger('ollama-embedding');
   private readonly endpoint: string;
+  private readonly breaker: CircuitBreaker;
 
   constructor(
     baseUrl: string,
@@ -44,6 +46,16 @@ export class OllamaEmbeddingAdapter implements EmbeddingPort {
   ) {
     // Trim trailing slashes so `${baseUrl}/api/embeddings` is well-formed.
     this.endpoint = `${baseUrl.replace(/\/+$/, '')}/api/embeddings`;
+    // [O1] 3 fails / 60s. Best-effort port — null on any failure;
+    // breaker stops the 30s timeout from compounding.
+    this.breaker = new CircuitBreaker({
+      name: 'ollama-embedding',
+      clock,
+      failureThreshold: 3,
+      openMs: 60_000,
+      onTransition: (from, to, name) =>
+        this.logger.warn({ from, to, name }, 'circuit_state_change'),
+    });
   }
 
   async embed(text: string): Promise<number[] | null> {
@@ -51,12 +63,16 @@ export class OllamaEmbeddingAdapter implements EmbeddingPort {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     try {
-      const response = await fetch(this.endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: this.model, prompt: text }),
-        signal: controller.signal,
-      });
+      const response = await callExternal(
+        () =>
+          fetch(this.endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model: this.model, prompt: text }),
+            signal: controller.signal,
+          }),
+        { breaker: this.breaker, label: 'ollama.embeddings' },
+      );
       const json = (await response.json()) as OllamaEmbeddingResponse;
       if (!response.ok || json.error || !Array.isArray(json.embedding)) {
         this.logger.warn(

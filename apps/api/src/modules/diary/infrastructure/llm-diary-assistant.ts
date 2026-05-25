@@ -19,8 +19,10 @@
  *
  * Installed for the adventure-diary feature (real-LLM upgrade).
  */
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { createLogger, type AppLogger } from '@app/logger';
+import { CLOCK, type Clock } from '@app/clock';
+import { CircuitBreaker, callExternal } from '@app/resilience';
 import type {
   DiaryAiAssistant,
   DiaryAssistInput,
@@ -57,8 +59,24 @@ interface OllamaResponse {
 @Injectable()
 export class LlmDiaryAssistant implements DiaryAiAssistant {
   private readonly logger: AppLogger = createLogger('diary.assistant.llm');
+  private readonly breaker: CircuitBreaker;
 
-  constructor(private readonly cfg: LlmDiaryConfig) {}
+  constructor(
+    private readonly cfg: LlmDiaryConfig,
+    @Inject(CLOCK) clock: Clock,
+  ) {
+    // [O1] 4 fails / 60s. Diary assist degrades to a heuristic on
+    // any failure; breaker keeps the heuristic latency low instead
+    // of waiting 20s per call once the upstream is wedged.
+    this.breaker = new CircuitBreaker({
+      name: `diary-${cfg.provider}`,
+      clock,
+      failureThreshold: 4,
+      openMs: 60_000,
+      onTransition: (from, to, name) =>
+        this.logger.warn({ from, to, name }, 'circuit_state_change'),
+    });
+  }
 
   async assist(input: DiaryAssistInput): Promise<DiaryAssistResult> {
     const text = (await this.complete(this.buildPrompt(input))).trim();
@@ -115,16 +133,20 @@ export class LlmDiaryAssistant implements DiaryAiAssistant {
 
   private async callGemini(userPrompt: string, signal: AbortSignal): Promise<string> {
     const url = `${GEMINI_BASE}/${this.cfg.model}:generateContent?key=${this.cfg.credential}`;
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: SYSTEM }] },
-        contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-        generationConfig: { maxOutputTokens: 768, temperature: 0.8 },
-      }),
-      signal,
-    });
+    const res = await callExternal(
+      () =>
+        fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            system_instruction: { parts: [{ text: SYSTEM }] },
+            contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+            generationConfig: { maxOutputTokens: 768, temperature: 0.8 },
+          }),
+          signal,
+        }),
+      { breaker: this.breaker, label: 'diary.gemini' },
+    );
     const json = (await res.json()) as GeminiResponse;
     if (!res.ok || json.error) {
       throw new Error(json.error?.message ?? `Gemini HTTP ${res.status}`);
@@ -134,20 +156,24 @@ export class LlmDiaryAssistant implements DiaryAiAssistant {
 
   private async callOllama(userPrompt: string, signal: AbortSignal): Promise<string> {
     const endpoint = `${this.cfg.credential.replace(/\/+$/, '')}/api/chat`;
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: this.cfg.model,
-        stream: false,
-        messages: [
-          { role: 'system', content: SYSTEM },
-          { role: 'user', content: userPrompt },
-        ],
-        options: { temperature: 0.8 },
-      }),
-      signal,
-    });
+    const res = await callExternal(
+      () =>
+        fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: this.cfg.model,
+            stream: false,
+            messages: [
+              { role: 'system', content: SYSTEM },
+              { role: 'user', content: userPrompt },
+            ],
+            options: { temperature: 0.8 },
+          }),
+          signal,
+        }),
+      { breaker: this.breaker, label: 'diary.ollama' },
+    );
     const json = (await res.json()) as OllamaResponse;
     if (!res.ok || json.error) throw new Error(json.error ?? `Ollama HTTP ${res.status}`);
     return json.message?.content ?? '';
