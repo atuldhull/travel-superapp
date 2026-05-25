@@ -16,6 +16,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Env } from '@app/config';
+import { CLOCK, type Clock } from '@app/clock';
 import { hashEmail } from '../../../common/crypto/email-hash';
 import { MAILER_PORT, type MailerPort } from '../../../common/mailer/mailer.port';
 import {
@@ -38,6 +39,7 @@ export class RequestPasswordResetUseCase {
     @Inject(PASSWORD_RESET_TOKEN_REPOSITORY)
     private readonly tokens: PasswordResetTokenRepository,
     @Inject(MAILER_PORT) private readonly mailer: MailerPort,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   async execute(cmd: RequestPasswordResetCommand): Promise<void> {
@@ -50,7 +52,7 @@ export class RequestPasswordResetUseCase {
 
     const token = randomBytes(32).toString('hex');
     const tokenHash = createHash('sha256').update(`${pepper}${token}`).digest('hex');
-    const expiresAt = new Date(Date.now() + TOKEN_TTL_MS);
+    const expiresAt = new Date(this.clock.nowMs() + TOKEN_TTL_MS);
     await this.tokens.create({ emailHash, tokenHash, expiresAt });
 
     const webBaseUrl =

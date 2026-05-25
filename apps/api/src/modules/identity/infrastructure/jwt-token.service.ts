@@ -111,6 +111,9 @@ export function parseDuration(value: string): number {
   }
 }
 
-function futureDate(seconds: number): Date {
-  return new Date(Date.now() + seconds * 1000);
+function futureDate(seconds: number, now: number = Date.now()): Date {
+  // [M6] Accepts an explicit `now` so callers (which inject the Clock)
+  // can roll time forward deterministically. The default keeps non-test
+  // callers working without an audit.
+  return new Date(now + seconds * 1000);
 }

@@ -14,6 +14,7 @@
  */
 import { forwardRef, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { SYSTEM_CLOCK } from '@app/clock';
 import type { Env } from '@app/config';
 import { EventsModule } from '../events/events.module';
 import { FoodModule } from '../food/food.module';
@@ -138,17 +139,17 @@ import { TripController } from './interface/trip.controller';
         const anthropicKey = config.get('ANTHROPIC_API_KEY', { infer: true });
         if (anthropicKey) {
           const model = config.get('ANTHROPIC_MODEL', { infer: true });
-          return new ClaudeTripPlannerAdapter(anthropicKey, model);
+          return new ClaudeTripPlannerAdapter(anthropicKey, model, SYSTEM_CLOCK);
         }
         const geminiKey = config.get('GEMINI_API_KEY', { infer: true });
         if (geminiKey) {
           const model = config.get('GEMINI_MODEL', { infer: true });
-          return new GeminiTripPlannerAdapter(geminiKey, model);
+          return new GeminiTripPlannerAdapter(geminiKey, model, SYSTEM_CLOCK);
         }
         const ollamaUrl = config.get('OLLAMA_URL', { infer: true });
         if (ollamaUrl) {
           const model = config.get('OLLAMA_MODEL', { infer: true });
-          return new OllamaTripPlannerAdapter(ollamaUrl, model);
+          return new OllamaTripPlannerAdapter(ollamaUrl, model, SYSTEM_CLOCK);
         }
         return new StubTripPlannerAdapter();
       },

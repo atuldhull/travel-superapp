@@ -15,6 +15,7 @@
  * exercised by every other api e2e suite that goes through the
  * TripPlannerPort with the default empty env.
  */
+import { SYSTEM_CLOCK } from '@app/clock';
 import { ClaudeTripPlannerAdapter } from '../src/modules/trip/infrastructure/claude-trip-planner.adapter';
 import { GeminiTripPlannerAdapter } from '../src/modules/trip/infrastructure/gemini-trip-planner.adapter';
 import { OllamaTripPlannerAdapter } from '../src/modules/trip/infrastructure/ollama-trip-planner.adapter';
@@ -38,6 +39,7 @@ describeAnthropic(
       const adapter = new ClaudeTripPlannerAdapter(
         process.env['ANTHROPIC_API_KEY'] ?? '',
         process.env['ANTHROPIC_MODEL'] ?? 'claude-opus-4-7',
+        SYSTEM_CLOCK,
       );
       const result = await adapter.generatePlan(SAMPLE_REQUEST);
       expect(result.provider).toBe('anthropic');
@@ -62,6 +64,7 @@ describeGemini('POST.4 — GeminiTripPlannerAdapter (integration, requires GEMIN
     const adapter = new GeminiTripPlannerAdapter(
       process.env['GEMINI_API_KEY'] ?? '',
       process.env['GEMINI_MODEL'] ?? 'gemini-2.0-flash-exp',
+      SYSTEM_CLOCK,
     );
     const result = await adapter.generatePlan(SAMPLE_REQUEST);
     expect(result.provider).toBe('gemini');
@@ -82,6 +85,7 @@ describeOllama('POST.4 — OllamaTripPlannerAdapter (integration, requires OLLAM
     const adapter = new OllamaTripPlannerAdapter(
       process.env['OLLAMA_URL'] ?? '',
       process.env['OLLAMA_MODEL'] ?? 'llama3.1:8b',
+      SYSTEM_CLOCK,
     );
     const result = await adapter.generatePlan(SAMPLE_REQUEST);
     expect(result.provider).toBe('ollama');

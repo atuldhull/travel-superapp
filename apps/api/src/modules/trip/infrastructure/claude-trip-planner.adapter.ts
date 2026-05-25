@@ -24,8 +24,9 @@
  * Installed by prompt [IV.18.19.44]. Multi-provider rewrite in [POST.4].
  */
 import Anthropic from '@anthropic-ai/sdk';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { createLogger, type AppLogger } from '@app/logger';
+import { CLOCK, type Clock } from '@app/clock';
 import type {
   TripPlannerPort,
   TripPlannerRequest,
@@ -57,14 +58,18 @@ export class ClaudeTripPlannerAdapter implements TripPlannerPort {
   private readonly model: string;
   private readonly logger: AppLogger = createLogger('claude-trip-planner');
 
-  constructor(apiKey: string, model: string) {
+  constructor(
+    apiKey: string,
+    model: string,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {
     this.client = new Anthropic({ apiKey });
     this.model = model;
   }
 
   async generatePlan(req: TripPlannerRequest): Promise<TripPlannerResult> {
     const userPrompt = this.buildUserPrompt(req);
-    const startedAt = Date.now();
+    const startedAt = this.clock.nowMs();
     try {
       const response = await this.client.messages.create({
         model: this.model,
@@ -85,7 +90,7 @@ export class ClaudeTripPlannerAdapter implements TripPlannerPort {
           inputTokens: usage.input_tokens,
           outputTokens: usage.output_tokens,
           cachedTokens: usage.cache_read_input_tokens ?? 0,
-          latencyMs: Date.now() - startedAt,
+          latencyMs: this.clock.nowMs() - startedAt,
         },
         'trip_planner_claude_ok',
       );

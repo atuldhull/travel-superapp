@@ -5,6 +5,7 @@
  * Installed by prompt [V.UX.14].
  */
 import { Inject, Injectable } from '@nestjs/common';
+import { CLOCK, type Clock } from '@app/clock';
 import type { Preferences as PrismaPreferences } from '@prisma/client';
 import { PrismaService } from '../../../common/db/prisma.service';
 import type { Preferences } from '../domain/preferences.entity';
@@ -15,14 +16,17 @@ import type {
 
 @Injectable()
 export class PrismaPreferencesRepository implements PreferencesRepository {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {}
 
   async getOrDefault(userId: string): Promise<Preferences> {
     const row = await this.prisma.preferences.findUnique({ where: { userId } });
     if (row) return toDomain(row);
     // Synthetic default shape — same column defaults the migration
     // sets. Caller never sees an empty body even before first write.
-    const now = new Date();
+    const now = this.clock.now();
     return {
       id: '',
       userId,

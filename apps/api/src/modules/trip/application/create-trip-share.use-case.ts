@@ -18,6 +18,7 @@
 import { randomBytes } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { NotFoundError, ValidationError } from '@app/errors';
+import { CLOCK, type Clock } from '@app/clock';
 import type { TripShare } from '../domain/trip-share.entity';
 import { TRIP_REPOSITORY, type TripRepository } from './ports/trip.repository';
 import { TRIP_SHARE_REPOSITORY, type TripShareRepository } from './ports/trip-share.repository';
@@ -33,10 +34,11 @@ export class CreateTripShareUseCase {
   constructor(
     @Inject(TRIP_REPOSITORY) private readonly trips: TripRepository,
     @Inject(TRIP_SHARE_REPOSITORY) private readonly shares: TripShareRepository,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   async execute(cmd: CreateTripShareCommand): Promise<TripShare> {
-    if (cmd.expiresAt && cmd.expiresAt.getTime() <= Date.now()) {
+    if (cmd.expiresAt && cmd.expiresAt.getTime() <= this.clock.nowMs()) {
       throw new ValidationError(
         'expiresAt must be in the future',
         { expiresAt: ['must be in the future'] },

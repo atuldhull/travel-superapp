@@ -26,8 +26,9 @@
  *
  * Installed by prompt [POST.4].
  */
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { createLogger, type AppLogger } from '@app/logger';
+import { CLOCK, type Clock } from '@app/clock';
 import { groundingPreamble } from '../application/ports/trip-planner.port';
 import type {
   TripPlannerPort,
@@ -71,6 +72,7 @@ export class OllamaTripPlannerAdapter implements TripPlannerPort {
   constructor(
     baseUrl: string,
     private readonly model: string,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {
     // Trim trailing slashes so `${baseUrl}/api/chat` is well-formed.
     this.endpoint = `${baseUrl.replace(/\/+$/, '')}/api/chat`;
@@ -86,7 +88,7 @@ export class OllamaTripPlannerAdapter implements TripPlannerPort {
       ],
       options: { temperature: 0.7 },
     };
-    const startedAt = Date.now();
+    const startedAt = this.clock.nowMs();
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     try {
@@ -112,7 +114,7 @@ export class OllamaTripPlannerAdapter implements TripPlannerPort {
           model: this.model,
           inputTokens: json.prompt_eval_count ?? 0,
           outputTokens: json.eval_count ?? 0,
-          latencyMs: Date.now() - startedAt,
+          latencyMs: this.clock.nowMs() - startedAt,
         },
         'trip_planner_ollama_ok',
       );

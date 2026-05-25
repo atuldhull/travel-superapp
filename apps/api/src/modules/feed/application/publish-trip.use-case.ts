@@ -15,6 +15,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { NotFoundError } from '@app/errors';
 import { createLogger, type AppLogger } from '@app/logger';
+import { CLOCK, type Clock } from '@app/clock';
 import { GeoQueries } from '../../../common/db/geo-queries';
 import { TRIP_REPOSITORY, type Trip, type TripRepository } from '../../trip';
 import {
@@ -48,6 +49,7 @@ export class PublishTripUseCase {
     @Inject(TRIP_PUBLICATION_REPOSITORY)
     private readonly pubs: TripPublicationRepository,
     @Inject(EMBEDDING_PORT) private readonly embeddings: EmbeddingPort,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   async execute(cmd: PublishTripCommand): Promise<TripPublication> {
@@ -58,7 +60,7 @@ export class PublishTripUseCase {
     }
 
     // INVARIANT A — must have definitively ended.
-    assertPublishable(trip.endsOn, new Date());
+    assertPublishable(trip.endsOn, this.clock.now());
 
     const visibility: Visibility = cmd.visibility ?? 'FOLLOWERS';
     const center = await this.geo.findTripCenter(cmd.tripId);
@@ -78,7 +80,7 @@ export class PublishTripUseCase {
       visibility,
       exposedLat: exposed.lat,
       exposedLng: exposed.lng,
-      publishedAt: new Date(),
+      publishedAt: this.clock.now(),
     });
 
     // POST.2C.2 — embed-on-publish, BEST-EFFORT. An absent/failed

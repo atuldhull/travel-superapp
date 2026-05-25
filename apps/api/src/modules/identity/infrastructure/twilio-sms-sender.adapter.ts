@@ -15,6 +15,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Env } from '@app/config';
 import { createLogger, type AppLogger } from '@app/logger';
+import { CLOCK, type Clock } from '@app/clock';
 import type { SmsMessage, SmsSender } from '../application/ports/sms-sender.port';
 
 const DAILY_SMS_CAP = 200;
@@ -35,9 +36,12 @@ export class TwilioSmsSenderAdapter implements SmsSender {
   private readonly fromNumber: string;
   private readonly logger: AppLogger = createLogger('identity.twilio-sms');
   private dailyCount = 0;
-  private dailyWindowStart = Date.now();
+  private dailyWindowStart = this.clock.nowMs();
 
-  constructor(@Inject(ConfigService) config: ConfigService<Env, true>) {
+  constructor(
+    @Inject(ConfigService) config: ConfigService<Env, true>,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {
     const sid = config.get('TWILIO_ACCOUNT_SID', { infer: true });
     const token = config.get('TWILIO_AUTH_TOKEN', { infer: true });
     const from = config.get('TWILIO_FROM_NUMBER', { infer: true });
@@ -75,9 +79,9 @@ export class TwilioSmsSenderAdapter implements SmsSender {
   }
 
   private checkAndTickDailyCap(): boolean {
-    if (Date.now() - this.dailyWindowStart >= DAY_MS) {
+    if (this.clock.nowMs() - this.dailyWindowStart >= DAY_MS) {
       this.dailyCount = 0;
-      this.dailyWindowStart = Date.now();
+      this.dailyWindowStart = this.clock.nowMs();
     }
     if (this.dailyCount >= DAILY_SMS_CAP) return false;
     this.dailyCount++;

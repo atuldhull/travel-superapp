@@ -20,6 +20,7 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { createLogger, type AppLogger } from '@app/logger';
+import { CLOCK, type Clock } from '@app/clock';
 import { PAYMENT_PROVIDER, type PaymentProviderPort } from './ports/payment-provider.port';
 import {
   SyncSubscriptionUseCase,
@@ -33,6 +34,7 @@ export class HandleStripeWebhookUseCase {
   constructor(
     @Inject(PAYMENT_PROVIDER) private readonly payments: PaymentProviderPort,
     private readonly sync: SyncSubscriptionUseCase,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   /** Verifies signature → throws WebhookSignatureError on mismatch
@@ -96,7 +98,7 @@ export class HandleStripeWebhookUseCase {
       priceCents: session.amount_total ?? 0,
       currency: (session.currency ?? 'usd').toUpperCase(),
       // 30-day placeholder — overwritten by the next subscription.updated event.
-      currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      currentPeriodEnd: new Date(this.clock.nowMs() + 30 * 24 * 60 * 60 * 1000),
       cancelAtPeriodEnd: false,
     });
   }

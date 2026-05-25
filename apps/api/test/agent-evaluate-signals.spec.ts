@@ -9,6 +9,7 @@
  *
  * Installed by prompt [POST.2A.3].
  */
+import { SYSTEM_CLOCK } from '@app/clock';
 import { EvaluateSignalsUseCase } from '../src/modules/agent/application/evaluate-signals.use-case';
 import type { SignalSnapshot } from '../src/modules/agent/application/ports/signal-source.port';
 import { WeatherSignalAdapter } from '../src/modules/agent/infrastructure/weather-signal.adapter';
@@ -126,7 +127,7 @@ describe('WeatherSignalAdapter (POST.2A.3, fake provider — LAW 2 PII)', () => 
 
   it('maps forecast → worst-day snapshot and sends ONLY lat/lng/days (no PII)', async () => {
     const fake = new FakeWeather();
-    const snap = await new WeatherSignalAdapter(fake).snapshot({
+    const snap = await new WeatherSignalAdapter(fake, SYSTEM_CLOCK).snapshot({
       kind: 'weather',
       lat: 48.85,
       lng: 2.35,
@@ -137,7 +138,7 @@ describe('WeatherSignalAdapter (POST.2A.3, fake provider — LAW 2 PII)', () => 
   });
 
   it('degrades to a deterministic null snapshot when the provider throws', async () => {
-    const snap = await new WeatherSignalAdapter(new FakeWeather(true)).snapshot({
+    const snap = await new WeatherSignalAdapter(new FakeWeather(true), SYSTEM_CLOCK).snapshot({
       kind: 'weather',
       lat: 1,
       lng: 2,

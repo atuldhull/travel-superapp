@@ -25,6 +25,7 @@ import { hashPassword } from '@app/auth';
 import { UnauthorizedError, ValidationError } from '@app/errors';
 import { ConfigService } from '@nestjs/config';
 import type { Env } from '@app/config';
+import { CLOCK, type Clock } from '@app/clock';
 import {
   PASSWORD_RESET_TOKEN_REPOSITORY,
   type PasswordResetTokenRepository,
@@ -46,6 +47,7 @@ export class ConsumePasswordResetUseCase {
     @Inject(PASSWORD_RESET_TOKEN_REPOSITORY)
     private readonly tokens: PasswordResetTokenRepository,
     @Inject(USER_REPOSITORY) private readonly users: UserRepository,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   async execute(cmd: ConsumePasswordResetCommand): Promise<void> {
@@ -61,7 +63,7 @@ export class ConsumePasswordResetUseCase {
     const pepper = this.config.get('EMAIL_PEPPER', { infer: true }) as string;
     const tokenHash = createHash('sha256').update(`${pepper}${cmd.token}`).digest('hex');
 
-    const consumed = await this.tokens.consume(tokenHash, new Date());
+    const consumed = await this.tokens.consume(tokenHash, this.clock.now());
     if (!consumed) {
       throw new UnauthorizedError(
         'Password reset link is invalid or expired',

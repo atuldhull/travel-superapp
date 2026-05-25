@@ -20,8 +20,9 @@
  *
  * Installed by prompt [POST.2C.2].
  */
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { createLogger, type AppLogger } from '@app/logger';
+import { CLOCK, type Clock } from '@app/clock';
 import type { EmbeddingPort } from '../application/ports/embedding.port';
 
 const REQUEST_TIMEOUT_MS = 30_000;
@@ -39,13 +40,14 @@ export class OllamaEmbeddingAdapter implements EmbeddingPort {
   constructor(
     baseUrl: string,
     private readonly model: string,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {
     // Trim trailing slashes so `${baseUrl}/api/embeddings` is well-formed.
     this.endpoint = `${baseUrl.replace(/\/+$/, '')}/api/embeddings`;
   }
 
   async embed(text: string): Promise<number[] | null> {
-    const startedAt = Date.now();
+    const startedAt = this.clock.nowMs();
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     try {
@@ -68,7 +70,11 @@ export class OllamaEmbeddingAdapter implements EmbeddingPort {
         return null;
       }
       this.logger.info(
-        { model: this.model, dims: json.embedding.length, latencyMs: Date.now() - startedAt },
+        {
+          model: this.model,
+          dims: json.embedding.length,
+          latencyMs: this.clock.nowMs() - startedAt,
+        },
         'trip_embedding_ollama_ok',
       );
       // Return as-is — the dimension guard lives at the DB boundary so

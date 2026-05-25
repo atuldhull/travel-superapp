@@ -6,6 +6,7 @@
  * Installed by prompt [V.UX.25].
  */
 import { Inject, Injectable } from '@nestjs/common';
+import { CLOCK, type Clock } from '@app/clock';
 import type { UserKarma as PrismaKarma } from '@prisma/client';
 import { PrismaService } from '../../../common/db/prisma.service';
 import type { UserKarma } from '../domain/karma.entity';
@@ -31,7 +32,10 @@ const BADGE_RULES: readonly BadgeRule[] = [
 
 @Injectable()
 export class PrismaKarmaRepository implements KarmaRepository {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {}
 
   async recomputeForUser(userId: string): Promise<RecomputeKarmaResult> {
     // Two indexed counts, then a single upsert. groupBy avoids round-
@@ -66,14 +70,14 @@ export class PrismaKarmaRepository implements KarmaRepository {
         reviewCount,
         helpfulVotesReceived,
         badges,
-        recomputedAt: new Date(),
+        recomputedAt: this.clock.now(),
       },
       update: {
         score,
         reviewCount,
         helpfulVotesReceived,
         badges,
-        recomputedAt: new Date(),
+        recomputedAt: this.clock.now(),
       },
     });
     return { userId, karma: toDomain(row), changed };

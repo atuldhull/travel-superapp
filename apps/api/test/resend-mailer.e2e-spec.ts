@@ -11,6 +11,7 @@
  * assert the behavioural contract.
  */
 import { ConfigService } from '@nestjs/config';
+import { SYSTEM_CLOCK } from '@app/clock';
 import { MailDeliveryError, ResendMailerAdapter } from '../src/common/mailer/resend-mailer.adapter';
 
 const skip = !process.env['RESEND_API_KEY'];
@@ -32,18 +33,18 @@ describeReal('POST.3 — ResendMailerAdapter (integration, requires RESEND_API_K
   }
 
   it('constructs the adapter from env vars', () => {
-    const adapter = new ResendMailerAdapter(makeConfig());
+    const adapter = new ResendMailerAdapter(makeConfig(), SYSTEM_CLOCK);
     expect(adapter).toBeInstanceOf(ResendMailerAdapter);
   });
 
   it('throws if RESEND_API_KEY missing at construction time', () => {
-    expect(() => new ResendMailerAdapter(makeConfig({ RESEND_API_KEY: '' }))).toThrow(
+    expect(() => new ResendMailerAdapter(makeConfig({ RESEND_API_KEY: '' }), SYSTEM_CLOCK)).toThrow(
       /RESEND_API_KEY/,
     );
   });
 
   it('wraps provider errors in MailDeliveryError', async () => {
-    const adapter = new ResendMailerAdapter(makeConfig());
+    const adapter = new ResendMailerAdapter(makeConfig(), SYSTEM_CLOCK);
     // Monkey-patch the underlying client to simulate a Resend error.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (adapter as unknown as { client: { emails: { send: (...a: unknown[]) => unknown } } }).client =
@@ -63,7 +64,7 @@ describeReal('POST.3 — ResendMailerAdapter (integration, requires RESEND_API_K
   });
 
   it('treats successful send as resolve-without-throw', async () => {
-    const adapter = new ResendMailerAdapter(makeConfig());
+    const adapter = new ResendMailerAdapter(makeConfig(), SYSTEM_CLOCK);
     (adapter as unknown as { client: { emails: { send: (...a: unknown[]) => unknown } } }).client =
       {
         emails: {

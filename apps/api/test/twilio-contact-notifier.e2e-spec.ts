@@ -18,6 +18,7 @@
  * critical no-phone branch without touching the network.
  */
 import { ConfigService } from '@nestjs/config';
+import { SYSTEM_CLOCK } from '@app/clock';
 import { TwilioContactNotifierAdapter } from '../src/modules/safety/infrastructure/twilio-contact-notifier.adapter';
 import type { SosNotificationPayload } from '../src/modules/safety/application/ports/contact-notifier.port';
 
@@ -42,18 +43,22 @@ describeReal(
     }
 
     it('constructs cleanly with all 3 env vars', () => {
-      const adapter = new TwilioContactNotifierAdapter(makeConfig());
+      const adapter = new TwilioContactNotifierAdapter(makeConfig(), SYSTEM_CLOCK);
       expect(adapter).toBeInstanceOf(TwilioContactNotifierAdapter);
     });
 
     it('throws when TWILIO_FROM_NUMBER is absent', () => {
       expect(
-        () => new TwilioContactNotifierAdapter(makeConfig({ TWILIO_FROM_NUMBER: undefined })),
+        () =>
+          new TwilioContactNotifierAdapter(
+            makeConfig({ TWILIO_FROM_NUMBER: undefined }),
+            SYSTEM_CLOCK,
+          ),
       ).toThrow(/TWILIO_FROM_NUMBER/);
     });
 
     it('skips silently for email-only contacts (no phone)', async () => {
-      const adapter = new TwilioContactNotifierAdapter(makeConfig());
+      const adapter = new TwilioContactNotifierAdapter(makeConfig(), SYSTEM_CLOCK);
       // Monkey-patch the client so a regression that DOES try to call
       // Twilio shows up loudly.
       let sendCalls = 0;

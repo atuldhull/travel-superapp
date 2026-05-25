@@ -30,6 +30,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { UnauthorizedError } from '@app/errors';
 import type { Env } from '@app/config';
 import { ConfigService } from '@nestjs/config';
+import { CLOCK, type Clock } from '@app/clock';
 import {
   IssueSessionUseCase,
   type IssueSessionCommand,
@@ -61,6 +62,7 @@ export class ConsumeMagicLinkUseCase {
     private readonly tokens: MagicLinkTokenRepository,
     @Inject(USER_REPOSITORY) private readonly users: UserRepository,
     private readonly issueSession: IssueSessionUseCase,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   async execute(cmd: ConsumeMagicLinkCommand): Promise<ConsumeMagicLinkResult> {
@@ -70,7 +72,7 @@ export class ConsumeMagicLinkUseCase {
     // Atomic single-use claim — wins iff: row exists, not consumed,
     // not expired. Wrong / consumed / expired all collapse to 401
     // MAGIC_LINK_INVALID (no information leak).
-    const consumed = await this.tokens.consume(tokenHash, new Date());
+    const consumed = await this.tokens.consume(tokenHash, this.clock.now());
     if (!consumed) {
       throw new UnauthorizedError('Magic link is invalid or expired', {}, 'MAGIC_LINK_INVALID');
     }

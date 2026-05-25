@@ -5,14 +5,18 @@
  *
  * Installed by prompt [V.UX.31].
  */
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { CLOCK, type Clock } from '@app/clock';
 import { PrismaService } from '../../../common/db/prisma.service';
 import type { PasswordResetToken } from '../domain/password-reset-token.entity';
 import type { PasswordResetTokenRepository } from '../application/ports/password-reset-token.repository';
 
 @Injectable()
 export class PrismaPasswordResetTokenRepository implements PasswordResetTokenRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {}
 
   async create(input: {
     readonly emailHash: string;
@@ -43,7 +47,7 @@ export class PrismaPasswordResetTokenRepository implements PasswordResetTokenRep
   }
 
   async countRecentForEmail(emailHash: string, withinMs: number): Promise<number> {
-    const since = new Date(Date.now() - withinMs);
+    const since = new Date(this.clock.nowMs() - withinMs);
     return this.prisma.passwordResetToken.count({
       where: { emailHash, createdAt: { gte: since } },
     });

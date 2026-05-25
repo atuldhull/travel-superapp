@@ -20,6 +20,7 @@
  */
 import { createHmac } from 'node:crypto';
 import { ConfigService } from '@nestjs/config';
+import { SYSTEM_CLOCK } from '@app/clock';
 import {
   WebhookSignatureError,
   type PaymentProviderPort,
@@ -50,25 +51,27 @@ describeReal('POST.9 — StripePaymentProvider (integration, requires STRIPE_SEC
       // throw. Skip silently if not provided.
       return;
     }
-    const provider = new StripePaymentProvider(makeConfig());
+    const provider = new StripePaymentProvider(makeConfig(), SYSTEM_CLOCK);
     expect(provider).toBeInstanceOf(StripePaymentProvider);
   });
 
   it('throws when STRIPE_WEBHOOK_SECRET is absent', () => {
     expect(
-      () => new StripePaymentProvider(makeConfig({ STRIPE_WEBHOOK_SECRET: undefined })),
+      () =>
+        new StripePaymentProvider(makeConfig({ STRIPE_WEBHOOK_SECRET: undefined }), SYSTEM_CLOCK),
     ).toThrow(/STRIPE_WEBHOOK_SECRET/);
   });
 
   it('throws when STRIPE_PRICE_PREMIUM is absent', () => {
     expect(
-      () => new StripePaymentProvider(makeConfig({ STRIPE_PRICE_PREMIUM: undefined })),
+      () =>
+        new StripePaymentProvider(makeConfig({ STRIPE_PRICE_PREMIUM: undefined }), SYSTEM_CLOCK),
     ).toThrow(/STRIPE_PRICE_PREMIUM/);
   });
 
   it('createCheckoutSession returns a session id + Stripe-hosted URL', async () => {
     if (!process.env['STRIPE_PRICE_PREMIUM']) return; // need real price id
-    const provider = new StripePaymentProvider(makeConfig());
+    const provider = new StripePaymentProvider(makeConfig(), SYSTEM_CLOCK);
     const result = await provider.createCheckoutSession({
       userId: 'test-user-id',
       userEmail: 'test+post9@example.com',
@@ -97,6 +100,7 @@ describeReal('POST.9 — StripePaymentProvider (integration, requires STRIPE_SEC
         STRIPE_WEBHOOK_SECRET: 'whsec_test_dummy_secret_for_signing',
         STRIPE_PRICE_PREMIUM: process.env['STRIPE_PRICE_PREMIUM'] ?? 'price_dummy',
       }),
+      SYSTEM_CLOCK,
     );
     if (!process.env['STRIPE_PRICE_PREMIUM']) return; // need real price for ctor
     const body = JSON.stringify({
@@ -117,6 +121,7 @@ describeReal('POST.9 — StripePaymentProvider (integration, requires STRIPE_SEC
         STRIPE_WEBHOOK_SECRET: 'whsec_real',
         STRIPE_PRICE_PREMIUM: process.env['STRIPE_PRICE_PREMIUM'],
       }),
+      SYSTEM_CLOCK,
     );
     const body = JSON.stringify({ id: 'evt_test_999', type: 'fake' });
     expect(() => provider.verifyWebhook(Buffer.from(body, 'utf8'), 't=1,v1=deadbeef')).toThrow(

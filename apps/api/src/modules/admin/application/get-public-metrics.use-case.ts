@@ -14,6 +14,7 @@
  * inferable from polling.
  */
 import { Inject, Injectable } from '@nestjs/common';
+import { CLOCK, type Clock } from '@app/clock';
 import { PrismaService } from '../../../common/db/prisma.service';
 
 export interface PublicMetrics {
@@ -32,10 +33,13 @@ function fuzz(n: number): number {
 
 @Injectable()
 export class GetPublicMetricsUseCase {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {}
 
   async execute(): Promise<PublicMetrics> {
-    const now = new Date();
+    const now = this.clock.now();
     const monthAgo = new Date(now.getTime() - 30 * MS_DAY);
     const weekAgo = new Date(now.getTime() - 7 * MS_DAY);
     const [trips, books, activeUsers] = await Promise.all([

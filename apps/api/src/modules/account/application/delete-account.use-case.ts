@@ -23,6 +23,7 @@ import { ConfigService } from '@nestjs/config';
 import type { Env } from '@app/config';
 import { UserNotFoundError } from '@app/errors';
 import { createLogger } from '@app/logger';
+import { CLOCK, type Clock } from '@app/clock';
 import { ACCOUNT_DELETER, type AccountDeleter } from './ports/account-deleter';
 import { MAILER_PORT, type MailerPort } from '../../../common/mailer/mailer.port';
 import { mintReactivationToken } from '../../../common/crypto/reactivation-token';
@@ -35,10 +36,11 @@ export class DeleteAccountUseCase {
     @Inject(ConfigService) private readonly config: ConfigService<Env, true>,
     @Inject(ACCOUNT_DELETER) private readonly deleter: AccountDeleter,
     @Inject(MAILER_PORT) private readonly mailer: MailerPort,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   async execute(userId: string): Promise<void> {
-    const result = await this.deleter.softDeleteAndRevokeSessions(userId, new Date());
+    const result = await this.deleter.softDeleteAndRevokeSessions(userId, this.clock.now());
     if (!result.ok) throw new UserNotFoundError(userId);
     if (result.email !== null) {
       try {

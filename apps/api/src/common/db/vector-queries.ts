@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { CLOCK, type Clock } from '@app/clock';
 import { PrismaService } from './prisma.service';
 
 /**
@@ -22,7 +23,10 @@ const DEFAULT_MODEL = 'unknown';
 
 @Injectable()
 export class VectorQueries {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {}
 
   /**
    * Upsert an embedding for a given Place row. The `PlaceEmbedding`
@@ -38,7 +42,7 @@ export class VectorQueries {
   ): Promise<void> {
     assertDimension(embedding);
     const vecLiteral = toVectorLiteral(embedding);
-    const now = new Date();
+    const now = this.clock.now();
     await this.prisma.$executeRaw`
       INSERT INTO "PlaceEmbedding" ("placeId", model, embedding, "updatedAt")
       VALUES (${placeId}, ${model}, ${vecLiteral}::vector, ${now})

@@ -26,6 +26,7 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { NotFoundError } from '@app/errors';
+import { CLOCK, type Clock } from '@app/clock';
 import { PrismaService } from '../../../common/db/prisma.service';
 import type { ItineraryDay } from '../domain/itinerary.entity';
 import type { Trip } from '../domain/trip.entity';
@@ -52,6 +53,7 @@ export class ResolveTripShareUseCase {
     // Identity module's user repo is focused on auth, not
     // display-name lookups.
     @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   async execute(code: string): Promise<ResolvedShare> {
@@ -59,7 +61,7 @@ export class ResolveTripShareUseCase {
     if (!share || !share.publicRead) {
       throw new NotFoundError('Share not found', { shareCode: code }, 'SHARE_NOT_FOUND');
     }
-    if (share.expiresAt && share.expiresAt.getTime() <= Date.now()) {
+    if (share.expiresAt && share.expiresAt.getTime() <= this.clock.nowMs()) {
       throw new NotFoundError(
         'Share has expired',
         { shareCode: code, expiredAt: share.expiresAt.toISOString() },

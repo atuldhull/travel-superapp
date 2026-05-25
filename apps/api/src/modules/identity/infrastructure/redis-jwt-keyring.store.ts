@@ -33,6 +33,7 @@ import Redis from 'ioredis';
 import { secretFromString, type JwtKey, type JwtKeyring } from '@app/auth';
 import type { Env } from '@app/config';
 import { createLogger } from '@app/logger';
+import { CLOCK, type Clock } from '@app/clock';
 import type { JwtKeyringStore, RingName } from '../application/ports/jwt-keyring.store';
 
 const log = createLogger('identity.jwt-keyring');
@@ -61,7 +62,10 @@ export class RedisJwtKeyringStore implements JwtKeyringStore, OnModuleDestroy {
   private readonly envRefreshSecret: string;
   private readonly cache = new Map<RingName, { ring: JwtKeyring; expiresAt: number }>();
 
-  constructor(@Inject(ConfigService) config: ConfigService<Env, true>) {
+  constructor(
+    @Inject(ConfigService) config: ConfigService<Env, true>,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {
     this.redis = new Redis(config.get('REDIS_URL', { infer: true }), {
       lazyConnect: true,
       maxRetriesPerRequest: 2,
@@ -84,7 +88,7 @@ export class RedisJwtKeyringStore implements JwtKeyringStore, OnModuleDestroy {
   }
 
   async getRing(name: RingName): Promise<JwtKeyring> {
-    const now = Date.now();
+    const now = this.clock.nowMs();
     const cached = this.cache.get(name);
     if (cached && cached.expiresAt > now) return cached.ring;
 

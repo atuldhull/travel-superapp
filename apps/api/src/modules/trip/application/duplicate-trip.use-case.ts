@@ -23,6 +23,7 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { NotFoundError } from '@app/errors';
+import { CLOCK, type Clock } from '@app/clock';
 import { GeoQueries } from '../../../common/db/geo-queries';
 import type { Trip } from '../domain/trip.entity';
 import {
@@ -46,6 +47,7 @@ export class DuplicateTripUseCase {
     @Inject(TRIP_REPOSITORY) private readonly trips: TripRepository,
     @Inject(ITINERARY_REPOSITORY) private readonly itinerary: ItineraryRepository,
     @Inject(GeoQueries) private readonly geo: GeoQueries,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   async execute(cmd: DuplicateTripCommand): Promise<Trip> {
@@ -87,7 +89,7 @@ export class DuplicateTripUseCase {
     // Recompute day dates against the duplicate's startsOn so the
     // copy is internally consistent — `dayIndex` 0 maps to the new
     // trip's startsOn (or, when no startsOn, falls back to today).
-    const baseDate = duplicate.startsOn ?? source.startsOn ?? new Date();
+    const baseDate = duplicate.startsOn ?? source.startsOn ?? this.clock.now();
     const baseUtc = new Date(
       Date.UTC(baseDate.getUTCFullYear(), baseDate.getUTCMonth(), baseDate.getUTCDate()),
     );

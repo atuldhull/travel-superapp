@@ -13,6 +13,7 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { NotFoundError } from '@app/errors';
+import { CLOCK, type Clock } from '@app/clock';
 import { TRIP_SHARE_REPOSITORY, type TripShareRepository } from '../../trip';
 import {
   TRIP_HEART_COUNTER_PORT,
@@ -24,6 +25,7 @@ export class HeartSharedTripUseCase {
   constructor(
     @Inject(TRIP_SHARE_REPOSITORY) private readonly shares: TripShareRepository,
     @Inject(TRIP_HEART_COUNTER_PORT) private readonly counter: TripHeartCounterPort,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   async execute(shareCode: string): Promise<{ readonly tripId: string; readonly hearts: number }> {
@@ -31,7 +33,7 @@ export class HeartSharedTripUseCase {
     if (!share || !share.publicRead) {
       throw new NotFoundError('Share not found', { shareCode }, 'SHARE_NOT_FOUND');
     }
-    if (share.expiresAt && share.expiresAt.getTime() <= Date.now()) {
+    if (share.expiresAt && share.expiresAt.getTime() <= this.clock.nowMs()) {
       throw new NotFoundError(
         'Share has expired',
         { shareCode, expiredAt: share.expiresAt.toISOString() },

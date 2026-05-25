@@ -6,7 +6,8 @@
  *
  * Installed for Phase 1 — Onboarding & Identity.
  */
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { CLOCK, type Clock } from '@app/clock';
 import { PrismaService } from '../../../common/db/prisma.service';
 import type { LoginChannel, LoginCode } from '../domain/login-code.entity';
 import type { LoginCodeRepository } from '../application/ports/login-code.repository';
@@ -37,7 +38,10 @@ function toDomain(row: LoginCodeRow): LoginCode {
 
 @Injectable()
 export class PrismaLoginCodeRepository implements LoginCodeRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {}
 
   async create(input: {
     readonly channel: LoginChannel;
@@ -58,7 +62,7 @@ export class PrismaLoginCodeRepository implements LoginCodeRepository {
 
   async findActive(destHash: string): Promise<LoginCode | null> {
     const row = await this.prisma.loginCode.findFirst({
-      where: { destHash, consumedAt: null, expiresAt: { gt: new Date() } },
+      where: { destHash, consumedAt: null, expiresAt: { gt: this.clock.now() } },
       orderBy: { createdAt: 'desc' },
     });
     return row ? toDomain(row) : null;
@@ -82,7 +86,7 @@ export class PrismaLoginCodeRepository implements LoginCodeRepository {
   }
 
   async countRecent(destHash: string, withinMs: number): Promise<number> {
-    const since = new Date(Date.now() - withinMs);
+    const since = new Date(this.clock.nowMs() - withinMs);
     return this.prisma.loginCode.count({
       where: { destHash, createdAt: { gte: since } },
     });

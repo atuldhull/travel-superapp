@@ -22,6 +22,7 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { createLogger } from '@app/logger';
+import { CLOCK, type Clock } from '@app/clock';
 import {
   NOTIFICATION_LOG_REPOSITORY,
   type NotificationLogRepository,
@@ -57,6 +58,7 @@ export class LoggingNotificationSender implements NotificationSender {
     private readonly prefsRepo: NotificationPreferenceRepository,
     @Inject(WebPushDispatcher)
     private readonly webPush: WebPushDispatcher,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   async send(input: SendNotificationInput): Promise<void> {
@@ -123,7 +125,7 @@ export class LoggingNotificationSender implements NotificationSender {
     }
 
     try {
-      const now = new Date();
+      const now = this.clock.now();
       await this.logRepo.create({
         userId: input.userId,
         channel: input.channel,

@@ -2,6 +2,7 @@
  * Pure unit tests for `SafetyProximitySignalAdapter` (Phase 6, I4).
  * No DB, no network — proves the qualify logic deterministically.
  */
+import { SYSTEM_CLOCK } from '@app/clock';
 import { SafetyProximitySignalAdapter } from '../src/modules/agent/infrastructure/safety-proximity-signal.adapter';
 import type { NearbyScamReport } from '../src/modules/agent/application/ports/signal-source.port';
 
@@ -10,7 +11,7 @@ function report(over: Partial<NearbyScamReport> = {}): NearbyScamReport {
 }
 
 describe('SafetyProximitySignalAdapter (unit)', () => {
-  const adapter = new SafetyProximitySignalAdapter();
+  const adapter = new SafetyProximitySignalAdapter(SYSTEM_CLOCK);
   const baseQuery = { kind: 'safety_proximity' as const, lat: 0, lng: 0 };
 
   it('returns kind="safety_proximity" and an observedAt timestamp', async () => {

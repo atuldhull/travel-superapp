@@ -15,6 +15,7 @@ import {
   assertEmbeddingDimension,
   EMBEDDING_DIMENSIONS,
 } from '../src/modules/feed/application/ports/embedding.port';
+import { SYSTEM_CLOCK } from '@app/clock';
 import { StubEmbeddingAdapter } from '../src/modules/feed/infrastructure/stub-embedding.adapter';
 import { PrismaTripPublicationRepository } from '../src/modules/feed/infrastructure/prisma-trip-publication.repository';
 import { PublishTripUseCase } from '../src/modules/feed/application/publish-trip.use-case';
@@ -175,7 +176,7 @@ describe('PublishTripUseCase embed-on-publish is BEST-EFFORT', () => {
   it('Ollama unavailable (embed→null): publish STILL succeeds, skip-index', async () => {
     const pubs = new FakePubs();
     const embeddings: EmbeddingPort = { embed: async () => null };
-    const uc = new PublishTripUseCase(trips, geo, pubs, embeddings);
+    const uc = new PublishTripUseCase(trips, geo, pubs, embeddings, SYSTEM_CLOCK);
 
     const out = await uc.execute({ tripId: 't1', userId: 'owner' });
 
@@ -187,7 +188,7 @@ describe('PublishTripUseCase embed-on-publish is BEST-EFFORT', () => {
     const pubs = new FakePubs();
     const vec = ok1024();
     const embeddings: EmbeddingPort = { embed: async () => vec };
-    const uc = new PublishTripUseCase(trips, geo, pubs, embeddings);
+    const uc = new PublishTripUseCase(trips, geo, pubs, embeddings, SYSTEM_CLOCK);
 
     await uc.execute({ tripId: 't1', userId: 'owner' });
 
@@ -198,7 +199,7 @@ describe('PublishTripUseCase embed-on-publish is BEST-EFFORT', () => {
     const pubs = new FakePubs();
     pubs.setEmbeddingThrows = true; // simulate the loud guard firing
     const embeddings: EmbeddingPort = { embed: async () => new Array(768).fill(0) };
-    const uc = new PublishTripUseCase(trips, geo, pubs, embeddings);
+    const uc = new PublishTripUseCase(trips, geo, pubs, embeddings, SYSTEM_CLOCK);
 
     // Best-effort: the user's publish resolves even though indexing blew up.
     await expect(uc.execute({ tripId: 't1', userId: 'owner' })).resolves.toMatchObject({

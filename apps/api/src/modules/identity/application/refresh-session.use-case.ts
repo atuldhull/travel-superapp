@@ -61,7 +61,7 @@ export class RefreshSessionUseCase {
     @Inject(USER_REPOSITORY) private readonly users: UserRepository,
     @Inject(TOKEN_SERVICE) private readonly tokens: TokenService,
     // [M2] Inject the clock so refresh-expiry comparisons are
-    // deterministic in tests. The implicit `Date.now()` path made
+    // deterministic in tests. The implicit `this.clock.nowMs()` path made
     // "rotate this expired session" tests racy.
     @Inject(CLOCK) private readonly clock: Clock,
   ) {}

@@ -15,6 +15,7 @@ import type { Env } from '@app/config';
 import { hashPassword, verifyPassword } from '@app/auth';
 import { RateLimitError, UnauthorizedError } from '@app/errors';
 import { createLogger } from '@app/logger';
+import { CLOCK, type Clock } from '@app/clock';
 import { isWellFormedBackupCode } from '../../../common/crypto/backup-code-hash';
 import { TOTP_PORT, type TotpPort } from './ports/totp.port';
 import {
@@ -124,6 +125,7 @@ export class LoginUseCase {
     private readonly failCounter: FailedLoginCounter,
     private readonly issueSession: IssueSessionUseCase,
     @Inject(TOTP_PORT) private readonly totp: TotpPort,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   async execute(cmd: LoginCommand): Promise<IssuedSession & { userId: string }> {
@@ -188,7 +190,7 @@ export class LoginUseCase {
     // already verified the password, so handing back a reactivation
     // token is safe (proves possession of credentials).
     if (userIncludingDeleted.deletedAt !== null) {
-      const ageMs = Date.now() - userIncludingDeleted.deletedAt.getTime();
+      const ageMs = this.clock.nowMs() - userIncludingDeleted.deletedAt.getTime();
       if (ageMs < RETENTION_WINDOW_MS) {
         const pepper = this.config.get('EMAIL_PEPPER', { infer: true }) as string;
         const token = mintReactivationToken(userIncludingDeleted.id, pepper);
