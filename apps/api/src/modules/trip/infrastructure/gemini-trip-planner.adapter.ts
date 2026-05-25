@@ -27,6 +27,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { createLogger, type AppLogger } from '@app/logger';
 import { CLOCK, type Clock } from '@app/clock';
+import { CircuitBreaker, callExternal } from '@app/resilience';
 import { groundingPreamble } from '../application/ports/trip-planner.port';
 import type {
   TripPlannerPort,
@@ -70,12 +71,25 @@ interface GeminiResponse {
 @Injectable()
 export class GeminiTripPlannerAdapter implements TripPlannerPort {
   private readonly logger: AppLogger = createLogger('gemini-trip-planner');
+  private readonly breaker: CircuitBreaker;
 
   constructor(
     private readonly apiKey: string,
     private readonly model: string,
     @Inject(CLOCK) private readonly clock: Clock,
-  ) {}
+  ) {
+    // [O1] 4 fails / 60s open. The adapter already falls back to a
+    // stub plan on error; the breaker just shortcuts the 30s
+    // timeout once Gemini is clearly degraded.
+    this.breaker = new CircuitBreaker({
+      name: 'gemini',
+      clock,
+      failureThreshold: 4,
+      openMs: 60_000,
+      onTransition: (from, to, name) =>
+        this.logger.warn({ from, to, name }, 'circuit_state_change'),
+    });
+  }
 
   async generatePlan(req: TripPlannerRequest): Promise<TripPlannerResult> {
     const url = `${ENDPOINT_BASE}/${this.model}:generateContent?key=${this.apiKey}`;
@@ -88,12 +102,16 @@ export class GeminiTripPlannerAdapter implements TripPlannerPort {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-        signal: controller.signal,
-      });
+      const response = await callExternal(
+        () =>
+          fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+            signal: controller.signal,
+          }),
+        { breaker: this.breaker, label: 'gemini.generateContent' },
+      );
       const json = (await response.json()) as GeminiResponse;
       if (!response.ok || json.error) {
         const errMsg = json.error?.message ?? `HTTP ${response.status}`;

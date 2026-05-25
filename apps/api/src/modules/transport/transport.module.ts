@@ -28,6 +28,7 @@
  */
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { SYSTEM_CLOCK } from '@app/clock';
 import type { Env } from '@app/config';
 import { GetRoutesUseCase } from './application/get-routes.use-case';
 import { GetNavigationUseCase } from './application/get-navigation.use-case';
@@ -61,7 +62,7 @@ import { TransportController } from './interface/transport.controller';
       provide: OsrmNavigationProvider,
       inject: [ConfigService],
       useFactory: (config: ConfigService<Env, true>) =>
-        new OsrmNavigationProvider(config.get('OSRM_BASE_URL', { infer: true })),
+        new OsrmNavigationProvider(config.get('OSRM_BASE_URL', { infer: true }), SYSTEM_CLOCK),
     },
     {
       provide: NAVIGATION_PROVIDER,
@@ -76,7 +77,7 @@ import { TransportController } from './interface/transport.controller';
       inject: [ConfigService],
       useFactory: (config: ConfigService<Env, true>) => {
         const key = config.get('TOMTOM_API_KEY', { infer: true });
-        return key ? new TomTomTrafficProvider(key) : null;
+        return key ? new TomTomTrafficProvider(key, SYSTEM_CLOCK) : null;
       },
     },
     {

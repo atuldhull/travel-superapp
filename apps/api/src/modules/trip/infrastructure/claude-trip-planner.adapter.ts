@@ -27,6 +27,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { Inject, Injectable } from '@nestjs/common';
 import { createLogger, type AppLogger } from '@app/logger';
 import { CLOCK, type Clock } from '@app/clock';
+import { CircuitBreaker, callExternal } from '@app/resilience';
 import type {
   TripPlannerPort,
   TripPlannerRequest,
@@ -34,6 +35,12 @@ import type {
 } from '../application/ports/trip-planner.port';
 
 const MAX_TOKENS = 1024;
+// [O1] Anthropic SDK calls go through a per-instance breaker. 8s
+// timeout matches the AI-latency SLO ceiling (docs/slos.md). 4
+// failures open the circuit for 60s — the trip planner already
+// returns a stub-prose fallback on error, so the breaker just
+// shortcuts the 8s timeout once Anthropic is clearly degraded.
+const REQUEST_TIMEOUT_MS = 8_000;
 
 const SYSTEM_PROMPT =
   `You are a concise, well-travelled itinerary writer. You produce ` +
@@ -57,6 +64,7 @@ export class ClaudeTripPlannerAdapter implements TripPlannerPort {
   private readonly client: Anthropic;
   private readonly model: string;
   private readonly logger: AppLogger = createLogger('claude-trip-planner');
+  private readonly breaker: CircuitBreaker;
 
   constructor(
     apiKey: string,
@@ -65,18 +73,34 @@ export class ClaudeTripPlannerAdapter implements TripPlannerPort {
   ) {
     this.client = new Anthropic({ apiKey });
     this.model = model;
+    this.breaker = new CircuitBreaker({
+      name: 'anthropic',
+      clock,
+      failureThreshold: 4,
+      openMs: 60_000,
+      onTransition: (from, to, name) =>
+        this.logger.warn({ from, to, name }, 'circuit_state_change'),
+    });
   }
 
   async generatePlan(req: TripPlannerRequest): Promise<TripPlannerResult> {
     const userPrompt = this.buildUserPrompt(req);
     const startedAt = this.clock.nowMs();
     try {
-      const response = await this.client.messages.create({
-        model: this.model,
-        max_tokens: MAX_TOKENS,
-        system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
-        messages: [{ role: 'user', content: userPrompt }],
-      });
+      const response = await callExternal(
+        () =>
+          this.client.messages.create({
+            model: this.model,
+            max_tokens: MAX_TOKENS,
+            system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+            messages: [{ role: 'user', content: userPrompt }],
+          }),
+        {
+          breaker: this.breaker,
+          timeoutMs: REQUEST_TIMEOUT_MS,
+          label: 'anthropic.messages.create',
+        },
+      );
       const text = response.content
         .filter((block) => block.type === 'text')
         .map((block) => (block as { text: string }).text)

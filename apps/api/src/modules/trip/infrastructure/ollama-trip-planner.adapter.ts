@@ -29,6 +29,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { createLogger, type AppLogger } from '@app/logger';
 import { CLOCK, type Clock } from '@app/clock';
+import { CircuitBreaker, callExternal } from '@app/resilience';
 import { groundingPreamble } from '../application/ports/trip-planner.port';
 import type {
   TripPlannerPort,
@@ -68,6 +69,7 @@ interface OllamaChatResponse {
 export class OllamaTripPlannerAdapter implements TripPlannerPort {
   private readonly logger: AppLogger = createLogger('ollama-trip-planner');
   private readonly endpoint: string;
+  private readonly breaker: CircuitBreaker;
 
   constructor(
     baseUrl: string,
@@ -76,6 +78,17 @@ export class OllamaTripPlannerAdapter implements TripPlannerPort {
   ) {
     // Trim trailing slashes so `${baseUrl}/api/chat` is well-formed.
     this.endpoint = `${baseUrl.replace(/\/+$/, '')}/api/chat`;
+    // [O1] Ollama runs locally — failures are usually "model not
+    // loaded" or "GPU OOM"; 3 fails opens for 60s so the planner
+    // chain falls through to Stub fast.
+    this.breaker = new CircuitBreaker({
+      name: 'ollama-trip',
+      clock,
+      failureThreshold: 3,
+      openMs: 60_000,
+      onTransition: (from, to, name) =>
+        this.logger.warn({ from, to, name }, 'circuit_state_change'),
+    });
   }
 
   async generatePlan(req: TripPlannerRequest): Promise<TripPlannerResult> {
@@ -92,12 +105,16 @@ export class OllamaTripPlannerAdapter implements TripPlannerPort {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     try {
-      const response = await fetch(this.endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-        signal: controller.signal,
-      });
+      const response = await callExternal(
+        () =>
+          fetch(this.endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+            signal: controller.signal,
+          }),
+        { breaker: this.breaker, label: 'ollama.chat' },
+      );
       const json = (await response.json()) as OllamaChatResponse;
       if (!response.ok || json.error) {
         const errMsg = json.error ?? `HTTP ${response.status}`;
