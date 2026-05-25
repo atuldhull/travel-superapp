@@ -24,6 +24,7 @@ import Stripe from 'stripe';
 import type { Env } from '@app/config';
 import { createLogger, type AppLogger } from '@app/logger';
 import { CLOCK, type Clock } from '@app/clock';
+import { CircuitBreaker, callExternal } from '@app/resilience';
 import {
   WebhookSignatureError,
   type CheckoutSessionRequest,
@@ -38,11 +39,23 @@ export class StripePaymentProvider implements PaymentProviderPort {
   private readonly priceId: string;
   private readonly webhookSecret: string;
   private readonly logger: AppLogger = createLogger('payments.stripe');
+  private readonly breaker: CircuitBreaker;
 
   constructor(
     @Inject(ConfigService) config: ConfigService<Env, true>,
     @Inject(CLOCK) private readonly clock: Clock,
   ) {
+    // [O1] 4 fails / 60s. Stripe outages are rare but expensive
+    // when they happen — every checkout 5xx is a lost conversion.
+    // The breaker lets us 503 fast + retry the checkout button.
+    this.breaker = new CircuitBreaker({
+      name: 'stripe',
+      clock,
+      failureThreshold: 4,
+      openMs: 60_000,
+      onTransition: (from, to, name) =>
+        this.logger.warn({ from, to, name }, 'circuit_state_change'),
+    });
     const apiKey = config.get('STRIPE_SECRET_KEY', { infer: true });
     if (!apiKey) {
       // Should never happen — the PaymentsModule factory only
@@ -71,28 +84,22 @@ export class StripePaymentProvider implements PaymentProviderPort {
 
   async createCheckoutSession(req: CheckoutSessionRequest): Promise<CheckoutSessionResult> {
     const startedAt = this.clock.nowMs();
-    const session = await this.client.checkout.sessions.create({
-      mode: 'subscription',
-      line_items: [{ price: this.priceId, quantity: 1 }],
-      success_url: req.successUrl,
-      cancel_url: req.cancelUrl,
-      // Re-use the existing Stripe Customer when the user already has
-      // a Subscription. Otherwise let Stripe create one keyed by
-      // customer_email so we don't end up with duplicates if the user
-      // returns later from a different device.
-      ...(req.stripeCustomerId
-        ? { customer: req.stripeCustomerId }
-        : { customer_email: req.userEmail, customer_creation: 'always' }),
-      // Stash our internal user id on both the session AND the
-      // resulting Subscription so the webhook handler can map back
-      // without an extra lookup.
-      client_reference_id: req.userId,
-      subscription_data: {
-        metadata: { internalUserId: req.userId },
-      },
-      // Allow promotion codes since we'll likely run launch promos.
-      allow_promotion_codes: true,
-    });
+    const session = await callExternal(
+      () =>
+        this.client.checkout.sessions.create({
+          mode: 'subscription',
+          line_items: [{ price: this.priceId, quantity: 1 }],
+          success_url: req.successUrl,
+          cancel_url: req.cancelUrl,
+          ...(req.stripeCustomerId
+            ? { customer: req.stripeCustomerId }
+            : { customer_email: req.userEmail, customer_creation: 'always' }),
+          client_reference_id: req.userId,
+          subscription_data: { metadata: { internalUserId: req.userId } },
+          allow_promotion_codes: true,
+        }),
+      { breaker: this.breaker, timeoutMs: 10_000, label: 'stripe.checkout.create' },
+    );
     if (!session.url) {
       throw new Error('Stripe returned a session without a URL');
     }
@@ -127,10 +134,14 @@ export class StripePaymentProvider implements PaymentProviderPort {
   }
 
   async getCustomerPortalUrl(stripeCustomerId: string, returnUrl: string): Promise<string> {
-    const session = await this.client.billingPortal.sessions.create({
-      customer: stripeCustomerId,
-      return_url: returnUrl,
-    });
+    const session = await callExternal(
+      () =>
+        this.client.billingPortal.sessions.create({
+          customer: stripeCustomerId,
+          return_url: returnUrl,
+        }),
+      { breaker: this.breaker, timeoutMs: 10_000, label: 'stripe.portal.create' },
+    );
     return session.url;
   }
 }

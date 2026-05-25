@@ -14,8 +14,10 @@
  *
  * Installed for the live-navigation feature.
  */
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { createLogger, type AppLogger } from '@app/logger';
+import { CLOCK, type Clock } from '@app/clock';
+import { CircuitBreaker, callExternal } from '@app/resilience';
 import type {
   NavAdvisory,
   NavPoint,
@@ -43,8 +45,23 @@ interface FlowSegmentData {
 @Injectable()
 export class TomTomTrafficProvider implements TrafficProvider {
   private readonly logger: AppLogger = createLogger('transport.traffic.tomtom');
+  private readonly breaker: CircuitBreaker;
 
-  constructor(private readonly apiKey: string) {}
+  constructor(
+    private readonly apiKey: string,
+    @Inject(CLOCK) clock: Clock,
+  ) {
+    // [O1] 5 fails / 60s. Each /annotate call fans out to 6 samples;
+    // a degraded TomTom would otherwise hammer them all 6x per call.
+    this.breaker = new CircuitBreaker({
+      name: 'tomtom',
+      clock,
+      failureThreshold: 5,
+      openMs: 60_000,
+      onTransition: (from, to, name) =>
+        this.logger.warn({ from, to, name }, 'circuit_state_change'),
+    });
+  }
 
   async annotate(input: TrafficAnnotateInput): Promise<TrafficAnnotation> {
     const n = input.geometry.length;
@@ -105,7 +122,10 @@ export class TomTomTrafficProvider implements TrafficProvider {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
     try {
-      const res = await fetch(url, { signal: ctrl.signal });
+      const res = await callExternal(() => fetch(url, { signal: ctrl.signal }), {
+        breaker: this.breaker,
+        label: 'tomtom.flowSegmentData',
+      });
       if (!res.ok) throw new Error(`TomTom HTTP ${res.status}`);
       const json = (await res.json()) as FlowSegmentData;
       const d = json.flowSegmentData;

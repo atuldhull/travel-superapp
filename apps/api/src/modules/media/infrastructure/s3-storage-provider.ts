@@ -35,6 +35,7 @@ import { ConfigService } from '@nestjs/config';
 import type { Env } from '@app/config';
 import { createLogger } from '@app/logger';
 import { CLOCK, type Clock } from '@app/clock';
+import { CircuitBreaker, callExternal } from '@app/resilience';
 import type {
   PresignedUploadRequest,
   StorageProvider,
@@ -53,6 +54,7 @@ const INTERNAL_SIG_TTL_SEC = 60;
 export class S3StorageProvider implements StorageProvider, OnModuleInit {
   private readonly client: S3Client;
   private readonly bucket: string;
+  private readonly breaker: CircuitBreaker;
 
   constructor(
     @Inject(ConfigService) config: ConfigService<Env, true>,
@@ -67,6 +69,27 @@ export class S3StorageProvider implements StorageProvider, OnModuleInit {
         secretAccessKey: config.get('S3_SECRET_KEY', { infer: true }),
       },
       forcePathStyle: true,
+    });
+    // [O1] 8 fails / 30s — S3 is typically reliable so the threshold
+    // is permissive. The 8 fetch sites (HEAD / GET / PUT / DELETE on
+    // pre-signed URLs) share one breaker via `s3Fetch()` below.
+    this.breaker = new CircuitBreaker({
+      name: 's3',
+      clock,
+      failureThreshold: 8,
+      openMs: 30_000,
+      onTransition: (from, to, name) => log.warn({ from, to, name }, 'circuit_state_change'),
+    });
+  }
+
+  /** Internal helper — wraps every pre-signed-URL fetch with the
+   *  per-instance breaker. 5s default timeout matches S3's median
+   *  latency × 5; a single hang shouldn't wedge the route. */
+  private s3Fetch(url: string, init: RequestInit, label: string): Promise<Response> {
+    return callExternal(() => fetch(url, init), {
+      breaker: this.breaker,
+      timeoutMs: 5_000,
+      label,
     });
   }
 
@@ -87,7 +110,7 @@ export class S3StorageProvider implements StorageProvider, OnModuleInit {
     try {
       const headCmd = new HeadBucketCommand({ Bucket: this.bucket });
       const url = await getSignedUrl(this.client, headCmd, { expiresIn: INTERNAL_SIG_TTL_SEC });
-      const res = await fetch(url, { method: 'HEAD' });
+      const res = await this.s3Fetch(url, { method: 'HEAD' }, 's3.headBucket');
       const latencyMs = this.clock.nowMs() - startedAt;
       if (res.ok || res.status === 404) {
         return { ok: true, latencyMs };
@@ -119,7 +142,7 @@ export class S3StorageProvider implements StorageProvider, OnModuleInit {
   async objectExists(key: string): Promise<boolean> {
     const cmd = new HeadObjectCommand({ Bucket: this.bucket, Key: key });
     const url = await getSignedUrl(this.client, cmd, { expiresIn: INTERNAL_SIG_TTL_SEC });
-    const res = await fetch(url, { method: 'HEAD' });
+    const res = await this.s3Fetch(url, { method: 'HEAD' }, 's3.headObject');
     if (res.status === 404) return false;
     if (res.ok) return true;
     throw new Error(`Unexpected HeadObject status ${res.status}`);
@@ -152,7 +175,7 @@ export class S3StorageProvider implements StorageProvider, OnModuleInit {
         ...(continuationToken !== undefined ? { ContinuationToken: continuationToken } : {}),
       });
       const url = await getSignedUrl(this.client, cmd, { expiresIn: INTERNAL_SIG_TTL_SEC });
-      const res = await fetch(url, { method: 'GET' });
+      const res = await this.s3Fetch(url, { method: 'GET' }, 's3.getObject');
       if (!res.ok) {
         throw new Error(`ListObjectsV2 status ${res.status}`);
       }
@@ -175,7 +198,7 @@ export class S3StorageProvider implements StorageProvider, OnModuleInit {
   async deleteObject(key: string): Promise<void> {
     const cmd = new DeleteObjectCommand({ Bucket: this.bucket, Key: key });
     const url = await getSignedUrl(this.client, cmd, { expiresIn: INTERNAL_SIG_TTL_SEC });
-    const res = await fetch(url, { method: 'DELETE' });
+    const res = await this.s3Fetch(url, { method: 'DELETE' }, 's3.deleteObject');
     // S3 returns 204 for both "deleted" and "didn't exist" — both
     // are success from our caller's POV (idempotent semantics).
     if (res.status === 204 || res.ok) return;
@@ -195,11 +218,11 @@ export class S3StorageProvider implements StorageProvider, OnModuleInit {
       ContentType: contentType,
     });
     const url = await getSignedUrl(this.client, cmd, { expiresIn: INTERNAL_SIG_TTL_SEC });
-    const res = await fetch(url, {
-      method: 'PUT',
-      headers: { 'Content-Type': contentType },
-      body,
-    });
+    const res = await this.s3Fetch(
+      url,
+      { method: 'PUT', headers: { 'Content-Type': contentType }, body },
+      's3.putObject',
+    );
     if (!res.ok) throw new Error(`PutObject status ${res.status}`);
   }
 
@@ -212,7 +235,7 @@ export class S3StorageProvider implements StorageProvider, OnModuleInit {
   async getObject(key: string): Promise<Buffer> {
     const cmd = new GetObjectCommand({ Bucket: this.bucket, Key: key });
     const url = await getSignedUrl(this.client, cmd, { expiresIn: INTERNAL_SIG_TTL_SEC });
-    const res = await fetch(url, { method: 'GET' });
+    const res = await this.s3Fetch(url, { method: 'GET' }, 's3.putObject');
     if (!res.ok) throw new Error(`GetObject status ${res.status}`);
     return Buffer.from(await res.arrayBuffer());
   }
@@ -231,7 +254,7 @@ export class S3StorageProvider implements StorageProvider, OnModuleInit {
     }
     let exists = false;
     try {
-      const headRes = await fetch(headUrl, { method: 'HEAD' });
+      const headRes = await this.s3Fetch(headUrl, { method: 'HEAD' }, 's3.headBucket.ensure');
       if (headRes.ok) {
         exists = true;
       } else if (headRes.status !== 404) {
@@ -252,7 +275,7 @@ export class S3StorageProvider implements StorageProvider, OnModuleInit {
       const createUrl = await getSignedUrl(this.client, createCmd, {
         expiresIn: INTERNAL_SIG_TTL_SEC,
       });
-      const createRes = await fetch(createUrl, { method: 'PUT' });
+      const createRes = await this.s3Fetch(createUrl, { method: 'PUT' }, 's3.createBucket');
       if (createRes.ok) {
         log.info({ bucket: this.bucket }, 'bucket_created');
         return;

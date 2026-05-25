@@ -22,6 +22,7 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { CircuitBreaker, CircuitOpenError, callExternal } from '@app/resilience';
 import { Resend } from 'resend';
 import type { Env } from '@app/config';
 import { DomainError } from '@app/errors';
@@ -45,6 +46,7 @@ export class ResendMailerAdapter implements MailerPort {
   private readonly client: Resend;
   private readonly fromAddress: string;
   private readonly logger: AppLogger = createLogger('resend-mailer');
+  private readonly breaker: CircuitBreaker;
 
   constructor(
     @Inject(ConfigService) config: ConfigService<Env, true>,
@@ -61,19 +63,40 @@ export class ResendMailerAdapter implements MailerPort {
     const fromEmail = config.get('EMAIL_FROM_ADDRESS', { infer: true });
     // RFC 5322 "Name <addr@domain>" form — Resend accepts this directly.
     this.fromAddress = `${fromName} <${fromEmail}>`;
+    // [O1] 5 fails / 30s open. Email is high-volume + idempotent; a
+    // breaker keeps a Resend outage from cascading into 5xx on signup.
+    this.breaker = new CircuitBreaker({
+      name: 'resend',
+      clock,
+      failureThreshold: 5,
+      openMs: 30_000,
+      onTransition: (from, to, name) =>
+        this.logger.warn({ from, to, name }, 'circuit_state_change'),
+    });
   }
 
   async send(message: MailMessage): Promise<void> {
     const html = message.htmlBody ?? this.synthesiseHtmlFromText(message.textBody);
     const startedAt = this.clock.nowMs();
     try {
-      const result = await this.client.emails.send({
-        from: this.fromAddress,
-        to: message.to,
-        subject: message.subject,
-        text: message.textBody,
-        html,
-      });
+      const result = await callExternal(
+        () =>
+          this.client.emails.send({
+            from: this.fromAddress,
+            to: message.to,
+            subject: message.subject,
+            text: message.textBody,
+            html,
+          }),
+        {
+          breaker: this.breaker,
+          timeoutMs: 10_000,
+          label: 'resend.emails.send',
+          onCircuitOpen: (err: CircuitOpenError) => {
+            throw new MailDeliveryError('Resend circuit open', err.message);
+          },
+        },
+      );
       // Resend SDK shape: { data: { id }, error: null } on success;
       // { data: null, error: { message, name, statusCode } } on failure.
       if (result.error) {

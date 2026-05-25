@@ -179,6 +179,53 @@ describe('architecture fitness — banned patterns', () => {
   });
 });
 
+describe('architecture fitness — external adapters wrapped in circuit breaker ([O1])', () => {
+  // Every external call (fetch / SDK method to a paid or 3P service)
+  // MUST go through `@app/resilience`'s `CircuitBreaker`. Without
+  // this, a single upstream hiccup cascades into 5xx on our routes
+  // (the canonical near-me-502-from-Open-Meteo example). Files that
+  // call `fetch(` OR import an external SDK are checked against the
+  // `@app/resilience` import + `CircuitBreaker|callExternal` token.
+  const srcFiles = [...walkTs(API_SRC)];
+
+  // Some files use `fetch(` for INTERNAL hops where a breaker would
+  // be wrong (e.g. the health indicator IS the probe). Allowlist them
+  // explicitly + keep this list TINY and DOCUMENTED.
+  const ALLOWLIST = new Set<string>([
+    // The health indicator IS the probe; wrapping it would defeat
+    // its purpose (a broken upstream IS what we want to surface).
+    'health/indicators/http-ping.indicator.ts',
+  ]);
+
+  const SDK_HINTS = [
+    /from\s+['"]@anthropic-ai\/sdk/,
+    /from\s+['"]@aws-sdk\/client-s3/,
+    /from\s+['"]stripe['"]/,
+    /from\s+['"]resend['"]/,
+    /require\(['"]twilio['"]\)/,
+    /import\s+.*from\s+['"]twilio['"]/,
+  ];
+
+  it('every external-call adapter imports @app/resilience', () => {
+    const offenders: string[] = [];
+    for (const rel of srcFiles) {
+      const norm = rel.replace(/\\/g, '/');
+      if (ALLOWLIST.has(norm)) continue;
+      const source = readFileSync(join(API_SRC, rel), 'utf8');
+      // Three classes of external call: native fetch, an upstream SDK
+      // import, OR `client.<method>` patterns we know wrap SDKs.
+      const usesFetch = /\bawait\s+fetch\(|\bfetch\(['"`]/.test(source);
+      const usesSdk = SDK_HINTS.some((re) => re.test(source));
+      const isAdapter = /\/infrastructure\//.test(norm) || /\/common\/mailer\//.test(norm);
+      if (!isAdapter) continue;
+      if (!(usesFetch || usesSdk)) continue;
+      if (/@app\/resilience/.test(source)) continue;
+      offenders.push(rel);
+    }
+    expect(offenders).toEqual([]);
+  });
+});
+
 describe('architecture fitness — shutdown hooks present ([M1])', () => {
   // L1 + L3 dropped --runInBand AND --forceExit by giving every
   // long-lived handle a real teardown. THESE invariants stop the

@@ -20,6 +20,7 @@
  */
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { SYSTEM_CLOCK } from '@app/clock';
 import type { Env } from '@app/config';
 import { CreateDiaryEntryUseCase } from './application/create-diary-entry.use-case';
 import { ListDiaryEntriesUseCase } from './application/list-diary-entries.use-case';
@@ -51,19 +52,25 @@ import { DiaryController } from './interface/diary.controller';
       useFactory: (config: ConfigService<Env, true>) => {
         const geminiKey = config.get('GEMINI_API_KEY', { infer: true });
         if (geminiKey) {
-          return new LlmDiaryAssistant({
-            provider: 'gemini',
-            model: config.get('GEMINI_MODEL', { infer: true }),
-            credential: geminiKey,
-          });
+          return new LlmDiaryAssistant(
+            {
+              provider: 'gemini',
+              model: config.get('GEMINI_MODEL', { infer: true }),
+              credential: geminiKey,
+            },
+            SYSTEM_CLOCK,
+          );
         }
         const ollamaUrl = config.get('OLLAMA_URL', { infer: true });
         if (ollamaUrl) {
-          return new LlmDiaryAssistant({
-            provider: 'ollama',
-            model: config.get('OLLAMA_MODEL', { infer: true }),
-            credential: ollamaUrl,
-          });
+          return new LlmDiaryAssistant(
+            {
+              provider: 'ollama',
+              model: config.get('OLLAMA_MODEL', { infer: true }),
+              credential: ollamaUrl,
+            },
+            SYSTEM_CLOCK,
+          );
         }
         return null;
       },

@@ -16,8 +16,10 @@
  *
  * Installed for the live-navigation feature.
  */
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { createLogger, type AppLogger } from '@app/logger';
+import { CLOCK, type Clock } from '@app/clock';
+import { CircuitBreaker, callExternal } from '@app/resilience';
 import type { NavPoint, NavRouteFlavor, RawNavRoute } from '../domain/nav-route.entity';
 import type { NavigationInput, NavigationProvider } from '../application/ports/navigation-provider';
 
@@ -48,8 +50,24 @@ export function buildOsrmUrl(baseUrl: string, points: readonly NavPoint[]): stri
 @Injectable()
 export class OsrmNavigationProvider implements NavigationProvider {
   private readonly logger: AppLogger = createLogger('transport.nav.osrm');
+  private readonly breaker: CircuitBreaker;
 
-  constructor(private readonly baseUrl: string) {}
+  constructor(
+    private readonly baseUrl: string,
+    @Inject(CLOCK) clock: Clock,
+  ) {
+    // [O1] 5 fails / 60s. OSRM throws on failure → composite falls
+    // back to mock; breaker stops the timeout latency from
+    // accumulating.
+    this.breaker = new CircuitBreaker({
+      name: 'osrm',
+      clock,
+      failureThreshold: 5,
+      openMs: 60_000,
+      onTransition: (from, to, name) =>
+        this.logger.warn({ from, to, name }, 'circuit_state_change'),
+    });
+  }
 
   async getRoutes(input: NavigationInput): Promise<readonly RawNavRoute[]> {
     const points: NavPoint[] = [
@@ -61,7 +79,10 @@ export class OsrmNavigationProvider implements NavigationProvider {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
     try {
-      const res = await fetch(url, { signal: ctrl.signal });
+      const res = await callExternal(() => fetch(url, { signal: ctrl.signal }), {
+        breaker: this.breaker,
+        label: 'osrm.route',
+      });
       if (!res.ok) throw new Error(`OSRM HTTP ${res.status}`);
       const json = (await res.json()) as OsrmResponse;
       if (json.code !== 'Ok' || !json.routes || json.routes.length === 0) {
