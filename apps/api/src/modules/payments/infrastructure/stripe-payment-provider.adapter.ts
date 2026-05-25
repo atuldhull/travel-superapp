@@ -23,6 +23,7 @@ import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 import type { Env } from '@app/config';
 import { createLogger, type AppLogger } from '@app/logger';
+import { CLOCK, type Clock } from '@app/clock';
 import {
   WebhookSignatureError,
   type CheckoutSessionRequest,
@@ -38,7 +39,10 @@ export class StripePaymentProvider implements PaymentProviderPort {
   private readonly webhookSecret: string;
   private readonly logger: AppLogger = createLogger('payments.stripe');
 
-  constructor(@Inject(ConfigService) config: ConfigService<Env, true>) {
+  constructor(
+    @Inject(ConfigService) config: ConfigService<Env, true>,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {
     const apiKey = config.get('STRIPE_SECRET_KEY', { infer: true });
     if (!apiKey) {
       // Should never happen — the PaymentsModule factory only
@@ -66,7 +70,7 @@ export class StripePaymentProvider implements PaymentProviderPort {
   }
 
   async createCheckoutSession(req: CheckoutSessionRequest): Promise<CheckoutSessionResult> {
-    const startedAt = Date.now();
+    const startedAt = this.clock.nowMs();
     const session = await this.client.checkout.sessions.create({
       mode: 'subscription',
       line_items: [{ price: this.priceId, quantity: 1 }],
@@ -96,7 +100,7 @@ export class StripePaymentProvider implements PaymentProviderPort {
       {
         userId: req.userId,
         sessionId: session.id,
-        latencyMs: Date.now() - startedAt,
+        latencyMs: this.clock.nowMs() - startedAt,
       },
       'stripe_checkout_session_created',
     );

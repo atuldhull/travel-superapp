@@ -7,6 +7,7 @@
  * Installed by prompt [IV.18.15.1].
  */
 import { Inject, Injectable } from '@nestjs/common';
+import { CLOCK, type Clock } from '@app/clock';
 import type {
   NotificationChannel as PrismaNotificationChannel,
   NotificationDeliveryStatus as PrismaNotificationDeliveryStatus,
@@ -26,7 +27,10 @@ import type {
 
 @Injectable()
 export class PrismaNotificationLogRepository implements NotificationLogRepository {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {}
 
   async create(input: CreateNotificationLogInput): Promise<NotificationLog> {
     const row = await this.prisma.notificationLog.create({
@@ -129,7 +133,7 @@ export class PrismaNotificationLogRepository implements NotificationLogRepositor
     // want the call to be idempotent.
     const result = await this.prisma.notificationLog.updateMany({
       where: { id, userId, archivedAt: null },
-      data: { archivedAt: new Date() },
+      data: { archivedAt: this.clock.now() },
     });
     if (result.count === 1) return true;
     // Either already archived (idempotent success) or not-our-row

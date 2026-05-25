@@ -40,7 +40,7 @@ export class LockTripUseCase {
   constructor(
     @Inject(TRIP_REPOSITORY) private readonly trips: TripRepository,
     @Inject(EVENT_BUS) private readonly events: EventBus,
-    // [M2] Clock injection — replaces the implicit `new Date()` that
+    // [M2] Clock injection — replaces the implicit `this.clock.now()` that
     // markLocked() defaults to. Tests bind a FakeClock to deterministically
     // drive the `updatedAt` stamp.
     @Inject(CLOCK) private readonly clock: Clock,

@@ -13,8 +13,9 @@
  * landing page goes viral. Cache key is global (the response has no
  * per-user shape).
  */
-import { Controller, Get, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, Inject } from '@nestjs/common';
 import { ApiOperation, ApiProperty, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { CLOCK, type Clock } from '@app/clock';
 import { Public } from '../../../common/auth';
 import {
   GetPublicMetricsUseCase,
@@ -47,7 +48,10 @@ interface CacheEntry {
 export class PublicMetricsController {
   private cache: CacheEntry | null = null;
 
-  constructor(private readonly getUc: GetPublicMetricsUseCase) {}
+  constructor(
+    private readonly getUc: GetPublicMetricsUseCase,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {}
 
   @ApiOperation({
     summary: 'V.UX.40 — anonymized landing-page counts. Public, 5-min cached, fuzzed under 1000.',
@@ -61,7 +65,7 @@ export class PublicMetricsController {
   @Get()
   @HttpCode(HttpStatus.OK)
   async get(): Promise<PublicMetrics> {
-    const now = Date.now();
+    const now = this.clock.nowMs();
     if (this.cache && this.cache.expiresAt > now) {
       return this.cache.value;
     }

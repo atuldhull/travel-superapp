@@ -14,6 +14,7 @@
  */
 import { forwardRef, Module, type Provider } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { SYSTEM_CLOCK } from '@app/clock';
 import type { Env } from '@app/config';
 import { TripModule } from '../trip/trip.module';
 import { ConsumeMagicLinkUseCase } from './application/consume-magic-link.use-case';
@@ -146,7 +147,7 @@ const oauthProvidersFactory = {
       inject: [ConfigService, StubMailerAdapter],
       useFactory: (config: ConfigService<Env, true>, stub: StubMailerAdapter) => {
         const apiKey = config.get('RESEND_API_KEY', { infer: true });
-        if (apiKey) return new ResendMailerAdapter(config);
+        if (apiKey) return new ResendMailerAdapter(config, SYSTEM_CLOCK);
         return stub;
       },
     },
@@ -162,7 +163,7 @@ const oauthProvidersFactory = {
         const sid = config.get('TWILIO_ACCOUNT_SID', { infer: true });
         const token = config.get('TWILIO_AUTH_TOKEN', { infer: true });
         const from = config.get('TWILIO_FROM_NUMBER', { infer: true });
-        if (sid && token && from) return new TwilioSmsSenderAdapter(config);
+        if (sid && token && from) return new TwilioSmsSenderAdapter(config, SYSTEM_CLOCK);
         return stub;
       },
     },

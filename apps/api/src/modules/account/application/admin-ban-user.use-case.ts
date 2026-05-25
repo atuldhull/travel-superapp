@@ -18,6 +18,7 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { UserNotFoundError, ValidationError } from '@app/errors';
+import { CLOCK, type Clock } from '@app/clock';
 import {
   ADMIN_AUDIT_LOG_REPOSITORY,
   recordAdminAction,
@@ -39,6 +40,7 @@ export class AdminBanUserUseCase {
   constructor(
     @Inject(ACCOUNT_DELETER) private readonly deleter: AccountDeleter,
     @Inject(ADMIN_AUDIT_LOG_REPOSITORY) private readonly audit: AdminAuditLogRepository,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   async execute(cmd: AdminBanUserCommand): Promise<void> {
@@ -51,7 +53,7 @@ export class AdminBanUserUseCase {
         'INVALID_BAN_REASON',
       );
     }
-    const ok = await this.deleter.banUser(cmd.targetUserId, new Date(), trimmed);
+    const ok = await this.deleter.banUser(cmd.targetUserId, this.clock.now(), trimmed);
     if (!ok) throw new UserNotFoundError(cmd.targetUserId);
     await recordAdminAction(this.audit, {
       actorId: cmd.actorId,

@@ -14,6 +14,7 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { ValidationError } from '@app/errors';
+import { CLOCK, type Clock } from '@app/clock';
 import type { CrimeIncidentWithDistance, ScamSeverity } from '../domain/crime-incident.entity';
 import {
   CRIME_INCIDENT_REPOSITORY,
@@ -39,6 +40,7 @@ export interface FindNearbyCrimesCommand {
 export class FindNearbyCrimesUseCase {
   constructor(
     @Inject(CRIME_INCIDENT_REPOSITORY) private readonly crimes: CrimeIncidentRepository,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   async execute(cmd: FindNearbyCrimesCommand): Promise<readonly CrimeIncidentWithDistance[]> {
@@ -89,7 +91,9 @@ export class FindNearbyCrimesUseCase {
         : Math.max(1, Math.min(MAX_LIMIT, Math.floor(cmd.limit)));
 
     const since =
-      cmd.sinceDays === undefined ? undefined : new Date(Date.now() - cmd.sinceDays * MS_PER_DAY);
+      cmd.sinceDays === undefined
+        ? undefined
+        : new Date(this.clock.nowMs() - cmd.sinceDays * MS_PER_DAY);
 
     const rows = await this.crimes.findNearby({
       lat: cmd.lat,

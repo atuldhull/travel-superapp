@@ -27,6 +27,7 @@
  */
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { SYSTEM_CLOCK } from '@app/clock';
 import type { Env } from '@app/config';
 import { TripModule } from '../trip/trip.module';
 import { GetMyFeedUseCase } from './application/get-my-feed.use-case';
@@ -74,7 +75,7 @@ import { FeedController } from './interface/feed.controller';
         const ollamaUrl = config.get('OLLAMA_URL', { infer: true });
         if (ollamaUrl) {
           const model = config.get('EMBEDDING_MODEL', { infer: true });
-          return new OllamaEmbeddingAdapter(ollamaUrl, model);
+          return new OllamaEmbeddingAdapter(ollamaUrl, model, SYSTEM_CLOCK);
         }
         return new StubEmbeddingAdapter();
       },

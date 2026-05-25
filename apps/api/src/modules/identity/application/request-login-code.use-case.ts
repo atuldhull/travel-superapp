@@ -15,6 +15,7 @@ import { createHash, randomInt } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import type { Env } from '@app/config';
 import { ConfigService } from '@nestjs/config';
+import { CLOCK, type Clock } from '@app/clock';
 import type { LoginChannel } from '../domain/login-code.entity';
 import { LOGIN_CODE_REPOSITORY, type LoginCodeRepository } from './ports/login-code.repository';
 import { MAILER_PORT, type MailerPort } from '../../../common/mailer/mailer.port';
@@ -43,6 +44,7 @@ export class RequestLoginCodeUseCase {
     @Inject(LOGIN_CODE_REPOSITORY) private readonly codes: LoginCodeRepository,
     @Inject(MAILER_PORT) private readonly mailer: MailerPort,
     @Inject(SMS_SENDER) private readonly sms: SmsSender,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   async execute(cmd: RequestLoginCodeCommand): Promise<void> {
@@ -60,7 +62,7 @@ export class RequestLoginCodeUseCase {
       channel: cmd.channel,
       destHash,
       codeHash,
-      expiresAt: new Date(Date.now() + CODE_TTL_MS),
+      expiresAt: new Date(this.clock.nowMs() + CODE_TTL_MS),
     });
 
     const appName =

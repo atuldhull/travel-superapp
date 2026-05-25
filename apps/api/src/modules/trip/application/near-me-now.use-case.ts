@@ -22,8 +22,9 @@
  *
  * Installed by prompt [V.UX.7].
  */
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { isDomainError, ValidationError } from '@app/errors';
+import { CLOCK, type Clock } from '@app/clock';
 import { SearchPlacesUseCase, type PlaceWithDistance } from '../../places';
 import { GetSafetyScoreUseCase, type SafetyScore } from '../../safety';
 import { GetRoutesUseCase, type RouteLeg } from '../../transport';
@@ -67,6 +68,7 @@ export class NearMeNowUseCase {
     private readonly getForecast: GetForecastUseCase,
     private readonly getSafetyScore: GetSafetyScoreUseCase,
     private readonly geo: GeoQueries,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   async execute(cmd: NearMeNowCommand): Promise<NearMeNowResult> {
@@ -119,7 +121,7 @@ export class NearMeNowUseCase {
       places: out,
       weather,
       safety,
-      fetchedAt: new Date(),
+      fetchedAt: this.clock.now(),
     };
   }
 

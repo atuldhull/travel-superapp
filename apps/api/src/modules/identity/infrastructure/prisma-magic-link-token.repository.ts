@@ -6,14 +6,18 @@
  *
  * Installed by prompt [V.UX.2].
  */
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { CLOCK, type Clock } from '@app/clock';
 import { PrismaService } from '../../../common/db/prisma.service';
 import type { MagicLinkToken } from '../domain/magic-link-token.entity';
 import type { MagicLinkTokenRepository } from '../application/ports/magic-link-token.repository';
 
 @Injectable()
 export class PrismaMagicLinkTokenRepository implements MagicLinkTokenRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {}
 
   async create(input: {
     readonly emailHash: string;
@@ -34,7 +38,7 @@ export class PrismaMagicLinkTokenRepository implements MagicLinkTokenRepository 
     const row = await this.prisma.magicLinkToken.findUnique({ where: { tokenHash } });
     if (!row) return null;
     if (row.consumedAt !== null) return null;
-    if (row.expiresAt.getTime() <= Date.now()) return null;
+    if (row.expiresAt.getTime() <= this.clock.nowMs()) return null;
     return row;
   }
 
@@ -58,7 +62,7 @@ export class PrismaMagicLinkTokenRepository implements MagicLinkTokenRepository 
   }
 
   async countRecentForEmail(emailHash: string, withinMs: number): Promise<number> {
-    const since = new Date(Date.now() - withinMs);
+    const since = new Date(this.clock.nowMs() - withinMs);
     return this.prisma.magicLinkToken.count({
       where: { emailHash, createdAt: { gte: since } },
     });

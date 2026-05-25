@@ -37,11 +37,15 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { UserNotFoundError } from '@app/errors';
+import { CLOCK, type Clock } from '@app/clock';
 import { USER_DATA_AGGREGATOR, type UserDataAggregator } from './ports/user-data-aggregator';
 
 @Injectable()
 export class StreamAccountExportUseCase {
-  constructor(@Inject(USER_DATA_AGGREGATOR) private readonly agg: UserDataAggregator) {}
+  constructor(
+    @Inject(USER_DATA_AGGREGATOR) private readonly agg: UserDataAggregator,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {}
 
   /**
    * Returns an async generator of NDJSON-encoded strings, one per
@@ -53,7 +57,7 @@ export class StreamAccountExportUseCase {
     if (!bundle) throw new UserNotFoundError(userId);
 
     yield line('metadata', {
-      exportedAt: new Date().toISOString(),
+      exportedAt: this.clock.now().toISOString(),
       formatVersion: 1,
       userId,
     });

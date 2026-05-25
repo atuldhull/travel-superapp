@@ -10,6 +10,7 @@
  * Installed by prompt [V.UX.32].
  */
 import { Inject, Injectable } from '@nestjs/common';
+import { CLOCK, type Clock } from '@app/clock';
 import { PrismaService } from '../../../common/db/prisma.service';
 
 export interface StorageStats {
@@ -36,7 +37,10 @@ export interface StorageStats {
 
 @Injectable()
 export class GetStorageStatsUseCase {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {}
 
   async execute(userId: string): Promise<StorageStats> {
     const [
@@ -94,7 +98,7 @@ export class GetStorageStatsUseCase {
       dishReports,
       oauthIdentities,
       helpfulVotes,
-      computedAt: new Date().toISOString(),
+      computedAt: this.clock.now().toISOString(),
     };
   }
 }

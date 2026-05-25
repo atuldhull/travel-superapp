@@ -5,6 +5,7 @@
  * Installed by prompt [IV.18.12.5].
  */
 import { Inject, Injectable } from '@nestjs/common';
+import { CLOCK, type Clock } from '@app/clock';
 import type { Review as PrismaReview } from '@prisma/client';
 import { PrismaService } from '../../../common/db/prisma.service';
 import { Review, type ReviewTargetType } from '../domain/review.entity';
@@ -18,7 +19,10 @@ import type {
 
 @Injectable()
 export class PrismaReviewRepository implements ReviewRepository {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {}
 
   async create(input: CreateReviewInput): Promise<Review> {
     const row = await this.prisma.review.create({
@@ -112,7 +116,7 @@ export class PrismaReviewRepository implements ReviewRepository {
     // the wire shape simple; an admin/edit flow lands in a follow-up).
     const result = await this.prisma.review.updateMany({
       where: { id: input.id, responseBody: null },
-      data: { responseBody: input.responseBody, responseAt: new Date() },
+      data: { responseBody: input.responseBody, responseAt: this.clock.now() },
     });
     if (result.count === 0) return null;
     const row = await this.prisma.review.findUnique({ where: { id: input.id } });

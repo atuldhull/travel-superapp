@@ -24,6 +24,7 @@ import {
 import { TRIP_SHARE_REPOSITORY, type TripShareRepository } from '../../trip';
 import { Inject } from '@nestjs/common';
 import { NotFoundError } from '@app/errors';
+import { CLOCK, type Clock } from '@app/clock';
 import {
   HeartSharedTripResponseDto,
   SharedTripHeartCountResponseDto,
@@ -44,6 +45,7 @@ export class SharedTripReactController {
     private readonly heart: HeartSharedTripUseCase,
     @Inject(TRIP_HEART_COUNTER_PORT) private readonly counter: TripHeartCounterPort,
     @Inject(TRIP_SHARE_REPOSITORY) private readonly shares: TripShareRepository,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   @ApiOperation({
@@ -80,7 +82,7 @@ export class SharedTripReactController {
     if (!share || !share.publicRead) {
       throw new NotFoundError('Share not found', { shareCode: code }, 'SHARE_NOT_FOUND');
     }
-    if (share.expiresAt && share.expiresAt.getTime() <= Date.now()) {
+    if (share.expiresAt && share.expiresAt.getTime() <= this.clock.nowMs()) {
       throw new NotFoundError(
         'Share has expired',
         { shareCode: code, expiredAt: share.expiresAt.toISOString() },

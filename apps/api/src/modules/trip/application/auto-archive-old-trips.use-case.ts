@@ -6,6 +6,7 @@
  * Installed by prompt [V.UX.30].
  */
 import { Inject, Injectable } from '@nestjs/common';
+import { CLOCK, type Clock } from '@app/clock';
 import { TRIP_REPOSITORY, type TripRepository } from './ports/trip.repository';
 
 const DEFAULT_AGE_DAYS = 365;
@@ -18,9 +19,15 @@ export interface AutoArchiveResult {
 
 @Injectable()
 export class AutoArchiveOldTripsUseCase {
-  constructor(@Inject(TRIP_REPOSITORY) private readonly trips: TripRepository) {}
+  constructor(
+    @Inject(TRIP_REPOSITORY) private readonly trips: TripRepository,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {}
 
-  async execute(now: Date = new Date(), ageDays = DEFAULT_AGE_DAYS): Promise<AutoArchiveResult> {
+  async execute(
+    now: Date = this.clock.now(),
+    ageDays = DEFAULT_AGE_DAYS,
+  ): Promise<AutoArchiveResult> {
     const cutoff = new Date(now.getTime() - ageDays * DAY_MS);
     const archived = await this.trips.autoArchiveOlderThan(cutoff);
     return { archived, cutoff };

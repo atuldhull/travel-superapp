@@ -28,13 +28,13 @@ export type ReplanProposedEvent = DomainEventOfName<'Trip.ReplanProposed', Repla
 export function makeAgentEvent<TName extends string, TPayload>(
   name: TName,
   payload: TPayload,
-  opts: { readonly traceId?: string } = {},
+  opts: { readonly traceId?: string; readonly now?: Date } = {},
 ): DomainEvent<TPayload> & { readonly name: TName } {
   return {
     name,
     id: randomUUID(),
     version: 1,
-    occurredAt: new Date(),
+    occurredAt: opts.now ?? new Date(),
     ...(opts.traceId ? { traceId: opts.traceId } : {}),
     payload,
   };

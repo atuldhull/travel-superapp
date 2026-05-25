@@ -6,6 +6,7 @@
  * will actually delete.
  */
 import { Inject, Injectable } from '@nestjs/common';
+import { CLOCK, type Clock } from '@app/clock';
 import { DEFAULT_RETENTION_DAYS } from '../../../common/policy/retention-policy';
 import {
   COMPLIANCE_QUERIES_PORT,
@@ -15,9 +16,12 @@ import {
 
 @Injectable()
 export class GetRetentionStatsUseCase {
-  constructor(@Inject(COMPLIANCE_QUERIES_PORT) private readonly queries: ComplianceQueries) {}
+  constructor(
+    @Inject(COMPLIANCE_QUERIES_PORT) private readonly queries: ComplianceQueries,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {}
 
   async execute(): Promise<RetentionStats> {
-    return this.queries.getRetentionStats(DEFAULT_RETENTION_DAYS, new Date());
+    return this.queries.getRetentionStats(DEFAULT_RETENTION_DAYS, this.clock.now());
   }
 }

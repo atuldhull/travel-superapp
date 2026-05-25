@@ -17,6 +17,7 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { NotFoundError } from '@app/errors';
+import { CLOCK, type Clock } from '@app/clock';
 import type { MemoryBook } from '../domain/memory-book.entity';
 import { MEMORY_BOOK_REPOSITORY, type MemoryBookRepository } from './ports/memory-book.repository';
 
@@ -27,10 +28,13 @@ export interface PublishMemoryBookCommand {
 
 @Injectable()
 export class PublishMemoryBookUseCase {
-  constructor(@Inject(MEMORY_BOOK_REPOSITORY) private readonly repo: MemoryBookRepository) {}
+  constructor(
+    @Inject(MEMORY_BOOK_REPOSITORY) private readonly repo: MemoryBookRepository,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {}
 
   async execute(cmd: PublishMemoryBookCommand): Promise<MemoryBook> {
-    const updated = await this.repo.setPublishedAtForOwner(cmd.id, cmd.ownerId, new Date());
+    const updated = await this.repo.setPublishedAtForOwner(cmd.id, cmd.ownerId, this.clock.now());
     if (!updated) {
       throw new NotFoundError(
         `Memory book not found: ${cmd.id}`,

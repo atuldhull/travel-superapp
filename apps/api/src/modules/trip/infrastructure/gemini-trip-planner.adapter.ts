@@ -24,8 +24,9 @@
  *
  * Installed by prompt [POST.4].
  */
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { createLogger, type AppLogger } from '@app/logger';
+import { CLOCK, type Clock } from '@app/clock';
 import { groundingPreamble } from '../application/ports/trip-planner.port';
 import type {
   TripPlannerPort,
@@ -73,6 +74,7 @@ export class GeminiTripPlannerAdapter implements TripPlannerPort {
   constructor(
     private readonly apiKey: string,
     private readonly model: string,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   async generatePlan(req: TripPlannerRequest): Promise<TripPlannerResult> {
@@ -82,7 +84,7 @@ export class GeminiTripPlannerAdapter implements TripPlannerPort {
       contents: [{ role: 'user', parts: [{ text: this.buildUserPrompt(req) }] }],
       generationConfig: { maxOutputTokens: MAX_OUTPUT_TOKENS, temperature: 0.7 },
     };
-    const startedAt = Date.now();
+    const startedAt = this.clock.nowMs();
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     try {
@@ -117,7 +119,7 @@ export class GeminiTripPlannerAdapter implements TripPlannerPort {
           inputTokens,
           outputTokens,
           cachedTokens,
-          latencyMs: Date.now() - startedAt,
+          latencyMs: this.clock.nowMs() - startedAt,
         },
         'trip_planner_gemini_ok',
       );

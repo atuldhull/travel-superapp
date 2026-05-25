@@ -15,6 +15,7 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { NotFoundError, ValidationError } from '@app/errors';
+import { CLOCK, type Clock } from '@app/clock';
 import type {
   AgentBookingSummary,
   AgentEarningsSummary,
@@ -43,7 +44,10 @@ export interface AgentDashboard {
 
 @Injectable()
 export class GetAgentDashboardUseCase {
-  constructor(@Inject(AGENT_REPOSITORY) private readonly agents: AgentRepository) {}
+  constructor(
+    @Inject(AGENT_REPOSITORY) private readonly agents: AgentRepository,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {}
 
   async execute(cmd: GetAgentDashboardCommand): Promise<AgentDashboard> {
     const windowDays =
@@ -68,7 +72,7 @@ export class GetAgentDashboardUseCase {
       );
     }
 
-    const since = new Date(Date.now() - windowDays * 86_400_000);
+    const since = new Date(this.clock.nowMs() - windowDays * 86_400_000);
     const [bookings, earnings, reviews] = await Promise.all([
       this.agents.listBookingsForAgent({
         agentId: profile.id,

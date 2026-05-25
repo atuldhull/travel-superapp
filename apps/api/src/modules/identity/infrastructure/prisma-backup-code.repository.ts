@@ -8,13 +8,17 @@
  * Installed by prompt [III.13.2] part 5.
  */
 import { Inject, Injectable } from '@nestjs/common';
+import { CLOCK, type Clock } from '@app/clock';
 import { PrismaService } from '../../../common/db/prisma.service';
 import type { BackupCodeRepository } from '../application/ports/backup-code.repository';
 import { generatePlaintextCode, hashBackupCode } from '../../../common/crypto/backup-code-hash';
 
 @Injectable()
 export class PrismaBackupCodeRepository implements BackupCodeRepository {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {}
 
   async regenerate(userId: string, count: number): Promise<readonly string[]> {
     const plaintexts: string[] = [];
@@ -45,7 +49,7 @@ export class PrismaBackupCodeRepository implements BackupCodeRepository {
 
   async consume(userId: string, plaintext: string): Promise<boolean> {
     const codeHash = hashBackupCode(plaintext);
-    const now = new Date();
+    const now = this.clock.now();
     // Conditional update: marks used iff currently unused. Returns 1
     // on the race winner, 0 for late arrivals.
     const result = await this.prisma.mfaBackupCode.updateMany({

@@ -93,7 +93,7 @@ export class DiaryEntry {
    *   D3 mood ≤ DIARY_MAX_MOOD chars (after trim) — empty becomes null
    *   D4 entryDate parses to a valid Date (or defaults to now)
    */
-  static create(input: CreateDiaryEntryInput): NormalisedDiaryEntry {
+  static create(input: CreateDiaryEntryInput, now: Date = new Date()): NormalisedDiaryEntry {
     const title = input.title.trim();
     if (title.length === 0 || title.length > DIARY_MAX_TITLE) {
       throw new ValidationError(
@@ -121,7 +121,7 @@ export class DiaryEntry {
         'INVALID_DIARY_MOOD',
       );
     }
-    const entryDate = input.entryDate ? new Date(input.entryDate) : new Date();
+    const entryDate = input.entryDate ? new Date(input.entryDate) : now;
     if (Number.isNaN(entryDate.getTime())) {
       throw new ValidationError(
         'entryDate is not a valid date',

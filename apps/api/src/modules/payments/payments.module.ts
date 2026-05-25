@@ -20,6 +20,7 @@
  */
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { SYSTEM_CLOCK } from '@app/clock';
 import type { Env } from '@app/config';
 import { CreateCheckoutSessionUseCase } from './application/create-checkout-session.use-case';
 import { HandleStripeWebhookUseCase } from './application/handle-stripe-webhook.use-case';
@@ -45,7 +46,7 @@ import { PaymentsController } from './interface/payments.controller';
       useFactory: (config: ConfigService<Env, true>) => {
         const apiKey = config.get('STRIPE_SECRET_KEY', { infer: true });
         if (!apiKey) return null;
-        return new StripePaymentProvider(config);
+        return new StripePaymentProvider(config, SYSTEM_CLOCK);
       },
     },
   ],

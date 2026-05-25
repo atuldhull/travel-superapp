@@ -17,6 +17,7 @@
  *
  * Installed by the agent↔trip real-triggers slice.
  */
+import { SYSTEM_CLOCK } from '@app/clock';
 import { EvaluateSignalsUseCase } from '../src/modules/agent/application/evaluate-signals.use-case';
 import { RunWatchCycleUseCase } from '../src/modules/agent/application/run-watch-cycle.use-case';
 import type { TripWatch } from '../src/modules/agent/domain/trip-watch.entity';
@@ -145,6 +146,7 @@ function build(opts: {
     draft,
     runs,
     watches,
+    SYSTEM_CLOCK,
   );
   return { uc, spy };
 }

@@ -18,6 +18,7 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { createLogger } from '@app/logger';
+import { CLOCK, type Clock } from '@app/clock';
 import { PrismaService } from '../../../common/db/prisma.service';
 import {
   NOTIFICATION_PREFERENCE_REPOSITORY,
@@ -50,6 +51,7 @@ export class SendWeeklyDigestUseCase {
     private readonly logRepo: NotificationLogRepository,
     @Inject(NOTIFICATION_SENDER)
     private readonly sender: NotificationSender,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   /**
@@ -59,7 +61,7 @@ export class SendWeeklyDigestUseCase {
    *              The scheduler always passes false; tests pass true
    *              to assert the body without contorting the calendar.
    */
-  async execute(now: Date = new Date(), force = false): Promise<WeeklyDigestSweepResult> {
+  async execute(now: Date = this.clock.now(), force = false): Promise<WeeklyDigestSweepResult> {
     const eligible = await this.prefsRepo.listEligibleForDigest();
     let sent = 0;
     for (const pref of eligible) {

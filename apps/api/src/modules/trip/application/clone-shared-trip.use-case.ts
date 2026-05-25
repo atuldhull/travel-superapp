@@ -19,6 +19,7 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { NotFoundError } from '@app/errors';
+import { CLOCK, type Clock } from '@app/clock';
 import { GeoQueries } from '../../../common/db/geo-queries';
 import type { Trip } from '../domain/trip.entity';
 import {
@@ -39,6 +40,7 @@ export class CloneSharedTripUseCase {
     @Inject(ITINERARY_REPOSITORY) private readonly itinerary: ItineraryRepository,
     @Inject(GeoQueries) private readonly geo: GeoQueries,
     private readonly resolveShare: ResolveTripShareUseCase,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   async execute(shareCode: string, userId: string): Promise<Trip> {
@@ -67,7 +69,7 @@ export class CloneSharedTripUseCase {
 
     // Recompute day dates against the clone's own startsOn (matches
     // DuplicateTripUseCase). `dayIndex` keeps the original ordering.
-    const baseDate = clone.startsOn ?? resolved.trip.startsOn ?? new Date();
+    const baseDate = clone.startsOn ?? resolved.trip.startsOn ?? this.clock.now();
     const baseUtc = new Date(
       Date.UTC(baseDate.getUTCFullYear(), baseDate.getUTCMonth(), baseDate.getUTCDate()),
     );

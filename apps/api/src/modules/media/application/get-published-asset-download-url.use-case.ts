@@ -18,6 +18,7 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { NotFoundError } from '@app/errors';
+import { CLOCK, type Clock } from '@app/clock';
 import { MEMORY_BOOK_REPOSITORY, type MemoryBookRepository } from './ports/memory-book.repository';
 import { STORAGE_PROVIDER, type StorageProvider } from './ports/storage-provider';
 
@@ -38,6 +39,7 @@ export class GetPublishedAssetDownloadUrlUseCase {
   constructor(
     @Inject(MEMORY_BOOK_REPOSITORY) private readonly repo: MemoryBookRepository,
     @Inject(STORAGE_PROVIDER) private readonly storage: StorageProvider,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   async execute(
@@ -54,7 +56,7 @@ export class GetPublishedAssetDownloadUrlUseCase {
     const url = await this.storage.createPresignedDownloadUrl(asset.s3KeyRaw, DOWNLOAD_TTL_SECS);
     return {
       url,
-      expiresAt: new Date(Date.now() + DOWNLOAD_TTL_SECS * 1000),
+      expiresAt: new Date(this.clock.nowMs() + DOWNLOAD_TTL_SECS * 1000),
     };
   }
 }

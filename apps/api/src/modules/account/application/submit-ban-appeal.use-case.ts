@@ -14,6 +14,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Env } from '@app/config';
 import { ValidationError } from '@app/errors';
+import { CLOCK, type Clock } from '@app/clock';
 import { PrismaService } from '../../../common/db/prisma.service';
 import { hashEmail } from '../../../common/crypto/email-hash';
 
@@ -32,6 +33,7 @@ export class SubmitBanAppealUseCase {
   constructor(
     @Inject(ConfigService) private readonly _config: ConfigService<Env, true>,
     @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   async execute(cmd: SubmitBanAppealCommand): Promise<void> {
@@ -49,7 +51,7 @@ export class SubmitBanAppealUseCase {
 
     // Soft rate-limit per email per hour. Quietly return success
     // when over quota (matches password-reset / magic-link posture).
-    const since = new Date(Date.now() - RATE_LIMIT_WINDOW_MS);
+    const since = new Date(this.clock.nowMs() - RATE_LIMIT_WINDOW_MS);
     const recent = await this.prisma.banAppeal.count({
       where: { emailHash, createdAt: { gte: since } },
     });

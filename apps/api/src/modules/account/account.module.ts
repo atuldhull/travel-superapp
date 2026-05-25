@@ -22,6 +22,7 @@
  */
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { SYSTEM_CLOCK } from '@app/clock';
 import type { Env } from '@app/config';
 import { AddTrustedContactUseCase } from './application/add-trusted-contact.use-case';
 import { GetConnectivityInfoUseCase } from './application/get-connectivity-info.use-case';
@@ -110,7 +111,7 @@ import { TrustedContactsController } from './interface/trusted-contacts.controll
       inject: [ConfigService, StubMailerAdapter],
       useFactory: (config: ConfigService<Env, true>, stub: StubMailerAdapter) => {
         const apiKey = config.get('RESEND_API_KEY', { infer: true });
-        if (apiKey) return new ResendMailerAdapter(config);
+        if (apiKey) return new ResendMailerAdapter(config, SYSTEM_CLOCK);
         return stub;
       },
     },

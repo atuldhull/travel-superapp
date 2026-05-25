@@ -2,6 +2,7 @@
  * Pure unit tests for `DeadlineSignalAdapter` (Phase 3, G5).
  * No DB, no network — proves the bucket logic deterministically.
  */
+import { SYSTEM_CLOCK } from '@app/clock';
 import { DeadlineSignalAdapter } from '../src/modules/agent/infrastructure/deadline-signal.adapter';
 
 function daysFromNow(n: number): string {
@@ -12,7 +13,7 @@ function daysFromNow(n: number): string {
 }
 
 describe('DeadlineSignalAdapter (unit)', () => {
-  const adapter = new DeadlineSignalAdapter();
+  const adapter = new DeadlineSignalAdapter(SYSTEM_CLOCK);
   const baseQuery = { kind: 'deadline' as const, lat: 0, lng: 0 };
 
   it('returns kind="deadline" and an observedAt timestamp', async () => {

@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import type { ThrottlerStorage } from '@nestjs/throttler';
 import type { Env } from '@app/config';
 import { createLogger } from '@app/logger';
+import { CLOCK, type Clock } from '@app/clock';
 import Redis from 'ioredis';
 
 /** Shape `@nestjs/throttler` requires `increment` to return. Inlined
@@ -64,7 +65,10 @@ export class RedisThrottlerStorage implements ThrottlerStorage, OnModuleDestroy 
   private readonly pepper: string;
   private readonly keyPrefix: string;
 
-  constructor(@Inject(ConfigService) config: ConfigService<Env, true>) {
+  constructor(
+    @Inject(ConfigService) config: ConfigService<Env, true>,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {
     this.redis = new Redis(config.get('REDIS_URL', { infer: true }), {
       lazyConnect: true,
       maxRetriesPerRequest: 2,
@@ -86,7 +90,7 @@ export class RedisThrottlerStorage implements ThrottlerStorage, OnModuleDestroy 
     throttlerName: string,
   ): Promise<ThrottlerStorageRecord> {
     const fullKey = `${this.keyPrefix}${throttlerName}:${this.hash(key)}`;
-    const now = Date.now();
+    const now = this.clock.nowMs();
     const uid = `${now}-${randomUUID()}`;
 
     if (
