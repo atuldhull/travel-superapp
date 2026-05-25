@@ -1,0 +1,24 @@
+# Grafana provisioning ([N1]) — auto-wires Tempo + Prometheus as
+# data sources so the dashboards under `dashboards/` resolve on
+# first boot. No manual UI clicking required.
+apiVersion: 1
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    jsonData:
+      timeInterval: 15s
+
+  - name: Tempo
+    type: tempo
+    access: proxy
+    url: http://tempo:3200
+    jsonData:
+      tracesToMetrics:
+        datasourceUid: prometheus
+      serviceMap:
+        datasourceUid: prometheus
+      nodeGraph:
+        enabled: true
