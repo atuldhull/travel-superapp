@@ -21,6 +21,50 @@
 
 ---
 
+## Road-to-10 honest-audit closeout (O-series, ✅ COMPLETE)
+
+- **Date**: 2026-05-25
+- **Series**: O1–O5. Closed FOUR gaps the user surfaced when
+  asking "is anything left?":
+  - **O1** (`338fd65`) wrapped the 12 remaining external adapters
+    (claude / gemini / ollama-trip / ollama-embed / opensky /
+    resend / twilio-sms / twilio-sos / stripe / tomtom / osrm /
+    llm-diary / s3) with `@app/resilience` circuit breakers + a
+    fitness gate so future external adapters MUST import
+    `@app/resilience` or fail CI. New `callExternal()` helper
+    (22/22 tests).
+  - **O2** (`ffd5039`) load shedder — Fastify onRequest hook
+    returning 503 + `retry-after` when event-loop lag ≥ 100ms OR
+    in-flight ≥ 200. `/health/*` + `/metrics` always pass. 7 new
+    pure-function tests verify the bypass invariants.
+  - **O3** (`276e0b2`) two more Grafana dashboards —
+    `slo-burn-rate.json` (MWMR burn-rate per window with the
+    14.4× / 6× / 3× / 1× thresholds) + `external-resilience.json`
+    (5xx by route, event-loop lag, AI route p95). Closes the
+    "build REAL Grafana dashboards" (plural) ask.
+  - **O4** (`45b04f4`) closed 3 dead doc cross-refs + a real
+    script bug: NEW `runbook-external-api-degraded.md`
+    (breaker-open playbook), NEW `email-pepper-rotation.md`
+    (4-phase migration), replaced an absolute Windows-path link
+    in `incident-response.md`, and hardened
+    `scripts/dr/restore-test.sh` to NOT depend on the
+    non-existent `supabase db backups list/download` CLI
+    subcommands (takes `$DR_DUMP_FILE` from operator manual
+    download now).
+  - **O5** (this commit) final gauntlet + log update.
+- **Verification gates ALL green locally**:
+  - `pnpm --filter=api typecheck` ✓
+  - `pnpm --filter=api arch` ✓ (709 modules, 3127 deps)
+  - `pnpm --filter=api cycles` ✓ (3 sanctioned, 0 unsanctioned)
+  - `pnpm --filter=api cover:unit` ✓ 193 / 193 (+7 from O2)
+  - `pnpm --filter=@app/resilience test` ✓ 22 / 22 (+5 from O1)
+- After O-series, the 14-item Production/ops list is GENUINELY
+  closed — not "code shipped, hope it works" but with a fitness
+  gate that fails CI if anyone lands a new external adapter
+  WITHOUT a circuit breaker.
+
+---
+
 ## Road-to-10 Production/ops readiness series (✅ COMPLETE)
 
 - **Date**: 2026-05-25
