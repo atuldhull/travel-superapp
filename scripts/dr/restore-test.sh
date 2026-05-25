@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# scripts/dr/restore-test.sh ([N5]) — quarterly disaster-recovery drill.
+# scripts/dr/restore-test.sh ([N5], hardened in [O4]) — quarterly DR drill.
 #
-# Validates that a Supabase Postgres backup can be (a) downloaded,
+# Validates that a Supabase Postgres backup can be (a) procured,
 # (b) replayed into a SCRATCH database, and (c) used by the api to
 # satisfy a smoke probe. Records the timing so the team can compare
 # this quarter's RTO to the previous one.
@@ -11,11 +11,18 @@
 #   ./scripts/dr/restore-test.sh staging  2026Q2
 #
 # Requirements:
-#   - supabase CLI authenticated (`supabase login`)
-#   - psql installed
-#   - $DR_SCRATCH_DATABASE_URL set to a writable Postgres
-#     (e.g. a throwaway Supabase project named travel-dr-scratch)
-#   - $DR_SOURCE_PROJECT_REF set to the Supabase project to restore FROM
+#   - psql installed (on PATH)
+#   - $DR_SCRATCH_DATABASE_URL: a writable Postgres for the replay
+#     (e.g. a throwaway Supabase project named `travel-dr-scratch`)
+#   - $DR_DUMP_FILE: path to a `.sql` dump file downloaded ahead of
+#     time from Supabase Dashboard → Database → Backups → Download.
+#     IF unset, the script prints instructions and exits non-zero.
+#
+# Why no automated download: Supabase's CLI does not expose a stable
+# `db backups list/download` subcommand. Backups land via the
+# dashboard OR the Management API (which needs a long-lived service
+# token we don't want CI-resident). The operator downloads the dump
+# once per drill, then runs this script against it.
 #
 # Output:
 #   - Step-by-step log to stdout
@@ -23,14 +30,14 @@
 #   - Exit code 0 on success, non-zero on any failed step
 #
 # What "success" means:
-#   1. The latest available dump downloads in < 5 min
+#   1. A dump file path resolves + is non-empty
 #   2. The dump replays into the scratch DB in < 30 min
 #   3. A `SELECT count(*) FROM "User"` returns > 0
 #   4. The api boots against the scratch DB and /health/ready 200s
 #
-# Together these are the four checks that translate "we have backups"
-# into "we have RECOVERABLE backups". A green drill is the only
-# evidence the RPO/RTO numbers in docs/runbooks/backups-dr.md are real.
+# Together these checks translate "we have backups" into "we have
+# RECOVERABLE backups". A green drill is the only evidence the
+# RPO/RTO numbers in docs/runbooks/backups-dr.md are real.
 
 set -euo pipefail
 
@@ -50,14 +57,31 @@ esac
 
 REQUIRED_ENV=(
   DR_SCRATCH_DATABASE_URL
-  DR_SOURCE_PROJECT_REF
+  DR_DUMP_FILE
 )
 for var in "${REQUIRED_ENV[@]}"; do
   if [ -z "${!var:-}" ]; then
-    echo "::error::env var $var is required" >&2
+    cat <<EOF >&2
+::error::env var $var is required.
+
+Procuring DR_DUMP_FILE (one-time per drill):
+  1. Supabase Dashboard → travel-${ENV} project → Database → Backups
+  2. Click "Download" on the most recent automatic backup.
+  3. Set DR_DUMP_FILE=/path/to/the/downloaded/file.sql
+  4. Re-run this script.
+
+DR_SCRATCH_DATABASE_URL should point at a SEPARATE Supabase project
+(e.g. travel-dr-scratch) — NEVER replay onto the live one during a
+drill.
+EOF
     exit 2
   fi
 done
+
+if [ ! -f "$DR_DUMP_FILE" ]; then
+  echo "::error::DR_DUMP_FILE='$DR_DUMP_FILE' does not exist or is not a file" >&2
+  exit 2
+fi
 
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 DRILL_DIR="$REPO_ROOT/docs/dr-drills"
@@ -80,31 +104,17 @@ START_TS=$(date -u +%s)
 
 note "DR drill — $ENV — $QUARTER — started at $(date -u +%FT%TZ)"
 
-# ─── Step 1: download the latest dump ─────────────────────────────────
-note "Step 1: listing backups for project $DR_SOURCE_PROJECT_REF"
-BACKUP_ID=$(supabase db backups list \
-  --project-ref "$DR_SOURCE_PROJECT_REF" \
-  --output json \
-  | jq -r '.[0].id // empty')
-
-if [ -z "$BACKUP_ID" ]; then
-  fail "no backups found for project $DR_SOURCE_PROJECT_REF"
+# ─── Step 1: resolve dump file ─────────────────────────────────────────
+note "Step 1: dump file = $DR_DUMP_FILE"
+DUMP_FILE="$DR_DUMP_FILE"
+DUMP_SIZE=$(du -h "$DUMP_FILE" | cut -f1)
+DUMP_AGE_SECS=$(( $(date +%s) - $(stat -c %Y "$DUMP_FILE" 2>/dev/null || stat -f %m "$DUMP_FILE") ))
+note "  size: $DUMP_SIZE, age: ${DUMP_AGE_SECS}s"
+if [ "$DUMP_AGE_SECS" -gt 86400 ]; then
+  note "  ⚠️  dump is > 24h old — RPO measurement won't reflect today"
 fi
-note "  using backup id: $BACKUP_ID"
-
-DUMP_FILE=$(mktemp -t dr-dump.XXXXXX.sql)
-DL_START=$(date -u +%s)
-supabase db backups download \
-  --project-ref "$DR_SOURCE_PROJECT_REF" \
-  --id "$BACKUP_ID" \
-  --file "$DUMP_FILE" \
-  || fail "supabase db backups download failed"
-DL_SECS=$(( $(date -u +%s) - DL_START ))
-note "  download OK in ${DL_SECS}s ($(du -h "$DUMP_FILE" | cut -f1))"
-
-if [ "$DL_SECS" -gt 300 ]; then
-  note "  ⚠️  download > 5 min — flag in drill notes"
-fi
+BACKUP_ID="(operator-provided)"
+DL_SECS=0
 
 # ─── Step 2: replay into scratch ───────────────────────────────────────
 note "Step 2: replaying into scratch DB"
