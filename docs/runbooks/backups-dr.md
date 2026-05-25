@@ -122,13 +122,20 @@ $25/mo we spend.
 ## Quarterly restore drill
 
 A backup that hasn't been tested is a wish, not a backup. Every
-quarter the on-call runs:
+quarter the on-call:
+
+1. Downloads the latest dump from Supabase → Database → Backups.
+   (Supabase's CLI has no stable `db backups download` subcommand,
+   so this step stays manual — see the script header for the why.)
+2. Runs the harness against the downloaded file:
 
 ```bash
+export DR_DUMP_FILE=/path/to/downloaded/backup.sql
+export DR_SCRATCH_DATABASE_URL=postgresql://... # a SEPARATE scratch project
 ./scripts/dr/restore-test.sh staging 2026Q2
 ```
 
-(See the script for what it does + the success criteria.)
+(See the script header for what it does + the success criteria.)
 
 The drill writes to `docs/dr-drills/<quarter>.md` — append the
 output of the script + sign off. Missed quarter = SEV-2 + filed
