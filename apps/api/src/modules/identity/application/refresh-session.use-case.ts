@@ -25,6 +25,7 @@
  * Installed by prompt [III.13.2] part 2.
  */
 import { Inject, Injectable } from '@nestjs/common';
+import { CLOCK, type Clock } from '@app/clock';
 import { JwtVerificationError } from '@app/auth';
 import { createLogger } from '@app/logger';
 import { UnauthorizedError } from '@app/errors';
@@ -59,6 +60,10 @@ export class RefreshSessionUseCase {
     @Inject(SESSION_REPOSITORY) private readonly sessions: SessionRepository,
     @Inject(USER_REPOSITORY) private readonly users: UserRepository,
     @Inject(TOKEN_SERVICE) private readonly tokens: TokenService,
+    // [M2] Inject the clock so refresh-expiry comparisons are
+    // deterministic in tests. The implicit `Date.now()` path made
+    // "rotate this expired session" tests racy.
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   async execute(cmd: RefreshSessionCommand): Promise<RefreshedSession> {
@@ -98,7 +103,7 @@ export class RefreshSessionUseCase {
     }
 
     // 4. Expiry. No cascade — expiring is normal, revoke just this row.
-    if (row.expiresAt.getTime() <= Date.now()) {
+    if (row.expiresAt.getTime() <= this.clock.nowMs()) {
       await this.sessions.revoke(row.id);
       throw new UnauthorizedError('Session expired', {}, 'REFRESH_EXPIRED');
     }
