@@ -1,0 +1,42 @@
+# Tempo config ([N1]) — minimal single-binary setup for local dev.
+#
+# Receives OTLP/HTTP on :4318 + OTLP/gRPC on :4317; stores 24h of
+# traces in /var/tempo (ephemeral inside the container — fine for
+# dev). Prod targets Honeycomb or Grafana Cloud Tempo, not this.
+server:
+  http_listen_port: 3200
+  log_level: warn
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        http:
+          endpoint: 0.0.0.0:4318
+        grpc:
+          endpoint: 0.0.0.0:4317
+
+ingester:
+  # Short flush so a dev run sees its traces in Grafana within ~5s.
+  max_block_duration: 5m
+  trace_idle_period: 10s
+
+storage:
+  trace:
+    backend: local
+    local:
+      path: /var/tempo/blocks
+    wal:
+      path: /var/tempo/wal
+
+compactor:
+  compaction:
+    block_retention: 24h
+
+# Required for Tempo >=2 to start cleanly under usage-tracker enabled
+# defaults. Keep an explicit per-tenant override so the OOM-guard
+# trips before the dev box thrashes.
+overrides:
+  defaults:
+    ingestion:
+      max_traces_per_user: 10000

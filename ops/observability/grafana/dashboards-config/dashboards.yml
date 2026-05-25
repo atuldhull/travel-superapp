@@ -1,0 +1,15 @@
+# Grafana dashboard provisioning ([N1]) — loads every JSON dashboard
+# under `/var/lib/grafana/dashboards` on boot. The compose file
+# mounts `ops/observability/grafana/dashboards/` there.
+apiVersion: 1
+providers:
+  - name: 'travel'
+    orgId: 1
+    folder: ''
+    type: file
+    disableDeletion: false
+    editable: true
+    updateIntervalSeconds: 30
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: true

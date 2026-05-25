@@ -1,0 +1,85 @@
+# Local observability stack ([N1]) — $0, no-key, no SaaS.
+#
+# Brings up three containers:
+#   - tempo:    OTLP receiver + trace store
+#   - prometheus: scrapes /metrics from apps/api
+#   - grafana:  pre-provisioned dashboards + data sources (admin/admin)
+#
+# Usage:
+#   docker compose -f ops/observability/docker-compose.observability.yml up -d
+#
+# Then point the api at the stack:
+#   export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+#   pnpm --filter=api dev
+#
+# Visit:
+#   - Grafana  http://localhost:3030   (admin / admin)
+#   - Tempo    http://localhost:3200
+#   - Prom     http://localhost:9090
+#
+# Why ports != defaults: 3000/3001 are already taken by api/web in
+# this project. The mapping below leaves dev-port collisions at zero.
+#
+# This stack is for DEV + smoke validation only. Prod observability
+# is handled by Honeycomb (`HONEYCOMB_API_KEY` env) or by Grafana
+# Cloud (`OTEL_EXPORTER_OTLP_ENDPOINT` env + headers).
+services:
+  tempo:
+    image: grafana/tempo:2.6.1
+    command: ['-config.file=/etc/tempo.yaml']
+    ports:
+      - '3200:3200' # Tempo HTTP API (Grafana queries here)
+      - '4318:4318' # OTLP / HTTP — matches OTLPTraceExporter default
+      - '4317:4317' # OTLP / gRPC (unused by us, exposed for compatibility)
+    volumes:
+      - ./tempo.yaml:/etc/tempo.yaml:ro
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:3200/ready']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  prometheus:
+    image: prom/prometheus:v3.0.0
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=24h'
+    ports:
+      - '9090:9090'
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    extra_hosts:
+      # Lets Prometheus inside the container scrape api/web running
+      # on the HOST. Without this, `host.docker.internal` resolves
+      # only on Docker Desktop; declaring it explicitly keeps Linux +
+      # CI in step.
+      - 'host.docker.internal:host-gateway'
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:9090/-/ready']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  grafana:
+    image: grafana/grafana:11.3.0
+    depends_on:
+      tempo:
+        condition: service_healthy
+      prometheus:
+        condition: service_healthy
+    ports:
+      - '3030:3000'
+    environment:
+      # admin/admin keeps the dev-onboarding zero-friction. NEVER use
+      # these defaults in any externally-reachable env.
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: 'true'
+      GF_AUTH_ANONYMOUS_ORG_ROLE: 'Viewer'
+      # Disable the "Welcome to Grafana" cloud-promo banner.
+      GF_NEWS_NEWS_FEED_ENABLED: 'false'
+    volumes:
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/dashboards-config:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro

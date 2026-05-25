@@ -22,6 +22,20 @@ import { createSdk, type CreateSdkOptions } from './tracing';
 
 let sdk: NodeSDK | null = null;
 
+/**
+ * Returns true when a REAL OTLP destination is configured — either a
+ * managed-SaaS key (Honeycomb) or an explicit local/remote OTLP
+ * endpoint. Without one, the OTLP/HTTP exporter pointed at the
+ * `localhost:4318` default 404s constantly in prod (and in any dev
+ * env that doesn't have Jaeger / Tempo running). [N1] gates SDK
+ * startup on this so a misconfigured prod doesn't log-spam.
+ */
+function hasRealOtlpDestination(opts: Omit<CreateSdkOptions, 'serviceName'>): boolean {
+  if (opts.honeycombApiKey || process.env['HONEYCOMB_API_KEY']) return true;
+  if (opts.otlpEndpoint || process.env['OTEL_EXPORTER_OTLP_ENDPOINT']) return true;
+  return false;
+}
+
 export function initTracing(
   serviceName: string,
   opts: Omit<CreateSdkOptions, 'serviceName'> = {},
@@ -30,6 +44,18 @@ export function initTracing(
   if (process.env['OTEL_DISABLED'] === 'true') {
     // eslint-disable-next-line no-console
     console.warn('[observability] OTEL_DISABLED=true — tracing skipped.');
+    return null;
+  }
+  // [N1] No real OTLP destination is configured — starting the SDK
+  // would 404-spam against the default `localhost:4318`. Skip with
+  // a one-line note so operators see why traces are absent.
+  if (!hasRealOtlpDestination(opts)) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      '[observability] Neither OTEL_EXPORTER_OTLP_ENDPOINT nor HONEYCOMB_API_KEY is set — ' +
+        'tracing disabled (no exporter started). Set one of them, or set OTEL_DISABLED=true ' +
+        'to suppress this warning. See ops/observability/README.md for the local stack.',
+    );
     return null;
   }
   sdk = createSdk({ serviceName, ...opts });
