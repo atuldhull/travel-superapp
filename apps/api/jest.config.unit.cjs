@@ -46,6 +46,7 @@ module.exports = {
     '<rootDir>/test/factories.unit.spec.ts',
     '<rootDir>/test/contract.*.spec.ts',
     '<rootDir>/test/geo-math.property.spec.ts',
+    '<rootDir>/test/overload-shedder.unit.spec.ts',
   ],
   setupFiles: ['<rootDir>/test/setup.ts'],
   collectCoverage: true,
