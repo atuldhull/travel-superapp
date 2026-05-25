@@ -13,6 +13,28 @@ module.exports = {
   // them out of the default run.
   testPathIgnorePatterns: ['/node_modules/', '<rootDir>/test/quarantine/'],
   setupFiles: ['<rootDir>/test/setup.ts'],
+  // [M3] jest-junit reporter persists pass/fail per test ID + per
+  // worker. CI uploads `apps/api/test-results/**/*.xml` as an artifact
+  // and the nightly `flake-trends.yml` workflow aggregates the last
+  // 10 days to surface "this test failed N of last 10 runs" without
+  // standing up a paid dashboard. Closes #8 of the road-to-10 list.
+  reporters: [
+    'default',
+    [
+      'jest-junit',
+      {
+        outputDirectory: '<rootDir>/test-results',
+        outputName: 'junit-w${JEST_WORKER_ID}.xml',
+        // Hyphen-joined classnames + suite-prefixed test names so the
+        // aggregator can group by `<file>::<test>` uniquely across
+        // shards. Avoids the "two tests named 'works' in different
+        // files merging into one row" trap.
+        classNameTemplate: '{filepath}',
+        titleTemplate: '{classname} :: {title}',
+        ancestorSeparator: ' > ',
+      },
+    ],
+  ],
   // [L1] globalSetup decides between Docker compose / CI services /
   // Testcontainers and writes DATABASE_URL + REDIS_URL into the env;
   // it also pre-creates per-worker Postgres schemas (test_w1..8) and
