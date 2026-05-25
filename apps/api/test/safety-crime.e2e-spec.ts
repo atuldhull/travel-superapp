@@ -39,7 +39,6 @@ describe('Safety crime-layer (integration, requires Postgres)', () => {
   let app: NestFastifyApplication;
   let prisma: PrismaService;
   let geo: GeoQueries;
-  let dbReachable = true;
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -47,22 +46,15 @@ describe('Safety crime-layer (integration, requires Postgres)', () => {
     app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
     app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)'] });
     await app.register(fastifyCookie);
-    try {
-      await app.init();
-      await app.getHttpAdapter().getInstance().ready();
-      prisma = moduleRef.get(PrismaService);
-      geo = moduleRef.get(GeoQueries);
-      await prisma.$queryRaw`SELECT 1`;
-      // Drop any leftover rows from a prior crashed run.
-      await prisma.crimeIncident.deleteMany({
-        where: { source: { startsWith: SOURCE_PREFIX } },
-      });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(`crime test: infra not reachable (${message}). Skipping.`);
-      dbReachable = false;
-    }
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+    prisma = moduleRef.get(PrismaService);
+    geo = moduleRef.get(GeoQueries);
+    await prisma.$queryRaw`SELECT 1`;
+    // Drop any leftover rows from a prior crashed run.
+    await prisma.crimeIncident.deleteMany({
+      where: { source: { startsWith: SOURCE_PREFIX } },
+    });
   });
 
   afterEach(async () => {
@@ -75,7 +67,7 @@ describe('Safety crime-layer (integration, requires Postgres)', () => {
   });
 
   afterAll(async () => {
-    if (dbReachable) await app.close();
+    await app.close();
     await moduleRef.close();
   });
 

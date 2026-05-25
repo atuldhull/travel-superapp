@@ -28,7 +28,6 @@ describe('GeoQueries (integration, requires Docker Postgres)', () => {
   let moduleRef: TestingModule;
   let geo: GeoQueries;
   let prisma: PrismaService;
-  let dbReachable = true;
 
   beforeAll(async () => {
     // Compile the DI graph but DO NOT create an HTTP app — GeoQueries
@@ -37,15 +36,8 @@ describe('GeoQueries (integration, requires Docker Postgres)', () => {
     moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     prisma = moduleRef.get(PrismaService);
     geo = moduleRef.get(GeoQueries);
-    try {
-      // $queryRaw against a trivial value probes the connection.
-      await prisma.$queryRaw`SELECT 1`;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(`geo-queries integration test: DB not reachable (${message}). Skipping.`);
-      dbReachable = false;
-    }
+    // $queryRaw against a trivial value probes the connection.
+    await prisma.$queryRaw`SELECT 1`;
   });
 
   afterEach(async () => {
@@ -61,10 +53,6 @@ describe('GeoQueries (integration, requires Docker Postgres)', () => {
   });
 
   it('inserts 3 places; finding within 5 km of Victoria returns 2 (Hyde Park + Trafalgar, not Windsor)', async () => {
-    if (!dbReachable) {
-      return;
-    }
-
     const hydePark = await geo.insertPlace({
       sourceKey: `${SOURCE_PREFIX}-hyde-park`,
       name: 'Hyde Park',

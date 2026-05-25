@@ -46,7 +46,6 @@ describe('Budget mode + free events + stayType (V.UX.16 — integration)', () =>
   let moduleRef: TestingModule;
   let app: NestFastifyApplication;
   let prisma: PrismaService;
-  let infraReachable = true;
 
   // Suite-local coords clear of every other suite.
   const lat = 34.111;
@@ -58,28 +57,20 @@ describe('Budget mode + free events + stayType (V.UX.16 — integration)', () =>
     app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
     app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)'] });
     await app.register(fastifyCookie);
-    try {
-      await app.init();
-      await app.getHttpAdapter().getInstance().ready();
-      prisma = moduleRef.get(PrismaService);
-      await prisma.$queryRaw`SELECT 1`;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(`budget-mode test: infra not reachable (${message}). Skipping.`);
-      infraReachable = false;
-    }
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+    prisma = moduleRef.get(PrismaService);
+    await prisma.$queryRaw`SELECT 1`;
   });
 
   afterEach(async () => {
-    if (!infraReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
   });
 
   afterAll(async () => {
-    if (infraReachable) await app.close();
+    await app.close();
     await moduleRef.close();
   });
 
@@ -98,7 +89,6 @@ describe('Budget mode + free events + stayType (V.UX.16 — integration)', () =>
   }
 
   it('PATCH /preferences { budgetMode, dailyBudgetUsd } round-trips', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('upsert');
     const patch = await app.inject({
       method: 'PATCH',
@@ -123,7 +113,6 @@ describe('Budget mode + free events + stayType (V.UX.16 — integration)', () =>
   });
 
   it('PATCH dailyBudgetUsd null clears the target', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('clear');
     await app.inject({
       method: 'PATCH',
@@ -142,7 +131,6 @@ describe('Budget mode + free events + stayType (V.UX.16 — integration)', () =>
   });
 
   it('events freeOnly drops paid jazz + symphony', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('events');
     const from = new Date('2026-06-01T00:00:00.000Z').toISOString();
     const to = new Date('2026-06-03T00:00:00.000Z').toISOString();
@@ -181,7 +169,6 @@ describe('Budget mode + free events + stayType (V.UX.16 — integration)', () =>
   });
 
   it('stays stayType=hostel keeps just the hostel fixture', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('hostel');
     const res = await app.inject({
       method: 'POST',
@@ -202,7 +189,6 @@ describe('Budget mode + free events + stayType (V.UX.16 — integration)', () =>
   });
 
   it('stays maxPriceUsdPerNight caps drop the boutique fixture', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('cap');
     const res = await app.inject({
       method: 'POST',

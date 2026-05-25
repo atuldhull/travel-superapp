@@ -37,7 +37,6 @@ describe('Memory Book publish flow (integration, requires Postgres + MinIO)', ()
   let moduleRef: TestingModule;
   let app: NestFastifyApplication;
   let prisma: PrismaService;
-  let infraReachable = true;
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -45,30 +44,22 @@ describe('Memory Book publish flow (integration, requires Postgres + MinIO)', ()
     app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
     app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)'] });
     await app.register(fastifyCookie);
-    try {
-      await app.init();
-      await app.getHttpAdapter().getInstance().ready();
-      prisma = moduleRef.get(PrismaService);
-      await prisma.$queryRaw`SELECT 1`;
-      const probe = await fetch(`${process.env['S3_ENDPOINT']}/`);
-      if (probe.status >= 500) throw new Error(`MinIO probe ${probe.status}`);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(`mem-book-publish test: infra not reachable (${message}). Skipping.`);
-      infraReachable = false;
-    }
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+    prisma = moduleRef.get(PrismaService);
+    await prisma.$queryRaw`SELECT 1`;
+    const probe = await fetch(`${process.env['S3_ENDPOINT']}/`);
+    if (probe.status >= 500) throw new Error(`MinIO probe ${probe.status}`);
   });
 
   afterEach(async () => {
-    if (!infraReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
   });
 
   afterAll(async () => {
-    if (infraReachable) await app.close();
+    await app.close();
     await moduleRef.close();
   });
 
@@ -135,7 +126,6 @@ describe('Memory Book publish flow (integration, requires Postgres + MinIO)', ()
   }
 
   it('GET /memory-books/public/:id on an unpublished book → 404 (no auth needed)', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('unpub-pub');
     const { bookId } = await createBookWithMedia(accessToken);
 
@@ -148,7 +138,6 @@ describe('Memory Book publish flow (integration, requires Postgres + MinIO)', ()
   });
 
   it('happy path: publish → public GET succeeds → public download URL fetches bytes', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('happy');
     const { bookId, mediaId, bytes } = await createBookWithMedia(accessToken);
 
@@ -191,7 +180,6 @@ describe('Memory Book publish flow (integration, requires Postgres + MinIO)', ()
   });
 
   it('unpublish → public GET 404s; existing presigned URLs still work for their TTL', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('unpub-flow');
     const { bookId, mediaId } = await createBookWithMedia(accessToken);
     await app.inject({
@@ -238,7 +226,6 @@ describe('Memory Book publish flow (integration, requires Postgres + MinIO)', ()
   });
 
   it('publish on someone else’s book → 404', async () => {
-    if (!infraReachable) return;
     const alice = await registerUser('pub-a');
     const bob = await registerUser('pub-b');
     const { bookId } = await createBookWithMedia(alice.accessToken);
@@ -253,7 +240,6 @@ describe('Memory Book publish flow (integration, requires Postgres + MinIO)', ()
   });
 
   it('public asset URL: assetId not attached to this book → 404', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('wrong-asset');
     const { bookId } = await createBookWithMedia(accessToken);
     await app.inject({
@@ -271,7 +257,6 @@ describe('Memory Book publish flow (integration, requires Postgres + MinIO)', ()
   });
 
   it('public GET returns minimal owner-safe metadata (no ownerId leak)', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('priv');
     const { bookId } = await createBookWithMedia(accessToken);
     await app.inject({
@@ -295,7 +280,6 @@ describe('Memory Book publish flow (integration, requires Postgres + MinIO)', ()
   });
 
   it('publishing twice refreshes the timestamp (idempotent in effect)', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('republish');
     const { bookId } = await createBookWithMedia(accessToken);
 

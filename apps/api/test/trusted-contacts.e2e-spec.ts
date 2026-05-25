@@ -37,7 +37,6 @@ describe('Trusted contacts + SOS fan-out (V.UX.13 — integration)', () => {
   let app: NestFastifyApplication;
   let prisma: PrismaService;
   let notifier: StubContactNotifierAdapter;
-  let infraReachable = true;
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -45,22 +44,14 @@ describe('Trusted contacts + SOS fan-out (V.UX.13 — integration)', () => {
     app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
     app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)'] });
     await app.register(fastifyCookie);
-    try {
-      await app.init();
-      await app.getHttpAdapter().getInstance().ready();
-      prisma = moduleRef.get(PrismaService);
-      notifier = moduleRef.get(StubContactNotifierAdapter);
-      await prisma.$queryRaw`SELECT 1`;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(`trusted-contacts test: infra not reachable (${message}). Skipping.`);
-      infraReachable = false;
-    }
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+    prisma = moduleRef.get(PrismaService);
+    notifier = moduleRef.get(StubContactNotifierAdapter);
+    await prisma.$queryRaw`SELECT 1`;
   });
 
   afterEach(async () => {
-    if (!infraReachable) return;
     notifier.clear();
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
@@ -68,7 +59,7 @@ describe('Trusted contacts + SOS fan-out (V.UX.13 — integration)', () => {
   });
 
   afterAll(async () => {
-    if (infraReachable) await app.close();
+    await app.close();
     await moduleRef.close();
   });
 
@@ -96,7 +87,6 @@ describe('Trusted contacts + SOS fan-out (V.UX.13 — integration)', () => {
   }
 
   it('GET without bearer → 401', async () => {
-    if (!infraReachable) return;
     const res = await app.inject({
       method: 'GET',
       url: '/api/v1/account/trusted-contacts',
@@ -105,7 +95,6 @@ describe('Trusted contacts + SOS fan-out (V.UX.13 — integration)', () => {
   });
 
   it('happy path: add → list → delete', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('happy');
 
     const add = await addContact(accessToken, {
@@ -144,7 +133,6 @@ describe('Trusted contacts + SOS fan-out (V.UX.13 — integration)', () => {
   });
 
   it('POST without phone or email → 422 CONTACT_CHANNEL_REQUIRED', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('chan');
     const res = await addContact(accessToken, { name: 'Nameless' });
     expect(res.statusCode).toBe(422);
@@ -152,7 +140,6 @@ describe('Trusted contacts + SOS fan-out (V.UX.13 — integration)', () => {
   });
 
   it('cap of 3 enforced — 4th add → 422 CONTACT_LIMIT_REACHED', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('cap');
     for (let i = 0; i < 3; i++) {
       const res = await addContact(accessToken, {
@@ -170,7 +157,6 @@ describe('Trusted contacts + SOS fan-out (V.UX.13 — integration)', () => {
   });
 
   it("DELETE on someone else's contact → 404 CONTACT_NOT_FOUND", async () => {
-    if (!infraReachable) return;
     const alice = await registerUser('a');
     const bob = await registerUser('b');
     const aliceAdd = await addContact(alice.accessToken, {
@@ -189,7 +175,6 @@ describe('Trusted contacts + SOS fan-out (V.UX.13 — integration)', () => {
   });
 
   it('SOS trigger fans out to every pre-set contact', async () => {
-    if (!infraReachable) return;
     const { userId, accessToken } = await registerUser('sos');
     await addContact(accessToken, { name: 'Mom', phone: '+15550000001' });
     await addContact(accessToken, { name: 'Friend', email: 'friend@example.com' });
@@ -218,7 +203,6 @@ describe('Trusted contacts + SOS fan-out (V.UX.13 — integration)', () => {
   });
 
   it('SOS trigger with zero contacts → 201, ring untouched', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('sos-empty');
     notifier.clear();
     const sos = await app.inject({

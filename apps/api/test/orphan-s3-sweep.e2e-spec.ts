@@ -39,7 +39,6 @@ describe('OrphanS3SweepUseCase (integration, requires Docker MinIO + Postgres)',
   let prisma: PrismaService;
   let storage: StorageProvider;
   let sweepUc: OrphanS3SweepUseCase;
-  let infraReachable = true;
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -47,30 +46,22 @@ describe('OrphanS3SweepUseCase (integration, requires Docker MinIO + Postgres)',
     app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
     app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)'] });
     await app.register(fastifyCookie);
-    try {
-      await app.init();
-      await app.getHttpAdapter().getInstance().ready();
-      prisma = moduleRef.get(PrismaService);
-      storage = moduleRef.get<StorageProvider>(STORAGE_PROVIDER);
-      sweepUc = moduleRef.get(OrphanS3SweepUseCase);
-      await prisma.$queryRaw`SELECT 1`;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(`orphan-s3-sweep test: infra not reachable (${message}). Skipping.`);
-      infraReachable = false;
-    }
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+    prisma = moduleRef.get(PrismaService);
+    storage = moduleRef.get<StorageProvider>(STORAGE_PROVIDER);
+    sweepUc = moduleRef.get(OrphanS3SweepUseCase);
+    await prisma.$queryRaw`SELECT 1`;
   });
 
   afterEach(async () => {
-    if (!infraReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
   });
 
   afterAll(async () => {
-    if (infraReachable) await app.close();
+    await app.close();
     await moduleRef.close();
   });
 
@@ -103,7 +94,6 @@ describe('OrphanS3SweepUseCase (integration, requires Docker MinIO + Postgres)',
   }
 
   it('deletes an orphan bucket key (no DB row); leaves a referenced key alone', async () => {
-    if (!infraReachable) return;
     const user = await registerUser('mixed');
 
     const orphanKey = `${TEST_PREFIX}/orphan/${uniqueSuffix()}`;
@@ -139,7 +129,6 @@ describe('OrphanS3SweepUseCase (integration, requires Docker MinIO + Postgres)',
   });
 
   it('idempotent: a second sweep on the same state is a no-op for our keys', async () => {
-    if (!infraReachable) return;
     const user = await registerUser('idemp');
     const referencedKey = `${TEST_PREFIX}/idemp-ref/${uniqueSuffix()}`;
     await putBytes(referencedKey);

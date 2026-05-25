@@ -137,7 +137,6 @@ describe('Trip overview (integration, requires Docker Postgres + Redis)', () => 
   let app: NestFastifyApplication;
   let prisma: PrismaService;
   let weatherStub: StubWeather;
-  let dbReachable = true;
 
   beforeAll(async () => {
     const weather = new StubWeather();
@@ -155,53 +154,42 @@ describe('Trip overview (integration, requires Docker Postgres + Redis)', () => 
     app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
     app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)'] });
     await app.register(fastifyCookie);
-    try {
-      await app.init();
-      await app.getHttpAdapter().getInstance().ready();
-      prisma = moduleRef.get(PrismaService);
-      weatherStub = moduleRef.get<StubWeather>(WEATHER_PROVIDER);
-      await prisma.$queryRaw`SELECT 1`;
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+    prisma = moduleRef.get(PrismaService);
+    weatherStub = moduleRef.get<StubWeather>(WEATHER_PROVIDER);
+    await prisma.$queryRaw`SELECT 1`;
 
-      // Wipe stays + eateries caches so prior-run entries don't mask
-      // the overview's sub-fetches for this suite's coord.
-      const flush = new Redis(process.env['REDIS_URL']!, {
-        lazyConnect: false,
-        maxRetriesPerRequest: 2,
-      });
-      try {
-        for (const ns of ['stays', 'eateries', 'weather', 'events']) {
-          const stream = flush.scanStream({
-            match: `travel-${process.env['NODE_ENV']}:${ns}:*`,
-            count: 100,
-          });
-          for await (const keys of stream as unknown as AsyncIterable<string[]>) {
-            if (keys.length > 0) await flush.del(...keys);
-          }
+    // Wipe stays + eateries caches so prior-run entries don't mask
+    // the overview's sub-fetches for this suite's coord.
+    const flush = new Redis(process.env['REDIS_URL']!, {
+      lazyConnect: false,
+      maxRetriesPerRequest: 2,
+    });
+    try {
+      for (const ns of ['stays', 'eateries', 'weather', 'events']) {
+        const stream = flush.scanStream({
+          match: `travel-${process.env['NODE_ENV']}:${ns}:*`,
+          count: 100,
+        });
+        for await (const keys of stream as unknown as AsyncIterable<string[]>) {
+          if (keys.length > 0) await flush.del(...keys);
         }
-      } finally {
-        await flush.quit();
       }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(`overview test: infra not reachable (${message}). Skipping.`);
-      dbReachable = false;
+    } finally {
+      await flush.quit();
     }
   });
 
   afterEach(async () => {
-    if (dbReachable) {
-      weatherStub.shouldFail = false;
-      await prisma.user.deleteMany({
-        where: { displayName: { startsWith: TEST_PREFIX } },
-      });
-    }
+    weatherStub.shouldFail = false;
+    await prisma.user.deleteMany({
+      where: { displayName: { startsWith: TEST_PREFIX } },
+    });
   });
 
   afterAll(async () => {
-    if (dbReachable) {
-      await app.close();
-    }
+    await app.close();
     await moduleRef.close();
   });
 

@@ -53,7 +53,6 @@ describe('GET /trips/:id/overview — media section ([IV.18.12.10])', () => {
   let moduleRef: TestingModule;
   let app: NestFastifyApplication;
   let prisma: PrismaService;
-  let infraReachable = true;
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -61,21 +60,13 @@ describe('GET /trips/:id/overview — media section ([IV.18.12.10])', () => {
     app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
     app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)'] });
     await app.register(fastifyCookie);
-    try {
-      await app.init();
-      await app.getHttpAdapter().getInstance().ready();
-      prisma = moduleRef.get(PrismaService);
-      await prisma.$queryRaw`SELECT 1`;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(`overview-media test: infra not reachable (${message}). Skipping.`);
-      infraReachable = false;
-    }
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+    prisma = moduleRef.get(PrismaService);
+    await prisma.$queryRaw`SELECT 1`;
   });
 
   afterEach(async () => {
-    if (!infraReachable) return;
     // User cascade-deletes Trip + MediaAsset rows.
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
@@ -83,7 +74,7 @@ describe('GET /trips/:id/overview — media section ([IV.18.12.10])', () => {
   });
 
   afterAll(async () => {
-    if (infraReachable) await app.close();
+    await app.close();
     await moduleRef.close();
   });
 
@@ -153,7 +144,6 @@ describe('GET /trips/:id/overview — media section ([IV.18.12.10])', () => {
   }
 
   it('trip with no attached media → media section ok:true, count=0, recent=[]', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('empty');
     const tripId = await createTrip(accessToken);
 
@@ -164,7 +154,6 @@ describe('GET /trips/:id/overview — media section ([IV.18.12.10])', () => {
   });
 
   it('trip with 3 attached media → count=3, recent has 3, sorted desc by createdAt', async () => {
-    if (!infraReachable) return;
     const { userId, accessToken } = await registerUser('rich');
     const tripId = await createTrip(accessToken);
     const ids = await seedTripMedia(userId, tripId, 3, 'rich');
@@ -179,7 +168,6 @@ describe('GET /trips/:id/overview — media section ([IV.18.12.10])', () => {
   });
 
   it('cross-user isolation: Bob’s overview never sees Alice’s media', async () => {
-    if (!infraReachable) return;
     const alice = await registerUser('alice');
     const bob = await registerUser('bob');
     const aliceTrip = await createTrip(alice.accessToken);
@@ -205,7 +193,6 @@ describe('GET /trips/:id/overview — media section ([IV.18.12.10])', () => {
   });
 
   it('recent list capped at 12 — additional rows still counted', async () => {
-    if (!infraReachable) return;
     const { userId, accessToken } = await registerUser('capped');
     const tripId = await createTrip(accessToken);
     await seedTripMedia(userId, tripId, 15, 'capped');

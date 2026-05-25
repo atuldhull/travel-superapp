@@ -38,7 +38,6 @@ describe('Account lockout (integration, requires Docker Postgres + Redis)', () =
   let app: NestFastifyApplication;
   let prisma: PrismaService;
   let counter: FailedLoginCounter;
-  let dbReachable = true;
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -46,18 +45,11 @@ describe('Account lockout (integration, requires Docker Postgres + Redis)', () =
     app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
     app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)'] });
     await app.register(fastifyCookie);
-    try {
-      await app.init();
-      await app.getHttpAdapter().getInstance().ready();
-      prisma = moduleRef.get(PrismaService);
-      counter = moduleRef.get<FailedLoginCounter>(FAILED_LOGIN_COUNTER);
-      await prisma.$queryRaw`SELECT 1`;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(`lockout test: infra not reachable (${message}). Skipping.`);
-      dbReachable = false;
-    }
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+    prisma = moduleRef.get(PrismaService);
+    counter = moduleRef.get<FailedLoginCounter>(FAILED_LOGIN_COUNTER);
+    await prisma.$queryRaw`SELECT 1`;
   });
 
   afterEach(async () => {
@@ -67,9 +59,7 @@ describe('Account lockout (integration, requires Docker Postgres + Redis)', () =
   });
 
   afterAll(async () => {
-    if (dbReachable) {
-      await app.close();
-    }
+    await app.close();
     await moduleRef.close();
   });
 

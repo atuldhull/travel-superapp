@@ -64,7 +64,6 @@ describe('GET /account/export (integration, requires Postgres + MinIO)', () => {
   let moduleRef: TestingModule;
   let app: NestFastifyApplication;
   let prisma: PrismaService;
-  let infraReachable = true;
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -72,30 +71,22 @@ describe('GET /account/export (integration, requires Postgres + MinIO)', () => {
     app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
     app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)'] });
     await app.register(fastifyCookie);
-    try {
-      await app.init();
-      await app.getHttpAdapter().getInstance().ready();
-      prisma = moduleRef.get(PrismaService);
-      await prisma.$queryRaw`SELECT 1`;
-      const probe = await fetch(`${process.env['S3_ENDPOINT']}/`);
-      if (probe.status >= 500) throw new Error(`MinIO probe ${probe.status}`);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(`account-export test: infra not reachable (${message}). Skipping.`);
-      infraReachable = false;
-    }
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+    prisma = moduleRef.get(PrismaService);
+    await prisma.$queryRaw`SELECT 1`;
+    const probe = await fetch(`${process.env['S3_ENDPOINT']}/`);
+    if (probe.status >= 500) throw new Error(`MinIO probe ${probe.status}`);
   });
 
   afterEach(async () => {
-    if (!infraReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
   });
 
   afterAll(async () => {
-    if (infraReachable) await app.close();
+    await app.close();
     await moduleRef.close();
   });
 
@@ -190,14 +181,12 @@ describe('GET /account/export (integration, requires Postgres + MinIO)', () => {
   // ─── Tests ──────────────────────────────────────────────────────────
 
   it('GET /account/export without bearer → 401', async () => {
-    if (!infraReachable) return;
     const res = await app.inject({ method: 'GET', url: '/api/v1/account/export' });
     expect(res.statusCode).toBe(401);
     expect(JSON.parse(res.body).code).toBe('UNAUTHENTICATED');
   });
 
   it('empty user → 200; only Identity is populated, every other section is `{ count: 0, rows: [] }`', async () => {
-    if (!infraReachable) return;
     const { userId, accessToken } = await registerUser('empty');
 
     const { status, body } = await getExport(accessToken);
@@ -249,7 +238,6 @@ describe('GET /account/export (integration, requires Postgres + MinIO)', () => {
   });
 
   it('rich user → bundle contains every authored row', async () => {
-    if (!infraReachable) return;
     const { userId, accessToken } = await registerUser('rich');
 
     const tripId = await createTrip(accessToken, 'rich-trip');
@@ -281,7 +269,6 @@ describe('GET /account/export (integration, requires Postgres + MinIO)', () => {
   });
 
   it('cross-user IDOR: Bob’s export contains zero of Alice’s rows', async () => {
-    if (!infraReachable) return;
     const alice = await registerUser('alice');
     const bob = await registerUser('bob');
 
@@ -311,7 +298,6 @@ describe('GET /account/export (integration, requires Postgres + MinIO)', () => {
   });
 
   it('itinerary fan-out: trip with generated itinerary → days present in bundle', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('itin');
 
     // Create trip with dates so itinerary generation produces day rows.

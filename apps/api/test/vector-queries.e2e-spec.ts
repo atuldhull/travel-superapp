@@ -36,7 +36,6 @@ describe('VectorQueries (integration, requires Docker Postgres)', () => {
   let geo: GeoQueries;
   let vec: VectorQueries;
   let prisma: PrismaService;
-  let dbReachable = true;
   const placeIdByIdx = new Map<number, string>();
 
   beforeAll(async () => {
@@ -45,15 +44,7 @@ describe('VectorQueries (integration, requires Docker Postgres)', () => {
     geo = moduleRef.get(GeoQueries);
     vec = moduleRef.get(VectorQueries);
 
-    try {
-      await prisma.$queryRaw`SELECT 1`;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(`vector-queries integration test: DB not reachable (${message}). Skipping.`);
-      dbReachable = false;
-      return;
-    }
+    await prisma.$queryRaw`SELECT 1`;
 
     // Seed: 100 Places + 100 embeddings. Places share a dummy location
     // — this test doesn't exercise geo.
@@ -71,14 +62,12 @@ describe('VectorQueries (integration, requires Docker Postgres)', () => {
   }, 60_000); // 60s timeout — 200 SQL round-trips can take a while.
 
   afterAll(async () => {
-    if (dbReachable) {
-      await prisma.placeEmbedding.deleteMany({
-        where: { placeId: { in: Array.from(placeIdByIdx.values()) } },
-      });
-      await prisma.place.deleteMany({
-        where: { sourceKey: { startsWith: SOURCE_PREFIX } },
-      });
-    }
+    await prisma.placeEmbedding.deleteMany({
+      where: { placeId: { in: Array.from(placeIdByIdx.values()) } },
+    });
+    await prisma.place.deleteMany({
+      where: { sourceKey: { startsWith: SOURCE_PREFIX } },
+    });
     await moduleRef.close();
   });
 

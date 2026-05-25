@@ -67,7 +67,6 @@ describe('Weather cache (integration, requires Docker Postgres + Redis)', () => 
   let app: NestFastifyApplication;
   let prisma: PrismaService;
   let stub: StubOpenMeteo;
-  let dbReachable = true;
 
   beforeAll(async () => {
     const stubInstance = new StubOpenMeteo();
@@ -79,52 +78,41 @@ describe('Weather cache (integration, requires Docker Postgres + Redis)', () => 
     app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
     app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)'] });
     await app.register(fastifyCookie);
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+    prisma = moduleRef.get(PrismaService);
+    stub = moduleRef.get<StubOpenMeteo>(OpenMeteoWeatherProvider);
+    await prisma.$queryRaw`SELECT 1`;
+    // Wipe any stale cache entries from prior test runs — the
+    // module's own Redis client uses the same key prefix, and
+    // entries from an earlier failed run would masquerade as
+    // "cache hit" and break this suite.
+    const flushClient = new Redis(process.env['REDIS_URL']!, {
+      lazyConnect: false,
+      maxRetriesPerRequest: 2,
+    });
     try {
-      await app.init();
-      await app.getHttpAdapter().getInstance().ready();
-      prisma = moduleRef.get(PrismaService);
-      stub = moduleRef.get<StubOpenMeteo>(OpenMeteoWeatherProvider);
-      await prisma.$queryRaw`SELECT 1`;
-      // Wipe any stale cache entries from prior test runs — the
-      // module's own Redis client uses the same key prefix, and
-      // entries from an earlier failed run would masquerade as
-      // "cache hit" and break this suite.
-      const flushClient = new Redis(process.env['REDIS_URL']!, {
-        lazyConnect: false,
-        maxRetriesPerRequest: 2,
+      const stream = flushClient.scanStream({
+        match: `travel-${process.env['NODE_ENV']}:weather:*`,
+        count: 100,
       });
-      try {
-        const stream = flushClient.scanStream({
-          match: `travel-${process.env['NODE_ENV']}:weather:*`,
-          count: 100,
-        });
-        for await (const keys of stream as unknown as AsyncIterable<string[]>) {
-          if (keys.length > 0) await flushClient.del(...keys);
-        }
-      } finally {
-        await flushClient.quit();
+      for await (const keys of stream as unknown as AsyncIterable<string[]>) {
+        if (keys.length > 0) await flushClient.del(...keys);
       }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(`weather-cache test: infra not reachable (${message}). Skipping.`);
-      dbReachable = false;
+    } finally {
+      await flushClient.quit();
     }
   });
 
   afterEach(async () => {
-    if (dbReachable) {
-      stub.reset();
-      await prisma.user.deleteMany({
-        where: { displayName: { startsWith: TEST_PREFIX } },
-      });
-    }
+    stub.reset();
+    await prisma.user.deleteMany({
+      where: { displayName: { startsWith: TEST_PREFIX } },
+    });
   });
 
   afterAll(async () => {
-    if (dbReachable) {
-      await app.close();
-    }
+    await app.close();
     await moduleRef.close();
   });
 

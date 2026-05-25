@@ -47,7 +47,6 @@ describe('Trip × sample-plan (public, integration)', () => {
   let app: NestFastifyApplication;
   let prisma: PrismaService;
   let stub: StubPlanner;
-  let dbReachable = true;
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({ imports: [AppModule] })
@@ -58,26 +57,19 @@ describe('Trip × sample-plan (public, integration)', () => {
     app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
     app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)'] });
     await app.register(fastifyCookie);
-    try {
-      await app.init();
-      await app.getHttpAdapter().getInstance().ready();
-      prisma = moduleRef.get(PrismaService);
-      stub = moduleRef.get<StubPlanner>(TRIP_PLANNER_PORT);
-      await prisma.$queryRaw`SELECT 1`;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(`sample-plan test: DB not reachable (${message}). Skipping.`);
-      dbReachable = false;
-    }
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+    prisma = moduleRef.get(PrismaService);
+    stub = moduleRef.get<StubPlanner>(TRIP_PLANNER_PORT);
+    await prisma.$queryRaw`SELECT 1`;
   });
 
   afterEach(() => {
-    if (dbReachable) stub.reset();
+    stub.reset();
   });
 
   afterAll(async () => {
-    if (dbReachable) await app.close();
+    await app.close();
     await moduleRef.close();
   });
 

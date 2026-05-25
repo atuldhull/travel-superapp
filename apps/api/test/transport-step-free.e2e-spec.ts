@@ -32,7 +32,6 @@ describe('Step-free routing + comfortMode (V.UX.15 — integration)', () => {
   let moduleRef: TestingModule;
   let app: NestFastifyApplication;
   let prisma: PrismaService;
-  let infraReachable = true;
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -40,28 +39,20 @@ describe('Step-free routing + comfortMode (V.UX.15 — integration)', () => {
     app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
     app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)'] });
     await app.register(fastifyCookie);
-    try {
-      await app.init();
-      await app.getHttpAdapter().getInstance().ready();
-      prisma = moduleRef.get(PrismaService);
-      await prisma.$queryRaw`SELECT 1`;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(`transport-step-free test: infra not reachable (${message}). Skipping.`);
-      infraReachable = false;
-    }
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+    prisma = moduleRef.get(PrismaService);
+    await prisma.$queryRaw`SELECT 1`;
   });
 
   afterEach(async () => {
-    if (!infraReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
   });
 
   afterAll(async () => {
-    if (infraReachable) await app.close();
+    await app.close();
     await moduleRef.close();
   });
 
@@ -86,7 +77,6 @@ describe('Step-free routing + comfortMode (V.UX.15 — integration)', () => {
   const destination = { lat: 28.6219, lng: 77.219 }; // ~1.5 km away
 
   it('default response: every leg has a stepFree boolean; walk + transit are not step-free', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('default');
     const res = await app.inject({
       method: 'POST',
@@ -107,7 +97,6 @@ describe('Step-free routing + comfortMode (V.UX.15 — integration)', () => {
   });
 
   it('stepFreeOnly: true drops walk + public_transit', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('stepfree');
     const res = await app.inject({
       method: 'POST',
@@ -127,7 +116,6 @@ describe('Step-free routing + comfortMode (V.UX.15 — integration)', () => {
   });
 
   it('PATCH /preferences { comfortMode: true } round-trips through GET', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('comfort');
     const before = await app.inject({
       method: 'GET',

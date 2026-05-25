@@ -31,7 +31,6 @@ describe('Media EXIF-strip stub on confirm (integration, requires Docker Postgre
   let moduleRef: TestingModule;
   let app: NestFastifyApplication;
   let prisma: PrismaService;
-  let infraReachable = true;
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -39,32 +38,24 @@ describe('Media EXIF-strip stub on confirm (integration, requires Docker Postgre
     app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
     app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)'] });
     await app.register(fastifyCookie);
-    try {
-      await app.init();
-      await app.getHttpAdapter().getInstance().ready();
-      prisma = moduleRef.get(PrismaService);
-      await prisma.$queryRaw`SELECT 1`;
-      const probe = await fetch(`${process.env['S3_ENDPOINT']}/`).catch((err) => {
-        throw err;
-      });
-      if (probe.status >= 500) throw new Error(`MinIO probe returned ${probe.status}`);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(`media-exif-strip test: infra not reachable (${message}). Skipping.`);
-      infraReachable = false;
-    }
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+    prisma = moduleRef.get(PrismaService);
+    await prisma.$queryRaw`SELECT 1`;
+    const probe = await fetch(`${process.env['S3_ENDPOINT']}/`).catch((err) => {
+      throw err;
+    });
+    if (probe.status >= 500) throw new Error(`MinIO probe returned ${probe.status}`);
   });
 
   afterEach(async () => {
-    if (!infraReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
   });
 
   afterAll(async () => {
-    if (infraReachable) await app.close();
+    await app.close();
     await moduleRef.close();
   });
 
@@ -118,7 +109,6 @@ describe('Media EXIF-strip stub on confirm (integration, requires Docker Postgre
   }
 
   it('image confirm → exifStripped flips to true', async () => {
-    if (!infraReachable) return;
     const u = await registerUser('image');
     const { mediaAssetId } = await uploadAndConfirm(u.accessToken, 'image');
     const row = await prisma.mediaAsset.findUnique({ where: { id: mediaAssetId } });
@@ -128,7 +118,6 @@ describe('Media EXIF-strip stub on confirm (integration, requires Docker Postgre
   });
 
   it('video confirm → exifStripped stays false (worker defers)', async () => {
-    if (!infraReachable) return;
     const u = await registerUser('video');
     const { mediaAssetId } = await uploadAndConfirm(u.accessToken, 'video');
     const row = await prisma.mediaAsset.findUnique({ where: { id: mediaAssetId } });
@@ -138,7 +127,6 @@ describe('Media EXIF-strip stub on confirm (integration, requires Docker Postgre
   });
 
   it('idempotent: re-confirming an image leaves exifStripped=true', async () => {
-    if (!infraReachable) return;
     const u = await registerUser('idemp');
     const { mediaAssetId } = await uploadAndConfirm(u.accessToken, 'image');
     // Re-confirm — already-ready short-circuit; flag stays true.

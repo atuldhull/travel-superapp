@@ -48,7 +48,6 @@ describe('Trip × Transport (integration, requires Postgres + Redis)', () => {
   let app: NestFastifyApplication;
   let prisma: PrismaService;
   let geo: GeoQueries;
-  let dbReachable = true;
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -56,34 +55,27 @@ describe('Trip × Transport (integration, requires Postgres + Redis)', () => {
     app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
     app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)'] });
     await app.register(fastifyCookie);
-    try {
-      await app.init();
-      await app.getHttpAdapter().getInstance().ready();
-      prisma = moduleRef.get(PrismaService);
-      geo = moduleRef.get(GeoQueries);
-      await prisma.$queryRaw`SELECT 1`;
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+    prisma = moduleRef.get(PrismaService);
+    geo = moduleRef.get(GeoQueries);
+    await prisma.$queryRaw`SELECT 1`;
 
-      // Drop stale routing cache entries.
-      const flush = new Redis(process.env['REDIS_URL']!, {
-        lazyConnect: false,
-        maxRetriesPerRequest: 2,
+    // Drop stale routing cache entries.
+    const flush = new Redis(process.env['REDIS_URL']!, {
+      lazyConnect: false,
+      maxRetriesPerRequest: 2,
+    });
+    try {
+      const stream = flush.scanStream({
+        match: `travel-${process.env['NODE_ENV']}:routing:*`,
+        count: 100,
       });
-      try {
-        const stream = flush.scanStream({
-          match: `travel-${process.env['NODE_ENV']}:routing:*`,
-          count: 100,
-        });
-        for await (const keys of stream as unknown as AsyncIterable<string[]>) {
-          if (keys.length > 0) await flush.del(...keys);
-        }
-      } finally {
-        await flush.quit();
+      for await (const keys of stream as unknown as AsyncIterable<string[]>) {
+        if (keys.length > 0) await flush.del(...keys);
       }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(`trip-transport test: infra not reachable (${message}). Skipping.`);
-      dbReachable = false;
+    } finally {
+      await flush.quit();
     }
   });
 
@@ -97,9 +89,7 @@ describe('Trip × Transport (integration, requires Postgres + Redis)', () => {
   });
 
   afterAll(async () => {
-    if (dbReachable) {
-      await app.close();
-    }
+    await app.close();
     await moduleRef.close();
   });
 

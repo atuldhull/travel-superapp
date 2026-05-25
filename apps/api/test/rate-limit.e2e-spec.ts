@@ -55,7 +55,6 @@ describe('Rate-limit sliding window (integration, requires Docker Redis)', () =>
   let moduleRef: TestingModule;
   let app: NestFastifyApplication;
   let storage: RedisThrottlerStorage;
-  let redisReachable = true;
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({
@@ -69,15 +68,8 @@ describe('Rate-limit sliding window (integration, requires Docker Redis)', () =>
     await app.getHttpAdapter().getInstance().ready();
     storage = moduleRef.get(RedisThrottlerStorage);
 
-    try {
-      // Touch the storage once to prove Redis is reachable.
-      await storage.increment('connectivity-probe', 1_000, 999, 0, 'default');
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(`rate-limit integration test: Redis not reachable (${message}). Skipping.`);
-      redisReachable = false;
-    }
+    // Touch the storage once to prove Redis is reachable.
+    await storage.increment('connectivity-probe', 1_000, 999, 0, 'default');
   });
 
   afterAll(async () => {
@@ -85,8 +77,6 @@ describe('Rate-limit sliding window (integration, requires Docker Redis)', () =>
   });
 
   it('the 11th call on the `ai` bucket returns 429 within the TTL window', async () => {
-    if (!redisReachable) return;
-
     const inject = (): Promise<{ statusCode: number; headers: Record<string, unknown> }> =>
       app
         .inject({
@@ -116,8 +106,6 @@ describe('Rate-limit sliding window (integration, requires Docker Redis)', () =>
   });
 
   it('the `default` bucket (60/min) is NOT exhausted by the 11 earlier hits on `ai` — proves bucket isolation', async () => {
-    if (!redisReachable) return;
-
     const res = await app.inject({
       method: 'GET',
       url: '/rate-limit-test/default',
