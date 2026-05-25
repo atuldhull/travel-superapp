@@ -21,6 +21,61 @@
 
 ---
 
+## Road-to-10 Test/CI reliability series (✅ COMPLETE)
+
+- **Date**: 2026-05-25
+- **Series**: L1–L6 (test infra) + M1–M5 (closeout). Closes all 8
+  items on the "Test/CI reliability 5 → 10" review list.
+- **Key shifts** (in commit order):
+  - **L1** (`2a33537`) Testcontainers fallback + per-worker
+    `?schema=test_w${JEST_WORKER_ID}` iso. No more "Docker not up"
+    silent skip; jest runs parallel without `--runInBand`.
+  - **L2** (`d4c1a96`) codemod swept 111 `if (!dbReachable) return`
+    skip-pass anti-patterns from the e2e tier.
+  - **L3** (`b3ec59d`) dropped `--runInBand` + `--forceExit` from
+    the api test scripts; integration tier exits clean.
+  - **L4** (`0c818c6`) `@app/clock` package (Clock interface,
+    SystemClock, makeFakeClock, CLOCK DI token, 8 tests).
+  - **L5** (`1965fde`) dev-server smoke workflow — every PR boots
+    `pnpm --filter=api dev` + `pnpm --filter=web dev` against
+    real Postgres + Redis and probes `/health/ready`. Closes the
+    "tsx silent crash" reliability gap.
+  - **L6** (`19bc932`) flake quarantine (`apps/api/test/quarantine/`)
+    - 4-shard jest matrix + `nick-fields/retry@v3` on the `tests`
+      job. Failure stays VISIBLE (informational job) rather than
+      silent (the L1/L2 anti-pattern).
+  - **M1** (`dd877be`) fitness invariants for shutdown hooks —
+    every `new Redis(` site MUST implement `OnModuleDestroy` +
+    `.quit()`, every `setInterval` MUST also `clearInterval`,
+    every `*.scheduler.ts` MUST gate on `NODE_ENV==='test'`. CI
+    refuses a future ioredis-owning class without teardown.
+  - **M2** (`79bac55`) `ClockModule` (`@Global()`) wired into
+    AppModule. LockTripUseCase + UnlockTripUseCase + RefreshSession
+    use-cases migrated to `@Inject(CLOCK) clock: Clock`.
+  - **M3** (`8840a4f`) jest-junit reporter + per-shard artifact
+    upload + nightly `flake-trends.yml` workflow with a
+    dependency-free aggregator (`scripts/aggregate-flakes.mjs`)
+    that posts the Top-20 flakes table to the run's step summary.
+  - **M4** (`ae3c492`) codemod swept 133 e2e specs of vestigial
+    `*Reachable` (`dbReachable` + `infraReachable` + `redisReachable`),
+    net –1168 lines. 0 lint errors after the sweep.
+- **Verification gates ALL green locally**:
+  - `pnpm --filter=api typecheck` ✓
+  - `pnpm --filter=api arch` ✓ (706 modules, 3023 deps)
+  - `pnpm --filter=api cycles` ✓ (3 sanctioned, 0 unsanctioned)
+  - `pnpm --filter=api cover:unit` ✓ 186 / 186 (99.72% lines)
+  - `architecture.fitness.spec.ts` ✓ 169 / 169 invariants
+  - `pnpm --filter=api lint` ✓ 0 errors
+- **Operator-owed** (the M5 monitor step — CI runtime):
+  - Push the branch + open a PR. Watch:
+    - `tests` 4-shard matrix: does the per-worker schema iso hold under shard load?
+    - `dev-server-smoke`: does api + web boot from a fresh clone?
+    - `quarantine`: informational green (no quarantined specs today)?
+    - `flake-trends`: nightly run picks up the FIRST junit artifacts.
+  - Document any first-run surprises as new memory notes.
+
+---
+
 ## POST-2.0 series — Agentic + Social upgrade
 
 > Strategy: `docs/APP_VISION_2.0.html` (§1–24). Execution prompt book:
