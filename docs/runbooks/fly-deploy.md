@@ -252,11 +252,58 @@ inlines the value into the client bundle during `next build`. Setting
 it via `fly secrets set` after the build is a no-op for client code
 (server-only `process.env.X` reads do still see the new value).
 
+## Automated deploy chain ([N4])
+
+`.github/workflows/deploy.yml` ships a full CI/CD chain. Manual `fly deploy`
+is for emergencies; the default path is:
+
+```
+push to main  →  ci + dev-server-smoke + security  →  deploy-staging  →
+                 external smoke probes  →  green
+workflow_dispatch (or tag v*.*.*)  →  deploy-production  →
+                 external smoke probes  →  rollback on failure
+```
+
+| Trigger                | Lands in   | Strategy   | Rollback           |
+| ---------------------- | ---------- | ---------- | ------------------ |
+| `git push origin main` | staging    | rolling    | auto on smoke fail |
+| Manual dispatch        | either     | rolling/bg | auto on smoke fail |
+| `git tag v0.x.0`       | production | blue-green | auto on smoke fail |
+
+**Gates** wait for `tests`, `smoke`, `security` checks to be green
+on the same SHA — no deploy-on-red. Production is gated by a
+GitHub Environment requiring 1 reviewer + a 5-min wait window
+(abort opportunity).
+
+**External smoke** runs from the GH-Actions runner against the
+public URL — catches "Fly thinks the machine is healthy but the
+edge / DNS / Cloudflare is broken" failure modes that Fly's
+in-cluster health checks miss. On any smoke failure, the workflow
+runs `flyctl releases rollback <previous_id>` to restore traffic.
+
+**Rolling vs blue-green:** staging uses `rolling` (faster, single
+machine at a time) because the cost of a brief blip is acceptable
+in staging. Production uses `bluegreen` (parallel machine set,
+swap traffic atomically) so a bad deploy never serves a real user.
+
+Manual rollback (from any laptop with `flyctl`):
+
+```bash
+fly releases --app travel-api-prod | head -5
+fly releases rollback <release-id> --app travel-api-prod
+```
+
+`fly releases` includes the SHA in its `name` column — pick the
+last-known-good and rollback. The smoke step ALSO runs after a
+rollback (it's the same workflow); if rollback succeeds it leaves
+the smoke step's failure visible so the incident is honest.
+
 ## Cross-references
 
 - [`fly.toml`](../../fly.toml) — api config
 - [`fly.web.toml`](../../fly.web.toml) — web config
 - [`apps/api/Dockerfile`](../../apps/api/Dockerfile) + [`apps/web/Dockerfile`](../../apps/web/Dockerfile)
+- [`.github/workflows/deploy.yml`](../../.github/workflows/deploy.yml) — the automated chain ([N4])
 - [`docs/runbooks/dockerfile.md`](./dockerfile.md) — what the image looks like
 - [`docs/runbooks/secrets.md`](./secrets.md) — Doppler integration
 - [`docs/runbooks/env-reference.md`](./env-reference.md) — every env var
