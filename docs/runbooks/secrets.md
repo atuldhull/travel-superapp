@@ -12,8 +12,41 @@
   the repo".
 - **Rotation cadence:** quarterly for routine secrets; immediately on
   any leak / employee departure.
+- **Automation:** [.github/workflows/secret-rotation.yml](../../.github/workflows/secret-rotation.yml) opens a tracking issue every 90 days with a checklist + one-click commands ([N6]).
 - **Breakglass:** see [Breakglass](#breakglass) below for what to do
   when Doppler itself is unreachable.
+
+## Automated rotation tooling ([N6])
+
+Two scripts under [`scripts/secrets/`](../../scripts/secrets/) handle
+the propagation half of rotation:
+
+| Script                        | Rotates                       | One-line                                                    |
+| ----------------------------- | ----------------------------- | ----------------------------------------------------------- |
+| `rotate-jwt-keyring.sh`       | JWT_ACCESS / JWT_REFRESH ring | `./scripts/secrets/rotate-jwt-keyring.sh staging access`    |
+| `rotate-supabase-password.sh` | Supabase Postgres password    | `./scripts/secrets/rotate-supabase-password.sh prod '<pw>'` |
+
+`rotate-jwt-keyring.sh` calls the admin endpoint that the
+`RedisJwtKeyringStore` exposes: it moves `current` → `previous[0]`
+and mints a fresh `current` ATOMICALLY. Tokens issued with the old
+kid continue to verify for one access-token TTL (15m); after that,
+clients refresh and pick up the new kid. No re-login storm.
+
+`rotate-supabase-password.sh` is semi-automated — the Supabase
+2FA-gated password change stays manual (operator clicks
+"Reset Database Password" in the dashboard, copies the new pw),
+then the script:
+
+1. Pushes the new DATABASE_URL / DIRECT_URL to Doppler
+2. Pushes the same to Fly secrets (triggers rolling restart)
+3. Smoke-probes /health/ready before exiting
+
+This closes the long-standing "rotate Supabase DB pw (manual TODO)"
+note in the road-to-10 review.
+
+`.github/workflows/secret-rotation.yml` runs every 90 days + opens
+a tracking issue with the rotation checklist. The on-call closes
+the issue once each rotation has been recorded.
 
 ## Architecture
 
