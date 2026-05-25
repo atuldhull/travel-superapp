@@ -21,7 +21,8 @@
  * nothing new fires by default. This adapter just makes the kind
  * addressable from the CompositeSignalSource.
  */
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { CLOCK, type Clock } from '@app/clock';
 import type {
   NearbyScamReport,
   SignalSnapshot,
@@ -36,8 +37,10 @@ const RECENCY_WINDOW_DAYS = 14;
 
 @Injectable()
 export class SafetyProximitySignalAdapter implements SignalSource {
+  constructor(@Inject(CLOCK) private readonly clock: Clock) {}
+
   async snapshot(query: SignalSourceQuery): Promise<SignalSnapshot> {
-    const observedAt = new Date();
+    const observedAt = this.clock.now();
     const reports = query.nearbyScamReports;
     if (!reports || reports.length === 0) {
       return {

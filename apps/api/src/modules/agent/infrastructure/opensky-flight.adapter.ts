@@ -16,8 +16,9 @@
  *
  * Installed by prompt [POST.2A.3].
  */
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { createLogger, type AppLogger } from '@app/logger';
+import { CLOCK, type Clock } from '@app/clock';
 import type {
   SignalSnapshot,
   SignalSource,
@@ -50,7 +51,10 @@ function noChange(): SignalSnapshot {
 export class OpenSkyFlightAdapter implements SignalSource {
   private readonly logger: AppLogger = createLogger('agent.signal.flight');
 
-  constructor(private readonly baseUrl: string) {}
+  constructor(
+    private readonly baseUrl: string,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {}
 
   async snapshot(query: SignalSourceQuery): Promise<SignalSnapshot> {
     const url = buildStatesUrl(this.baseUrl, query.lat, query.lng);
@@ -66,7 +70,7 @@ export class OpenSkyFlightAdapter implements SignalSource {
       await res.json();
       return {
         kind: 'flight',
-        observedAt: new Date(),
+        observedAt: this.clock.now(),
         data: Object.freeze({ delayed: false }),
       };
     } catch (err) {

@@ -17,6 +17,7 @@
  * Installed by prompt [IV.18.16.3].
  */
 import { Inject, Injectable } from '@nestjs/common';
+import { CLOCK, type Clock } from '@app/clock';
 import { DEFAULT_RETENTION_DAYS } from '../../../common/policy/retention-policy';
 import { ACCOUNT_PURGER, type AccountPurger } from './ports/account-purger';
 
@@ -29,11 +30,14 @@ export interface PurgeSoftDeletedUsersCommand {
 
 @Injectable()
 export class PurgeSoftDeletedUsersUseCase {
-  constructor(@Inject(ACCOUNT_PURGER) private readonly purger: AccountPurger) {}
+  constructor(
+    @Inject(ACCOUNT_PURGER) private readonly purger: AccountPurger,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {}
 
   async execute(cmd: PurgeSoftDeletedUsersCommand = {}): Promise<{ purged: number }> {
     const retentionDays = cmd.retentionDays ?? DEFAULT_RETENTION_DAYS;
-    const now = cmd.now ?? new Date();
+    const now = cmd.now ?? this.clock.now();
     const cutoff = new Date(now.getTime() - retentionDays * 24 * 60 * 60 * 1000);
     const purged = await this.purger.purgeOlderThan(cutoff);
     return { purged };

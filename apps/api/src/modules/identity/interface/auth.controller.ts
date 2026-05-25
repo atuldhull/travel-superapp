@@ -38,6 +38,7 @@ import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nes
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { Env } from '@app/config';
 import { ConfigService } from '@nestjs/config';
+import { CLOCK, type Clock } from '@app/clock';
 import { type AuthenticatedUser, CurrentUser, Public } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { IssueSessionUseCase } from '../../identity/application/issue-session.use-case';
@@ -154,6 +155,7 @@ export class AuthController {
     // called directly in this file today (magic-link uses ConsumeMagicLinkUseCase
     // which already wraps IssueSessionUseCase).
     @Inject(IssueSessionUseCase) private readonly _issue: IssueSessionUseCase,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {
     void this._issue;
   }
@@ -558,7 +560,7 @@ export class AuthController {
     // probe never bounces.
     let previousSeenAt: Date | null = row?.previousSeenAt ?? null;
     try {
-      const stamp = await this.users.stampSeen(user.sub, new Date());
+      const stamp = await this.users.stampSeen(user.sub, this.clock.now());
       previousSeenAt = stamp.previousSeenAt;
     } catch {
       /* best-effort */
@@ -750,7 +752,10 @@ export class AuthController {
   private setRefreshCookie(reply: FastifyReply, token: string, expiresAt: Date): void {
     const nodeEnv = this.config.get('NODE_ENV', { infer: true });
     const isProdLike = nodeEnv === 'production' || nodeEnv === 'staging';
-    const maxAgeSeconds = Math.max(0, Math.floor((expiresAt.getTime() - Date.now()) / 1000));
+    const maxAgeSeconds = Math.max(
+      0,
+      Math.floor((expiresAt.getTime() - this.clock.nowMs()) / 1000),
+    );
     reply.setCookie(REFRESH_COOKIE_NAME, token, {
       httpOnly: true,
       sameSite: 'strict',

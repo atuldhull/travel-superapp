@@ -19,7 +19,8 @@
  * Subscribing a watch to `'deadline'` stays opt-in. This adapter
  * just makes the kind addressable from the CompositeSignalSource.
  */
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { CLOCK, type Clock } from '@app/clock';
 import type {
   SignalSnapshot,
   SignalSource,
@@ -30,8 +31,10 @@ const REMINDER_WINDOW_DAYS = 7;
 
 @Injectable()
 export class DeadlineSignalAdapter implements SignalSource {
+  constructor(@Inject(CLOCK) private readonly clock: Clock) {}
+
   async snapshot(query: SignalSourceQuery): Promise<SignalSnapshot> {
-    const observedAt = new Date();
+    const observedAt = this.clock.now();
     const iso = query.tripStartsOnIso;
     if (!iso) {
       return {
@@ -48,7 +51,7 @@ export class DeadlineSignalAdapter implements SignalSource {
         data: { changed: false, reason: 'invalid-iso' },
       };
     }
-    const today = new Date();
+    const today = this.clock.now();
     today.setHours(0, 0, 0, 0);
     const targetMidnight = new Date(target);
     targetMidnight.setHours(0, 0, 0, 0);

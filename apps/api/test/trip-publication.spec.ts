@@ -10,6 +10,7 @@
  *
  * Installed by prompt [POST.2B.2].
  */
+import { SYSTEM_CLOCK } from '@app/clock';
 import { NotFoundError, ValidationError } from '@app/errors';
 import {
   assertPublishable,
@@ -146,14 +147,26 @@ describe('PublishTripUseCase / UnpublishTripUseCase (POST.2B.2, fakes)', () => {
   }
 
   it('rejects a non-owner with TRIP_NOT_FOUND', async () => {
-    const uc = new PublishTripUseCase(tripsWith(YESTERDAY), geo, new FakePubs(), noEmbed);
+    const uc = new PublishTripUseCase(
+      tripsWith(YESTERDAY),
+      geo,
+      new FakePubs(),
+      noEmbed,
+      SYSTEM_CLOCK,
+    );
     await expect(uc.execute({ tripId: 't1', userId: 'someone-else' })).rejects.toBeInstanceOf(
       NotFoundError,
     );
   });
 
   it('rejects publishing a not-yet-ended trip (INVARIANT A, no HTTP)', async () => {
-    const uc = new PublishTripUseCase(tripsWith(TOMORROW), geo, new FakePubs(), noEmbed);
+    const uc = new PublishTripUseCase(
+      tripsWith(TOMORROW),
+      geo,
+      new FakePubs(),
+      noEmbed,
+      SYSTEM_CLOCK,
+    );
     await expect(uc.execute({ tripId: 't1', userId: 'owner' })).rejects.toMatchObject({
       code: 'TRIP_NOT_ENDED',
     });
@@ -161,7 +174,7 @@ describe('PublishTripUseCase / UnpublishTripUseCase (POST.2B.2, fakes)', () => {
 
   it('defaults to FOLLOWERS (D2) and coarsens its geo without opt-in', async () => {
     const pubs = new FakePubs();
-    const uc = new PublishTripUseCase(tripsWith(YESTERDAY), geo, pubs, noEmbed);
+    const uc = new PublishTripUseCase(tripsWith(YESTERDAY), geo, pubs, noEmbed, SYSTEM_CLOCK);
     const out = await uc.execute({ tripId: 't1', userId: 'owner' });
     expect(out.visibility).toBe('FOLLOWERS');
     expect(out.exposedLat).toBe(coarsenCoord(48.8566));
@@ -169,7 +182,7 @@ describe('PublishTripUseCase / UnpublishTripUseCase (POST.2B.2, fakes)', () => {
 
   it('PUBLIC coarsens; unpublish calls setPrivate (owner-scoped)', async () => {
     const pubs = new FakePubs();
-    const pub = new PublishTripUseCase(tripsWith(YESTERDAY), geo, pubs, noEmbed);
+    const pub = new PublishTripUseCase(tripsWith(YESTERDAY), geo, pubs, noEmbed, SYSTEM_CLOCK);
     const out = await pub.execute({ tripId: 't1', userId: 'owner', visibility: 'PUBLIC' });
     expect(out.exposedLat).toBe(coarsenCoord(48.8566));
     expect(out.exposedLat).not.toBe(48.8566);

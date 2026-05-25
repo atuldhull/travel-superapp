@@ -34,6 +34,7 @@ import { Inject, Injectable, type OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Env } from '@app/config';
 import { createLogger } from '@app/logger';
+import { CLOCK, type Clock } from '@app/clock';
 import type {
   PresignedUploadRequest,
   StorageProvider,
@@ -53,7 +54,10 @@ export class S3StorageProvider implements StorageProvider, OnModuleInit {
   private readonly client: S3Client;
   private readonly bucket: string;
 
-  constructor(@Inject(ConfigService) config: ConfigService<Env, true>) {
+  constructor(
+    @Inject(ConfigService) config: ConfigService<Env, true>,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {
     this.bucket = config.get('S3_BUCKET', { infer: true });
     this.client = new S3Client({
       endpoint: config.get('S3_ENDPOINT', { infer: true }),
@@ -79,12 +83,12 @@ export class S3StorageProvider implements StorageProvider, OnModuleInit {
    * S3 hiccup.
    */
   async pingBucket(): Promise<{ ok: boolean; latencyMs: number; error?: string }> {
-    const startedAt = Date.now();
+    const startedAt = this.clock.nowMs();
     try {
       const headCmd = new HeadBucketCommand({ Bucket: this.bucket });
       const url = await getSignedUrl(this.client, headCmd, { expiresIn: INTERNAL_SIG_TTL_SEC });
       const res = await fetch(url, { method: 'HEAD' });
-      const latencyMs = Date.now() - startedAt;
+      const latencyMs = this.clock.nowMs() - startedAt;
       if (res.ok || res.status === 404) {
         return { ok: true, latencyMs };
       }
@@ -92,7 +96,7 @@ export class S3StorageProvider implements StorageProvider, OnModuleInit {
     } catch (err) {
       return {
         ok: false,
-        latencyMs: Date.now() - startedAt,
+        latencyMs: this.clock.nowMs() - startedAt,
         error: err instanceof Error ? err.message : String(err),
       };
     }

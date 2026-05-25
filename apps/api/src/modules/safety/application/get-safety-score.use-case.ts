@@ -36,6 +36,7 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { ValidationError } from '@app/errors';
+import { CLOCK, type Clock } from '@app/clock';
 import type { CrimeIncidentWithDistance, ScamSeverity } from '../domain/crime-incident.entity';
 import type { ScamReportWithDistance } from '../domain/scam-report.entity';
 import { FindNearbyCrimesUseCase } from './find-nearby-crimes.use-case';
@@ -78,6 +79,7 @@ export class GetSafetyScoreUseCase {
   constructor(
     @Inject(FindNearbyCrimesUseCase) private readonly findCrimes: FindNearbyCrimesUseCase,
     @Inject(FindNearbyScamsUseCase) private readonly findScams: FindNearbyScamsUseCase,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   async execute(cmd: GetSafetyScoreCommand): Promise<SafetyScore> {
@@ -147,7 +149,7 @@ export class GetSafetyScoreUseCase {
       score,
       grade: grade(score),
       breakdown,
-      computedAt: new Date(),
+      computedAt: this.clock.now(),
     };
   }
 }

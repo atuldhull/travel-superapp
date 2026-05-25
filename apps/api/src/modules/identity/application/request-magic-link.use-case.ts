@@ -23,6 +23,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import type { Env } from '@app/config';
 import { ConfigService } from '@nestjs/config';
+import { CLOCK, type Clock } from '@app/clock';
 import {
   MAGIC_LINK_TOKEN_REPOSITORY,
   type MagicLinkTokenRepository,
@@ -45,6 +46,7 @@ export class RequestMagicLinkUseCase {
     @Inject(MAGIC_LINK_TOKEN_REPOSITORY)
     private readonly tokens: MagicLinkTokenRepository,
     @Inject(MAILER_PORT) private readonly mailer: MailerPort,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   async execute(cmd: RequestMagicLinkCommand): Promise<void> {
@@ -61,7 +63,7 @@ export class RequestMagicLinkUseCase {
     // 32 bytes hex → 64 chars; URL-safe (no padding).
     const token = randomBytes(32).toString('hex');
     const tokenHash = createHash('sha256').update(`${pepper}${token}`).digest('hex');
-    const expiresAt = new Date(Date.now() + TOKEN_TTL_MS);
+    const expiresAt = new Date(this.clock.nowMs() + TOKEN_TTL_MS);
     await this.tokens.create({ emailHash, tokenHash, expiresAt });
 
     // Default to the web dev port (:3002). The schema default is

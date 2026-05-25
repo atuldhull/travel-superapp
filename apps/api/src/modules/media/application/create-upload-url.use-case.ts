@@ -15,6 +15,7 @@
  */
 import { randomBytes } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
+import { CLOCK, type Clock } from '@app/clock';
 import { MediaAsset, type MediaKind } from '../domain/media-asset.entity';
 import { MEDIA_ASSET_REPOSITORY, type MediaAssetRepository } from './ports/media-asset.repository';
 import { STORAGE_PROVIDER, type StorageProvider } from './ports/storage-provider';
@@ -39,6 +40,7 @@ export class CreateUploadUrlUseCase {
   constructor(
     @Inject(MEDIA_ASSET_REPOSITORY) private readonly repo: MediaAssetRepository,
     @Inject(STORAGE_PROVIDER) private readonly storage: StorageProvider,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   async execute(cmd: CreateUploadUrlCommand): Promise<CreateUploadUrlResult> {
@@ -66,7 +68,7 @@ export class CreateUploadUrlUseCase {
       expiresSec: UPLOAD_EXPIRES_SEC,
     });
 
-    const expiresAt = new Date(Date.now() + UPLOAD_EXPIRES_SEC * 1000);
+    const expiresAt = new Date(this.clock.nowMs() + UPLOAD_EXPIRES_SEC * 1000);
     return { asset, uploadUrl, expiresAt };
   }
 }

@@ -10,6 +10,7 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { ConflictError, NotFoundError } from '@app/errors';
+import { CLOCK, type Clock } from '@app/clock';
 import { MEDIA_ASSET_REPOSITORY, type MediaAssetRepository } from './ports/media-asset.repository';
 import { STORAGE_PROVIDER, type StorageProvider } from './ports/storage-provider';
 
@@ -30,6 +31,7 @@ export class GetMediaDownloadUrlUseCase {
   constructor(
     @Inject(MEDIA_ASSET_REPOSITORY) private readonly repo: MediaAssetRepository,
     @Inject(STORAGE_PROVIDER) private readonly storage: StorageProvider,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   async execute(cmd: GetMediaDownloadUrlCommand): Promise<GetMediaDownloadUrlResult> {
@@ -45,7 +47,7 @@ export class GetMediaDownloadUrlUseCase {
       );
     }
     const url = await this.storage.createPresignedDownloadUrl(asset.s3KeyRaw, DOWNLOAD_EXPIRES_SEC);
-    const expiresAt = new Date(Date.now() + DOWNLOAD_EXPIRES_SEC * 1000);
+    const expiresAt = new Date(this.clock.nowMs() + DOWNLOAD_EXPIRES_SEC * 1000);
     return { url, expiresAt };
   }
 }

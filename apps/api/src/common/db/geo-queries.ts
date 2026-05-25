@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
+import { CLOCK, type Clock } from '@app/clock';
 import type {
   CrimeIncident,
   Place,
@@ -27,7 +28,10 @@ import { PrismaService } from './prisma.service';
  */
 @Injectable()
 export class GeoQueries {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {}
 
   /**
    * Insert a Place row with typed fields + PostGIS Point coordinate.
@@ -39,7 +43,7 @@ export class GeoQueries {
     // — the DB itself accepts any varchar. Mixed formats are tolerable;
     // re-evaluate if id-format observability becomes important.
     const id = randomUUID();
-    const now = new Date();
+    const now = this.clock.now();
     const metadata = (input.metadata ?? null) as Prisma.InputJsonValue | null;
     const rows = await this.prisma.$queryRaw<Place[]>`
       INSERT INTO "Place" (
@@ -108,7 +112,7 @@ export class GeoQueries {
    */
   async insertTrip(input: InsertTripInput): Promise<Trip> {
     const id = randomUUID();
-    const now = new Date();
+    const now = this.clock.now();
     const rows = await this.prisma.$queryRaw<Trip[]>`
       INSERT INTO "Trip" (
         id, "userId", title, status, center, "radiusKm", "startsOn",
@@ -221,7 +225,7 @@ export class GeoQueries {
     priceTier: number;
   }> {
     const id = randomUUID();
-    const now = new Date();
+    const now = this.clock.now();
     const rows = await this.prisma.$queryRaw<
       Array<{
         id: string;
@@ -259,7 +263,7 @@ export class GeoQueries {
    * actually updated (0 if no Place with that id exists).
    */
   async updatePlaceCoordinates(id: string, lat: number, lng: number): Promise<number> {
-    const now = new Date();
+    const now = this.clock.now();
     return this.prisma.$executeRaw`
       UPDATE "Place"
       SET
@@ -279,7 +283,7 @@ export class GeoQueries {
    */
   async insertScamReport(input: InsertScamReportInput): Promise<ScamReport> {
     const id = randomUUID();
-    const now = new Date();
+    const now = this.clock.now();
     const rows = await this.prisma.$queryRaw<ScamReport[]>`
       INSERT INTO "ScamReport" (
         id, "reporterId", category, severity, coordinates, description,
@@ -401,7 +405,7 @@ export class GeoQueries {
    */
   async insertCrimeIncident(input: InsertCrimeIncidentInput): Promise<CrimeIncident> {
     const id = randomUUID();
-    const now = new Date();
+    const now = this.clock.now();
     const rows = await this.prisma.$queryRaw<CrimeIncident[]>`
       INSERT INTO "CrimeIncident" (
         id, source, category, severity, coordinates, "reportedAt", "createdAt"
@@ -481,7 +485,7 @@ export class GeoQueries {
    */
   async insertSosEvent(input: InsertSosEventInput): Promise<SosEvent> {
     const id = randomUUID();
-    const now = new Date();
+    const now = this.clock.now();
     const rows = await this.prisma.$queryRaw<SosEvent[]>`
       INSERT INTO "SosEvent" (id, "userId", coordinates, trigger, "createdAt")
       VALUES (

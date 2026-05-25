@@ -11,19 +11,23 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { UserNotFoundError } from '@app/errors';
+import { CLOCK, type Clock } from '@app/clock';
 import type { UserDataExport } from '../domain/user-data-export.entity';
 import { USER_DATA_AGGREGATOR, type UserDataAggregator } from './ports/user-data-aggregator';
 
 @Injectable()
 export class ExportUserDataUseCase {
-  constructor(@Inject(USER_DATA_AGGREGATOR) private readonly agg: UserDataAggregator) {}
+  constructor(
+    @Inject(USER_DATA_AGGREGATOR) private readonly agg: UserDataAggregator,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {}
 
   async execute(userId: string): Promise<UserDataExport> {
     const bundle = await this.agg.aggregateForUser(userId);
     if (!bundle) throw new UserNotFoundError(userId);
     return {
       metadata: {
-        exportedAt: new Date().toISOString(),
+        exportedAt: this.clock.now().toISOString(),
         formatVersion: 1,
         userId,
       },

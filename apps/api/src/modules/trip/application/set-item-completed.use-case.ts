@@ -12,19 +12,23 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { NotFoundError } from '@app/errors';
+import { CLOCK, type Clock } from '@app/clock';
 import { ITINERARY_REPOSITORY, type ItineraryRepository } from './ports/itinerary.repository';
 import type { ItineraryItem } from '../domain/itinerary.entity';
 
 @Injectable()
 export class SetItemCompletedUseCase {
-  constructor(@Inject(ITINERARY_REPOSITORY) private readonly itinerary: ItineraryRepository) {}
+  constructor(
+    @Inject(ITINERARY_REPOSITORY) private readonly itinerary: ItineraryRepository,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {}
 
   /**
    * `completed=true` stamps `completedAt = now()`; `completed=false`
    * clears it back to null. Idempotent on either side.
    */
   async execute(itemId: string, userId: string, completed: boolean): Promise<ItineraryItem> {
-    const next = completed ? new Date() : null;
+    const next = completed ? this.clock.now() : null;
     const updated = await this.itinerary.setItemCompletedForUser(itemId, userId, next);
     if (!updated) {
       throw new NotFoundError(`Itinerary item not found: ${itemId}`, { itemId }, 'ITEM_NOT_FOUND');

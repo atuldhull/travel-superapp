@@ -29,6 +29,7 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { createLogger, type AppLogger } from '@app/logger';
+import { CLOCK, type Clock } from '@app/clock';
 import { GeoQueries } from '../../../common/db/geo-queries';
 import { TRIP_REPOSITORY, type TripRepository } from '../../trip';
 import type { SignalKind, TripWatch } from '../domain/trip-watch.entity';
@@ -92,9 +93,10 @@ export class RunWatchCycleUseCase {
     @Inject(DraftMemoryBookUseCase) private readonly draft: DraftMemoryBookUseCase,
     @Inject(AGENT_RUN_REPOSITORY) private readonly runs: AgentRunRepository,
     @Inject(TRIP_WATCH_REPOSITORY) private readonly watches: TripWatchRepository,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
-  async execute(watch: TripWatch, now: Date = new Date()): Promise<WatchCycleOutcome> {
+  async execute(watch: TripWatch, now: Date = this.clock.now()): Promise<WatchCycleOutcome> {
     const trip = await this.trips.findById(watch.tripId);
     if (!trip) {
       // Trip deleted out from under the watch — drain it.

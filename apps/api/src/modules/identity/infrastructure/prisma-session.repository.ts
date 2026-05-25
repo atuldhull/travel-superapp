@@ -9,6 +9,7 @@
  * Installed by prompt [III.13.2] part 2.
  */
 import { Inject, Injectable } from '@nestjs/common';
+import { CLOCK, type Clock } from '@app/clock';
 import type { Session as PrismaSession } from '@prisma/client';
 import { PrismaService } from '../../../common/db/prisma.service';
 import type { Session } from '../domain/session.entity';
@@ -19,7 +20,10 @@ import type {
 
 @Injectable()
 export class PrismaSessionRepository implements SessionRepository {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {}
 
   async create(input: CreateSessionInput): Promise<Session> {
     const row = await this.prisma.session.create({
@@ -48,7 +52,7 @@ export class PrismaSessionRepository implements SessionRepository {
     const newRow = await this.prisma.$transaction(async (tx) => {
       await tx.session.update({
         where: { id: oldSessionId },
-        data: { revokedAt: new Date() },
+        data: { revokedAt: this.clock.now() },
       });
       return tx.session.create({
         data: {
@@ -69,12 +73,12 @@ export class PrismaSessionRepository implements SessionRepository {
   async revoke(sessionId: string): Promise<void> {
     await this.prisma.session.updateMany({
       where: { id: sessionId, revokedAt: null },
-      data: { revokedAt: new Date() },
+      data: { revokedAt: this.clock.now() },
     });
   }
 
   async revokeAllForUser(userId: string): Promise<number> {
-    const now = new Date();
+    const now = this.clock.now();
     const result = await this.prisma.session.updateMany({
       where: { userId, revokedAt: null },
       data: { revokedAt: now },
@@ -87,7 +91,7 @@ export class PrismaSessionRepository implements SessionRepository {
       where: {
         userId,
         revokedAt: null,
-        expiresAt: { gt: new Date() },
+        expiresAt: { gt: this.clock.now() },
       },
       orderBy: { issuedAt: 'asc' },
     });

@@ -13,6 +13,7 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { createLogger, type AppLogger } from '@app/logger';
+import { CLOCK, type Clock } from '@app/clock';
 import { WEATHER_PROVIDER, type WeatherProvider } from '../../weather';
 import type {
   SignalSnapshot,
@@ -26,7 +27,10 @@ const FORECAST_DAYS = 7;
 export class WeatherSignalAdapter implements SignalSource {
   private readonly logger: AppLogger = createLogger('agent.signal.weather');
 
-  constructor(@Inject(WEATHER_PROVIDER) private readonly weather: WeatherProvider) {}
+  constructor(
+    @Inject(WEATHER_PROVIDER) private readonly weather: WeatherProvider,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {}
 
   async snapshot(query: SignalSourceQuery): Promise<SignalSnapshot> {
     try {
@@ -46,7 +50,7 @@ export class WeatherSignalAdapter implements SignalSource {
       }
       return {
         kind: 'weather',
-        observedAt: new Date(),
+        observedAt: this.clock.now(),
         data: Object.freeze({
           maxPrecipProbabilityPercent: maxProb,
           worstDay,

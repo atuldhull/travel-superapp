@@ -16,6 +16,7 @@
  */
 import { Module, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { SYSTEM_CLOCK } from '@app/clock';
 import type { Env } from '@app/config';
 import { AccountModule } from '../account/account.module';
 import { TripModule } from '../trip/trip.module';
@@ -114,7 +115,7 @@ import { SosController } from './interface/sos.controller';
         const token = config.get('TWILIO_AUTH_TOKEN', { infer: true });
         const from = config.get('TWILIO_FROM_NUMBER', { infer: true });
         if (sid && token && from) {
-          return new TwilioContactNotifierAdapter(config);
+          return new TwilioContactNotifierAdapter(config, SYSTEM_CLOCK);
         }
         return stub;
       },

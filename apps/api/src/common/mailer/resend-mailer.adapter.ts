@@ -26,6 +26,7 @@ import { Resend } from 'resend';
 import type { Env } from '@app/config';
 import { DomainError } from '@app/errors';
 import { createLogger, type AppLogger } from '@app/logger';
+import { CLOCK, type Clock } from '@app/clock';
 import type { MailMessage, MailerPort } from './mailer.port';
 
 /** Thrown when Resend rejects a send. The wrapping use-case decides
@@ -45,7 +46,10 @@ export class ResendMailerAdapter implements MailerPort {
   private readonly fromAddress: string;
   private readonly logger: AppLogger = createLogger('resend-mailer');
 
-  constructor(@Inject(ConfigService) config: ConfigService<Env, true>) {
+  constructor(
+    @Inject(ConfigService) config: ConfigService<Env, true>,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {
     const apiKey = config.get('RESEND_API_KEY', { infer: true });
     if (!apiKey) {
       // Should never happen — the IdentityModule factory only
@@ -61,7 +65,7 @@ export class ResendMailerAdapter implements MailerPort {
 
   async send(message: MailMessage): Promise<void> {
     const html = message.htmlBody ?? this.synthesiseHtmlFromText(message.textBody);
-    const startedAt = Date.now();
+    const startedAt = this.clock.nowMs();
     try {
       const result = await this.client.emails.send({
         from: this.fromAddress,
@@ -85,7 +89,7 @@ export class ResendMailerAdapter implements MailerPort {
           to: message.to,
           subject: message.subject,
           messageId: result.data?.id ?? null,
-          latencyMs: Date.now() - startedAt,
+          latencyMs: this.clock.nowMs() - startedAt,
         },
         'resend_mailer_send_ok',
       );

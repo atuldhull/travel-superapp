@@ -7,6 +7,7 @@
  * Installed by prompt [IV.18.2.3].
  */
 import { Inject, Injectable } from '@nestjs/common';
+import { CLOCK, type Clock } from '@app/clock';
 import type { Trip as PrismaTrip } from '@prisma/client';
 import { GeoQueries } from '../../../common/db/geo-queries';
 import { PrismaService } from '../../../common/db/prisma.service';
@@ -25,6 +26,7 @@ export class PrismaTripRepository implements TripRepository {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(GeoQueries) private readonly geo: GeoQueries,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   async createDraft(input: CreateTripDraftInput): Promise<Trip> {
@@ -163,7 +165,7 @@ export class PrismaTripRepository implements TripRepository {
   async setArchivedForUser(id: string, userId: string, archive: boolean): Promise<Trip | null> {
     const result = await this.prisma.trip.updateMany({
       where: { id, userId },
-      data: { archivedAt: archive ? new Date() : null },
+      data: { archivedAt: archive ? this.clock.now() : null },
     });
     if (result.count !== 1) return null;
     const row = await this.prisma.trip.findUnique({ where: { id } });
@@ -176,7 +178,7 @@ export class PrismaTripRepository implements TripRepository {
         archivedAt: null,
         createdAt: { lt: cutoff },
       },
-      data: { archivedAt: new Date() },
+      data: { archivedAt: this.clock.now() },
     });
     return result.count;
   }

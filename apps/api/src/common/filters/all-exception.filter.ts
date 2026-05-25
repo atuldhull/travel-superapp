@@ -17,17 +17,24 @@
  */
 import { type ArgumentsHost, Catch, type ExceptionFilter, HttpException } from '@nestjs/common';
 import type { FastifyReply } from 'fastify';
+import { type Clock, SYSTEM_CLOCK } from '@app/clock';
 import { type AppLogger, createLogger, getTraceContext } from '@app/logger';
 
 @Catch()
 export class AllExceptionFilter implements ExceptionFilter {
   private readonly logger: AppLogger = createLogger('AllExceptionFilter');
 
+  // [M6] Optional `clock` constructor parameter so 131 existing
+  // `new AllExceptionFilter()` call sites (main.ts + every e2e
+  // spec) keep compiling. Tests that want deterministic timestamps
+  // pass a FakeClock; production gets the SYSTEM_CLOCK default.
+  constructor(private readonly clock: Clock = SYSTEM_CLOCK) {}
+
   catch(err: unknown, host: ArgumentsHost): void {
     const http = host.switchToHttp();
     const response = http.getResponse<FastifyReply>();
     const traceId = getTraceContext()?.traceId;
-    const timestamp = new Date().toISOString();
+    const timestamp = this.clock.now().toISOString();
 
     // 1. NestJS built-in exceptions — keep their contract.
     if (err instanceof HttpException) {

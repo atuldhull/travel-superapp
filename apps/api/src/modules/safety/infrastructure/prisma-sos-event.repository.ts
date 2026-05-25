@@ -11,6 +11,7 @@
  * Installed by prompt [IV.18.11.2].
  */
 import { Inject, Injectable } from '@nestjs/common';
+import { CLOCK, type Clock } from '@app/clock';
 import type { SosEvent as PrismaSosEvent } from '@prisma/client';
 import { GeoQueries } from '../../../common/db/geo-queries';
 import { PrismaService } from '../../../common/db/prisma.service';
@@ -29,6 +30,7 @@ export class PrismaSosEventRepository implements SosEventRepository {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(GeoQueries) private readonly geo: GeoQueries,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   async create(input: CreateSosInput): Promise<SosEvent> {
@@ -46,7 +48,7 @@ export class PrismaSosEventRepository implements SosEventRepository {
   }
 
   async resolve(input: ResolveSosInput): Promise<SosEvent | null> {
-    const now = new Date();
+    const now = this.clock.now();
     const result = await this.prisma.sosEvent.updateMany({
       where: { id: input.id, userId: input.userId, resolvedAt: null },
       data: { resolvedAt: now, resolutionNote: input.note },
@@ -76,7 +78,7 @@ export class PrismaSosEventRepository implements SosEventRepository {
   }
 
   async adminResolve(input: AdminResolveSosInput): Promise<SosEvent | null> {
-    const now = new Date();
+    const now = this.clock.now();
     const result = await this.prisma.sosEvent.updateMany({
       // No userId scope — admin can resolve any active event.
       where: { id: input.id, resolvedAt: null },

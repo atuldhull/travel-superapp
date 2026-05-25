@@ -10,6 +10,7 @@
  * Installed by prompt [V.UX.25].
  */
 import { Inject, Injectable } from '@nestjs/common';
+import { CLOCK, type Clock } from '@app/clock';
 import { NotFoundError } from '@app/errors';
 import { PrismaService } from '../../../common/db/prisma.service';
 import type { PublicReviewerProfile, UserKarma } from '../domain/karma.entity';
@@ -30,6 +31,7 @@ export class GetPublicReviewerProfileUseCase {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(KARMA_REPOSITORY) private readonly karma: KarmaRepository,
     @Inject(REVIEW_REPOSITORY) private readonly reviews: ReviewRepository,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   async execute(cmd: GetPublicReviewerProfileCommand): Promise<PublicReviewerProfile> {
@@ -54,7 +56,7 @@ export class GetPublicReviewerProfileUseCase {
     return {
       userId: user.id,
       displayName: user.displayName,
-      karma: karma ?? synthesiseZeroKarma(cmd.userId),
+      karma: karma ?? synthesiseZeroKarma(cmd.userId, this.clock.now()),
       recentReviews: recentReviews.map((r) => ({
         id: r.id,
         targetType: r.targetType,
@@ -67,8 +69,9 @@ export class GetPublicReviewerProfileUseCase {
   }
 }
 
-function synthesiseZeroKarma(userId: string): UserKarma {
-  const now = new Date();
+// [M6] Accepts `now` so the caller (the use-case, which injects CLOCK)
+// can pass `this.clock.now()` for deterministic test time.
+function synthesiseZeroKarma(userId: string, now: Date = new Date()): UserKarma {
   return {
     id: '',
     userId,

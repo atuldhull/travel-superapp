@@ -25,6 +25,7 @@
  */
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { SYSTEM_CLOCK } from '@app/clock';
 import type { Env } from '@app/config';
 import { WeatherModule } from '../weather/weather.module';
 import { TripModule } from '../trip/trip.module';
@@ -92,7 +93,7 @@ import { AgentScheduler } from './interface/agent.scheduler';
       provide: OpenSkyFlightAdapter,
       inject: [ConfigService],
       useFactory: (config: ConfigService<Env, true>) =>
-        new OpenSkyFlightAdapter(config.get('OPENSKY_BASE_URL', { infer: true })),
+        new OpenSkyFlightAdapter(config.get('OPENSKY_BASE_URL', { infer: true }), SYSTEM_CLOCK),
     },
     AgentScheduler,
   ],

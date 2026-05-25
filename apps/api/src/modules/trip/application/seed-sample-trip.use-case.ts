@@ -17,6 +17,7 @@
  * Installed by prompt [V.UX.3].
  */
 import { Inject, Injectable } from '@nestjs/common';
+import { CLOCK, type Clock } from '@app/clock';
 import { CreateTripDraftUseCase, type CreateTripDraftCommand } from './create-trip-draft.use-case';
 import { TRIP_REPOSITORY, type TripRepository } from './ports/trip.repository';
 
@@ -38,6 +39,7 @@ export class SeedSampleTripUseCase {
   constructor(
     @Inject(TRIP_REPOSITORY) private readonly trips: TripRepository,
     private readonly createDraft: CreateTripDraftUseCase,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   async execute(userId: string): Promise<{ readonly created: boolean }> {
@@ -46,7 +48,7 @@ export class SeedSampleTripUseCase {
 
     // Compute the next Saturday + Sunday so the sample looks fresh
     // every time it's seeded (rather than a stale 2026 date).
-    const now = new Date();
+    const now = this.clock.now();
     const day = now.getUTCDay(); // 0 = Sun, 6 = Sat
     const daysToSaturday = (6 - day + 7) % 7 || 7;
     const startsOn = new Date(now);

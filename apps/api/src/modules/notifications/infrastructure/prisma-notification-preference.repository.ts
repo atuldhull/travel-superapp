@@ -8,6 +8,7 @@
  * Installed by prompt [V.UX.26].
  */
 import { Inject, Injectable } from '@nestjs/common';
+import { CLOCK, type Clock } from '@app/clock';
 import type { NotificationPreference as PrismaNotificationPreference } from '@prisma/client';
 import { PrismaService } from '../../../common/db/prisma.service';
 import type {
@@ -21,12 +22,15 @@ import type {
 
 @Injectable()
 export class PrismaNotificationPreferenceRepository implements NotificationPreferenceRepository {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {}
 
   async getOrDefault(userId: string): Promise<NotificationPreference> {
     const row = await this.prisma.notificationPreference.findUnique({ where: { userId } });
     if (row) return toDomain(row);
-    const now = new Date();
+    const now = this.clock.now();
     return {
       id: '',
       userId,

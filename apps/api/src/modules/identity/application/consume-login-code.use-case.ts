@@ -16,6 +16,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { UnauthorizedError } from '@app/errors';
 import type { Env } from '@app/config';
 import { ConfigService } from '@nestjs/config';
+import { CLOCK, type Clock } from '@app/clock';
 import type { LoginChannel } from '../domain/login-code.entity';
 import {
   IssueSessionUseCase,
@@ -47,6 +48,7 @@ export class ConsumeLoginCodeUseCase {
     @Inject(LOGIN_CODE_REPOSITORY) private readonly codes: LoginCodeRepository,
     @Inject(USER_REPOSITORY) private readonly users: UserRepository,
     private readonly issueSession: IssueSessionUseCase,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   async execute(cmd: ConsumeLoginCodeCommand): Promise<ConsumeLoginCodeResult> {
@@ -66,7 +68,7 @@ export class ConsumeLoginCodeUseCase {
       await this.codes.registerFailedAttempt(active.id);
       throw invalid();
     }
-    const won = await this.codes.consume(active.id, new Date());
+    const won = await this.codes.consume(active.id, this.clock.now());
     if (!won) throw invalid();
 
     let userId: string;

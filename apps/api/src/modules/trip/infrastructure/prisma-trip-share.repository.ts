@@ -5,6 +5,7 @@
  * Installed by prompt [IV.18.2.13].
  */
 import { Inject, Injectable } from '@nestjs/common';
+import { CLOCK, type Clock } from '@app/clock';
 import type { TripShare as PrismaTripShare } from '@prisma/client';
 import { PrismaService } from '../../../common/db/prisma.service';
 import type { TripShare } from '../domain/trip-share.entity';
@@ -15,7 +16,10 @@ import type {
 
 @Injectable()
 export class PrismaTripShareRepository implements TripShareRepository {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {}
 
   async create(input: CreateShareInput): Promise<TripShare> {
     const row = await this.prisma.tripShare.create({
@@ -57,7 +61,7 @@ export class PrismaTripShareRepository implements TripShareRepository {
   async countActiveSharesForTrip(tripId: string): Promise<number> {
     // Active = publicRead=true AND (no expiry OR expiry > now).
     // Prisma's OR filter handles the nullable expiry cleanly.
-    const now = new Date();
+    const now = this.clock.now();
     return this.prisma.tripShare.count({
       where: {
         tripId,
