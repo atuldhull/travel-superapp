@@ -25,7 +25,6 @@ import { MetricsService } from '../src/common/metrics/metrics.service';
 describe('http_request_duration_seconds Histogram (integration)', () => {
   let moduleRef: TestingModule;
   let app: NestFastifyApplication;
-  let infraReachable = true;
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -33,26 +32,18 @@ describe('http_request_duration_seconds Histogram (integration)', () => {
     app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
     app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)', 'metrics'] });
     await app.register(fastifyCookie);
-    try {
-      await app.init();
-      await app.getHttpAdapter().getInstance().ready();
-      // Same wiring as main.ts step 6d.
-      await registerHttpMetricsMiddleware(app, moduleRef.get(MetricsService));
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(`metrics-http-duration test: infra not reachable (${message}). Skipping.`);
-      infraReachable = false;
-    }
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+    // Same wiring as main.ts step 6d.
+    await registerHttpMetricsMiddleware(app, moduleRef.get(MetricsService));
   });
 
   afterAll(async () => {
-    if (infraReachable) await app.close();
+    await app.close();
     await moduleRef.close();
   });
 
   it('emits histogram lines (HELP + TYPE + bucket + count + sum) after a request', async () => {
-    if (!infraReachable) return;
     // Hit a route to generate at least one observation.
     const probe = await app.inject({ method: 'GET', url: '/health/live' });
     expect(probe.statusCode).toBe(200);
@@ -68,7 +59,6 @@ describe('http_request_duration_seconds Histogram (integration)', () => {
   });
 
   it('matched route template (not raw path) is the route label', async () => {
-    if (!infraReachable) return;
     // /health/live is a static route — `route="/health/live"`.
     await app.inject({ method: 'GET', url: '/health/live' });
     const scrape = await app.inject({ method: 'GET', url: '/metrics' });
@@ -76,7 +66,6 @@ describe('http_request_duration_seconds Histogram (integration)', () => {
   });
 
   it('the /metrics route itself does NOT show up in the histogram', async () => {
-    if (!infraReachable) return;
     // Several scrapes — none should record themselves.
     await app.inject({ method: 'GET', url: '/metrics' });
     await app.inject({ method: 'GET', url: '/metrics' });

@@ -38,7 +38,6 @@ describe('Memory Book v1 (integration, requires Postgres + MinIO)', () => {
   let moduleRef: TestingModule;
   let app: NestFastifyApplication;
   let prisma: PrismaService;
-  let infraReachable = true;
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -46,23 +45,15 @@ describe('Memory Book v1 (integration, requires Postgres + MinIO)', () => {
     app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
     app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)'] });
     await app.register(fastifyCookie);
-    try {
-      await app.init();
-      await app.getHttpAdapter().getInstance().ready();
-      prisma = moduleRef.get(PrismaService);
-      await prisma.$queryRaw`SELECT 1`;
-      const probe = await fetch(`${process.env['S3_ENDPOINT']}/`);
-      if (probe.status >= 500) throw new Error(`MinIO probe ${probe.status}`);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(`memory-book test: infra not reachable (${message}). Skipping.`);
-      infraReachable = false;
-    }
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+    prisma = moduleRef.get(PrismaService);
+    await prisma.$queryRaw`SELECT 1`;
+    const probe = await fetch(`${process.env['S3_ENDPOINT']}/`);
+    if (probe.status >= 500) throw new Error(`MinIO probe ${probe.status}`);
   });
 
   afterEach(async () => {
-    if (!infraReachable) return;
     // User cascade-deletes MediaAsset + MemoryBook rows.
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
@@ -70,7 +61,7 @@ describe('Memory Book v1 (integration, requires Postgres + MinIO)', () => {
   });
 
   afterAll(async () => {
-    if (infraReachable) await app.close();
+    await app.close();
     await moduleRef.close();
   });
 
@@ -118,7 +109,6 @@ describe('Memory Book v1 (integration, requires Postgres + MinIO)', () => {
   }
 
   it('POST /memory-books without a bearer → 401', async () => {
-    if (!infraReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/memory-books',
@@ -128,7 +118,6 @@ describe('Memory Book v1 (integration, requires Postgres + MinIO)', () => {
   });
 
   it('happy path: create → list → get → update → delete', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('happy');
 
     // Create
@@ -197,7 +186,6 @@ describe('Memory Book v1 (integration, requires Postgres + MinIO)', () => {
   });
 
   it('default theme is "classic" when omitted', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('default-theme');
     const res = await app.inject({
       method: 'POST',
@@ -210,7 +198,6 @@ describe('Memory Book v1 (integration, requires Postgres + MinIO)', () => {
   });
 
   it('attach media → GET assetIds includes it; detach → removed', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('attach');
     const create = await app.inject({
       method: 'POST',
@@ -255,7 +242,6 @@ describe('Memory Book v1 (integration, requires Postgres + MinIO)', () => {
   });
 
   it('attaching to someone else’s book → 404 MEMORY_BOOK_NOT_FOUND', async () => {
-    if (!infraReachable) return;
     const alice = await registerUser('a-idor');
     const bob = await registerUser('b-idor');
     const aliceBook = await app.inject({
@@ -278,7 +264,6 @@ describe('Memory Book v1 (integration, requires Postgres + MinIO)', () => {
   });
 
   it('attaching someone else’s media to my book → 404 MEDIA_NOT_FOUND', async () => {
-    if (!infraReachable) return;
     const alice = await registerUser('a-med');
     const bob = await registerUser('b-med');
     const aliceMediaId = await uploadReadyMedia(alice.accessToken);
@@ -301,7 +286,6 @@ describe('Memory Book v1 (integration, requires Postgres + MinIO)', () => {
   });
 
   it('GET on another user’s book → 404 MEMORY_BOOK_NOT_FOUND', async () => {
-    if (!infraReachable) return;
     const alice = await registerUser('a-get');
     const bob = await registerUser('b-get');
     const aliceBook = await app.inject({
@@ -322,7 +306,6 @@ describe('Memory Book v1 (integration, requires Postgres + MinIO)', () => {
   });
 
   it('deleting a book with attached media: media survives, memoryBookId NULLs', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('cascade');
     const create = await app.inject({
       method: 'POST',
@@ -357,7 +340,6 @@ describe('Memory Book v1 (integration, requires Postgres + MinIO)', () => {
   });
 
   it('empty title → 422 VALIDATION_FAILED (Zod min(1))', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('empty');
     const res = await app.inject({
       method: 'POST',
@@ -370,7 +352,6 @@ describe('Memory Book v1 (integration, requires Postgres + MinIO)', () => {
   });
 
   it('list returns only my own books', async () => {
-    if (!infraReachable) return;
     const alice = await registerUser('l-a');
     const bob = await registerUser('l-b');
     await app.inject({

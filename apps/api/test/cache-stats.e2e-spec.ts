@@ -28,7 +28,6 @@ describe('TypedRedisCache.getStats() (integration, requires Docker Redis)', () =
   let moduleRef: TestingModule;
   let app: NestFastifyApplication;
   let cache: TripBalancesCache;
-  let infraReachable = true;
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -36,28 +35,20 @@ describe('TypedRedisCache.getStats() (integration, requires Docker Redis)', () =
     app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
     app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)'] });
     await app.register(fastifyCookie);
-    try {
-      await app.init();
-      await app.getHttpAdapter().getInstance().ready();
-      cache = moduleRef.get(TripBalancesCache);
-      // Force a connect attempt so subsequent gets either hit or miss
-      // — but never fail the test on a broken Redis.
-      await cache.get('warmup-probe');
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(`cache-stats test: infra not reachable (${message}). Skipping.`);
-      infraReachable = false;
-    }
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+    cache = moduleRef.get(TripBalancesCache);
+    // Force a connect attempt so subsequent gets either hit or miss
+    // — but never fail the test on a broken Redis.
+    await cache.get('warmup-probe');
   });
 
   afterAll(async () => {
-    if (infraReachable) await app.close();
+    await app.close();
     await moduleRef.close();
   });
 
   it('namespace label exposed on getStats()', () => {
-    if (!infraReachable) return;
     const stats = cache.getStats();
     expect(stats.namespace).toBe('trip-balances');
     expect(typeof stats.hits).toBe('number');
@@ -65,7 +56,6 @@ describe('TypedRedisCache.getStats() (integration, requires Docker Redis)', () =
   });
 
   it('cold get on an unknown key increments misses (not hits)', async () => {
-    if (!infraReachable) return;
     const before = cache.getStats();
     const unknownKey = `cache-stats-test-unknown-${uniqueSuffix()}`;
     const result = await cache.get(unknownKey);
@@ -76,7 +66,6 @@ describe('TypedRedisCache.getStats() (integration, requires Docker Redis)', () =
   });
 
   it('warmed key increments hits (not misses) on subsequent get', async () => {
-    if (!infraReachable) return;
     const key = `cache-stats-test-warm-${uniqueSuffix()}`;
     await cache.set(key, [], 60);
     const before = cache.getStats();
@@ -88,7 +77,6 @@ describe('TypedRedisCache.getStats() (integration, requires Docker Redis)', () =
   });
 
   it('counters are monotonic across mixed access patterns', async () => {
-    if (!infraReachable) return;
     const before = cache.getStats();
     // 2 misses + 1 hit (after warm).
     await cache.get(`monotonic-miss-1-${uniqueSuffix()}`);

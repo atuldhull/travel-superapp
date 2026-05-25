@@ -25,7 +25,6 @@ describe('Translation + country primer (V.UX.18 — integration)', () => {
   let moduleRef: TestingModule;
   let app: NestFastifyApplication;
   let prisma: PrismaService;
-  let infraReachable = true;
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -33,28 +32,20 @@ describe('Translation + country primer (V.UX.18 — integration)', () => {
     app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
     app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)'] });
     await app.register(fastifyCookie);
-    try {
-      await app.init();
-      await app.getHttpAdapter().getInstance().ready();
-      prisma = moduleRef.get(PrismaService);
-      await prisma.$queryRaw`SELECT 1`;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(`translation-primer test: infra not reachable (${message}). Skipping.`);
-      infraReachable = false;
-    }
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+    prisma = moduleRef.get(PrismaService);
+    await prisma.$queryRaw`SELECT 1`;
   });
 
   afterEach(async () => {
-    if (!infraReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
   });
 
   afterAll(async () => {
-    if (infraReachable) await app.close();
+    await app.close();
     await moduleRef.close();
   });
 
@@ -73,7 +64,6 @@ describe('Translation + country primer (V.UX.18 — integration)', () => {
   }
 
   it('POST /translation/translate stub prefixes the input', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('stub');
     const res = await app.inject({
       method: 'POST',
@@ -97,7 +87,6 @@ describe('Translation + country primer (V.UX.18 — integration)', () => {
   });
 
   it('POST /translation/translate honors sourceLang when supplied', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('src');
     const res = await app.inject({
       method: 'POST',
@@ -112,7 +101,6 @@ describe('Translation + country primer (V.UX.18 — integration)', () => {
   });
 
   it('POST /translation/translate empty text → 422', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('empty');
     const res = await app.inject({
       method: 'POST',
@@ -124,7 +112,6 @@ describe('Translation + country primer (V.UX.18 — integration)', () => {
   });
 
   it('POST /translation/translate without bearer → 401', async () => {
-    if (!infraReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/translation/translate',
@@ -134,7 +121,6 @@ describe('Translation + country primer (V.UX.18 — integration)', () => {
   });
 
   it('GET /safety/country-primer/:code returns the seeded primer', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('primer');
     const res = await app.inject({
       method: 'GET',
@@ -159,7 +145,6 @@ describe('Translation + country primer (V.UX.18 — integration)', () => {
   });
 
   it('GET /safety/country-primer/:code is case-insensitive', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('upper');
     const res = await app.inject({
       method: 'GET',
@@ -172,7 +157,6 @@ describe('Translation + country primer (V.UX.18 — integration)', () => {
   });
 
   it('GET /safety/country-primer/:code unknown → 404 COUNTRY_PRIMER_NOT_FOUND', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('miss');
     const res = await app.inject({
       method: 'GET',

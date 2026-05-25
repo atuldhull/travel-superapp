@@ -83,7 +83,6 @@ describe('Events module (integration, requires Docker Postgres + Redis)', () => 
   let app: NestFastifyApplication;
   let prisma: PrismaService;
   let stub: RecordingEventProvider;
-  let dbReachable = true;
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({ imports: [AppModule] })
@@ -94,49 +93,38 @@ describe('Events module (integration, requires Docker Postgres + Redis)', () => 
     app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
     app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)'] });
     await app.register(fastifyCookie);
-    try {
-      await app.init();
-      await app.getHttpAdapter().getInstance().ready();
-      prisma = moduleRef.get(PrismaService);
-      stub = moduleRef.get<RecordingEventProvider>(MockEventProvider);
-      await prisma.$queryRaw`SELECT 1`;
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+    prisma = moduleRef.get(PrismaService);
+    stub = moduleRef.get<RecordingEventProvider>(MockEventProvider);
+    await prisma.$queryRaw`SELECT 1`;
 
-      const flush = new Redis(process.env['REDIS_URL']!, {
-        lazyConnect: false,
-        maxRetriesPerRequest: 2,
+    const flush = new Redis(process.env['REDIS_URL']!, {
+      lazyConnect: false,
+      maxRetriesPerRequest: 2,
+    });
+    try {
+      const stream = flush.scanStream({
+        match: `travel-${process.env['NODE_ENV']}:events:*`,
+        count: 100,
       });
-      try {
-        const stream = flush.scanStream({
-          match: `travel-${process.env['NODE_ENV']}:events:*`,
-          count: 100,
-        });
-        for await (const keys of stream as unknown as AsyncIterable<string[]>) {
-          if (keys.length > 0) await flush.del(...keys);
-        }
-      } finally {
-        await flush.quit();
+      for await (const keys of stream as unknown as AsyncIterable<string[]>) {
+        if (keys.length > 0) await flush.del(...keys);
       }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(`events-search test: infra not reachable (${message}). Skipping.`);
-      dbReachable = false;
+    } finally {
+      await flush.quit();
     }
   });
 
   afterEach(async () => {
-    if (dbReachable) {
-      stub.reset();
-      await prisma.user.deleteMany({
-        where: { displayName: { startsWith: TEST_PREFIX } },
-      });
-    }
+    stub.reset();
+    await prisma.user.deleteMany({
+      where: { displayName: { startsWith: TEST_PREFIX } },
+    });
   });
 
   afterAll(async () => {
-    if (dbReachable) {
-      await app.close();
-    }
+    await app.close();
     await moduleRef.close();
   });
 

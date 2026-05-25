@@ -16,7 +16,6 @@ import { AppModule } from '../src/app.module';
 
 describe('apps/api bootstrap (e2e)', () => {
   let app: NestFastifyApplication;
-  let dbReachable = true;
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -32,21 +31,12 @@ describe('apps/api bootstrap (e2e)', () => {
       exclude: ['health', 'health/(.*)'],
     });
 
-    try {
-      await app.init();
-      await app.getHttpAdapter().getInstance().ready();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(`app bootstrap test: DB not reachable (${message}). Skipping.`);
-      dbReachable = false;
-    }
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
   });
 
   afterAll(async () => {
-    if (dbReachable) {
-      await app.close();
-    }
+    await app.close();
   });
 
   describe('GET /health/live (bare, outside /api/v1 prefix)', () => {

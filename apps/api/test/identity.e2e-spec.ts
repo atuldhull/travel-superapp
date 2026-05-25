@@ -38,7 +38,6 @@ describe('Identity auth flow (integration, requires Docker Postgres)', () => {
   let moduleRef: TestingModule;
   let app: NestFastifyApplication;
   let prisma: PrismaService;
-  let dbReachable = true;
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -50,17 +49,10 @@ describe('Identity auth flow (integration, requires Docker Postgres)', () => {
     // Postgres is unreachable, which previously crashed the suite
     // instead of letting it skip. See memory `feedback_...` / slice
     // back-port.
-    try {
-      await app.init();
-      await app.getHttpAdapter().getInstance().ready();
-      prisma = moduleRef.get(PrismaService);
-      await prisma.$queryRaw`SELECT 1`;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(`identity integration test: DB not reachable (${message}). Skipping.`);
-      dbReachable = false;
-    }
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+    prisma = moduleRef.get(PrismaService);
+    await prisma.$queryRaw`SELECT 1`;
   });
 
   afterEach(async () => {
@@ -71,9 +63,7 @@ describe('Identity auth flow (integration, requires Docker Postgres)', () => {
   });
 
   afterAll(async () => {
-    if (dbReachable) {
-      await app.close();
-    }
+    await app.close();
     await moduleRef.close();
   });
 

@@ -43,7 +43,6 @@ describe('Domain event emission (integration, requires Docker Postgres + Redis)'
   let app: NestFastifyApplication;
   let prisma: PrismaService;
   let bus: EventBus;
-  let dbReachable = true;
   const recorded: Recorded[] = [];
 
   function resetRecording(): void {
@@ -57,41 +56,34 @@ describe('Domain event emission (integration, requires Docker Postgres + Redis)'
     app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)'] });
     await app.register(fastifyCookie);
     await registerTraceMiddleware(app);
-    try {
-      await app.init();
-      await app.getHttpAdapter().getInstance().ready();
-      prisma = moduleRef.get(PrismaService);
-      bus = moduleRef.get<InMemoryEventBus>(InMemoryEventBus);
-      await prisma.$queryRaw`SELECT 1`;
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+    prisma = moduleRef.get(PrismaService);
+    bus = moduleRef.get<InMemoryEventBus>(InMemoryEventBus);
+    await prisma.$queryRaw`SELECT 1`;
 
-      // Subscribe a single spy to EVERY event by listening on each
-      // known name. `subscribe` requires a concrete event name, so
-      // we subscribe once per name and dedupe via a set.
-      const names = [
-        'Trip.TripDrafted',
-        'Trip.TripUpdated',
-        'Trip.TripDeleted',
-        'Trip.ItineraryGenerated',
-        'Identity.SessionIssued',
-      ];
-      for (const name of names) {
-        await bus.subscribe(
-          name,
-          async (event: DomainEvent<unknown>) => {
-            recorded.push({
-              name: event.name,
-              payload: event.payload,
-              traceId: event.traceId,
-            });
-          },
-          { consumerGroup: `spy-${name}` },
-        );
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(`events test: infra not reachable (${message}). Skipping.`);
-      dbReachable = false;
+    // Subscribe a single spy to EVERY event by listening on each
+    // known name. `subscribe` requires a concrete event name, so
+    // we subscribe once per name and dedupe via a set.
+    const names = [
+      'Trip.TripDrafted',
+      'Trip.TripUpdated',
+      'Trip.TripDeleted',
+      'Trip.ItineraryGenerated',
+      'Identity.SessionIssued',
+    ];
+    for (const name of names) {
+      await bus.subscribe(
+        name,
+        async (event: DomainEvent<unknown>) => {
+          recorded.push({
+            name: event.name,
+            payload: event.payload,
+            traceId: event.traceId,
+          });
+        },
+        { consumerGroup: `spy-${name}` },
+      );
     }
   });
 
@@ -103,9 +95,7 @@ describe('Domain event emission (integration, requires Docker Postgres + Redis)'
   });
 
   afterAll(async () => {
-    if (dbReachable) {
-      await app.close();
-    }
+    await app.close();
     await moduleRef.close();
   });
 

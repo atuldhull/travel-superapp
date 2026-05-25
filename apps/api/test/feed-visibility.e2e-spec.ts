@@ -23,17 +23,12 @@ describe('Pull-feed visibility + block filters (e2e, requires Postgres)', () => 
   let moduleRef: TestingModule;
   let prisma: PrismaService;
   let getFeed: GetFeedUseCase;
-  let dbReachable = true;
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
-    try {
-      prisma = moduleRef.get(PrismaService);
-      await prisma.$queryRaw`SELECT 1`;
-      getFeed = moduleRef.get(GetFeedUseCase);
-    } catch {
-      dbReachable = false;
-    }
+    prisma = moduleRef.get(PrismaService);
+    await prisma.$queryRaw`SELECT 1`;
+    getFeed = moduleRef.get(GetFeedUseCase);
   });
 
   afterEach(async () => {

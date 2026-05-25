@@ -31,7 +31,6 @@ describe('Memory Book reorder (V.UX.12 — integration, requires Postgres + MinI
   let moduleRef: TestingModule;
   let app: NestFastifyApplication;
   let prisma: PrismaService;
-  let infraReachable = true;
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -39,30 +38,22 @@ describe('Memory Book reorder (V.UX.12 — integration, requires Postgres + MinI
     app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
     app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)'] });
     await app.register(fastifyCookie);
-    try {
-      await app.init();
-      await app.getHttpAdapter().getInstance().ready();
-      prisma = moduleRef.get(PrismaService);
-      await prisma.$queryRaw`SELECT 1`;
-      const probe = await fetch(`${process.env['S3_ENDPOINT']}/`);
-      if (probe.status >= 500) throw new Error(`MinIO probe ${probe.status}`);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(`memory-book-reorder test: infra not reachable (${message}). Skipping.`);
-      infraReachable = false;
-    }
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+    prisma = moduleRef.get(PrismaService);
+    await prisma.$queryRaw`SELECT 1`;
+    const probe = await fetch(`${process.env['S3_ENDPOINT']}/`);
+    if (probe.status >= 500) throw new Error(`MinIO probe ${probe.status}`);
   });
 
   afterEach(async () => {
-    if (!infraReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
   });
 
   afterAll(async () => {
-    if (infraReachable) await app.close();
+    await app.close();
     await moduleRef.close();
   });
 
@@ -135,7 +126,6 @@ describe('Memory Book reorder (V.UX.12 — integration, requires Postgres + MinI
   }
 
   it('reorders assets and persists new positions in subsequent GET', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('happy');
     const { bookId, ids } = await createBookWithAssets(accessToken, 'happy', 3);
 
@@ -163,7 +153,6 @@ describe('Memory Book reorder (V.UX.12 — integration, requires Postgres + MinI
   });
 
   it('public viewer reflects the same ordering after publish', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('public');
     const { bookId, ids } = await createBookWithAssets(accessToken, 'public', 2);
 
@@ -191,7 +180,6 @@ describe('Memory Book reorder (V.UX.12 — integration, requires Postgres + MinI
   });
 
   it('reorder list with duplicates → 422 INVALID_ASSET_ORDER', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('dup');
     const { bookId, ids } = await createBookWithAssets(accessToken, 'dup', 2);
 
@@ -207,7 +195,6 @@ describe('Memory Book reorder (V.UX.12 — integration, requires Postgres + MinI
   });
 
   it('reorder list missing an attached asset → 422 INVALID_ASSET_ORDER', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('miss');
     const { bookId, ids } = await createBookWithAssets(accessToken, 'miss', 3);
 
@@ -224,7 +211,6 @@ describe('Memory Book reorder (V.UX.12 — integration, requires Postgres + MinI
   });
 
   it('reorder targeting another user’s book → 404 MEMORY_BOOK_NOT_FOUND', async () => {
-    if (!infraReachable) return;
     const alice = await registerUser('a');
     const bob = await registerUser('b');
     const { bookId, ids } = await createBookWithAssets(alice.accessToken, 'a', 2);
@@ -240,7 +226,6 @@ describe('Memory Book reorder (V.UX.12 — integration, requires Postgres + MinI
   });
 
   it('without bearer → 401', async () => {
-    if (!infraReachable) return;
     const res = await app.inject({
       method: 'PATCH',
       url: '/api/v1/memory-books/abc/asset-order',

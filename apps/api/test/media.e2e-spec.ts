@@ -32,7 +32,6 @@ describe('Media module (integration, requires Docker Postgres + MinIO)', () => {
   let moduleRef: TestingModule;
   let app: NestFastifyApplication;
   let prisma: PrismaService;
-  let infraReachable = true;
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -40,31 +39,23 @@ describe('Media module (integration, requires Docker Postgres + MinIO)', () => {
     app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
     app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)'] });
     await app.register(fastifyCookie);
-    try {
-      await app.init();
-      await app.getHttpAdapter().getInstance().ready();
-      prisma = moduleRef.get(PrismaService);
-      await prisma.$queryRaw`SELECT 1`;
-      // Probe MinIO directly too — the module's ensureBucket
-      // tolerates a missing MinIO without throwing, which would
-      // otherwise let tests pass `beforeAll` then fail opaquely
-      // on the first PUT.
-      const probe = await fetch(`${process.env['S3_ENDPOINT']}/`).catch((err) => {
-        throw err;
-      });
-      if (probe.status >= 500) {
-        throw new Error(`MinIO probe returned ${probe.status}`);
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(`media test: infra not reachable (${message}). Skipping.`);
-      infraReachable = false;
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+    prisma = moduleRef.get(PrismaService);
+    await prisma.$queryRaw`SELECT 1`;
+    // Probe MinIO directly too — the module's ensureBucket
+    // tolerates a missing MinIO without throwing, which would
+    // otherwise let tests pass `beforeAll` then fail opaquely
+    // on the first PUT.
+    const probe = await fetch(`${process.env['S3_ENDPOINT']}/`).catch((err) => {
+      throw err;
+    });
+    if (probe.status >= 500) {
+      throw new Error(`MinIO probe returned ${probe.status}`);
     }
   });
 
   afterEach(async () => {
-    if (!infraReachable) return;
     // User cascade-deletes the MediaAsset rows.
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
@@ -72,9 +63,7 @@ describe('Media module (integration, requires Docker Postgres + MinIO)', () => {
   });
 
   afterAll(async () => {
-    if (infraReachable) {
-      await app.close();
-    }
+    await app.close();
     await moduleRef.close();
   });
 
@@ -116,7 +105,6 @@ describe('Media module (integration, requires Docker Postgres + MinIO)', () => {
   }
 
   it('POST /media/upload-url without a bearer → 401', async () => {
-    if (!infraReachable) return;
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/media/upload-url',
@@ -127,7 +115,6 @@ describe('Media module (integration, requires Docker Postgres + MinIO)', () => {
   });
 
   it('happy path: upload-url → PUT bytes → confirm → download → fetch bytes back', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('happy');
 
     const contentType = 'image/png';
@@ -167,7 +154,6 @@ describe('Media module (integration, requires Docker Postgres + MinIO)', () => {
   });
 
   it('confirm before the upload actually happened → 409 UPLOAD_NOT_COMPLETED', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('nocomplete');
     const { mediaAssetId } = await requestUploadUrl(accessToken);
 
@@ -182,7 +168,6 @@ describe('Media module (integration, requires Docker Postgres + MinIO)', () => {
   });
 
   it('confirm on another user’s asset → 404 MEDIA_NOT_FOUND (IDOR defence)', async () => {
-    if (!infraReachable) return;
     const alice = await registerUser('a-idor');
     const bob = await registerUser('b-idor');
     const { mediaAssetId } = await requestUploadUrl(alice.accessToken);
@@ -198,7 +183,6 @@ describe('Media module (integration, requires Docker Postgres + MinIO)', () => {
   });
 
   it('download-url on another user’s asset → 404 MEDIA_NOT_FOUND', async () => {
-    if (!infraReachable) return;
     const alice = await registerUser('a-dl');
     const bob = await registerUser('b-dl');
     const contentType = 'image/png';
@@ -226,7 +210,6 @@ describe('Media module (integration, requires Docker Postgres + MinIO)', () => {
   });
 
   it('invalid kind (e.g. "audio") → 422 VALIDATION_FAILED', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('badkind');
     const res = await app.inject({
       method: 'POST',
@@ -239,7 +222,6 @@ describe('Media module (integration, requires Docker Postgres + MinIO)', () => {
   });
 
   it('double-confirm is idempotent — second call still returns ready', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('double');
     const contentType = 'image/jpeg';
     const { mediaAssetId, uploadUrl } = await requestUploadUrl(accessToken, { contentType });

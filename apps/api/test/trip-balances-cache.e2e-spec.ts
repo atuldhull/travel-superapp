@@ -37,7 +37,6 @@ describe('Trip balances cache (integration, requires Postgres + Redis)', () => {
   let moduleRef: TestingModule;
   let app: NestFastifyApplication;
   let prisma: PrismaService;
-  let infraReachable = true;
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -45,36 +44,28 @@ describe('Trip balances cache (integration, requires Postgres + Redis)', () => {
     app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
     app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)'] });
     await app.register(fastifyCookie);
-    try {
-      await app.init();
-      await app.getHttpAdapter().getInstance().ready();
-      prisma = moduleRef.get(PrismaService);
-      await prisma.$queryRaw`SELECT 1`;
-      // SCAN-DEL the cache namespace so a stale prior-run entry
-      // doesn't mask the upstream behavior. Standard test-isolation
-      // pattern from the existing cache suites.
-      const redis = new Redis(process.env['REDIS_URL'] ?? 'redis://localhost:6379');
-      const env = process.env['NODE_ENV'] ?? 'test';
-      const keys = await redis.keys(`travel-${env}:trip-balances:*`);
-      if (keys.length > 0) await redis.del(...keys);
-      await redis.quit();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(`balances-cache test: infra not reachable (${message}). Skipping.`);
-      infraReachable = false;
-    }
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+    prisma = moduleRef.get(PrismaService);
+    await prisma.$queryRaw`SELECT 1`;
+    // SCAN-DEL the cache namespace so a stale prior-run entry
+    // doesn't mask the upstream behavior. Standard test-isolation
+    // pattern from the existing cache suites.
+    const redis = new Redis(process.env['REDIS_URL'] ?? 'redis://localhost:6379');
+    const env = process.env['NODE_ENV'] ?? 'test';
+    const keys = await redis.keys(`travel-${env}:trip-balances:*`);
+    if (keys.length > 0) await redis.del(...keys);
+    await redis.quit();
   });
 
   afterEach(async () => {
-    if (!infraReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
   });
 
   afterAll(async () => {
-    if (infraReachable) await app.close();
+    await app.close();
     await moduleRef.close();
   });
 
@@ -135,7 +126,6 @@ describe('Trip balances cache (integration, requires Postgres + Redis)', () => {
   }
 
   it('cache hit: balance read is served from Redis after initial computation', async () => {
-    if (!infraReachable) return;
     const { userId, accessToken } = await registerUser('cache-hit');
     const tripId = await createTrip(accessToken);
     await postExpense(accessToken, tripId, userId, '50.00');
@@ -165,7 +155,6 @@ describe('Trip balances cache (integration, requires Postgres + Redis)', () => {
   });
 
   it('cache invalidation: create-expense via API → next balance read reflects new row', async () => {
-    if (!infraReachable) return;
     const { userId, accessToken } = await registerUser('cache-invalidate');
     const tripId = await createTrip(accessToken);
     await postExpense(accessToken, tripId, userId, '50.00');
@@ -213,7 +202,6 @@ describe('Trip balances cache (integration, requires Postgres + Redis)', () => {
   });
 
   it('cache invalidation: delete-expense → next balance read reflects removal', async () => {
-    if (!infraReachable) return;
     const { userId, accessToken } = await registerUser('cache-delete');
     const tripId = await createTrip(accessToken);
     const e1 = await postExpense(accessToken, tripId, userId, '50.00');
@@ -244,7 +232,6 @@ describe('Trip balances cache (integration, requires Postgres + Redis)', () => {
   });
 
   it('cross-trip isolation: cache key is per-trip; one trip’s cache doesn’t affect another', async () => {
-    if (!infraReachable) return;
     const { userId, accessToken } = await registerUser('cross-trip');
     const tripA = await createTrip(accessToken);
     const tripB = await createTrip(accessToken);
