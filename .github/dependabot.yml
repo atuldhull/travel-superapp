@@ -1,0 +1,94 @@
+# Dependabot config ([N7]).
+#
+# Three update streams:
+#   - pnpm workspace deps (every workspace package + app)
+#   - Docker base images
+#   - GitHub Actions
+#
+# Grouping keeps the PR firehose manageable:
+#   - prod deps:      one PR per major surface (api, web, packages)
+#   - dev deps:       grouped per-week
+#   - security-only:  immediate, one PR per advisory
+#
+# CVE-blocking is handled by `pnpm audit:critical` in the `security`
+# CI job (a critical CVE blocks merge regardless of Dependabot
+# state). Dependabot's role here is to KEEP MOVING — surface
+# upgrades before they pile up.
+
+version: 2
+updates:
+  # ─── pnpm — root workspace ──────────────────────────────────────────
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '09:00'
+      timezone: 'Etc/UTC'
+    open-pull-requests-limit: 10
+    versioning-strategy: 'increase' # bump caret ranges
+    rebase-strategy: 'auto'
+    commit-message:
+      prefix: 'chore(deps)'
+      prefix-development: 'chore(deps-dev)'
+      include: 'scope'
+    labels: ['dependencies']
+    groups:
+      # Patch + minor for everything (high-volume, low-risk).
+      patch-and-minor:
+        applies-to: version-updates
+        update-types: ['minor', 'patch']
+      # Security advisories — these get their own PR, never bundled.
+      security:
+        applies-to: security-updates
+        patterns: ['*']
+    ignore:
+      # Pinned by the monorepo to a specific major. Bumping requires
+      # a coordinated migration; Dependabot can't drive that.
+      - dependency-name: 'react'
+        update-types: ['version-update:semver-major']
+      - dependency-name: 'react-dom'
+        update-types: ['version-update:semver-major']
+      - dependency-name: 'next'
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@nestjs/*'
+        update-types: ['version-update:semver-major']
+      - dependency-name: 'prisma'
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@prisma/*'
+        update-types: ['version-update:semver-major']
+
+  # ─── Dockerfiles (api + web) ─────────────────────────────────────────
+  - package-ecosystem: 'docker'
+    directory: '/apps/api'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+    open-pull-requests-limit: 3
+    labels: ['dependencies', 'docker']
+    commit-message:
+      prefix: 'chore(docker)'
+
+  - package-ecosystem: 'docker'
+    directory: '/apps/web'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+    open-pull-requests-limit: 3
+    labels: ['dependencies', 'docker']
+    commit-message:
+      prefix: 'chore(docker)'
+
+  # ─── GitHub Actions ──────────────────────────────────────────────────
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+    open-pull-requests-limit: 5
+    labels: ['dependencies', 'ci']
+    commit-message:
+      prefix: 'chore(ci)'
+    groups:
+      actions:
+        patterns: ['*']
