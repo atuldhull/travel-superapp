@@ -35,6 +35,7 @@ import { DomainExceptionFilter } from './common/filters/domain-exception.filter'
 import { registerDeprecationHook } from './common/deprecation/register-deprecation-hook';
 import { registerHttpMetricsMiddleware } from './common/metrics/http-metrics.middleware';
 import { MetricsService } from './common/metrics/metrics.service';
+import { registerOverloadShedder } from './common/overload/overload.shedder';
 import { registerSecurity } from './common/security/security.register';
 import { registerTraceMiddleware } from './common/trace/register-trace-middleware';
 
@@ -102,6 +103,14 @@ async function bootstrap(): Promise<void> {
   //    Permissions-Policy. Registered before listen so every route —
   //    including /health/* — gets the same response-side hardening.
   await registerSecurity(app, env);
+
+  // 6a-bis. [O2] Load shedder — rejects new requests with 503 when
+  //    event-loop lag > 100ms OR in-flight count >= 200. /health/*
+  //    + /metrics ALWAYS pass (the orchestrator + Prometheus need
+  //    them most during overload). Registered before the trace +
+  //    metrics middleware so a shed request doesn't burn either
+  //    bookkeeping path.
+  registerOverloadShedder(app.getHttpAdapter().getInstance() as FastifyInstance);
 
   // 6b. Cookie parser — required by Identity module's refresh endpoint to
   //     read the httpOnly `refresh_token` cookie (CLAUDE rule 12).
