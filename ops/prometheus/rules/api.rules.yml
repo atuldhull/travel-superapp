@@ -1,0 +1,191 @@
+# Prometheus alert + recording rules for the api ([N2]).
+#
+# Two halves:
+#   1. RECORDING rules — pre-compute the burn rate at each window so
+#      dashboards + alerts read a single series instead of nesting
+#      `histogram_quantile(rate(...))` four times.
+#   2. ALERTING rules — the multi-window multi-burn-rate scheme from
+#      Google SRE Workbook §5.1. Pages on 14.4× / 6× burns (1h budget
+#      window); tickets on 3× / 1× burns (24h–72h windows).
+#
+# Targets in docs/slos.md:
+#   - Availability  99.5 %  (28d window)
+#   - p95 reads     < 300ms (28d)
+#   - p95 writes    < 600ms (28d)
+#   - p95 AI        < 8s    (28d)
+#
+# Wire-up:
+#   - Mounted into the local Prometheus container at
+#     `/etc/prometheus/rules/*.yml` (see ops/observability/prometheus.yml).
+#   - In Grafana Cloud / Honeycomb, paste these into the managed
+#     rule UI. They are vendor-neutral PromQL.
+#
+# Each alert carries a `runbook` annotation pointing at
+# `docs/runbooks/slo-<name>.md`.
+
+groups:
+  - name: api.recording.error-rate
+    interval: 30s
+    rules:
+      # `error_ratio_<window>` — the fraction of requests that
+      # returned 5xx, computed over `<window>`. The multi-burn-rate
+      # alerts read these four series instead of recomputing the
+      # rate every evaluation.
+      - record: api:error_ratio:5m
+        expr: |
+          sum(rate(http_request_duration_seconds_count{service="api",status=~"5.."}[5m]))
+          /
+          clamp_min(sum(rate(http_request_duration_seconds_count{service="api"}[5m])), 1)
+      - record: api:error_ratio:30m
+        expr: |
+          sum(rate(http_request_duration_seconds_count{service="api",status=~"5.."}[30m]))
+          /
+          clamp_min(sum(rate(http_request_duration_seconds_count{service="api"}[30m])), 1)
+      - record: api:error_ratio:1h
+        expr: |
+          sum(rate(http_request_duration_seconds_count{service="api",status=~"5.."}[1h]))
+          /
+          clamp_min(sum(rate(http_request_duration_seconds_count{service="api"}[1h])), 1)
+      - record: api:error_ratio:6h
+        expr: |
+          sum(rate(http_request_duration_seconds_count{service="api",status=~"5.."}[6h]))
+          /
+          clamp_min(sum(rate(http_request_duration_seconds_count{service="api"}[6h])), 1)
+      - record: api:error_ratio:24h
+        expr: |
+          sum(rate(http_request_duration_seconds_count{service="api",status=~"5.."}[24h]))
+          /
+          clamp_min(sum(rate(http_request_duration_seconds_count{service="api"}[24h])), 1)
+      - record: api:error_ratio:72h
+        expr: |
+          sum(rate(http_request_duration_seconds_count{service="api",status=~"5.."}[72h]))
+          /
+          clamp_min(sum(rate(http_request_duration_seconds_count{service="api"}[72h])), 1)
+
+  - name: api.alerts.availability
+    rules:
+      # 14.4× burn over 1h = exhausts a 28d 99.5% budget in 2h.
+      # PAGE — wake the on-call.
+      - alert: ApiAvailabilityBurnFast
+        expr: |
+          api:error_ratio:5m > (14.4 * 0.005)
+          and
+          api:error_ratio:1h > (14.4 * 0.005)
+        for: 2m
+        labels:
+          severity: page
+          slo: availability
+        annotations:
+          summary: 'API burning availability budget 14× (1h window)'
+          description: |
+            Error rate is {{ $value | humanizePercentage }} over 5m AND 1h.
+            At this rate the 28-day 99.5% availability budget exhausts
+            in ≈2h. The pager runs to docs/runbooks/slo-availability.md.
+          runbook: 'docs/runbooks/slo-availability.md'
+
+      # 6× burn over 6h. PAGE.
+      - alert: ApiAvailabilityBurnMedium
+        expr: |
+          api:error_ratio:30m > (6 * 0.005)
+          and
+          api:error_ratio:6h > (6 * 0.005)
+        for: 15m
+        labels:
+          severity: page
+          slo: availability
+        annotations:
+          summary: 'API burning availability budget 6× (6h window)'
+          description: 'Budget exhausts in ≈13h at this rate.'
+          runbook: 'docs/runbooks/slo-availability.md'
+
+      # 3× burn over 24h. TICKET (Slack, not pager).
+      - alert: ApiAvailabilityBurnSlow
+        expr: |
+          api:error_ratio:2h > (3 * 0.005)
+          and
+          api:error_ratio:24h > (3 * 0.005)
+        for: 1h
+        labels:
+          severity: ticket
+          slo: availability
+        annotations:
+          summary: 'API trending toward availability SLO breach (24h)'
+          description: 'File a tracking issue. Investigate next business day.'
+          runbook: 'docs/runbooks/slo-availability.md'
+
+  - name: api.alerts.latency
+    rules:
+      - alert: ApiP95ReadLatencyHigh
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket{service="api",method=~"GET|HEAD",route!~".*ai.*|.*plan.*|.*memory-book.*"}[10m])) by (le)
+          ) > 0.3
+        for: 10m
+        labels:
+          severity: ticket
+          slo: read-latency
+        annotations:
+          summary: 'p95 GET latency > 300ms for 10m'
+          runbook: 'docs/runbooks/slo-read-latency.md'
+
+      - alert: ApiP95AiLatencyHigh
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket{service="api",route=~".*ai.*|.*plan.*|.*memory-book.*"}[10m])) by (le)
+          ) > 8
+        for: 15m
+        labels:
+          severity: ticket
+          slo: ai-latency
+        annotations:
+          summary: 'p95 AI endpoint latency > 8s for 15m'
+          description: |
+            Likely an upstream Anthropic/Gemini/Ollama degradation.
+            The runbook tests the fallback chain.
+          runbook: 'docs/runbooks/slo-ai-latency.md'
+
+  - name: api.alerts.health
+    rules:
+      - alert: ApiInstanceDown
+        expr: up{job="travel-api"} == 0
+        for: 2m
+        labels:
+          severity: page
+        annotations:
+          summary: 'API instance down: {{ $labels.instance }}'
+          description: |
+            Prometheus has not scraped /metrics from {{ $labels.instance }}
+            for >2m. Either the process is dead OR networking is
+            wedged. Check fly logs.
+          runbook: 'docs/runbooks/slo-availability.md'
+
+  - name: api.alerts.resilience
+    rules:
+      # The Throttler should rate-limit, NOT 5xx. A sudden spike in
+      # 429s is normal (load); a sudden spike in 5xx from /api/v1/auth
+      # often means credential-stuffing has overloaded the failed-login
+      # counter.
+      - alert: AuthErrorRateElevated
+        expr: |
+          sum(rate(http_request_duration_seconds_count{service="api",route=~"/api/v1/auth/.*",status=~"5.."}[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: ticket
+          area: security
+        annotations:
+          summary: 'Elevated 5xx on /auth/* — credential-stuffing or upstream wedge?'
+          runbook: 'docs/runbooks/auth-error-spike.md'
+
+      - alert: CacheHitRatioCollapsed
+        expr: |
+          (sum(cache_hit_total) / clamp_min(sum(cache_hit_total) + sum(cache_miss_total), 1)) < 0.2
+        for: 30m
+        labels:
+          severity: ticket
+        annotations:
+          summary: 'Cache hit ratio < 20% — Redis outage or cold-start?'
+          description: |
+            Persistent below-20% hit ratio for 30m. Check Redis health
+            and recent deploys (a code change that bumped the cache key
+            namespace would also flatten the hit ratio temporarily).
+          runbook: 'docs/runbooks/cache-collapse.md'

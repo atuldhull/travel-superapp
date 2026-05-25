@@ -1,0 +1,76 @@
+# Alertmanager config sketch ([N2]).
+#
+# This file documents how alerts route once an Alertmanager is wired.
+# It is NOT auto-mounted into the local observability stack (the
+# local stack is for dev / dashboard validation, not pager testing).
+# To exercise paging end-to-end, deploy Alertmanager + this config to
+# Fly / Grafana Cloud / Honeycomb's webhook target.
+#
+# Routing posture:
+#   severity=page    → PagerDuty (or Slack channel #travel-pager)
+#   severity=ticket  → Slack channel #travel-alerts (no pager)
+#   default          → Slack channel #travel-noise (visibility only)
+#
+# Receivers are templated to env vars — fill in (or use envsubst) when
+# deploying. NEVER commit a real Slack webhook URL or PD integration key.
+
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: noise
+  group_by: ['alertname', 'slo']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 12h
+  routes:
+    - matchers:
+        - severity = page
+      receiver: pager
+      group_wait: 10s
+      repeat_interval: 1h
+      continue: true # ALSO post to #travel-alerts for visibility
+    - matchers:
+        - severity = page
+      receiver: alerts
+    - matchers:
+        - severity = ticket
+      receiver: alerts
+      repeat_interval: 24h
+
+receivers:
+  - name: pager
+    pagerduty_configs:
+      - service_key: '${PAGERDUTY_INTEGRATION_KEY}'
+        description: '{{ .CommonLabels.alertname }}: {{ .CommonAnnotations.summary }}'
+        details:
+          runbook: '{{ .CommonAnnotations.runbook }}'
+          firing: '{{ template "pagerduty.default.instances" .Alerts.Firing }}'
+
+  - name: alerts
+    slack_configs:
+      - api_url: '${SLACK_WEBHOOK_TRAVEL_ALERTS}'
+        channel: '#travel-alerts'
+        title: '{{ .CommonLabels.severity | toUpper }} — {{ .CommonLabels.alertname }}'
+        text: |
+          {{ range .Alerts -}}
+          *{{ .Annotations.summary }}*
+          {{ .Annotations.description }}
+          Runbook: {{ .Annotations.runbook }}
+          {{ end }}
+
+  - name: noise
+    slack_configs:
+      - api_url: '${SLACK_WEBHOOK_TRAVEL_NOISE}'
+        channel: '#travel-noise'
+        title: '{{ .CommonLabels.alertname }}'
+        text: '{{ .CommonAnnotations.summary }}'
+
+# Inhibit a `BurnFast` page from re-firing while the slower
+# `BurnSlow` ticket is also firing — they're the same problem.
+inhibit_rules:
+  - source_matchers:
+      - alertname = ApiAvailabilityBurnFast
+    target_matchers:
+      - alertname = ApiAvailabilityBurnSlow
+    equal: ['slo']
