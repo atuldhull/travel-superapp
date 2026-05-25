@@ -16,6 +16,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { AppConfigModule } from '@app/config';
 import { AppNestLoggerService } from '@app/logger';
 import { JwtAuthGuard, RolesGuard } from './common/auth';
+import { ClockModule } from './common/clock/clock.module';
 import { DbModule } from './common/db/db.module';
 import { EventsModule } from './common/events/events.module';
 import { MetricsModule } from './common/metrics/metrics.module';
@@ -59,6 +60,11 @@ import { WeatherModule } from './modules/weather/weather.module';
 @Module({
   imports: [
     AppConfigModule.forRoot(),
+    // ClockModule sits next to AppConfigModule on purpose: both are
+    // process-level singletons every feature needs. Importing it
+    // early in the list keeps the dependency graph readable + means
+    // `CLOCK` is resolvable from the moment AppModule starts wiring.
+    ClockModule,
     DbModule,
     EventsModule,
     MetricsModule,
