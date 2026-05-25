@@ -15,9 +15,11 @@
  *
  * Installed by prompt [IV.18.5.1].
  */
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { CLOCK, type Clock } from '@app/clock';
 import { ExternalServiceError } from '@app/errors';
 import { createLogger } from '@app/logger';
+import { CircuitBreaker, CircuitOpenError, withTimeout } from '@app/resilience';
 import type {
   DailyForecast,
   HourlyForecast,
@@ -32,6 +34,15 @@ import type {
 
 const OPEN_METEO_URL = 'https://api.open-meteo.com/v1/forecast';
 const log = createLogger('weather.open-meteo');
+// [N8] External-call hardening — Open-Meteo is a free, keyless API
+// with NO SLA. Without a circuit breaker, one hiccup at the upstream
+// cascaded into 5xx on every /near-me / /forecast call until the
+// upstream healed (the review's "near-me 502 from a weather hiccup"
+// example). Now: a 5-failure streak opens the breaker for 30s; the
+// 31st-second probe either re-closes (upstream healed) or re-opens
+// (still down). Routes can catch `CircuitOpenError` and serve a
+// cached / null-fallback instead of 5xx-ing.
+const REQUEST_TIMEOUT_MS = 5_000;
 
 interface OpenMeteoDaily {
   readonly time: readonly string[];
@@ -61,6 +72,39 @@ interface OpenMeteoHourlyResponse {
 
 @Injectable()
 export class OpenMeteoWeatherProvider implements WeatherProvider {
+  private readonly breaker: CircuitBreaker;
+
+  constructor(@Inject(CLOCK) private readonly clock: Clock) {
+    this.breaker = new CircuitBreaker({
+      name: 'open-meteo',
+      clock,
+      // 5 consecutive 5xx / fetch failures opens for 30s. The Stub
+      // doesn't get to set this — these are the production defaults.
+      failureThreshold: 5,
+      openMs: 30_000,
+      // Don't count "valid but empty response" cases (4xx-shaped
+      // problems from the caller) toward the failure streak. Our
+      // `ExternalServiceError` carries `http_<status>` as `reason`
+      // when the response was non-2xx; treat 5xx + fetch_failed as
+      // upstream-fault, everything else as caller-fault.
+      isFailure: (err) => {
+        if (!(err instanceof ExternalServiceError)) return false;
+        // The 2nd ctor arg of ExternalServiceError is the upstream
+        // reason ("fetch_failed", "http_503", etc.) and lands on
+        // `.message`. Count anything that smells like upstream-fault
+        // (network / 5xx / contract drift) toward the failure
+        // streak; 4xx is caller-bug and not the breaker's job.
+        const reason = err.message;
+        return (
+          reason === 'fetch_failed' ||
+          reason === 'malformed_response' ||
+          reason.startsWith('http_5')
+        );
+      },
+      onTransition: (from, to, name) => log.warn({ from, to, name }, 'circuit_state_change'),
+    });
+  }
+
   async getDailyForecast(input: GetDailyForecastInput): Promise<WeatherForecast> {
     const url = new URL(OPEN_METEO_URL);
     url.searchParams.set('latitude', input.lat.toString());
@@ -72,31 +116,55 @@ export class OpenMeteoWeatherProvider implements WeatherProvider {
     url.searchParams.set('forecast_days', input.days.toString());
     url.searchParams.set('timezone', 'auto');
 
-    let res: Response;
+    let body: OpenMeteoResponse;
     try {
-      res = await fetch(url.toString(), { method: 'GET' });
+      body = await this.breaker.exec(async () => {
+        let res: Response;
+        try {
+          res = await withTimeout(
+            fetch(url.toString(), { method: 'GET' }),
+            REQUEST_TIMEOUT_MS,
+            'open-meteo daily',
+          );
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          log.warn({ err: message }, 'open_meteo_fetch_failed');
+          throw new ExternalServiceError(
+            'open-meteo',
+            'fetch_failed',
+            { message },
+            'WEATHER_PROVIDER_UNAVAILABLE',
+          );
+        }
+        if (!res.ok) {
+          log.warn({ status: res.status }, 'open_meteo_non_ok');
+          throw new ExternalServiceError(
+            'open-meteo',
+            `http_${res.status}`,
+            { status: res.status },
+            'WEATHER_PROVIDER_UNAVAILABLE',
+          );
+        }
+        return (await res.json()) as OpenMeteoResponse;
+      });
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      log.warn({ err: message }, 'open_meteo_fetch_failed');
-      throw new ExternalServiceError(
-        'open-meteo',
-        'fetch_failed',
-        { message },
-        'WEATHER_PROVIDER_UNAVAILABLE',
-      );
+      // Translate CircuitOpenError into the same ExternalServiceError
+      // shape callers already handle — they get a uniform "weather
+      // unavailable" instead of a new error class to thread.
+      if (err instanceof CircuitOpenError) {
+        log.warn(
+          { circuit: err.circuitName, nextProbeAt: err.nextProbeAt },
+          'open_meteo_circuit_open',
+        );
+        throw new ExternalServiceError(
+          'open-meteo',
+          'circuit_open',
+          { nextProbeAt: err.nextProbeAt },
+          'WEATHER_PROVIDER_UNAVAILABLE',
+        );
+      }
+      throw err;
     }
-
-    if (!res.ok) {
-      log.warn({ status: res.status }, 'open_meteo_non_ok');
-      throw new ExternalServiceError(
-        'open-meteo',
-        `http_${res.status}`,
-        { status: res.status },
-        'WEATHER_PROVIDER_UNAVAILABLE',
-      );
-    }
-
-    const body = (await res.json()) as OpenMeteoResponse;
     // Minimal shape check — any missing field means the provider's
     // contract drifted and we'd rather fail loudly than return zeros.
     if (!body.daily || !Array.isArray(body.daily.time)) {
@@ -143,30 +211,52 @@ export class OpenMeteoWeatherProvider implements WeatherProvider {
     url.searchParams.set('forecast_days', days.toString());
     url.searchParams.set('timezone', 'auto');
 
-    let res: Response;
+    let body: OpenMeteoHourlyResponse;
     try {
-      res = await fetch(url.toString(), { method: 'GET' });
+      body = await this.breaker.exec(async () => {
+        let res: Response;
+        try {
+          res = await withTimeout(
+            fetch(url.toString(), { method: 'GET' }),
+            REQUEST_TIMEOUT_MS,
+            'open-meteo hourly',
+          );
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          log.warn({ err: message }, 'open_meteo_hourly_fetch_failed');
+          throw new ExternalServiceError(
+            'open-meteo',
+            'fetch_failed',
+            { message },
+            'WEATHER_PROVIDER_UNAVAILABLE',
+          );
+        }
+        if (!res.ok) {
+          log.warn({ status: res.status }, 'open_meteo_hourly_non_ok');
+          throw new ExternalServiceError(
+            'open-meteo',
+            `http_${res.status}`,
+            { status: res.status },
+            'WEATHER_PROVIDER_UNAVAILABLE',
+          );
+        }
+        return (await res.json()) as OpenMeteoHourlyResponse;
+      });
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      log.warn({ err: message }, 'open_meteo_hourly_fetch_failed');
-      throw new ExternalServiceError(
-        'open-meteo',
-        'fetch_failed',
-        { message },
-        'WEATHER_PROVIDER_UNAVAILABLE',
-      );
+      if (err instanceof CircuitOpenError) {
+        log.warn(
+          { circuit: err.circuitName, nextProbeAt: err.nextProbeAt },
+          'open_meteo_hourly_circuit_open',
+        );
+        throw new ExternalServiceError(
+          'open-meteo',
+          'circuit_open',
+          { nextProbeAt: err.nextProbeAt },
+          'WEATHER_PROVIDER_UNAVAILABLE',
+        );
+      }
+      throw err;
     }
-    if (!res.ok) {
-      log.warn({ status: res.status }, 'open_meteo_hourly_non_ok');
-      throw new ExternalServiceError(
-        'open-meteo',
-        `http_${res.status}`,
-        { status: res.status },
-        'WEATHER_PROVIDER_UNAVAILABLE',
-      );
-    }
-
-    const body = (await res.json()) as OpenMeteoHourlyResponse;
     if (!body.hourly || !Array.isArray(body.hourly.time)) {
       throw new ExternalServiceError(
         'open-meteo',
