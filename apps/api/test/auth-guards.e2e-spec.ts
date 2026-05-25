@@ -61,7 +61,6 @@ describe('Auth guards (integration, requires Docker Postgres)', () => {
   let app: NestFastifyApplication;
   let prisma: PrismaService;
   let tokens: TokenService;
-  let dbReachable = true;
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({
@@ -71,18 +70,11 @@ describe('Auth guards (integration, requires Docker Postgres)', () => {
     app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
     app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)'] });
     await app.register(fastifyCookie);
-    try {
-      await (app as INestApplication).init();
-      await app.getHttpAdapter().getInstance().ready();
-      prisma = moduleRef.get(PrismaService);
-      tokens = moduleRef.get<TokenService>(TOKEN_SERVICE);
-      await prisma.$queryRaw`SELECT 1`;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(`auth-guards integration test: DB not reachable (${message}). Skipping.`);
-      dbReachable = false;
-    }
+    await (app as INestApplication).init();
+    await app.getHttpAdapter().getInstance().ready();
+    prisma = moduleRef.get(PrismaService);
+    tokens = moduleRef.get<TokenService>(TOKEN_SERVICE);
+    await prisma.$queryRaw`SELECT 1`;
   });
 
   afterEach(async () => {
@@ -92,9 +84,7 @@ describe('Auth guards (integration, requires Docker Postgres)', () => {
   });
 
   afterAll(async () => {
-    if (dbReachable) {
-      await app.close();
-    }
+    await app.close();
     await moduleRef.close();
   });
 

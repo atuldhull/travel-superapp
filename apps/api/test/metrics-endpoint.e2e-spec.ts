@@ -28,7 +28,6 @@ describe('GET /metrics (integration, requires Docker Redis)', () => {
   let moduleRef: TestingModule;
   let app: NestFastifyApplication;
   let cache: TripBalancesCache;
-  let infraReachable = true;
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -38,23 +37,16 @@ describe('GET /metrics (integration, requires Docker Redis)', () => {
     // hit `/metrics` not `/api/v1/metrics`.
     app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)', 'metrics'] });
     await app.register(fastifyCookie);
-    try {
-      await app.init();
-      await app.getHttpAdapter().getInstance().ready();
-      cache = moduleRef.get(TripBalancesCache);
-      // Force a connect attempt so the cache namespace label
-      // shows up in subsequent scrapes.
-      await cache.get('metrics-warmup-probe');
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(`metrics-endpoint test: infra not reachable (${message}). Skipping.`);
-      infraReachable = false;
-    }
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+    cache = moduleRef.get(TripBalancesCache);
+    // Force a connect attempt so the cache namespace label
+    // shows up in subsequent scrapes.
+    await cache.get('metrics-warmup-probe');
   });
 
   afterAll(async () => {
-    if (infraReachable) await app.close();
+    await app.close();
     await moduleRef.close();
   });
 
@@ -75,7 +67,6 @@ describe('GET /metrics (integration, requires Docker Redis)', () => {
   }
 
   it('@Public(): no bearer required → 200 + prom text-format', async () => {
-    if (!infraReachable) return;
     const { status, body, contentType } = await scrape();
     expect(status).toBe(200);
     expect(contentType).toContain('text/plain');
@@ -85,14 +76,12 @@ describe('GET /metrics (integration, requires Docker Redis)', () => {
   });
 
   it('emits cache_hit_total + cache_miss_total labeled by cache namespace', async () => {
-    if (!infraReachable) return;
     const { body } = await scrape();
     expect(body).toMatch(/cache_hit_total\{cache="trip-balances"\}\s+\d/);
     expect(body).toMatch(/cache_miss_total\{cache="trip-balances"\}\s+\d/);
   });
 
   it('cache_hit_total reflects new hits between scrapes', async () => {
-    if (!infraReachable) return;
     const before = await scrape();
     const beforeHits = parseGauge(before.body, 'cache_hit_total', 'trip-balances') ?? 0;
 
@@ -107,7 +96,6 @@ describe('GET /metrics (integration, requires Docker Redis)', () => {
   });
 
   it('default node process metrics are surfaced', async () => {
-    if (!infraReachable) return;
     const { body } = await scrape();
     // collectDefaultMetrics emits these baseline series.
     expect(body).toContain('process_cpu_user_seconds_total');

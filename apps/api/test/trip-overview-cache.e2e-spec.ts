@@ -37,7 +37,6 @@ describe('GET /trips/:id/overview cache (integration, requires Docker Postgres +
   let app: NestFastifyApplication;
   let prisma: PrismaService;
   let cache: TripOverviewCache;
-  let infraReachable = true;
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -45,31 +44,23 @@ describe('GET /trips/:id/overview cache (integration, requires Docker Postgres +
     app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
     app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)', 'metrics'] });
     await app.register(fastifyCookie);
-    try {
-      await app.init();
-      await app.getHttpAdapter().getInstance().ready();
-      prisma = moduleRef.get(PrismaService);
-      cache = moduleRef.get(TripOverviewCache);
-      await prisma.$queryRaw`SELECT 1`;
-      // Warm Redis connection so subsequent stats are stable.
-      await cache.get('warmup-probe');
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(`trip-overview-cache test: infra not reachable (${message}). Skipping.`);
-      infraReachable = false;
-    }
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+    prisma = moduleRef.get(PrismaService);
+    cache = moduleRef.get(TripOverviewCache);
+    await prisma.$queryRaw`SELECT 1`;
+    // Warm Redis connection so subsequent stats are stable.
+    await cache.get('warmup-probe');
   });
 
   afterEach(async () => {
-    if (!infraReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
   });
 
   afterAll(async () => {
-    if (infraReachable) await app.close();
+    await app.close();
     await moduleRef.close();
   });
 
@@ -114,7 +105,6 @@ describe('GET /trips/:id/overview cache (integration, requires Docker Postgres +
   }
 
   it('first overview call → cache miss; second call → cache hit (same user)', async () => {
-    if (!infraReachable) return;
     const u = await registerUser('user');
     const tripId = await createTrip(u.accessToken);
 
@@ -133,7 +123,6 @@ describe('GET /trips/:id/overview cache (integration, requires Docker Postgres +
   });
 
   it('cache hit serves the same payload as the cold compute', async () => {
-    if (!infraReachable) return;
     const u = await registerUser('payload');
     const tripId = await createTrip(u.accessToken);
     const cold = await app.inject({
@@ -151,7 +140,6 @@ describe('GET /trips/:id/overview cache (integration, requires Docker Postgres +
   });
 
   it('TripOverviewCache.getStats() namespace label is correct', () => {
-    if (!infraReachable) return;
     expect(cache.getStats().namespace).toBe('trip-overview');
   });
 });

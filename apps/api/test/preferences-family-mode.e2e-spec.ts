@@ -37,7 +37,6 @@ describe('Preferences + family-mode filters (V.UX.14 — integration)', () => {
   let app: NestFastifyApplication;
   let prisma: PrismaService;
   let geo: GeoQueries;
-  let infraReachable = true;
   // Suite-local coordinates, well away from any other suite.
   const lat = 41.123;
   const lng = -73.456;
@@ -48,22 +47,14 @@ describe('Preferences + family-mode filters (V.UX.14 — integration)', () => {
     app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
     app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)'] });
     await app.register(fastifyCookie);
-    try {
-      await app.init();
-      await app.getHttpAdapter().getInstance().ready();
-      prisma = moduleRef.get(PrismaService);
-      geo = moduleRef.get(GeoQueries);
-      await prisma.$queryRaw`SELECT 1`;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(`prefs-family test: infra not reachable (${message}). Skipping.`);
-      infraReachable = false;
-    }
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+    prisma = moduleRef.get(PrismaService);
+    geo = moduleRef.get(GeoQueries);
+    await prisma.$queryRaw`SELECT 1`;
   });
 
   afterEach(async () => {
-    if (!infraReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
@@ -73,7 +64,7 @@ describe('Preferences + family-mode filters (V.UX.14 — integration)', () => {
   });
 
   afterAll(async () => {
-    if (infraReachable) await app.close();
+    await app.close();
     await moduleRef.close();
   });
 
@@ -92,7 +83,6 @@ describe('Preferences + family-mode filters (V.UX.14 — integration)', () => {
   }
 
   it('GET /preferences returns defaults before first write', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('default');
     const res = await app.inject({
       method: 'GET',
@@ -107,7 +97,6 @@ describe('Preferences + family-mode filters (V.UX.14 — integration)', () => {
   });
 
   it('PATCH familyMode + kidAges persists', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('upsert');
     const patch = await app.inject({
       method: 'PATCH',
@@ -131,7 +120,6 @@ describe('Preferences + family-mode filters (V.UX.14 — integration)', () => {
   });
 
   it('PATCH with kid age > 17 → 422 INVALID_KID_AGE', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('badage');
     const res = await app.inject({
       method: 'PATCH',
@@ -144,7 +132,6 @@ describe('Preferences + family-mode filters (V.UX.14 — integration)', () => {
   });
 
   it('PATCH with > 8 kids → 422 (Zod cap)', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('toomany');
     const res = await app.inject({
       method: 'PATCH',
@@ -157,7 +144,6 @@ describe('Preferences + family-mode filters (V.UX.14 — integration)', () => {
   });
 
   it('Stays search with requiredAmenities=["wifi"] keeps all 3 mock listings', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('stays-pass');
     const res = await app.inject({
       method: 'POST',
@@ -180,7 +166,6 @@ describe('Preferences + family-mode filters (V.UX.14 — integration)', () => {
   });
 
   it('Stays search with requiredAmenities=["crib"] returns 0 (mock has none)', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('stays-crib');
     const res = await app.inject({
       method: 'POST',
@@ -200,7 +185,6 @@ describe('Preferences + family-mode filters (V.UX.14 — integration)', () => {
   });
 
   it('Places search with requiredFeatures filters via PlaceTag rows', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('places');
 
     const kidPlace = await geo.insertPlace({

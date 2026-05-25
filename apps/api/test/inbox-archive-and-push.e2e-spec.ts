@@ -58,7 +58,6 @@ describe('V.UX.26 inbox archive + per-category prefs + push (integration, requir
   let prisma: PrismaService;
   let sender: LoggingNotificationSender;
   let digest: SendWeeklyDigestUseCase;
-  let dbReachable = true;
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -66,19 +65,12 @@ describe('V.UX.26 inbox archive + per-category prefs + push (integration, requir
     app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
     app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)'] });
     await app.register(fastifyCookie);
-    try {
-      await app.init();
-      await app.getHttpAdapter().getInstance().ready();
-      prisma = moduleRef.get(PrismaService);
-      sender = moduleRef.get(LoggingNotificationSender);
-      digest = moduleRef.get(SendWeeklyDigestUseCase);
-      await prisma.$queryRaw`SELECT 1`;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(`inbox-archive-push test: DB not reachable (${message}). Skipping.`);
-      dbReachable = false;
-    }
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+    prisma = moduleRef.get(PrismaService);
+    sender = moduleRef.get(LoggingNotificationSender);
+    digest = moduleRef.get(SendWeeklyDigestUseCase);
+    await prisma.$queryRaw`SELECT 1`;
   });
 
   afterEach(async () => {
@@ -95,7 +87,7 @@ describe('V.UX.26 inbox archive + per-category prefs + push (integration, requir
   });
 
   afterAll(async () => {
-    if (dbReachable) await app.close();
+    await app.close();
     await moduleRef.close();
   });
 

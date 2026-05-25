@@ -35,7 +35,6 @@ describe('Concierge agent-match + curatedOnly (V.UX.17 — integration)', () => 
   let app: NestFastifyApplication;
   let prisma: PrismaService;
   let geo: GeoQueries;
-  let infraReachable = true;
 
   const lat = 39.012;
   const lng = -98.012;
@@ -46,22 +45,14 @@ describe('Concierge agent-match + curatedOnly (V.UX.17 — integration)', () => 
     app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
     app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)'] });
     await app.register(fastifyCookie);
-    try {
-      await app.init();
-      await app.getHttpAdapter().getInstance().ready();
-      prisma = moduleRef.get(PrismaService);
-      geo = moduleRef.get(GeoQueries);
-      await prisma.$queryRaw`SELECT 1`;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(`concierge test: infra not reachable (${message}). Skipping.`);
-      infraReachable = false;
-    }
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+    prisma = moduleRef.get(PrismaService);
+    geo = moduleRef.get(GeoQueries);
+    await prisma.$queryRaw`SELECT 1`;
   });
 
   afterEach(async () => {
-    if (!infraReachable) return;
     // Cascades User -> Agent through Agent.userId FK.
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
@@ -72,7 +63,7 @@ describe('Concierge agent-match + curatedOnly (V.UX.17 — integration)', () => 
   });
 
   afterAll(async () => {
-    if (infraReachable) await app.close();
+    await app.close();
     await moduleRef.close();
   });
 
@@ -153,7 +144,6 @@ describe('Concierge agent-match + curatedOnly (V.UX.17 — integration)', () => 
   }
 
   it('non-premium caller → 403 ROLE_FORBIDDEN', async () => {
-    if (!infraReachable) return;
     const reg = await registerUser('basic');
     const tripId = await createTrip(reg.accessToken, 'basic-trip');
     const res = await app.inject({
@@ -167,7 +157,6 @@ describe('Concierge agent-match + curatedOnly (V.UX.17 — integration)', () => 
   });
 
   it('premium caller, foreign tripId → 404 TRIP_NOT_FOUND', async () => {
-    if (!infraReachable) return;
     const alice = await registerUser('a');
     const aliceTripId = await createTrip(alice.accessToken, 'alice');
     const bob = await loginAsPremium('b');
@@ -182,7 +171,6 @@ describe('Concierge agent-match + curatedOnly (V.UX.17 — integration)', () => 
   });
 
   it('premium caller, valid trip → returns top 3 verified agents (drops pending)', async () => {
-    if (!infraReachable) return;
     const me = await loginAsPremium('me');
     const tripId = await createTrip(me.token, 'mine');
 
@@ -239,7 +227,6 @@ describe('Concierge agent-match + curatedOnly (V.UX.17 — integration)', () => 
   });
 
   it('region filter excludes agents outside the destination', async () => {
-    if (!infraReachable) return;
     const me = await loginAsPremium('region');
     const tripId = await createTrip(me.token, 'region');
 
@@ -270,7 +257,6 @@ describe('Concierge agent-match + curatedOnly (V.UX.17 — integration)', () => 
   });
 
   it('places curatedOnly filter keeps only PlaceTag curated=true rows', async () => {
-    if (!infraReachable) return;
     const me = await loginAsPremium('curated');
 
     const curated = await geo.insertPlace({

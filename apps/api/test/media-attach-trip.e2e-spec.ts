@@ -28,7 +28,6 @@ describe('Media × Trip attachment (integration, requires Postgres + MinIO)', ()
   let moduleRef: TestingModule;
   let app: NestFastifyApplication;
   let prisma: PrismaService;
-  let infraReachable = true;
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -36,24 +35,16 @@ describe('Media × Trip attachment (integration, requires Postgres + MinIO)', ()
     app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
     app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)'] });
     await app.register(fastifyCookie);
-    try {
-      await app.init();
-      await app.getHttpAdapter().getInstance().ready();
-      prisma = moduleRef.get(PrismaService);
-      await prisma.$queryRaw`SELECT 1`;
-      // MinIO must be reachable so the upload → confirm flow works.
-      const probe = await fetch(`${process.env['S3_ENDPOINT']}/`);
-      if (probe.status >= 500) throw new Error(`MinIO probe ${probe.status}`);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(`media-attach test: infra not reachable (${message}). Skipping.`);
-      infraReachable = false;
-    }
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+    prisma = moduleRef.get(PrismaService);
+    await prisma.$queryRaw`SELECT 1`;
+    // MinIO must be reachable so the upload → confirm flow works.
+    const probe = await fetch(`${process.env['S3_ENDPOINT']}/`);
+    if (probe.status >= 500) throw new Error(`MinIO probe ${probe.status}`);
   });
 
   afterEach(async () => {
-    if (!infraReachable) return;
     // User cascade-deletes MediaAsset (via ownerId FK) + Trip (via
     // userId FK).
     await prisma.user.deleteMany({
@@ -62,7 +53,7 @@ describe('Media × Trip attachment (integration, requires Postgres + MinIO)', ()
   });
 
   afterAll(async () => {
-    if (infraReachable) await app.close();
+    await app.close();
     await moduleRef.close();
   });
 
@@ -125,7 +116,6 @@ describe('Media × Trip attachment (integration, requires Postgres + MinIO)', ()
   }
 
   it('happy path: attach → tripId set → GET /trip/:tripId lists it → detach clears it', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('happy');
     const tripId = await createTrip(accessToken);
     const mediaId = await uploadReadyMedia(accessToken);
@@ -173,7 +163,6 @@ describe('Media × Trip attachment (integration, requires Postgres + MinIO)', ()
   });
 
   it('attach to another user’s trip → 404 TRIP_NOT_FOUND (IDOR defence)', async () => {
-    if (!infraReachable) return;
     const alice = await registerUser('a-idor-trip');
     const bob = await registerUser('b-idor-trip');
     const aliceTripId = await createTrip(alice.accessToken);
@@ -190,7 +179,6 @@ describe('Media × Trip attachment (integration, requires Postgres + MinIO)', ()
   });
 
   it('attach another user’s media → 404 MEDIA_NOT_FOUND (IDOR defence)', async () => {
-    if (!infraReachable) return;
     const alice = await registerUser('a-idor-media');
     const bob = await registerUser('b-idor-media');
     const aliceMediaId = await uploadReadyMedia(alice.accessToken);
@@ -208,7 +196,6 @@ describe('Media × Trip attachment (integration, requires Postgres + MinIO)', ()
   });
 
   it('GET /media/trip/:tripId on another user’s trip → 404 TRIP_NOT_FOUND', async () => {
-    if (!infraReachable) return;
     const alice = await registerUser('a-list');
     const bob = await registerUser('b-list');
     const aliceTripId = await createTrip(alice.accessToken);
@@ -223,7 +210,6 @@ describe('Media × Trip attachment (integration, requires Postgres + MinIO)', ()
   });
 
   it('processing-status media is NOT listed by GET /media/trip/:tripId', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('noproc');
     const tripId = await createTrip(accessToken);
 
@@ -257,7 +243,6 @@ describe('Media × Trip attachment (integration, requires Postgres + MinIO)', ()
   });
 
   it('detach is always allowed on own media (even if currently unattached)', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('detach');
     const mediaId = await uploadReadyMedia(accessToken);
 
@@ -273,7 +258,6 @@ describe('Media × Trip attachment (integration, requires Postgres + MinIO)', ()
   });
 
   it('PATCH without body → 422 VALIDATION_FAILED (Zod requires tripId key)', async () => {
-    if (!infraReachable) return;
     const { accessToken } = await registerUser('novalid');
     const mediaId = await uploadReadyMedia(accessToken);
 

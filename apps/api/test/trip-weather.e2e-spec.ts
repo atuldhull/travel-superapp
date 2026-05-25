@@ -56,7 +56,6 @@ describe('Trip × Weather (integration, requires Docker Postgres)', () => {
   let app: NestFastifyApplication;
   let prisma: PrismaService;
   let stub: StubWeatherProvider;
-  let dbReachable = true;
 
   beforeAll(async () => {
     const stubInstance = new StubWeatherProvider();
@@ -68,33 +67,22 @@ describe('Trip × Weather (integration, requires Docker Postgres)', () => {
     app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
     app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)'] });
     await app.register(fastifyCookie);
-    try {
-      await app.init();
-      await app.getHttpAdapter().getInstance().ready();
-      prisma = moduleRef.get(PrismaService);
-      stub = moduleRef.get<StubWeatherProvider>(WEATHER_PROVIDER);
-      await prisma.$queryRaw`SELECT 1`;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(`trip-weather test: DB not reachable (${message}). Skipping.`);
-      dbReachable = false;
-    }
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+    prisma = moduleRef.get(PrismaService);
+    stub = moduleRef.get<StubWeatherProvider>(WEATHER_PROVIDER);
+    await prisma.$queryRaw`SELECT 1`;
   });
 
   afterEach(async () => {
-    if (dbReachable) {
-      stub.reset();
-      await prisma.user.deleteMany({
-        where: { displayName: { startsWith: TEST_PREFIX } },
-      });
-    }
+    stub.reset();
+    await prisma.user.deleteMany({
+      where: { displayName: { startsWith: TEST_PREFIX } },
+    });
   });
 
   afterAll(async () => {
-    if (dbReachable) {
-      await app.close();
-    }
+    await app.close();
     await moduleRef.close();
   });
 

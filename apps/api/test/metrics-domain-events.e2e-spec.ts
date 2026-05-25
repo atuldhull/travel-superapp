@@ -29,7 +29,6 @@ describe('domain_events_total counter (integration, requires Docker Postgres)', 
   let moduleRef: TestingModule;
   let app: NestFastifyApplication;
   let prisma: PrismaService;
-  let infraReachable = true;
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -37,28 +36,20 @@ describe('domain_events_total counter (integration, requires Docker Postgres)', 
     app.useGlobalFilters(new AllExceptionFilter(), new DomainExceptionFilter());
     app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)', 'metrics'] });
     await app.register(fastifyCookie);
-    try {
-      await app.init();
-      await app.getHttpAdapter().getInstance().ready();
-      prisma = moduleRef.get(PrismaService);
-      await prisma.$queryRaw`SELECT 1`;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(`metrics-domain-events test: infra not reachable (${message}). Skipping.`);
-      infraReachable = false;
-    }
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+    prisma = moduleRef.get(PrismaService);
+    await prisma.$queryRaw`SELECT 1`;
   });
 
   afterEach(async () => {
-    if (!infraReachable) return;
     await prisma.user.deleteMany({
       where: { displayName: { startsWith: TEST_PREFIX } },
     });
   });
 
   afterAll(async () => {
-    if (infraReachable) await app.close();
+    await app.close();
     await moduleRef.close();
   });
 
@@ -87,7 +78,6 @@ describe('domain_events_total counter (integration, requires Docker Postgres)', 
   }
 
   it('register triggers Identity.SessionIssued → counter increments', async () => {
-    if (!infraReachable) return;
     const before = await scrapeCounter('Identity.SessionIssued');
     await registerUser('first');
     const after = await scrapeCounter('Identity.SessionIssued');
@@ -95,7 +85,6 @@ describe('domain_events_total counter (integration, requires Docker Postgres)', 
   });
 
   it('counter is monotonic across additional events', async () => {
-    if (!infraReachable) return;
     const before = await scrapeCounter('Identity.SessionIssued');
     await registerUser('second-1');
     await registerUser('second-2');
@@ -104,7 +93,6 @@ describe('domain_events_total counter (integration, requires Docker Postgres)', 
   });
 
   it('counter is exposed with the expected label format', async () => {
-    if (!infraReachable) return;
     await registerUser('format');
     const res = await app.inject({ method: 'GET', url: '/metrics' });
     expect(res.statusCode).toBe(200);

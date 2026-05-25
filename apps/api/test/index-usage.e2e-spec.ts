@@ -50,28 +50,18 @@ describe('Index usage acceptance [III.12.4] (integration, requires Docker Postgr
   let moduleRef: TestingModule;
   let prisma: PrismaService;
   let geo: GeoQueries;
-  let dbReachable = true;
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     prisma = moduleRef.get(PrismaService);
     geo = moduleRef.get(GeoQueries);
-    try {
-      await prisma.$queryRaw`SELECT 1`;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(`index-usage test: DB not reachable (${message}). Skipping.`);
-      dbReachable = false;
-    }
+    await prisma.$queryRaw`SELECT 1`;
   });
 
   afterAll(async () => {
-    if (dbReachable) {
-      await prisma.place.deleteMany({
-        where: { sourceKey: { startsWith: SOURCE_PREFIX } },
-      });
-    }
+    await prisma.place.deleteMany({
+      where: { sourceKey: { startsWith: SOURCE_PREFIX } },
+    });
     await moduleRef.close();
   });
 
