@@ -1,0 +1,210 @@
+{
+  "annotations": { "list": [] },
+  "description": "SLO burn-rate dashboard ([O3]). Reads the recording rules from ops/prometheus/rules/api.rules.yml (api:error_ratio:{5m,30m,1h,6h,24h,72h}) and visualises each burn-rate against the page / ticket thresholds (14.4× / 6× / 3× / 1×). One row per window. Backs the docs/slos.md error-budget policy.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "panels": [
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "unit": "percentunit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.7 },
+              { "color": "red", "value": 0.9 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 0 },
+      "id": 1,
+      "targets": [
+        {
+          "expr": "1 - (sum(increase(http_request_duration_seconds_count{service=\"api\",status=~\"5..\"}[28d])) / clamp_min(0.005 * sum(increase(http_request_duration_seconds_count{service=\"api\"}[28d])), 1))",
+          "refId": "A"
+        }
+      ],
+      "title": "Budget remaining (28d availability — 99.5% target)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "unit": "none" } },
+      "gridPos": { "h": 6, "w": 18, "x": 6, "y": 0 },
+      "id": 2,
+      "targets": [
+        {
+          "expr": "api:error_ratio:5m / 0.005",
+          "legendFormat": "burn rate (5m)",
+          "refId": "A"
+        },
+        {
+          "expr": "api:error_ratio:1h / 0.005",
+          "legendFormat": "burn rate (1h)",
+          "refId": "B"
+        },
+        {
+          "expr": "api:error_ratio:6h / 0.005",
+          "legendFormat": "burn rate (6h)",
+          "refId": "C"
+        },
+        {
+          "expr": "api:error_ratio:24h / 0.005",
+          "legendFormat": "burn rate (24h)",
+          "refId": "D"
+        }
+      ],
+      "title": "Burn rate × budget — page at 14.4 / 6, ticket at 3 / 1",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 6 },
+              { "color": "red", "value": 14.4 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 6 },
+      "id": 3,
+      "targets": [{ "expr": "api:error_ratio:5m / 0.005", "refId": "A" }],
+      "title": "Burn (5m)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 6 },
+              { "color": "red", "value": 14.4 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 6 },
+      "id": 4,
+      "targets": [{ "expr": "api:error_ratio:1h / 0.005", "refId": "A" }],
+      "title": "Burn (1h)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 3 },
+              { "color": "red", "value": 6 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 6 },
+      "id": 5,
+      "targets": [{ "expr": "api:error_ratio:6h / 0.005", "refId": "A" }],
+      "title": "Burn (6h)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 3 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 6 },
+      "id": 6,
+      "targets": [{ "expr": "api:error_ratio:24h / 0.005", "refId": "A" }],
+      "title": "Burn (24h)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "unit": "s" } },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 11 },
+      "id": 7,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{service=\"api\",method=~\"GET|HEAD\",route!~\".*ai.*|.*plan.*|.*memory-book.*\"}[10m])) by (le))",
+          "legendFormat": "p95 reads",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{service=\"api\",method=~\"POST|PUT|PATCH|DELETE\",route!~\".*ai.*|.*plan.*|.*memory-book.*\"}[10m])) by (le))",
+          "legendFormat": "p95 writes",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{service=\"api\",route=~\".*ai.*|.*plan.*|.*memory-book.*\"}[10m])) by (le))",
+          "legendFormat": "p95 AI",
+          "refId": "C"
+        }
+      ],
+      "title": "p95 latency by SLO tier (read/write/AI)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "unit": "ops" } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 11 },
+      "id": 8,
+      "targets": [
+        {
+          "expr": "sum(rate(http_request_duration_seconds_count{service=\"api\",status=\"503\"}[5m]))",
+          "legendFormat": "503 rate (incl. shed)",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(http_request_duration_seconds_count{service=\"api\",status=~\"5..\"}[5m]))",
+          "legendFormat": "all 5xx rate",
+          "refId": "B"
+        }
+      ],
+      "title": "Error rate (5xx & 503 / shed)",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["travel", "slo", "burn-rate"],
+  "templating": { "list": [] },
+  "time": { "from": "now-6h", "to": "now" },
+  "timezone": "browser",
+  "title": "SLO Burn Rate",
+  "uid": "travel-slo-burn-rate",
+  "version": 1,
+  "weekStart": ""
+}

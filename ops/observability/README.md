@@ -96,7 +96,9 @@ ops/observability/
     ├── datasources/datasources.yml      # auto-wires Tempo + Prometheus
     ├── dashboards-config/dashboards.yml # provisioning provider
     └── dashboards/
-        └── api-overview.json            # starter dashboard
+        ├── api-overview.json            # request rate + p95 + cache + memory
+        ├── slo-burn-rate.json           # MWMR burn-rate panels per window ([O3])
+        └── external-resilience.json     # 5xx / lag / cache + per-route p95 ([O3])
 ```
 
 Alert rules live next to this, under `ops/prometheus/rules/` ([N2]).
