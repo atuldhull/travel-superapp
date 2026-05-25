@@ -21,6 +21,63 @@
 
 ---
 
+## Road-to-10 Production/ops readiness series (✅ COMPLETE)
+
+- **Date**: 2026-05-25
+- **Series**: N1–N12. Closes all 14 items on the
+  "Production/ops readiness 4 → 10" review list. Some items are
+  fully shippable code (N1 OTLP fix, N8 circuit breaker); the
+  rest ship as docs + IaC + runbooks the operator activates
+  when ready (real cloud accounts, real CCs).
+- **Key shifts** (in commit order):
+  - **N1** (`cfca449`) OTLP 404 fix: gate SDK on real endpoint
+    - ship local `ops/observability/` stack (Tempo + Prometheus
+    - Grafana with provisioned `api-overview` dashboard).
+  - **N2** (`15c8a32`) `docs/slos.md` (99.5% / p95 300ms / 8s
+    targets), `ops/prometheus/rules/api.rules.yml` MWMR alerts
+    - 5 per-alert runbooks + Alertmanager routing sketch.
+  - **N3** (`ca015fe`) Terraform stack for Fly under
+    `ops/terraform/` + `terraform-plan` (PR diff) +
+    `terraform-apply` (GH-Environment-gated) workflows.
+  - **N4** (`c311553`) `deploy.yml` full chain: gates → rolling
+    (staging) or blue-green (prod) → external smoke probes →
+    `flyctl releases rollback` on failure.
+  - **N5** (`a7ff26d`) backups+DR runbook (RTO/RPO matrix per
+    asset) + `scripts/dr/restore-test.sh` drill harness.
+  - **N6** (`16abe23`) `scripts/secrets/rotate-jwt-keyring.sh`
+    - `rotate-supabase-password.sh` (closes operator-owed
+      Supabase pw TODO) + quarterly `secret-rotation.yml`
+      issue-opener.
+  - **N7** (`e041d89`) `.github/dependabot.yml` +
+    `docs/security/threat-model.md` (STRIDE + top-10) +
+    `scripts/security/csp-audit.sh` + `SECURITY.md`.
+  - **N8** (`0f01154`) new `@app/resilience` package (circuit
+    breaker + withTimeout + withRetry, 17 unit tests pass
+    against FakeClock); applied to `OpenMeteoWeatherProvider`
+    (the near-me-502 culprit).
+  - **N9** (`182d3c2`) `ops/terraform/cloudflare.tf` — WAF +
+    per-route edge rate limits (auth, AI, scanner-block,
+    health-allow). Gated `cloudflare_enabled = false` default.
+  - **N10** (`f87fc41`) `docs/compliance/gdpr-audit.md` —
+    Art. 6/15/16/17/18/20/21 coverage + retention + PII inventory
+    - audit summary.
+  - **N11** (`a2e499f`) `docs/runbooks/cost-monitoring.md` +
+    `.github/workflows/ci-cost-watch.yml` (daily probe, 80%
+    threshold opens issue).
+- **Verification (local)**:
+  - typecheck ✓ · arch ✓ (707 modules, 3105 deps) · cycles ✓
+    (3 sanctioned, 0 unsanctioned) · cover:unit ✓ 186 / 186 ·
+    @app/resilience test ✓ 17 / 17 · all YAML parses.
+- **Operator-owed** (outside CI's reach):
+  - Park DNS on Cloudflare + flip `cloudflare_enabled = true`.
+  - Upgrade Supabase to Pro ($25/mo) → enable PITR.
+  - Run the FIRST DR drill via `scripts/dr/restore-test.sh`.
+  - Set per-provider spending caps in each dashboard.
+  - Push branch + run the new `deploy.yml` chain on real CI.
+  - Publish privacy policy + cookie banner before EU launch.
+
+---
+
 ## Road-to-10 Test/CI reliability series (✅ COMPLETE)
 
 - **Date**: 2026-05-25
