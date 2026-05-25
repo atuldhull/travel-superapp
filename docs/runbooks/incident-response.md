@@ -51,7 +51,7 @@
 - Symptom: 500s from many routes, "connection pool" errors
 - Check Supabase dashboard for instance status
 - Verify `DATABASE_POOL_MAX` is below Supabase's connection cap (currently 100 on free tier)
-- Per [`feedback_postgres_max_connections_runinband.md`](../../C:/Users/atuld/.claude/projects/c--Users-atuld-dev-testing/memory/feedback_postgres_max_connections_runinband.md): full e2e suite cascade-fails on default jest concurrency
+- Historical: full e2e suite cascade-failed on default jest concurrency until [L1]+[L3] per-worker `?schema=test_w${JEST_WORKER_ID}` iso lifted the `max_connections=100` ceiling; if a similar pattern returns, suspect schema-iso regression first.
 
 ### Stripe webhook backlog
 
