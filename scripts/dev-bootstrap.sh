@@ -1,19 +1,37 @@
 #!/usr/bin/env bash
 # Dev bootstrap — one-command local up for TravelSuperApp.
 #
-#   bash scripts/dev-bootstrap.sh
+#   bash scripts/dev-bootstrap.sh            # bootstrap only
+#   bash scripts/dev-bootstrap.sh --verify   # bootstrap + boot api + poll /health/ready
 #
 # Brings up Postgres + Redis + Meilisearch + MinIO via docker compose,
 # generates apps/api/.env.local + apps/web/.env.local on first run,
 # applies Prisma migrations, and seeds demo data. Idempotent — re-running
 # is safe; existing env files are not overwritten.
 #
-# After this completes, in two separate terminals:
+# With --verify (used by CI bootstrap-smoke and by humans who want
+# end-to-end proof): starts apps/api in the background, polls
+# http://127.0.0.1:3000/health/ready for up to 90s, then stops it.
+# Exits non-zero with a diagnostic if the api fails to become ready.
+#
+# After this completes (no --verify), in two separate terminals:
 #   pnpm --filter=api dev    # NestJS on :3000
 #   pnpm --filter=web dev    # Next.js on :3001
 #
-# Installed by prompt [IV.18.19.49.x bootstrap].
+# Installed by prompt [IV.18.19.49.x bootstrap]. Verify flag added by [P2].
 set -euo pipefail
+
+VERIFY=0
+for arg in "$@"; do
+  case "$arg" in
+    --verify) VERIFY=1 ;;
+    -h|--help)
+      sed -n '2,22p' "$0" | sed 's/^# \{0,1\}//'
+      exit 0
+      ;;
+    *) printf "unknown flag: %s\n" "$arg" >&2; exit 2 ;;
+  esac
+done
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
@@ -143,3 +161,57 @@ printf "  api:  pnpm --filter=api dev   (http://localhost:3000)\n"
 printf "  web:  pnpm --filter=web dev   (http://localhost:3001)\n"
 printf "\n  postgres :5432  redis :6379  meilisearch :7700  minio :9000 (console :9001)\n"
 printf "  stop stack:  docker compose -f infra/docker-compose.yml down\n"
+
+# ── 7. optional verify (--verify) ───────────────────────────────────────
+# Boots apps/api in the background, polls /health/ready until 200 OR 90s,
+# then kills the background api. This is the CI smoke-test path and is the
+# only way to be SURE that bootstrap actually produces a running system.
+if [ "$VERIFY" = "1" ]; then
+  step "verify api boots + /health/ready=200"
+
+  API_LOG="$(mktemp -t travel-api-verify.XXXXXX.log)"
+  ( cd "$REPO_ROOT" && pnpm --filter=api start:dev >"$API_LOG" 2>&1 ) &
+  API_PID=$!
+  trap 'kill "$API_PID" 2>/dev/null || true' EXIT
+
+  ok "api booting in background (pid $API_PID, log $API_LOG)"
+
+  READY=0
+  # Poll for up to 90s. Use 127.0.0.1 not localhost — Windows resolves
+  # localhost to IPv6 and Docker only listens on IPv4 (memory:
+  # localhost-ipv6-postgres).
+  for i in $(seq 1 90); do
+    if curl -fsS -m 2 http://127.0.0.1:3000/health/ready >/dev/null 2>&1; then
+      READY=1
+      ok "/health/ready=200 after ${i}s"
+      break
+    fi
+    if ! kill -0 "$API_PID" 2>/dev/null; then
+      printf "\033[1;31m✗ api process exited before becoming ready\033[0m\n" >&2
+      tail -n 100 "$API_LOG" >&2 || true
+      exit 1
+    fi
+    sleep 1
+  done
+
+  if [ "$READY" != "1" ]; then
+    printf "\033[1;31m✗ /health/ready never returned 200 after 90s\033[0m\n" >&2
+    printf "  last 100 lines of api log (%s):\n" "$API_LOG" >&2
+    tail -n 100 "$API_LOG" >&2 || true
+    exit 1
+  fi
+
+  # Light second probe — exercise /health/live + /metrics so we know
+  # observability + the liveness probe are wired, not just the readiness gate.
+  curl -fsS -m 2 http://127.0.0.1:3000/health/live >/dev/null 2>&1 || {
+    printf "\033[1;31m✗ /health/live did not respond\033[0m\n" >&2
+    exit 1
+  }
+  ok "/health/live=200"
+
+  curl -fsS -m 2 http://127.0.0.1:3000/metrics 2>/dev/null | head -n 1 | grep -q '^# HELP\|^# TYPE\|^[a-z]' && ok "/metrics emits prometheus exposition" || warn "/metrics empty — observability may be gated off"
+
+  kill "$API_PID" 2>/dev/null || true
+  wait "$API_PID" 2>/dev/null || true
+  ok "verify complete — system bootstraps end-to-end"
+fi
