@@ -195,3 +195,130 @@ resource "cloudflare_ruleset" "always_allow_probes" {
     }
   }
 }
+
+# ─── Cache rules ([Q6]) ─────────────────────────────────────────────────
+#
+# Edge caching for read-mostly public surfaces. The api still emits the
+# canonical `Cache-Control` header on every response (see
+# apps/api/src/common/cache-control/), so this ruleset just tells
+# Cloudflare to RESPECT the origin's caching intent for public paths,
+# and to AGGRESSIVELY cache the heaviest public read.
+#
+# Why a separate ruleset (kind = "zone", phase = "http_request_cache_settings"):
+# the cache phase runs BEFORE WAF / rate-limit in Cloudflare's
+# pipeline, so a cache HIT skips the origin entirely — both rate-limit
+# budgets and api CPU stay protected by the cache, not just by WAF.
+#
+# Bypass list mirrors the always-allow rule above — auth + write-paths
+# never cache (Cloudflare's defaults exclude POST/PUT/DELETE but we
+# call it out for the reader).
+
+resource "cloudflare_ruleset" "cache_public_reads" {
+  count = var.cloudflare_enabled ? 1 : 0
+
+  zone_id     = var.cloudflare_zone_id
+  name        = "travel — cache public read endpoints"
+  description = "Edge-cache public reads. Origin Cache-Control header is authoritative; this ruleset turns on edge respect + sets defaults per route family."
+  kind        = "zone"
+  phase       = "http_request_cache_settings"
+
+  # /api/v1/places/featured + /api/v1/places/:id (public read of place
+  # metadata) — high hit ratio, very low write rate, safe to cache 60s.
+  rules {
+    description = "Cache public place reads (60s edge TTL, respect origin)"
+    enabled     = true
+    expression = <<-EOT
+      (http.request.method eq "GET")
+      and (
+        http.request.uri.path starts_with "/api/v1/places/featured"
+        or http.request.uri.path matches "^/api/v1/places/[^/]+$"
+      )
+    EOT
+    action = "set_cache_settings"
+    action_parameters {
+      cache = true
+      edge_ttl {
+        mode    = "respect_origin"
+        default = 60
+      }
+      browser_ttl {
+        mode    = "respect_origin"
+      }
+      # Vary headers — accept-language for i18n, accept-encoding for
+      # gzip/br compression (Cloudflare does this by default but be
+      # explicit so future reviewers see it).
+      respect_strong_etags = true
+    }
+  }
+
+  # /api/v1/trips/published/* — public trip pages. Longer TTL because
+  # a published trip is immutable until republished (which busts the
+  # cache via the cache-tag header the api emits).
+  rules {
+    description = "Cache public trip reads (5m edge TTL, respect origin)"
+    enabled     = true
+    expression = <<-EOT
+      (http.request.method eq "GET")
+      and (http.request.uri.path starts_with "/api/v1/trips/published/")
+    EOT
+    action = "set_cache_settings"
+    action_parameters {
+      cache = true
+      edge_ttl {
+        mode    = "respect_origin"
+        default = 300
+      }
+      browser_ttl {
+        mode    = "respect_origin"
+      }
+      respect_strong_etags = true
+    }
+  }
+
+  # /api/v1/feed/public — anonymous feed. 30s TTL (high churn,
+  # smaller win, but cheap on a 100k-RPS slow day).
+  rules {
+    description = "Cache anonymous public feed (30s edge TTL)"
+    enabled     = true
+    expression = <<-EOT
+      (http.request.method eq "GET")
+      and (http.request.uri.path starts_with "/api/v1/feed/public")
+    EOT
+    action = "set_cache_settings"
+    action_parameters {
+      cache = true
+      edge_ttl {
+        mode    = "respect_origin"
+        default = 30
+      }
+      browser_ttl {
+        mode    = "respect_origin"
+      }
+    }
+  }
+
+  # Everything else under /api/v1 — NEVER cache. Authenticated reads,
+  # writes, anything with a Set-Cookie response. Belt-and-braces:
+  # Cloudflare's defaults already exclude non-cacheable shapes, but
+  # an explicit "no" makes the intent reviewable.
+  rules {
+    description = "Bypass cache for everything else under /api/v1"
+    enabled     = true
+    expression = <<-EOT
+      (http.request.uri.path starts_with "/api/v1")
+      and not (
+        (http.request.method eq "GET")
+        and (
+          http.request.uri.path starts_with "/api/v1/places/featured"
+          or http.request.uri.path matches "^/api/v1/places/[^/]+$"
+          or http.request.uri.path starts_with "/api/v1/trips/published/"
+          or http.request.uri.path starts_with "/api/v1/feed/public"
+        )
+      )
+    EOT
+    action = "set_cache_settings"
+    action_parameters {
+      cache = false
+    }
+  }
+}
