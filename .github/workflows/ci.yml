@@ -645,6 +645,7 @@ jobs:
       NODE_ENV: test
       LOG_LEVEL: silent
       DATABASE_URL: postgresql://travel:travel_dev@localhost:5432/travel_dev
+      DIRECT_URL: postgresql://travel:travel_dev@localhost:5432/travel_dev
       REDIS_URL: redis://localhost:6379
       S3_ENDPOINT: http://localhost:9000
       S3_BUCKET: travel-ci
