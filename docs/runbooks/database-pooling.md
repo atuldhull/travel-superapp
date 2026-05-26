@@ -123,11 +123,51 @@ A request is "active" while it holds a transaction — typically 10-200 ms. Conc
 2. **Doppler** — set `DIRECT_URL` in every non-local environment. Required by Prisma migrate.
 3. **CI deploy gate** — `.github/workflows/deploy.yml` must fail if `DIRECT_URL` is unset for the target environment.
 
+## Read replicas ([R4])
+
+`PrismaService` exposes a `$readReplica()` accessor. When `DATABASE_URL_READONLY` is set, it returns a second `PrismaClient` wired to that URL; otherwise it returns the primary client. Either way the returned shape is `PrismaClient`, so call sites don't branch on env.
+
+```ts
+// In a use-case that doesn't need read-after-write consistency:
+async listPublishedTrips(): Promise<Trip[]> {
+  return this.prisma.$readReplica().trip.findMany({
+    where: { status: 'published' },
+    take: 100,
+  });
+}
+
+// In a use-case that DOES need consistency (read your own write):
+async upsertAndReadBack(input: ...): Promise<Trip> {
+  const trip = await this.prisma.trip.upsert({ ... });
+  // Same client — no replica lag risk.
+  return this.prisma.trip.findUniqueOrThrow({ where: { id: trip.id } });
+}
+```
+
+**When to use `$readReplica`:**
+
+- Hot public reads (`/api/v1/places/featured`, `/api/v1/feed/public`, published trip pages).
+- Reads scoped to a single region during multi-region operation (the replica lives in the surviving region per [multi-region-failover.md](multi-region-failover.md)).
+- Background workers doing read-mostly scans (analytics rollup, recrawl planner).
+
+**When NOT to use:**
+
+- Any read inside `prisma.$transaction(...)` — the replica isn't part of the transaction.
+- Read-after-write of the same row — replica lag (typically 50-500 ms on Supabase Team) means stale data.
+- Writes — always primary.
+- Auth flows — never read a session from a replica; lag would let a logged-out user pass a check the primary already invalidated.
+
+Supabase Pro doesn't include replicas; Supabase Team ($599/mo) does. The runbook above is operator-owed for activation: provision the replica in the Supabase dashboard, copy the read URL, set `DATABASE_URL_READONLY` in Doppler, redeploy.
+
 ## See also
 
 - [`apps/api/prisma/schema.prisma`](../../apps/api/prisma/schema.prisma) — datasource block with `directUrl`
-- [`packages/config/src/schema.ts`](../../packages/config/src/schema.ts) — `DATABASE_URL` + `DIRECT_URL` Zod fields
+- [`apps/api/src/common/db/prisma.service.ts`](../../apps/api/src/common/db/prisma.service.ts) — `$readReplica()` accessor + lifecycle
+- [`packages/config/src/schema.ts`](../../packages/config/src/schema.ts) — `DATABASE_URL` + `DIRECT_URL` + `DATABASE_URL_READONLY` Zod fields
 - [`infra/pgbouncer/pgbouncer.ini`](../../infra/pgbouncer/pgbouncer.ini) — local PgBouncer config (transaction mode)
 - [`infra/docker-compose.yml`](../../infra/docker-compose.yml) — `pgbouncer` service under profile `pool`
+- [`docs/runbooks/multi-region-failover.md`](multi-region-failover.md) — the failover path the replica unlocks
+- [`docs/runbooks/db-partitioning.md`](db-partitioning.md) — when read replicas aren't enough ([R5])
 - [Prisma — PgBouncer + Prisma](https://www.prisma.io/docs/orm/prisma-client/setup-and-configuration/databases-connections/pgbouncer)
 - [Supabase — connection pooling](https://supabase.com/docs/guides/database/connecting-to-postgres#connection-pooler)
+- [Supabase — read replicas](https://supabase.com/docs/guides/platform/read-replicas)
