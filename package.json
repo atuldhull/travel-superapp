@@ -19,6 +19,7 @@
     "cycles": "turbo run cycles",
     "sdk:check": "node scripts/sdk-check.cjs",
     "shared-types:check": "node scripts/shared-types-check.cjs",
+    "docs:api:build": "node scripts/docs-api-build.cjs",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "test:integration": "turbo run test:integration",
