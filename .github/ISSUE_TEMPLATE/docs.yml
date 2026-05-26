@@ -1,0 +1,47 @@
+name: 📚 Docs issue
+description: A doc is wrong, stale, or missing.
+title: 'docs: '
+labels: ['documentation', 'good first issue']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Doc fixes are some of the most impactful contributions — they directly affect every future
+        contributor's onboarding. For typo / broken-link / one-paragraph fixes, please skip the issue
+        and **open a PR directly**.
+        This template is for larger drift: "the doc says X but the code does Y", "the runbook is
+        missing a step", "we don't have a doc for Z".
+  - type: input
+    id: location
+    attributes:
+      label: Doc location
+      description: 'Path to the file (or the section heading if it spans multiple docs).'
+      placeholder: 'docs/runbooks/backups-dr.md §Tier 2 dump-and-replay'
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What's wrong
+      description: 'Quote the misleading / missing text. Cite what the code actually does, if applicable.'
+      placeholder: |
+        The runbook says to run `supabase db backups list` but that subcommand does not exist (verified
+        with `supabase --help` on CLI 1.207.x). Operators following this on incident would block.
+    validations:
+      required: true
+  - type: textarea
+    id: proposed
+    attributes:
+      label: Proposed fix
+      placeholder: 'Replace the step with: download the dump manually from the Supabase dashboard, then pass it via $DR_DUMP_FILE.'
+    validations:
+      required: false
+  - type: checkboxes
+    id: pre-flight
+    attributes:
+      label: Pre-flight
+      options:
+        - label: I'm reporting drift, not requesting a new feature (use the feature template for that).
+          required: true
+        - label: For a typo / one-paragraph fix I would open a PR directly.
+          required: true
