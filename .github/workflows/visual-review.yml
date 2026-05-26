@@ -1,0 +1,128 @@
+# visual-review — post a PR comment when Playwright E2E (visual / a11y)
+# fails, surfacing the report + diff artifacts so reviewers don't dig
+# through Actions UI manually.
+#
+# Why a separate workflow (not a step inside `ci.yml`):
+#   - GitHub blocks `pull_request` workflows from forks from posting
+#     comments (the GITHUB_TOKEN there is read-only). The
+#     `workflow_run` trigger runs in the repo's privilege scope, so
+#     it CAN post comments — even when ci.yml ran on a fork PR.
+#   - Same pattern docs.github.com recommends for this exact UX.
+#
+# What it posts:
+#   - The PR comment links to the failed run + the playwright-report
+#     artifact (HTML report with embedded pixel diffs).
+#   - Instructions for both fix paths: local update (preferred) and
+#     workflow_dispatch baseline refresh (for Linux-only changes).
+#   - Updates the existing comment in place on subsequent failures
+#     (no comment spam on a re-run).
+#
+# Installed by [R2] of the road-to-10-partials closeout.
+
+name: visual-review
+
+on:
+  workflow_run:
+    workflows: ['ci']
+    types: [completed]
+
+permissions:
+  pull-requests: write
+  actions: read
+  checks: read
+
+jobs:
+  comment-on-failure:
+    name: PR comment with diff artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    # Only post when ci.yml failed (= e2e or anything else failed) AND
+    # the run was for a PR. Skip pushes to main — those bake-in to the
+    # next PR's comparison.
+    if: |
+      github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.event == 'pull_request'
+
+    steps:
+      - name: Find PR for this workflow run
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+            const prs = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: run.head_sha,
+            });
+            const pr = prs.data.find((p) => p.state === 'open');
+            if (!pr) {
+              core.setOutput('skip', 'true');
+              core.info('No open PR for this commit — skipping comment');
+              return;
+            }
+            core.setOutput('pr_number', String(pr.number));
+            core.setOutput('skip', 'false');
+
+      - name: Post / update PR comment
+        if: steps.pr.outputs.skip != 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = Number('${{ steps.pr.outputs.pr_number }}');
+            const run = context.payload.workflow_run;
+            const reportUrl = `${run.html_url}#artifacts`;
+            const tag = '<!-- visual-review-comment -->';
+
+            const body = [
+              tag,
+              '## 🔍 Visual / E2E checks failed',
+              '',
+              `**Workflow run:** [${run.name} #${run.run_number}](${run.html_url})`,
+              `**Commit:** \`${run.head_sha.slice(0, 7)}\``,
+              '',
+              '### Inspect the diff',
+              '',
+              `1. Open the run above → scroll to **Artifacts** → download \`playwright-report\``,
+              `2. Unzip + open \`playwright-report/index.html\` in a browser`,
+              `3. Each failing test has a "Screenshots" tab with expected / actual / diff PNGs side-by-side`,
+              '',
+              '### If the diff is intentional',
+              '',
+              '**Linux (CI-platform) baselines** must be produced on Linux — your local Mac/Windows pixels diverge. Two options:',
+              '',
+              '- **Preferred:** open the [`e2e-update-baselines`](../../actions/workflows/e2e-update-baselines.yml) workflow → **Run workflow** → it captures + opens a PR with new baselines. Merge that PR, then re-run THIS PR.',
+              '- **Local-and-fine-on-Linux only:** \`pnpm --filter=web e2e:update\` then commit the new PNGs under \`apps/web/e2e/**/<spec>-snapshots/\`.',
+              '',
+              '### If the diff is a regression',
+              '',
+              'Fix the UI in this PR + push — the e2e job re-runs automatically. No baseline update needed.',
+              '',
+              '_See [`docs/runbooks/visual-regression.md`](../../blob/main/docs/runbooks/visual-regression.md) for the full procedure + the SaaS Chromatic path._',
+            ].join('\n');
+
+            const existing = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              per_page: 100,
+            });
+            const prior = existing.data.find((c) => c.body && c.body.startsWith(tag));
+
+            if (prior) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: prior.id,
+                body,
+              });
+              core.info(`Updated existing comment ${prior.id}`);
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body,
+              });
+              core.info(`Created new comment on PR #${prNumber}`);
+            }
