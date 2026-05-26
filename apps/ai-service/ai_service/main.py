@@ -40,6 +40,8 @@ import os
 from fastapi import FastAPI
 from pydantic import BaseModel
 
+import base64
+
 from ai_service.schemas import (
     AiServiceHealthResponse,
     EmbeddingsRequest,
@@ -47,9 +49,28 @@ from ai_service.schemas import (
     TranslateRequest,
     TranslateResponse,
 )
+from ai_service.schemas.crowd import (
+    CrowdDensity,
+    CrowdPredictRequest,
+    CrowdPredictResponse,
+    CrowdPredictResponseFeatures,
+)
+from ai_service.schemas.fake_review import (
+    FakeReviewLabel,
+    FakeReviewScoreRequest,
+    FakeReviewScoreResponse,
+    FakeReviewScoreResponseResults,
+)
 from ai_service.schemas.health import AiServiceHealthResponseRay
+from ai_service.schemas.stt import STTChunk, STTPartial
 from ai_service.services.argos_translator import ArgosTranslator
+from ai_service.services.heuristics import (
+    label_for_score,
+    predict_crowd_density,
+    score_review,
+)
 from ai_service.services.ollama_client import OllamaClient
+from ai_service.services.whisper_client import WhisperClient
 import time
 
 # Module-level singletons — these carry instance state (installed-pair set,
@@ -57,6 +78,7 @@ import time
 # per-request would lose the install cache and re-read env on every call.
 _ollama = OllamaClient()
 _argos = ArgosTranslator()
+_whisper = WhisperClient()
 
 
 app = FastAPI(
@@ -186,6 +208,101 @@ async def embeddings(req: EmbeddingsRequest) -> EmbeddingsResponse:
         embeddings=filled,
         model=f"{_ollama.model}@1.0" if any_real else "stub-deterministic@0.1.0",
         dimensions=1024,
+    )
+
+
+# ───────────────────────────────────────────────────────────────────
+# STT — faster-whisper when [stt] extras are installed; echo-stub
+# fallback otherwise.
+# ───────────────────────────────────────────────────────────────────
+
+
+@app.post("/v1/transcribe", response_model=STTPartial, tags=["inference"])
+async def transcribe(chunk: STTChunk) -> STTPartial:
+    """
+    Speech-to-text via faster-whisper when the optional `[stt]` extras
+    are installed. Stub fallback returns an empty `STTPartial` so the
+    wire contract is honoured either way.
+
+    Audio bytes are expected as little-endian 16-bit signed PCM mono at
+    `chunk.sampleRateHz`. Richer codec support (mp3 / webm / ogg) lands
+    when streaming endpoints are added in a follow-up.
+
+    Installed by [S-A3] of the S-series real-functionality closeout.
+    """
+    audio_bytes = _coerce_audio_bytes(chunk.audio)
+    result = await _whisper.transcribe(audio_bytes, chunk.sampleRateHz)
+    if result is None:
+        return STTPartial(text="", isFinal=chunk.final, confidence=0.0)
+    text, confidence = result
+    return STTPartial(text=text, isFinal=chunk.final, confidence=confidence)
+
+
+def _coerce_audio_bytes(audio: bytes | str) -> bytes:
+    """STTChunk.audio is `bytes | str`; the str form is base64-encoded."""
+    if isinstance(audio, bytes):
+        return audio
+    try:
+        return base64.b64decode(audio, validate=False)
+    except (ValueError, TypeError):
+        return b""
+
+
+# ───────────────────────────────────────────────────────────────────
+# Fake-review scoring — heuristic ($0, no extras)
+# ───────────────────────────────────────────────────────────────────
+
+
+@app.post("/v1/fake-review/score", response_model=FakeReviewScoreResponse, tags=["inference"])
+def score_fake_reviews(req: FakeReviewScoreRequest) -> FakeReviewScoreResponse:
+    """
+    Score a batch of reviews for fakeness. Today this runs a pure-Python
+    heuristic (length / caps ratio / generic-phrase hits / emoji density);
+    DistilBERT-class classifier swaps in as a drop-in adapter later.
+
+    Installed by [S-A4] of the S-series real-functionality closeout.
+    """
+    results: list[FakeReviewScoreResponseResults] = []
+    for review in req.reviews:
+        score, reasons = score_review(review.body)
+        results.append(
+            FakeReviewScoreResponseResults(
+                id=review.id,
+                score=score,
+                label=FakeReviewLabel(label_for_score(score)),
+                reasons=reasons,
+            )
+        )
+    return FakeReviewScoreResponse(results=results)
+
+
+# ───────────────────────────────────────────────────────────────────
+# Crowd-density prediction — heuristic ($0, no extras)
+# ───────────────────────────────────────────────────────────────────
+
+
+@app.post("/v1/crowd/predict", response_model=CrowdPredictResponse, tags=["inference"])
+def predict_crowd(req: CrowdPredictRequest) -> CrowdPredictResponse:
+    """
+    Predict crowd density at `placeId` for `timestamp`. Heuristic — gaussian
+    time-of-day curves + weekend bump + per-place jitter. Prophet (or
+    similar) swaps in as a drop-in adapter when we have footfall data
+    to train on.
+
+    Installed by [S-A5] of the S-series real-functionality closeout.
+    """
+    density_str, density_score, confidence = predict_crowd_density(
+        req.placeId, req.timestamp, is_holiday=False
+    )
+    return CrowdPredictResponse(
+        density=CrowdDensity(density_str),
+        densityScore=density_score,
+        confidence=confidence,
+        features=CrowdPredictResponseFeatures(
+            dayOfWeek=float(req.timestamp.weekday()),
+            hourOfDay=float(req.timestamp.hour + req.timestamp.minute / 60.0),
+            isHoliday=False,
+        ),
     )
 
 
