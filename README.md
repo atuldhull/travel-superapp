@@ -24,6 +24,9 @@ corepack enable   # on Windows may need admin; otherwise use: npx pnpm <cmd>
 # Bootstrap (docker stack + .env.local generation + migrate + seed)
 pnpm dev:up
 
+# … or bootstrap AND prove it works end-to-end (CI uses this)
+pnpm dev:up:verify   # boots api in background, polls /health/ready, exits non-zero on failure
+
 # Two terminals — api + web
 pnpm --filter=api dev    # http://localhost:3000
 pnpm --filter=web dev    # http://localhost:3001
@@ -35,6 +38,8 @@ pnpm dev:down
 `pnpm dev:up` is idempotent. It generates `apps/api/.env.local` +
 `apps/web/.env.local` with random dev peppers on first run and never
 overwrites them on subsequent runs.
+
+`pnpm dev:up:verify` is what [.github/workflows/bootstrap-smoke.yml](.github/workflows/bootstrap-smoke.yml) runs on every PR that touches bootstrap, docker, Prisma, or the api boot path — a green run is the contract that a new engineer can `git clone` → one command → see `:3000/health/ready=200` within 90s.
 
 Requirements: Docker, Node **22+** (`.nvmrc`), pnpm **9+** (`package.json#packageManager`), Git.
 

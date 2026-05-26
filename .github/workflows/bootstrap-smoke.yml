@@ -1,0 +1,81 @@
+# Bootstrap smoke — proves that `bash scripts/dev-bootstrap.sh --verify`
+# takes a fresh checkout to `:3000/health/ready=200` end-to-end.
+#
+# Runs on every PR that could break first-day onboarding: the bootstrap
+# script itself, infra (docker-compose, prisma, env shape), api boot
+# path, or workspace deps. Catches regressions BEFORE a new engineer
+# tries to follow docs/onboarding.md.
+#
+# Installed by [P2] of the Documentation 8.5→10 series.
+
+name: bootstrap-smoke
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/dev-bootstrap.sh'
+      - 'infra/docker-compose.yml'
+      - 'infra/postgres/**'
+      - 'apps/api/package.json'
+      - 'apps/api/src/main.ts'
+      - 'apps/api/src/app.module.ts'
+      - 'apps/api/prisma/**'
+      - 'prisma/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/bootstrap-smoke.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: bootstrap-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bootstrap:
+    name: pnpm dev:up --verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: false
+
+      # Docker is pre-installed on ubuntu-latest runners. Compose v2 is too.
+      - name: Sanity-check docker
+        run: |
+          docker --version
+          docker compose version
+
+      - name: Run dev-bootstrap.sh --verify
+        run: bash scripts/dev-bootstrap.sh --verify
+        env:
+          # ts-node transpile-only avoids the esbuild import-resolution
+          # quirk that bit the api earlier this cycle (see PROGRESS.md
+          # entry "dev server boots reliably").
+          TS_NODE_TRANSPILE_ONLY: 'true'
+
+      - name: Capture api log on failure
+        if: failure()
+        run: |
+          echo '--- docker compose ps ---'
+          docker compose -f infra/docker-compose.yml ps || true
+          echo '--- last 200 lines of postgres ---'
+          docker compose -f infra/docker-compose.yml logs --tail=200 postgres || true
+          echo '--- last 200 lines of redis ---'
+          docker compose -f infra/docker-compose.yml logs --tail=200 redis || true
+
+      - name: Stop stack
+        if: always()
+        run: docker compose -f infra/docker-compose.yml down -v || true
