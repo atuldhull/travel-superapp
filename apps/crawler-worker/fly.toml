@@ -1,0 +1,39 @@
+# Fly.io config for `apps/crawler-worker`. See
+# apps/notification-worker/fly.toml for the shared rationale.
+#
+# When the Playwright + headless-Chromium pipeline lands, this VM
+# size will need to bump to `performance-2x` + 2GB RAM (Chromium
+# is heavy). Today's stub fits on the small tier.
+#
+# Installed by [Q4] of the Scale-readiness 3→10 series.
+
+app = "travel-crawler-worker-staging"
+primary_region = "iad"
+kill_signal = "SIGTERM"
+# A crawl batch can take minutes; allow generous drain time so
+# we don't kill mid-fetch and trigger upstream rate-limit penalties.
+kill_timeout = "180s"
+
+[build]
+  dockerfile = "apps/crawler-worker/Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  LOG_LEVEL = "info"
+  # External APIs (Google Places, FSQ, OSM) all have per-key rate
+  # limits — keep concurrency tight to stay under them.
+  WORKER_CONCURRENCY = "2"
+
+[processes]
+  worker = "node apps/crawler-worker/dist/main.js"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1
+  processes = ["worker"]
+
+[restart]
+  policy = "on-failure"
+  retries = 10

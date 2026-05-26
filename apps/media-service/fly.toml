@@ -1,0 +1,35 @@
+# Fly.io config for `apps/media-service`. See
+# apps/notification-worker/fly.toml for the shared rationale.
+#
+# Installed by [Q4] of the Scale-readiness 3→10 series.
+
+app = "travel-media-service-staging"
+primary_region = "iad"
+kill_signal = "SIGTERM"
+# Sharp variants can take 10-30s on a large source; allow time.
+kill_timeout = "120s"
+
+[build]
+  dockerfile = "apps/media-service/Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  LOG_LEVEL = "info"
+  # Sharp is CPU-bound — keep concurrency low to avoid CPU contention.
+  WORKER_CONCURRENCY = "4"
+
+[processes]
+  worker = "node apps/media-service/dist/main.js"
+
+[[vm]]
+  # Sharp + libvips want more RAM headroom than the notification
+  # worker. Bump to 512mb so a single large image doesn't OOM.
+  size = "shared-cpu-1x"
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1
+  processes = ["worker"]
+
+[restart]
+  policy = "on-failure"
+  retries = 10
