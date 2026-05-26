@@ -21,6 +21,41 @@
 
 ---
 
+## Scale-readiness 3 → 10 (Q-series, ✅ COMPLETE)
+
+- **Date**: 2026-05-26
+- **Series**: Q1–Q11. The biggest gap — the $0/no-key constraint left scale deliberately unbuilt. Q-series ships the seams + the runbooks; real scale-out is operator-owed (paid Supabase Pro / Upstash Pro / Fly machines / GPU).
+- **One commit per slice**; gauntlet green at every step.
+
+| Slice   | What                                                                                                                                                                                                        | Commit                |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
+| **Q1**  | PgBouncer transaction-mode pooler on :6543 (compose profile `pool`) + `DATABASE_URL` (pooled) / `DIRECT_URL` (migrate) split + Prisma `directUrl` + runbook + CI env-var update.                            | `567ef98`             |
+| **Q2**  | Redis cluster-posture runbook (4 postures, hash-tag rules, slot-safety patterns) + fitness gate "no `redis.keys(` / `KEYS pattern`" (truth-tabled 7/7).                                                     | `3f6bf20`             |
+| **Q3**  | `@app/jobs` BullMQ wrapper (typed Queue/Worker factories, cluster-safe queue names) + `JobsService` @Global producer + real notification-worker (was a 1-line shell).                                       | `f389deb` · `c2cc4ad` |
+| **Q4**  | All 3 Node workers (notification / media / crawler) independently deployable: Dockerfile + fly.toml + ops/terraform/workers.tf (for_each fly_app) + `deploy-workers.yml` with paths-filter.                 | `3bca2c8`             |
+| **Q5**  | pgvector ivfflat → HNSW switch runbook: lists/probes math, recall measurement SQL, zero-downtime swap procedure, 24h rollback window.                                                                       | `d1d2f75`             |
+| **Q6**  | Cloudflare cache rules (4 routes for public reads) + `apps/api/src/common/cache-control/` helpers (setCachePublic / setCacheNoStore with SWR) + 5 unit tests.                                               | `0452f1a`             |
+| **Q7**  | Capacity matrix: 8 route classes by bottleneck, target latency table, measured-today (5 surfaces), "what we don't know" + path to each answer, per-tier readiness checklist (1k / 10k / 100k).              | `d9f37a0`             |
+| **Q8**  | Statelessness fitness invariant: no module-level mutable `Map`/`Set` (ReadonlyMap/Set exempted; allowlist for the by-design-per-process metrics registry) + `docs/architecture/statelessness.md`.           | `b058814`             |
+| **Q9**  | Multi-region: workers extended to `setproduct(workers, regions)` so they spread with the api (was single-region) + failover runbook (Fly automatic + manual + Supabase replica scenario + quarterly drill). | `ceceff2`             |
+| **Q10** | AI inference scaling path doc (out-of-scope for code today — ai-service is a scaffold): 4 levers (batching / concurrency / caching / fallback), GPU strategy table, when-to-implement triggers.             | `57973d0`             |
+| **Q11** | Cost-per-user model: free-tier ~$0.18/user/mo (cached ~$0.10), Premium ~$5.33/user/mo, fixed ~$110/mo, break-even at 24 Premium users, sensitivity table.                                                   | `29c3276`             |
+
+**Verification**: every slice ran a relevant subset of typecheck / build / arch / cycles / sdk:check / docs:erd:check / docs:env:check / markdownlint before its commit. Final state: tree clean on `main`, 94 markdown files lint clean.
+
+**Operator-owed** (cannot self-close — all itemised in the slice runbooks):
+
+- Supabase Pro upgrade ($25/mo) — unlocks PgBouncer + PITR + 200 connections (Q1 + N5)
+- Cloudflare DNS parked + `cloudflare_enabled = true` (Q6 cache rules + N9 WAF)
+- 6× `flyctl apps create` for the worker apps (Q4)
+- `FLY_API_TOKEN` repo secret scoped to the worker apps (Q4)
+- Per-environment Doppler secret sync for every worker
+- Multi-region drill quarterly (Q9 runbook)
+- AI provider keys decided + spending caps (Q10 + N11)
+- AI inference implementation — future prompt [IV.18.2.11] (Q10 plans it)
+
+---
+
 ## Documentation 8.5 → 10 (P-series, ✅ COMPLETE)
 
 - **Date**: 2026-05-26
