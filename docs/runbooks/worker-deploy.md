@@ -10,7 +10,7 @@ Three Node workers ship as independent Fly apps, one per logical pipeline:
 | `travel-media-service-*`       | `apps/media-service/`       | `media-variants`  | Redis · R2 · Postgres (state update) |
 | `travel-crawler-worker-*`      | `apps/crawler-worker/`      | `crawler-recrawl` | Redis · Google Places · FSQ · OSM    |
 
-`*` = `staging` or `prod`. The ai-service (Python) deploys separately — see [ai-inference-scale.md](../architecture/ai-inference-scale.md) ([Q10]).
+`*` = `staging` or `prod`. The ai-service (Python FastAPI) also deploys via its own pipeline — see [`.github/workflows/deploy-ai-service.yml`](../../.github/workflows/deploy-ai-service.yml) + [ai-inference-scale.md](../architecture/ai-inference-scale.md) ([Q10] + [R6]). Stub today; real inference lands in `[IV.18.2.11]`.
 
 ## One-time setup (operator-owed)
 
