@@ -46,9 +46,11 @@ import {
   getTripControllerGetOneQueryKey,
   getTripControllerListQueryKey,
   useMediaControllerListByTrip,
+  useTripControllerArchive,
   useTripControllerBuildItinerary,
   useTripControllerDuplicate,
   useTripControllerLock,
+  useTripControllerUnarchive,
   useTripControllerUnlock,
   useTripControllerGetItinerary,
   useTripControllerGetOne,
@@ -167,6 +169,47 @@ export default function TripDetailPage() {
       onError: (err: unknown) => {
         const e = err as ApiError;
         setErrorMsg(`${e.code ?? `HTTP_${e.status ?? '???'}`} — ${e.message ?? 'Unlock failed.'}`);
+      },
+    },
+  });
+
+  // [S-C1] V.UX.30 archive surface — soft-deletes the trip from the
+  // owner's list (still queryable by direct id; not in /trips). Owner-
+  // gated server-side; idempotent. The CONFIRM gate prevents
+  // mis-clicks since unarchive can't reach an irrecoverable trip.
+  const [confirmArchive, setConfirmArchive] = useState(false);
+
+  const archiveMutation = useTripControllerArchive({
+    mutation: {
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: getTripControllerGetOneQueryKey(id) });
+        await queryClient.invalidateQueries({
+          queryKey: getTripControllerListQueryKey({ limit: '20' } as never),
+        });
+        setConfirmArchive(false);
+        setErrorMsg(null);
+      },
+      onError: (err: unknown) => {
+        const e = err as ApiError;
+        setErrorMsg(`${e.code ?? `HTTP_${e.status ?? '???'}`} — ${e.message ?? 'Archive failed.'}`);
+      },
+    },
+  });
+
+  const unarchiveMutation = useTripControllerUnarchive({
+    mutation: {
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: getTripControllerGetOneQueryKey(id) });
+        await queryClient.invalidateQueries({
+          queryKey: getTripControllerListQueryKey({ limit: '20' } as never),
+        });
+        setErrorMsg(null);
+      },
+      onError: (err: unknown) => {
+        const e = err as ApiError;
+        setErrorMsg(
+          `${e.code ?? `HTTP_${e.status ?? '???'}`} — ${e.message ?? 'Unarchive failed.'}`,
+        );
       },
     },
   });
@@ -306,6 +349,15 @@ export default function TripDetailPage() {
             }
           }}
           isLockToggling={lockMutation.isPending || unlockMutation.isPending}
+          onAskArchive={() => {
+            setConfirmArchive(true);
+            setErrorMsg(null);
+          }}
+          onUnarchive={() => {
+            setErrorMsg(null);
+            unarchiveMutation.mutate({ id });
+          }}
+          isUnarchiving={unarchiveMutation.isPending}
         />
       )}
       <DailySpendBanner tripId={id} enabled={token !== null && !editing} />
@@ -324,6 +376,40 @@ export default function TripDetailPage() {
       {/* J4 — comment thread. Self-contained; the API gates posting
           to published trips and explains when the trip isn't yet. */}
       {token !== null && !editing ? <TripComments tripId={id} /> : null}
+      {confirmArchive ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Archive this trip?</CardTitle>
+            <CardSubtitle>
+              The trip is hidden from your list but kept intact. Unarchive any time from the trip
+              page (you'll need the direct URL).
+            </CardSubtitle>
+          </CardHeader>
+          {errorMsg ? (
+            <p className="mb-3 rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-sm text-red-600 dark:text-red-400">
+              {errorMsg}
+            </p>
+          ) : null}
+          <div className="flex gap-3">
+            <Button
+              variant="primary"
+              onClick={() => archiveMutation.mutate({ id })}
+              disabled={archiveMutation.isPending}
+            >
+              {archiveMutation.isPending ? 'Archiving…' : 'Archive'}
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setConfirmArchive(false);
+                setErrorMsg(null);
+              }}
+            >
+              Cancel
+            </Button>
+          </div>
+        </Card>
+      ) : null}
       {confirmDelete ? (
         <Card>
           <CardHeader>
@@ -372,6 +458,9 @@ interface ReadViewProps {
   readonly duplicateErrorMsg: string | null;
   readonly onLockToggle: () => void;
   readonly isLockToggling: boolean;
+  readonly onAskArchive: () => void;
+  readonly onUnarchive: () => void;
+  readonly isUnarchiving: boolean;
 }
 
 function ReadView({
@@ -384,8 +473,12 @@ function ReadView({
   duplicateErrorMsg,
   onLockToggle,
   isLockToggling,
+  onAskArchive,
+  onUnarchive,
+  isUnarchiving,
 }: ReadViewProps) {
   const isOwner = role === 'owner';
+  const isArchived = trip.archivedAt != null;
   const statusVariant: 'neutral' | 'brand' = trip.status === 'draft' ? 'neutral' : 'brand';
   // F9 — Phase 2 polish: pre-seed the global assistant from THIS
   // trip's context. Same hook /home uses. Button hides until center
@@ -470,35 +563,57 @@ function ReadView({
               🌐 Primer
             </Link>
             {isOwner ? (
-              <>
-                <Button variant="outline" size="sm" onClick={onDuplicate} disabled={isDuplicating}>
-                  {isDuplicating ? 'Duplicating…' : 'Duplicate'}
+              isArchived ? (
+                // When archived, every editable control is hidden;
+                // only Unarchive is offered. Defence-in-depth — the
+                // API also forbids edits on archived trips.
+                <Button variant="outline" size="sm" onClick={onUnarchive} disabled={isUnarchiving}>
+                  {isUnarchiving ? 'Unarchiving…' : '📂 Unarchive'}
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={onLockToggle}
-                  disabled={isLockToggling}
-                >
-                  {isLockToggling
-                    ? trip.status === 'published'
-                      ? 'Unlocking…'
-                      : 'Locking…'
-                    : trip.status === 'published'
-                      ? '🔓 Unlock'
-                      : '🔒 Lock'}
-                </Button>
-                <Button variant="outline" size="sm" onClick={onEdit}>
-                  Edit
-                </Button>
-                <Button variant="ghost" size="sm" onClick={onAskDelete}>
-                  Delete
-                </Button>
-              </>
+              ) : (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onDuplicate}
+                    disabled={isDuplicating}
+                  >
+                    {isDuplicating ? 'Duplicating…' : 'Duplicate'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onLockToggle}
+                    disabled={isLockToggling}
+                  >
+                    {isLockToggling
+                      ? trip.status === 'published'
+                        ? 'Unlocking…'
+                        : 'Locking…'
+                      : trip.status === 'published'
+                        ? '🔓 Unlock'
+                        : '🔒 Lock'}
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={onEdit}>
+                    Edit
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={onAskArchive}>
+                    🗄️ Archive
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={onAskDelete}>
+                    Delete
+                  </Button>
+                </>
+              )
             ) : null}
           </div>
         </div>
-        {trip.status === 'published' ? (
+        {isArchived ? (
+          <p className="mt-2 rounded-md border border-slate-500/30 bg-slate-500/5 px-3 py-2 text-xs text-slate-700 dark:text-slate-300">
+            🗄️ <strong>Archived.</strong> Hidden from your trip list. Reads still work via this
+            direct URL. Unarchive to reopen for edits + put it back in your list.
+          </p>
+        ) : trip.status === 'published' ? (
           <p className="mt-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
             🔒 <strong>Locked.</strong> Share collaborators can read + vote + log expenses, but only
             you can edit the itinerary or trip metadata. Unlock to reopen edits.
