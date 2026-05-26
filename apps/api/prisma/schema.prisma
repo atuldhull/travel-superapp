@@ -29,7 +29,17 @@ generator client {
 
 datasource db {
   provider   = "postgresql"
+  // Runtime connection — goes through PgBouncer (transaction-mode) in
+  // staging/prod. Pooled URL has `?pgbouncer=true&connection_limit=1`
+  // appended; Prisma client respects those flags. In dev, this defaults
+  // to the direct port (5432) because the local stack does not run
+  // PgBouncer unless explicitly started (compose profile `pool`).
   url        = env("DATABASE_URL")
+  // Migrations + introspection must NOT go through PgBouncer transaction
+  // mode (prepared statements + DDL break under it). `directUrl` is the
+  // bypass — same database, port 5432 / no pooler. Defaults to
+  // DATABASE_URL in dev so local stays one-URL.
+  directUrl  = env("DIRECT_URL")
   extensions = [postgis, vector, pg_trgm, pgcrypto]
 }
 

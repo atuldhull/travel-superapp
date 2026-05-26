@@ -1,0 +1,14 @@
+; LOCAL-DEV ONLY userlist for the PgBouncer container.
+;
+; Format: "<user>" "<password|hash>"
+;
+; The password matches POSTGRES_PASSWORD in infra/docker-compose.yml.
+; Real environments inject this from Doppler / a Kubernetes secret —
+; NEVER commit a real production hash here.
+;
+; To regenerate (after bumping the dev password):
+;     docker run --rm -e POSTGRES_PASSWORD=travel_dev edoburu/pgbouncer:1.22.1 \
+;       pgbouncer -m SCRAM-SHA-256 travel
+;
+"travel" "travel_dev"
+"pgbouncer_admin" "pgbouncer_admin"

@@ -28,8 +28,21 @@ const RuntimeSchema = z.object({
 });
 
 // ─── Database (Postgres 16 + PostGIS + pgvector) ────────────────────────
+//
+// Two URLs by design ([Q1] scale-readiness):
+//   - DATABASE_URL → goes through PgBouncer (transaction-mode) in
+//     staging / prod. Pooled — handles 1000s of clients on top of a
+//     small (10-25) physical connection pool. Per Prisma docs, the
+//     pooled URL MUST carry `?pgbouncer=true&connection_limit=1` so
+//     the client disables prepared statements (which break under
+//     transaction-mode pooling) and keeps one connection per worker.
+//   - DIRECT_URL → bypasses the pooler (port 5432 vs 6543). Used by
+//     `prisma migrate` (DDL needs a session-mode connection) and by
+//     Prisma's introspection (advisory locks via session state).
+//     Optional — falls back to DATABASE_URL in dev when no pooler.
 const DatabaseSchema = z.object({
   DATABASE_URL: z.string().url(),
+  DIRECT_URL: z.string().url().optional(),
   DATABASE_POOL_MIN: z.coerce.number().int().nonnegative().default(2),
   DATABASE_POOL_MAX: z.coerce.number().int().positive().default(10),
 });
