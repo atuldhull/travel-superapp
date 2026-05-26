@@ -144,7 +144,8 @@ review, apply.
 ## Cross-refs
 
 - [`apps/api/src/common/rate-limit/`](../../apps/api/src/common/rate-limit/) — the inner layer
-- [`ops/terraform/cloudflare.tf`](../../ops/terraform/cloudflare.tf) — the rule definitions
+- [`apps/api/src/common/cache-control/`](../../apps/api/src/common/cache-control/) — origin Cache-Control helpers paired with the edge cache rules ([Q6])
+- [`ops/terraform/cloudflare.tf`](../../ops/terraform/cloudflare.tf) — the rule definitions (WAF + rate limit + cache rules)
 - [`docs/security/threat-model.md`](../security/threat-model.md) — top abuse scenarios + mitigation status
 - [`docs/runbooks/slo-availability.md`](slo-availability.md) — what to do when the pager fires
 - [`docs/runbooks/auth-error-spike.md`](auth-error-spike.md) — the credential-stuffing path
