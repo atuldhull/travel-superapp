@@ -14,17 +14,24 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 export class AuthSuccessResponseDto {
-  @ApiProperty({ format: 'cuid', description: 'Authenticated user id.' })
+  @ApiProperty({
+    format: 'cuid',
+    description: 'Authenticated user id.',
+    example: 'clxn8q3t40000jq08yzn4l1ab',
+  })
   declare userId: string;
 
   @ApiProperty({
     description: 'Bearer access token (JWT). Memory-only — never localStorage.',
+    example:
+      'eyJhbGciOiJSUzI1NiIsImtpZCI6IjFhYjJjM2Q0In0.eyJzdWIiOiJjbHhuOHEzdDQwMDAwIn0.signature…',
   })
   declare accessToken: string;
 
   @ApiProperty({
     format: 'date-time',
     description: 'ISO-8601 timestamp at which the access token expires.',
+    example: '2026-05-26T10:35:00.000Z',
   })
   declare expiresAt: string;
 }
@@ -32,12 +39,15 @@ export class AuthSuccessResponseDto {
 export class RefreshSuccessResponseDto {
   @ApiProperty({
     description: 'New bearer access token (JWT). Refresh cookie is rotated server-side.',
+    example:
+      'eyJhbGciOiJSUzI1NiIsImtpZCI6IjFhYjJjM2Q0In0.eyJzdWIiOiJjbHhuOHEzdDQwMDAwIn0.signature…',
   })
   declare accessToken: string;
 
   @ApiProperty({
     format: 'date-time',
     description: 'ISO-8601 timestamp at which the new access token expires.',
+    example: '2026-05-26T10:50:00.000Z',
   })
   declare expiresAt: string;
 }
@@ -54,6 +64,7 @@ export class MagicLinkRequestResponseDto {
   @ApiProperty({
     enum: ['ok'],
     description: "Always 'ok'. Doesn't reveal whether the email is registered.",
+    example: 'ok',
   })
   declare status: string;
 }
@@ -67,6 +78,7 @@ export class PasswordResetRequestResponseDto {
   @ApiProperty({
     enum: ['ok'],
     description: "Always 'ok'. Doesn't reveal whether the email is registered.",
+    example: 'ok',
   })
   declare status: string;
 }
@@ -79,7 +91,7 @@ export class PasswordResetRequestResponseDto {
  * don't want a session to land in a browser the user just borrowed.
  */
 export class PasswordResetConsumeResponseDto {
-  @ApiProperty({ enum: ['ok'] })
+  @ApiProperty({ enum: ['ok'], example: 'ok' })
   declare status: string;
 }
 
@@ -93,21 +105,31 @@ export class PasswordResetConsumeResponseDto {
  * follow-up.
  */
 export class WhoAmIResponseDto {
-  @ApiProperty({ format: 'cuid', description: 'User id (`sub` claim).' })
+  @ApiProperty({
+    format: 'cuid',
+    description: 'User id (`sub` claim).',
+    example: 'clxn8q3t40000jq08yzn4l1ab',
+  })
   declare sub: string;
 
-  @ApiProperty({ format: 'cuid', description: 'Session id (`sid` claim).' })
+  @ApiProperty({
+    format: 'cuid',
+    description: 'Session id (`sid` claim).',
+    example: 'clxn8q9f80001jq08kk72g3dx',
+  })
   declare sid: string;
 
   @ApiProperty({
     enum: ['user', 'premium', 'agent', 'admin', 'compliance', 'sre'],
     description: 'Role assigned to the session.',
+    example: 'user',
   })
   declare role: 'user' | 'premium' | 'agent' | 'admin' | 'compliance' | 'sre';
 
   @ApiProperty({
     description:
       'True iff the user has completed (or skipped) the 3-step onboarding wizard. Web client uses this to decide whether to bounce post-login → /onboarding or → /trips. Installed by [V.UX.3].',
+    example: true,
   })
   declare hasSeenOnboarding: boolean;
 
@@ -116,6 +138,7 @@ export class WhoAmIResponseDto {
     format: 'date-time',
     description:
       'V.UX.30 — the visit BEFORE the current one. Web compares this against now() to decide whether to render the welcome-back hero (>30d gap fires it). Null on first sign-in.',
+    example: '2026-04-12T18:22:30.000Z',
   })
   declare previousSeenAt: string | null;
 }
@@ -127,6 +150,6 @@ export class WhoAmIResponseDto {
  * Installed by prompt [V.UX.3].
  */
 export class OnboardingCompleteResponseDto {
-  @ApiProperty({ enum: ['ok'] })
+  @ApiProperty({ enum: ['ok'], example: 'ok' })
   declare status: string;
 }

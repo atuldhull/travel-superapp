@@ -4573,15 +4573,18 @@ components:
           type: string
           format: email
           maxLength: 254
+          example: rashmi@example.com
         password:
           type: string
           minLength: 12
           maxLength: 128
           description: Min 12 chars, max 128.
+          example: correct-horse-battery-staple
         displayName:
           type: string
           minLength: 1
           maxLength: 60
+          example: Rashmi Singh
       required:
         - email
         - password
@@ -4593,13 +4596,16 @@ components:
           type: string
           format: cuid
           description: Authenticated user id.
+          example: clxn8q3t40000jq08yzn4l1ab
         accessToken:
           type: string
           description: Bearer access token (JWT). Memory-only — never localStorage.
+          example: eyJhbGciOiJSUzI1NiIsImtpZCI6IjFhYjJjM2Q0In0.eyJzdWIiOiJjbHhuOHEzdDQwMDAwIn0.signature…
         expiresAt:
           type: string
           format: date-time
           description: ISO-8601 timestamp at which the access token expires.
+          example: 2026-05-26T10:35:00.000Z
       required:
         - userId
         - accessToken
@@ -4613,6 +4619,7 @@ components:
             identityToken). Real Google tokens are ~1.2KB; max enforced at 8192.
           minLength: 1
           maxLength: 8192
+          example: eyJhbGciOiJSUzI1NiIsImtpZCI6IjFhYjJjM2Q0In0.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhdWQiOiI…
       required:
         - idToken
     MagicLinkRequestRequestDto:
@@ -4622,6 +4629,7 @@ components:
           type: string
           format: email
           maxLength: 254
+          example: rashmi@example.com
       required:
         - email
     MagicLinkRequestResponseDto:
@@ -4632,6 +4640,7 @@ components:
           enum:
             - ok
           description: Always 'ok'. Doesn't reveal whether the email is registered.
+          example: ok
       required:
         - status
     MagicLinkConsumeRequestDto:
@@ -4644,6 +4653,7 @@ components:
           pattern: ^[0-9a-f]{64}$
           minLength: 64
           maxLength: 64
+          example: b27e1a5cc4e8f9d2a1b6c3d8e9f4a7b2c5d8e1f4a7b0c3d6e9f2a5b8c1d4e7f0
       required:
         - token
     LoginCodeRequestRequestDto:
@@ -4654,10 +4664,12 @@ components:
           enum:
             - email
             - phone
+          example: email
         destination:
           type: string
           maxLength: 254
           description: Email address, or E.164-ish phone (optional leading +, 7..15 digits).
+          example: rashmi@example.com
       required:
         - channel
         - destination
@@ -4669,14 +4681,17 @@ components:
           enum:
             - email
             - phone
+          example: email
         destination:
           type: string
           maxLength: 254
+          example: rashmi@example.com
         code:
           type: string
           minLength: 6
           maxLength: 6
           description: 6-digit code.
+          example: "482915"
       required:
         - channel
         - destination
@@ -4688,6 +4703,7 @@ components:
           type: string
           format: email
           maxLength: 254
+          example: rashmi@example.com
       required:
         - email
     PasswordResetRequestResponseDto:
@@ -4698,6 +4714,7 @@ components:
           enum:
             - ok
           description: Always 'ok'. Doesn't reveal whether the email is registered.
+          example: ok
       required:
         - status
     PasswordResetConsumeRequestDto:
@@ -4710,11 +4727,13 @@ components:
           pattern: ^[0-9a-f]{64}$
           minLength: 64
           maxLength: 64
+          example: b27e1a5cc4e8f9d2a1b6c3d8e9f4a7b2c5d8e1f4a7b0c3d6e9f2a5b8c1d4e7f0
         newPassword:
           type: string
           minLength: 12
           maxLength: 128
           description: New password (12..128 chars).
+          example: a-brand-new-passphrase-2026
       required:
         - token
         - newPassword
@@ -4725,6 +4744,7 @@ components:
           type: string
           enum:
             - ok
+          example: ok
       required:
         - status
     LoginRequestDto:
@@ -4734,15 +4754,18 @@ components:
           type: string
           format: email
           maxLength: 254
+          example: rashmi@example.com
         password:
           type: string
           minLength: 1
           maxLength: 128
+          example: correct-horse-battery-staple
         mfaCode:
           type: string
           description: 6-digit TOTP or 8-char backup code (only on the second call when
             MFA is on).
           pattern: ^(\d{6}|[A-Za-z0-9]{8})$
+          example: "482915"
       required:
         - email
         - password
@@ -4752,10 +4775,12 @@ components:
         accessToken:
           type: string
           description: New bearer access token (JWT). Refresh cookie is rotated server-side.
+          example: eyJhbGciOiJSUzI1NiIsImtpZCI6IjFhYjJjM2Q0In0.eyJzdWIiOiJjbHhuOHEzdDQwMDAwIn0.signature…
         expiresAt:
           type: string
           format: date-time
           description: ISO-8601 timestamp at which the new access token expires.
+          example: 2026-05-26T10:50:00.000Z
       required:
         - accessToken
         - expiresAt
@@ -4766,10 +4791,12 @@ components:
           type: string
           format: cuid
           description: User id (`sub` claim).
+          example: clxn8q3t40000jq08yzn4l1ab
         sid:
           type: string
           format: cuid
           description: Session id (`sid` claim).
+          example: clxn8q9f80001jq08kk72g3dx
         role:
           type: string
           enum:
@@ -4780,11 +4807,13 @@ components:
             - compliance
             - sre
           description: Role assigned to the session.
+          example: user
         hasSeenOnboarding:
           type: boolean
           description: True iff the user has completed (or skipped) the 3-step onboarding
             wizard. Web client uses this to decide whether to bounce post-login
             → /onboarding or → /trips. Installed by [V.UX.3].
+          example: true
         previousSeenAt:
           type: object
           nullable: true
@@ -4792,6 +4821,7 @@ components:
           description: V.UX.30 — the visit BEFORE the current one. Web compares this
             against now() to decide whether to render the welcome-back hero
             (>30d gap fires it). Null on first sign-in.
+          example: 2026-04-12T18:22:30.000Z
       required:
         - sub
         - sid
@@ -4806,6 +4836,7 @@ components:
           description: When true, also seed a read-only "Sample trip — Goa weekend" if the
             user has zero trips. Sent from the Skip terminal of the onboarding
             wizard. Idempotent.
+          example: true
     OnboardingCompleteResponseDto:
       type: object
       properties:
@@ -4813,6 +4844,7 @@ components:
           type: string
           enum:
             - ok
+          example: ok
       required:
         - status
     CreateTripRequestDto:

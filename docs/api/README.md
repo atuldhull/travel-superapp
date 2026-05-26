@@ -39,17 +39,17 @@ Uses `@redocly/cli build-docs` under the hood. No install required — `npx -y` 
 
 ## Coverage today
 
-| Aspect                       | Status                                                                                         |
-| ---------------------------- | ---------------------------------------------------------------------------------------------- |
-| Every route + verb + path    | ✅                                                                                             |
-| Tags by module               | ✅ (`identity`, `trip`, `media`, `social`, `notifications`, `admin`, `account`, …)             |
-| Security schemes             | ✅ Bearer auth declared in the export script                                                   |
-| Inferred error responses     | ✅ 401 / 403 / 404 / 500 from global guards + DomainExceptionFilter                            |
-| Per-route request bodies     | 🟡 Rolling out per module — touch a controller, add `@ApiBody()` for ITS routes in the same PR |
-| Per-route response bodies    | 🟡 Same — `@ApiResponse()` per route                                                           |
-| Per-route examples           | 🟡 Same — `examples: { … }` on the decorator                                                   |
-| CI drift gate (yaml ↔ code)  | ✅ `pnpm sdk:check` runs on every PR in the `arch` job (it regenerates the spec + diffs)       |
-| Hosted viewer (GitHub Pages) | ✅ Workflow ships ready-to-enable; operator-owed one-time Pages activation                     |
+| Aspect                       | Status                                                                                                          |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Every route + verb + path    | ✅                                                                                                              |
+| Tags by module               | ✅ (`identity`, `trip`, `media`, `social`, `notifications`, `admin`, `account`, …)                              |
+| Security schemes             | ✅ Bearer auth declared in the export script                                                                    |
+| Inferred error responses     | ✅ 401 / 403 / 404 / 500 from global guards + DomainExceptionFilter                                             |
+| Per-route request bodies     | 🟢 **identity** (wave-1 reference, R3) · 🟡 every other module — same pattern, lands when the module is touched |
+| Per-route response bodies    | 🟢 **identity** complete (AuthSuccess / Refresh / MagicLink / WhoAmI / etc.) · 🟡 elsewhere                     |
+| Per-route examples           | 🟢 **identity** complete via `@ApiProperty({ example })` on the DTOs · 🟡 elsewhere                             |
+| CI drift gate (yaml ↔ code)  | ✅ `pnpm sdk:check` runs on every PR in the `arch` job (it regenerates the spec + diffs)                        |
+| Hosted viewer (GitHub Pages) | ✅ Workflow ships ready-to-enable; operator-owed one-time Pages activation                                      |
 
 `@ApiBody` / `@ApiResponse` rollout is intentionally per-module instead of a single mega-PR — each module owner adds them when they next touch their module. The drift gate already prevents the spec from rotting; richness is incremental.
 
