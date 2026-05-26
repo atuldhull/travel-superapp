@@ -177,6 +177,32 @@ describe('architecture fitness — banned patterns', () => {
     }
     expect(offenders).toEqual([]);
   });
+
+  it('no `redis.keys(` / `KEYS pattern` calls — KEYS blocks single-thread + bans cluster ([Q2])', () => {
+    // KEYS is O(n) over the entire keyspace, blocks the Redis server,
+    // and is rejected outright by cluster mode. Use SCAN (or
+    // scanStream) instead. See docs/runbooks/redis-cluster-posture.md.
+    //
+    // We accept Lua's `KEYS[N]` array references — that's the CORRECT
+    // way to pass keys into EVAL. The bad shape is `"KEYS pattern*"`
+    // as a literal Redis command string (note the space after KEYS,
+    // which separates Lua array refs from the dangerous command form).
+    const offenders: string[] = [];
+    for (const rel of srcFiles) {
+      const source = readFileSync(join(API_SRC, rel), 'utf8');
+      // .keys() on any identifier whose name contains redis / cache /
+      // ioredis. Allows `Object.keys(` + `.keys()` on plain Map/Set.
+      const redisKeysCall = /\b\w*(?:redis|cache|ioredis)\w*\s*\.\s*keys\s*\(/i;
+      // Bare uppercase `KEYS<space>` inside a string literal — the
+      // dangerous Redis command form. `KEYS[1]` (Lua array ref) is
+      // not flagged because of the space requirement.
+      const luaKeysCmd = /['"`]\s*KEYS\s+\S/;
+      if (redisKeysCall.test(source) || luaKeysCmd.test(source)) {
+        offenders.push(rel);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
 });
 
 describe('architecture fitness — external adapters wrapped in circuit breaker ([O1])', () => {
