@@ -68,3 +68,8 @@ the usual suspect.
 - A weekend / holiday traffic-dip naturally inflates the miss ratio because
   the surface has fewer warm keys. Compare against the same weekday a
   week ago before escalating.
+
+## See also
+
+- [`docs/runbooks/redis-cluster-posture.md`](redis-cluster-posture.md) — single-node vs. cluster posture; what stays cluster-safe and how to migrate ([Q2]).
+- [`docs/runbooks/database-pooling.md`](database-pooling.md) — Postgres is the cache's source of truth; cache collapse cascades onto Postgres CPU + connection pool ([Q1]).
