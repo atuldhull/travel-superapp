@@ -11,6 +11,7 @@
   "scripts": {
     "dev": "turbo run dev",
     "dev:up": "bash scripts/dev-bootstrap.sh",
+    "dev:up:verify": "bash scripts/dev-bootstrap.sh --verify",
     "dev:down": "docker compose -f infra/docker-compose.yml down",
     "build": "turbo run build",
     "lint": "turbo run lint",

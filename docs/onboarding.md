@@ -9,6 +9,16 @@
 
 ## TL;DR — first-day path
 
+The fastest path is one command (after [prereqs](#prereqs) are installed):
+
+```sh
+pnpm dev:up:verify
+```
+
+This bootstraps the docker stack, generates `apps/api/.env.local` + `apps/web/.env.local`, applies migrations, seeds demo data, boots the api in the background, and polls `http://127.0.0.1:3000/health/ready` until it returns 200 (up to 90s) — exiting non-zero with a precise diagnostic if anything failed. It is the same script CI runs on [`.github/workflows/bootstrap-smoke.yml`](../.github/workflows/bootstrap-smoke.yml), so a green run here = same green run a reviewer sees.
+
+If you want to follow the steps one-by-one (recommended for the first run, so you understand each layer), use the full path:
+
 1. [Prereqs](#prereqs) (15 min)
 2. [Clone + install](#clone--install) (10 min)
 3. [Boot the local stack](#boot-the-local-stack) (10 min)
