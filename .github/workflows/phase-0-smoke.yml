@@ -42,6 +42,7 @@ jobs:
       NODE_ENV: test
       LOG_LEVEL: silent
       DATABASE_URL: postgresql://travel:travel_dev@localhost:5432/travel_dev
+      DIRECT_URL: postgresql://travel:travel_dev@localhost:5432/travel_dev
       REDIS_URL: redis://:redis_dev@localhost:6379
       JWT_ACCESS_SECRET: ci_smoke_access_secret_min_32_chars_XXXXXX
       JWT_REFRESH_SECRET: ci_smoke_refresh_secret_min_32_chars_YYYYY

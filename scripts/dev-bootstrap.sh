@@ -70,6 +70,11 @@ PORT=3000
 LOG_LEVEL=info
 
 DATABASE_URL=postgresql://travel:travel_dev@localhost:5432/travel_dev
+# In dev DIRECT_URL == DATABASE_URL — both go to :5432, no pooler.
+# In staging / prod they diverge: DATABASE_URL goes through PgBouncer
+# (:6543 + ?pgbouncer=true), DIRECT_URL stays on :5432 for migrate.
+# See docs/runbooks/database-pooling.md ([Q1]).
+DIRECT_URL=postgresql://travel:travel_dev@localhost:5432/travel_dev
 DATABASE_POOL_MIN=2
 DATABASE_POOL_MAX=10
 
