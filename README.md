@@ -4,13 +4,16 @@ Mobile-first, AI-powered travel super-app. A user enters a place + radius; the a
 
 ## Authoritative docs
 
-| File                                                     | Purpose                                              |
-| -------------------------------------------------------- | ---------------------------------------------------- |
-| [`travel-app-playbook.md`](./travel-app-playbook.md)     | The book — architecture, conventions, phases.        |
-| [`travel-app-playbook.html`](./travel-app-playbook.html) | Shareable viewer of the book.                        |
-| [`travel-app-prompts.md`](./travel-app-prompts.md)       | Prompt archive — one prompt per Playbook subsection. |
-| [`CLAUDE.md`](./CLAUDE.md)                               | System rules for AI agents working on this repo.     |
-| [`PROGRESS.md`](./PROGRESS.md)                           | Rolling log of completed prompts.                    |
+| File                                                                     | Purpose                                                                    |
+| ------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| [`travel-app-playbook.md`](./travel-app-playbook.md)                     | The book — architecture, conventions, phases.                              |
+| [`travel-app-playbook.html`](./travel-app-playbook.html)                 | Shareable viewer of the book.                                              |
+| [`travel-app-prompts.md`](./travel-app-prompts.md)                       | Prompt archive — one prompt per Playbook subsection.                       |
+| [`CLAUDE.md`](./CLAUDE.md)                                               | System rules for AI agents working on this repo.                           |
+| [`PROGRESS.md`](./PROGRESS.md)                                           | Rolling log of completed prompts.                                          |
+| [`docs/architecture/c4/`](./docs/architecture/c4/)                       | Visual architecture — C4 system context, containers, components (Mermaid). |
+| [`docs/architecture/context-map.md`](./docs/architecture/context-map.md) | The 17 bounded contexts: events, facade ports, owned Prisma models.        |
+| [`docs/onboarding.md`](./docs/onboarding.md)                             | Day-1 setup: clone → `pnpm dev:up` → `:3000/health/ready=200`.             |
 
 ## Quickstart
 
