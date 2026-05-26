@@ -1,0 +1,12 @@
+# Don't bake the dev-only artefacts into the image.
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/.pytest_cache/
+**/.ruff_cache/
+**/.mypy_cache/
+.venv/
+.env
+.env.local
+node_modules/
+tests/

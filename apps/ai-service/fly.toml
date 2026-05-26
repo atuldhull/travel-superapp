@@ -1,0 +1,61 @@
+# Fly.io config for apps/ai-service. Stub today; real inference lands
+# in [IV.18.2.11]. See apps/notification-worker/fly.toml for the same
+# shape applied to a Node worker.
+#
+# Unlike the Node workers, ai-service IS HTTP — apps/api calls it
+# at https://travel-ai-service-*.fly.dev/v1/translate etc.
+# So this fly.toml has an [http_service] block + health checks.
+#
+# Installed by [R6] of the road-to-10-partials closeout.
+
+app = "travel-ai-service-staging"
+primary_region = "iad"
+kill_signal = "SIGTERM"
+# Once real models load, a slow request mid-shutdown should be
+# allowed to finish or be retried by the api-side circuit breaker.
+kill_timeout = "30s"
+
+[build]
+  dockerfile = "apps/ai-service/Dockerfile"
+
+[env]
+  PORT = "8001"
+  # OTLP target is wired in production via Doppler.
+
+[http_service]
+  internal_port = 8001
+  force_https = true
+  # Stub-only today: cheap, can auto-stop when idle. When real models
+  # land, switch this to "suspend" (Fly keeps the VM warm — no
+  # multi-second cold start while loading model weights).
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    interval = "10s"
+    timeout = "5s"
+    grace_period = "30s"
+    method = "GET"
+    path = "/health/ready"
+    protocol = "http"
+
+  [[http_service.checks]]
+    interval = "15s"
+    timeout = "3s"
+    grace_period = "30s"
+    method = "GET"
+    path = "/health/live"
+    protocol = "http"
+
+[[vm]]
+  # 1 GB for the stub-only image; bump to 4-8 GB CPU or shift to a
+  # GPU machine when real models land (see docs/architecture/ai-inference-scale.md).
+  size = "shared-cpu-1x"
+  memory = "1024mb"
+  cpu_kind = "shared"
+  cpus = 1
+
+[restart]
+  policy = "on-failure"
+  retries = 5
