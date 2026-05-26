@@ -2,22 +2,21 @@
  * notification-worker — entrypoint.
  *
  * Consumes the `notifications` BullMQ queue. Each job carries
- * { userId, channel, template, vars }; the handler routes to the
- * appropriate dispatcher (push / email / SMS).
+ * { userId, channel, template, vars }; the handler routes to a real
+ * dispatcher (Resend / Twilio / web-push) per [S-B1]. Dispatchers
+ * gracefully no-op when their provider env vars are absent, so $0
+ * deploys keep working — they just log "skipped, no config" and ack.
  *
- * Today the handler is a STUB that logs the job — the real dispatchers
- * still run inline inside apps/api (Resend / Twilio / web-push). The
- * migration path is in [Q3]'s job-queues design doc. Wiring this stub
- * NOW means:
- *   1. The queue + worker connection is exercised on every boot.
- *   2. The fitness gate on Worker.close() lifecycle is honoured.
- *   3. The first real consumer migration becomes "replace the stub",
- *      not "stand up the worker".
+ * Scaffold installed by [Q3]; real dispatchers wired by [S-B1].
  *
- * Installed by [Q3] of the Scale-readiness 3→10 series.
+ * Migration note: the producer side (apps/api LoggingNotificationSender)
+ * still runs inline sends today. Once it migrates to enqueue full
+ * rendered payloads (vars.to / vars.subject / vars.body), the inline
+ * dispatcher in apps/api is deleted by [S-B5].
  */
 import { makeWorker, type JobPayloads } from '@app/jobs';
 import { createLogger, type LogLevel } from '@app/logger';
+import { buildDispatcherRouter } from './dispatchers';
 
 /**
  * Per-app env validation — the worker only needs REDIS_URL + LOG_LEVEL,
@@ -41,20 +40,28 @@ function readWorkerEnv(): { REDIS_URL: string; LOG_LEVEL: LogLevel } {
 async function main(): Promise<void> {
   const env = readWorkerEnv();
   const logger = createLogger('notification-worker', { level: env.LOG_LEVEL });
+  const router = buildDispatcherRouter();
 
-  logger.info({ redisUrl: redactUrl(env.REDIS_URL) }, 'notification-worker booting');
+  logger.info(
+    { redisUrl: redactUrl(env.REDIS_URL), dispatchers: router.status() },
+    'notification-worker booting',
+  );
 
   const worker = makeWorker('notifications', {
     redisUrl: env.REDIS_URL,
     concurrency: Number(process.env.WORKER_CONCURRENCY ?? '10'),
     handler: async (job) => {
-      const { userId, channel, template, vars } = job.data as JobPayloads['notifications'];
-      // STUB: log + ack. Real dispatchers wire up in the migration PR
-      // that replaces inline sends inside apps/api.
-      logger.info(
-        { jobId: job.id, userId, channel, template, varsKeys: Object.keys(vars) },
-        'notification-job consumed (stub)',
+      const payload = job.data as JobPayloads['notifications'];
+      logger.debug(
+        {
+          jobId: job.id,
+          userId: payload.userId,
+          channel: payload.channel,
+          template: payload.template,
+        },
+        'notification-job consumed',
       );
+      await router.dispatch(payload, logger);
     },
   });
 
