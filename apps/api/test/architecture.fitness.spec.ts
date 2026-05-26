@@ -178,6 +178,49 @@ describe('architecture fitness — banned patterns', () => {
     expect(offenders).toEqual([]);
   });
 
+  it('no module-level mutable Map/Set state — breaks horizontal scaling ([Q8])', () => {
+    // Module-level `const FOO = new Map()` survives one process but
+    // not two — the second machine sees an empty cache and either
+    // re-fetches everything (low harm) or serves stale truth (real
+    // harm). All mutable state lives in Postgres / Redis.
+    //
+    // Read-only lookup tables (`ReadonlyMap` / `ReadonlySet` type)
+    // are fine — they're seed data, never mutated.
+    //
+    // Documented exceptions live in ALLOWED_STATEFUL_MODULES below.
+    // Adding a site means making a conscious "this is OK because…"
+    // decision; the fitness spec keeps the list honest.
+    const ALLOWED_STATEFUL_MODULES = new Set<string>([
+      // typed-redis-cache.ts maintains a static registry of every
+      // cache instance for the metrics walker. The Set IS the
+      // memory but the Set is also the only consumer; it never
+      // syncs cross-process state (per-process metrics is the
+      // intended shape — each machine reports its own counters).
+      'common/cache/typed-redis-cache.ts',
+    ]);
+
+    const offenders: Array<{ file: string; line: string }> = [];
+    for (const rel of srcFiles) {
+      const source = readFileSync(join(API_SRC, rel), 'utf8');
+      // Module-level (zero-indent) `const|let|var FOO ... = new
+      // (Map|Set|WeakMap|WeakSet)(...)`. Reject unless the type
+      // annotation is `ReadonlyMap` / `ReadonlySet`, OR the file is
+      // explicitly allowlisted.
+      const rels = rel.replace(/\\/g, '/');
+      for (const line of source.split('\n')) {
+        // Zero-indent statement.
+        if (!/^(const|let|var)\s+\w+/.test(line)) continue;
+        if (!/\bnew\s+(Map|Set|WeakMap|WeakSet)\s*[<(]/.test(line)) continue;
+        // ReadonlyMap / ReadonlySet typed = OK (immutable seed data).
+        if (/:\s*Readonly(Map|Set)\b/.test(line)) continue;
+        if (ALLOWED_STATEFUL_MODULES.has(rels)) continue;
+        offenders.push({ file: rel, line: line.trim() });
+        break; // one finding per file is enough.
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
   it('no `redis.keys(` / `KEYS pattern` calls — KEYS blocks single-thread + bans cluster ([Q2])', () => {
     // KEYS is O(n) over the entire keyspace, blocks the Redis server,
     // and is rejected outright by cluster mode. Use SCAN (or
