@@ -20,6 +20,8 @@
     "sdk:check": "node scripts/sdk-check.cjs",
     "shared-types:check": "node scripts/shared-types-check.cjs",
     "docs:api:build": "node scripts/docs-api-build.cjs",
+    "docs:erd": "node scripts/docs-emit-erd.mjs",
+    "docs:erd:check": "node scripts/docs-emit-erd.mjs --check",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "test:integration": "turbo run test:integration",

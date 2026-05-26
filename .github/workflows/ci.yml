@@ -176,6 +176,14 @@ jobs:
         # ([F3])
         run: pnpm shared-types:check
 
+      - name: ERD drift gate
+        # Refuses to merge if `docs/architecture/data-model.md` is stale
+        # relative to `apps/api/prisma/schema.prisma`. The script also
+        # fails when a new model is added without being assigned to a
+        # cluster — keeps the ERD synced with the data model.
+        # ([P4])
+        run: pnpm docs:erd:check
+
   # ──────────────────────────────────────────────────────────────
   # Domain-unit coverage gate ([H1]) — runs ONLY the pure-domain
   # `*-entity.unit.spec.ts` + `trip-transitions.unit.spec.ts`
