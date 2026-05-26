@@ -118,6 +118,17 @@ export * from './generated/react-query/food/food';
 export * from './generated/react-query/weather/weather';
 // V.UX.22 — cultural persona: festival overlay hook lives in the events barrel.
 export * from './generated/react-query/events/events';
+// [S-Cs] — standalone /stays page (C0 audit 0% gap). The stays plain
+// barrel isn't pre-exported, so star-export here is conflict-free.
+export * from './generated/react-query/stays/stays';
+// [S-Ct] — standalone /transport surface. The plain transport barrel
+// is already star-exported above (line ~31), so star-exporting the
+// react-query barrel here would collide on the underlying fetcher
+// names. Surface only the hooks the new page actually consumes.
+export {
+  useTransportControllerNavigation,
+  useTransportControllerRoutes,
+} from './generated/react-query/transport/transport';
 // V.UX.26 — notifications persona: inbox + per-category prefs + Web Push
 // subscription. The notifications barrel was implicit before; adding the
 // V.UX.26 surfaces (`useNotificationsControllerArchive`,
