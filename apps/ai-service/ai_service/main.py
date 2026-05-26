@@ -48,12 +48,15 @@ from ai_service.schemas import (
     TranslateResponse,
 )
 from ai_service.schemas.health import AiServiceHealthResponseRay
+from ai_service.services.argos_translator import ArgosTranslator
 from ai_service.services.ollama_client import OllamaClient
+import time
 
-# Module-level singleton — the Ollama client carries no mutable state
-# (immutable base_url + model from env, AsyncClient is created per-batch).
-# Re-instantiating per-request would just re-read env on every call.
+# Module-level singletons — these carry instance state (installed-pair set,
+# event-loop lock) but no module-level mutable globals. Re-instantiating
+# per-request would lose the install cache and re-read env on every call.
 _ollama = OllamaClient()
+_argos = ArgosTranslator()
 
 
 app = FastAPI(
@@ -99,22 +102,39 @@ def health_ready() -> AiServiceHealthResponse:
 
 
 @app.post("/v1/translate", response_model=TranslateResponse, tags=["inference"])
-def translate(req: TranslateRequest) -> TranslateResponse:
+async def translate(req: TranslateRequest) -> TranslateResponse:
     """
-    Translation stub — echoes the input text back. The CONTRACT
-    (`TranslateRequest` / `TranslateResponse` shape) is real; the
-    inference is not.
+    Real translation via Argos when the optional `[translate]` extras are
+    installed; echo stub fallback when they are not (or when the requested
+    language pair has no Argos package).
 
-    When NLLB-200 lands, only this function changes. Callers using
-    `@app/shared-types`'s `TranslateRequest` Zod schema don't need
-    to touch a line. The `modelVersion` field lets the caller detect
-    the swap from `stub@0.1.0` → `nllb-200@1.0` without code changes.
+    Deploy posture: the default Dockerfile does NOT install Argos to keep
+    image size small. Operators opt-in with `pip install '.[translate]'`
+    in their build pipeline when they want real translation. The wire
+    contract is unchanged either way — callers detect the upgrade via
+    the `modelVersion` field (`stub@0.1.0` → `argos@1.9.6`).
+
+    Installed by [S-A2] of the S-series real-functionality closeout.
     """
+    start_ns = time.monotonic_ns()
+    translated = await _argos.translate(req.text, req.sourceLang, req.targetLang)
+    elapsed_ms = max(0, (time.monotonic_ns() - start_ns) // 1_000_000)
+
+    if translated is None:
+        # Argos unavailable, language pair missing, or translation errored.
+        # Fall back to echo so the caller's flow doesn't break.
+        return TranslateResponse(
+            text=req.text,
+            modelVersion="stub@0.1.0",
+            cacheHit=False,
+            latencyMs=int(elapsed_ms),
+        )
+
     return TranslateResponse(
-        text=req.text,
-        modelVersion="stub@0.1.0",
+        text=translated,
+        modelVersion=_argos.model_version,
         cacheHit=False,
-        latencyMs=0,
+        latencyMs=int(elapsed_ms),
     )
 
 
