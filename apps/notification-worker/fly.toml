@@ -1,0 +1,49 @@
+# Fly.io config for `apps/notification-worker`. Drives `fly deploy`
+# pointed at this directory. Companion to:
+#   - apps/notification-worker/Dockerfile  (the build)
+#   - ops/terraform/main.tf                (fly_app + IPs + secrets)
+#   - docs/runbooks/worker-deploy.md       (the operational story)
+#
+# Naming convention matches the api:
+#   travel-notification-worker-staging   — pre-prod
+#   travel-notification-worker-prod      — production
+#
+# Workers are NOT public HTTP endpoints — there's no [http_service]
+# block. They consume from Redis and exit cleanly on SIGTERM (the
+# BullMQ Worker.close() in src/main.ts).
+#
+# Installed by [Q4] of the Scale-readiness 3→10 series.
+
+app = "travel-notification-worker-staging"
+primary_region = "iad"
+kill_signal = "SIGTERM"
+# Long enough for a slow in-flight email/SMS to flush, short enough
+# to not wedge a deploy.
+kill_timeout = "60s"
+
+[build]
+  dockerfile = "apps/notification-worker/Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  LOG_LEVEL = "info"
+  # Real REDIS_URL lands via `fly secrets import` from Doppler.
+  WORKER_CONCURRENCY = "10"
+
+# Workers run as long-lived processes — Fly's `auto_stop_machines`
+# is set to OFF because pausing a worker mid-drain would lose jobs.
+# Scale by manually running `fly scale count 2 -a <app>` or via the
+# deploy workflow.
+[processes]
+  worker = "node apps/notification-worker/dist/main.js"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"   # Small footprint — no Prisma engines, no Fastify.
+  cpu_kind = "shared"
+  cpus = 1
+  processes = ["worker"]
+
+[restart]
+  policy = "on-failure"
+  retries = 10
