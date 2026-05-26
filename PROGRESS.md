@@ -21,6 +21,35 @@
 
 ---
 
+## Documentation 8.5 → 10 (P-series, ✅ COMPLETE)
+
+- **Date**: 2026-05-26
+- **Series**: P1–P8 (P5 was already shipped in N7 as `docs/security/threat-model.md`; series is 7 actual slices).
+- **One commit per slice**; the gauntlet stays green at every step.
+
+| Slice  | What                                                                                                                                                                                       | Commit    |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------- |
+| **P1** | C4 architecture diagrams (Mermaid `C4Context` + `C4Container` + `C4Component`, all render natively on GitHub; SVGs validated locally @ 69/83/86 KB).                                       | `226692a` |
+| **P2** | `pnpm dev:up:verify` boots api in background + polls `/health/ready=200` ≤ 90s with diagnostic on failure. `.github/workflows/bootstrap-smoke.yml` runs it on every PR touching bootstrap. | `de19ca8` |
+| **P3** | Hosted API reference: thin Redoc shell @ `docs/api/index.html` + offline bundle via `pnpm docs:api:build` + GH Pages publisher `.github/workflows/docs-api.yml`.                           | `ee437c3` |
+| **P4** | ERD auto-emitted by `scripts/docs-emit-erd.mjs` → `docs/architecture/data-model.md` (64 models, 8 clusters). Drift gate `pnpm docs:erd:check` wired into the CI `arch` job.                | `e03b514` |
+| —      | prettier-ignore the generated ERD (same pattern as `openapi.yaml` + sdk/generated/\*\*).                                                                                                   | `b4a7bff` |
+| **P6** | Docs staleness CI — markdownlint-cli2 + lychee + custom env-schema drift gate. Caught 19 real env-var drifts, fixed them in `docs/env.md`. All 82 docs lint clean.                         | `4259e55` |
+| **P7** | `CHANGELOG.md` (Keep-A-Changelog) + `release-please-config.json` + `.release-please-manifest.json` + `.github/workflows/release-please.yml` (release-PR-on-merge automation).              | `1f48ecb` |
+| **P8** | `CONTRIBUTING.md` (root) + 4 `ISSUE_TEMPLATE/` YAML forms (bug / feature / docs / config) + tightened PR template (author + reviewer checklists mirroring CONTRIBUTING.md).                | `4424784` |
+
+**P5 already shipped** in N7 as [`docs/security/threat-model.md`](docs/security/threat-model.md) — STRIDE-per-hop, 7 trust boundaries, top-10 abuse scenarios.
+
+**Verification**: `pnpm typecheck` ✓ (touched packages unchanged); `npx markdownlint-cli2` ✓ (0 errors across 83 markdown files); `pnpm docs:erd:check` ✓; `pnpm docs:env:check` ✓ (68 env vars in sync); `pnpm docs:api:build` ✓ (1771 KiB Redoc bundle); all 3 Mermaid C4 blocks + all 8 Mermaid ER blocks rendered via `@mermaid-js/mermaid-cli@10`.
+
+**Operator-owed** (cannot self-close):
+
+- Enable **GitHub Pages → Source = GitHub Actions** so `docs-api.yml` deploys.
+- Enable **Discussions** in repo Settings for the link in `.github/ISSUE_TEMPLATE/config.yml`.
+- After the first feat/fix lands on main post-P7, **merge the release PR** that release-please opens — that produces `v0.1.0`.
+
+---
+
 ## Road-to-10 honest-audit closeout (O-series, ✅ COMPLETE)
 
 - **Date**: 2026-05-25
