@@ -21,6 +21,35 @@
 
 ---
 
+## Road-to-10 partials closeout (R-series, ✅ COMPLETE)
+
+- **Date**: 2026-05-26
+- **Series**: R1–R7. After the user's audit listed 5 PARTIAL items across the 6 dimensions, R-series finishes each — including the deferred ai-service deploy stack — and honestly documents where measurements are still operator-owed.
+
+| Slice  | What                                                                                                                                                                                                                                            | Commit    |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| **R1** | Removed dead `Date.now()` block in `jwks-rotation.e2e-spec.ts` — was followed by `void loginRes` + a workaround comment. Closes 2.10.                                                                                                           | `1303c60` |
+| **R2** | `visual-review.yml` workflow posts/updates a PR comment when ci.yml fails on E2E, linking to the playwright-report artifact + the fix paths. Chromatic step already gated in ci.yml. Closes 2.8.                                                | `732b193` |
+| **R3** | `@ApiProperty({ example })` sweep on every identity DTO (10 request + 7 response). openapi.yaml regen +32 lines. Identity = wave-1 reference. Closes 5.3.                                                                                       | `21cab44` |
+| **R4** | `PrismaService.$readReplica()` accessor — returns a second client when `DATABASE_URL_READONLY` is set; otherwise returns the primary. Same shape both ways; no call-site branching. Closes 6.1 (replicas).                                      | `f3edbf1` |
+| **R5** | `docs/runbooks/db-partitioning.md` — when to partition, 3 candidate tables (LiveEvent / NotificationLog / AdminAuditLog) with zero-downtime SQL + trigger thresholds + sharding plan. Closes 6.1 (partitioning).                                | `cec5a0b` |
+| **R6** | ai-service goes from contract-only scaffold → fully deployable: `pyproject.toml` + `main.py` (stub endpoints) + Dockerfile + `fly.toml` + terraform `fly_app` + `deploy-ai-service.yml`. Closes 6.4.                                            | `49738d2` |
+| **R7** | Capacity matrix refresh — honest disclosure that no new measurements were taken (Docker not running locally; no staging yet). 6 Q/R-series changes affecting capacity logged with "re-measure when" triggers. Closes 6.7 (with honest caveats). | `21da70e` |
+
+**All 5 partials from the user's audit now closed** (plus a 6th — R6 fills the audit's only "completely scaffold" item, ai-service).
+
+**Verification across the series**: typecheck ✓ (R3 + R4 + R6 schema-aware), sdk:check ✓ (R3 regen), docs:env:check ✓ (R4 added DATABASE_URL_READONLY → 70 env vars), markdownlint ✓ (96 files at the final commit). Read-replica + ai-service stub paths are runtime-untested without docker / staging — explicit in R7.
+
+**Operator-owed (new for R-series)**:
+
+- `flyctl apps create -o <fly-org> travel-ai-service-{staging,prod}` × 2 (R6)
+- Doppler secret sync for both ai-service apps (R6)
+- Supabase Team upgrade for actual read replica + DATABASE_URL_READONLY (R4)
+- Optional: Chromatic via CHROMATIC_PROJECT_TOKEN repo secret (R2)
+- `git push origin main` to fire the deploy chain + post-Q/R re-measurement (R7)
+
+---
+
 ## Scale-readiness 3 → 10 (Q-series, ✅ COMPLETE)
 
 - **Date**: 2026-05-26
