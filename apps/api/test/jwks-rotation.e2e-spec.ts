@@ -112,30 +112,17 @@ describe('JWKS rotation (integration, requires Postgres + Redis)', () => {
     const kidBefore = kidOf(accessToken);
     await promoteToAdmin(userId);
     // After promotion the old access token still has role=user in
-    // its claims (role is inside the signed JWT). We need a new
-    // admin-role token — re-register a second admin identity, or
-    // skip the role-in-token + re-issue via refresh. Simpler path:
-    // flip role directly + /login to mint a fresh admin token.
-    const loginRes = await app.inject({
-      method: 'POST',
-      url: '/api/v1/auth/login',
-      payload: {
-        email: `${TEST_PREFIX}-adminrotate-${Date.now().toString().slice(0, -3)}`.concat(
-          '@example.com',
-        ),
-        password: 'correct-horse-battery-staple',
-      },
-    });
-    void loginRes; // Login by email requires the exact addr; simpler: trust the role-flip invalidation below.
-
-    // Practical workaround: re-register fresh to get a brand-new
-    // session. Then flip THAT user's role to admin, then request
-    // a refresh so the new session token carries role=admin. But
-    // refresh is httpOnly-cookie-driven. Cleanest: register a
-    // dedicated admin user, promote to admin BEFORE any token is
-    // issued — but register returns a token at creation. So: use
-    // DB update + a fresh register whose returned token already
-    // reflects the post-update row.
+    // its claims (role is inside the signed JWT). Cleanest path:
+    // register a dedicated admin user, flip role to admin in the
+    // DB BEFORE the register call returns its token, so the
+    // returned token already reflects role=admin. The DB update
+    // happens via prisma below; register-then-promote would mint
+    // a user-role token first and we'd need a re-issue.
+    //
+    // ([R1] removed the prior dead-code `loginRes` attempt — login
+    // by email needs the exact addr, which we don't have for the
+    // hypothetical "preexisting admin" path. The workaround below
+    // is the only path that actually works.)
     const adminEmail = `${TEST_PREFIX}-admin2-${uniqueSuffix()}@example.com`;
     const adminRes = await app.inject({
       method: 'POST',
