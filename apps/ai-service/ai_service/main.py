@@ -48,6 +48,12 @@ from ai_service.schemas import (
     TranslateResponse,
 )
 from ai_service.schemas.health import AiServiceHealthResponseRay
+from ai_service.services.ollama_client import OllamaClient
+
+# Module-level singleton — the Ollama client carries no mutable state
+# (immutable base_url + model from env, AsyncClient is created per-batch).
+# Re-instantiating per-request would just re-read env on every call.
+_ollama = OllamaClient()
 
 
 app = FastAPI(
@@ -133,16 +139,32 @@ def _stub_embedding(text: str) -> list[float]:
 
 
 @app.post("/v1/embeddings", response_model=EmbeddingsResponse, tags=["inference"])
-def embeddings(req: EmbeddingsRequest) -> EmbeddingsResponse:
+async def embeddings(req: EmbeddingsRequest) -> EmbeddingsResponse:
     """
-    Embeddings stub — deterministic-but-fake vectors. Real
-    sentence-transformers lands in [IV.18.2.11]. The wire shape
-    (1024 floats) matches `PlaceEmbedding.embedding vector(1024)`
-    in the Prisma schema so end-to-end integration works today.
+    Real embeddings via Ollama when `OLLAMA_URL` is set; deterministic-but-fake
+    fallback otherwise. The wire shape (1024 floats) matches
+    `PlaceEmbedding.embedding vector(1024)` in the Prisma schema either way.
+
+    Per-text fallback: if Ollama answers some texts and fails others, each
+    miss is stubbed independently. The response `model` reports the dominant
+    source ("mxbai-embed-large@1.0" if any real vector came back, else
+    "stub-deterministic@0.1.0") — observability picks up partial degradation
+    via the per-call WARN logs in OllamaClient.
+
+    Installed by [S-A1] of the S-series real-functionality closeout.
     """
+    vectors = await _ollama.embed_batch(list(req.inputs))
+    any_real = any(v is not None for v in vectors)
+
+    # Stub-fill the misses so the response shape is always valid.
+    filled = [
+        v if v is not None and len(v) == 1024 else _stub_embedding(text)
+        for v, text in zip(vectors, req.inputs)
+    ]
+
     return EmbeddingsResponse(
-        embeddings=[_stub_embedding(text) for text in req.inputs],
-        model="stub-deterministic@0.1.0",
+        embeddings=filled,
+        model=f"{_ollama.model}@1.0" if any_real else "stub-deterministic@0.1.0",
         dimensions=1024,
     )
 

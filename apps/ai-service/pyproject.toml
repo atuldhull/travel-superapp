@@ -10,13 +10,22 @@ dependencies = [
     "opentelemetry-sdk==1.29.0",
     "opentelemetry-exporter-otlp-proto-http==1.29.0",
     "opentelemetry-instrumentation-fastapi==0.50b0",
+    # httpx is the async HTTP client we use to talk to Ollama (embeddings)
+    # and Argos (translate, optional). Promoted from dev to main in [S-A1].
+    "httpx==0.28.1",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest==8.3.4",
-    "httpx==0.28.1",
+    "pytest-asyncio==0.24.0",
     "ruff==0.8.4",
+]
+# Real translation backend (Argos) is OPTIONAL — installing it pulls a
+# ~500MB model per language pair on first use. The Dockerfile can opt-in via
+# `pip install '.[translate]'`. Without it, /v1/translate falls back to echo.
+translate = [
+    "argostranslate==1.9.6",
 ]
 
 [build-system]
