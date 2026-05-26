@@ -13,16 +13,16 @@
 
 ## Model-ownership index (64 models)
 
-| Cluster         | Models                                                                                                                                                                                    |
-| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Identity        | `User`, `BanAppeal`, `UserOAuthIdentity`, `Session`, `MagicLinkToken`, `PasswordResetToken`, `MfaBackupCode`, `Preferences`, `Device`, `LoginCode`                                        |
-| Trip            | `Trip`, `ItineraryDay`, `ItineraryItem`, `TripVersion`, `TripWatch`, `TripPublication`                                                                                                    |
-| PlaceDiscovery  | `Place`, `PlaceTag`, `PlaceEmbedding`, `Stay`, `StayPrice`, `StayBooking`, `Eatery`, `Dish`, `DishTag`, `RouteLeg`, `TransitSchedule`, `WeatherForecast`, `Alert`, `Event`, `EventSource` |
-| Safety          | `CrimeIncident`, `ScamReport`, `Agent`, `SosEvent`, `TrustedContact`, `AgentRun`, `AgentStep`                                                                                             |
-| LiveAndDiary    | `Geofence`, `LiveEvent`, `DiaryEntry`                                                                                                                                                     |
-| SocialAndMemory | `TripShare`, `Vote`, `Expense`, `Review`, `UserKarma`, `HelpfulVote`, `Follow`, `UserBlock`, `TripComment`, `GamificationProfile`, `EarnedBadge`, `MediaAsset`, `MemoryBook`              |
-| Money           | `Subscription`, `EscrowHold`, `Commission`                                                                                                                                                |
-| Platform        | `NotificationPreference`, `PushSubscription`, `NotificationLog`, `AdminUser`, `ModerationItem`, `FeatureFlag`, `AdminAuditLog`                                                            |
+| Cluster | Models |
+| ------- | ------ |
+| Identity | `User`, `BanAppeal`, `UserOAuthIdentity`, `Session`, `MagicLinkToken`, `PasswordResetToken`, `MfaBackupCode`, `Preferences`, `Device`, `LoginCode` |
+| Trip | `Trip`, `ItineraryDay`, `ItineraryItem`, `TripVersion`, `TripWatch`, `TripPublication` |
+| PlaceDiscovery | `Place`, `PlaceTag`, `PlaceEmbedding`, `Stay`, `StayPrice`, `StayBooking`, `Eatery`, `Dish`, `DishTag`, `RouteLeg`, `TransitSchedule`, `WeatherForecast`, `Alert`, `Event`, `EventSource` |
+| Safety | `CrimeIncident`, `ScamReport`, `Agent`, `SosEvent`, `TrustedContact`, `AgentRun`, `AgentStep` |
+| LiveAndDiary | `Geofence`, `LiveEvent`, `DiaryEntry` |
+| SocialAndMemory | `TripShare`, `Vote`, `Expense`, `Review`, `UserKarma`, `HelpfulVote`, `Follow`, `UserBlock`, `TripComment`, `GamificationProfile`, `EarnedBadge`, `MediaAsset`, `MemoryBook` |
+| Money | `Subscription`, `EscrowHold`, `Commission` |
+| Platform | `NotificationPreference`, `PushSubscription`, `NotificationLog`, `AdminUser`, `ModerationItem`, `FeatureFlag`, `AdminAuditLog` |
 
 Maps 1-to-N onto the 17 bounded contexts in [`context-map.md`](./context-map.md) — see "Cluster legend" in [`c4/components-api.md`](./c4/components-api.md) for the mapping.
 
@@ -612,42 +612,42 @@ erDiagram
 
 These are the foreign keys that cross bounded-context lines — the seams to watch when you refactor a module.
 
-| From cluster   | From model      | →   | To model                 | To cluster      | Field               |
-| -------------- | --------------- | --- | ------------------------ | --------------- | ------------------- |
-| Identity       | `User`          | →   | `Trip`                   | Trip            | `trips`             |
-| Identity       | `User`          | →   | `TripVersion`            | Trip            | `tripVersions`      |
-| Identity       | `User`          | →   | `TripShare`              | SocialAndMemory | `tripShares`        |
-| Identity       | `User`          | →   | `Vote`                   | SocialAndMemory | `votes`             |
-| Identity       | `User`          | →   | `Expense`                | SocialAndMemory | `expenses`          |
-| Identity       | `User`          | →   | `Review`                 | SocialAndMemory | `reviews`           |
-| Identity       | `User`          | →   | `MediaAsset`             | SocialAndMemory | `mediaAssets`       |
-| Identity       | `User`          | →   | `MemoryBook`             | SocialAndMemory | `memoryBooks`       |
-| Identity       | `User`          | →   | `Subscription`           | Money           | `subscriptions`     |
-| Identity       | `User`          | →   | `EscrowHold`             | Money           | `escrowHolds`       |
-| Identity       | `User`          | →   | `Commission`             | Money           | `commissions`       |
-| Identity       | `User`          | →   | `ScamReport`             | Safety          | `scamReports`       |
-| Identity       | `User`          | →   | `SosEvent`               | Safety          | `sosEvents`         |
-| Identity       | `User`          | →   | `TrustedContact`         | Safety          | `trustedContacts`   |
-| Identity       | `User`          | →   | `StayBooking`            | PlaceDiscovery  | `stayBookings`      |
-| Identity       | `User`          | →   | `NotificationPreference` | Platform        | `notificationPrefs` |
-| Identity       | `User`          | →   | `NotificationLog`        | Platform        | `notificationLogs`  |
-| Identity       | `User`          | →   | `PushSubscription`       | Platform        | `pushSubscriptions` |
-| Identity       | `User`          | →   | `LiveEvent`              | LiveAndDiary    | `liveEvents`        |
-| Identity       | `User`          | →   | `Agent`                  | Safety          | `agent`             |
-| Identity       | `User`          | →   | `Dish`                   | PlaceDiscovery  | `dishReports`       |
-| Identity       | `User`          | →   | `ModerationItem`         | Platform        | `moderationActions` |
-| Identity       | `User`          | →   | `AdminAuditLog`          | Platform        | `adminAuditLogs`    |
-| Identity       | `User`          | →   | `UserKarma`              | SocialAndMemory | `karma`             |
-| Identity       | `User`          | →   | `HelpfulVote`            | SocialAndMemory | `helpfulVotes`      |
-| PlaceDiscovery | `Place`         | →   | `Geofence`               | LiveAndDiary    | `geofences`         |
-| Safety         | `Agent`         | →   | `EscrowHold`             | Money           | `escrowHolds`       |
-| Trip           | `ItineraryItem` | →   | `Place`                  | PlaceDiscovery  | `place`             |
-| Trip           | `Trip`          | →   | `TripShare`              | SocialAndMemory | `shares`            |
-| Trip           | `Trip`          | →   | `Vote`                   | SocialAndMemory | `votes`             |
-| Trip           | `Trip`          | →   | `Expense`                | SocialAndMemory | `expenses`          |
-| Trip           | `Trip`          | →   | `Review`                 | SocialAndMemory | `reviews`           |
-| Trip           | `Trip`          | →   | `MediaAsset`             | SocialAndMemory | `media`             |
-| Trip           | `Trip`          | →   | `LiveEvent`              | LiveAndDiary    | `liveEvents`        |
+| From cluster | From model | → | To model | To cluster | Field |
+| ------------ | ---------- | - | -------- | ---------- | ----- |
+| Identity | `User` | → | `Trip` | Trip | `trips` |
+| Identity | `User` | → | `TripVersion` | Trip | `tripVersions` |
+| Identity | `User` | → | `TripShare` | SocialAndMemory | `tripShares` |
+| Identity | `User` | → | `Vote` | SocialAndMemory | `votes` |
+| Identity | `User` | → | `Expense` | SocialAndMemory | `expenses` |
+| Identity | `User` | → | `Review` | SocialAndMemory | `reviews` |
+| Identity | `User` | → | `MediaAsset` | SocialAndMemory | `mediaAssets` |
+| Identity | `User` | → | `MemoryBook` | SocialAndMemory | `memoryBooks` |
+| Identity | `User` | → | `Subscription` | Money | `subscriptions` |
+| Identity | `User` | → | `EscrowHold` | Money | `escrowHolds` |
+| Identity | `User` | → | `Commission` | Money | `commissions` |
+| Identity | `User` | → | `ScamReport` | Safety | `scamReports` |
+| Identity | `User` | → | `SosEvent` | Safety | `sosEvents` |
+| Identity | `User` | → | `TrustedContact` | Safety | `trustedContacts` |
+| Identity | `User` | → | `StayBooking` | PlaceDiscovery | `stayBookings` |
+| Identity | `User` | → | `NotificationPreference` | Platform | `notificationPrefs` |
+| Identity | `User` | → | `NotificationLog` | Platform | `notificationLogs` |
+| Identity | `User` | → | `PushSubscription` | Platform | `pushSubscriptions` |
+| Identity | `User` | → | `LiveEvent` | LiveAndDiary | `liveEvents` |
+| Identity | `User` | → | `Agent` | Safety | `agent` |
+| Identity | `User` | → | `Dish` | PlaceDiscovery | `dishReports` |
+| Identity | `User` | → | `ModerationItem` | Platform | `moderationActions` |
+| Identity | `User` | → | `AdminAuditLog` | Platform | `adminAuditLogs` |
+| Identity | `User` | → | `UserKarma` | SocialAndMemory | `karma` |
+| Identity | `User` | → | `HelpfulVote` | SocialAndMemory | `helpfulVotes` |
+| PlaceDiscovery | `Place` | → | `Geofence` | LiveAndDiary | `geofences` |
+| Safety | `Agent` | → | `EscrowHold` | Money | `escrowHolds` |
+| Trip | `ItineraryItem` | → | `Place` | PlaceDiscovery | `place` |
+| Trip | `Trip` | → | `TripShare` | SocialAndMemory | `shares` |
+| Trip | `Trip` | → | `Vote` | SocialAndMemory | `votes` |
+| Trip | `Trip` | → | `Expense` | SocialAndMemory | `expenses` |
+| Trip | `Trip` | → | `Review` | SocialAndMemory | `reviews` |
+| Trip | `Trip` | → | `MediaAsset` | SocialAndMemory | `media` |
+| Trip | `Trip` | → | `LiveEvent` | LiveAndDiary | `liveEvents` |
 
 ## Enums
 
