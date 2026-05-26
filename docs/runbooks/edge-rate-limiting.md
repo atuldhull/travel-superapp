@@ -100,6 +100,7 @@ spam in support):
 3. If the request shape is unusual (e.g., a partner with a known
    IP block doing high-volume legitimate traffic), add their IPs
    to an allowlist in a follow-up rule:
+
    ```hcl
    resource "cloudflare_ruleset" "allowlist_partner_x" {
      count = var.cloudflare_enabled ? 1 : 0

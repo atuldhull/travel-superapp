@@ -1,0 +1,86 @@
+{
+  // markdownlint-cli2 config for TravelSuperApp docs.
+  // Installed by [P6] of the Documentation 8.5→10 series.
+  //
+  // Philosophy: lint for things that ROT (trailing whitespace, broken
+  // heading hierarchy, blank-line gaps inside lists) — NOT for stylistic
+  // taste (line length, exact bullet character). Prettier handles style.
+  "config": {
+    "default": true,
+
+    // Allow long lines — many of our docs include URLs, code blocks, or
+    // diagram source that don't wrap usefully. Prettier already keeps
+    // prose reasonable.
+    "MD013": false,
+
+    // Allow inline HTML — Mermaid blocks, details, the occasional <kbd>.
+    "MD033": false,
+
+    // Allow duplicate headings — runbooks use repeated section names
+    // like "See also" / "Symptoms" / "Mitigation" by design.
+    "MD024": false,
+
+    // Allow trailing punctuation in headings ("e.g.").
+    "MD026": false,
+
+    // Allow bare URLs — most of our doc links go through markdown link
+    // text, but we use bare URLs in a few status-page references.
+    "MD034": false,
+
+    // Allow first-line non-H1 — auto-generated files (e.g.
+    // data-model.md) start with a > blockquote pointer.
+    "MD041": false,
+
+    // Allow `**bold lead-in**` as a section divider — this is the
+    // dominant pattern in PROGRESS.md entries and per-prompt retros.
+    "MD036": false,
+
+    // Allow fenced blocks with no language. Many of our runbooks have
+    // shell output / structured text where "no language" is the most
+    // honest choice. Re-enable when the codebase has a consistent
+    // convention for "untyped" blocks.
+    "MD040": false,
+
+    // Disable link-fragment validation — markdownlint computes
+    // GitHub-flavoured slugs differently from GitHub itself in a few
+    // corner cases (e.g. `POST.1` → `#post1` works on GitHub but the
+    // linter reads it as `#post-1`). Use the live preview to validate
+    // fragments instead.
+    "MD051": false,
+
+    // Disable table-pipe alignment. Long-row tables can't reasonably be
+    // hand-aligned; prettier already handles spacing.
+    "MD058": false,
+    "MD060": false,
+
+    // The "fenced code block must be surrounded by blank lines" rule
+    // (MD031) is fine. Same for "list separated by blank lines" (MD032).
+  },
+
+  "globs": [
+    "**/*.md",
+    "**/*.markdown"
+  ],
+
+  "ignores": [
+    "**/node_modules/**",
+    "**/.turbo/**",
+    "**/.stryker-tmp/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/.next/**",
+    "**/coverage/**",
+    "**/CHANGELOG.md",
+    "PROGRESS.md",
+    "docs/architecture/data-model.md",
+    "docs/api/openapi.yaml",
+    "packages/sdk/src/generated/**",
+    "travel-app-playbook.html",
+    "travel-app-playbook.md",
+    "travel-app-prompts.md",
+    "travel-app-user-prompts.md",
+    "travel-app-plan.md",
+    "travel-app-compendium-v2.md",
+    "travel-app-compendium-v3.md"
+  ]
+}
