@@ -39,6 +39,7 @@ The answer drove how every future cache lands and how observability cross-cuts t
 ### C. Shared `TypedRedisCache<T>` abstract base · **CHOSEN**
 
 - **Shape:** `apps/api/src/common/cache/typed-redis-cache.ts` is a generic abstract class. Subclasses are ~10 lines:
+
   ```ts
   @Injectable()
   export class RedisWeatherCache extends TypedRedisCache<WeatherForecast> implements WeatherCache {
@@ -47,6 +48,7 @@ The answer drove how every future cache lands and how observability cross-cuts t
     }
   }
   ```
+
 - The base owns: ioredis client (with `lazyConnect` + `enableOfflineQueue: false`), `keyPrefix = 'travel-<env>:<namespace>:'`, `get/set/del`, error-swallow + log, `OnModuleDestroy.quit()`, hit/miss counters + structured `cache_hit` / `cache_miss` log events ([IV.18.10.5]), static instance registry for the prom-client metrics walker ([IV.18.10.6]).
 - TTL-only caches are subclasses that use `get/set` only; write-invalidated caches additionally call `del(key)` from their write paths.
 - **Pros:**

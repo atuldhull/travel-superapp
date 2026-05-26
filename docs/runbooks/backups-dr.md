@@ -31,6 +31,7 @@ SEV-1 + post-mortem required.
   60s RPO above. Without it, RPO = "last completed daily dump" =
   24h. **The PITR upgrade is operator-owed and listed below.**
 - **Manual export** any time:
+
   ```bash
   # Run from a laptop — never from CI without scrubbing the output.
   supabase db dump --db-url "$DIRECT_URL" --file backup-$(date +%F).sql
@@ -52,6 +53,7 @@ SEV-1 + post-mortem required.
 - **Cross-bucket replica** lives at `travel-media-prod-replica`
   in a different R2 region. Nightly cron via a Cloudflare Worker
   (lands in [N11]). Until then, manually sync once a week:
+
   ```bash
   rclone sync r2:travel-media-prod r2:travel-media-prod-replica --progress
   ```
