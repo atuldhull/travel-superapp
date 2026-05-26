@@ -1,0 +1,47 @@
+# release-please — automate version bump + CHANGELOG.md + GitHub Release.
+#
+# How it works:
+#   1. On every push to `main`, release-please-action scans new Conventional
+#      Commits since the last tag.
+#   2. If anything bumpable lands (feat / fix / perf), it opens (or updates)
+#      a "release PR" that bumps package.json#version + appends a CHANGELOG
+#      entry, grouped by section (see release-please-config.json).
+#   3. Merge the release PR → release-please tags the SHA, drafts a GitHub
+#      Release, and resets the cycle.
+#
+# Until v1.0.0 the bump-minor-pre-major flag keeps us on 0.x.y — every
+# `feat:` bumps the MINOR (0.1.0 → 0.2.0) instead of jumping to 1.0.0.
+#
+# Operator-owed:
+#   - Nothing for the basic flow — uses the default GITHUB_TOKEN.
+#   - For npm publish / Docker tag steps in the future, add a step
+#     gated on `${{ steps.release.outputs.release_created }}`.
+#
+# Installed by [P7] of the Documentation 8.5→10 series.
+
+name: release-please
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: release-please-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - id: release
+        uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
