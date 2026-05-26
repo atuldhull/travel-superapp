@@ -93,11 +93,13 @@ Both providers have generous free tiers — same env-gated activation pattern as
 2. **Create project → Node.js / NestJS** → copy the DSN (`https://xxx@oXXX.ingest.sentry.io/XXX`)
 3. **Create another project → Next.js** → copy that DSN
 4. Drop into `apps/api/.env`:
+
    ```
    SENTRY_DSN_API=https://xxx@…
    SENTRY_DSN_WEB=https://yyy@…
    NEXT_PUBLIC_SENTRY_DSN_WEB=https://yyy@…
    ```
+
 5. Restart both api + web. The api's `sentry.init.ts` (loaded before NestFactory) calls `Sentry.init`; `Sentry.setupNestErrorHandler` in `main.ts` wires uncaught controller errors. Web's `sentry.{client,server,edge}.config.ts` are auto-discovered by Next.js.
 
 **Honeycomb — local dev setup** (free, ~2 min):

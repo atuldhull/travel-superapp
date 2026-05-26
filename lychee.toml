@@ -1,0 +1,72 @@
+# lychee link-checker config for TravelSuperApp docs.
+# Installed by [P6] of the Documentation 8.5→10 series.
+#
+# lychee crawls every link in every committed markdown / HTML file and
+# fails when one is dead. It is the antidote to docs that drift after
+# rename / restructure / external-tool death.
+#
+# Usage (locally):
+#   npx -y lychee --config lychee.toml '**/*.md' README.md
+#
+# CI runs this via .github/workflows/docs-lint.yml.
+
+# Verbose enough to debug a failure; quiet enough not to drown the log.
+verbose = "info"
+
+# Honour `--no-progress`-equivalent. CI is non-tty so this matters.
+no_progress = true
+
+# Reasonable timeout for slow external hosts.
+timeout = 20
+max_retries = 2
+retry_wait_time = 4
+
+# Cache results between runs so CI doesn't re-hit github.com every time.
+cache = true
+max_cache_age = "1d"
+
+# Don't crawl the network of the network — depth = 0 means only files we
+# explicitly pass on the CLI. Markdown links to other markdown files are
+# resolved as file paths regardless.
+max_concurrency = 16
+
+# Exclude URLs that are operator-owed placeholders, local-only addresses,
+# repos that are private, and known-flaky third-party hosts that aren't
+# worth blocking a PR over.
+exclude = [
+  # Localhost / private network — these only resolve on dev machines.
+  '^https?://localhost(:\d+)?(/.*)?$',
+  '^https?://127\.0\.0\.1(:\d+)?(/.*)?$',
+  '^https?://0\.0\.0\.0(:\d+)?(/.*)?$',
+  '^https?://[a-z0-9-]+\.local(/.*)?$',
+  '^http://api(/.*)?$',
+  '^http://web(/.*)?$',
+  '^http://postgres(/.*)?$',
+  '^http://redis(/.*)?$',
+  '^http://minio(/.*)?$',
+
+  # Operator-owed placeholders documented as such.
+  '<TODO>',
+  '<your-project>',
+  '<owner>',
+  '<APP>',
+  '<previous-tag>',
+
+  # Email href schemes — lychee can verify SMTP but on free CI tier
+  # this is flaky and out-of-scope for "are my docs internally consistent".
+  '^mailto:',
+
+  # Anchor-only links — lychee can't verify in-page anchors reliably
+  # across markdown renderers. (markdownlint MD051 covers this scope.)
+  '^#',
+]
+
+# Allow self-signed certs nowhere — production has real ones.
+insecure = false
+
+# Strip query params from cache key so repeated `?utm_source=` hits hit
+# the same cache entry.
+include_verbatim = false
+
+# Schemes we'll actually verify. http(s) and file (for relative repo refs).
+scheme = ["https", "http", "file"]

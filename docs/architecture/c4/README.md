@@ -36,7 +36,7 @@ The three files are mutually consistent. If you edit one, walk up and down to ch
 - A **new external SaaS** integration → L1 + L2 (plus a new entry in [`docs/external-apis.md`](../../external-apis.md)).
 - A **new app or worker** in `apps/` → L2 (plus a new row in the root [`README.md`](../../../README.md#structure)).
 - A **new bounded context** (rare — requires an ADR) → L3 + a new row in [`context-map.md`](../context-map.md).
-- A **renamed module** (`identity` → `account`, etc.) → grep all three files; CI does not enforce diagram drift today (see [P6 in the series plan](#)).
+- A **renamed module** (`identity` → `account`, etc.) → grep all three files; CI does not enforce diagram drift today (a future docs-lint rule could).
 
 ---
 
