@@ -19,6 +19,7 @@ import { JwtAuthGuard, RolesGuard } from './common/auth';
 import { ClockModule } from './common/clock/clock.module';
 import { DbModule } from './common/db/db.module';
 import { EventsModule } from './common/events/events.module';
+import { JobsModule } from './common/jobs/jobs.module';
 import { MetricsModule } from './common/metrics/metrics.module';
 import { RateLimitGuard } from './common/rate-limit/rate-limit.guard';
 import { RateLimitModule } from './common/rate-limit/rate-limit.module';
@@ -65,6 +66,11 @@ import { WeatherModule } from './modules/weather/weather.module';
     // early in the list keeps the dependency graph readable + means
     // `CLOCK` is resolvable from the moment AppModule starts wiring.
     ClockModule,
+    // JobsModule is the producer side of the BullMQ seam ([Q3]). Like
+    // ClockModule it's @Global() + process-singleton: any use-case can
+    // `@Inject(JobsService)` and enqueue. The notification-worker app
+    // (`apps/notification-worker`) is the consumer side.
+    JobsModule,
     DbModule,
     EventsModule,
     MetricsModule,

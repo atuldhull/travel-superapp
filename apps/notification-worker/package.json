@@ -2,6 +2,30 @@
   "name": "notification-worker",
   "version": "0.0.0",
   "private": true,
-  "description": "NestJS standalone + BullMQ worker (push/email/SMS fan-out).",
-  "type": "commonjs"
+  "description": "BullMQ Worker consuming the `notifications` queue — fans out push / email / SMS off the request path. See packages/jobs/README.md.",
+  "type": "commonjs",
+  "main": "./dist/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "clean": "rimraf dist",
+    "dev": "ts-node --transpile-only src/main.ts",
+    "start": "node dist/main.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "jest --passWithNoTests"
+  },
+  "dependencies": {
+    "@app/jobs": "workspace:*",
+    "@app/logger": "workspace:*"
+  },
+  "devDependencies": {
+    "@app/eslint-config": "workspace:*",
+    "@app/tsconfig": "workspace:*",
+    "@types/node": "^22.10.5",
+    "jest": "^29.7.0",
+    "rimraf": "^6.0.1",
+    "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2"
+  }
 }

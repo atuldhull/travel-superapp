@@ -37,6 +37,7 @@
     "@app/config": "workspace:*",
     "@app/errors": "workspace:*",
     "@app/events": "workspace:*",
+    "@app/jobs": "workspace:*",
     "@app/logger": "workspace:*",
     "@app/observability": "workspace:*",
     "@app/resilience": "workspace:*",
