@@ -1,0 +1,15 @@
+# Issue-template chooser config. Installed by [P8].
+blank_issues_enabled: false
+contact_links:
+  - name: 🔒 Security disclosure
+    url: 'mailto:security@travel.local'
+    about: |
+      Found a security issue? Do NOT open a public issue — email
+      security@travel.local. We bring the conversation into a private
+      GitHub Security Advisory. See SECURITY.md for the policy + scope.
+  - name: 💬 Discussions
+    url: https://github.com/atuldhull/travel-superapp/discussions
+    about: |
+      Questions, design proposals, or anything that isn't a bug or a
+      specific feature request belongs in Discussions. (Enable once
+      operator activates Discussions in repo Settings.)

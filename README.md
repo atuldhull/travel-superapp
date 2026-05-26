@@ -12,6 +12,7 @@ Mobile-first, AI-powered travel super-app. A user enters a place + radius; the a
 | [`CLAUDE.md`](./CLAUDE.md)                                               | System rules for AI agents working on this repo.                           |
 | [`PROGRESS.md`](./PROGRESS.md)                                           | Rolling log of completed prompts.                                          |
 | [`CHANGELOG.md`](./CHANGELOG.md)                                         | Public release notes. Maintained by release-please.                        |
+| [`CONTRIBUTING.md`](./CONTRIBUTING.md)                                   | Branch + commit + PR + review conventions. Read before your first PR.      |
 | [`docs/architecture/c4/`](./docs/architecture/c4/)                       | Visual architecture — C4 system context, containers, components (Mermaid). |
 | [`docs/architecture/context-map.md`](./docs/architecture/context-map.md) | The 17 bounded contexts: events, facade ports, owned Prisma models.        |
 | [`docs/onboarding.md`](./docs/onboarding.md)                             | Day-1 setup: clone → `pnpm dev:up` → `:3000/health/ready=200`.             |

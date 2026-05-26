@@ -1,0 +1,89 @@
+name: ✨ Feature request
+description: Propose a new capability or a non-trivial improvement to an existing one.
+title: 'feat: '
+labels: ['enhancement', 'triage']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for proposing something. The best feature requests start from the **problem**, not the **solution** —
+        if you skip "Problem statement" and jump straight to "How", we'll send it back.
+        For larger changes (new bounded context, new external dependency), please plan to write an ADR
+        in `docs/adr/` alongside the implementation PR.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: 'Who is hurt today, by what missing capability? Concrete user story or measurable gap.'
+      placeholder: "Trip planners who travel with a partner can't share an editable itinerary — they currently email PDFs."
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: 'Sketch — not final design. What does the user do? What does the system do? Which module(s)?'
+      placeholder: |
+        Add a `TripCollaborator` table + a "Share to edit" button on the trip view.
+        Owners invite by email; invitees get edit rights scoped to itinerary fields only.
+        Lives in the existing `social` module; reuses the `TripShare` aggregate's permission model.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: 'What else could solve the problem? Why is the proposal better?'
+      placeholder: |
+        - "Just share a read-only link" — already exists; doesn't solve "we both want to edit".
+        - "Build a new bounded context" — overkill; this is a `social` extension.
+    validations:
+      required: true
+  - type: dropdown
+    id: bounded-context
+    attributes:
+      label: Which bounded context owns this?
+      description: 'See docs/architecture/context-map.md if unsure.'
+      options:
+        - 'Identity'
+        - 'Trip Planning'
+        - 'Live Companion'
+        - 'Places Catalog'
+        - 'Stays'
+        - 'Food & Tryouts'
+        - 'Transport & Routing'
+        - 'Safety'
+        - 'Weather & Environment'
+        - 'Events & Culture'
+        - 'Translation'
+        - 'Social & Groups'
+        - 'Media & Memory'
+        - 'Payments'
+        - 'Notifications'
+        - 'Analytics & Telemetry'
+        - 'Admin & Ops'
+        - 'New context (will need an ADR)'
+        - 'Unsure'
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: How urgent is this?
+      options:
+        - 'Nice-to-have'
+        - 'Painful workaround in place today'
+        - 'Blocking a real user from completing a core flow'
+    validations:
+      required: true
+  - type: checkboxes
+    id: pre-flight
+    attributes:
+      label: Pre-flight
+      options:
+        - label: I checked `travel-app-playbook.md` + `travel-app-prompts.md` — this is not already planned.
+          required: true
+        - label: I checked existing issues / PRs — this is not already proposed.
+          required: true
+        - label: I am willing to write the ADR if this requires an architectural decision.
+          required: false

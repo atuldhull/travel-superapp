@@ -1,0 +1,82 @@
+name: 🐛 Bug report
+description: Something is broken in main (or a release). Help us reproduce + fix.
+title: 'bug: '
+labels: ['bug', 'triage']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug. The faster we can reproduce, the faster we can fix.
+        Please fill in **every** section — bug reports without reproduction steps tend to sit in triage.
+  - type: input
+    id: version
+    attributes:
+      label: Version / commit
+      description: "Output of `git rev-parse HEAD` (or the release tag if you're on a published version)."
+      placeholder: '226692a or v0.1.0'
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: 'OS + Node + pnpm + Docker version. Local? Staging? Production?'
+      placeholder: 'macOS 15 / Node 22.4 / pnpm 9.12 / Docker 27 / local'
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: 'Concrete, observable behaviour. Avoid "it broke" — describe what you saw.'
+      placeholder: |
+        Calling `POST /api/v1/trips` with a valid body returns 500. Same request worked at commit 1f48ecb.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+      placeholder: 'I expected 201 Created with a Location header pointing at /api/v1/trips/{id}.'
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction steps
+      description: 'The minimal sequence that reproduces the bug. If the bug is intermittent, say so + estimate frequency.'
+      placeholder: |
+        1. pnpm dev:up:verify
+        2. curl -X POST http://127.0.0.1:3000/api/v1/trips -H 'Authorization: Bearer <jwt>' -d @body.json
+        3. Observe 500
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log lines / stack trace
+      description: 'Paste the relevant log lines from `apps/api` (use ```json fences). Redact any PII / secrets.'
+      render: text
+    validations:
+      required: false
+  - type: dropdown
+    id: regression
+    attributes:
+      label: Is this a regression?
+      options:
+        - 'No idea — first time I noticed it'
+        - 'Yes — worked at a prior commit (specify in description)'
+        - 'No — never worked'
+    validations:
+      required: true
+  - type: checkboxes
+    id: pre-flight
+    attributes:
+      label: Pre-flight
+      options:
+        - label: I searched existing issues + recent PRs and this is not a duplicate.
+          required: true
+        - label: I ran `pnpm dev:up:verify` and `pnpm typecheck && pnpm arch` — the local gauntlet does not flag this independently.
+          required: true
+        - label: I have not pasted real secrets / API keys / customer PII into this issue.
+          required: true
