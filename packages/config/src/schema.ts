@@ -43,6 +43,13 @@ const RuntimeSchema = z.object({
 const DatabaseSchema = z.object({
   DATABASE_URL: z.string().url(),
   DIRECT_URL: z.string().url().optional(),
+  // [R4] Read replica URL. When set, PrismaService.$readReplica()
+  // returns a SECOND PrismaClient connected to this URL — used by
+  // explicitly-marked use-cases for hot reads that don't need
+  // read-after-write consistency. When unset, $readReplica()
+  // returns the primary client (same shape, no branching at call
+  // sites). Supabase Team / managed-replica DB URL goes here.
+  DATABASE_URL_READONLY: z.string().url().optional(),
   DATABASE_POOL_MIN: z.coerce.number().int().nonnegative().default(2),
   DATABASE_POOL_MAX: z.coerce.number().int().positive().default(10),
 });
