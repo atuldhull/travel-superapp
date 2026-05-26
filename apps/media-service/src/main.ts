@@ -3,19 +3,24 @@
  *
  * Consumes the `media-variants` BullMQ queue. Each job carries
  * { assetId, sourceKey }; the handler reads the source from S3/R2,
- * runs Sharp to emit avif/webp/thumb variants, and updates the
- * `MediaAsset` row to `ready`.
+ * runs Sharp to emit two WebP variants (thumb 256w q70, medium 1024w q80),
+ * and uploads each variant back at a deterministic key:
  *
- * Today the handler is a STUB that logs the job — the real Sharp
- * pipeline still runs inline inside apps/api (see media/infrastructure).
- * Wiring the worker NOW means the deploy stack is ready when the
- * pipeline migrates.
+ *   {sourceKey}.thumb.webp
+ *   {sourceKey}.medium.webp
  *
- * Installed by [Q4] of the Scale-readiness 3→10 series — was a 1-line
- * placeholder until this slice gave it a Dockerfile + fly.toml.
+ * The MediaAsset row update path (set status=ready + populate variants
+ * column) does NOT run from this worker yet — apps/api still owns the
+ * inline pipeline + DB write. Once apps/api migrates to enqueue
+ * media-variants jobs (no inline Sharp), [S-B5] adds the worker→api
+ * callback that flips the row.
+ *
+ * Scaffold installed by [Q4]; real Sharp pipeline wired by [S-B2].
  */
 import { makeWorker, type JobPayloads } from '@app/jobs';
 import { createLogger, type LogLevel } from '@app/logger';
+import { generateVariants, type VariantLabel } from './sharp-processor';
+import { readS3ConfigFromEnv, WorkerS3Client } from './s3-client';
 
 function readWorkerEnv(): { REDIS_URL: string; LOG_LEVEL: LogLevel } {
   const REDIS_URL = process.env.REDIS_URL;
@@ -31,16 +36,42 @@ async function main(): Promise<void> {
   const env = readWorkerEnv();
   const logger = createLogger('media-service', { level: env.LOG_LEVEL });
 
-  logger.info({ redisUrl: redactUrl(env.REDIS_URL) }, 'media-service booting');
+  // S3 config is REQUIRED — no graceful skip here. A media-service
+  // without S3 has nothing to do, so fail-fast on boot rather than
+  // silently dropping every job.
+  const s3 = new WorkerS3Client(readS3ConfigFromEnv());
+
+  logger.info({ redisUrl: redactUrl(env.REDIS_URL), s3Bucket: s3.bucket }, 'media-service booting');
 
   const worker = makeWorker('media-variants', {
     redisUrl: env.REDIS_URL,
     concurrency: Number(process.env.WORKER_CONCURRENCY ?? '4'),
     handler: async (job) => {
       const { assetId, sourceKey } = job.data as JobPayloads['media-variants'];
-      // STUB: log + ack. Real Sharp pipeline migrates from apps/api
-      // in a follow-up PR.
-      logger.info({ jobId: job.id, assetId, sourceKey }, 'media-variants job consumed (stub)');
+      const startMs = Date.now();
+      const source = await s3.getObject(sourceKey);
+      const variants = await generateVariants(source);
+      // Upload in parallel — variants are independent of each other.
+      await Promise.all(
+        variants.map((v) => s3.putObject(variantKey(sourceKey, v.label), v.buffer, 'image/webp')),
+      );
+      logger.info(
+        {
+          jobId: job.id,
+          assetId,
+          sourceKey,
+          sourceBytes: source.length,
+          variants: variants.map((v) => ({
+            label: v.label,
+            bytes: v.bytes,
+            width: v.width,
+            height: v.height,
+            sha256: v.sha256.slice(0, 16),
+          })),
+          elapsedMs: Date.now() - startMs,
+        },
+        'media-variants generated',
+      );
     },
   });
 
@@ -58,6 +89,7 @@ async function main(): Promise<void> {
     logger.info({ signal }, 'media-service draining');
     try {
       await worker.close();
+      s3.destroy();
       logger.info('media-service closed cleanly');
       process.exit(0);
     } catch (err) {
@@ -70,6 +102,11 @@ async function main(): Promise<void> {
   process.on('SIGINT', () => void shutdown('SIGINT'));
 
   logger.info({ concurrency: worker.opts.concurrency }, 'media-service ready');
+}
+
+/** Deterministic key for each generated variant. */
+function variantKey(sourceKey: string, label: VariantLabel): string {
+  return `${sourceKey}.${label}.webp`;
 }
 
 function redactUrl(url: string): string {
