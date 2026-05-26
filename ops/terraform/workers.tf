@@ -69,22 +69,43 @@ resource "fly_app_secrets" "worker" {
 }
 
 resource "fly_machine" "worker" {
-  for_each = local.workers
-  app      = fly_app.worker[each.key].id
-  region   = var.primary_region
-  name     = "${each.value.app}-0"
+  # One machine per (worker × region) — spreads workers across the same
+  # regions the api uses ([Q9]). For staging (single region) this is
+  # 3 workers × 1 region = 3 machines; for production (2 regions today)
+  # it's 3 workers × 2 regions = 6 machines.
+  #
+  # All regions consume from the SAME Redis instance — failover happens
+  # at the Redis side (Upstash primary+replica), not at the worker side.
+  # If a region disappears, the surviving region's workers pick up the
+  # slack (jobs visible-timeout back to wait, other workers re-claim).
+  for_each = {
+    for pair in setproduct(keys(local.workers), var.regions) :
+    "${pair[0]}-${pair[1]}" => {
+      worker = pair[0]
+      region = pair[1]
+      spec   = local.workers[pair[0]]
+    }
+  }
 
-  image = "registry.fly.io/${each.value.app}:latest"
+  app      = fly_app.worker[each.value.worker].id
+  region   = each.value.region
+  name     = "${each.value.spec.app}-${each.value.region}"
+
+  image = "registry.fly.io/${each.value.spec.app}:latest"
 
   cputype  = "shared"
   cpus     = 1
-  memorymb = each.value.memory_mb
+  memorymb = each.value.spec.memory_mb
 
   # No `services` block — workers are not HTTP endpoints.
 
   env = {
     NODE_ENV           = var.environment == "production" ? "production" : "staging"
     LOG_LEVEL          = "info"
-    WORKER_CONCURRENCY = tostring(each.value.concurrency)
+    WORKER_CONCURRENCY = tostring(each.value.spec.concurrency)
+    # FLY_REGION is set automatically by Fly at runtime — surfacing
+    # it as a comment so the reader knows where the worker thinks it
+    # lives without needing to look it up. Workers tag their log
+    # output with this via @app/logger's process-env reader.
   }
 }
