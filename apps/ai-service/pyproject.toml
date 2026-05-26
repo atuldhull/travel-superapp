@@ -27,6 +27,12 @@ dev = [
 translate = [
     "argostranslate==1.9.6",
 ]
+# Real STT backend (faster-whisper) is OPTIONAL — base.en model is ~150MB,
+# medium is ~1.5GB. The Dockerfile can opt-in via `pip install '.[stt]'`.
+# Without it, /v1/transcribe returns empty STTPartial so the contract holds.
+stt = [
+    "faster-whisper==1.1.0",
+]
 
 [build-system]
 requires = ["setuptools>=68"]
