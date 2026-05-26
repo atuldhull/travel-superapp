@@ -1,0 +1,90 @@
+# deploy-ai-service — Python FastAPI sidecar deploy.
+#
+# Triggers:
+#   - push to main that touches apps/ai-service/** OR the shared
+#     pydantic schemas (regen would change the wire contract)
+#   - manual workflow_dispatch with environment + region overrides
+#
+# Stub-only today; same workflow shape will continue to work when
+# real model code lands in [IV.18.2.11].
+#
+# Operator-owed (one-time):
+#   - flyctl apps create -o <fly-org> travel-ai-service-staging
+#   - flyctl apps create -o <fly-org> travel-ai-service-prod
+#   - flyctl secrets import for each app from Doppler
+#   - FLY_API_TOKEN repo secret with deploy scope on both apps
+#
+# Installed by [R6] of the road-to-10-partials closeout.
+
+name: deploy-ai-service
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/ai-service/**'
+      - 'packages/shared-types/schemas/ai-service/**'
+      - '.github/workflows/deploy-ai-service.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        type: choice
+        required: true
+        default: 'staging'
+        options: [staging, production]
+
+concurrency:
+  group: deploy-ai-service-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: deploy ai-service → ${{ github.event.inputs.environment || 'staging' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      ENVIRONMENT: ${{ github.event.inputs.environment || 'staging' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Compute target app name
+        id: target
+        run: |
+          STAGING_APP=$(awk -F'"' '/^app = / { print $2 }' apps/ai-service/fly.toml)
+          if [ "$ENVIRONMENT" = "production" ]; then
+            APP="${STAGING_APP/-staging/-prod}"
+          else
+            APP="$STAGING_APP"
+          fi
+          echo "app=$APP" >> "$GITHUB_OUTPUT"
+          echo "deploying to $APP"
+
+      - name: Deploy
+        run: |
+          flyctl deploy \
+            --config apps/ai-service/fly.toml \
+            --app "${{ steps.target.outputs.app }}" \
+            --dockerfile apps/ai-service/Dockerfile \
+            --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Post-deploy health check
+        run: |
+          APP="${{ steps.target.outputs.app }}"
+          # Fly's edge fronts the app at $APP.fly.dev.
+          for i in $(seq 1 12); do
+            if curl -fsS -m 5 "https://${APP}.fly.dev/health/ready" >/dev/null 2>&1; then
+              echo "ai-service ready"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "ai-service did not become ready within 60s"
+          exit 1
