@@ -21,6 +21,17 @@
 
 ---
 
+## S-series — Real-functionality gap closeout (IN-PROGRESS)
+
+- **Started**: 2026-05-26
+- **Goal**: close real-functionality gaps before any 2.0 menu — ai-service stubs (Block A), worker stubs (Block B), web feature breadth (Block C), mobile (Block D, gated on Z1), admin (Block E, gated on Z2). Audits Z1+Z2 first to size D + E honestly.
+
+| Slice  | What                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Commit   |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| **Z1** | `docs/audit/mobile-2026-05-26.md` — Expo 51 mobile-app audit. Verdict **~45% complete** (functional alpha, three ship-blockers): tokens in plaintext AsyncStorage, Explore tab is a 10% web-link stub, memory-book detail renders position+id not image. Six screens · 12 endpoints wired · 0 native integrations beyond AsyncStorage+NetInfo · 0 tests · no `eas.json`. D-series sized at ~12-16 weeks (D1-D5 form the MVP-on-stores cut at ~6-8 weeks). | _staged_ |
+
+---
+
 ## Road-to-10 partials closeout (R-series, ✅ COMPLETE)
 
 - **Date**: 2026-05-26
