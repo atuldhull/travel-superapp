@@ -2,7 +2,7 @@
 
 > Source of truth for the 17 bounded contexts defined in Playbook §7.2. For every context this file records: **inbound events consumed · outbound events published · facade ports exposed · Prisma models owned**. Enforced by [ADR-004](../adr/ADR-004-bounded-contexts.md).
 >
-> **Visual companion:** [`c4/`](./c4/) renders these 17 contexts at three zoom levels — [system context](./c4/system-context.md), [containers](./c4/containers.md), and the [component layout inside apps/api](./c4/components-api.md).
+> **Visual companion:** [`c4/`](./c4/) renders these 17 contexts at three zoom levels — [system context](./c4/system-context.md), [containers](./c4/containers.md), and the [component layout inside apps/api](./c4/components-api.md). [`data-model.md`](./data-model.md) renders the 64 Prisma models (per-cluster Mermaid ERDs + cross-cluster FK table), auto-generated from `schema.prisma`.
 >
 > **Installed by** `[II.7.2]`. **Update rule:** changing the owner of a Prisma model, adding/retiring an event name, or adding a facade port is a context-map edit AND either a superseding ADR (if it flips the rule) or a row change here (if it's an addition inside the rule). This doc is authoritative — module code must reflect it.
 
