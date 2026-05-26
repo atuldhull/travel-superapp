@@ -30,7 +30,7 @@
  */
 
 import { Queue, QueueEvents, Worker, type Processor } from 'bullmq';
-import IORedis, { type RedisOptions } from 'ioredis';
+import type { RedisOptions } from 'ioredis';
 
 /**
  * Registry of job names that exist in the system. Adding a new queue =
