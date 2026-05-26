@@ -11,6 +11,8 @@ pnpm-lock.yaml
 # regen) to post-prettier (HEAD) and never converges. Same reason
 # pnpm-lock.yaml is ignored above.
 docs/api/openapi.yaml
+docs/api/index.bundled.html
+docs/architecture/data-model.md
 packages/sdk/src/generated/**
 packages/shared-types/schemas/**
 apps/ai-service/ai_service/schemas/**
