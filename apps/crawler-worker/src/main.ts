@@ -2,19 +2,21 @@
  * crawler-worker — entrypoint.
  *
  * Consumes the `crawler-recrawl` BullMQ queue. Each job carries
- * { placeId, reason }; the handler re-fetches Google Places +
- * Foursquare + OSM for the place, dedups, and upserts.
+ * { placeId, reason, center?, name?, radiusM? }; the handler fans
+ * out across OSM Overpass (always on) + Google Places + Foursquare
+ * (both gated on their API-key env vars) and reports a collated,
+ * de-duplicated CrawlSummary via the structured logger.
  *
- * Today the handler is a STUB that logs the job — the real Playwright
- * + federated catalog logic still lives in apps/api/modules/places.
- * Wiring the worker NOW means the deploy stack is ready when the
- * pipeline migrates.
+ * Persistence migration: the worker does NOT yet upsert Place rows —
+ * apps/api still owns that path. [S-B5] adds the worker→api callback
+ * that lands the crawled rows. Logging the summary today gives ops a
+ * working pipeline they can observe before flipping the write path.
  *
- * Installed by [Q4] of the Scale-readiness 3→10 series — was a 1-line
- * placeholder until this slice gave it a Dockerfile + fly.toml.
+ * Scaffold installed by [Q4]; real provider fan-out wired by [S-B3].
  */
 import { makeWorker, type JobPayloads } from '@app/jobs';
 import { createLogger, type LogLevel } from '@app/logger';
+import { buildCrawlerRouter } from './providers';
 
 function readWorkerEnv(): { REDIS_URL: string; LOG_LEVEL: LogLevel } {
   const REDIS_URL = process.env.REDIS_URL;
@@ -29,8 +31,12 @@ function readWorkerEnv(): { REDIS_URL: string; LOG_LEVEL: LogLevel } {
 async function main(): Promise<void> {
   const env = readWorkerEnv();
   const logger = createLogger('crawler-worker', { level: env.LOG_LEVEL });
+  const router = buildCrawlerRouter();
 
-  logger.info({ redisUrl: redactUrl(env.REDIS_URL) }, 'crawler-worker booting');
+  logger.info(
+    { redisUrl: redactUrl(env.REDIS_URL), providers: router.status() },
+    'crawler-worker booting',
+  );
 
   const worker = makeWorker('crawler-recrawl', {
     redisUrl: env.REDIS_URL,
@@ -38,10 +44,48 @@ async function main(): Promise<void> {
     // so we don't blow rate-limit budgets per provider.
     concurrency: Number(process.env.WORKER_CONCURRENCY ?? '2'),
     handler: async (job) => {
-      const { placeId, reason } = job.data as JobPayloads['crawler-recrawl'];
-      // STUB: log + ack. Real Playwright + federated-catalog logic
-      // migrates from apps/api/modules/places in a follow-up PR.
-      logger.info({ jobId: job.id, placeId, reason }, 'crawler-recrawl job consumed (stub)');
+      const payload = job.data as JobPayloads['crawler-recrawl'];
+      const { placeId, reason, center, name, radiusM } = payload;
+      // Backward-compatible: pre-[S-B3] producers only sent placeId+reason.
+      // Without `center` we have nothing to query — log + ack.
+      if (!center) {
+        logger.info(
+          { jobId: job.id, placeId, reason },
+          'crawler-recrawl skipped — no center coordinates in payload',
+        );
+        return;
+      }
+      const summary = await router.crawl(
+        {
+          lat: center.lat,
+          lng: center.lng,
+          radiusM: radiusM ?? 250,
+          ...(name ? { nameHint: name } : {}),
+        },
+        logger,
+      );
+      logger.info(
+        {
+          jobId: job.id,
+          placeId,
+          reason,
+          center,
+          radiusM: radiusM ?? 250,
+          hits: summary.hits.length,
+          perProvider: summary.perProvider,
+          skippedProviders: summary.skippedProviders,
+          elapsedMs: summary.elapsedMs,
+          // First few hits inline for spot-checking. Full results land
+          // in the DB once [S-B5] wires the worker→api callback.
+          sample: summary.hits.slice(0, 5).map((h) => ({
+            provider: h.provider,
+            externalId: h.externalId,
+            name: h.name,
+            distanceMeters: h.distanceMeters,
+          })),
+        },
+        'crawler-recrawl crawled',
+      );
     },
   });
 

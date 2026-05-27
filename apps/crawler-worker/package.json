@@ -15,8 +15,10 @@
     "test": "jest --passWithNoTests"
   },
   "dependencies": {
+    "@app/clock": "workspace:*",
     "@app/jobs": "workspace:*",
-    "@app/logger": "workspace:*"
+    "@app/logger": "workspace:*",
+    "@app/resilience": "workspace:*"
   },
   "devDependencies": {
     "@app/eslint-config": "workspace:*",
