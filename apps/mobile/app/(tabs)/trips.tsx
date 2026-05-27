@@ -18,8 +18,11 @@ import { useOnlineStatus } from '../../lib/use-online-status';
 export default function TripsScreen() {
   const token = useAuthToken();
   const online = useOnlineStatus();
+  // [S-D1 follow-up] orval regen for S-C1 (archive/unarchive) made
+  // `archived` required on the list params; mobile default is the
+  // non-archived list (same as the web /trips page).
   const trips = useTripControllerList(
-    { limit: '50' },
+    { limit: '50', archived: 'false' },
     { query: { enabled: token !== null, retry: false } },
   );
 
