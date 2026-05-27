@@ -27,6 +27,7 @@ const NAV: ReadonlyArray<{ href: string; label: string }> = [
   { href: '/admin/scam-reports', label: 'Scam reports' },
   { href: '/admin/sos', label: 'SOS triage' },
   { href: '/admin/users', label: 'Users' },
+  { href: '/admin/agent-kyc', label: 'Agent KYC' },
   { href: '/admin/media', label: 'Media' },
   { href: '/admin/audit', label: 'Audit log' },
 ];

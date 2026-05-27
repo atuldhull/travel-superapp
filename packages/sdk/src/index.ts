@@ -257,6 +257,10 @@ export type { AdminCreatePlaceRequestDto } from './generated/schemas/adminCreate
 export type { AdminPurgeForceResponseDto } from './generated/schemas/adminPurgeForceResponseDto';
 export type { AdminUserDto } from './generated/schemas/adminUserDto';
 export type { AdminListUsersResponseDto } from './generated/schemas/adminListUsersResponseDto';
+// [S-E5] Agent KYC moderation DTOs.
+export type { AdminAgentDto } from './generated/schemas/adminAgentDto';
+export type { AdminListAgentsResponseDto } from './generated/schemas/adminListAgentsResponseDto';
+export type { AdminRejectAgentRequestDto } from './generated/schemas/adminRejectAgentRequestDto';
 export type { AdminMediaDto } from './generated/schemas/adminMediaDto';
 export type { AdminListMediaResponseDto } from './generated/schemas/adminListMediaResponseDto';
 export type { SosEventDto } from './generated/schemas/sosEventDto';
