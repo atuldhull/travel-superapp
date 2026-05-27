@@ -27,8 +27,10 @@ import { GetRetentionStatsUseCase } from './application/get-retention-stats.use-
 import { ListTakedownsUseCase } from './application/list-takedowns.use-case';
 import { ADMIN_AUDIT_LOG_REPOSITORY } from './application/ports/admin-audit-log.repository';
 import { COMPLIANCE_QUERIES_PORT } from './application/ports/compliance-queries.port';
+import { SLACK_ADMIN_NOTIFIER } from './application/ports/slack-admin-notifier.port';
 import { PrismaAdminAuditLogRepository } from './infrastructure/prisma-admin-audit-log.repository';
 import { PrismaComplianceQueries } from './infrastructure/prisma-compliance-queries';
+import { SlackAdminNotifierAdapter } from './infrastructure/slack-admin-notifier.adapter';
 import { AdminAuditLogsController } from './interface/admin-audit-logs.controller';
 import { AdminController } from './interface/admin.controller';
 import { ComplianceController } from './interface/compliance.controller';
@@ -53,6 +55,9 @@ import { PublicMetricsController } from './interface/public-metrics.controller';
     GetPublicMetricsUseCase,
     { provide: ADMIN_AUDIT_LOG_REPOSITORY, useClass: PrismaAdminAuditLogRepository },
     { provide: COMPLIANCE_QUERIES_PORT, useClass: PrismaComplianceQueries },
+    // [S-E6] Slack webhook notifier — swallows errors, only fires for
+    // critical action types, no-op when SLACK_ADMIN_WEBHOOK_URL is unset.
+    { provide: SLACK_ADMIN_NOTIFIER, useClass: SlackAdminNotifierAdapter },
   ],
   // V.UX.36 — exported via @Global so cross-module admin use-cases
   // can record audit rows without module wiring churn.

@@ -232,6 +232,15 @@ const ObservabilitySchema = z.object({
   /** Honeycomb dataset name (defaults to NODE_ENV). */
   HONEYCOMB_DATASET: z.string().optional(),
   POSTHOG_API_KEY: z.string().optional(),
+  /**
+   * [S-E6] — Slack Incoming Webhook URL. When set, every AdminAuditLog
+   * write also fires a fire-and-forget POST to this webhook with a
+   * compact "actor / action / target / context" summary. Absent =
+   * silent (the audit row still lands; ops just don't get pinged).
+   *
+   * Format: https://hooks.slack.com/services/T.../B.../...
+   */
+  SLACK_ADMIN_WEBHOOK_URL: optionalUrl,
 });
 
 // ─── Feature flags (OpenFeature local fallback) ─────────────────────────
