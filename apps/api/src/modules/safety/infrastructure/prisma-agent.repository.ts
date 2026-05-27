@@ -126,6 +126,42 @@ export class PrismaAgentRepository implements AgentRepository {
     });
     return rows.map(toReview);
   }
+
+  async listByKycStatus(input: {
+    readonly kycStatus: 'pending' | 'verified' | 'rejected';
+    readonly limit: number;
+    readonly offset: number;
+  }): Promise<{ readonly agents: readonly AgentProfile[]; readonly total: number }> {
+    const limit = Math.min(Math.max(input.limit, 1), 200);
+    const offset = Math.max(input.offset, 0);
+    const where = { kycStatus: input.kycStatus };
+    const [rows, total] = await this.prisma.$transaction([
+      this.prisma.agent.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip: offset,
+      }),
+      this.prisma.agent.count({ where }),
+    ]);
+    return { agents: rows.map(toProfile), total };
+  }
+
+  async setKycStatus(input: {
+    readonly agentId: string;
+    readonly kycStatus: 'pending' | 'verified' | 'rejected';
+    readonly verifiedAt: Date | null;
+  }): Promise<AgentProfile | null> {
+    // updateMany returns count so we know whether the row existed.
+    // Same shape as updateForUser above.
+    const result = await this.prisma.agent.updateMany({
+      where: { id: input.agentId },
+      data: { kycStatus: input.kycStatus, verifiedAt: input.verifiedAt },
+    });
+    if (result.count === 0) return null;
+    const row = await this.prisma.agent.findUnique({ where: { id: input.agentId } });
+    return row ? toProfile(row) : null;
+  }
 }
 
 function toMatch(row: PrismaAgent): AgentMatch {

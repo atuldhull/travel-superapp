@@ -96,6 +96,28 @@ export interface AgentRepository {
     readonly agentId: string;
     readonly limit: number;
   }): Promise<readonly AgentReviewWithResponse[]>;
+
+  /**
+   * [S-E5] — admin queue lookup by `kycStatus`. Returns the
+   * AgentProfile rows + total count for pagination, newest-first
+   * by createdAt.
+   */
+  listByKycStatus(input: {
+    readonly kycStatus: 'pending' | 'verified' | 'rejected';
+    readonly limit: number;
+    readonly offset: number;
+  }): Promise<{ readonly agents: readonly AgentProfile[]; readonly total: number }>;
+
+  /**
+   * [S-E5] — admin-driven KYC status flip. Setting status='verified'
+   * stamps `verifiedAt = now`; rejecting clears it. Returns the
+   * updated profile or null if the row is gone.
+   */
+  setKycStatus(input: {
+    readonly agentId: string;
+    readonly kycStatus: 'pending' | 'verified' | 'rejected';
+    readonly verifiedAt: Date | null;
+  }): Promise<AgentProfile | null>;
 }
 
 export const AGENT_REPOSITORY = Symbol('AgentRepository');

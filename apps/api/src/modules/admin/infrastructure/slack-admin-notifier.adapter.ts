@@ -43,6 +43,9 @@ const PING_ACTIONS: ReadonlySet<string> = new Set([
   'promote_admin',
   'demote_admin',
   'resolve_sos',
+  // [S-E5] agent KYC moderation
+  'verify_agent',
+  'reject_agent',
 ]);
 
 @Injectable()
