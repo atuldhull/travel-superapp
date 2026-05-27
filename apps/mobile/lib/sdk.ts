@@ -4,22 +4,22 @@
  *   1. `configureSdk` once per app boot — base URL from app.json's
  *      `extra.apiBaseUrl` (or fallback to localhost which the dev
  *      tunnel + LAN ip dance makes Just Work for Expo Go).
- *   2. Expose a tiny in-memory access-token store + AsyncStorage-backed
- *      bootstrap. The token is hydrated from disk on app start; the
+ *   2. Expose a tiny in-memory access-token store + encrypted-disk-
+ *      backed bootstrap. The token is hydrated on app start; the
  *      `setAccessToken` setter writes both memory + disk.
  *
- * CLAUDE.md rule 12 forbids `localStorage` for tokens on web. RN has
- * no `localStorage`; the equivalent guidance is "encrypt at rest".
- * We use AsyncStorage (unencrypted by default) for now — swap to
- * `expo-secure-store` when the tokens leave dev.
+ * CLAUDE.md rule 12: access tokens live in memory at runtime; the
+ * mobile-equivalent of "no httpOnly cookie" is encryption at rest.
+ * [S-D1] swapped AsyncStorage (unencrypted) for `expo-secure-store`
+ * (iOS Keychain + Android EncryptedSharedPreferences). Migration of
+ * existing V.UX.27 AsyncStorage tokens happens once-per-device on
+ * first boot — see `secure-token-store.ts`.
  *
- * Installed by prompt [V.UX.27].
+ * Installed by prompt [V.UX.27]; secure store landed by [S-D1].
  */
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { configureSdk } from '@app/sdk';
-
-const TOKEN_KEY = 'travel-mobile-access-token';
+import { readPersistedToken, writePersistedToken } from './secure-token-store';
 
 let memoryToken: string | null = null;
 const subscribers = new Set<(t: string | null) => void>();
@@ -34,11 +34,7 @@ export function getAccessToken(): string | null {
 
 export async function setAccessToken(token: string | null): Promise<void> {
   memoryToken = token;
-  if (token === null) {
-    await AsyncStorage.removeItem(TOKEN_KEY);
-  } else {
-    await AsyncStorage.setItem(TOKEN_KEY, token);
-  }
+  await writePersistedToken(token);
   notify();
 }
 
@@ -63,7 +59,7 @@ export async function bootSdk(): Promise<void> {
     getAccessToken: () => memoryToken,
   });
   if (memoryToken === null) {
-    const stored = await AsyncStorage.getItem(TOKEN_KEY);
+    const stored = await readPersistedToken();
     if (stored !== null && stored.length > 0) {
       memoryToken = stored;
       notify();
