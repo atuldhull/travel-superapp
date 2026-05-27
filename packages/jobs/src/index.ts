@@ -55,10 +55,23 @@ export interface JobPayloads {
     assetId: string;
     sourceKey: string;
   };
-  /** Crawler re-crawl on a schedule. */
+  /**
+   * Crawler re-crawl on a schedule. Producer-side enqueue passes the
+   * place's current coordinates so the worker can fan out to providers
+   * (OSM Overpass / Google Places / FSQ) without an extra DB round-trip.
+   * `name` is an optional query hint; OSM uses it when present.
+   *
+   * `center` is optional for backward compatibility — when omitted (the
+   * pre-[S-B3] producer shape), the worker logs a "skipped: no center"
+   * info row + acks rather than failing the queue.
+   */
   'crawler-recrawl': {
     placeId: string;
     reason: 'scheduled' | 'event-triggered';
+    center?: { lat: number; lng: number };
+    name?: string;
+    /** Search radius in metres. Default 250 if absent. */
+    radiusM?: number;
   };
 }
 

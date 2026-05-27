@@ -236,12 +236,18 @@ importers:
 
   apps/crawler-worker:
     dependencies:
+      '@app/clock':
+        specifier: workspace:*
+        version: link:../../packages/clock
       '@app/jobs':
         specifier: workspace:*
         version: link:../../packages/jobs
       '@app/logger':
         specifier: workspace:*
         version: link:../../packages/logger
+      '@app/resilience':
+        specifier: workspace:*
+        version: link:../../packages/resilience
     devDependencies:
       '@app/eslint-config':
         specifier: workspace:*
