@@ -19,9 +19,12 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AdminAgentDto,
+  AdminAgentsControllerListParams,
   AdminAuditLogsControllerListParams,
   AdminBanRequestDto,
   AdminCreatePlaceRequestDto,
+  AdminListAgentsResponseDto,
   AdminListAuditLogsResponseDto,
   AdminListBanAppealsResponseDto,
   AdminListMediaResponseDto,
@@ -31,6 +34,7 @@ import type {
   AdminMediaControllerListParams,
   AdminPlaceDto,
   AdminPurgeForceResponseDto,
+  AdminRejectAgentRequestDto,
   AdminResolveSosRequestDto,
   AdminScamModerationControllerListParams,
   AdminSosControllerListParams,
@@ -586,6 +590,335 @@ export const useAdminTripsControllerRemove = <TError = unknown,
       > => {
 
       const mutationOptions = getAdminTripsControllerRemoveMutationOptions(options);
+
+      return useMutation(mutationOptions);
+    }
+    /**
+ * @summary List agents by KYC status. Default = pending; ?status= for verified / rejected.
+ */
+export type adminAgentsControllerListResponse200 = {
+  data: AdminListAgentsResponseDto
+  status: 200
+}
+    
+export type adminAgentsControllerListResponseSuccess = (adminAgentsControllerListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminAgentsControllerListResponse = (adminAgentsControllerListResponseSuccess)
+
+export const getAdminAgentsControllerListUrl = (params: AdminAgentsControllerListParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/admin/agents?${stringifiedParams}` : `/api/v1/admin/agents`
+}
+
+export const adminAgentsControllerList = async (params: AdminAgentsControllerListParams, options?: RequestInit): Promise<adminAgentsControllerListResponse> => {
+  
+  return apiFetch<adminAgentsControllerListResponse>(getAdminAgentsControllerListUrl(params),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+
+
+export const getAdminAgentsControllerListInfiniteQueryKey = (params?: AdminAgentsControllerListParams,) => {
+    return [
+    'infinite', `/api/v1/admin/agents`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+export const getAdminAgentsControllerListQueryKey = (params?: AdminAgentsControllerListParams,) => {
+    return [
+    `/api/v1/admin/agents`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+    
+export const getAdminAgentsControllerListInfiniteQueryOptions = <TData = Awaited<ReturnType<typeof adminAgentsControllerList>>, TError = unknown>(params: AdminAgentsControllerListParams, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof adminAgentsControllerList>>, TError, TData>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminAgentsControllerListInfiniteQueryKey(params);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminAgentsControllerList>>> = ({ signal, pageParam }) => adminAgentsControllerList({...params, 'limit': pageParam || params?.['limit']}, { signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn,   staleTime: 30000,  ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof adminAgentsControllerList>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminAgentsControllerListInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof adminAgentsControllerList>>>
+export type AdminAgentsControllerListInfiniteQueryError = unknown
+
+
+/**
+ * @summary List agents by KYC status. Default = pending; ?status= for verified / rejected.
+ */
+
+export function useAdminAgentsControllerListInfinite<TData = Awaited<ReturnType<typeof adminAgentsControllerList>>, TError = unknown>(
+ params: AdminAgentsControllerListParams, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof adminAgentsControllerList>>, TError, TData>, request?: SecondParameter<typeof apiFetch>}
+  
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminAgentsControllerListInfiniteQueryOptions(params,options)
+
+  const query = useInfiniteQuery(queryOptions) as  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const getAdminAgentsControllerListQueryOptions = <TData = Awaited<ReturnType<typeof adminAgentsControllerList>>, TError = unknown>(params: AdminAgentsControllerListParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminAgentsControllerList>>, TError, TData>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminAgentsControllerListQueryKey(params);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminAgentsControllerList>>> = ({ signal }) => adminAgentsControllerList(params, { signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn,   staleTime: 30000,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminAgentsControllerList>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminAgentsControllerListQueryResult = NonNullable<Awaited<ReturnType<typeof adminAgentsControllerList>>>
+export type AdminAgentsControllerListQueryError = unknown
+
+
+/**
+ * @summary List agents by KYC status. Default = pending; ?status= for verified / rejected.
+ */
+
+export function useAdminAgentsControllerList<TData = Awaited<ReturnType<typeof adminAgentsControllerList>>, TError = unknown>(
+ params: AdminAgentsControllerListParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminAgentsControllerList>>, TError, TData>, request?: SecondParameter<typeof apiFetch>}
+  
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminAgentsControllerListQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+/**
+ * @summary Verify an agent KYC (sets verifiedAt = now).
+ */
+export type adminAgentsControllerVerifyResponse200 = {
+  data: AdminAgentDto
+  status: 200
+}
+
+export type adminAgentsControllerVerifyResponse404 = {
+  data: void
+  status: 404
+}
+    
+export type adminAgentsControllerVerifyResponseSuccess = (adminAgentsControllerVerifyResponse200) & {
+  headers: Headers;
+};
+export type adminAgentsControllerVerifyResponseError = (adminAgentsControllerVerifyResponse404) & {
+  headers: Headers;
+};
+
+export type adminAgentsControllerVerifyResponse = (adminAgentsControllerVerifyResponseSuccess | adminAgentsControllerVerifyResponseError)
+
+export const getAdminAgentsControllerVerifyUrl = (id: string,) => {
+
+
+  
+
+  return `/api/v1/admin/agents/${id}/verify`
+}
+
+export const adminAgentsControllerVerify = async (id: string, options?: RequestInit): Promise<adminAgentsControllerVerifyResponse> => {
+  
+  return apiFetch<adminAgentsControllerVerifyResponse>(getAdminAgentsControllerVerifyUrl(id),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
+
+export const getAdminAgentsControllerVerifyMutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminAgentsControllerVerify>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminAgentsControllerVerify>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['adminAgentsControllerVerify'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminAgentsControllerVerify>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  adminAgentsControllerVerify(id,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminAgentsControllerVerifyMutationResult = NonNullable<Awaited<ReturnType<typeof adminAgentsControllerVerify>>>
+    
+    export type AdminAgentsControllerVerifyMutationError = void
+
+    /**
+ * @summary Verify an agent KYC (sets verifiedAt = now).
+ */
+export const useAdminAgentsControllerVerify = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminAgentsControllerVerify>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof apiFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminAgentsControllerVerify>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+
+      const mutationOptions = getAdminAgentsControllerVerifyMutationOptions(options);
+
+      return useMutation(mutationOptions);
+    }
+    /**
+ * @summary Reject an agent KYC (clears verifiedAt) with a reason.
+ */
+export type adminAgentsControllerRejectResponse200 = {
+  data: AdminAgentDto
+  status: 200
+}
+
+export type adminAgentsControllerRejectResponse400 = {
+  data: void
+  status: 400
+}
+
+export type adminAgentsControllerRejectResponse404 = {
+  data: void
+  status: 404
+}
+    
+export type adminAgentsControllerRejectResponseSuccess = (adminAgentsControllerRejectResponse200) & {
+  headers: Headers;
+};
+export type adminAgentsControllerRejectResponseError = (adminAgentsControllerRejectResponse400 | adminAgentsControllerRejectResponse404) & {
+  headers: Headers;
+};
+
+export type adminAgentsControllerRejectResponse = (adminAgentsControllerRejectResponseSuccess | adminAgentsControllerRejectResponseError)
+
+export const getAdminAgentsControllerRejectUrl = (id: string,) => {
+
+
+  
+
+  return `/api/v1/admin/agents/${id}/reject`
+}
+
+export const adminAgentsControllerReject = async (id: string,
+    adminRejectAgentRequestDto: AdminRejectAgentRequestDto, options?: RequestInit): Promise<adminAgentsControllerRejectResponse> => {
+  
+  return apiFetch<adminAgentsControllerRejectResponse>(getAdminAgentsControllerRejectUrl(id),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      adminRejectAgentRequestDto,)
+  }
+);}
+
+
+
+
+export const getAdminAgentsControllerRejectMutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminAgentsControllerReject>>, TError,{id: string;data: AdminRejectAgentRequestDto}, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminAgentsControllerReject>>, TError,{id: string;data: AdminRejectAgentRequestDto}, TContext> => {
+
+const mutationKey = ['adminAgentsControllerReject'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminAgentsControllerReject>>, {id: string;data: AdminRejectAgentRequestDto}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  adminAgentsControllerReject(id,data,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminAgentsControllerRejectMutationResult = NonNullable<Awaited<ReturnType<typeof adminAgentsControllerReject>>>
+    export type AdminAgentsControllerRejectMutationBody = AdminRejectAgentRequestDto
+    export type AdminAgentsControllerRejectMutationError = void
+
+    /**
+ * @summary Reject an agent KYC (clears verifiedAt) with a reason.
+ */
+export const useAdminAgentsControllerReject = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminAgentsControllerReject>>, TError,{id: string;data: AdminRejectAgentRequestDto}, TContext>, request?: SecondParameter<typeof apiFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminAgentsControllerReject>>,
+        TError,
+        {id: string;data: AdminRejectAgentRequestDto},
+        TContext
+      > => {
+
+      const mutationOptions = getAdminAgentsControllerRejectMutationOptions(options);
 
       return useMutation(mutationOptions);
     }
