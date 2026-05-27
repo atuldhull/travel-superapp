@@ -20,8 +20,11 @@ import { SYSTEM_CLOCK } from '@app/clock';
 import type { Env } from '@app/config';
 import { AccountModule } from '../account/account.module';
 import { TripModule } from '../trip/trip.module';
+import { AdminListPendingAgentsUseCase } from './application/admin-list-pending-agents.use-case';
 import { AdminListSosEventsUseCase } from './application/admin-list-sos-events.use-case';
+import { AdminRejectAgentUseCase } from './application/admin-reject-agent.use-case';
 import { AdminResolveSosUseCase } from './application/admin-resolve-sos.use-case';
+import { AdminVerifyAgentUseCase } from './application/admin-verify-agent.use-case';
 import { DismissScamReportUseCase } from './application/dismiss-scam-report.use-case';
 import { FindNearbyCrimesUseCase } from './application/find-nearby-crimes.use-case';
 import { FindNearbyScamsUseCase } from './application/find-nearby-scams.use-case';
@@ -53,6 +56,7 @@ import { PrismaScamReportRepository } from './infrastructure/prisma-scam-report.
 import { PrismaSosEventRepository } from './infrastructure/prisma-sos-event.repository';
 import { StubContactNotifierAdapter } from './infrastructure/stub-contact-notifier.adapter';
 import { TwilioContactNotifierAdapter } from './infrastructure/twilio-contact-notifier.adapter';
+import { AdminAgentsController } from './interface/admin-agents.controller';
 import { AdminScamModerationController } from './interface/admin-scam-moderation.controller';
 import { AdminSosController } from './interface/admin-sos.controller';
 import { AgentSelfController } from './interface/agent-self.controller';
@@ -79,6 +83,7 @@ import { SosController } from './interface/sos.controller';
     SosController,
     CrimeLayerController,
     SafetyScoreController,
+    AdminAgentsController,
     AdminScamModerationController,
     AdminSosController,
     AgentsController,
@@ -130,8 +135,11 @@ import { SosController } from './interface/sos.controller';
     ListScamReportsForModerationUseCase,
     VerifyScamReportUseCase,
     DismissScamReportUseCase,
+    AdminListPendingAgentsUseCase,
     AdminListSosEventsUseCase,
+    AdminRejectAgentUseCase,
     AdminResolveSosUseCase,
+    AdminVerifyAgentUseCase,
     MatchAgentForTripUseCase,
     GetCountryPrimerUseCase,
     GetAgentProfileUseCase,
