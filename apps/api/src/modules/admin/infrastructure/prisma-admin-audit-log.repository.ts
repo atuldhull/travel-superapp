@@ -18,10 +18,17 @@ import type {
   ListAdminAuditLogResult,
   RecordAdminAuditLogInput,
 } from '../application/ports/admin-audit-log.repository';
+import {
+  SLACK_ADMIN_NOTIFIER,
+  type SlackAdminNotifierPort,
+} from '../application/ports/slack-admin-notifier.port';
 
 @Injectable()
 export class PrismaAdminAuditLogRepository implements AdminAuditLogRepository {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(SLACK_ADMIN_NOTIFIER) private readonly slack: SlackAdminNotifierPort,
+  ) {}
 
   async record(input: RecordAdminAuditLogInput): Promise<AdminAuditLog> {
     const row = await this.prisma.adminAuditLog.create({
@@ -32,6 +39,17 @@ export class PrismaAdminAuditLogRepository implements AdminAuditLogRepository {
         action: input.action,
         context: (input.context ?? null) as Prisma.InputJsonValue | typeof Prisma.JsonNull,
       },
+    });
+    // [S-E6] Fire-and-forget Slack ping for ops visibility on critical
+    // actions. The notifier swallows its own errors so the audit write
+    // never fails on webhook trouble. `void` rather than `await` because
+    // the caller shouldn't wait for the webhook to land.
+    void this.slack.notify({
+      actorId: row.actorId,
+      action: row.action,
+      targetType: row.targetType,
+      targetId: row.targetId,
+      context: (row.context as Record<string, unknown> | null) ?? null,
     });
     return toDomain(row);
   }
