@@ -736,6 +736,376 @@ export const DESTINATIONS: Record<string, Destination> = {
       },
     ],
   },
+  darjeeling: {
+    slug: 'darjeeling',
+    name: 'Darjeeling',
+    state: 'West Bengal',
+    tagline: 'Tea gardens, a toy train, and Kanchenjunga at sunrise.',
+    hero: {
+      id: '1593348820055-1ca6db415be3',
+      by: 'Abhishek Koli',
+      alt: 'Mist over Darjeeling tea gardens with a colonial bungalow at sunrise.',
+    },
+    facts: [
+      { label: 'Best season', value: 'Mar – Jun, Sep – Nov' },
+      { label: 'Pace', value: 'Misty · contemplative' },
+      { label: 'Budget', value: 'From ₹4k / day' },
+    ],
+    lede: "Darjeeling sits at 6,700ft on a Himalayan ridge — close enough to Kanchenjunga that on a clear morning the world's third-highest peak is just there. The British built it as a sanatorium in 1835 because the air healed lung disease; the tea industry followed, and the narrow-gauge railway followed that. Three things ride together up the hill: the train, the mist, and a 188-year-old habit of slow afternoons.",
+    moments: [
+      {
+        title: 'Tiger Hill sunrise',
+        body: '4:30am alarm. 11km drive. 12,000-pilgrim viewpoint. When Kanchenjunga lights, nobody speaks.',
+        photo: { id: '1593348820055-1ca6db415be3', by: 'Abhishek Koli', alt: 'Himalayan dawn.' },
+      },
+      {
+        title: 'Toy Train Ghum loop',
+        body: 'UNESCO since 1999. The blue-painted steam loco still climbs at 16km/h. Two-hour joyride.',
+        photo: { id: '1626621341517-bbf3d9990a23', by: 'Saurav Rastogi', alt: 'Mountain train.' },
+      },
+      {
+        title: 'Happy Valley Tea Estate tour',
+        body: "Operating since 1854. Walk the bushes, watch the rolling room, taste a first-flush in the manager's bungalow.",
+        photo: { id: '1571745544682-143ea663cf2c', by: 'Lazar Gugleta', alt: 'A tea garden.' },
+      },
+      {
+        title: "Glenary's on Mall Road",
+        body: 'A British bakery since 1885. Marbled rum cake, Darjeeling first flush, the only acceptable post-walk reward.',
+        photo: {
+          id: '1545048702-79362596cdc9',
+          by: 'Sandy Ravaloniaina',
+          alt: 'A bakery counter.',
+        },
+      },
+      {
+        title: 'Padmaja Naidu Zoo for the red panda',
+        body: "The only successful red-panda breeding program in India. Best at 9am when they're active.",
+        photo: {
+          id: '1532375810709-75b1da00537c',
+          by: 'Saurav Rastogi',
+          alt: 'A Himalayan meadow.',
+        },
+      },
+    ],
+    itineraries: [
+      {
+        name: 'The hill long weekend',
+        days: 3,
+        lede: 'Tiger Hill sunrise, toy train loop, one tea estate, lots of bakery hours.',
+      },
+      {
+        name: 'Tea & dzongs',
+        days: 6,
+        lede: 'Add Sikkim border + Rangit valley. Six gompas, three tea gardens, two passes.',
+      },
+      {
+        name: 'Eastern Himalaya arc',
+        days: 12,
+        lede: 'Darjeeling → Kalimpong → Pelling → Gangtok → Lachung. The full ridgeline.',
+      },
+    ],
+  },
+  udaipur: {
+    slug: 'udaipur',
+    name: 'Udaipur',
+    state: 'Rajasthan',
+    tagline: 'The City of Lakes — palaces on water, Mewar light, the colour of dusk.',
+    hero: {
+      id: '1568797629192-5c34d4a4f54e',
+      by: 'Anubhav Saxena',
+      alt: 'The City Palace of Udaipur reflected in Lake Pichola at dusk.',
+    },
+    facts: [
+      { label: 'Best season', value: 'Oct – Mar' },
+      { label: 'Pace', value: 'Slow · royal' },
+      { label: 'Budget', value: 'From ₹6k / day' },
+    ],
+    lede: "Founded by Maharana Udai Singh II in 1559 — after the third sack of Chittor finally convinced the Mewar court that hill-and-lake was harder to siege than fort-and-plain. Five centuries on, Lake Pichola still mirrors the City Palace, and the Mewar lineage (the world's oldest surviving royal family) still hosts dinners in it. Of all Rajasthan, Udaipur is the city you slow down for.",
+    moments: [
+      {
+        title: 'Lake Pichola at sunset',
+        body: 'Ferry from Bansi Ghat. Forty minutes around the lake. Jag Niwas (Taj Lake Palace) floats past.',
+        photo: {
+          id: '1568797629192-5c34d4a4f54e',
+          by: 'Anubhav Saxena',
+          alt: 'A lake palace at dusk.',
+        },
+      },
+      {
+        title: 'The City Palace by morning',
+        body: '11 separate palaces, 4 courtyards. Get there at 9am, before the heat + the tour buses.',
+        photo: {
+          id: '1477587458883-47465968ef79',
+          by: 'Liam Baldock',
+          alt: 'Rajasthani palace architecture.',
+        },
+      },
+      {
+        title: 'A miniature painting class',
+        body: 'Mewar school, 16th-century technique. Half a day with a master in his Brahmpol home.',
+        photo: {
+          id: '1532375810709-75b1da00537c',
+          by: 'Saurav Rastogi',
+          alt: 'A craftsperson at work.',
+        },
+      },
+      {
+        title: 'Bagore-ki-Haveli folk dance',
+        body: 'Every evening at 7pm. Rajasthani folk: ghoomar, kathputli, the chari with seven brass pots on a head.',
+        photo: { id: '1561361398-a8f8d1f54bd1', by: 'Akshay Patil', alt: 'A traditional dance.' },
+      },
+      {
+        title: 'Saheliyon-ki-Bari at golden hour',
+        body: 'The Garden of the Maidens. Lotus pools, marble pavilions, an audience of just you and a dozen pigeons.',
+        photo: {
+          id: '1599661046289-e31897846e41',
+          by: 'Annie Spratt',
+          alt: 'A formal Mughal garden.',
+        },
+      },
+    ],
+    itineraries: [
+      {
+        name: 'Udaipur essential',
+        days: 4,
+        lede: 'City Palace, two lake rides, one folk dance, two long meals on a haveli rooftop.',
+      },
+      {
+        name: 'Mewar arc',
+        days: 8,
+        lede: 'Add Kumbhalgarh fort + Ranakpur Jain temple + Eklingji. The full Mewar heritage spine.',
+      },
+      {
+        name: 'Rajasthan loop',
+        days: 14,
+        lede: 'Udaipur → Jodhpur → Jaisalmer → Pushkar → Jaipur. The classic desert circuit.',
+      },
+    ],
+  },
+  madurai: {
+    slug: 'madurai',
+    name: 'Madurai',
+    state: 'Tamil Nadu',
+    tagline: 'The Athens of the East — 2,500 years of continuous temple worship.',
+    hero: {
+      id: '1582625313996-0d4ad2c79ff3',
+      by: 'Sankaranarayanan G',
+      alt: 'The towering gopuram of Meenakshi Amman Temple in Madurai at dawn.',
+    },
+    facts: [
+      { label: 'Best season', value: 'Oct – Mar' },
+      { label: 'Pace', value: 'Intense · spiritual' },
+      { label: 'Budget', value: 'From ₹3k / day' },
+    ],
+    lede: 'Madurai is older than Athens. The Pandya kings ruled here from the 3rd century BCE. The Meenakshi Amman Temple — fourteen gopurams, the tallest 170 feet, every inch carved with 33,000 figures — has held a continuous puja for 2,500 years. The old city around it is a maze of jasmine markets, brass-pot kitchens, and chai shops that still cost ₹10.',
+    moments: [
+      {
+        title: 'The 9pm Meenakshi closing puja',
+        body: "Lord Sundareswarar is carried in a palanquin to Goddess Meenakshi's chamber. Drums, conch, every night for 800 years.",
+        photo: {
+          id: '1582625313996-0d4ad2c79ff3',
+          by: 'Sankaranarayanan G',
+          alt: 'A South Indian temple at night.',
+        },
+      },
+      {
+        title: 'Jasmine market at dawn',
+        body: "East Veli Street, 5am. Madurai supplies most of India's jasmine garlands. Truckloads of white flowers.",
+        photo: { id: '1596797038530-2c107229654b', by: 'Calvin Hanson', alt: 'A flower market.' },
+      },
+      {
+        title: 'Thirumalai Nayakkar Palace',
+        body: '1636. Half the original survives — but the half that stands is breathtaking. Roman arches in a Dravidian palace.',
+        photo: {
+          id: '1561361513-2d000a50f0dc',
+          by: 'Akshay Nanavati',
+          alt: 'Old palace architecture.',
+        },
+      },
+      {
+        title: 'Jigarthanda at Famous Jigarthanda',
+        body: 'A 70-year-old shop on West Masi Street. Cooled milk, almond gum, ice cream. The only acceptable drink at 2pm.',
+        photo: {
+          id: '1585937421612-70a008356fbe',
+          by: 'Bimo Luki',
+          alt: 'Cold South Indian dessert.',
+        },
+      },
+      {
+        title: 'A weaver visit at Sungudi village',
+        body: '15km out. Sungudi tie-dye saris have a Geographical Indication tag. The dyers work in family courtyards.',
+        photo: {
+          id: '1532375810709-75b1da00537c',
+          by: 'Saurav Rastogi',
+          alt: 'A weaver dyeing fabric.',
+        },
+      },
+    ],
+    itineraries: [
+      {
+        name: 'Madurai immersive',
+        days: 3,
+        lede: 'Two temple evenings, one palace morning, one jasmine dawn, three Jigarthanda stops.',
+      },
+      {
+        name: 'Temple trail',
+        days: 7,
+        lede: 'Add Rameshwaram + Thanjavur + Tiruchirappalli. The Chola heritage circuit.',
+      },
+      {
+        name: 'Tamil deep',
+        days: 12,
+        lede: 'Chennai → Mahabalipuram → Tanjavur → Madurai → Rameshwaram → Kanyakumari. The full state.',
+      },
+    ],
+  },
+  bhuj: {
+    slug: 'bhuj',
+    name: 'Bhuj',
+    state: 'Gujarat',
+    tagline: 'The Great Rann of Kutch — a white salt desert that disappears in monsoon.',
+    hero: {
+      id: '1606044466411-207e6e72b39e',
+      by: 'Akshay Nanavati',
+      alt: 'The white salt flats of the Rann of Kutch under a full moon.',
+    },
+    facts: [
+      { label: 'Best season', value: 'Nov – Feb (Rann Utsav)' },
+      { label: 'Pace', value: 'Surreal · slow' },
+      { label: 'Budget', value: 'From ₹4k / day' },
+    ],
+    lede: "For eight months a year, the Rann is a salt flat — 30,000 km² of pure white, flat to the horizon, salt crystals on every footstep. For four months it's the Arabian Sea. The transition between the two — the dust storms, the flamingos arriving by the million, the herders driving their dromedaries across the crust — is the strangest landscape in India. The Rann Utsav from November to February makes it visitable; the rest of the year you need a permit and a guide who knows the salt.",
+    moments: [
+      {
+        title: 'Full moon at White Rann',
+        body: 'The salt mirrors the moon. The horizon disappears. You can walk for an hour and still be in the same view.',
+        photo: {
+          id: '1606044466411-207e6e72b39e',
+          by: 'Akshay Nanavati',
+          alt: 'White salt flats at night.',
+        },
+      },
+      {
+        title: 'Hodka village handicrafts',
+        body: 'Banni grasslands, 60km from Bhuj. Live with a Meghwal family. Mirror embroidery, mud-and-mirror houses, camel milk.',
+        photo: {
+          id: '1532375810709-75b1da00537c',
+          by: 'Saurav Rastogi',
+          alt: 'A village craft demonstration.',
+        },
+      },
+      {
+        title: 'Flamingo City at Khadir',
+        body: 'November–February. Half a million greater flamingos breed here. The largest flamingo gathering on earth.',
+        photo: { id: '1593693411515-c20261bcad6e', by: 'Anirban Mahapatra', alt: 'Wetland birds.' },
+      },
+      {
+        title: 'Aaina Mahal in Bhuj town',
+        body: "The Hall of Mirrors. Survived two earthquakes. The Maharao's private chambers reopened in 2018.",
+        photo: { id: '1599661046289-e31897846e41', by: 'Annie Spratt', alt: 'An ornate hall.' },
+      },
+      {
+        title: 'Mandvi beach sunset',
+        body: "Bhuj's coastal twin, 60km south. Vijay Vilas palace, a working dhow shipyard, an empty Arabian beach.",
+        photo: { id: '1512100356356-de1b84283e18', by: 'Lewis J Goetz', alt: 'A coastal sunset.' },
+      },
+    ],
+    itineraries: [
+      {
+        name: 'Rann weekend',
+        days: 3,
+        lede: 'Two nights at a Rann Utsav tent camp. One white-Rann full-moon walk. One craft village.',
+      },
+      {
+        name: 'Kutch craft trail',
+        days: 6,
+        lede: 'Add Hodka + Nirona + Bhujodi. Bell-makers, lacquer, copper bells, mirror embroidery.',
+      },
+      {
+        name: 'Gujarat arc',
+        days: 12,
+        lede: 'Ahmedabad → Bhuj → Junagadh → Somnath → Diu. Heritage + Gir lions + coast.',
+      },
+    ],
+  },
+  shillong: {
+    slug: 'shillong',
+    name: 'Shillong',
+    state: 'Meghalaya',
+    tagline:
+      'The Scotland of the East — rock music, living root bridges, monsoon rain that ends the world.',
+    hero: {
+      id: '1593348820055-1ca6db415be3',
+      by: 'Abhishek Koli',
+      alt: 'Pine-clad hills around Shillong with monsoon clouds rolling in.',
+    },
+    facts: [
+      { label: 'Best season', value: 'Mar – May, Oct – Nov' },
+      { label: 'Pace', value: 'Music · forest · wet' },
+      { label: 'Budget', value: 'From ₹4k / day' },
+    ],
+    lede: 'Cherrapunji, an hour south of Shillong, is the wettest place on earth. Mawsynram, the next valley over, is wetter. The hills are pine-and-cloud all year; the rivers cut limestone canyons that the Khasi people have woven living rubber-fig roots into bridges across for 500 years. Shillong itself is a small university town with a disproportionate rock-music scene — Bob Dylan & Beatles covers in every chai-stained café.',
+    moments: [
+      {
+        title: 'A living root bridge at Nongriat',
+        body: 'Cherrapunji → 3,500 steps down. Two bridges, one double-decker, both still growing. Stay the night, walk back at dawn.',
+        photo: {
+          id: '1567619313084-90c11abfbe53',
+          by: 'Suket Dedhia',
+          alt: 'A living-root forest bridge.',
+        },
+      },
+      {
+        title: 'Café Shillong on Police Bazaar',
+        body: 'Live music every night. Half the bands you hear at Indian music festivals started on this stage.',
+        photo: { id: '1545048702-79362596cdc9', by: 'Sandy Ravaloniaina', alt: 'A café interior.' },
+      },
+      {
+        title: "Mawlynnong, Asia's cleanest village",
+        body: '90km southeast. Bamboo dustbins in every yard. Stay at a Khasi homestay. Smoke-fish breakfast.',
+        photo: {
+          id: '1532375810709-75b1da00537c',
+          by: 'Saurav Rastogi',
+          alt: 'A clean hill village.',
+        },
+      },
+      {
+        title: 'Krang Suri falls',
+        body: 'The turquoise pool. 100m drop. Cliff-jumping platforms at three heights. Best Apr–May before monsoon.',
+        photo: {
+          id: '1593693411515-c20261bcad6e',
+          by: 'Anirban Mahapatra',
+          alt: 'A turquoise waterfall pool.',
+        },
+      },
+      {
+        title: 'Don Bosco Centre for Indigenous Cultures',
+        body: 'Two floors, eight major tribes of Northeast India, the most underrated museum in the country.',
+        photo: {
+          id: '1518002171953-a080ee817e1f',
+          by: 'Sylwia Bartyzel',
+          alt: 'A regional museum.',
+        },
+      },
+    ],
+    itineraries: [
+      {
+        name: 'Shillong & Cherrapunji',
+        days: 4,
+        lede: 'Two days in Shillong, one root-bridge trek, one Mawlynnong overnight.',
+      },
+      {
+        name: 'Seven Sisters lite',
+        days: 8,
+        lede: 'Add Kaziranga (rhinos) + Majuli (river island). Three states.',
+      },
+      {
+        name: 'Full Northeast arc',
+        days: 16,
+        lede: 'Guwahati → Shillong → Kaziranga → Majuli → Tawang → Bomdila. The far-east loop.',
+      },
+    ],
+  },
   varanasi: {
     slug: 'varanasi',
     name: 'Varanasi',
