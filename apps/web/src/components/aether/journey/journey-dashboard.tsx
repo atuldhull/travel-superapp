@@ -12,11 +12,13 @@
  * Auth-gated. Loading + error states are calm + Aether-styled.
  */
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useTheme } from '@app/aether-core';
 import {
   getTripControllerGetOneQueryKey,
   useTripControllerArchive,
+  useTripControllerDuplicate,
   useTripControllerGetItinerary,
   useTripControllerGetOne,
   useTripControllerShare,
@@ -108,10 +110,12 @@ function fmtDayHead(v: unknown): string {
 
 export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.ReactElement {
   const theme = useTheme();
+  const router = useRouter();
   const { isNarrow } = useViewport();
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [shareCopied, setShareCopied] = useState<boolean>(false);
   const [shareError, setShareError] = useState<string | null>(null);
+  const [duplicateError, setDuplicateError] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const invalidateThisTrip = (): void => {
     void queryClient.invalidateQueries({ queryKey: getTripControllerGetOneQueryKey(tripId) });
@@ -121,6 +125,18 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
   });
   const unarchiveMutation = useTripControllerUnarchive({
     mutation: { onSuccess: invalidateThisTrip },
+  });
+  const duplicateMutation = useTripControllerDuplicate({
+    mutation: {
+      onSuccess: (created: { data: TripDto }) => {
+        const dup = created.data;
+        setDuplicateError(null);
+        router.push(`/aether/journey/${dup.id}`);
+      },
+      onError: (err: unknown) => {
+        setDuplicateError(err instanceof Error ? err.message : 'Could not duplicate this journey.');
+      },
+    },
   });
   const shareMutation = useTripControllerShare({
     mutation: {
@@ -470,6 +486,34 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
                     {unarchiveMutation.isPending ? 'Restoring…' : 'Unarchive · restore'}
                   </button>
                 )}
+                <button
+                  type="button"
+                  onClick={() => duplicateMutation.mutate({ id: trip.id })}
+                  disabled={duplicateMutation.isPending}
+                  style={{
+                    padding: `${theme.space.hairline}px ${theme.space.comfy}px`,
+                    borderRadius: theme.radius.pill,
+                    background: 'transparent',
+                    border: `1px solid ${ochre.deep}`,
+                    color: ochre.deep,
+                    fontFamily: theme.font.ui,
+                    fontSize: theme.text.small.size,
+                    fontWeight: 600,
+                    cursor: duplicateMutation.isPending ? 'wait' : 'pointer',
+                    opacity: duplicateMutation.isPending ? 0.6 : 1,
+                    transition: 'background 220ms, color 220ms',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!duplicateMutation.isPending) {
+                      e.currentTarget.style.background = ochre.whisper;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'transparent';
+                  }}
+                >
+                  {duplicateMutation.isPending ? 'Duplicating…' : 'Duplicate journey'}
+                </button>
                 <Link
                   href="/aether/me/journeys"
                   style={{
@@ -487,6 +531,19 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
                   ← All journeys
                 </Link>
               </div>
+              {duplicateError !== null && (
+                <p
+                  role="alert"
+                  style={{
+                    marginTop: theme.space.tight,
+                    fontFamily: theme.font.ui,
+                    fontSize: theme.text.small.size,
+                    color: '#8a2418',
+                  }}
+                >
+                  {duplicateError}
+                </p>
+              )}
             </Reveal>
 
             {/* Share band — creates a /shared/[code] link via POST
