@@ -21,9 +21,15 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import tamaguiConfig from '../tamagui.config';
 import { bootSdk } from '../lib/sdk';
 import { persistOptions, queryClient } from '../lib/offline-cache';
+import { usePushNotifications } from '../lib/use-push-notifications';
 
 export default function RootLayout() {
   const [ready, setReady] = useState(false);
+  // [S-D4] Wire the notification-tap deep-link handler at root so it
+  // catches notifications regardless of which surface the user lands
+  // on. Permission ask + Expo-token fetch are NOT auto-triggered —
+  // profile.tsx surfaces a CTA the user has to opt into.
+  usePushNotifications();
 
   useEffect(() => {
     let mounted = true;
