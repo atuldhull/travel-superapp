@@ -33,6 +33,7 @@ import { useAudioEngine, useMotionPolicy, useTheme } from '@app/aether-core';
 import { EXPERIENCES, GUSTARE, HERO, photoUrl } from './photos';
 import { DriftNav } from './drift-nav';
 import { useParallax } from './use-parallax';
+import { useViewport } from './use-viewport';
 import { Reveal } from './drift-sections/reveal';
 import { FeaturedChips } from './drift-sections/featured-chips';
 import { StatStrip } from './drift-sections/stat-strip';
@@ -79,6 +80,7 @@ export function DriftCanvas(): React.ReactElement {
 
   // Parallax ref for the hero photo — drifts up at 0.3x scroll speed.
   const heroImgRef = useParallax<HTMLImageElement>({ speed: 0.3, maxOffset: 200 });
+  const { isNarrow } = useViewport();
 
   // Token shortcuts. App code never writes raw hex.
   const ink = theme.color.ink;
@@ -146,7 +148,9 @@ export function DriftCanvas(): React.ReactElement {
             zIndex: 1,
             maxWidth: 1280,
             margin: '0 auto',
-            padding: `${theme.space.surface}px ${theme.space.margin}px 0`,
+            padding: isNarrow
+              ? `${theme.space.hero}px ${theme.space.comfy}px 0`
+              : `${theme.space.surface}px ${theme.space.margin}px 0`,
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'flex-end',

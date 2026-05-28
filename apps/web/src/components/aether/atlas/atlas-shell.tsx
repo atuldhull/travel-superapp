@@ -7,6 +7,7 @@ import { useMemo } from 'react';
 import { AetherProvider } from '@app/aether-core';
 import { theme as baseTheme, type Theme } from '@app/aether-motion';
 import { AtlasCanvas } from './atlas-canvas';
+import { Pulse } from '../pulse/pulse';
 
 export function AtlasShell(): React.ReactElement {
   const theme = useMemo<Theme>(
@@ -25,6 +26,7 @@ export function AtlasShell(): React.ReactElement {
   return (
     <AetherProvider premiumTier={null} audioOptOut={false} theme={theme}>
       <AtlasCanvas />
+      <Pulse />
     </AetherProvider>
   );
 }

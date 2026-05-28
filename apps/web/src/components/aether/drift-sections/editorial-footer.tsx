@@ -11,6 +11,7 @@
 import Link from 'next/link';
 import { useTheme } from '@app/aether-core';
 import { HERO, EXPERIENCES, GUSTARE, REGIONS, JOURNAL, creditUrl } from '../photos';
+import { useViewport } from '../use-viewport';
 
 interface FooterColumn {
   readonly title: string;
@@ -50,6 +51,7 @@ const COLUMNS: readonly FooterColumn[] = [
 
 export function EditorialFooter(): React.ReactElement {
   const theme = useTheme();
+  const { isNarrow } = useViewport();
   const ink = theme.color.ink;
   const surface = theme.color.surface;
   const accent = theme.palette.terracotta;
@@ -67,9 +69,13 @@ export function EditorialFooter(): React.ReactElement {
         style={{
           maxWidth: 1280,
           margin: '0 auto',
-          padding: `${theme.space.hero}px ${theme.space.margin}px`,
+          padding: isNarrow
+            ? `${theme.space.gutter}px ${theme.space.comfy}px`
+            : `${theme.space.hero}px ${theme.space.margin}px`,
           display: 'grid',
-          gridTemplateColumns: 'minmax(260px, 1.5fr) repeat(3, minmax(160px, 1fr))',
+          gridTemplateColumns: isNarrow
+            ? '1fr'
+            : 'minmax(260px, 1.5fr) repeat(3, minmax(160px, 1fr))',
           gap: theme.space.gutter,
         }}
       >
