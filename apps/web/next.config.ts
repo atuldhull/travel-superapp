@@ -25,6 +25,20 @@ const nextConfig: NextConfig = {
   typedRoutes: true,
   output: 'standalone',
   outputFileTracingRoot: path.join(__dirname, '..', '..'),
+  // [AE54] Allow next/image to optimize Unsplash sources. Aether
+  // photography (drift hero, destinations, journal, atlas) all pulls
+  // from images.unsplash.com; without this entry <Image src="https
+  // ://images.unsplash.com/..." /> rejects with the platform error.
+  // SafeImg keeps using raw <img> for parallax-ref heroes (ref
+  // forwarding doesn't trivially work through next/image), but
+  // surfaces that move to <Image fill /> in the future now have
+  // the config slot they need.
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: 'images.unsplash.com' },
+      { protocol: 'https', hostname: 'plus.unsplash.com' },
+    ],
+  },
   // react-globe.gl + three (cinematic globe) and maplibre-gl + pmtiles
   // + protomaps-themes-base (offline vector map) ship untranspiled
   // ESM; Next's bundler needs them here or the ssr:false components
