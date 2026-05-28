@@ -16,6 +16,7 @@ import { useMemo } from 'react';
 import { AetherProvider } from '@app/aether-core';
 import { theme as baseTheme, type Theme } from '@app/aether-motion';
 import { DriftCanvas } from './drift-canvas';
+import { Pulse } from './pulse/pulse';
 
 export function DriftShell(): React.ReactElement {
   // Compose an apps/web-specific theme that prepends the next/font CSS
@@ -41,6 +42,7 @@ export function DriftShell(): React.ReactElement {
   return (
     <AetherProvider premiumTier={null} audioOptOut={false} theme={theme}>
       <DriftCanvas />
+      <Pulse />
     </AetherProvider>
   );
 }

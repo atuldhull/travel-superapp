@@ -20,9 +20,11 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useTheme } from '@app/aether-core';
+import { useViewport } from './use-viewport';
 
 export function DriftNav(): React.ReactElement {
   const theme = useTheme();
+  const { isNarrow } = useViewport();
   const [scrolled, setScrolled] = useState<boolean>(false);
 
   useEffect(() => {
@@ -59,11 +61,13 @@ export function DriftNav(): React.ReactElement {
         style={{
           maxWidth: 1280,
           margin: '0 auto',
-          padding: `${theme.space.inline}px ${theme.space.gutter}px`,
+          padding: isNarrow
+            ? `${theme.space.tight}px ${theme.space.comfy}px`
+            : `${theme.space.inline}px ${theme.space.gutter}px`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: theme.space.comfy,
+          gap: theme.space.tight,
         }}
       >
         {/* Wordmark + mark */}
@@ -100,86 +104,99 @@ export function DriftNav(): React.ReactElement {
           <span
             style={{
               fontFamily: theme.font.display,
-              fontSize: theme.text.large.size,
+              fontSize: isNarrow ? theme.text.body.size : theme.text.large.size,
               fontWeight: 600,
               letterSpacing: '-0.01em',
             }}
           >
-            TravelSuperApp
+            {isNarrow ? 'Aether' : 'TravelSuperApp'}
           </span>
-          <span
-            style={{
-              fontFamily: theme.font.ui,
-              fontSize: theme.text.small.size,
-              opacity: 0.6,
-              marginLeft: theme.space.tight,
-            }}
-          >
-            · Aether
-          </span>
+          {!isNarrow && (
+            <span
+              style={{
+                fontFamily: theme.font.ui,
+                fontSize: theme.text.small.size,
+                opacity: 0.6,
+                marginLeft: theme.space.tight,
+              }}
+            >
+              · Aether
+            </span>
+          )}
         </Link>
 
-        {/* Right side: anchor links + "back to app" */}
+        {/* Right side: anchor links + "back to app". On narrow only
+            the Open-the-app pill survives — Pulse + the nav anchors
+            here would overflow at <640px. The other sections are still
+            reachable via the EditorialFooter sitemap + Pulse FAB. */}
         <nav
           aria-label="Drift sections"
-          style={{ display: 'flex', alignItems: 'center', gap: theme.space.inline }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: isNarrow ? theme.space.tight : theme.space.inline,
+          }}
         >
-          <a
-            href="#esperienze"
-            style={{
-              fontFamily: theme.font.ui,
-              fontSize: theme.text.small.size,
-              fontWeight: 500,
-              letterSpacing: '0.02em',
-              textDecoration: 'none',
-              color: scrolled ? ink.soft : surface.soft,
-              transition: 'color 280ms',
-            }}
-          >
-            Experiences
-          </a>
-          <Link
-            href="/aether/atlas"
-            style={{
-              fontFamily: theme.font.ui,
-              fontSize: theme.text.small.size,
-              fontWeight: 500,
-              letterSpacing: '0.02em',
-              textDecoration: 'none',
-              color: scrolled ? ink.soft : surface.soft,
-              transition: 'color 280ms',
-            }}
-          >
-            Atlas
-          </Link>
-          <Link
-            href="/aether/journal"
-            style={{
-              fontFamily: theme.font.ui,
-              fontSize: theme.text.small.size,
-              fontWeight: 500,
-              letterSpacing: '0.02em',
-              textDecoration: 'none',
-              color: scrolled ? ink.soft : surface.soft,
-              transition: 'color 280ms',
-            }}
-          >
-            Journal
-          </Link>
-          <Link
-            href="/aether/about"
-            style={{
-              fontFamily: theme.font.ui,
-              fontSize: theme.text.small.size,
-              fontWeight: 500,
-              letterSpacing: '0.02em',
-              textDecoration: 'none',
-              color: scrolled ? ink.soft : surface.soft,
-              transition: 'color 280ms',
-            }}
-          >
-            About
-          </Link>
+          {!isNarrow && (
+            <>
+              <a
+                href="#esperienze"
+                style={{
+                  fontFamily: theme.font.ui,
+                  fontSize: theme.text.small.size,
+                  fontWeight: 500,
+                  letterSpacing: '0.02em',
+                  textDecoration: 'none',
+                  color: scrolled ? ink.soft : surface.soft,
+                  transition: 'color 280ms',
+                }}
+              >
+                Experiences
+              </a>
+              <Link
+                href="/aether/atlas"
+                style={{
+                  fontFamily: theme.font.ui,
+                  fontSize: theme.text.small.size,
+                  fontWeight: 500,
+                  letterSpacing: '0.02em',
+                  textDecoration: 'none',
+                  color: scrolled ? ink.soft : surface.soft,
+                  transition: 'color 280ms',
+                }}
+              >
+                Atlas
+              </Link>
+              <Link
+                href="/aether/journal"
+                style={{
+                  fontFamily: theme.font.ui,
+                  fontSize: theme.text.small.size,
+                  fontWeight: 500,
+                  letterSpacing: '0.02em',
+                  textDecoration: 'none',
+                  color: scrolled ? ink.soft : surface.soft,
+                  transition: 'color 280ms',
+                }}
+              >
+                Journal
+              </Link>
+              <Link
+                href="/aether/about"
+                style={{
+                  fontFamily: theme.font.ui,
+                  fontSize: theme.text.small.size,
+                  fontWeight: 500,
+                  letterSpacing: '0.02em',
+                  textDecoration: 'none',
+                  color: scrolled ? ink.soft : surface.soft,
+                  transition: 'color 280ms',
+                }}
+              >
+                About
+              </Link>
+            </>
+          )}
           <Link
             href="/home"
             style={{
@@ -199,7 +216,7 @@ export function DriftNav(): React.ReactElement {
               transition: 'background 280ms, border-color 280ms',
             }}
           >
-            Open the app
+            {isNarrow ? 'App' : 'Open the app'}
             <span aria-hidden>→</span>
           </Link>
         </nav>
