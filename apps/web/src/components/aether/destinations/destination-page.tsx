@@ -17,6 +17,7 @@
  */
 import Link from 'next/link';
 import { useMotionPolicy, useTheme } from '@app/aether-core';
+import { useTripControllerList, type TripDto } from '@app/sdk';
 import { DriftNav } from '../drift-nav';
 import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
@@ -24,6 +25,7 @@ import { useParallax } from '../use-parallax';
 import { useViewport } from '../use-viewport';
 import { photoUrl } from '../photos';
 import { SafeImg } from '../safe-img';
+import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
 import { type Destination } from './data';
 
 export interface DestinationPageProps {
@@ -35,6 +37,22 @@ export function DestinationPage({ destination: d }: DestinationPageProps): React
   const motionPolicy = useMotionPolicy();
   const { isNarrow } = useViewport();
   const heroImgRef = useParallax<HTMLImageElement>({ speed: 0.28, maxOffset: 180 });
+
+  // Surface a draft trip the signed-in user could add this destination
+  // to. Picks the most recent in-flight draft. The journey dashboard
+  // reads ?addPlace= and shows the staging banner (Phase 0 stub — the
+  // append endpoint lands in Phase 1).
+  const token = useAuthToken();
+  const bootComplete = useAuthBootComplete();
+  const isAuthed = bootComplete && token !== null;
+  const tripsQuery = useTripControllerList(
+    { limit: '5', archived: 'false' },
+    { query: { enabled: isAuthed } },
+  );
+  const draftTrip: TripDto | null = (() => {
+    const list = (tripsQuery.data?.data as { trips?: TripDto[] } | undefined)?.trips ?? [];
+    return list.find((t) => t.status === 'draft') ?? null;
+  })();
 
   const ink = theme.color.ink;
   const surface = theme.color.surface;
@@ -509,27 +527,51 @@ export function DestinationPage({ destination: d }: DestinationPageProps): React
           >
             Two minutes with the planner gets you a draft. Refine from there.
           </p>
-          <Link
-            href={`/aether/plan?where=${encodeURIComponent(d.name)}`}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 10,
-              padding: `${theme.space.comfy}px ${theme.space.loose}px`,
-              borderRadius: theme.radius.pill,
-              background: accent.base,
-              color: surface.base,
-              fontFamily: theme.font.ui,
-              fontSize: theme.text.button.size,
-              fontWeight: theme.text.button.weight,
-              textDecoration: 'none',
-              boxShadow: theme.elevation.raised.shadow,
-              letterSpacing: '0.01em',
-            }}
-          >
-            Begin the yatra
-            <span aria-hidden>→</span>
-          </Link>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: theme.space.comfy }}>
+            <Link
+              href={`/aether/plan?where=${encodeURIComponent(d.name)}`}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: `${theme.space.comfy}px ${theme.space.loose}px`,
+                borderRadius: theme.radius.pill,
+                background: accent.base,
+                color: surface.base,
+                fontFamily: theme.font.ui,
+                fontSize: theme.text.button.size,
+                fontWeight: theme.text.button.weight,
+                textDecoration: 'none',
+                boxShadow: theme.elevation.raised.shadow,
+                letterSpacing: '0.01em',
+              }}
+            >
+              Begin the yatra
+              <span aria-hidden>→</span>
+            </Link>
+            {isAuthed && draftTrip !== null && (
+              <Link
+                href={`/aether/journey/${draftTrip.id}?addPlace=${encodeURIComponent(d.name)}`}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: `${theme.space.tight}px ${theme.space.loose}px`,
+                  borderRadius: theme.radius.pill,
+                  background: 'transparent',
+                  border: `1px solid ${ochre.deep}`,
+                  color: ochre.deep,
+                  fontFamily: theme.font.ui,
+                  fontSize: theme.text.small.size,
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  letterSpacing: '0.01em',
+                }}
+              >
+                + Add to your {draftTrip.title} draft
+              </Link>
+            )}
+          </div>
         </div>
       </Reveal>
 
