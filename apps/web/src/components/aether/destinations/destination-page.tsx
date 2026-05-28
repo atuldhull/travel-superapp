@@ -449,7 +449,9 @@ export function DestinationPage({ destination: d }: DestinationPageProps): React
                     {it.lede}
                   </p>
                   <Link
-                    href="/home"
+                    href={`/aether/plan?where=${encodeURIComponent(d.name)}&pace=${encodeURIComponent(
+                      it.name,
+                    )}&days=${it.days}`}
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -508,7 +510,7 @@ export function DestinationPage({ destination: d }: DestinationPageProps): React
             Two minutes with the planner gets you a draft. Refine from there.
           </p>
           <Link
-            href="/home"
+            href={`/aether/plan?where=${encodeURIComponent(d.name)}`}
             style={{
               display: 'inline-flex',
               alignItems: 'center',

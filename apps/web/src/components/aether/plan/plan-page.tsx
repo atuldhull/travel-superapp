@@ -18,7 +18,7 @@
  * Reachable from every Begin-the-yatra CTA across the Aether surface.
  */
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { useTheme } from '@app/aether-core';
 import { useTripControllerCreate, type TripDto } from '@app/sdk';
@@ -75,6 +75,7 @@ export function PlanPage(): React.ReactElement {
   const theme = useTheme();
   const { isNarrow } = useViewport();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const token = useAuthToken();
   const bootComplete = useAuthBootComplete();
   const isAuthed = bootComplete && token !== null;
@@ -88,10 +89,26 @@ export function PlanPage(): React.ReactElement {
     },
   });
 
-  const [destination, setDestination] = useState<string>('');
-  const [when, setWhen] = useState<string>('');
-  const [pace, setPace] = useState<(typeof PACE_OPTIONS)[number]>('Balanced');
-  const [kind, setKind] = useState<(typeof KIND_OPTIONS)[number]>('Heritage');
+  // Pre-fill from query params — set by 'Plan this with AI →' CTAs on
+  // destination detail pages. Reads once on mount; later edits in the
+  // form aren't reset when the URL changes (typical SPA expectation).
+  const initialWhere = searchParams?.get('where') ?? '';
+  const initialWhen = searchParams?.get('when') ?? '';
+  const paceParam = searchParams?.get('pace');
+  const initialPace: (typeof PACE_OPTIONS)[number] =
+    paceParam !== null && paceParam !== undefined && PACE_OPTIONS.includes(paceParam as never)
+      ? (paceParam as (typeof PACE_OPTIONS)[number])
+      : 'Balanced';
+  const kindParam = searchParams?.get('kind');
+  const initialKind: (typeof KIND_OPTIONS)[number] =
+    kindParam !== null && kindParam !== undefined && KIND_OPTIONS.includes(kindParam as never)
+      ? (kindParam as (typeof KIND_OPTIONS)[number])
+      : 'Heritage';
+
+  const [destination, setDestination] = useState<string>(initialWhere);
+  const [when, setWhen] = useState<string>(initialWhen);
+  const [pace, setPace] = useState<(typeof PACE_OPTIONS)[number]>(initialPace);
+  const [kind, setKind] = useState<(typeof KIND_OPTIONS)[number]>(initialKind);
   const [submitted, setSubmitted] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
