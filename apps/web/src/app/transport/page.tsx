@@ -81,8 +81,8 @@ export default function TransportPage() {
   const router = useRouter();
   const token = useAuthToken();
   const bootComplete = useAuthBootComplete();
-  const [origin, setOrigin] = useState(DEFAULT_ORIGIN);
-  const [destination, setDestination] = useState(DEFAULT_DEST);
+  const [, setOrigin] = useState(DEFAULT_ORIGIN);
+  const [, setDestination] = useState(DEFAULT_DEST);
   const [originText, setOriginText] = useState(`${DEFAULT_ORIGIN.lat}, ${DEFAULT_ORIGIN.lng}`);
   const [destText, setDestText] = useState(`${DEFAULT_DEST.lat}, ${DEFAULT_DEST.lng}`);
   const [selectedModes, setSelectedModes] = useState<Set<TransportMode>>(() => new Set(ALL_MODES));
