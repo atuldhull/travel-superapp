@@ -139,19 +139,19 @@ export interface SampleEntry {
 export const samples = {
   /** Nylon-string root pluck for confirm events. */
   nylonPluck: {
-    url: '/audio/aether/v0/nylon-pluck-d3.mp3',
+    url: '/audio/aether/v0/nylon-pluck-d3.wav',
     loop: false,
     gainDb: -6,
   },
   /** Analog-tape ambient pad — Drift / Atlas surface background. */
   tapeAmbient: {
-    url: '/audio/aether/v0/tape-ambient-d-min.mp3',
+    url: '/audio/aether/v0/tape-ambient-d-min.wav',
     loop: true,
     gainDb: -18,
   },
   /** Mandolin confirm — used on premium-gate unlock + memory-book completion. */
   mandolinConfirm: {
-    url: '/audio/aether/v0/mandolin-flourish-d-min.mp3',
+    url: '/audio/aether/v0/mandolin-flourish-d-min.wav',
     loop: false,
     gainDb: -9,
   },
