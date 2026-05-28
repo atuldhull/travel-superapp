@@ -67,7 +67,7 @@ export function JournalPreview(): React.ReactElement {
             </h2>
           </div>
           <Link
-            href="#blog"
+            href="/aether/journal"
             style={{
               fontFamily: theme.font.ui,
               fontSize: theme.text.body.size,
