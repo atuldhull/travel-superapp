@@ -26,6 +26,7 @@ import { DriftNav } from '../drift-nav';
 import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
 import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
+import { geocodeOne } from '../../../lib/geocode';
 
 interface SketchedTrip {
   readonly slug: string;
@@ -62,11 +63,10 @@ const SKETCHES: readonly SketchedTrip[] = [
 const PACE_OPTIONS = ['Slow & deep', 'Balanced', 'Many places, fast'] as const;
 const KIND_OPTIONS = ['Heritage', 'Mountains', 'Coast', 'Food', 'Spiritual'] as const;
 
-/** Fallback center used when geocoding the freeform 'Where' isn't
- *  available yet (Phase 0). Picked Jaipur as a sensible default —
- *  ~middle of the country, on most flight paths, a common starting
- *  point for first-time India travellers. Phase 1 wires the field
- *  to a real geocoder. */
+/** Fallback center used when Photon misses on the freeform 'Where'
+ *  (typo, blank, exotic abbreviation). Picked Jaipur — a sensible
+ *  starting point for first-time India travellers + middle of the
+ *  country geographically. */
 const DEFAULT_CENTER = { lat: 26.9124, lng: 75.7873 } as const;
 const DEFAULT_RADIUS_KM = 50;
 
@@ -98,7 +98,7 @@ export function PlanPage(): React.ReactElement {
   const ochre = theme.palette.ochre;
   const olive = theme.palette.olive;
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     setErrorMsg(null);
 
@@ -117,11 +117,23 @@ export function PlanPage(): React.ReactElement {
       (trimmedWhen !== '' ? ` · ${trimmedWhen}` : '');
 
     setSubmitted(true);
+
+    // Geocode the 'Where' field — Photon (komoot) → Nominatim fallback,
+    // both keyless. Always resolves (never throws); falls through to
+    // Jaipur default on miss + on empty input.
+    let center: { lat: number; lng: number } = DEFAULT_CENTER;
+    if (trimmedDest !== '') {
+      const hit = await geocodeOne(trimmedDest, 'India', DEFAULT_CENTER);
+      if (hit !== null) {
+        center = { lat: hit.lat, lng: hit.lng };
+      }
+    }
+
     createTrip.mutate(
       {
         data: {
           title,
-          center: { lat: DEFAULT_CENTER.lat, lng: DEFAULT_CENTER.lng },
+          center,
           radiusKm: DEFAULT_RADIUS_KM,
         },
       },
@@ -298,7 +310,7 @@ export function PlanPage(): React.ReactElement {
                 </div>
               ) : (
                 <form
-                  onSubmit={handleSubmit}
+                  onSubmit={(e) => void handleSubmit(e)}
                   style={{ display: 'flex', flexDirection: 'column', gap: theme.space.loose }}
                 >
                   {errorMsg !== null && (
