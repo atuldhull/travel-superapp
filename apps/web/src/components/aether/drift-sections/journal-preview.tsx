@@ -11,6 +11,9 @@ import { useTheme, useMotionPolicy } from '@app/aether-core';
 import { JOURNAL, JOURNAL_LABELS, photoUrl } from '../photos';
 import { Reveal } from './reveal';
 
+/** Map JOURNAL_LABELS index → real slug in @/components/aether/journal/data.ts. */
+const JOURNAL_SLUGS = ['chai-at-first-light', 'monks-of-hemis', 'vanishing-banarsi-loom'] as const;
+
 export function JournalPreview(): React.ReactElement {
   const theme = useTheme();
   const motionPolicy = useMotionPolicy();
@@ -91,7 +94,7 @@ export function JournalPreview(): React.ReactElement {
           return (
             <Reveal key={photo.id} delay={idx * 100}>
               <Link
-                href={`#journal-${idx + 1}`}
+                href={`/aether/journal/${JOURNAL_SLUGS[idx]}`}
                 style={{
                   textDecoration: 'none',
                   color: 'inherit',

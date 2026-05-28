@@ -424,6 +424,318 @@ export const DESTINATIONS: Record<string, Destination> = {
       },
     ],
   },
+  mumbai: {
+    slug: 'mumbai',
+    name: 'Mumbai',
+    state: 'Maharashtra',
+    tagline: 'A city of seven islands — bombay duck, art deco, monsoon rain.',
+    hero: {
+      id: '1570168007204-dfb528c6958f',
+      by: 'Aniket Deole',
+      alt: 'The Gateway of India at dusk with the Arabian Sea behind it.',
+    },
+    facts: [
+      { label: 'Best season', value: 'Nov – Feb' },
+      { label: 'Pace', value: 'Energy & art' },
+      { label: 'Budget', value: 'From ₹5k / day' },
+    ],
+    lede: 'Bombay was seven fishing islands joined by Portuguese and British landfill, and the seams still show — Bandra was an island, Mahim was a swamp, Marine Drive was the sea. It is the only Indian city whose architecture argues with itself: Gothic Victoria Terminus, Art Deco Marine Drive, Indo-Saracenic Gateway, and the modern towers of BKC, all within an hour.',
+    moments: [
+      {
+        title: 'Sunrise at Banganga Tank',
+        body: 'A 12th-century stepwell in the middle of Walkeshwar. Brahmin priests still bathe at dawn.',
+        photo: { id: '1561361398-a8f8d1f54bd1', by: 'Akshay Patil', alt: 'A stepwell at dawn.' },
+      },
+      {
+        title: 'Kala Ghoda art walk',
+        body: 'The southern crescent — Jehangir, NGMA, Rhythm House, Kitab Khana. Half a Saturday.',
+        photo: {
+          id: '1532375810709-75b1da00537c',
+          by: 'Saurav Rastogi',
+          alt: 'A South Bombay street.',
+        },
+      },
+      {
+        title: 'Bohri thal in Bhendi Bazaar',
+        body: 'Eight people, one giant tray, eight courses, no cutlery. The most underrated meal in India.',
+        photo: {
+          id: '1585937421612-70a008356fbe',
+          by: 'Bimo Luki',
+          alt: 'A communal Indian feast.',
+        },
+      },
+      {
+        title: 'Bandra-Worli sea bridge at dusk',
+        body: 'Drive both ways. The city skyline from the middle is unforgettable.',
+        photo: { id: '1570168007204-dfb528c6958f', by: 'Aniket Deole', alt: 'A bridge at sunset.' },
+      },
+      {
+        title: 'Elephanta Caves day trip',
+        body: 'Catch the 9am ferry. The 6th-century rock-cut Shiva trimurti is the artistic highlight of western India.',
+        photo: {
+          id: '1561361513-2d000a50f0dc',
+          by: 'Akshay Nanavati',
+          alt: 'Ancient rock-cut sculpture.',
+        },
+      },
+    ],
+    itineraries: [
+      {
+        name: 'South Bombay weekend',
+        days: 3,
+        lede: 'Colaba causeway, Kala Ghoda, Marine Drive, the Bombay you imagined. Two iconic restaurants.',
+      },
+      {
+        name: 'Bombay & the coast',
+        days: 6,
+        lede: 'Add Alibaug + Kashid for two beach days. The classic Bombayite weekender.',
+      },
+      {
+        name: 'Maharashtra spine',
+        days: 10,
+        lede: 'Mumbai → Aurangabad (Ajanta + Ellora) → Pune → Mahabaleshwar. Heritage + hill stations.',
+      },
+    ],
+  },
+  coorg: {
+    slug: 'coorg',
+    name: 'Coorg',
+    state: 'Karnataka',
+    tagline: 'The Scotland of India — coffee, mist, and quiet hill folk.',
+    hero: {
+      id: '1571745544682-143ea663cf2c',
+      by: 'Lazar Gugleta',
+      alt: 'Coorg hill country covered in mist and coffee plantations.',
+    },
+    facts: [
+      { label: 'Best season', value: 'Oct – Mar' },
+      { label: 'Pace', value: 'Slow · misty' },
+      { label: 'Budget', value: 'From ₹4k / day' },
+    ],
+    lede: "Kodagu — the locals' name — is the smallest district in Karnataka and one of the most distinct cultures in India. The Kodavas have their own language, their own martial dance, their own dress, and they make 60% of India's coffee. Three valleys, a hundred homestays, weather that turns on a dime.",
+    moments: [
+      {
+        title: 'A homestay in Madikeri',
+        body: 'Skip the resorts. Stay with a Kodava family — pandhi curry for dinner, coffee at dawn.',
+        photo: { id: '1571745544682-143ea663cf2c', by: 'Lazar Gugleta', alt: 'A misty hill home.' },
+      },
+      {
+        title: 'Abbey Falls in monsoon',
+        body: 'October overflows. Walk the 15 minutes from the road. Get drenched. Worth it.',
+        photo: {
+          id: '1593693411515-c20261bcad6e',
+          by: 'Anirban Mahapatra',
+          alt: 'A waterfall in monsoon.',
+        },
+      },
+      {
+        title: 'Coffee plantation tour at Kaapi Royale',
+        body: 'See the bean from cherry to roast. Buy 2kg of single-origin arabica. Take it home.',
+        photo: {
+          id: '1545048702-79362596cdc9',
+          by: 'Sandy Ravaloniaina',
+          alt: 'Coffee beans and a cup.',
+        },
+      },
+      {
+        title: 'Talacauvery sunrise',
+        body: 'The source of the Kaveri river. 4,500ft. Drive up in the dark — the temple opens at 5am.',
+        photo: {
+          id: '1571745544682-143ea663cf2c',
+          by: 'Lazar Gugleta',
+          alt: 'A hill temple at dawn.',
+        },
+      },
+      {
+        title: 'Dubare elephant camp',
+        body: 'Forty minutes from Madikeri. Help bathe the rescued elephants in the river. Pure joy.',
+        photo: {
+          id: '1532375810709-75b1da00537c',
+          by: 'Saurav Rastogi',
+          alt: 'An elephant in a river.',
+        },
+      },
+    ],
+    itineraries: [
+      {
+        name: 'Coorg recharge',
+        days: 3,
+        lede: 'One homestay, three meals, a waterfall, a plantation walk. Phones away.',
+      },
+      {
+        name: 'Coorg & coast',
+        days: 7,
+        lede: 'Hills first, then 4 hours west to Gokarna for beach reset. The full Karnataka exhale.',
+      },
+      {
+        name: 'Western Ghats sweep',
+        days: 12,
+        lede: 'Bangalore → Coorg → Wayanad → Munnar → Thekkady → Periyar. Coffee + tea + cardamom country.',
+      },
+    ],
+  },
+  pondicherry: {
+    slug: 'pondicherry',
+    name: 'Pondicherry',
+    state: 'Tamil Nadu',
+    tagline: 'A French quarter on the Bay of Bengal — pastel walls, bouganvillea, sea breeze.',
+    hero: {
+      id: '1582625313996-0d4ad2c79ff3',
+      by: 'Sankaranarayanan G',
+      alt: 'The pastel French Quarter of Pondicherry with colonial architecture.',
+    },
+    facts: [
+      { label: 'Best season', value: 'Oct – Mar' },
+      { label: 'Pace', value: 'Café · pétanque · sea' },
+      { label: 'Budget', value: 'From ₹3.5k / day' },
+    ],
+    lede: 'Pondichéry was French until 1954 and still keeps the rond-points, the police kepi, the bouganvillea, and a school where children learn French as a first language. Walk the White Town in the morning before the sun rises high. The Tamil Quarter on the other side of the canal is louder, older, and just as worth your hours.',
+    moments: [
+      {
+        title: 'Sunrise at the Promenade',
+        body: '5:30am. Joggers, the Gandhi statue, the rocks against the Bay of Bengal. Coffee at Le Café.',
+        photo: {
+          id: '1582625313996-0d4ad2c79ff3',
+          by: 'Sankaranarayanan G',
+          alt: 'Promenade at dawn.',
+        },
+      },
+      {
+        title: 'Auroville utopia',
+        body: '10km north. The Matrimandir golden sphere, no money, no religion, an experiment in human unity.',
+        photo: {
+          id: '1567619313084-90c11abfbe53',
+          by: 'Suket Dedhia',
+          alt: 'A meditative sphere.',
+        },
+      },
+      {
+        title: 'Bouganvillea & croissants on Rue Romain Rolland',
+        body: "Just walk. Café des Arts. Baker Street. The yellow walls catch every hour's light differently.",
+        photo: {
+          id: '1582625313996-0d4ad2c79ff3',
+          by: 'Sankaranarayanan G',
+          alt: 'Pastel French Quarter walls.',
+        },
+      },
+      {
+        title: 'A bicycle through the Tamil Quarter',
+        body: 'Cross the canal. Temple bells, fish markets, kolam patterns at every door. The real Pondicherry.',
+        photo: {
+          id: '1561361398-a8f8d1f54bd1',
+          by: 'Akshay Patil',
+          alt: 'An old Tamil neighbourhood.',
+        },
+      },
+      {
+        title: 'Paradise Beach by ferry',
+        body: 'Boat ride south. Empty beach, only-coconut-water rules, return at sunset.',
+        photo: {
+          id: '1512100356356-de1b84283e18',
+          by: 'Lewis J Goetz',
+          alt: 'A quiet southern beach.',
+        },
+      },
+    ],
+    itineraries: [
+      {
+        name: 'Pondi weekend',
+        days: 3,
+        lede: 'Two nights in the White Town. One Auroville day. Long meals, sea breeze, cycle around.',
+      },
+      {
+        name: 'East coast loop',
+        days: 6,
+        lede: 'Add Mahabalipuram (UNESCO shore temple) + Chennai. The Coromandel coast in one arc.',
+      },
+      {
+        name: 'Tamil heritage',
+        days: 12,
+        lede: 'Chennai → Mahabalipuram → Pondicherry → Tanjavur → Madurai → Rameshwaram. Temple country.',
+      },
+    ],
+  },
+  spiti: {
+    slug: 'spiti',
+    name: 'Spiti',
+    state: 'Himachal Pradesh',
+    tagline: 'Trans-Himalayan high desert — fossil-strewn rivers, monasteries on cliffs.',
+    hero: {
+      id: '1606044466411-207e6e72b39e',
+      by: 'Akshay Nanavati',
+      alt: 'The barren Spiti Valley with snow peaks and a riverbed.',
+    },
+    facts: [
+      { label: 'Best season', value: 'May – Oct' },
+      { label: 'Pace', value: 'Remote · meditative' },
+      { label: 'Budget', value: 'From ₹4k / day' },
+    ],
+    lede: 'Spiti means "middle land" — the buffer between India and Tibet. Altitude 12,000ft minimum, 24 hours by road from anywhere, no chain hotels, no malls. What it offers is silence so deep you can hear your blood, monasteries that have run continuously for a thousand years, and the kind of stars no city dweller has ever seen.',
+    moments: [
+      {
+        title: 'Key Monastery at dawn',
+        body: 'Built in the 11th century, 13,500ft. Get there before the tourists. The puja begins at 6am.',
+        photo: {
+          id: '1518002171953-a080ee817e1f',
+          by: 'Sylwia Bartyzel',
+          alt: 'A Buddhist monastery on a cliff.',
+        },
+      },
+      {
+        title: "Chicham bridge — Asia's highest",
+        body: "14,000ft, a slim suspension over a 300ft gorge. You drive across it. Don't look down.",
+        photo: {
+          id: '1626621341517-bbf3d9990a23',
+          by: 'Saurav Rastogi',
+          alt: 'High Himalayan road.',
+        },
+      },
+      {
+        title: 'Fossils at Langza village',
+        body: 'Marine fossils in a high-altitude desert — Spiti was sea floor 100 million years ago.',
+        photo: {
+          id: '1606044466411-207e6e72b39e',
+          by: 'Akshay Nanavati',
+          alt: 'A high mountain village.',
+        },
+      },
+      {
+        title: 'Homestay in Kibber',
+        body: "World's highest motorable village. Stay with a family. Eat thukpa. Watch the stars come out.",
+        photo: {
+          id: '1567619313084-90c11abfbe53',
+          by: 'Suket Dedhia',
+          alt: 'A Himalayan family home.',
+        },
+      },
+      {
+        title: 'Pin Valley snow leopard tracking',
+        body: 'Feb–March only. Trained spotters, layered like a parka. Patience required. Reward, immense.',
+        photo: {
+          id: '1626621341517-bbf3d9990a23',
+          by: 'Saurav Rastogi',
+          alt: 'A snowy high valley.',
+        },
+      },
+    ],
+    itineraries: [
+      {
+        name: 'Spiti loop short',
+        days: 7,
+        lede: 'Shimla → Kalpa → Tabo → Kaza → Chandratal → Manali. The classic 1,000km circuit.',
+      },
+      {
+        name: 'Spiti deep',
+        days: 10,
+        lede: 'Add Pin Valley + Kibber + Komic + Hikkim. Time for actual immersion.',
+      },
+      {
+        name: 'Himachal grand',
+        days: 14,
+        lede: 'Add Shimla, Kalpa, Manali at top and tail. The full Himachal arc, monastery to monastery.',
+      },
+    ],
+  },
   varanasi: {
     slug: 'varanasi',
     name: 'Varanasi',
