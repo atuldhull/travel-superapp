@@ -182,6 +182,20 @@ export function DriftNav(): React.ReactElement {
                 Journal
               </Link>
               <Link
+                href="/aether/me/journeys"
+                style={{
+                  fontFamily: theme.font.ui,
+                  fontSize: theme.text.small.size,
+                  fontWeight: 500,
+                  letterSpacing: '0.02em',
+                  textDecoration: 'none',
+                  color: scrolled ? ink.soft : surface.soft,
+                  transition: 'color 280ms',
+                }}
+              >
+                My journeys
+              </Link>
+              <Link
                 href="/aether/about"
                 style={{
                   fontFamily: theme.font.ui,

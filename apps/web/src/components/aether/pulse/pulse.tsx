@@ -34,6 +34,7 @@ import { useViewport } from '../use-viewport';
 
 const QUICK_PROMPTS = [
   { label: 'Plan a trip', kind: 'plan' as const, href: '/aether/plan' },
+  { label: 'Your journeys', kind: 'mine' as const, href: '/aether/me/journeys' },
   { label: 'Find a destination', kind: 'find' as const, href: '/aether/destinations' },
   { label: 'See the map', kind: 'map' as const, href: '/aether/atlas' },
 ];
