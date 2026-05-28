@@ -32,12 +32,35 @@ export const photoUrl = (p: Photo, w: number): string => U(p.id, w);
 export const creditUrl = (p: Photo): string =>
   `https://unsplash.com/photos/${p.id}?utm_source=travelsuperapp&utm_medium=referral`;
 
-/** Hero — Taj Mahal at sunrise, full-bleed. */
+/** Hero — Taj Mahal at sunrise, full-bleed (carousel anchor #1). */
 export const HERO: Photo = {
   id: '1564507592333-c60657eea523',
   by: 'Sylwia Bartyzel',
   alt: 'The Taj Mahal at sunrise, soft pink light on white marble reflected in the long pool.',
 };
+
+/** Hero carousel — four iconic photographs that rotate every ~9s
+ *  while motionPolicy is 'full'. First image is HERO (above) so the
+ *  initial paint is the marquee Taj Mahal sunrise. Reduces to a
+ *  single still image on reduced-motion. */
+export const HERO_CAROUSEL: readonly Photo[] = [
+  HERO,
+  {
+    id: '1523906834658-6e24ef2386f9',
+    by: 'Damiano Baschiera',
+    alt: 'Rolling cypress hills under a soft golden-hour sky over a quiet valley.',
+  },
+  {
+    id: '1599661046289-e31897846e41',
+    by: 'Annie Spratt',
+    alt: 'The pink lattice façade of Hawa Mahal in Jaipur glowing at golden hour.',
+  },
+  {
+    id: '1602216056096-3b40cc0c9944',
+    by: 'Tom Vining',
+    alt: 'A Kerala houseboat drifting through palm-lined backwaters at dusk.',
+  },
+];
 
 /** Four "Our experiences" cards: Heritage / Cuisine / Mountains / Coast. */
 export const EXPERIENCES: readonly Photo[] = [

@@ -27,10 +27,10 @@
  *   • essential → parallax/reveal disabled, layout intact
  *   • none      → all transitions stripped, instant render
  */
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAudioEngine, useMotionPolicy, useTheme } from '@app/aether-core';
-import { EXPERIENCES, GUSTARE, HERO, photoUrl } from './photos';
+import { EXPERIENCES, GUSTARE, HERO, HERO_CAROUSEL, photoUrl } from './photos';
 import { DriftNav } from './drift-nav';
 import { useParallax } from './use-parallax';
 import { useViewport } from './use-viewport';
@@ -83,6 +83,17 @@ export function DriftCanvas(): React.ReactElement {
   const heroImgRef = useParallax<HTMLImageElement>({ speed: 0.3, maxOffset: 200 });
   const { isNarrow } = useViewport();
 
+  // Hero carousel — rotates every 9s through HERO_CAROUSEL while
+  // motionPolicy is 'full'. The next photograph fades in over the
+  // current one via a stacked-img cross-fade.
+  const [heroIdx, setHeroIdx] = useState<number>(0);
+  useEffect(() => {
+    if (motionPolicy !== 'full') return;
+    const id = window.setInterval(() => setHeroIdx((i) => (i + 1) % HERO_CAROUSEL.length), 9_000);
+    return () => window.clearInterval(id);
+  }, [motionPolicy]);
+  const currentHero = HERO_CAROUSEL[heroIdx] ?? HERO;
+
   // Token shortcuts. App code never writes raw hex.
   const ink = theme.color.ink;
   const surface = theme.color.surface;
@@ -112,11 +123,28 @@ export function DriftCanvas(): React.ReactElement {
         }}
         aria-label="Hero"
       >
-        {/* Hero photograph — parallax drift on scroll */}
+        {/* Hero carousel — bottom layer = always HERO so the very
+            first paint is the marquee Taj sunrise; top layer cross-
+            fades to currentHero on rotation. The parallax ref tracks
+            the active (top) layer. */}
         <img
-          ref={heroImgRef}
           src={photoUrl(HERO, 2400)}
           alt={HERO.alt}
+          aria-hidden
+          style={{
+            position: 'absolute',
+            inset: '-10% 0 -10% 0',
+            width: '100%',
+            height: '120%',
+            objectFit: 'cover',
+            transformOrigin: '50% 55%',
+          }}
+        />
+        <img
+          ref={heroImgRef}
+          key={currentHero.id}
+          src={photoUrl(currentHero, 2400)}
+          alt={currentHero.alt}
           style={{
             position: 'absolute',
             inset: '-10% 0 -10% 0',
@@ -125,8 +153,12 @@ export function DriftCanvas(): React.ReactElement {
             objectFit: 'cover',
             transform: motionPolicy === 'full' ? 'scale(1.04)' : 'none',
             transformOrigin: '50% 55%',
-            transition: 'transform 28s cubic-bezier(0.42, 0, 0.18, 1)',
-            willChange: motionPolicy === 'full' ? 'transform' : 'auto',
+            transition:
+              motionPolicy === 'full'
+                ? 'opacity 1600ms cubic-bezier(0.42, 0, 0.18, 1), transform 28s cubic-bezier(0.42, 0, 0.18, 1)'
+                : 'none',
+            willChange: motionPolicy === 'full' ? 'transform, opacity' : 'auto',
+            animation: motionPolicy === 'full' ? 'aether-hero-fade 1600ms ease-out' : 'none',
           }}
         />
         {/* Cream-tinted scrim — preserves photo while lifting palette */}
@@ -628,6 +660,14 @@ export function DriftCanvas(): React.ReactElement {
 
       {/* ─── EDITORIAL FOOTER ─────────────────────────────────────────── */}
       <EditorialFooter />
+
+      {/* Hero carousel cross-fade keyframe */}
+      <style>{`
+        @keyframes aether-hero-fade {
+          from { opacity: 0; }
+          to   { opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }
