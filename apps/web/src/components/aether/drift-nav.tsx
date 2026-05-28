@@ -138,6 +138,20 @@ export function DriftNav(): React.ReactElement {
           >
             Experiences
           </a>
+          <Link
+            href="/aether/atlas"
+            style={{
+              fontFamily: theme.font.ui,
+              fontSize: theme.text.small.size,
+              fontWeight: 500,
+              letterSpacing: '0.02em',
+              textDecoration: 'none',
+              color: scrolled ? ink.soft : surface.soft,
+              transition: 'color 280ms',
+            }}
+          >
+            Atlas
+          </Link>
           <a
             href="#blog"
             style={{
