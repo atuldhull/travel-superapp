@@ -31,40 +31,57 @@ interface Pin {
   readonly y: number;
 }
 
-/** Six destinations, positioned with approximate geographic flair —
+/** Ten destinations, positioned with approximate geographic flair —
  *  not pixel-accurate to lat/lng but recognisable. Leh up top, Kerala
- *  at the bottom, Varanasi on the right, Goa/Hampi mid-south-west. */
+ *  at the bottom, Varanasi on the east, Goa/Hampi mid-south-west,
+ *  Mumbai on the west coast, Pondicherry on the east coast. */
 const PINS: readonly Pin[] = [
   {
     slug: 'leh',
     name: 'Leh',
     state: 'Ladakh',
     tagline: 'High monasteries, thin air.',
-    x: 36,
-    y: 10,
+    x: 38,
+    y: 8,
+  },
+  {
+    slug: 'spiti',
+    name: 'Spiti',
+    state: 'Himachal Pradesh',
+    tagline: 'Trans-Himalayan high desert.',
+    x: 32,
+    y: 18,
   },
   {
     slug: 'jaipur',
     name: 'Jaipur',
     state: 'Rajasthan',
     tagline: 'Pink city of forts.',
-    x: 36,
-    y: 30,
+    x: 34,
+    y: 32,
   },
   {
     slug: 'varanasi',
     name: 'Varanasi',
     state: 'Uttar Pradesh',
     tagline: 'The oldest living city.',
-    x: 60,
-    y: 36,
+    x: 62,
+    y: 38,
+  },
+  {
+    slug: 'mumbai',
+    name: 'Mumbai',
+    state: 'Maharashtra',
+    tagline: 'A city of seven islands.',
+    x: 22,
+    y: 54,
   },
   {
     slug: 'anjuna',
     name: 'Anjuna',
     state: 'Goa',
     tagline: 'Susegad — beach & cafés.',
-    x: 30,
+    x: 26,
     y: 64,
   },
   {
@@ -72,8 +89,24 @@ const PINS: readonly Pin[] = [
     name: 'Hampi',
     state: 'Karnataka',
     tagline: 'A vanished empire in granite.',
-    x: 40,
+    x: 36,
     y: 70,
+  },
+  {
+    slug: 'coorg',
+    name: 'Coorg',
+    state: 'Karnataka',
+    tagline: 'Coffee country in the mist.',
+    x: 32,
+    y: 78,
+  },
+  {
+    slug: 'pondicherry',
+    name: 'Pondicherry',
+    state: 'Tamil Nadu',
+    tagline: 'A French quarter on the bay.',
+    x: 52,
+    y: 80,
   },
   {
     slug: 'alleppey',
@@ -81,12 +114,12 @@ const PINS: readonly Pin[] = [
     state: 'Kerala',
     tagline: 'Backwaters & houseboats.',
     x: 36,
-    y: 86,
+    y: 90,
   },
 ];
 
-/** Order in which to draw the connecting line — top-down, south circle. */
-const LINE_ORDER: readonly number[] = [0, 1, 2, 4, 5, 3, 0];
+/** Order in which to draw the connecting line — descending route. */
+const LINE_ORDER: readonly number[] = [0, 1, 2, 3, 6, 5, 4, 7, 9, 8, 3];
 
 export function AtlasCanvas(): React.ReactElement {
   const theme = useTheme();
