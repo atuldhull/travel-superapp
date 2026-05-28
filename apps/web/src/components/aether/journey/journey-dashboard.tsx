@@ -18,6 +18,7 @@ import { DriftNav } from '../drift-nav';
 import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
 import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
+import { useViewport } from '../use-viewport';
 
 export interface JourneyDashboardProps {
   tripId: string;
@@ -50,6 +51,7 @@ function fmtDate(v: unknown): string {
 
 export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.ReactElement {
   const theme = useTheme();
+  const { isNarrow } = useViewport();
   const token = useAuthToken();
   const bootComplete = useAuthBootComplete();
   const isAuthed = bootComplete && token !== null;
@@ -82,7 +84,9 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
         style={{
           maxWidth: 1100,
           margin: '0 auto',
-          padding: `${theme.space.surface}px ${theme.space.margin}px ${theme.space.hero}px`,
+          padding: isNarrow
+            ? `${theme.space.hero}px ${theme.space.comfy}px ${theme.space.gutter}px`
+            : `${theme.space.surface}px ${theme.space.margin}px ${theme.space.hero}px`,
         }}
       >
         {/* Auth-gated */}

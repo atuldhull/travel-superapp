@@ -20,6 +20,7 @@ import { useTheme, useMotionPolicy } from '@app/aether-core';
 import { DriftNav } from '../drift-nav';
 import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
+import { useViewport } from '../use-viewport';
 
 interface Pin {
   readonly slug: string;
@@ -166,6 +167,7 @@ const DARK_LABELS = 'https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/
 export function AtlasCanvas(): React.ReactElement {
   const theme = useTheme();
   const motionPolicy = useMotionPolicy();
+  const { isNarrow } = useViewport();
   const mapDivRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<unknown>(null);
 
@@ -273,7 +275,9 @@ export function AtlasCanvas(): React.ReactElement {
           style={{
             maxWidth: 1280,
             margin: '0 auto',
-            padding: `${theme.space.surface}px ${theme.space.margin}px ${theme.space.loose}px`,
+            padding: isNarrow
+              ? `${theme.space.hero}px ${theme.space.comfy}px ${theme.space.comfy}px`
+              : `${theme.space.surface}px ${theme.space.margin}px ${theme.space.loose}px`,
             textAlign: 'center',
           }}
         >

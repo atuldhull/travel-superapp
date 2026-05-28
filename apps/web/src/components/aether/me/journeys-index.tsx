@@ -17,6 +17,7 @@ import { DriftNav } from '../drift-nav';
 import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
 import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
+import { useViewport } from '../use-viewport';
 
 type ListFilter = 'all' | 'draft' | 'archived';
 
@@ -32,6 +33,7 @@ function fmtDate(v: unknown): string {
 
 export function JourneysIndex(): React.ReactElement {
   const theme = useTheme();
+  const { isNarrow } = useViewport();
   const token = useAuthToken();
   const bootComplete = useAuthBootComplete();
   const isAuthed = bootComplete && token !== null;
@@ -87,7 +89,9 @@ export function JourneysIndex(): React.ReactElement {
         style={{
           maxWidth: 1100,
           margin: '0 auto',
-          padding: `${theme.space.surface}px ${theme.space.margin}px ${theme.space.hero}px`,
+          padding: isNarrow
+            ? `${theme.space.hero}px ${theme.space.comfy}px ${theme.space.gutter}px`
+            : `${theme.space.surface}px ${theme.space.margin}px ${theme.space.hero}px`,
         }}
       >
         {/* Masthead */}
