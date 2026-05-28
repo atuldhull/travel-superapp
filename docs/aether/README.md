@@ -1,6 +1,6 @@
 # Aether — TravelSuperApp 2.0 frontend
 
-> **Status: scoped, not started.** 26 commits of S-series 1.0 work land first (per the post-compact autopilot order); Aether Phase 0 begins after C2 + D1-D5 are shipped.
+> **Status: Phase 0 in progress (2026-05-28).** 1.0 S-series shipped; all eight Phase-0-blocking decisions are answered (see [`06-decisions.md`](06-decisions.md)). Brand language locked to **Warm Italian tactile**; v2 launch milestone is Phase 1 trip-loop (~6 months solo).
 >
 > Codename for the complete frontend rebuild. Discards every current `apps/web/src/` and `apps/mobile/app/` pixel; keeps the API + `@app/sdk` + workers + ai-service untouched.
 >
@@ -14,6 +14,7 @@
 4. [`03-tech-stack.md`](03-tech-stack.md) — concrete library choices with versions + rationale.
 5. [`04-sequencing.md`](04-sequencing.md) — six-phase plan, 14-30 month range depending on team posture.
 6. [`05-uncopyability.md`](05-uncopyability.md) — why this is a real moat, not vapor.
+7. [`06-decisions.md`](06-decisions.md) — the eight Phase-0 decisions, **locked**.
 
 ## What we reuse from 1.0
 
@@ -29,18 +30,20 @@
 
 Every `.tsx` in `apps/web/src/app/**`, `apps/web/src/components/**`, `apps/mobile/app/**`, `apps/mobile/src/**`. Tamagui, the 11 generic UI primitives, the Tailwind utility soup — all of it goes. Reference implementations (auth flows, form patterns, token storage) inform Aether's equivalents but no code is copy-pasted.
 
-## Decisions blocking Phase 0
+## Decisions — locked 2026-05-28
 
-See [`04-sequencing.md`](04-sequencing.md#decisions) — eight decisions need answers before any Aether code lands:
+All eight answered in [`06-decisions.md`](06-decisions.md). Summary:
 
-1. Aspiration level (Phase 1 in ~4 months vs Phase 4 in ~14 months)
-2. Team posture (solo / contract designer+composer / hire 2-3 engineers)
-3. Brand language (serene-Japanese / warm-Italian / Scandinavian-precise / Afrofuturist)
-4. Audio mandatory vs opt-in
-5. Premium gating (which surfaces gate behind subscription)
-6. Web-first vs mobile-first launch (recommendation: web-first Phase 1-2)
-7. Continuum scope (Apple Continuity vs pan-OS WebTransport)
-8. AR commitment (Compass Eye AR mode in Phase 3 vs Phase 5)
+| #   | Decision       | Locked answer                                                 |
+| --- | -------------- | ------------------------------------------------------------- |
+| 1   | Aspiration     | Phase 1 trip-loop (~6 months solo) as v2 launch               |
+| 2   | Team           | Solo founder + composer contract                              |
+| 3   | Brand          | **Warm Italian tactile** (terracotta / ochre / olive / cream) |
+| 4   | Audio          | Mandatory, respects OS mute + reduced-motion + opt-out        |
+| 5   | Premium gating | Genie / Predictor / Compass Eye / Lumen PDF                   |
+| 6   | Launch order   | Web-first Phase 1-2, mobile Phase 4                           |
+| 7   | Continuum      | Apple Continuity + WebTransport with clean fallback           |
+| 8   | AR commitment  | Defer Compass Eye to Phase 5                                  |
 
 ## See also
 
