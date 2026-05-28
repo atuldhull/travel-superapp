@@ -4,22 +4,26 @@
  * <Pulse> — always-present AI overlay on every Aether surface.
  *
  * A small terracotta FAB sits bottom-right. Click expands it into a
- * glass-cream drawer with three quick prompts (Plan a trip / Find a
- * destination / Ask about a place) + a free-form input. Submitting
- * an input lands on /aether/plan with the question prefilled (Phase 0
- * stub — Phase 1 wires this to the ai-service /chat endpoint live in
- * the surface).
+ * glass-cream drawer with a real conversational surface — typing a
+ * place / mood / question fires the existing public `/trips/sample-plan`
+ * endpoint (the same $0 Gemini→Ollama→stub chain the landing demo
+ * uses). Follow-ups thread `instruction` + `priorPlan` so the model
+ * refines instead of restarting ("make it cheaper" / "two more days"
+ * / "more adventure").
  *
- * Mounted by every Aether *-shell via the AppChrome bare path. Hidden
- * on `/aether/plan` itself (the planner IS the AI surface there).
+ * Honest scope (matches GlobalAssistant): Pulse plans + refines. It
+ * does not book, pay, or change saved trips. All failures degrade
+ * to a calm message. No auth required.
  *
- * Honors motion policy — closed→open is a spring; reduced renders the
- * drawer flat.
+ * Hidden on `/aether/plan` itself (the planner IS the AI surface
+ * there). Mounted by every Aether *-shell inside the AetherProvider.
  */
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useMotionPolicy, useTheme } from '@app/aether-core';
+import { tripControllerSamplePlan, type GenerateSamplePlanResponseDto } from '@app/sdk';
+import { geocodeOne } from '../../../lib/geocode';
 import { useViewport } from '../use-viewport';
 
 const QUICK_PROMPTS = [
@@ -28,24 +32,38 @@ const QUICK_PROMPTS = [
   { label: 'See the map', kind: 'map' as const, href: '/aether/atlas' },
 ];
 
+interface ChatMessage {
+  readonly role: 'user' | 'assistant';
+  readonly content: string;
+}
+
+const DEFAULT_CENTER = { lat: 26.9124, lng: 75.7873 } as const; // Jaipur fallback.
+
 export function Pulse(): React.ReactElement | null {
   const theme = useTheme();
   const motionPolicy = useMotionPolicy();
   const { isNarrow } = useViewport();
   const pathname = usePathname();
-  const router = useRouter();
   const [open, setOpen] = useState<boolean>(false);
   const [q, setQ] = useState<string>('');
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [pending, setPending] = useState<boolean>(false);
+  const [provider, setProvider] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  // Threaded refinement state — sent to follow-up samplePlan calls so
+  // the model edits the prior plan instead of writing a new one.
+  const ctxRef = useRef<{
+    title: string;
+    center: { lat: number; lng: number };
+    plan: string;
+  } | null>(null);
 
-  // Hide Pulse on /aether/plan — that's already the AI surface.
   const hidden = pathname === '/aether/plan';
 
-  // Auto-focus the input when the drawer opens (motion-respecting).
   useEffect(() => {
     if (open && inputRef.current !== null) {
-      // Slight delay so the spring settles before focus.
       const id = window.setTimeout(
         () => inputRef.current?.focus(),
         motionPolicy === 'full' ? 200 : 0,
@@ -55,7 +73,12 @@ export function Pulse(): React.ReactElement | null {
     return undefined;
   }, [open, motionPolicy]);
 
-  // Close on Escape + click-outside.
+  useEffect(() => {
+    if (scrollRef.current !== null) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages, pending]);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent): void => {
@@ -82,16 +105,83 @@ export function Pulse(): React.ReactElement | null {
   const ochre = theme.palette.ochre;
   const olive = theme.palette.olive;
 
+  /** Generate or refine via the public sample-plan endpoint. */
+  async function ask(userText: string): Promise<void> {
+    const trimmed = userText.trim();
+    if (trimmed === '') return;
+
+    setMessages((prev) => [...prev, { role: 'user', content: trimmed }]);
+    setQ('');
+    setPending(true);
+
+    try {
+      let title: string;
+      let center: { lat: number; lng: number };
+      const isFollowUp = ctxRef.current !== null;
+
+      if (isFollowUp) {
+        title = ctxRef.current!.title;
+        center = ctxRef.current!.center;
+      } else {
+        const hit = await geocodeOne(trimmed, 'India', DEFAULT_CENTER);
+        title = hit?.label ?? trimmed;
+        center = hit ? { lat: hit.lat, lng: hit.lng } : DEFAULT_CENTER;
+      }
+
+      const requestBody = isFollowUp
+        ? {
+            title,
+            center,
+            radiusKm: 50,
+            instruction: trimmed,
+            priorPlan: ctxRef.current?.plan ?? '',
+          }
+        : { title, center, radiusKm: 50 };
+
+      const res = (await tripControllerSamplePlan(
+        requestBody as unknown as Parameters<typeof tripControllerSamplePlan>[0],
+      )) as unknown as { data: GenerateSamplePlanResponseDto };
+      const d = res.data;
+      const planValue: unknown = d?.plan;
+      const plan = typeof planValue === 'string' ? planValue : '';
+
+      if (plan === '') {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: 'assistant',
+            content:
+              "Couldn't sketch this one. Try a more specific place, or open the full planner via Plan a trip below.",
+          },
+        ]);
+      } else {
+        setMessages((prev) => [...prev, { role: 'assistant', content: plan }]);
+        ctxRef.current = { title, center, plan };
+        if (d?.provider) setProvider(d.provider);
+      }
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content:
+            'The intelligence is unreachable right now. The planner page still works — Plan a trip below.',
+        },
+      ]);
+    } finally {
+      setPending(false);
+    }
+  }
+
   const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
-    const trimmed = q.trim();
-    if (trimmed === '') {
-      router.push('/aether/plan');
-      return;
-    }
-    // Hand the freeform question to the planner. Phase 1 wires this to
-    // a real conversational AI endpoint.
-    router.push(`/aether/plan?q=${encodeURIComponent(trimmed)}`);
+    void ask(q);
+  };
+
+  const handleReset = (): void => {
+    setMessages([]);
+    setProvider(null);
+    ctxRef.current = null;
   };
 
   return (
@@ -105,7 +195,6 @@ export function Pulse(): React.ReactElement | null {
         fontFamily: theme.font.ui,
       }}
     >
-      {/* Drawer panel (only when open) */}
       {open && (
         <div
           role="dialog"
@@ -114,8 +203,11 @@ export function Pulse(): React.ReactElement | null {
             position: 'absolute',
             right: 0,
             bottom: 64,
-            width: 'min(360px, calc(100vw - 32px))',
-            padding: theme.space.loose,
+            width: isNarrow ? 'calc(100vw - 32px)' : 'min(420px, calc(100vw - 32px))',
+            maxHeight: 'min(620px, calc(100vh - 120px))',
+            display: 'flex',
+            flexDirection: 'column',
+            padding: theme.space.comfy,
             borderRadius: theme.radius.lg,
             background: 'rgba(242, 232, 213, 0.96)',
             backdropFilter: 'blur(16px) saturate(160%)',
@@ -130,11 +222,14 @@ export function Pulse(): React.ReactElement | null {
                 : 'none',
           }}
         >
+          {/* Header */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
+              paddingBottom: theme.space.tight,
+              borderBottom: `1px solid ${olive.whisper}`,
               marginBottom: theme.space.tight,
             }}
           >
@@ -150,53 +245,207 @@ export function Pulse(): React.ReactElement | null {
             >
               Pulse · ask anything
             </span>
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              aria-label="Close assistant"
-              style={{
-                width: 24,
-                height: 24,
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: theme.radius.pill,
-                background: 'transparent',
-                border: 'none',
-                color: ink.soft,
-                fontSize: 16,
-                cursor: 'pointer',
-                lineHeight: 1,
-              }}
-            >
-              ×
-            </button>
+            <div style={{ display: 'flex', gap: 4 }}>
+              {messages.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  aria-label="Start over"
+                  style={{
+                    fontFamily: theme.font.ui,
+                    fontSize: 10,
+                    letterSpacing: '0.14em',
+                    textTransform: 'uppercase',
+                    background: 'transparent',
+                    border: 'none',
+                    color: ink.soft,
+                    cursor: 'pointer',
+                    padding: '4px 8px',
+                    borderRadius: theme.radius.sm,
+                    fontWeight: 600,
+                  }}
+                >
+                  Reset
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label="Close assistant"
+                style={{
+                  width: 24,
+                  height: 24,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: theme.radius.pill,
+                  background: 'transparent',
+                  border: 'none',
+                  color: ink.soft,
+                  fontSize: 16,
+                  cursor: 'pointer',
+                  lineHeight: 1,
+                }}
+              >
+                ×
+              </button>
+            </div>
           </div>
 
-          <p
+          {/* Conversation scroll area */}
+          <div
+            ref={scrollRef}
             style={{
-              fontFamily: theme.font.display,
-              fontSize: 17,
-              lineHeight: 1.45,
-              letterSpacing: '-0.008em',
-              color: ink.base,
-              margin: 0,
-              marginBottom: theme.space.comfy,
+              flex: 1,
+              overflowY: 'auto',
+              padding: `${theme.space.tight}px 2px`,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: theme.space.tight,
+              minHeight: 0,
             }}
           >
-            How can the journey help today?
-          </p>
+            {messages.length === 0 && !pending && (
+              <>
+                <p
+                  style={{
+                    fontFamily: theme.font.display,
+                    fontSize: 17,
+                    lineHeight: 1.45,
+                    letterSpacing: '-0.008em',
+                    color: ink.base,
+                    margin: 0,
+                    marginBottom: theme.space.tight,
+                  }}
+                >
+                  How can the journey help today?
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <span
+                    style={{
+                      fontFamily: theme.font.ui,
+                      fontSize: 10,
+                      letterSpacing: '0.18em',
+                      textTransform: 'uppercase',
+                      color: ink.soft,
+                      opacity: 0.7,
+                      marginBottom: 4,
+                    }}
+                  >
+                    Or quick paths
+                  </span>
+                  {QUICK_PROMPTS.map((p) => (
+                    <Link
+                      key={p.kind}
+                      href={p.href}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: `${theme.space.tight}px ${theme.space.inline}px`,
+                        borderRadius: theme.radius.md,
+                        background: 'transparent',
+                        textDecoration: 'none',
+                        color: ink.base,
+                        fontFamily: theme.font.ui,
+                        fontSize: theme.text.body.size,
+                        border: `1px solid transparent`,
+                        transition: 'background 220ms, border-color 220ms',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = olive.whisper;
+                        e.currentTarget.style.borderColor = olive.whisper;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'transparent';
+                        e.currentTarget.style.borderColor = 'transparent';
+                      }}
+                      onClick={() => setOpen(false)}
+                    >
+                      <span>{p.label}</span>
+                      <span aria-hidden style={{ color: accent.deep, fontWeight: 600 }}>
+                        →
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </>
+            )}
 
+            {messages.map((m, idx) => (
+              <div
+                key={idx}
+                style={{
+                  alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
+                  maxWidth: '88%',
+                  padding: `${theme.space.tight}px ${theme.space.inline}px`,
+                  borderRadius: theme.radius.lg,
+                  background: m.role === 'user' ? accent.base : surface.base,
+                  color: m.role === 'user' ? surface.base : ink.base,
+                  fontFamily: m.role === 'user' ? theme.font.ui : theme.font.display,
+                  fontSize: m.role === 'user' ? theme.text.small.size : 14,
+                  lineHeight: m.role === 'user' ? 1.5 : 1.6,
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
+                  border: m.role === 'assistant' ? `1px solid ${ink.whisper}` : 'none',
+                  boxShadow: m.role === 'user' ? '0 2px 8px rgba(194, 97, 74, 0.25)' : 'none',
+                }}
+              >
+                {m.content}
+              </div>
+            ))}
+
+            {pending && (
+              <div
+                style={{
+                  alignSelf: 'flex-start',
+                  padding: `${theme.space.tight}px ${theme.space.inline}px`,
+                  borderRadius: theme.radius.lg,
+                  background: surface.base,
+                  border: `1px solid ${ink.whisper}`,
+                  fontFamily: theme.font.display,
+                  fontStyle: 'italic',
+                  fontSize: 14,
+                  color: ink.soft,
+                }}
+              >
+                <span
+                  style={{
+                    display: 'inline-block',
+                    animation:
+                      motionPolicy === 'full'
+                        ? 'aether-pulse-dot 1.4s ease-in-out infinite'
+                        : 'none',
+                  }}
+                >
+                  Thinking…
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Input bar */}
           <form
             onSubmit={handleSubmit}
-            style={{ display: 'flex', gap: theme.space.tight, marginBottom: theme.space.comfy }}
+            style={{
+              display: 'flex',
+              gap: theme.space.tight,
+              marginTop: theme.space.tight,
+              paddingTop: theme.space.tight,
+              borderTop: `1px solid ${olive.whisper}`,
+            }}
           >
             <input
               ref={inputRef}
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="A place, a date, a feeling…"
+              placeholder={
+                messages.length === 0
+                  ? 'A place, a mood, a question…'
+                  : 'Refine — fewer days, cheaper, more art…'
+              }
               aria-label="Ask the assistant"
+              disabled={pending}
               style={{
                 flex: 1,
                 padding: `${theme.space.tight}px ${theme.space.inline}px`,
@@ -207,85 +456,40 @@ export function Pulse(): React.ReactElement | null {
                 fontFamily: theme.font.ui,
                 fontSize: theme.text.body.size,
                 outline: 'none',
+                opacity: pending ? 0.6 : 1,
               }}
             />
             <button
               type="submit"
               aria-label="Ask"
+              disabled={pending || q.trim() === ''}
               style={{
                 width: 36,
                 height: 36,
                 flexShrink: 0,
                 borderRadius: theme.radius.pill,
-                background: accent.base,
+                background: pending || q.trim() === '' ? ink.whisper : accent.base,
                 color: surface.base,
                 border: 'none',
                 fontSize: 16,
-                cursor: 'pointer',
+                cursor: pending || q.trim() === '' ? 'not-allowed' : 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                transition: 'background 220ms',
               }}
             >
               →
             </button>
           </form>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <span
-              style={{
-                fontFamily: theme.font.ui,
-                fontSize: 10,
-                letterSpacing: '0.18em',
-                textTransform: 'uppercase',
-                color: ink.soft,
-                opacity: 0.7,
-                marginBottom: 4,
-              }}
-            >
-              Or quick paths
-            </span>
-            {QUICK_PROMPTS.map((p) => (
-              <Link
-                key={p.kind}
-                href={p.href}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: `${theme.space.tight}px ${theme.space.inline}px`,
-                  borderRadius: theme.radius.md,
-                  background: 'transparent',
-                  textDecoration: 'none',
-                  color: ink.base,
-                  fontFamily: theme.font.ui,
-                  fontSize: theme.text.body.size,
-                  border: `1px solid transparent`,
-                  transition: 'background 220ms, border-color 220ms',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = olive.whisper;
-                  e.currentTarget.style.borderColor = olive.whisper;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.borderColor = 'transparent';
-                }}
-                onClick={() => setOpen(false)}
-              >
-                <span>{p.label}</span>
-                <span aria-hidden style={{ color: accent.deep, fontWeight: 600 }}>
-                  →
-                </span>
-              </Link>
-            ))}
-          </div>
-
+          {/* Provider chip */}
           <div
             style={{
-              marginTop: theme.space.comfy,
-              paddingTop: theme.space.tight,
-              borderTop: `1px solid ${olive.whisper}`,
+              marginTop: 6,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
               fontFamily: theme.font.mono,
               fontSize: 10,
               color: ink.soft,
@@ -293,8 +497,36 @@ export function Pulse(): React.ReactElement | null {
               letterSpacing: '0.12em',
             }}
           >
-            Pulse · Phase 0 · live AI lands Phase 1
+            <span>Pulse · plans + refines, never books</span>
+            {provider !== null && <span>via {provider}</span>}
           </div>
+
+          {messages.length > 0 && (
+            <Link
+              href="/aether/plan"
+              onClick={() => setOpen(false)}
+              style={{
+                marginTop: theme.space.tight,
+                padding: `${theme.space.tight}px ${theme.space.inline}px`,
+                borderRadius: theme.radius.md,
+                background: olive.whisper,
+                border: `1px solid ${olive.whisper}`,
+                textDecoration: 'none',
+                color: ink.base,
+                fontFamily: theme.font.ui,
+                fontSize: theme.text.small.size,
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <span>Save this as a real trip</span>
+              <span aria-hidden style={{ color: accent.deep }}>
+                →
+              </span>
+            </Link>
+          )}
         </div>
       )}
 
@@ -320,6 +552,7 @@ export function Pulse(): React.ReactElement | null {
           fontSize: 22,
           fontWeight: 600,
           transition: 'transform 240ms cubic-bezier(0.42, 0, 0.18, 1), box-shadow 240ms',
+          position: 'relative',
         }}
         onMouseEnter={(e) => {
           if (motionPolicy === 'full') {
@@ -347,7 +580,6 @@ export function Pulse(): React.ReactElement | null {
             background: ochre.glow,
             border: `2px solid ${surface.base}`,
             display: open ? 'none' : 'block',
-            // Subtle pulse to draw the eye on first paint.
             animation:
               motionPolicy === 'full' ? 'aether-pulse-dot 2.4s ease-in-out infinite' : 'none',
           }}
