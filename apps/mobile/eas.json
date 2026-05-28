@@ -1,0 +1,60 @@
+{
+  "//": "EAS build + submit profiles. Installed by [S-D5] of the S-series real-functionality closeout.",
+  "//1": "Three profiles: development = Expo Go-compatible dev client; preview = internal TestFlight + Play Internal; production = App Store + Play Production.",
+  "//2": "Operator-owed before first build: `eas login` + `eas project:init` (writes the projectId into app.json). APNs key + FCM service account uploaded via `eas credentials`. Apple Developer team id + Google Play service account in apps/mobile/credentials.json (gitignored).",
+  "cli": {
+    "version": ">= 12.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "channel": "development",
+      "ios": {
+        "simulator": true
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "channel": "preview",
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://travel-api-staging.fly.dev"
+      },
+      "ios": {
+        "simulator": false
+      }
+    },
+    "production": {
+      "distribution": "store",
+      "channel": "production",
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://travel-api-prod.fly.dev"
+      }
+    }
+  },
+  "submit": {
+    "preview": {
+      "ios": {
+        "appleTeamId": "REPLACE_ME_SEE_DOPPLER",
+        "ascAppId": "REPLACE_ME_SEE_DOPPLER"
+      },
+      "android": {
+        "track": "internal",
+        "serviceAccountKeyPath": "./credentials/play-service-account.json"
+      }
+    },
+    "production": {
+      "ios": {
+        "appleTeamId": "REPLACE_ME_SEE_DOPPLER",
+        "ascAppId": "REPLACE_ME_SEE_DOPPLER"
+      },
+      "android": {
+        "track": "production",
+        "serviceAccountKeyPath": "./credentials/play-service-account.json"
+      }
+    }
+  }
+}
