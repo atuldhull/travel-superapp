@@ -19,11 +19,17 @@
  * there). Mounted by every Aether *-shell inside the AetherProvider.
  */
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useMotionPolicy, useTheme } from '@app/aether-core';
-import { tripControllerSamplePlan, type GenerateSamplePlanResponseDto } from '@app/sdk';
+import {
+  tripControllerSamplePlan,
+  useTripControllerCreate,
+  type GenerateSamplePlanResponseDto,
+  type TripDto,
+} from '@app/sdk';
 import { geocodeOne } from '../../../lib/geocode';
+import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
 import { useViewport } from '../use-viewport';
 
 const QUICK_PROMPTS = [
@@ -44,10 +50,30 @@ export function Pulse(): React.ReactElement | null {
   const motionPolicy = useMotionPolicy();
   const { isNarrow } = useViewport();
   const pathname = usePathname();
+  const router = useRouter();
+  const token = useAuthToken();
+  const bootComplete = useAuthBootComplete();
+  const isAuthed = bootComplete && token !== null;
   const [open, setOpen] = useState<boolean>(false);
   const [q, setQ] = useState<string>('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [pending, setPending] = useState<boolean>(false);
+  const [saving, setSaving] = useState<boolean>(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  const createTrip = useTripControllerCreate({
+    mutation: {
+      onSuccess: (created: TripDto) => {
+        setOpen(false);
+        setSaving(false);
+        router.push(`/aether/journey/${created.id}`);
+      },
+      onError: (err: unknown) => {
+        setSaving(false);
+        setSaveError(err instanceof Error ? err.message : 'Could not save. Try again.');
+      },
+    },
+  });
   const [provider, setProvider] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -501,31 +527,78 @@ export function Pulse(): React.ReactElement | null {
             {provider !== null && <span>via {provider}</span>}
           </div>
 
-          {messages.length > 0 && (
-            <Link
-              href="/aether/plan"
-              onClick={() => setOpen(false)}
-              style={{
-                marginTop: theme.space.tight,
-                padding: `${theme.space.tight}px ${theme.space.inline}px`,
-                borderRadius: theme.radius.md,
-                background: olive.whisper,
-                border: `1px solid ${olive.whisper}`,
-                textDecoration: 'none',
-                color: ink.base,
-                fontFamily: theme.font.ui,
-                fontSize: theme.text.small.size,
-                fontWeight: 600,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}
-            >
-              <span>Save this as a real trip</span>
-              <span aria-hidden style={{ color: accent.deep }}>
-                →
-              </span>
-            </Link>
+          {messages.length > 0 && ctxRef.current !== null && (
+            <>
+              {saveError !== null && (
+                <div
+                  role="alert"
+                  style={{
+                    marginTop: theme.space.tight,
+                    padding: `6px ${theme.space.inline}px`,
+                    borderRadius: theme.radius.sm,
+                    background: 'rgba(184, 58, 46, 0.10)',
+                    color: '#8a2418',
+                    fontFamily: theme.font.ui,
+                    fontSize: 11,
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {saveError}
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setSaveError(null);
+                  if (!isAuthed) {
+                    setOpen(false);
+                    router.push('/login?next=/aether/me/journeys');
+                    return;
+                  }
+                  if (ctxRef.current === null) return;
+                  const ctx = ctxRef.current;
+                  setSaving(true);
+                  createTrip.mutate({
+                    data: {
+                      title: ctx.title,
+                      center: { lat: ctx.center.lat, lng: ctx.center.lng },
+                      radiusKm: 50,
+                    },
+                  });
+                }}
+                disabled={saving || createTrip.isPending}
+                style={{
+                  marginTop: theme.space.tight,
+                  padding: `${theme.space.tight}px ${theme.space.inline}px`,
+                  borderRadius: theme.radius.md,
+                  background: olive.whisper,
+                  border: `1px solid ${olive.whisper}`,
+                  color: ink.base,
+                  fontFamily: theme.font.ui,
+                  fontSize: theme.text.small.size,
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  cursor: saving || createTrip.isPending ? 'wait' : 'pointer',
+                  width: '100%',
+                  textAlign: 'left',
+                  opacity: saving || createTrip.isPending ? 0.7 : 1,
+                  transition: 'background 220ms',
+                }}
+              >
+                <span>
+                  {saving || createTrip.isPending
+                    ? 'Saving the journey…'
+                    : isAuthed
+                      ? 'Save this as a real trip'
+                      : 'Sign in & save'}
+                </span>
+                <span aria-hidden style={{ color: accent.deep }}>
+                  →
+                </span>
+              </button>
+            </>
           )}
         </div>
       )}
