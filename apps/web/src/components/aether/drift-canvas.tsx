@@ -1,27 +1,45 @@
 'use client';
 
 /**
- * Drift — Aether's home surface, editorial rebuild (India edition).
+ * Drift — Aether's home surface (India edition, AE8 finishing pass).
  *
- * Magazine-grade composition: full-bleed Indian photography earning
- * the Warm palette (Jaipur sandstone / saffron / henna), display-serif
- * headlines, structured below-the-fold sections (Our experiences /
- * Swaad / trust signals).
+ * Magazine-grade composition. Bones derived from the Sapore Italiano
+ * reference; content applied to the Indian context; motion driven by
+ * the locked Aether tokens (k=120 d=18 spring, 0.42/0/0.18/1 standard
+ * easing, IntersectionObserver-driven one-shot reveals).
  *
- * The procedural sun + particle field that lived here in the first
- * Phase 0 cut moved out — they remain in @app/aether-canvas as
- * primitives for transitions / loaders / secondary surfaces, not on
- * the brand hero (a hero on black gives a tech-demo read; this gives
- * a luxury-travel read).
+ * Sections (top to bottom):
+ *   1. <DriftNav>           — sticky, transparent-over-hero → glass-cream on scroll
+ *   2. Hero                 — full-bleed Taj photo + parallax + display headline +
+ *                             italic lede + CTA + season chips + scroll indicator
+ *   3. <StatStrip>          — 28 states · 1,200 hosts · 4.9★ · 50k journeys
+ *   4. Esperienze grid      — 4 photo cards (Heritage / Cuisine / Mountains / Coast)
+ *   5. <RegionsGrid>        — 6 destination cards (Jaipur / Alleppey / Leh / Anjuna
+ *                             / Hampi / Varanasi) linking to /aether/destinations/:slug
+ *   6. Swaad band           — full-bleed spice market + centered CTA
+ *   7. <Voices>             — 3 italic-serif testimonial quotes
+ *   8. <JournalPreview>     — 3 editorial article cards
+ *   9. Trust signals        — 4-column why-us strip
+ *  10. <EditorialFooter>    — multi-column sitemap on espresso band
  *
- * Lives inside <AetherProvider> mounted by drift-shell.tsx; reads the
- * Warm Italian theme tokens (no raw hex), uses the locked springs for
- * any interaction, and respects motion + audio policy.
+ * Hero photo + every below-fold section honor motion policy:
+ *   • full     → parallax + ken-burns + staggered reveal-on-scroll
+ *   • essential → parallax/reveal disabled, layout intact
+ *   • none      → all transitions stripped, instant render
  */
 import { useCallback, useEffect } from 'react';
 import { useAudioEngine, useMotionPolicy, useTheme } from '@app/aether-core';
-import { EXPERIENCES, GUSTARE, HERO, creditUrl, photoUrl } from './photos';
+import { EXPERIENCES, GUSTARE, HERO, photoUrl } from './photos';
 import { DriftNav } from './drift-nav';
+import { useParallax } from './use-parallax';
+import { Reveal } from './drift-sections/reveal';
+import { FeaturedChips } from './drift-sections/featured-chips';
+import { StatStrip } from './drift-sections/stat-strip';
+import { RegionsGrid } from './drift-sections/regions-grid';
+import { Voices } from './drift-sections/voices';
+import { JournalPreview } from './drift-sections/journal-preview';
+import { EditorialFooter } from './drift-sections/editorial-footer';
+import { ScrollIndicator } from './drift-sections/scroll-indicator';
 
 const EXPERIENCE_LABELS: ReadonlyArray<{ title: string; subtitle: string; cta: string }> = [
   { title: 'Royal heritage', subtitle: 'Forts, palaces & living history.', cta: 'Explore →' },
@@ -58,7 +76,10 @@ export function DriftCanvas(): React.ReactElement {
     return () => engine.stopAmbient();
   }, [engine]);
 
-  // Token-derived inline styles. App code never writes raw hex.
+  // Parallax ref for the hero photo — drifts up at 0.3x scroll speed.
+  const heroImgRef = useParallax<HTMLImageElement>({ speed: 0.3, maxOffset: 200 });
+
+  // Token shortcuts. App code never writes raw hex.
   const ink = theme.color.ink;
   const surface = theme.color.surface;
   const accent = theme.palette.terracotta;
@@ -75,42 +96,44 @@ export function DriftCanvas(): React.ReactElement {
       }}
     >
       <DriftNav />
+
       {/* ─── HERO ─────────────────────────────────────────────────────── */}
       <section
         style={{
           position: 'relative',
           width: '100%',
-          height: 'min(92vh, 880px)',
+          height: 'min(96vh, 920px)',
           overflow: 'hidden',
           background: ink.deep,
         }}
         aria-label="Hero"
       >
-        {/* Hero photograph */}
+        {/* Hero photograph — parallax drift on scroll */}
         <img
+          ref={heroImgRef}
           src={photoUrl(HERO, 2400)}
           alt={HERO.alt}
           style={{
             position: 'absolute',
-            inset: 0,
+            inset: '-10% 0 -10% 0',
             width: '100%',
-            height: '100%',
+            height: '120%',
             objectFit: 'cover',
-            // Honor motion policy — no slow ken-burns drift when reduced.
             transform: motionPolicy === 'full' ? 'scale(1.04)' : 'none',
-            transformOrigin: '50% 60%',
-            transition: 'transform 24s cubic-bezier(0.42, 0, 0.18, 1)',
+            transformOrigin: '50% 55%',
+            transition: 'transform 28s cubic-bezier(0.42, 0, 0.18, 1)',
+            willChange: motionPolicy === 'full' ? 'transform' : 'auto',
           }}
         />
-        {/* Cream-tinted scrim — preserves photo while lifting palette toward Warm Italian */}
+        {/* Cream-tinted scrim — preserves photo while lifting palette */}
         <div
           style={{
             position: 'absolute',
             inset: 0,
             background: `linear-gradient(180deg,
-              rgba(242, 232, 213, 0.0) 0%,
-              rgba(242, 232, 213, 0.12) 45%,
-              rgba(42, 30, 24, 0.55) 100%)`,
+              rgba(24, 15, 11, 0.15) 0%,
+              rgba(24, 15, 11, 0.05) 30%,
+              rgba(24, 15, 11, 0.65) 100%)`,
           }}
           aria-hidden
         />
@@ -127,7 +150,7 @@ export function DriftCanvas(): React.ReactElement {
             flexDirection: 'column',
             justifyContent: 'flex-end',
             height: '100%',
-            paddingBottom: theme.space.hero,
+            paddingBottom: theme.space.hero + theme.space.gutter,
             color: surface.base,
           }}
         >
@@ -135,11 +158,12 @@ export function DriftCanvas(): React.ReactElement {
             style={{
               fontFamily: theme.font.ui,
               fontSize: theme.text.small.size,
-              letterSpacing: '0.16em',
+              letterSpacing: '0.18em',
               textTransform: 'uppercase',
               color: ochre.glow,
               margin: 0,
               marginBottom: theme.space.tight,
+              fontWeight: 600,
             }}
           >
             TravelSuperApp · यात्रा · journeys across Bharat
@@ -147,13 +171,13 @@ export function DriftCanvas(): React.ReactElement {
           <h1
             style={{
               fontFamily: theme.font.display,
-              fontSize: 'clamp(56px, 8vw, 112px)',
-              lineHeight: 1.02,
-              letterSpacing: '-0.025em',
-              fontWeight: theme.text.display.weight,
+              fontSize: 'clamp(56px, 8.4vw, 124px)',
+              lineHeight: 0.98,
+              letterSpacing: '-0.028em',
+              fontWeight: 600,
               margin: 0,
               maxWidth: '14ch',
-              textShadow: '0 2px 24px rgba(24, 15, 11, 0.35)',
+              textShadow: '0 2px 32px rgba(24, 15, 11, 0.45)',
             }}
           >
             Live Bharat.
@@ -161,7 +185,7 @@ export function DriftCanvas(): React.ReactElement {
           <p
             style={{
               fontFamily: theme.font.display,
-              fontSize: 'clamp(22px, 2.4vw, 31px)',
+              fontSize: 'clamp(22px, 2.4vw, 32px)',
               lineHeight: 1.3,
               letterSpacing: '-0.015em',
               fontStyle: 'italic',
@@ -190,7 +214,14 @@ export function DriftCanvas(): React.ReactElement {
             India is travelled.
           </p>
 
-          <div style={{ display: 'flex', gap: theme.space.comfy, alignItems: 'center' }}>
+          <div
+            style={{
+              display: 'flex',
+              gap: theme.space.comfy,
+              alignItems: 'center',
+              flexWrap: 'wrap',
+            }}
+          >
             <a
               href="#esperienze"
               style={{
@@ -227,15 +258,23 @@ export function DriftCanvas(): React.ReactElement {
                   fontSize: theme.text.small.size,
                   cursor: 'pointer',
                   backdropFilter: 'blur(8px)',
+                  WebkitBackdropFilter: 'blur(8px)',
                 }}
-                aria-label="Attiva l'audio ambientale"
+                aria-label="Enable ambient audio"
               >
                 ◔ audio
               </button>
             )}
           </div>
+
+          <FeaturedChips />
         </div>
+
+        <ScrollIndicator />
       </section>
+
+      {/* ─── STAT STRIP ───────────────────────────────────────────────── */}
+      <StatStrip />
 
       {/* ─── ESPERIENZE ───────────────────────────────────────────────── */}
       <section
@@ -243,45 +282,49 @@ export function DriftCanvas(): React.ReactElement {
         style={{
           maxWidth: 1280,
           margin: '0 auto',
-          padding: `${theme.space.surface}px ${theme.space.margin}px`,
+          padding: `${theme.space.gutter}px ${theme.space.margin}px ${theme.space.hero}px`,
         }}
+        aria-labelledby="experiences-heading"
       >
-        <div style={{ textAlign: 'center', marginBottom: theme.space.hero }}>
-          <span
-            aria-hidden
-            style={{
-              display: 'inline-block',
-              color: olive.deep,
-              fontSize: 24,
-              marginBottom: theme.space.tight,
-            }}
-          >
-            ✦
-          </span>
-          <h2
-            style={{
-              fontFamily: theme.font.display,
-              fontSize: 'clamp(36px, 4.5vw, 56px)',
-              lineHeight: 1.1,
-              letterSpacing: '-0.02em',
-              fontWeight: theme.text.display.weight,
-              margin: 0,
-              color: ink.base,
-            }}
-          >
-            Our experiences
-          </h2>
-          <p
-            style={{
-              fontFamily: theme.font.ui,
-              fontSize: theme.text.large.size,
-              color: ink.soft,
-              margin: `${theme.space.tight}px 0 0`,
-            }}
-          >
-            Hand-curated journeys across India's twenty-eight states.
-          </p>
-        </div>
+        <Reveal>
+          <div style={{ textAlign: 'center', marginBottom: theme.space.hero }}>
+            <span
+              aria-hidden
+              style={{
+                display: 'inline-block',
+                color: olive.deep,
+                fontSize: 24,
+                marginBottom: theme.space.tight,
+              }}
+            >
+              ✦
+            </span>
+            <h2
+              id="experiences-heading"
+              style={{
+                fontFamily: theme.font.display,
+                fontSize: 'clamp(36px, 4.5vw, 56px)',
+                lineHeight: 1.1,
+                letterSpacing: '-0.02em',
+                fontWeight: 600,
+                margin: 0,
+                color: ink.base,
+              }}
+            >
+              Our experiences
+            </h2>
+            <p
+              style={{
+                fontFamily: theme.font.ui,
+                fontSize: theme.text.large.size,
+                color: ink.soft,
+                margin: `${theme.space.tight}px 0 0`,
+              }}
+            >
+              Hand-curated journeys across India's twenty-eight states.
+            </p>
+          </div>
+        </Reveal>
 
         <div
           style={{
@@ -293,93 +336,103 @@ export function DriftCanvas(): React.ReactElement {
           {EXPERIENCES.map((photo, idx) => {
             const label = EXPERIENCE_LABELS[idx]!;
             return (
-              <article
-                key={photo.id}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  borderRadius: theme.radius.lg,
-                  overflow: 'hidden',
-                  background: surface.soft,
-                  boxShadow: theme.elevation.rest.shadow,
-                  border: `1px solid ${ink.whisper}`,
-                  transition: 'transform 220ms cubic-bezier(0.42, 0, 0.18, 1), box-shadow 220ms',
-                  cursor: 'pointer',
-                }}
-                onMouseEnter={(e) => {
-                  if (motionPolicy === 'full') {
-                    e.currentTarget.style.transform = 'translateY(-4px)';
-                    e.currentTarget.style.boxShadow = theme.elevation.lifted.shadow;
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = theme.elevation.rest.shadow;
-                }}
-              >
-                <div
+              <Reveal key={photo.id} delay={idx * 90}>
+                <article
                   style={{
-                    aspectRatio: '4 / 3',
-                    background: surface.deep,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    borderRadius: theme.radius.lg,
                     overflow: 'hidden',
+                    background: surface.soft,
+                    boxShadow: theme.elevation.rest.shadow,
+                    border: `1px solid ${ink.whisper}`,
+                    transition: 'transform 320ms cubic-bezier(0.42, 0, 0.18, 1), box-shadow 320ms',
+                    cursor: 'pointer',
+                    height: '100%',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (motionPolicy === 'full') {
+                      e.currentTarget.style.transform = 'translateY(-6px)';
+                      e.currentTarget.style.boxShadow = theme.elevation.lifted.shadow;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = theme.elevation.rest.shadow;
                   }}
                 >
-                  <img
-                    src={photoUrl(photo, 800)}
-                    alt={photo.alt}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                    loading="lazy"
-                  />
-                </div>
-                <div style={{ padding: theme.space.comfy }}>
-                  <h3
+                  <div
                     style={{
-                      fontFamily: theme.font.display,
-                      fontSize: theme.text.subhead.size,
-                      lineHeight: 1.25,
-                      letterSpacing: '-0.01em',
-                      fontWeight: 600,
-                      margin: 0,
-                      color: ink.base,
+                      aspectRatio: '4 / 3',
+                      background: surface.deep,
+                      overflow: 'hidden',
                     }}
                   >
-                    {label.title}
-                  </h3>
-                  <p
-                    style={{
-                      fontFamily: theme.font.ui,
-                      fontSize: theme.text.small.size,
-                      lineHeight: 1.5,
-                      color: ink.soft,
-                      margin: `${theme.space.hairline}px 0 ${theme.space.comfy}px`,
-                    }}
-                  >
-                    {label.subtitle}
-                  </p>
-                  <span
-                    style={{
-                      fontFamily: theme.font.ui,
-                      fontSize: theme.text.small.size,
-                      fontWeight: 600,
-                      color: accent.deep,
-                      letterSpacing: '0.02em',
-                    }}
-                  >
-                    {label.cta}
-                  </span>
-                </div>
-              </article>
+                    <img
+                      src={photoUrl(photo, 800)}
+                      alt={photo.alt}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        display: 'block',
+                      }}
+                      loading="lazy"
+                    />
+                  </div>
+                  <div style={{ padding: theme.space.comfy }}>
+                    <h3
+                      style={{
+                        fontFamily: theme.font.display,
+                        fontSize: theme.text.subhead.size,
+                        lineHeight: 1.25,
+                        letterSpacing: '-0.01em',
+                        fontWeight: 600,
+                        margin: 0,
+                        color: ink.base,
+                      }}
+                    >
+                      {label.title}
+                    </h3>
+                    <p
+                      style={{
+                        fontFamily: theme.font.ui,
+                        fontSize: theme.text.small.size,
+                        lineHeight: 1.5,
+                        color: ink.soft,
+                        margin: `${theme.space.hairline}px 0 ${theme.space.comfy}px`,
+                      }}
+                    >
+                      {label.subtitle}
+                    </p>
+                    <span
+                      style={{
+                        fontFamily: theme.font.ui,
+                        fontSize: theme.text.small.size,
+                        fontWeight: 600,
+                        color: accent.deep,
+                        letterSpacing: '0.02em',
+                      }}
+                    >
+                      {label.cta}
+                    </span>
+                  </div>
+                </article>
+              </Reveal>
             );
           })}
         </div>
       </section>
 
-      {/* ─── ITALIA DA GUSTARE ────────────────────────────────────────── */}
+      {/* ─── REGIONS ──────────────────────────────────────────────────── */}
+      <RegionsGrid />
+
+      {/* ─── SWAAD BAND ───────────────────────────────────────────────── */}
       <section
         style={{
           position: 'relative',
           width: '100%',
-          minHeight: 560,
+          minHeight: 600,
           overflow: 'hidden',
           background: olive.deep,
         }}
@@ -403,87 +456,99 @@ export function DriftCanvas(): React.ReactElement {
             position: 'absolute',
             inset: 0,
             background: `linear-gradient(180deg,
-              rgba(42, 30, 24, 0.15) 0%,
-              rgba(42, 30, 24, 0.55) 100%)`,
+              rgba(42, 30, 24, 0.20) 0%,
+              rgba(42, 30, 24, 0.62) 100%)`,
           }}
           aria-hidden
         />
-        <div
-          style={{
-            position: 'relative',
-            zIndex: 1,
-            maxWidth: 1280,
-            margin: '0 auto',
-            padding: `${theme.space.hero}px ${theme.space.margin}px`,
-            color: surface.base,
-            textAlign: 'center',
-          }}
-        >
-          <span
-            aria-hidden
+        <Reveal>
+          <div
             style={{
-              display: 'inline-block',
-              fontSize: 28,
-              marginBottom: theme.space.tight,
-              color: ochre.glow,
+              position: 'relative',
+              zIndex: 1,
+              maxWidth: 1280,
+              margin: '0 auto',
+              padding: `${theme.space.hero}px ${theme.space.margin}px`,
+              color: surface.base,
+              textAlign: 'center',
             }}
           >
-            ⌑
-          </span>
-          <h2
-            style={{
-              fontFamily: theme.font.display,
-              fontSize: 'clamp(36px, 4.5vw, 56px)',
-              lineHeight: 1.1,
-              letterSpacing: '-0.02em',
-              margin: 0,
-              fontWeight: theme.text.display.weight,
-              textShadow: '0 2px 12px rgba(24, 15, 11, 0.35)',
-            }}
-          >
-            Swaad — a taste of India
-          </h2>
-          <p
-            style={{
-              fontFamily: theme.font.display,
-              fontSize: 'clamp(18px, 2vw, 22px)',
-              fontStyle: 'italic',
-              lineHeight: 1.5,
-              maxWidth: '42ch',
-              margin: `${theme.space.comfy}px auto ${theme.space.loose}px`,
-              color: surface.soft,
-            }}
-          >
-            Spice routes, family recipes, and the people who have cooked them for centuries.
-          </p>
-          <a
-            href="#blog"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 10,
-              padding: `${theme.space.tight}px ${theme.space.loose}px`,
-              borderRadius: theme.radius.pill,
-              background: surface.base,
-              color: ink.base,
-              fontFamily: theme.font.ui,
-              fontSize: theme.text.button.size,
-              fontWeight: theme.text.button.weight,
-              textDecoration: 'none',
-              boxShadow: theme.elevation.raised.shadow,
-            }}
-          >
-            Read the journal
-          </a>
-        </div>
+            <span
+              aria-hidden
+              style={{
+                display: 'inline-block',
+                fontSize: 30,
+                marginBottom: theme.space.tight,
+                color: ochre.glow,
+              }}
+            >
+              ⌑
+            </span>
+            <h2
+              style={{
+                fontFamily: theme.font.display,
+                fontSize: 'clamp(36px, 4.5vw, 60px)',
+                lineHeight: 1.05,
+                letterSpacing: '-0.025em',
+                margin: 0,
+                fontWeight: 600,
+                textShadow: '0 2px 14px rgba(24, 15, 11, 0.35)',
+              }}
+            >
+              Swaad — a taste of India
+            </h2>
+            <p
+              style={{
+                fontFamily: theme.font.display,
+                fontSize: 'clamp(18px, 2vw, 23px)',
+                fontStyle: 'italic',
+                lineHeight: 1.5,
+                maxWidth: '46ch',
+                margin: `${theme.space.comfy}px auto ${theme.space.loose}px`,
+                color: surface.soft,
+              }}
+            >
+              Spice routes, family recipes, and the people who have cooked them for centuries.
+            </p>
+            <a
+              href="#blog"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: `${theme.space.tight}px ${theme.space.loose}px`,
+                borderRadius: theme.radius.pill,
+                background: surface.base,
+                color: ink.base,
+                fontFamily: theme.font.ui,
+                fontSize: theme.text.button.size,
+                fontWeight: theme.text.button.weight,
+                textDecoration: 'none',
+                boxShadow: theme.elevation.raised.shadow,
+              }}
+            >
+              Read the journal
+            </a>
+          </div>
+        </Reveal>
       </section>
+
+      {/* ─── VOICES ───────────────────────────────────────────────────── */}
+      <div id="voices">
+        <Voices />
+      </div>
+
+      {/* ─── JOURNAL ──────────────────────────────────────────────────── */}
+      <JournalPreview />
 
       {/* ─── TRUST SIGNALS ────────────────────────────────────────────── */}
       <section
+        id="trust"
         style={{
           maxWidth: 1280,
           margin: '0 auto',
           padding: `${theme.space.hero}px ${theme.space.margin}px`,
+          borderTop: `1px solid ${ink.whisper}`,
         }}
         aria-label="Why TravelSuperApp"
       >
@@ -494,90 +559,58 @@ export function DriftCanvas(): React.ReactElement {
             gap: theme.space.gutter,
           }}
         >
-          {TRUST_SIGNALS.map((s) => (
-            <div
-              key={s.title}
-              style={{
-                display: 'flex',
-                gap: theme.space.comfy,
-                alignItems: 'flex-start',
-              }}
-            >
-              <span
-                aria-hidden
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: 44,
-                  height: 44,
-                  borderRadius: theme.radius.pill,
-                  background: accent.whisper,
-                  color: accent.deep,
-                  fontSize: 20,
-                  flexShrink: 0,
-                }}
-              >
-                {s.icon}
-              </span>
-              <div>
-                <h3
+          {TRUST_SIGNALS.map((s, idx) => (
+            <Reveal key={s.title} delay={idx * 80}>
+              <div style={{ display: 'flex', gap: theme.space.comfy, alignItems: 'flex-start' }}>
+                <span
+                  aria-hidden
                   style={{
-                    fontFamily: theme.font.ui,
-                    fontSize: theme.text.body.size,
-                    fontWeight: 600,
-                    margin: 0,
-                    color: ink.base,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 44,
+                    height: 44,
+                    borderRadius: theme.radius.pill,
+                    background: accent.whisper,
+                    color: accent.deep,
+                    fontSize: 20,
+                    flexShrink: 0,
                   }}
                 >
-                  {s.title}
-                </h3>
-                <p
-                  style={{
-                    fontFamily: theme.font.ui,
-                    fontSize: theme.text.small.size,
-                    lineHeight: 1.5,
-                    color: ink.soft,
-                    margin: `${theme.space.hairline}px 0 0`,
-                  }}
-                >
-                  {s.body}
-                </p>
+                  {s.icon}
+                </span>
+                <div>
+                  <h3
+                    style={{
+                      fontFamily: theme.font.ui,
+                      fontSize: theme.text.body.size,
+                      fontWeight: 600,
+                      margin: 0,
+                      color: ink.base,
+                    }}
+                  >
+                    {s.title}
+                  </h3>
+                  <p
+                    style={{
+                      fontFamily: theme.font.ui,
+                      fontSize: theme.text.small.size,
+                      lineHeight: 1.5,
+                      color: ink.soft,
+                      margin: `${theme.space.hairline}px 0 0`,
+                    }}
+                  >
+                    {s.body}
+                  </p>
+                </div>
               </div>
-            </div>
+            </Reveal>
           ))}
         </div>
       </section>
 
-      {/* ─── CREDITS (subtle, bottom) ─────────────────────────────────── */}
-      <footer
-        style={{
-          borderTop: `1px solid ${ink.whisper}`,
-          padding: `${theme.space.loose}px ${theme.space.margin}px`,
-          fontFamily: theme.font.mono,
-          fontSize: 11,
-          color: ink.soft,
-          textAlign: 'center',
-        }}
-      >
-        Aether · Phase 0 preview · audio: {status} · motion: {motionPolicy}
-        <br />
-        Photography:{' '}
-        {[HERO, ...EXPERIENCES, GUSTARE].map((p, i, arr) => (
-          <span key={p.id}>
-            <a
-              href={creditUrl(p)}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: ink.soft, textDecoration: 'underline' }}
-            >
-              {p.by}
-            </a>
-            {i < arr.length - 1 ? ' · ' : ''}
-          </span>
-        ))}{' '}
-        on Unsplash. Phase 2 swaps to commissioned editorial.
-      </footer>
+      {/* ─── EDITORIAL FOOTER ─────────────────────────────────────────── */}
+      <EditorialFooter />
     </div>
   );
 }
