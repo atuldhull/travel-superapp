@@ -22,6 +22,7 @@ import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
 import { useParallax } from '../use-parallax';
 import { photoUrl } from '../photos';
+import { SafeImg } from '../safe-img';
 import { type Destination } from './data';
 
 export interface DestinationPageProps {
@@ -288,7 +289,7 @@ export function DestinationPage({ destination: d }: DestinationPageProps): React
                 }}
               >
                 <div style={{ aspectRatio: '3 / 2', background: surface.deep }}>
-                  <img
+                  <SafeImg
                     src={photoUrl(m.photo, 700)}
                     alt={m.photo.alt}
                     loading="lazy"

@@ -34,6 +34,7 @@ import { EXPERIENCES, GUSTARE, HERO, photoUrl } from './photos';
 import { DriftNav } from './drift-nav';
 import { useParallax } from './use-parallax';
 import { useViewport } from './use-viewport';
+import { SafeImg } from './safe-img';
 import { Reveal } from './drift-sections/reveal';
 import { FeaturedChips } from './drift-sections/featured-chips';
 import { StatStrip } from './drift-sections/stat-strip';
@@ -383,7 +384,7 @@ export function DriftCanvas(): React.ReactElement {
                         overflow: 'hidden',
                       }}
                     >
-                      <img
+                      <SafeImg
                         src={photoUrl(photo, 800)}
                         alt={photo.alt}
                         style={{
@@ -454,7 +455,7 @@ export function DriftCanvas(): React.ReactElement {
         }}
         aria-label="Swaad — taste of India"
       >
-        <img
+        <SafeImg
           src={photoUrl(GUSTARE, 2400)}
           alt={GUSTARE.alt}
           style={{

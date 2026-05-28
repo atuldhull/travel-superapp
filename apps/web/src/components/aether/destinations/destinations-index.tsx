@@ -15,6 +15,7 @@ import { DriftNav } from '../drift-nav';
 import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
 import { photoUrl } from '../photos';
+import { SafeImg } from '../safe-img';
 import { DESTINATIONS, ALL_SLUGS } from './data';
 
 type Filter = 'all' | 'heritage' | 'mountains' | 'coast' | 'cuisine';
@@ -229,7 +230,7 @@ export function DestinationsIndex(): React.ReactElement {
                       e.currentTarget.style.boxShadow = theme.elevation.rest.shadow;
                     }}
                   >
-                    <img
+                    <SafeImg
                       src={photoUrl(d.hero, 1000)}
                       alt={d.hero.alt}
                       loading="lazy"

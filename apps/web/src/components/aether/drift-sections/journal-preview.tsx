@@ -9,6 +9,7 @@
 import Link from 'next/link';
 import { useTheme, useMotionPolicy } from '@app/aether-core';
 import { JOURNAL, JOURNAL_LABELS, photoUrl } from '../photos';
+import { SafeImg } from '../safe-img';
 import { Reveal } from './reveal';
 
 /** Map JOURNAL_LABELS index → real slug in @/components/aether/journal/data.ts. */
@@ -129,7 +130,7 @@ export function JournalPreview(): React.ReactElement {
                       marginBottom: theme.space.comfy,
                     }}
                   >
-                    <img
+                    <SafeImg
                       src={photoUrl(photo, 900)}
                       alt={photo.alt}
                       loading="lazy"
