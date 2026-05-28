@@ -14,6 +14,7 @@ import { DriftNav } from '../drift-nav';
 import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
 import { photoUrl } from '../photos';
+import { SafeImg } from '../safe-img';
 import { JOURNAL_ARTICLES, ALL_JOURNAL_SLUGS } from './data';
 
 export function JournalIndex(): React.ReactElement {
@@ -134,7 +135,7 @@ export function JournalIndex(): React.ReactElement {
               }}
             >
               <div style={{ aspectRatio: '4 / 3', background: surface.deep }}>
-                <img
+                <SafeImg
                   src={photoUrl(featured.hero, 1400)}
                   alt={featured.hero.alt}
                   style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
@@ -302,7 +303,7 @@ export function JournalIndex(): React.ReactElement {
                       marginBottom: theme.space.comfy,
                     }}
                   >
-                    <img
+                    <SafeImg
                       src={photoUrl(a.hero, 900)}
                       alt={a.hero.alt}
                       loading="lazy"
