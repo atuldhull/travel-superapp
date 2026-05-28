@@ -30,7 +30,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAudioEngine, useMotionPolicy, useTheme } from '@app/aether-core';
-import { EXPERIENCES, GUSTARE, HERO, HERO_CAROUSEL, photoUrl } from './photos';
+import { EXPERIENCES, GUSTARE, HERO, HERO_CAROUSEL, creditUrl, photoUrl } from './photos';
 import { DriftNav } from './drift-nav';
 import { useParallax } from './use-parallax';
 import { useViewport } from './use-viewport';
@@ -307,6 +307,52 @@ export function DriftCanvas(): React.ReactElement {
 
           <FeaturedChips />
         </div>
+
+        {/* Photographer credit — bottom-right, cream text on dark shadow.
+            Key-binds to currentHero.id so it fades in/out alongside the
+            carousel cross-fade. */}
+        <a
+          key={`credit-${currentHero.id}`}
+          href={creditUrl(currentHero)}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`Photo by ${currentHero.by} on Unsplash`}
+          style={{
+            position: 'absolute',
+            right: isNarrow ? theme.space.comfy : theme.space.gutter,
+            bottom: isNarrow ? theme.space.comfy : theme.space.gutter,
+            zIndex: 2,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '6px 10px',
+            borderRadius: theme.radius.pill,
+            background: 'rgba(24, 15, 11, 0.42)',
+            color: surface.soft,
+            fontFamily: theme.font.ui,
+            fontSize: 11,
+            letterSpacing: '0.08em',
+            textDecoration: 'none',
+            textShadow: '0 1px 8px rgba(24, 15, 11, 0.6)',
+            backdropFilter: 'blur(6px)',
+            WebkitBackdropFilter: 'blur(6px)',
+            opacity: 0.78,
+            transition: 'opacity 320ms cubic-bezier(0.42, 0, 0.18, 1)',
+            animation: motionPolicy === 'full' ? 'aether-hero-fade 1600ms ease-out' : 'none',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.opacity = '1';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.opacity = '0.78';
+          }}
+        >
+          <span aria-hidden style={{ color: ochre.glow }}>
+            ◐
+          </span>
+          <span style={{ fontWeight: 600, color: surface.base }}>{currentHero.by}</span>
+          <span style={{ opacity: 0.72 }}>· Unsplash</span>
+        </a>
 
         <ScrollIndicator />
       </section>
