@@ -5,6 +5,7 @@ import { AetherProvider } from '@app/aether-core';
 import { theme as baseTheme, type Theme } from '@app/aether-motion';
 import { JourneysIndex } from './journeys-index';
 import { Pulse } from '../pulse/pulse';
+import { AetherA11yStyles } from '../aether-a11y-styles';
 
 export function JourneysShell(): React.ReactElement {
   const theme = useMemo<Theme>(
@@ -21,6 +22,7 @@ export function JourneysShell(): React.ReactElement {
   );
   return (
     <AetherProvider premiumTier={null} audioOptOut={false} theme={theme}>
+      <AetherA11yStyles />
       <JourneysIndex />
       <Pulse />
     </AetherProvider>

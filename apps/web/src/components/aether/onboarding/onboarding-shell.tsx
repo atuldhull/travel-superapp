@@ -5,6 +5,7 @@ import { AetherProvider } from '@app/aether-core';
 import { theme as baseTheme, type Theme } from '@app/aether-motion';
 import { OnboardingPage } from './onboarding-page';
 import { Pulse } from '../pulse/pulse';
+import { AetherA11yStyles } from '../aether-a11y-styles';
 
 export function OnboardingShell(): React.ReactElement {
   const theme = useMemo<Theme>(
@@ -21,6 +22,7 @@ export function OnboardingShell(): React.ReactElement {
   );
   return (
     <AetherProvider premiumTier={null} audioOptOut={false} theme={theme}>
+      <AetherA11yStyles />
       <OnboardingPage />
       <Pulse />
     </AetherProvider>

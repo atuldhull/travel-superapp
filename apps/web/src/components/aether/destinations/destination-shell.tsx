@@ -10,6 +10,7 @@ import { AetherProvider } from '@app/aether-core';
 import { theme as baseTheme, type Theme } from '@app/aether-motion';
 import { DestinationPage } from './destination-page';
 import { Pulse } from '../pulse/pulse';
+import { AetherA11yStyles } from '../aether-a11y-styles';
 import { type Destination } from './data';
 
 export function DestinationShell({
@@ -32,6 +33,7 @@ export function DestinationShell({
 
   return (
     <AetherProvider premiumTier={null} audioOptOut={false} theme={theme}>
+      <AetherA11yStyles />
       <DestinationPage destination={destination} />
       <Pulse />
     </AetherProvider>
