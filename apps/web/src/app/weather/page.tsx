@@ -15,7 +15,7 @@
  */
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   apiFetch,
@@ -24,7 +24,6 @@ import {
   type DailyForecastDto,
   type HourlyForecastDto,
 } from '@app/sdk';
-import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card, CardHeader, CardSubtitle, CardTitle } from '../../components/ui/card';
 import { Skeleton } from '../../components/ui/skeleton';

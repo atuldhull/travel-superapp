@@ -22,7 +22,7 @@
  */
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
@@ -37,6 +37,7 @@ import {
   type AgentReviewWithResponseDto,
   type UpdateAgentProfileRequestDto,
 } from '@app/sdk';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
 import { Card, CardHeader, CardSubtitle, CardTitle } from '../../../components/ui/card';

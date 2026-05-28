@@ -21,7 +21,7 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useReviewsControllerCreate, type CreateReviewRequestDto } from '@app/sdk';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
@@ -50,6 +50,14 @@ interface ApiError extends Error {
 }
 
 export default function NewReviewPage() {
+  return (
+    <Suspense fallback={null}>
+      <NewReviewPageInner />
+    </Suspense>
+  );
+}
+
+function NewReviewPageInner() {
   const router = useRouter();
   const params = useSearchParams();
   const token = useAuthToken();
