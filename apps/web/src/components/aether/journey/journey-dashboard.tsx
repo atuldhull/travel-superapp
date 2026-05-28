@@ -17,9 +17,13 @@ import { useTheme } from '@app/aether-core';
 import {
   getTripControllerGetOneQueryKey,
   useTripControllerArchive,
+  useTripControllerGetItinerary,
   useTripControllerGetOne,
   useTripControllerShare,
   useTripControllerUnarchive,
+  type ItineraryDayDto,
+  type ItineraryItemDto,
+  type ItineraryListResponseDto,
   type TripDto,
   type TripShareResponseDto,
 } from '@app/sdk';
@@ -57,6 +61,49 @@ function fmtDate(v: unknown): string {
     month: 'short',
     day: 'numeric',
   });
+}
+
+/** Pull a string field off the itinerary day's free-form summary blob. */
+function readSummaryField(
+  summary: ItineraryDayDto['summary'],
+  key: 'title' | 'subtitle' | 'theme' | 'note',
+): string | null {
+  if (summary === null) return null;
+  const v = (summary as Record<string, unknown>)[key];
+  return typeof v === 'string' && v.trim().length > 0 ? v : null;
+}
+
+/** Format a HH:MM:SS / ISO string fragment as a soft 4:32 PM style. */
+function fmtTime(v: unknown): string | null {
+  const s = asIso(v);
+  if (s === null) return null;
+  // Itinerary times can be naked clock strings (e.g. "09:30:00") OR
+  // timestamps. Try Date first; if it doesn't parse, fall back to the
+  // raw HH:MM slice.
+  const d = new Date(s);
+  if (!Number.isNaN(d.getTime()) && s.length > 8) {
+    return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  }
+  const match = /^(\d{1,2}):(\d{2})/.exec(s);
+  if (match !== null) {
+    const h = Number(match[1]);
+    const m = match[2];
+    const period = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 === 0 ? 12 : h % 12;
+    return `${h12}:${m} ${period}`;
+  }
+  return null;
+}
+
+/** Day-of-week + numeric date e.g. "Mon · Jun 3". */
+function fmtDayHead(v: unknown): string {
+  const iso = asIso(v);
+  if (iso === null) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '—';
+  const wk = d.toLocaleDateString(undefined, { weekday: 'short' });
+  const md = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return `${wk} · ${md}`;
 }
 
 export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.ReactElement {
@@ -97,6 +144,15 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
     query: { enabled: isAuthed, retry: 1 },
   });
   const trip = query.data?.data as TripDto | undefined;
+
+  // Itinerary days — separate endpoint. Fetch only once the trip is
+  // resolved so we don't burn calls on the auth-pending state.
+  const itineraryQuery = useTripControllerGetItinerary(tripId, {
+    query: { enabled: isAuthed && trip !== undefined, retry: 1 },
+  });
+  const itinerary = itineraryQuery.data?.data as ItineraryListResponseDto | undefined;
+  const days: ItineraryDayDto[] = itinerary?.days ?? [];
+  const hasItinerary = days.length > 0;
 
   const ink = theme.color.ink;
   const surface = theme.color.surface;
@@ -578,98 +634,335 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
               </div>
             </Reveal>
 
-            {/* Itinerary stub — Phase 1 wires to GET /trips/[id]/itinerary */}
-            <Reveal>
-              <div
-                style={{
-                  marginTop: theme.space.hero,
-                  padding: theme.space.loose,
-                  borderRadius: theme.radius.lg,
-                  background: surface.soft,
-                  border: `1px dashed ${olive.deep}`,
-                }}
-              >
-                <p
-                  style={{
-                    fontFamily: theme.font.ui,
-                    fontSize: 11,
-                    letterSpacing: '0.18em',
-                    textTransform: 'uppercase',
-                    color: olive.deep,
-                    fontWeight: 600,
-                    margin: 0,
-                    marginBottom: theme.space.tight,
-                  }}
-                >
-                  Day-by-day · coming next
-                </p>
-                <h2
-                  style={{
-                    fontFamily: theme.font.display,
-                    fontSize: 'clamp(22px, 2.6vw, 32px)',
-                    lineHeight: 1.2,
-                    letterSpacing: '-0.014em',
-                    fontWeight: 600,
-                    margin: 0,
-                    color: ink.base,
-                  }}
-                >
-                  The intelligence is preparing your itinerary.
-                </h2>
-                <p
-                  style={{
-                    fontFamily: theme.font.display,
-                    fontStyle: 'italic',
-                    fontSize: 17,
-                    lineHeight: 1.55,
-                    color: ink.soft,
-                    margin: `${theme.space.tight}px 0 ${theme.space.comfy}px`,
-                  }}
-                >
-                  Open this journey in the full planner to read the day-by-day, swap places, adjust
-                  pace, or add a host. The Aether dashboard shows the shape — the planner does the
-                  edit.
-                </p>
-                <div style={{ display: 'flex', gap: theme.space.tight, flexWrap: 'wrap' }}>
-                  <Link
-                    href={`/trips/${tripId}`}
+            {/* Itinerary — real days when present, calm stub otherwise. */}
+            {hasItinerary ? (
+              <Reveal>
+                <div style={{ marginTop: theme.space.hero }}>
+                  <p
                     style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      padding: `${theme.space.tight}px ${theme.space.loose}px`,
-                      borderRadius: theme.radius.pill,
-                      background: accent.base,
-                      color: surface.base,
                       fontFamily: theme.font.ui,
-                      fontSize: theme.text.button.size,
-                      fontWeight: theme.text.button.weight,
-                      textDecoration: 'none',
-                      boxShadow: theme.elevation.raised.shadow,
+                      fontSize: 11,
+                      letterSpacing: '0.22em',
+                      textTransform: 'uppercase',
+                      color: accent.deep,
+                      fontWeight: 600,
+                      margin: 0,
+                      marginBottom: theme.space.tight,
                     }}
                   >
-                    Open in the planner
-                    <span aria-hidden>→</span>
-                  </Link>
-                  <Link
-                    href="/aether/plan"
+                    Day by day · {days.length} {days.length === 1 ? 'day' : 'days'}
+                  </p>
+                  <h2
                     style={{
-                      padding: `${theme.space.tight}px ${theme.space.loose}px`,
-                      borderRadius: theme.radius.pill,
-                      background: 'transparent',
+                      fontFamily: theme.font.display,
+                      fontSize: 'clamp(28px, 3.4vw, 44px)',
+                      lineHeight: 1.1,
+                      letterSpacing: '-0.018em',
+                      fontWeight: 600,
+                      margin: 0,
+                      marginBottom: theme.space.gutter,
                       color: ink.base,
-                      fontFamily: theme.font.ui,
-                      fontSize: theme.text.button.size,
-                      fontWeight: theme.text.button.weight,
-                      textDecoration: 'none',
-                      border: `1px solid ${ink.whisper}`,
                     }}
                   >
-                    Sketch another
-                  </Link>
+                    The shape of your yatra.
+                  </h2>
+                  <ol
+                    style={{
+                      listStyle: 'none',
+                      padding: 0,
+                      margin: 0,
+                      display: 'grid',
+                      gap: theme.space.comfy,
+                    }}
+                  >
+                    {days.map((day) => {
+                      const dayNumber = day.dayIndex + 1;
+                      const title = readSummaryField(day.summary, 'title');
+                      const subtitle =
+                        readSummaryField(day.summary, 'subtitle') ??
+                        readSummaryField(day.summary, 'theme');
+                      const note = readSummaryField(day.summary, 'note');
+                      const items = [...day.items].sort(
+                        (a: ItineraryItemDto, b: ItineraryItemDto) => a.position - b.position,
+                      );
+                      return (
+                        <li
+                          key={day.id}
+                          style={{
+                            padding: theme.space.loose,
+                            borderRadius: theme.radius.lg,
+                            background: surface.soft,
+                            border: `1px solid ${olive.whisper}`,
+                            display: 'grid',
+                            gridTemplateColumns: isNarrow ? '1fr' : '88px 1fr',
+                            gap: theme.space.comfy,
+                          }}
+                        >
+                          {/* Numeral cap — display-serif, terracotta */}
+                          <div
+                            style={{
+                              fontFamily: theme.font.display,
+                              fontSize: isNarrow ? 28 : 56,
+                              lineHeight: 1,
+                              letterSpacing: '-0.02em',
+                              fontWeight: 600,
+                              color: accent.deep,
+                              textAlign: isNarrow ? 'left' : 'right',
+                            }}
+                          >
+                            {String(dayNumber).padStart(2, '0')}
+                          </div>
+                          <div>
+                            <p
+                              style={{
+                                fontFamily: theme.font.ui,
+                                fontSize: 11,
+                                letterSpacing: '0.18em',
+                                textTransform: 'uppercase',
+                                color: ink.soft,
+                                fontWeight: 600,
+                                margin: 0,
+                              }}
+                            >
+                              Day {dayNumber} · {fmtDayHead(day.date)}
+                            </p>
+                            <h3
+                              style={{
+                                fontFamily: theme.font.display,
+                                fontSize: 'clamp(22px, 2.4vw, 30px)',
+                                lineHeight: 1.2,
+                                letterSpacing: '-0.014em',
+                                fontWeight: 600,
+                                margin: `${theme.space.hairline}px 0 0`,
+                                color: ink.base,
+                              }}
+                            >
+                              {title ?? 'A quiet day in the journey.'}
+                            </h3>
+                            {subtitle !== null && (
+                              <p
+                                style={{
+                                  fontFamily: theme.font.display,
+                                  fontStyle: 'italic',
+                                  fontSize: 17,
+                                  lineHeight: 1.5,
+                                  color: ink.soft,
+                                  margin: `${theme.space.tight}px 0 0`,
+                                }}
+                              >
+                                {subtitle}
+                              </p>
+                            )}
+                            {items.length > 0 && (
+                              <ul
+                                style={{
+                                  listStyle: 'none',
+                                  padding: 0,
+                                  margin: `${theme.space.comfy}px 0 0`,
+                                  display: 'grid',
+                                  gap: theme.space.hairline,
+                                }}
+                              >
+                                {items.map((item) => {
+                                  const start = fmtTime(item.startTime);
+                                  const end = fmtTime(item.endTime);
+                                  const noteText = asIso(item.notes);
+                                  const done = asIso(item.completedAt) !== null;
+                                  return (
+                                    <li
+                                      key={item.id}
+                                      style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: '76px 1fr',
+                                        gap: theme.space.tight,
+                                        fontFamily: theme.font.ui,
+                                        fontSize: theme.text.body.size,
+                                        lineHeight: 1.5,
+                                        color: done ? ink.soft : ink.base,
+                                        textDecoration: done ? 'line-through' : 'none',
+                                      }}
+                                    >
+                                      <span
+                                        style={{
+                                          fontFamily: theme.font.mono,
+                                          fontSize: 11,
+                                          letterSpacing: '0.06em',
+                                          color: ink.soft,
+                                          paddingTop: 2,
+                                        }}
+                                      >
+                                        {start ?? '—'}
+                                        {end !== null && start !== null ? ` · ${end}` : ''}
+                                      </span>
+                                      <span>{noteText ?? 'Movement, with no script.'}</span>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            )}
+                            {note !== null && (
+                              <p
+                                style={{
+                                  fontFamily: theme.font.display,
+                                  fontStyle: 'italic',
+                                  fontSize: 15,
+                                  lineHeight: 1.55,
+                                  color: ink.soft,
+                                  margin: `${theme.space.comfy}px 0 0`,
+                                  paddingLeft: theme.space.comfy,
+                                  borderLeft: `2px solid ${ochre.deep}`,
+                                }}
+                              >
+                                {note}
+                              </p>
+                            )}
+                            {items.length === 0 && (
+                              <p
+                                style={{
+                                  fontFamily: theme.font.display,
+                                  fontStyle: 'italic',
+                                  fontSize: 15,
+                                  lineHeight: 1.55,
+                                  color: ink.soft,
+                                  margin: `${theme.space.tight}px 0 0`,
+                                }}
+                              >
+                                A pause day. Open in the planner to fill it in.
+                              </p>
+                            )}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                  <div
+                    style={{
+                      marginTop: theme.space.gutter,
+                      display: 'flex',
+                      gap: theme.space.tight,
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <Link
+                      href={`/trips/${tripId}`}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: `${theme.space.tight}px ${theme.space.loose}px`,
+                        borderRadius: theme.radius.pill,
+                        background: accent.base,
+                        color: surface.base,
+                        fontFamily: theme.font.ui,
+                        fontSize: theme.text.button.size,
+                        fontWeight: theme.text.button.weight,
+                        textDecoration: 'none',
+                        boxShadow: theme.elevation.raised.shadow,
+                      }}
+                    >
+                      Edit in the planner
+                      <span aria-hidden>→</span>
+                    </Link>
+                  </div>
                 </div>
-              </div>
-            </Reveal>
+              </Reveal>
+            ) : (
+              <Reveal>
+                <div
+                  style={{
+                    marginTop: theme.space.hero,
+                    padding: theme.space.loose,
+                    borderRadius: theme.radius.lg,
+                    background: surface.soft,
+                    border: `1px dashed ${olive.deep}`,
+                  }}
+                >
+                  <p
+                    style={{
+                      fontFamily: theme.font.ui,
+                      fontSize: 11,
+                      letterSpacing: '0.18em',
+                      textTransform: 'uppercase',
+                      color: olive.deep,
+                      fontWeight: 600,
+                      margin: 0,
+                      marginBottom: theme.space.tight,
+                    }}
+                  >
+                    {itineraryQuery.isPending
+                      ? 'Day-by-day · gathering'
+                      : 'Day-by-day · coming next'}
+                  </p>
+                  <h2
+                    style={{
+                      fontFamily: theme.font.display,
+                      fontSize: 'clamp(22px, 2.6vw, 32px)',
+                      lineHeight: 1.2,
+                      letterSpacing: '-0.014em',
+                      fontWeight: 600,
+                      margin: 0,
+                      color: ink.base,
+                    }}
+                  >
+                    {itineraryQuery.isPending
+                      ? 'Reading the days…'
+                      : 'The intelligence is preparing your itinerary.'}
+                  </h2>
+                  <p
+                    style={{
+                      fontFamily: theme.font.display,
+                      fontStyle: 'italic',
+                      fontSize: 17,
+                      lineHeight: 1.55,
+                      color: ink.soft,
+                      margin: `${theme.space.tight}px 0 ${theme.space.comfy}px`,
+                    }}
+                  >
+                    Open this journey in the full planner to read the day-by-day, swap places,
+                    adjust pace, or add a host. The Aether dashboard shows the shape — the planner
+                    does the edit.
+                  </p>
+                  <div style={{ display: 'flex', gap: theme.space.tight, flexWrap: 'wrap' }}>
+                    <Link
+                      href={`/trips/${tripId}`}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: `${theme.space.tight}px ${theme.space.loose}px`,
+                        borderRadius: theme.radius.pill,
+                        background: accent.base,
+                        color: surface.base,
+                        fontFamily: theme.font.ui,
+                        fontSize: theme.text.button.size,
+                        fontWeight: theme.text.button.weight,
+                        textDecoration: 'none',
+                        boxShadow: theme.elevation.raised.shadow,
+                      }}
+                    >
+                      Open in the planner
+                      <span aria-hidden>→</span>
+                    </Link>
+                    <Link
+                      href="/aether/plan"
+                      style={{
+                        padding: `${theme.space.tight}px ${theme.space.loose}px`,
+                        borderRadius: theme.radius.pill,
+                        background: 'transparent',
+                        color: ink.base,
+                        fontFamily: theme.font.ui,
+                        fontSize: theme.text.button.size,
+                        fontWeight: theme.text.button.weight,
+                        textDecoration: 'none',
+                        border: `1px solid ${ink.whisper}`,
+                      }}
+                    >
+                      Sketch another
+                    </Link>
+                  </div>
+                </div>
+              </Reveal>
+            )}
 
             {/* Footer meta */}
             <Reveal>
