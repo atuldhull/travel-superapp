@@ -5,13 +5,14 @@
  * is off, returns Next.js notFound() so the route looks like it doesn't
  * exist (we don't want curious visitors stumbling on a half-built surface).
  *
- * The canvas itself runs entirely client-side via <DriftShell> — the
- * page is a Server Component so the metadata + gate are statically
- * evaluable.
+ * This file is a Server Component (metadata + env check + notFound).
+ * The actual canvas is in <DriftLazy>, a tiny Client Component wrapper
+ * that does the `dynamic(..., { ssr: false })` import — required pattern
+ * since Next 15 disallows ssr:false from Server Components.
  */
-import dynamic from 'next/dynamic';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
+import { DriftLazy } from '@/components/aether/drift-lazy';
 
 export const metadata: Metadata = {
   title: 'Aether · Drift preview',
@@ -19,15 +20,9 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-// SSR-disabled — R3F, WebGPU, Tone.js are all client-only.
-const DriftShell = dynamic(
-  async () => (await import('@/components/aether/drift-shell')).DriftShell,
-  { ssr: false },
-);
-
 export default function DriftPage(): React.ReactElement {
   if (process.env['NEXT_PUBLIC_FEATURE_AETHER_PREVIEW'] !== '1') {
     notFound();
   }
-  return <DriftShell />;
+  return <DriftLazy />;
 }
