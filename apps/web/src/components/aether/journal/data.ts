@@ -158,6 +158,153 @@ export const JOURNAL_ARTICLES: Record<string, JournalArticle> = {
       },
     ],
   },
+  'toy-train-climbs-at-the-speed-of-fog': {
+    slug: 'toy-train-climbs-at-the-speed-of-fog',
+    kicker: 'Field notes · Darjeeling',
+    title: 'The toy train climbs at the speed of fog',
+    dek: 'A 138-year-old narrow-gauge railway still hauls itself up the Himalayan ridge at sixteen kilometres an hour. We rode the morning loco and asked the engineer why nothing has changed.',
+    author: 'Vihaan Iyer',
+    readMins: 8,
+    publishedOn: '11 Sep 2026',
+    hero: {
+      id: '1626621341517-bbf3d9990a23',
+      by: 'Saurav Rastogi',
+      alt: 'A Darjeeling Himalayan Railway steam loco climbing through morning fog.',
+    },
+    body: [
+      {
+        kind: 'p',
+        text: "The Darjeeling Himalayan Railway opened in 1881. The British wanted Darjeeling — the new hill station that healed lung disease — connected to the plains, and the only way up was a 78-kilometre, 7,000-foot climb through forests too steep for a standard-gauge railway. So they built the world's first narrow-gauge mountain railway. Two feet between the rails. Z-reverses and loops where the grade was too sharp. Steam locomotives smaller than most modern SUVs.",
+      },
+      {
+        kind: 'p',
+        text: 'It has run almost continuously ever since. UNESCO declared it a World Heritage Site in 1999. Today four steam locomotives — the B-class No. 782, 791, 794, and 805 — still pull a daily joy-ride loop from Darjeeling to Ghum, the highest railway station in India at 7,407 feet. The diesel loco does the long-haul run to Siliguri. The steam locos do the heritage work.',
+      },
+      {
+        kind: 'pull',
+        text: '"Sixteen kilometres an hour is not slow," the engineer said, polishing brass. "It is the right speed for the mountain. The mountain decides."',
+      },
+      {
+        kind: 'p',
+        text: "I rode the 10:40am Joy Ride out of Darjeeling station on a Tuesday in October. The fog came in halfway up to Batasia Loop and stayed until we crossed Ghum. You couldn't see the next carriage. You could hear the whistle bouncing off the conifers. The smoke smelled of coal — proper coal, not the diesel substitute most heritage railways have switched to. The Darjeeling line still burns ₹40-a-kilogram Bengali coal, two tonnes per joy ride.",
+      },
+      { kind: 'h2', text: 'What nobody mentions in the brochures' },
+      {
+        kind: 'p',
+        text: "The carriages are also 138 years old. They've been refurbished — fresh blue paint every two years, new windows when the old ones rattle out — but the underframes are original. The wood floor under the third-class bench in my carriage had a date stamped into it: 1908. The seat has held passengers continuously through both world wars, partition, four prime ministers, and a 2010 landslide that closed the line for six months.",
+      },
+      {
+        kind: 'p',
+        text: "The line is also losing money. The joy ride costs ₹1,500 (₹600 first-class on weekends — heated coaches, real food, a single-malt bar). It still runs at a loss; the Indian Railways subsidises the steam from the diesel's profits. There is constant pressure to retire the locos. Each one needs ₹8 crore of maintenance per decade. The argument that wins, every time, is that the railway is the line — without the steam, the heritage tag goes, and the entire tourism economy of Darjeeling town shifts. So the locos keep running.",
+      },
+      {
+        kind: 'p',
+        text: 'At Ghum, the train sits for fifteen minutes. The engineer climbs down, checks the firebox, drinks chai from a kulhad. Passengers wander to the war memorial at Batasia Loop. A snowfall of fog moves across the tracks. The conch from a roadside Buddhist temple cuts through it.',
+      },
+      {
+        kind: 'p',
+        text: 'The whistle calls everyone back. The brass bell rings twice. The loco breathes out steam in three deep huffs, then starts pulling. Sixteen kilometres an hour. The mountain decides.',
+      },
+    ],
+  },
+  'million-butter-lamps-meenakshi': {
+    slug: 'million-butter-lamps-meenakshi',
+    kicker: 'Pilgrim trail · Madurai',
+    title: 'A million butter lamps at Meenakshi',
+    dek: 'Every night for 800 years, the gods of Meenakshi Amman Temple have been put to bed in a procession of conch, drum, and palanquin. We stayed for five.',
+    author: 'Sneha Krishnan',
+    readMins: 10,
+    publishedOn: '18 Aug 2026',
+    hero: {
+      id: '1582625313996-0d4ad2c79ff3',
+      by: 'Sankaranarayanan G',
+      alt: 'The gopuram of Meenakshi Amman Temple in Madurai lit at night.',
+    },
+    body: [
+      {
+        kind: 'p',
+        text: "There are temples in India older than Meenakshi Amman. There are larger ones, richer ones, more famous ones. But there is no temple, anywhere in the world, where every single night for eight hundred years a procession has carried a sleeping god from his chamber to his wife's. The Pallaki Sevai begins at 9pm. The drums start. The conch shell calls. Two priests lift the palanquin holding Sundareswarar — Shiva, in his form as the Beautiful Lord — and walk him through three corridors, four courtyards, past 33,000 carved figures, to the chamber of his consort Meenakshi.",
+      },
+      {
+        kind: 'p',
+        text: 'He stays the night. At 5am the procession reverses. He returns to his own chamber. It happens every day. It has happened every day since at least the 14th century — the records go back that far; the practice is older.',
+      },
+      {
+        kind: 'pull',
+        text: '"The gods need to sleep too, my child," the priest said. "And they need to sleep with their wives. This is dharma."',
+      },
+      {
+        kind: 'p',
+        text: 'I came for one night. I stayed for five. The first night I stood in the back of the corridor and watched. The second night I asked a priest if I could walk in the procession — strangers can, if they ask kindly and stand at the back, but you have to keep up with the drums. The third night I made it to the front of the inner sanctum and saw the chamber doors close behind the palanquin. The fourth night I came at 4:45am to watch the reverse procession. The fifth night I stayed only for the conch.',
+      },
+      { kind: 'h2', text: 'A geography of devotion' },
+      {
+        kind: 'p',
+        text: "Meenakshi is not Shiva's wife in the orthodox Hindu pantheon — that's Parvati. Meenakshi is a Pandyan queen who fought Shiva in battle, defeated him, then realised she had been fighting her destined husband. The Pandyan kings of Madurai are why this story exists; they wanted a goddess local to them, not borrowed from the Sanskrit-speaking north. So the temple grew around her — fourteen gopurams of which the southernmost is the tallest at 170 feet, all of them painted in colours so wild they look like a Pixar storyboard. Every gopuram has been re-plastered and repainted every 12 years since the 16th century; the Kumbhabhishekam ceremony marking each repaint takes 41 days.",
+      },
+      {
+        kind: 'p',
+        text: 'The temple holds 33,000 sculptures. Every panel tells a story — the marriage, the battle, the boons granted, the demons defeated. You could spend a year reading them and not finish. Most pilgrims spend two hours, do a circuit, and go home. The temple priests have a saying for this: "First time you come to look. Second time you come to see. Tenth time you come to know."',
+      },
+      {
+        kind: 'p',
+        text: 'I was at "look" stage. The man next to me at the Pallaki Sevai on night four was at "know." He stood with his eyes closed for most of it, listened, occasionally hummed along with the conch. He told me he had been coming for forty-three years. He stayed at the same hotel — the Pandian — every visit. His son was a doctor in Boston who came once a year and joined him for the night procession. The son was not religious. The son came because his father did, and because, the man said, "where else can you see a thing that has happened every night for eight hundred years?"',
+      },
+      {
+        kind: 'p',
+        text: 'I flew home on the morning of the sixth day. I am thirty-one years old. I have eight hundred years of nights ahead of me if I want them. I want them.',
+      },
+    ],
+  },
+  'walking-on-sea-of-salt': {
+    slug: 'walking-on-sea-of-salt',
+    kicker: 'Field notes · Kutch',
+    title: 'Walking on a sea of salt',
+    dek: 'For four months the Great Rann is the Arabian Sea. For the other eight, it is the strangest landscape in India — a flat white desert the size of a small country.',
+    author: 'Maya Pradhan',
+    readMins: 7,
+    publishedOn: '24 Dec 2026',
+    hero: {
+      id: '1606044466411-207e6e72b39e',
+      by: 'Akshay Nanavati',
+      alt: 'Full moon over the white salt flats of the Rann of Kutch.',
+    },
+    body: [
+      {
+        kind: 'p',
+        text: 'You arrive at the Rann on a road that becomes — at some point, without warning — a salt road. The asphalt ends, the white begins, and within a kilometre the salt is on all four sides and there is no horizon. Just sky meeting salt at an impossible flatness. It is the largest seasonal salt desert in the world. From October to May it is 30,000 square kilometres of dried crystal. From June to September it is the Arabian Sea, slowly seeping in through the Indus delta and the Gulf of Kachchh, drowning everything you walked on six months earlier.',
+      },
+      {
+        kind: 'p',
+        text: 'The Rann Utsav — the official tourism festival that opens the desert from November to February — has built an entire tent city near Dhordo village to make this surreal landscape visitable. AC tents, buffet dinners, camel rides, cultural shows. It works. It is also not the only way.',
+      },
+      {
+        kind: 'pull',
+        text: '"The Rann is not a desert," the local guide said. "A desert has no water. The Rann has only water. You are walking on the lid of a sea."',
+      },
+      {
+        kind: 'p',
+        text: 'I went on a full moon. The Utsav arranges full-moon walks; my guide Rashid offered an alternative — go after the festival closes, sleep in his Meghwal-village homestay, walk to the salt at 9pm without the lights of the camp. So I did. We took flashlights, then turned them off after the first kilometre. The moon was enough. The salt mirrored it. The horizon vanished.',
+      },
+      { kind: 'h2', text: 'A landscape that is also a livelihood' },
+      {
+        kind: 'p',
+        text: "The Agariyas — salt farmers — work the Rann for those eight dry months. Each family digs a shallow well in October, pumps brine into rectangular evaporation pans, then waits for the sun to do its work. By February the pans hold loose salt crystals. By March the salt is being harvested by hand, scraped into mounds, loaded onto trucks. India produces 16% of the world's salt; 75% of that comes from Kutch; 100% of the labour comes from these families. They live in stilted tents on the salt for the harvest season, no shade, temperatures touching 50°C in May, until the monsoon arrives and floods everything they've built.",
+      },
+      {
+        kind: 'p',
+        text: 'Most tourists never see this. The Rann Utsav puts visitors a respectful distance from the working pans. Rashid took me at dawn the day after the moon walk. The Agariya we met had been working the same eight-hectare patch since he was twelve; he was now fifty-eight. His son worked the next patch. His grandson, eight years old, would inherit it. The salt is the inheritance. The salt is the work. The salt is the life.',
+      },
+      {
+        kind: 'p',
+        text: "On the way back to Bhuj town, we drove past flamingos — the second draw of the Rann after the moon. Half a million Greater Flamingos breed in Khadir island every winter; they look like a pink low-pressure system on the horizon. The road runs straight for forty kilometres without a single turn. The salt continues on both sides. Then, abruptly, the salt ends, the dust starts, and you're back in the inhabited world.",
+      },
+      {
+        kind: 'p',
+        text: 'I asked Rashid which season was better — the salt or the sea. He said, without hesitation, both. "You cannot know one without the other. Come back in July. I will show you the sea." I told him I would. I might.',
+      },
+    ],
+  },
 };
 
 export const ALL_JOURNAL_SLUGS: readonly string[] = Object.keys(JOURNAL_ARTICLES);
