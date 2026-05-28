@@ -21,6 +21,7 @@ import { DriftNav } from '../drift-nav';
 import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
 import { useParallax } from '../use-parallax';
+import { useViewport } from '../use-viewport';
 import { photoUrl } from '../photos';
 import { SafeImg } from '../safe-img';
 import { type Destination } from './data';
@@ -32,6 +33,7 @@ export interface DestinationPageProps {
 export function DestinationPage({ destination: d }: DestinationPageProps): React.ReactElement {
   const theme = useTheme();
   const motionPolicy = useMotionPolicy();
+  const { isNarrow } = useViewport();
   const heroImgRef = useParallax<HTMLImageElement>({ speed: 0.28, maxOffset: 180 });
 
   const ink = theme.color.ink;
@@ -92,7 +94,9 @@ export function DestinationPage({ destination: d }: DestinationPageProps): React
             zIndex: 1,
             maxWidth: 1280,
             margin: '0 auto',
-            padding: `${theme.space.surface}px ${theme.space.margin}px 0`,
+            padding: isNarrow
+              ? `${theme.space.hero}px ${theme.space.comfy}px 0`
+              : `${theme.space.surface}px ${theme.space.margin}px 0`,
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'flex-end',

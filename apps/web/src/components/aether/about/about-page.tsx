@@ -15,6 +15,7 @@ import { DriftNav } from '../drift-nav';
 import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
 import { useParallax } from '../use-parallax';
+import { useViewport } from '../use-viewport';
 import { photoUrl } from '../photos';
 
 interface Belief {
@@ -51,6 +52,7 @@ const BELIEFS: readonly Belief[] = [
 
 export function AboutPage(): React.ReactElement {
   const theme = useTheme();
+  const { isNarrow } = useViewport();
   const heroImgRef = useParallax<HTMLImageElement>({ speed: 0.22, maxOffset: 140 });
 
   const ink = theme.color.ink;
@@ -114,7 +116,9 @@ export function AboutPage(): React.ReactElement {
             zIndex: 1,
             maxWidth: 1280,
             margin: '0 auto',
-            padding: `${theme.space.surface}px ${theme.space.margin}px 0`,
+            padding: isNarrow
+              ? `${theme.space.hero}px ${theme.space.comfy}px 0`
+              : `${theme.space.surface}px ${theme.space.margin}px 0`,
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'flex-end',
