@@ -12,8 +12,14 @@
  * Auth-gated. Loading + error states are calm + Aether-styled.
  */
 import Link from 'next/link';
+import { useState } from 'react';
 import { useTheme } from '@app/aether-core';
-import { useTripControllerGetOne, type TripDto } from '@app/sdk';
+import {
+  useTripControllerGetOne,
+  useTripControllerShare,
+  type TripDto,
+  type TripShareResponseDto,
+} from '@app/sdk';
 import { DriftNav } from '../drift-nav';
 import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
@@ -52,6 +58,21 @@ function fmtDate(v: unknown): string {
 export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.ReactElement {
   const theme = useTheme();
   const { isNarrow } = useViewport();
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [shareCopied, setShareCopied] = useState<boolean>(false);
+  const [shareError, setShareError] = useState<string | null>(null);
+  const shareMutation = useTripControllerShare({
+    mutation: {
+      onSuccess: (created: TripShareResponseDto) => {
+        const origin = typeof window !== 'undefined' ? window.location.origin : '';
+        setShareUrl(`${origin}/shared/${created.shareCode}`);
+        setShareError(null);
+      },
+      onError: (err: unknown) => {
+        setShareError(err instanceof Error ? err.message : 'Could not create the share link.');
+      },
+    },
+  });
   const token = useAuthToken();
   const bootComplete = useAuthBootComplete();
   const isAuthed = bootComplete && token !== null;
@@ -299,6 +320,151 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
                     </div>
                   </div>
                 ))}
+              </div>
+            </Reveal>
+
+            {/* Share band — creates a /shared/[code] link via POST
+                /trips/[id]/share. Auth still required to read; recipients
+                hit the public shared route. */}
+            <Reveal>
+              <div
+                style={{
+                  marginTop: theme.space.gutter,
+                  padding: theme.space.loose,
+                  borderRadius: theme.radius.lg,
+                  background: ochre.whisper,
+                  border: `1px solid ${ochre.deep}`,
+                }}
+              >
+                <p
+                  style={{
+                    fontFamily: theme.font.ui,
+                    fontSize: 11,
+                    letterSpacing: '0.18em',
+                    textTransform: 'uppercase',
+                    color: accent.deep,
+                    fontWeight: 600,
+                    margin: 0,
+                    marginBottom: theme.space.tight,
+                  }}
+                >
+                  Share this journey
+                </p>
+                {shareUrl === null ? (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'baseline',
+                      justifyContent: 'space-between',
+                      gap: theme.space.comfy,
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <p
+                      style={{
+                        fontFamily: theme.font.display,
+                        fontStyle: 'italic',
+                        fontSize: 17,
+                        lineHeight: 1.5,
+                        color: ink.soft,
+                        margin: 0,
+                        maxWidth: '40ch',
+                      }}
+                    >
+                      Anyone with the link will be able to read this journey — they can&apos;t edit
+                      it, only see the shape.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        shareMutation.mutate({
+                          id: trip.id,
+                          data: {},
+                        })
+                      }
+                      disabled={shareMutation.isPending}
+                      style={{
+                        padding: `${theme.space.tight}px ${theme.space.loose}px`,
+                        borderRadius: theme.radius.pill,
+                        background: accent.base,
+                        color: surface.base,
+                        fontFamily: theme.font.ui,
+                        fontSize: theme.text.button.size,
+                        fontWeight: theme.text.button.weight,
+                        border: 'none',
+                        cursor: shareMutation.isPending ? 'wait' : 'pointer',
+                        opacity: shareMutation.isPending ? 0.7 : 1,
+                      }}
+                    >
+                      {shareMutation.isPending ? 'Creating…' : 'Create link →'}
+                    </button>
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: theme.space.tight,
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <code
+                      style={{
+                        flex: '1 1 280px',
+                        padding: `${theme.space.tight}px ${theme.space.inline}px`,
+                        borderRadius: theme.radius.md,
+                        background: surface.base,
+                        border: `1px solid ${ink.whisper}`,
+                        fontFamily: theme.font.mono,
+                        fontSize: 12,
+                        color: ink.base,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {shareUrl}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                          void navigator.clipboard.writeText(shareUrl).then(() => {
+                            setShareCopied(true);
+                            window.setTimeout(() => setShareCopied(false), 2000);
+                          });
+                        }
+                      }}
+                      style={{
+                        padding: `${theme.space.tight}px ${theme.space.comfy}px`,
+                        borderRadius: theme.radius.pill,
+                        background: shareCopied ? olive.deep : ink.base,
+                        color: surface.base,
+                        fontFamily: theme.font.ui,
+                        fontSize: theme.text.small.size,
+                        fontWeight: 600,
+                        border: 'none',
+                        cursor: 'pointer',
+                        transition: 'background 220ms',
+                      }}
+                    >
+                      {shareCopied ? '✓ Copied' : 'Copy'}
+                    </button>
+                  </div>
+                )}
+                {shareError !== null && (
+                  <p
+                    role="alert"
+                    style={{
+                      marginTop: theme.space.tight,
+                      fontFamily: theme.font.ui,
+                      fontSize: theme.text.small.size,
+                      color: '#8a2418',
+                    }}
+                  >
+                    {shareError}
+                  </p>
+                )}
               </div>
             </Reveal>
 
