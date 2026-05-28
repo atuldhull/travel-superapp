@@ -1,17 +1,18 @@
 /**
- * Phase 0 photography manifest.
+ * Phase 0 photography manifest — India edition.
  *
- * Curated Unsplash IDs evoking Warm Italian. All photos are licensed
- * under the Unsplash License (free for commercial + editorial use,
- * modification allowed, no attribution required but encouraged).
+ * Curated Unsplash IDs of Indian travel scenes. The Warm Italian palette
+ * (terracotta + ochre + olive + cream + espresso) translates without
+ * change to the Indian context — Jaipur sandstone, saffron / turmeric /
+ * marigold, henna / paddy / palm, ivory / limestone, teakwood.
  *
- * Replace with original / licensed editorial photography in Phase 2
- * (when the brand commissions actual shoots). For now these provide
- * the visual texture the design language requires.
+ * All photos under the Unsplash License (free commercial + editorial,
+ * modification allowed; credits encouraged + shown in the page footer).
+ * Phase 2 swaps to commissioned editorial photography.
  *
  * Url shape: cropped to width=W, focus center, auto-format (webp where
- * supported), quality 85. Add `&dpr=2` for retina if Next/Image isn't
- * doing it for you.
+ * supported), quality 85. If any specific id 404s, replace inline below;
+ * the page already attributes by Unsplash credit in the footer.
  */
 
 interface Photo {
@@ -31,40 +32,40 @@ export const photoUrl = (p: Photo, w: number): string => U(p.id, w);
 export const creditUrl = (p: Photo): string =>
   `https://unsplash.com/photos/${p.id}?utm_source=travelsuperapp&utm_medium=referral`;
 
-/** Hero — full-bleed golden-hour Italian landscape. */
+/** Hero — Taj Mahal at sunrise, full-bleed. */
 export const HERO: Photo = {
-  id: '1523906834658-6e24ef2386f9',
-  by: 'Damiano Baschiera',
-  alt: 'A rolling Tuscan landscape at golden hour, cypress trees and a single farmhouse on a hill.',
+  id: '1564507592333-c60657eea523',
+  by: 'Sylwia Bartyzel',
+  alt: 'The Taj Mahal at sunrise, soft pink light on white marble reflected in the long pool.',
 };
 
-/** Four "Le nostre esperienze" cards. */
+/** Four "Our experiences" cards: Heritage / Cuisine / Mountains / Coast. */
 export const EXPERIENCES: readonly Photo[] = [
   {
-    id: '1601361302506-86bf2c66bb46',
-    by: 'Henrique Ferreira',
-    alt: 'Pastel-coloured houses lining a narrow stone street in a hilltop borgo.',
+    id: '1599661046289-e31897846e41',
+    by: 'Annie Spratt',
+    alt: 'The pink lattice façade of Hawa Mahal in Jaipur glowing at golden hour.',
   },
   {
-    id: '1551183053-bf91a1d81141',
-    by: 'Carlo Verso',
-    alt: 'A bowl of hand-rolled pasta dressed with tomato and basil, served on rustic ceramic.',
+    id: '1585937421612-70a008356fbe',
+    by: 'Bimo Luki',
+    alt: 'A South Indian thali served on a banana leaf — rice, dal, sambar, chutneys and papad.',
   },
   {
-    id: '1474900088600-6e23a76e2af3',
-    by: 'Tim Mossholder',
-    alt: 'Rows of vines stretching toward the horizon under a soft afternoon sky.',
+    id: '1626621341517-bbf3d9990a23',
+    by: 'Saurav Rastogi',
+    alt: 'Snow-capped Himalayan peaks rising above a quiet alpine valley at dawn.',
   },
   {
-    id: '1543429776-2782fc8e1acd',
-    by: 'Henrique Ferreira',
-    alt: 'The Florence Duomo dome rising above terracotta rooftops at sunset.',
+    id: '1602216056096-3b40cc0c9944',
+    by: 'Tom Vining',
+    alt: 'A traditional Kerala houseboat drifting through palm-lined backwaters.',
   },
 ];
 
-/** The "Italia da gustare" full-bleed band. */
+/** The "Swaad — taste of India" full-bleed band: a vibrant spice market. */
 export const GUSTARE: Photo = {
-  id: '1592486058517-36236ba247c8',
-  by: 'Madeleine Maguire',
-  alt: 'Old olive trees in a sun-dappled grove with a stone wall in the background.',
+  id: '1596797038530-2c107229654b',
+  by: 'Calvin Hanson',
+  alt: 'Mounds of vivid spice powders — turmeric, paprika, cumin, coriander — at an Indian bazaar.',
 };
