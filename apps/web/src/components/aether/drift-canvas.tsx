@@ -21,6 +21,7 @@
 import { useCallback, useEffect } from 'react';
 import { useAudioEngine, useMotionPolicy, useTheme } from '@app/aether-core';
 import { EXPERIENCES, GUSTARE, HERO, creditUrl, photoUrl } from './photos';
+import { DriftNav } from './drift-nav';
 
 const EXPERIENCE_LABELS: ReadonlyArray<{ title: string; subtitle: string; cta: string }> = [
   { title: 'Royal heritage', subtitle: 'Forts, palaces & living history.', cta: 'Explore →' },
@@ -73,6 +74,7 @@ export function DriftCanvas(): React.ReactElement {
         minHeight: '100vh',
       }}
     >
+      <DriftNav />
       {/* ─── HERO ─────────────────────────────────────────────────────── */}
       <section
         style={{
