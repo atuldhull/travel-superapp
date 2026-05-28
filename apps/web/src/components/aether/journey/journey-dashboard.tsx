@@ -15,11 +15,15 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useTheme } from '@app/aether-core';
 import {
+  getTripControllerGetOneQueryKey,
+  useTripControllerArchive,
   useTripControllerGetOne,
   useTripControllerShare,
+  useTripControllerUnarchive,
   type TripDto,
   type TripShareResponseDto,
 } from '@app/sdk';
+import { useQueryClient } from '@tanstack/react-query';
 import { DriftNav } from '../drift-nav';
 import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
@@ -61,6 +65,16 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [shareCopied, setShareCopied] = useState<boolean>(false);
   const [shareError, setShareError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const invalidateThisTrip = (): void => {
+    void queryClient.invalidateQueries({ queryKey: getTripControllerGetOneQueryKey(tripId) });
+  };
+  const archiveMutation = useTripControllerArchive({
+    mutation: { onSuccess: invalidateThisTrip },
+  });
+  const unarchiveMutation = useTripControllerUnarchive({
+    mutation: { onSuccess: invalidateThisTrip },
+  });
   const shareMutation = useTripControllerShare({
     mutation: {
       onSuccess: (created: TripShareResponseDto) => {
@@ -320,6 +334,102 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
                     </div>
                   </div>
                 ))}
+              </div>
+            </Reveal>
+
+            {/* Action row — archive/unarchive. Aether keeps these small;
+                destructive style only on the archive direction. */}
+            <Reveal>
+              <div
+                style={{
+                  marginTop: theme.space.gutter,
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: theme.space.tight,
+                  alignItems: 'center',
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: theme.font.ui,
+                    fontSize: 11,
+                    letterSpacing: '0.18em',
+                    textTransform: 'uppercase',
+                    color: ink.soft,
+                    fontWeight: 600,
+                    marginRight: theme.space.tight,
+                  }}
+                >
+                  Actions
+                </span>
+                {trip.archivedAt === null ? (
+                  <button
+                    type="button"
+                    onClick={() => archiveMutation.mutate({ id: trip.id })}
+                    disabled={archiveMutation.isPending}
+                    style={{
+                      padding: `${theme.space.hairline}px ${theme.space.comfy}px`,
+                      borderRadius: theme.radius.pill,
+                      background: 'transparent',
+                      border: `1px solid ${ink.whisper}`,
+                      color: ink.base,
+                      fontFamily: theme.font.ui,
+                      fontSize: theme.text.small.size,
+                      fontWeight: 600,
+                      cursor: archiveMutation.isPending ? 'wait' : 'pointer',
+                      opacity: archiveMutation.isPending ? 0.6 : 1,
+                      transition: 'background 220ms, border-color 220ms',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!archiveMutation.isPending) {
+                        e.currentTarget.style.background = 'rgba(184, 58, 46, 0.06)';
+                        e.currentTarget.style.borderColor = 'rgba(184, 58, 46, 0.3)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.borderColor = ink.whisper;
+                    }}
+                  >
+                    {archiveMutation.isPending ? 'Archiving…' : 'Archive journey'}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => unarchiveMutation.mutate({ id: trip.id })}
+                    disabled={unarchiveMutation.isPending}
+                    style={{
+                      padding: `${theme.space.hairline}px ${theme.space.comfy}px`,
+                      borderRadius: theme.radius.pill,
+                      background: olive.whisper,
+                      border: `1px solid ${olive.deep}`,
+                      color: ink.base,
+                      fontFamily: theme.font.ui,
+                      fontSize: theme.text.small.size,
+                      fontWeight: 600,
+                      cursor: unarchiveMutation.isPending ? 'wait' : 'pointer',
+                      opacity: unarchiveMutation.isPending ? 0.6 : 1,
+                    }}
+                  >
+                    {unarchiveMutation.isPending ? 'Restoring…' : 'Unarchive · restore'}
+                  </button>
+                )}
+                <Link
+                  href="/aether/me/journeys"
+                  style={{
+                    padding: `${theme.space.hairline}px ${theme.space.comfy}px`,
+                    borderRadius: theme.radius.pill,
+                    background: 'transparent',
+                    border: `1px solid ${ink.whisper}`,
+                    color: ink.soft,
+                    fontFamily: theme.font.ui,
+                    fontSize: theme.text.small.size,
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                  }}
+                >
+                  ← All journeys
+                </Link>
               </div>
             </Reveal>
 
