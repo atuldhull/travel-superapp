@@ -25,8 +25,10 @@ import { useMotionPolicy, useTheme } from '@app/aether-core';
 import {
   tripControllerSamplePlan,
   useTripControllerCreate,
+  useTripControllerShare,
   type GenerateSamplePlanResponseDto,
   type TripDto,
+  type TripShareResponseDto,
 } from '@app/sdk';
 import { geocodeOne } from '../../../lib/geocode';
 import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
@@ -61,16 +63,52 @@ export function Pulse(): React.ReactElement | null {
   const [pending, setPending] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  // When save+share is chosen, hold the intent across the create
+  // mutation so onSuccess can chain into the share mutation.
+  const [shareAfterSave, setShareAfterSave] = useState<boolean>(false);
+  const [savedShareConfirm, setSavedShareConfirm] = useState<boolean>(false);
+
+  const shareTrip = useTripControllerShare({
+    mutation: {
+      onSuccess: (created: TripShareResponseDto, vars: { id: string }) => {
+        const origin = typeof window !== 'undefined' ? window.location.origin : '';
+        const shareUrl = `${origin}/shared/${created.shareCode}`;
+        if (typeof navigator !== 'undefined' && navigator.clipboard) {
+          void navigator.clipboard.writeText(shareUrl);
+        }
+        setSavedShareConfirm(true);
+        // Drop the confirmation after a beat, then open the journey.
+        window.setTimeout(() => {
+          setSavedShareConfirm(false);
+          setOpen(false);
+          setSaving(false);
+          setShareAfterSave(false);
+          router.push(`/aether/journey/${vars.id}`);
+        }, 900);
+      },
+      onError: (err: unknown) => {
+        // Trip exists; share failed. Still navigate so the user can
+        // mint the link from the dashboard.
+        setSaveError(err instanceof Error ? err.message : 'Saved, but the share link failed.');
+        setShareAfterSave(false);
+      },
+    },
+  });
 
   const createTrip = useTripControllerCreate({
     mutation: {
       onSuccess: (created: TripDto) => {
+        if (shareAfterSave) {
+          shareTrip.mutate({ id: created.id, data: {} });
+          return;
+        }
         setOpen(false);
         setSaving(false);
         router.push(`/aether/journey/${created.id}`);
       },
       onError: (err: unknown) => {
         setSaving(false);
+        setShareAfterSave(false);
         setSaveError(err instanceof Error ? err.message : 'Could not save. Try again.');
       },
     },
@@ -547,10 +585,31 @@ export function Pulse(): React.ReactElement | null {
                   {saveError}
                 </div>
               )}
+              {savedShareConfirm && (
+                <div
+                  role="status"
+                  style={{
+                    marginTop: theme.space.tight,
+                    padding: `6px ${theme.space.inline}px`,
+                    borderRadius: theme.radius.sm,
+                    background: olive.whisper,
+                    border: `1px solid ${olive.deep}`,
+                    color: ink.base,
+                    fontFamily: theme.font.ui,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    letterSpacing: '0.02em',
+                    lineHeight: 1.4,
+                  }}
+                >
+                  ✓ Link copied · journey opening…
+                </div>
+              )}
               <button
                 type="button"
                 onClick={() => {
                   setSaveError(null);
+                  setShareAfterSave(false);
                   if (!isAuthed) {
                     setOpen(false);
                     router.push('/login?next=/aether/me/journeys');
@@ -567,7 +626,7 @@ export function Pulse(): React.ReactElement | null {
                     },
                   });
                 }}
-                disabled={saving || createTrip.isPending}
+                disabled={saving || createTrip.isPending || shareTrip.isPending}
                 style={{
                   marginTop: theme.space.tight,
                   padding: `${theme.space.tight}px ${theme.space.inline}px`,
@@ -581,10 +640,11 @@ export function Pulse(): React.ReactElement | null {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  cursor: saving || createTrip.isPending ? 'wait' : 'pointer',
+                  cursor:
+                    saving || createTrip.isPending || shareTrip.isPending ? 'wait' : 'pointer',
                   width: '100%',
                   textAlign: 'left',
-                  opacity: saving || createTrip.isPending ? 0.7 : 1,
+                  opacity: saving || createTrip.isPending || shareTrip.isPending ? 0.7 : 1,
                   transition: 'background 220ms',
                 }}
               >
@@ -599,6 +659,57 @@ export function Pulse(): React.ReactElement | null {
                   →
                 </span>
               </button>
+              {isAuthed && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSaveError(null);
+                    if (ctxRef.current === null) return;
+                    const ctx = ctxRef.current;
+                    setShareAfterSave(true);
+                    setSaving(true);
+                    createTrip.mutate({
+                      data: {
+                        title: ctx.title,
+                        center: { lat: ctx.center.lat, lng: ctx.center.lng },
+                        radiusKm: 50,
+                      },
+                    });
+                  }}
+                  disabled={saving || createTrip.isPending || shareTrip.isPending}
+                  style={{
+                    marginTop: 6,
+                    padding: `6px ${theme.space.inline}px`,
+                    borderRadius: theme.radius.md,
+                    background: 'transparent',
+                    border: `1px solid ${ochre.deep}`,
+                    color: ochre.deep,
+                    fontFamily: theme.font.ui,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    letterSpacing: '0.02em',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    cursor:
+                      saving || createTrip.isPending || shareTrip.isPending ? 'wait' : 'pointer',
+                    width: '100%',
+                    textAlign: 'left',
+                    opacity: saving || createTrip.isPending || shareTrip.isPending ? 0.7 : 1,
+                  }}
+                >
+                  <span>
+                    {shareTrip.isPending
+                      ? 'Minting link…'
+                      : shareAfterSave && (saving || createTrip.isPending)
+                        ? 'Saving + minting…'
+                        : 'Save + share immediately'}
+                  </span>
+                  <span aria-hidden style={{ color: ochre.deep }}>
+                    ⧉
+                  </span>
+                </button>
+              )}
             </>
           )}
         </div>
