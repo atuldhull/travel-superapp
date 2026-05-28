@@ -7,11 +7,15 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { PlanLazy } from '@/components/aether/plan/plan-lazy';
+import { aetherOg } from '@/lib/aether-og';
 
+const TITLE = 'Aether · Begin a yatra';
+const DESC = 'Three questions, one sketched journey.';
 export const metadata: Metadata = {
-  title: 'Aether · Begin a yatra',
-  description: 'Three questions, one sketched journey.',
+  title: TITLE,
+  description: DESC,
   robots: { index: false, follow: false },
+  ...aetherOg(TITLE, DESC, { photoId: '1599661046289-e31897846e41' }),
 };
 
 export default function PlanRoute(): React.ReactElement {

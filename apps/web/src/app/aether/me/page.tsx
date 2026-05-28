@@ -5,11 +5,15 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { MeLazy } from '@/components/aether/me-home/me-lazy';
+import { aetherOg } from '@/lib/aether-og';
 
+const TITLE = 'Aether · My atlas';
+const DESC = 'Your journeys, your shares, your account — in one quiet view.';
 export const metadata: Metadata = {
-  title: 'Aether · My atlas',
-  description: 'Your journeys, your shares, your account — in one quiet view.',
+  title: TITLE,
+  description: DESC,
   robots: { index: false, follow: false },
+  ...aetherOg(TITLE, DESC),
 };
 
 export default function MeHomeRoute(): React.ReactElement {

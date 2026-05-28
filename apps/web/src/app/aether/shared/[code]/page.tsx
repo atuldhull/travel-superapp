@@ -9,15 +9,19 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { SharedLazy } from '@/components/aether/shared/shared-lazy';
+import { aetherOg } from '@/lib/aether-og';
 
 interface PageProps {
   readonly params: Promise<{ readonly code: string }>;
 }
 
+const TITLE = 'Aether · A shared journey';
+const DESC = 'Someone else’s sketch of the road. Read it, clone it, refuse it.';
 export const metadata: Metadata = {
-  title: 'Aether · A shared journey',
-  description: 'Someone else’s sketch of the road. Read it, clone it, refuse it.',
+  title: TITLE,
+  description: DESC,
   robots: { index: false, follow: false },
+  ...aetherOg(TITLE, DESC),
 };
 
 export default async function SharedTripRoute({ params }: PageProps): Promise<React.ReactElement> {

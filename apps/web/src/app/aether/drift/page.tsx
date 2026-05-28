@@ -13,11 +13,15 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { DriftLazy } from '@/components/aether/drift-lazy';
+import { aetherOg } from '@/lib/aether-og';
 
+const TITLE = 'Aether · Live Bharat';
+const DESC = 'Slow travel, sketched by AI — twenty-eight states, one quiet journey.';
 export const metadata: Metadata = {
-  title: 'Aether · Drift preview',
-  description: 'A glimpse of the next surface. Warm Italian. Phase 0.',
+  title: TITLE,
+  description: DESC,
   robots: { index: false, follow: false },
+  ...aetherOg(TITLE, DESC),
 };
 
 export default function DriftPage(): React.ReactElement {

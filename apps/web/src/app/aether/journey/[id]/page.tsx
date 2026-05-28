@@ -7,11 +7,15 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { JourneyLazy } from '@/components/aether/journey/journey-lazy';
+import { aetherOg } from '@/lib/aether-og';
 
+const TITLE = 'Aether · Your journey';
+const DESC = 'A live editorial view of your drafted trip.';
 export const metadata: Metadata = {
-  title: 'Aether · Your journey',
-  description: 'A live editorial view of your drafted trip.',
+  title: TITLE,
+  description: DESC,
   robots: { index: false, follow: false },
+  ...aetherOg(TITLE, DESC),
 };
 
 export default async function JourneyRoute({
