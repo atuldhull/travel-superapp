@@ -32,6 +32,7 @@ import { AuraNudge } from '../components/auth/aura-nudge';
 import { GlobalAssistant } from '../components/assistant/global-assistant';
 import { PwaRegister } from '../components/pwa/pwa-register';
 import { Providers } from './providers';
+import { AppChrome, HideOnAether } from '../components/layout/app-chrome';
 
 // POST.2 — Inter as the brand typeface. `next/font/google` self-hosts
 // the file at build time, so no FCP regression and no CLS risk. We
@@ -115,59 +116,70 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           {/* V.UX.35 — sticky SOS banner. Renders nothing when no
               active SOS; surfaces "I'm OK" cancel + local 911 when active. */}
           <ActiveSosBanner />
-          <div className="mx-auto max-w-3xl px-6 py-10 space-y-6">
-            <header
-              className="sticky top-3 z-40 -mx-3 flex items-center justify-between gap-3 rounded-2xl border border-gold-600/15 bg-surface/70 px-4 py-2.5 shadow-(--shadow-depth-2) backdrop-blur-xl supports-backdrop-filter:bg-surface/60"
-              role="banner"
-            >
-              {/* Premium glass top-bar — gold hairline, sticky, blurred. */}
-              <Logo />
-              <nav aria-label="Primary" className="flex items-center gap-1.5 sm:gap-2">
-                <Link
-                  href="/home"
-                  className="rounded-full px-3 py-1.5 text-sm font-medium text-muted transition hover:bg-gold-500/10 hover:text-surface-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                >
-                  Home
-                </Link>
-                <Link
-                  href="/feed"
-                  className="rounded-full px-3 py-1.5 text-sm font-medium text-muted transition hover:bg-gold-500/10 hover:text-surface-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                >
-                  Feed
-                </Link>
-                <Link
-                  href="/navigate"
-                  className="hidden rounded-full px-3 py-1.5 text-sm font-medium text-muted transition hover:bg-gold-500/10 hover:text-surface-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:inline-block"
-                >
-                  Navigate
-                </Link>
-                <Link
-                  href="/diary"
-                  className="hidden rounded-full px-3 py-1.5 text-sm font-medium text-muted transition hover:bg-gold-500/10 hover:text-surface-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:inline-block"
-                >
-                  Diary
-                </Link>
-                <InboxBadge />
-                <ThemeToggle />
-                <UserMenu />
-              </nav>
-            </header>
-            <main id="main" tabIndex={-1} className="outline-none">
-              <AuraNudge />
-              {children}
-            </main>
-            <Footer />
-          </div>
+          {/* AppChrome conditionally renders nav + container + footer for
+              regular routes, OR bare children for /aether/* surfaces that
+              own their own editorial layout end-to-end. */}
+          <AppChrome
+            nudge={<AuraNudge />}
+            footer={<Footer />}
+            nav={
+              <header
+                className="sticky top-3 z-40 -mx-3 flex items-center justify-between gap-3 rounded-2xl border border-gold-600/15 bg-surface/70 px-4 py-2.5 shadow-(--shadow-depth-2) backdrop-blur-xl supports-backdrop-filter:bg-surface/60"
+                role="banner"
+              >
+                {/* Premium glass top-bar — gold hairline, sticky, blurred. */}
+                <Logo />
+                <nav aria-label="Primary" className="flex items-center gap-1.5 sm:gap-2">
+                  <Link
+                    href="/home"
+                    className="rounded-full px-3 py-1.5 text-sm font-medium text-muted transition hover:bg-gold-500/10 hover:text-surface-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  >
+                    Home
+                  </Link>
+                  <Link
+                    href="/feed"
+                    className="rounded-full px-3 py-1.5 text-sm font-medium text-muted transition hover:bg-gold-500/10 hover:text-surface-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  >
+                    Feed
+                  </Link>
+                  <Link
+                    href="/navigate"
+                    className="hidden rounded-full px-3 py-1.5 text-sm font-medium text-muted transition hover:bg-gold-500/10 hover:text-surface-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:inline-block"
+                  >
+                    Navigate
+                  </Link>
+                  <Link
+                    href="/diary"
+                    className="hidden rounded-full px-3 py-1.5 text-sm font-medium text-muted transition hover:bg-gold-500/10 hover:text-surface-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:inline-block"
+                  >
+                    Diary
+                  </Link>
+                  <InboxBadge />
+                  <ThemeToggle />
+                  <UserMenu />
+                </nav>
+              </header>
+            }
+          >
+            {children}
+          </AppChrome>
           {/* V.UX.13 — persistent SOS FAB. Renders disabled for
               anonymous callers; tap → confirm modal → POST /safety/sos
-              → fan-out to trusted contacts. */}
-          <SosFab />
+              → fan-out to trusted contacts. Hidden on /aether/* so the
+              editorial composition stays clean. */}
+          <HideOnAether>
+            <SosFab />
+          </HideOnAether>
           {/* Phase 2 (D2) — app-wide AI travel planner, stacked above
               the SOS FAB (bottom-right). $0 public planner chain. */}
-          <GlobalAssistant />
+          <HideOnAether>
+            <GlobalAssistant />
+          </HideOnAether>
           {/* V.UX.18 — persistent translate widget bottom-left.
               Disabled for anonymous callers (api requires auth). */}
-          <TranslateWidget />
+          <HideOnAether>
+            <TranslateWidget />
+          </HideOnAether>
           {/* V.UX.28 — visually-hidden ARIA live regions. Consumers
               push messages via `announce()` from `lib/announce.ts`. */}
           <LiveRegion />
