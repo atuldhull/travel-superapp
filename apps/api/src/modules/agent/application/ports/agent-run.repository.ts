@@ -24,6 +24,13 @@ export interface AppendAgentStepInput {
 export interface AgentRunRepository {
   create(input: CreateAgentRunInput): Promise<AgentRun>;
   findById(id: string): Promise<AgentRun | null>;
+  /**
+   * [S-C2] Find the active (status='watching') run for a trip, if any.
+   * Returns null when no run exists or all runs are closed. Used by
+   * the trip-detail surface to decide whether to render the
+   * AgentWatchCard live state.
+   */
+  findActiveByTripId(tripId: string): Promise<AgentRun | null>;
   /** Append-only — the only write verb for steps. */
   appendStep(input: AppendAgentStepInput): Promise<AgentStep>;
   listSteps(agentRunId: string): Promise<readonly AgentStep[]>;

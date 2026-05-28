@@ -50,6 +50,14 @@ class FakeRuns implements AgentRunRepository {
   async findById(x: string): Promise<AgentRun | null> {
     return this.runs.get(x) ?? null;
   }
+  async findActiveByTripId(tripId: string): Promise<AgentRun | null> {
+    // [S-C2] Newest watching run for the trip; mirrors the Prisma impl.
+    const candidates = Array.from(this.runs.values()).filter(
+      (r) => r.tripId === tripId && r.status === 'watching',
+    );
+    candidates.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return candidates[0] ?? null;
+  }
   async appendStep(i: AppendAgentStepInput): Promise<AgentStep> {
     const s: AgentStep = {
       id: id('step'),

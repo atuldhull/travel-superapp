@@ -4496,6 +4496,23 @@ paths:
       summary: Agent probe — 503 (AGENT_DISABLED) when FEATURE_AGENT_ENABLED is off.
       tags: &a76
         - agent
+  /api/v1/agent/trips/{tripId}/proposals:
+    get:
+      operationId: AgentController_listTripProposalsRoute
+      parameters:
+        - name: tripId
+          required: true
+          in: path
+          description: Trip id
+          schema:
+            type: string
+      responses:
+        "200":
+          description: ""
+      security: *a75
+      summary: "[S-C2] Active agent run + pending proposals for a trip. Returns
+        {run:null, proposals:[]} when no watch is live."
+      tags: *a76
   /api/v1/agent/runs/{id}:
     get:
       operationId: AgentController_getRun

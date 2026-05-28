@@ -39,6 +39,7 @@ import {
   ConfirmReplanUseCase,
   type ConfirmReplanResult,
 } from '../application/confirm-replan.use-case';
+import { ListTripProposalsUseCase } from '../application/list-trip-proposals.use-case';
 
 export interface AgentStatusDto {
   readonly enabled: true;
@@ -48,6 +49,12 @@ export interface AgentStatusDto {
 export interface AgentRunDto {
   readonly run: AgentRun;
   readonly steps: readonly AgentStep[];
+}
+
+/** [S-C2] Response for `GET /agent/trips/:tripId/proposals`. */
+export interface TripProposalsDto {
+  readonly run: AgentRun | null;
+  readonly proposals: readonly AgentStep[];
 }
 
 @ApiTags('agent')
@@ -60,6 +67,8 @@ export class AgentController {
     @Inject(ConfigService) private readonly config: ConfigService<Env, true>,
     @Inject(AGENT_RUN_REPOSITORY) private readonly runs: AgentRunRepository,
     @Inject(ConfirmReplanUseCase) private readonly confirm: ConfirmReplanUseCase,
+    @Inject(ListTripProposalsUseCase)
+    private readonly listTripProposals: ListTripProposalsUseCase,
   ) {}
 
   /** 503 with a stable code when the agent feature is off. */
@@ -80,6 +89,18 @@ export class AgentController {
     this.requireAgent();
     this.logger.debug({}, 'agent_status_probe');
     return { enabled: true, phase: 'Phase A (POST.2A.4)' };
+  }
+
+  @ApiOperation({
+    summary:
+      '[S-C2] Active agent run + pending proposals for a trip. Returns {run:null, proposals:[]} when no watch is live.',
+  })
+  @ApiParam({ name: 'tripId', description: 'Trip id' })
+  @Get('trips/:tripId/proposals')
+  async listTripProposalsRoute(@Param('tripId') tripId: string): Promise<TripProposalsDto> {
+    this.requireAgent();
+    const result = await this.listTripProposals.execute(tripId);
+    return { run: result.run, proposals: result.proposals };
   }
 
   @ApiOperation({ summary: 'An agent run + its append-only step log.' })

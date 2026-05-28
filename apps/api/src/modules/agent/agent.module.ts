@@ -39,6 +39,7 @@ import { SIGNAL_SOURCE_PORT } from './application/ports/signal-source.port';
 import { TRIP_WATCH_REPOSITORY } from './application/ports/trip-watch.repository';
 import { ConfirmReplanUseCase } from './application/confirm-replan.use-case';
 import { EvaluateSignalsUseCase } from './application/evaluate-signals.use-case';
+import { ListTripProposalsUseCase } from './application/list-trip-proposals.use-case';
 import { ProposeReplanUseCase } from './application/propose-replan.use-case';
 import { DraftMemoryBookUseCase } from './application/draft-memory-book.use-case';
 import { StartTripWatchUseCase } from './application/start-trip-watch.use-case';
@@ -73,6 +74,7 @@ import { AgentScheduler } from './interface/agent.scheduler';
     ProposeReplanUseCase,
     ConfirmReplanUseCase,
     DraftMemoryBookUseCase,
+    ListTripProposalsUseCase,
     RunWatchCycleUseCase,
     TripItineraryWatchHandler,
     WeatherSignalAdapter,

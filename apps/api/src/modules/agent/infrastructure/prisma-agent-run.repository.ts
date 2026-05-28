@@ -57,6 +57,17 @@ export class PrismaAgentRunRepository implements AgentRunRepository {
     return row ? runToDomain(row) : null;
   }
 
+  async findActiveByTripId(tripId: string): Promise<AgentRun | null> {
+    // [S-C2] Newest watching run for the trip. A trip can have multiple
+    // runs over its lifetime (one per agent-watch session); we surface
+    // the active one.
+    const row = await this.prisma.agentRun.findFirst({
+      where: { tripId, status: 'watching' },
+      orderBy: { createdAt: 'desc' },
+    });
+    return row ? runToDomain(row) : null;
+  }
+
   async appendStep(input: AppendAgentStepInput): Promise<AgentStep> {
     const row = await this.prisma.agentStep.create({
       data: {
