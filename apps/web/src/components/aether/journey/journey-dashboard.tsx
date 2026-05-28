@@ -12,7 +12,7 @@
  * Auth-gated. Loading + error states are calm + Aether-styled.
  */
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { useTheme } from '@app/aether-core';
 import {
@@ -111,6 +111,8 @@ function fmtDayHead(v: unknown): string {
 export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.ReactElement {
   const theme = useTheme();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const addPlace = searchParams.get('addPlace');
   const { isNarrow } = useViewport();
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [shareCopied, setShareCopied] = useState<boolean>(false);
@@ -339,6 +341,92 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
                 </p>
               )}
             </Reveal>
+
+            {/* "Add to trip" staging banner — set by destination pages
+                that link here with ?addPlace=. Phase 0 stub: explains
+                the place is queued; the real append-place endpoint is
+                Phase 1. Open-in-planner takes the user to the live
+                editor where they can drop the pin. */}
+            {addPlace !== null && addPlace !== '' && (
+              <Reveal>
+                <div
+                  style={{
+                    marginTop: theme.space.gutter,
+                    padding: theme.space.loose,
+                    borderRadius: theme.radius.lg,
+                    background: ochre.whisper,
+                    border: `1px solid ${ochre.deep}`,
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: theme.space.comfy,
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div>
+                    <p
+                      style={{
+                        fontFamily: theme.font.ui,
+                        fontSize: 11,
+                        letterSpacing: '0.22em',
+                        textTransform: 'uppercase',
+                        color: accent.deep,
+                        fontWeight: 600,
+                        margin: 0,
+                      }}
+                    >
+                      Adding to your trip
+                    </p>
+                    <p
+                      style={{
+                        fontFamily: theme.font.display,
+                        fontSize: 'clamp(20px, 2.4vw, 28px)',
+                        lineHeight: 1.2,
+                        letterSpacing: '-0.014em',
+                        fontWeight: 600,
+                        margin: `${theme.space.hairline}px 0 0`,
+                        color: ink.base,
+                      }}
+                    >
+                      {addPlace}
+                    </p>
+                    <p
+                      style={{
+                        fontFamily: theme.font.display,
+                        fontStyle: 'italic',
+                        fontSize: 15,
+                        lineHeight: 1.5,
+                        color: ink.soft,
+                        margin: `${theme.space.tight}px 0 0`,
+                        maxWidth: '46ch',
+                      }}
+                    >
+                      Open this trip in the planner to drop the pin and let the model fit it into
+                      the days.
+                    </p>
+                  </div>
+                  <Link
+                    href={`/trips/${tripId}`}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: `${theme.space.tight}px ${theme.space.loose}px`,
+                      borderRadius: theme.radius.pill,
+                      background: accent.base,
+                      color: surface.base,
+                      fontFamily: theme.font.ui,
+                      fontSize: theme.text.button.size,
+                      fontWeight: theme.text.button.weight,
+                      textDecoration: 'none',
+                    }}
+                  >
+                    Open the planner
+                    <span aria-hidden>→</span>
+                  </Link>
+                </div>
+              </Reveal>
+            )}
 
             {/* Facts strip */}
             <Reveal>
