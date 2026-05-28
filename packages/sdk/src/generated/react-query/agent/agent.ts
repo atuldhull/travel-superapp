@@ -163,6 +163,143 @@ export function useAgentControllerStatus<TData = Awaited<ReturnType<typeof agent
 
 
 /**
+ * @summary [S-C2] Active agent run + pending proposals for a trip. Returns {run:null, proposals:[]} when no watch is live.
+ */
+export type agentControllerListTripProposalsRouteResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type agentControllerListTripProposalsRouteResponseSuccess = (agentControllerListTripProposalsRouteResponse200) & {
+  headers: Headers;
+};
+;
+
+export type agentControllerListTripProposalsRouteResponse = (agentControllerListTripProposalsRouteResponseSuccess)
+
+export const getAgentControllerListTripProposalsRouteUrl = (tripId: string,) => {
+
+
+  
+
+  return `/api/v1/agent/trips/${tripId}/proposals`
+}
+
+export const agentControllerListTripProposalsRoute = async (tripId: string, options?: RequestInit): Promise<agentControllerListTripProposalsRouteResponse> => {
+  
+  return apiFetch<agentControllerListTripProposalsRouteResponse>(getAgentControllerListTripProposalsRouteUrl(tripId),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+
+
+export const getAgentControllerListTripProposalsRouteInfiniteQueryKey = (tripId?: string,) => {
+    return [
+    'infinite', `/api/v1/agent/trips/${tripId}/proposals`
+    ] as const;
+    }
+
+export const getAgentControllerListTripProposalsRouteQueryKey = (tripId?: string,) => {
+    return [
+    `/api/v1/agent/trips/${tripId}/proposals`
+    ] as const;
+    }
+
+    
+export const getAgentControllerListTripProposalsRouteInfiniteQueryOptions = <TData = Awaited<ReturnType<typeof agentControllerListTripProposalsRoute>>, TError = unknown>(tripId: string, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof agentControllerListTripProposalsRoute>>, TError, TData>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAgentControllerListTripProposalsRouteInfiniteQueryKey(tripId);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof agentControllerListTripProposalsRoute>>> = ({ signal }) => agentControllerListTripProposalsRoute(tripId, { signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(tripId),  staleTime: 30000,  ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof agentControllerListTripProposalsRoute>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AgentControllerListTripProposalsRouteInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof agentControllerListTripProposalsRoute>>>
+export type AgentControllerListTripProposalsRouteInfiniteQueryError = unknown
+
+
+/**
+ * @summary [S-C2] Active agent run + pending proposals for a trip. Returns {run:null, proposals:[]} when no watch is live.
+ */
+
+export function useAgentControllerListTripProposalsRouteInfinite<TData = Awaited<ReturnType<typeof agentControllerListTripProposalsRoute>>, TError = unknown>(
+ tripId: string, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof agentControllerListTripProposalsRoute>>, TError, TData>, request?: SecondParameter<typeof apiFetch>}
+  
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAgentControllerListTripProposalsRouteInfiniteQueryOptions(tripId,options)
+
+  const query = useInfiniteQuery(queryOptions) as  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const getAgentControllerListTripProposalsRouteQueryOptions = <TData = Awaited<ReturnType<typeof agentControllerListTripProposalsRoute>>, TError = unknown>(tripId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof agentControllerListTripProposalsRoute>>, TError, TData>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAgentControllerListTripProposalsRouteQueryKey(tripId);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof agentControllerListTripProposalsRoute>>> = ({ signal }) => agentControllerListTripProposalsRoute(tripId, { signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(tripId),  staleTime: 30000,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof agentControllerListTripProposalsRoute>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AgentControllerListTripProposalsRouteQueryResult = NonNullable<Awaited<ReturnType<typeof agentControllerListTripProposalsRoute>>>
+export type AgentControllerListTripProposalsRouteQueryError = unknown
+
+
+/**
+ * @summary [S-C2] Active agent run + pending proposals for a trip. Returns {run:null, proposals:[]} when no watch is live.
+ */
+
+export function useAgentControllerListTripProposalsRoute<TData = Awaited<ReturnType<typeof agentControllerListTripProposalsRoute>>, TError = unknown>(
+ tripId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof agentControllerListTripProposalsRoute>>, TError, TData>, request?: SecondParameter<typeof apiFetch>}
+  
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAgentControllerListTripProposalsRouteQueryOptions(tripId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+/**
  * @summary An agent run + its append-only step log.
  */
 export type agentControllerGetRunResponse404 = {
