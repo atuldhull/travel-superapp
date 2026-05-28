@@ -39,6 +39,41 @@ export const agentControllerStatus = async ( options?: RequestInit): Promise<age
 
 
 /**
+ * @summary [S-C2] Active agent run + pending proposals for a trip. Returns {run:null, proposals:[]} when no watch is live.
+ */
+export type agentControllerListTripProposalsRouteResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type agentControllerListTripProposalsRouteResponseSuccess = (agentControllerListTripProposalsRouteResponse200) & {
+  headers: Headers;
+};
+;
+
+export type agentControllerListTripProposalsRouteResponse = (agentControllerListTripProposalsRouteResponseSuccess)
+
+export const getAgentControllerListTripProposalsRouteUrl = (tripId: string,) => {
+
+
+  
+
+  return `/api/v1/agent/trips/${tripId}/proposals`
+}
+
+export const agentControllerListTripProposalsRoute = async (tripId: string, options?: RequestInit): Promise<agentControllerListTripProposalsRouteResponse> => {
+  
+  return apiFetch<agentControllerListTripProposalsRouteResponse>(getAgentControllerListTripProposalsRouteUrl(tripId),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+/**
  * @summary An agent run + its append-only step log.
  */
 export type agentControllerGetRunResponse404 = {

@@ -105,6 +105,16 @@ export * from './generated/react-query/safety/safety';
 export * from './generated/react-query/account/account';
 // V.UX.17 — premium concierge agent-match.
 export * from './generated/react-query/agents/agents';
+// [S-C2] — trip-watch agent (POST.2A.1). The plain `/agent` barrel is
+// already star-exported above (line ~30) which collides on the underlying
+// fetcher names; surface only the React-Query hooks AgentWatchCard
+// actually consumes.
+export {
+  useAgentControllerAcceptProposal,
+  useAgentControllerDeclineProposal,
+  useAgentControllerListTripProposalsRoute,
+  getAgentControllerListTripProposalsRouteQueryKey,
+} from './generated/react-query/agent/agent';
 // V.UX.18 — translation widget. CountryPrimer hooks live under the
 // already-star-exported safety barrel (controller uses @ApiTags('safety')).
 export * from './generated/react-query/translation/translation';

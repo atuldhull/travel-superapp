@@ -38,6 +38,10 @@ class FakeRuns implements AgentRunRepository {
   async findById(): Promise<AgentRun | null> {
     return null;
   }
+  // [S-C2] Memory-book test fake — no agent runs in scope; null is fine.
+  async findActiveByTripId(): Promise<AgentRun | null> {
+    return null;
+  }
   async appendStep(i: AppendAgentStepInput): Promise<AgentStep> {
     const s: AgentStep = {
       id: `step-${++seq}`,
