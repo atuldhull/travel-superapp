@@ -28,6 +28,7 @@
  *   • none      → all transitions stripped, instant render
  */
 import { useCallback, useEffect } from 'react';
+import Link from 'next/link';
 import { useAudioEngine, useMotionPolicy, useTheme } from '@app/aether-core';
 import { EXPERIENCES, GUSTARE, HERO, photoUrl } from './photos';
 import { DriftNav } from './drift-nav';
@@ -223,7 +224,7 @@ export function DriftCanvas(): React.ReactElement {
             }}
           >
             <a
-              href="#esperienze"
+              href="/aether/plan"
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -337,87 +338,98 @@ export function DriftCanvas(): React.ReactElement {
             const label = EXPERIENCE_LABELS[idx]!;
             return (
               <Reveal key={photo.id} delay={idx * 90}>
-                <article
+                <Link
+                  href="/aether/destinations"
                   style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    borderRadius: theme.radius.lg,
-                    overflow: 'hidden',
-                    background: surface.soft,
-                    boxShadow: theme.elevation.rest.shadow,
-                    border: `1px solid ${ink.whisper}`,
-                    transition: 'transform 320ms cubic-bezier(0.42, 0, 0.18, 1), box-shadow 320ms',
-                    cursor: 'pointer',
+                    textDecoration: 'none',
+                    color: 'inherit',
+                    display: 'block',
                     height: '100%',
                   }}
-                  onMouseEnter={(e) => {
-                    if (motionPolicy === 'full') {
-                      e.currentTarget.style.transform = 'translateY(-6px)';
-                      e.currentTarget.style.boxShadow = theme.elevation.lifted.shadow;
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = theme.elevation.rest.shadow;
-                  }}
                 >
-                  <div
+                  <article
                     style={{
-                      aspectRatio: '4 / 3',
-                      background: surface.deep,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      borderRadius: theme.radius.lg,
                       overflow: 'hidden',
+                      background: surface.soft,
+                      boxShadow: theme.elevation.rest.shadow,
+                      border: `1px solid ${ink.whisper}`,
+                      transition:
+                        'transform 320ms cubic-bezier(0.42, 0, 0.18, 1), box-shadow 320ms',
+                      cursor: 'pointer',
+                      height: '100%',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (motionPolicy === 'full') {
+                        e.currentTarget.style.transform = 'translateY(-6px)';
+                        e.currentTarget.style.boxShadow = theme.elevation.lifted.shadow;
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = theme.elevation.rest.shadow;
                     }}
                   >
-                    <img
-                      src={photoUrl(photo, 800)}
-                      alt={photo.alt}
+                    <div
                       style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        display: 'block',
-                      }}
-                      loading="lazy"
-                    />
-                  </div>
-                  <div style={{ padding: theme.space.comfy }}>
-                    <h3
-                      style={{
-                        fontFamily: theme.font.display,
-                        fontSize: theme.text.subhead.size,
-                        lineHeight: 1.25,
-                        letterSpacing: '-0.01em',
-                        fontWeight: 600,
-                        margin: 0,
-                        color: ink.base,
+                        aspectRatio: '4 / 3',
+                        background: surface.deep,
+                        overflow: 'hidden',
                       }}
                     >
-                      {label.title}
-                    </h3>
-                    <p
-                      style={{
-                        fontFamily: theme.font.ui,
-                        fontSize: theme.text.small.size,
-                        lineHeight: 1.5,
-                        color: ink.soft,
-                        margin: `${theme.space.hairline}px 0 ${theme.space.comfy}px`,
-                      }}
-                    >
-                      {label.subtitle}
-                    </p>
-                    <span
-                      style={{
-                        fontFamily: theme.font.ui,
-                        fontSize: theme.text.small.size,
-                        fontWeight: 600,
-                        color: accent.deep,
-                        letterSpacing: '0.02em',
-                      }}
-                    >
-                      {label.cta}
-                    </span>
-                  </div>
-                </article>
+                      <img
+                        src={photoUrl(photo, 800)}
+                        alt={photo.alt}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          display: 'block',
+                        }}
+                        loading="lazy"
+                      />
+                    </div>
+                    <div style={{ padding: theme.space.comfy }}>
+                      <h3
+                        style={{
+                          fontFamily: theme.font.display,
+                          fontSize: theme.text.subhead.size,
+                          lineHeight: 1.25,
+                          letterSpacing: '-0.01em',
+                          fontWeight: 600,
+                          margin: 0,
+                          color: ink.base,
+                        }}
+                      >
+                        {label.title}
+                      </h3>
+                      <p
+                        style={{
+                          fontFamily: theme.font.ui,
+                          fontSize: theme.text.small.size,
+                          lineHeight: 1.5,
+                          color: ink.soft,
+                          margin: `${theme.space.hairline}px 0 ${theme.space.comfy}px`,
+                        }}
+                      >
+                        {label.subtitle}
+                      </p>
+                      <span
+                        style={{
+                          fontFamily: theme.font.ui,
+                          fontSize: theme.text.small.size,
+                          fontWeight: 600,
+                          color: accent.deep,
+                          letterSpacing: '0.02em',
+                        }}
+                      >
+                        {label.cta}
+                      </span>
+                    </div>
+                  </article>
+                </Link>
               </Reveal>
             );
           })}
@@ -510,8 +522,8 @@ export function DriftCanvas(): React.ReactElement {
             >
               Spice routes, family recipes, and the people who have cooked them for centuries.
             </p>
-            <a
-              href="#blog"
+            <Link
+              href="/aether/journal"
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -528,7 +540,7 @@ export function DriftCanvas(): React.ReactElement {
               }}
             >
               Read the journal
-            </a>
+            </Link>
           </div>
         </Reveal>
       </section>
