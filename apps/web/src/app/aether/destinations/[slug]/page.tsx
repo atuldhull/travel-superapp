@@ -15,6 +15,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { ALL_SLUGS, DESTINATIONS } from '@/components/aether/destinations/data';
 import { DestinationLazy } from '@/components/aether/destinations/destination-lazy';
+import { aetherOg } from '@/lib/aether-og';
 
 export function generateStaticParams(): Array<{ slug: string }> {
   return ALL_SLUGS.map((slug) => ({ slug }));
@@ -30,10 +31,12 @@ export async function generateMetadata({
   if (d === undefined) {
     return { title: 'Aether · Not found' };
   }
+  const title = `Aether · ${d.name}`;
   return {
-    title: `Aether · ${d.name}`,
+    title,
     description: d.tagline,
     robots: { index: false, follow: false },
+    ...aetherOg(title, d.tagline, { photoId: d.hero.id }),
   };
 }
 

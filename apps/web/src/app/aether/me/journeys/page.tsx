@@ -4,11 +4,15 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { JourneysLazy } from '@/components/aether/me/journeys-lazy';
+import { aetherOg } from '@/lib/aether-og';
 
+const TITLE = 'Aether · Your journeys';
+const DESC = 'Every road you have sketched, in one place.';
 export const metadata: Metadata = {
-  title: 'Aether · Your journeys',
-  description: 'Every road you have sketched, in one place.',
+  title: TITLE,
+  description: DESC,
   robots: { index: false, follow: false },
+  ...aetherOg(TITLE, DESC),
 };
 
 export default function JourneysIndexRoute(): React.ReactElement {

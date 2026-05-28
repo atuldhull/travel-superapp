@@ -12,11 +12,15 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { AtlasLazy } from '@/components/aether/atlas/atlas-lazy';
+import { aetherOg } from '@/lib/aether-og';
 
+const TITLE = 'Aether · Atlas';
+const DESC = 'A constellation of fifteen Indian destinations, pinned on a dark map.';
 export const metadata: Metadata = {
-  title: 'Aether · Atlas',
-  description: 'A constellation map of destinations. Phase 0 sketch.',
+  title: TITLE,
+  description: DESC,
   robots: { index: false, follow: false },
+  ...aetherOg(TITLE, DESC, { photoId: '1567619313084-90c11abfbe53' }),
 };
 
 export default function AtlasPage(): React.ReactElement {

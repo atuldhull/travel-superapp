@@ -9,6 +9,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { ALL_JOURNAL_SLUGS, JOURNAL_ARTICLES } from '@/components/aether/journal/data';
 import { JournalLazy } from '@/components/aether/journal/journal-lazy';
+import { aetherOg } from '@/lib/aether-og';
 
 export function generateStaticParams(): Array<{ slug: string }> {
   return ALL_JOURNAL_SLUGS.map((slug) => ({ slug }));
@@ -22,10 +23,12 @@ export async function generateMetadata({
   const { slug } = await params;
   const a = JOURNAL_ARTICLES[slug];
   if (a === undefined) return { title: 'Aether · Not found' };
+  const title = `Aether journal · ${a.title}`;
   return {
-    title: `Aether journal · ${a.title}`,
+    title,
     description: a.dek,
     robots: { index: false, follow: false },
+    ...aetherOg(title, a.dek, { photoId: a.hero.id }),
   };
 }
 
