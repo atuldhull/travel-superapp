@@ -21,6 +21,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useTheme } from '@app/aether-core';
 import { useViewport } from './use-viewport';
+import { AudioChip } from './audio-chip';
 
 export function DriftNav(): React.ReactElement {
   const theme = useTheme();
@@ -211,6 +212,7 @@ export function DriftNav(): React.ReactElement {
               </Link>
             </>
           )}
+          {!isNarrow && <AudioChip inverted={!scrolled} />}
           <Link
             href="/home"
             style={{
