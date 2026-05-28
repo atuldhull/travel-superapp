@@ -1,0 +1,4 @@
+storybook-static/
+.cache/
+node_modules/
+*.log

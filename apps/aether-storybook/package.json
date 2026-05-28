@@ -1,0 +1,44 @@
+{
+  "name": "aether-storybook",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Storybook for @app/aether-* — palette / spring / typography / scene / surface stories. Visual regression via Chromatic.",
+  "type": "module",
+  "scripts": {
+    "storybook": "storybook dev -p 6011",
+    "build-storybook": "storybook build -o storybook-static",
+    "chromatic": "chromatic --exit-zero-on-changes",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint stories .storybook"
+  },
+  "dependencies": {
+    "@app/aether-canvas": "workspace:*",
+    "@app/aether-core": "workspace:*",
+    "@app/aether-motion": "workspace:*",
+    "@react-three/fiber": "^9.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "three": "^0.184.0",
+    "tone": "^15.0.0"
+  },
+  "devDependencies": {
+    "@app/eslint-config": "workspace:*",
+    "@app/tsconfig": "workspace:*",
+    "@storybook/addon-essentials": "^8.4.0",
+    "@storybook/addon-interactions": "^8.4.0",
+    "@storybook/addon-themes": "^8.4.0",
+    "@storybook/blocks": "^8.4.0",
+    "@storybook/react": "^8.4.0",
+    "@storybook/react-vite": "^8.4.0",
+    "@storybook/test": "^8.4.0",
+    "@types/node": "^22.10.5",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/three": "^0.184.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "chromatic": "^11.20.0",
+    "storybook": "^8.4.0",
+    "typescript": "^5.7.2",
+    "vite": "^5.4.0"
+  }
+}
