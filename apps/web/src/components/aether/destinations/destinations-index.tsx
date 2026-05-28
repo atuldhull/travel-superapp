@@ -33,6 +33,11 @@ const FILTER_MAP: Record<string, ReadonlyArray<Filter>> = {
   coorg: ['mountains', 'cuisine'],
   pondicherry: ['coast', 'cuisine'],
   spiti: ['mountains'],
+  darjeeling: ['mountains', 'cuisine'],
+  udaipur: ['heritage'],
+  madurai: ['heritage', 'cuisine'],
+  bhuj: ['heritage'],
+  shillong: ['mountains'],
 };
 
 const FILTERS: ReadonlyArray<{ key: Filter; label: string }> = [
@@ -92,7 +97,7 @@ export function DestinationsIndex(): React.ReactElement {
               marginBottom: theme.space.tight,
             }}
           >
-            All destinations · दस यात्राएँ
+            All destinations · पंद्रह यात्राएँ
           </p>
           <h1
             style={{
@@ -107,7 +112,7 @@ export function DestinationsIndex(): React.ReactElement {
               marginInline: 'auto',
             }}
           >
-            Ten ways to know India.
+            Fifteen ways to know India.
           </h1>
           <p
             style={{
