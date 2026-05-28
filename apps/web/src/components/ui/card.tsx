@@ -42,13 +42,16 @@ export function Card({
   children,
   ...rest
 }: CardProps) {
+  // ElementType union of HTML tags + components confuses TS19 about
+  // the children slot — cast to a permissive shape so children: ReactNode passes.
+  const Component = Tag as ElementType<HTMLAttributes<HTMLElement>>;
   return (
-    <Tag
+    <Component
       className={cn(depthBase, depthStyles[depth], interactive && 'cursor-pointer', className)}
       {...rest}
     >
       {children}
-    </Tag>
+    </Component>
   );
 }
 

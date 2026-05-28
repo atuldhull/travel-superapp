@@ -29,7 +29,17 @@ const nextConfig: NextConfig = {
   // + protomaps-themes-base (offline vector map) ship untranspiled
   // ESM; Next's bundler needs them here or the ssr:false components
   // fail to chunk/parse.
-  transpilePackages: ['react-globe.gl', 'three', 'maplibre-gl', 'pmtiles', 'protomaps-themes-base'],
+  transpilePackages: [
+    'react-globe.gl',
+    'three',
+    'maplibre-gl',
+    'pmtiles',
+    'protomaps-themes-base',
+    // Aether — source-only workspace packages, need TSX transpile.
+    '@app/aether-motion',
+    '@app/aether-core',
+    '@app/aether-canvas',
+  ],
 };
 
 // `withSentryConfig` is safe to call unconditionally — it only

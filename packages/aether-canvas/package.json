@@ -1,0 +1,44 @@
+{
+  "name": "@app/aether-canvas",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Aether 3D canvas — React Three Fiber wrapper that boots WebGPU with WebGL2 fallback. Exposes <AetherScene> + Warm-Italian lighting + ambient particle field. Three.js is a peer dep so consumers control the version.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src test",
+    "test": "jest --passWithNoTests",
+    "test:watch": "jest --watch"
+  },
+  "dependencies": {
+    "@app/aether-motion": "workspace:*",
+    "@app/aether-core": "workspace:*"
+  },
+  "peerDependencies": {
+    "@react-three/fiber": "^9.0.0 || ^8.17.0",
+    "react": "^19.0.0",
+    "three": "^0.171.0 || ^0.184.0"
+  },
+  "devDependencies": {
+    "@app/eslint-config": "workspace:*",
+    "@app/tsconfig": "workspace:*",
+    "@react-three/fiber": "^9.0.0",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.10.5",
+    "@types/react": "^19.0.0",
+    "@types/three": "^0.184.0",
+    "jest": "^29.7.0",
+    "react": "^19.0.0",
+    "three": "^0.184.0",
+    "ts-jest": "^29.2.5",
+    "typescript": "^5.7.2"
+  }
+}
