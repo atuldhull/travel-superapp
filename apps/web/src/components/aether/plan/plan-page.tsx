@@ -27,6 +27,7 @@ import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
 import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
 import { geocodeOne } from '../../../lib/geocode';
+import { useViewport } from '../use-viewport';
 
 interface SketchedTrip {
   readonly slug: string;
@@ -72,6 +73,7 @@ const DEFAULT_RADIUS_KM = 50;
 
 export function PlanPage(): React.ReactElement {
   const theme = useTheme();
+  const { isNarrow } = useViewport();
   const router = useRouter();
   const token = useAuthToken();
   const bootComplete = useAuthBootComplete();
@@ -166,7 +168,9 @@ export function PlanPage(): React.ReactElement {
         style={{
           maxWidth: 1280,
           margin: '0 auto',
-          padding: `${theme.space.surface}px ${theme.space.margin}px ${theme.space.hero}px`,
+          padding: isNarrow
+            ? `${theme.space.hero}px ${theme.space.comfy}px ${theme.space.gutter}px`
+            : `${theme.space.surface}px ${theme.space.margin}px ${theme.space.hero}px`,
         }}
       >
         <div
