@@ -79,8 +79,9 @@ export function PlanPage(): React.ReactElement {
   const createTrip = useTripControllerCreate({
     mutation: {
       onSuccess: (created: TripDto) => {
-        // Created.id present on the response per CreateTripRequestDto schema.
-        router.push(`/trips/${created.id}`);
+        // Land in the Aether-styled live journey dashboard. The dashboard
+        // has an 'Open in the planner →' link for the full editing flow.
+        router.push(`/aether/journey/${created.id}`);
       },
     },
   });
