@@ -1,28 +1,31 @@
 'use client';
 
 /**
- * <PlanPage> — the Aether trip-planner entry surface (Phase 0 stub).
+ * <PlanPage> — the Aether trip-planner entry surface, wired to backend.
  *
  * Two-column composition:
- *   • Left: editorial intro + the three-question form ("where to" /
- *     "when" / "what kind"). On submit, Phase 0 just shows a
- *     confirmation card — Phase 1 wires this to the existing
- *     trip-planner backend (`apiFetch` to `POST /trips/draft` or
- *     similar). For now the form proves the surface end-to-end.
- *   • Right: a stack of "recently sketched" trip cards — hand-curated
- *     itineraries with destination + duration + pace summary, each
- *     linking back to the relevant destination detail.
+ *   • Left: editorial intro + the three-question form (Where / When /
+ *     Pace / Kind). On submit, calls `useTripControllerCreate` against
+ *     `POST /trips` with the entered title + a default-Jaipur center
+ *     (geocoding lands Phase 1) + pace/kind appended to the title.
+ *     Auth-gated: if not signed in, the submit button becomes a
+ *     'Sign in to sketch' link to /login?next=/aether/plan.
+ *     On success, navigates to the existing /trips/[id] surface so
+ *     the user lands in the planner with their new draft live.
+ *   • Right: 3 'Recently sketched' editorial trip cards linking to
+ *     destination details.
  *
- * Reachable from every Begin-the-yatra CTA, every destination's final
- * call-to-action, the AboutPage's bottom CTA, and the Drift hero
- * pill.
+ * Reachable from every Begin-the-yatra CTA across the Aether surface.
  */
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { useTheme } from '@app/aether-core';
+import { useTripControllerCreate, type TripDto } from '@app/sdk';
 import { DriftNav } from '../drift-nav';
 import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
+import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
 
 interface SketchedTrip {
   readonly slug: string;
@@ -59,13 +62,35 @@ const SKETCHES: readonly SketchedTrip[] = [
 const PACE_OPTIONS = ['Slow & deep', 'Balanced', 'Many places, fast'] as const;
 const KIND_OPTIONS = ['Heritage', 'Mountains', 'Coast', 'Food', 'Spiritual'] as const;
 
+/** Fallback center used when geocoding the freeform 'Where' isn't
+ *  available yet (Phase 0). Picked Jaipur as a sensible default —
+ *  ~middle of the country, on most flight paths, a common starting
+ *  point for first-time India travellers. Phase 1 wires the field
+ *  to a real geocoder. */
+const DEFAULT_CENTER = { lat: 26.9124, lng: 75.7873 } as const;
+const DEFAULT_RADIUS_KM = 50;
+
 export function PlanPage(): React.ReactElement {
   const theme = useTheme();
+  const router = useRouter();
+  const token = useAuthToken();
+  const bootComplete = useAuthBootComplete();
+  const isAuthed = bootComplete && token !== null;
+  const createTrip = useTripControllerCreate({
+    mutation: {
+      onSuccess: (created: TripDto) => {
+        // Created.id present on the response per CreateTripRequestDto schema.
+        router.push(`/trips/${created.id}`);
+      },
+    },
+  });
+
   const [destination, setDestination] = useState<string>('');
   const [when, setWhen] = useState<string>('');
   const [pace, setPace] = useState<(typeof PACE_OPTIONS)[number]>('Balanced');
   const [kind, setKind] = useState<(typeof KIND_OPTIONS)[number]>('Heritage');
   const [submitted, setSubmitted] = useState<boolean>(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const ink = theme.color.ink;
   const surface = theme.color.surface;
@@ -75,8 +100,42 @@ export function PlanPage(): React.ReactElement {
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
+    setErrorMsg(null);
+
+    if (!isAuthed) {
+      // Bounce to login with a return-here next-param.
+      router.push('/login?next=/aether/plan');
+      return;
+    }
+
+    const trimmedDest = destination.trim();
+    const trimmedWhen = when.trim();
+    // Title rolls the four answers into one human-readable string. The
+    // existing /trips/[id] surface shows this prominently.
+    const title =
+      `${trimmedDest !== '' ? trimmedDest : kind} · ${pace.toLowerCase()}` +
+      (trimmedWhen !== '' ? ` · ${trimmedWhen}` : '');
+
     setSubmitted(true);
-    // Phase 1 wires to the real backend.
+    createTrip.mutate(
+      {
+        data: {
+          title,
+          center: { lat: DEFAULT_CENTER.lat, lng: DEFAULT_CENTER.lng },
+          radiusKm: DEFAULT_RADIUS_KM,
+        },
+      },
+      {
+        onError: (err: unknown) => {
+          setSubmitted(false);
+          const message =
+            err instanceof Error
+              ? err.message
+              : 'Something went wrong sketching the trip. Try again.';
+          setErrorMsg(message);
+        },
+      },
+    );
   };
 
   return (
@@ -172,7 +231,7 @@ export function PlanPage(): React.ReactElement {
                       marginBottom: theme.space.tight,
                     }}
                   >
-                    Sketch queued
+                    {createTrip.isPending ? 'Sketching…' : 'Sketch queued'}
                   </p>
                   <h2
                     style={{
@@ -198,8 +257,9 @@ export function PlanPage(): React.ReactElement {
                       margin: `${theme.space.tight}px 0 ${theme.space.comfy}px`,
                     }}
                   >
-                    We&apos;re reading your three answers. A full draft itinerary will land in your
-                    inbox within an hour — and on this surface, the moment you sign in.
+                    {createTrip.isPending
+                      ? 'Drafting your trip on the server. This takes a few seconds — we redirect the moment it lands.'
+                      : 'Your draft is saved. You can refine it on the trip page or sketch another below.'}
                   </p>
                   <div style={{ display: 'flex', gap: theme.space.tight, flexWrap: 'wrap' }}>
                     <button
@@ -241,6 +301,42 @@ export function PlanPage(): React.ReactElement {
                   onSubmit={handleSubmit}
                   style={{ display: 'flex', flexDirection: 'column', gap: theme.space.loose }}
                 >
+                  {errorMsg !== null && (
+                    <div
+                      role="alert"
+                      style={{
+                        padding: theme.space.comfy,
+                        borderRadius: theme.radius.md,
+                        background: 'rgba(184, 58, 46, 0.08)',
+                        border: `1px solid rgba(184, 58, 46, 0.3)`,
+                        color: '#8a2418',
+                        fontFamily: theme.font.ui,
+                        fontSize: theme.text.small.size,
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      {errorMsg}
+                    </div>
+                  )}
+
+                  {!isAuthed && bootComplete && (
+                    <div
+                      style={{
+                        padding: theme.space.comfy,
+                        borderRadius: theme.radius.md,
+                        background: ochre.whisper,
+                        border: `1px solid ${ochre.deep}`,
+                        fontFamily: theme.font.ui,
+                        fontSize: theme.text.small.size,
+                        color: ink.base,
+                        lineHeight: 1.55,
+                      }}
+                    >
+                      You&apos;ll be asked to sign in before the sketch saves. Drafts live in your
+                      account so you can come back to them.
+                    </div>
+                  )}
+
                   {/* Where */}
                   <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <span
@@ -401,13 +497,19 @@ export function PlanPage(): React.ReactElement {
                       fontSize: theme.text.button.size,
                       fontWeight: theme.text.button.weight,
                       border: 'none',
-                      cursor: 'pointer',
+                      cursor: createTrip.isPending ? 'wait' : 'pointer',
                       alignSelf: 'flex-start',
                       letterSpacing: '0.01em',
                       boxShadow: theme.elevation.raised.shadow,
+                      opacity: createTrip.isPending ? 0.7 : 1,
                     }}
+                    disabled={createTrip.isPending}
                   >
-                    Sketch the journey →
+                    {createTrip.isPending
+                      ? 'Sketching…'
+                      : isAuthed
+                        ? 'Sketch the journey →'
+                        : 'Sign in & sketch →'}
                   </button>
                 </form>
               )}

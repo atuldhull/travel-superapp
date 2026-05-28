@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { AetherProvider } from '@app/aether-core';
 import { theme as baseTheme, type Theme } from '@app/aether-motion';
 import { AboutPage } from './about-page';
+import { Pulse } from '../pulse/pulse';
 
 export function AboutShell(): React.ReactElement {
   const theme = useMemo<Theme>(
@@ -21,6 +22,7 @@ export function AboutShell(): React.ReactElement {
   return (
     <AetherProvider premiumTier={null} audioOptOut={false} theme={theme}>
       <AboutPage />
+      <Pulse />
     </AetherProvider>
   );
 }
