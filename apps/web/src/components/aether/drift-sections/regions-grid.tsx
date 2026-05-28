@@ -11,6 +11,7 @@
 import Link from 'next/link';
 import { useTheme, useMotionPolicy } from '@app/aether-core';
 import { REGIONS, REGION_LABELS, photoUrl } from '../photos';
+import { SafeImg } from '../safe-img';
 import { Reveal } from './reveal';
 
 export function RegionsGrid(): React.ReactElement {
@@ -118,7 +119,7 @@ export function RegionsGrid(): React.ReactElement {
                     e.currentTarget.style.boxShadow = theme.elevation.rest.shadow;
                   }}
                 >
-                  <img
+                  <SafeImg
                     src={photoUrl(photo, 1000)}
                     alt={photo.alt}
                     loading="lazy"
