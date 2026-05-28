@@ -7,11 +7,15 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { OnboardingLazy } from '@/components/aether/onboarding/onboarding-lazy';
+import { aetherOg } from '@/lib/aether-og';
 
+const TITLE = 'Aether · Begin';
+const DESC = 'Slow travel, sketched by AI — your first yatra in three breaths.';
 export const metadata: Metadata = {
-  title: 'Aether · Begin',
-  description: 'Slow travel, sketched by AI — your first yatra in three breaths.',
+  title: TITLE,
+  description: DESC,
   robots: { index: false, follow: false },
+  ...aetherOg(TITLE, DESC),
 };
 
 export default function OnboardingRoute(): React.ReactElement {

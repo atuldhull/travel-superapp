@@ -5,11 +5,15 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { SharesLazy } from '@/components/aether/me/shares-lazy';
+import { aetherOg } from '@/lib/aether-og';
 
+const TITLE = 'Aether · Your shares';
+const DESC = 'Every share link you have minted, in one place.';
 export const metadata: Metadata = {
-  title: 'Aether · Your shares',
-  description: 'Every share link you have minted, in one place.',
+  title: TITLE,
+  description: DESC,
   robots: { index: false, follow: false },
+  ...aetherOg(TITLE, DESC),
 };
 
 export default function SharesIndexRoute(): React.ReactElement {

@@ -4,11 +4,15 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { AccountLazy } from '@/components/aether/account/account-lazy';
+import { aetherOg } from '@/lib/aether-og';
 
+const TITLE = 'Aether · Your atlas';
+const DESC = 'Your identity, your settings, your road.';
 export const metadata: Metadata = {
-  title: 'Aether · Your atlas',
-  description: 'Your identity, your settings, your road.',
+  title: TITLE,
+  description: DESC,
   robots: { index: false, follow: false },
+  ...aetherOg(TITLE, DESC),
 };
 
 export default function AccountRoute(): React.ReactElement {

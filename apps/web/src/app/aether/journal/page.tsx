@@ -4,11 +4,15 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { JournalIndexLazy } from '@/components/aether/journal/journal-index-lazy';
+import { aetherOg } from '@/lib/aether-og';
 
+const TITLE = 'Aether · The Journal';
+const DESC = 'Long-form notes from the road. Field notes, craft stories, pilgrim trails.';
 export const metadata: Metadata = {
-  title: 'Aether · The Journal',
-  description: 'Long-form notes from the road. Field notes, craft stories, pilgrim trails.',
+  title: TITLE,
+  description: DESC,
   robots: { index: false, follow: false },
+  ...aetherOg(TITLE, DESC, { photoId: '1545048702-79362596cdc9' }),
 };
 
 export default function JournalIndexRoute(): React.ReactElement {
