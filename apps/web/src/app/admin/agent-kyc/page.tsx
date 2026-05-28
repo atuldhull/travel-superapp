@@ -20,7 +20,6 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useQueryClient } from '@tanstack/react-query';
 import {
-  getAdminAgentsControllerListQueryKey,
   useAdminAgentsControllerList,
   useAdminAgentsControllerReject,
   useAdminAgentsControllerVerify,
@@ -58,7 +57,6 @@ export default function AgentKycPage() {
   const queryClient = useQueryClient();
 
   const params = { status, limit: String(limit), offset: String(offset) };
-  const queryKey = getAdminAgentsControllerListQueryKey(params);
   const listQuery = useAdminAgentsControllerList(params);
 
   const invalidateAll = () => queryClient.invalidateQueries({ queryKey: ['/api/v1/admin/agents'] });
