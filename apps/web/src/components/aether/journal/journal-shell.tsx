@@ -5,6 +5,7 @@ import { AetherProvider } from '@app/aether-core';
 import { theme as baseTheme, type Theme } from '@app/aether-motion';
 import { JournalArticleView } from './journal-article';
 import { Pulse } from '../pulse/pulse';
+import { AetherA11yStyles } from '../aether-a11y-styles';
 import { type JournalArticle } from './data';
 
 export function JournalShell({ article }: { article: JournalArticle }): React.ReactElement {
@@ -22,6 +23,7 @@ export function JournalShell({ article }: { article: JournalArticle }): React.Re
   );
   return (
     <AetherProvider premiumTier={null} audioOptOut={false} theme={theme}>
+      <AetherA11yStyles />
       <JournalArticleView article={article} />
       <Pulse />
     </AetherProvider>
