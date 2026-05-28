@@ -222,25 +222,46 @@ export function JourneysIndex(): React.ReactElement {
                     );
                   })}
                 </div>
-                <Link
-                  href="/aether/plan"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: `${theme.space.tight}px ${theme.space.comfy}px`,
-                    borderRadius: theme.radius.pill,
-                    background: ink.base,
-                    color: surface.base,
-                    fontFamily: theme.font.ui,
-                    fontSize: theme.text.button.size,
-                    fontWeight: theme.text.button.weight,
-                    textDecoration: 'none',
-                  }}
-                >
-                  Sketch another
-                  <span aria-hidden>→</span>
-                </Link>
+                <div style={{ display: 'flex', gap: theme.space.tight, flexWrap: 'wrap' }}>
+                  <Link
+                    href="/aether/me/shares"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: `${theme.space.tight}px ${theme.space.comfy}px`,
+                      borderRadius: theme.radius.pill,
+                      background: 'transparent',
+                      border: `1px solid ${ochre.deep}`,
+                      color: ochre.deep,
+                      fontFamily: theme.font.ui,
+                      fontSize: theme.text.small.size,
+                      fontWeight: 600,
+                      textDecoration: 'none',
+                    }}
+                  >
+                    Your shares
+                  </Link>
+                  <Link
+                    href="/aether/plan"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: `${theme.space.tight}px ${theme.space.comfy}px`,
+                      borderRadius: theme.radius.pill,
+                      background: ink.base,
+                      color: surface.base,
+                      fontFamily: theme.font.ui,
+                      fontSize: theme.text.button.size,
+                      fontWeight: theme.text.button.weight,
+                      textDecoration: 'none',
+                    }}
+                  >
+                    Sketch another
+                    <span aria-hidden>→</span>
+                  </Link>
+                </div>
               </div>
             </Reveal>
 
