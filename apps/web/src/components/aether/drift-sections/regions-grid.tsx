@@ -64,6 +64,21 @@ export function RegionsGrid(): React.ReactElement {
           >
             From desert palaces to coral coastlines — start where the heart points.
           </p>
+          <div style={{ marginTop: theme.space.comfy }}>
+            <Link
+              href="/aether/atlas"
+              style={{
+                fontFamily: theme.font.ui,
+                fontSize: theme.text.body.size,
+                fontWeight: 600,
+                color: theme.palette.terracotta.deep,
+                textDecoration: 'none',
+                letterSpacing: '0.01em',
+              }}
+            >
+              See the constellation map →
+            </Link>
+          </div>
         </div>
       </Reveal>
 
