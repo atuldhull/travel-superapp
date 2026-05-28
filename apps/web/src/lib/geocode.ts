@@ -223,10 +223,32 @@ export async function reverseGeocode(lat: number, lng: number): Promise<string |
 }
 
 /**
+ * In-memory geocode cache. Photon hits add ~300ms on Plan submit; on
+ * Pulse first message the user already paid that cost — repeated asks
+ * to the same place (very common — 'Jaipur', 'Goa', 'Kerala' are typed
+ * dozens of times across a session) should be instant.
+ *
+ * Map keyed by lowercase "place|city". Entries hold {value, at} where
+ * `at` is the insertion timestamp; entries older than 1 hour are
+ * evicted on next read. Pure session-scoped — clears on reload.
+ */
+interface CacheEntry {
+  readonly value: GeoPlace | null;
+  readonly at: number;
+}
+const GEOCODE_TTL_MS = 60 * 60 * 1000;
+const geocodeCache = new Map<string, CacheEntry>();
+
+function cacheKey(place: string, city: string): string {
+  return `${place.trim().toLowerCase()}|${city.trim().toLowerCase()}`;
+}
+
+/**
  * Resolve ONE place, biased to a city so an itinerary landmark pins
  * near the trip — not a same-named place on another continent.
  * Returns null on miss (caller skips the pin). One network call in
- * the common case (Photon handles "<place> <city>" well).
+ * the common case (Photon handles "<place> <city>" well). Cached
+ * for 1 hour per (place, city) pair.
  */
 export async function geocodeOne(
   place: string,
@@ -235,8 +257,29 @@ export async function geocodeOne(
 ): Promise<GeoPlace | null> {
   const q = place.trim();
   if (!q) return null;
+  const key = cacheKey(q, city);
+  const cached = geocodeCache.get(key);
+  if (cached !== undefined) {
+    if (Date.now() - cached.at < GEOCODE_TTL_MS) {
+      return cached.value;
+    }
+    geocodeCache.delete(key);
+  }
   const hit = await searchPlaces(`${q}, ${city}`, 1, bias);
-  if (hit[0]) return hit[0];
+  const first = hit[0];
+  if (first) {
+    geocodeCache.set(key, { value: first, at: Date.now() });
+    return first;
+  }
   const bare = await searchPlaces(q, 1, bias);
-  return bare[0] ?? null;
+  const second = bare[0] ?? null;
+  geocodeCache.set(key, { value: second, at: Date.now() });
+  return second;
+}
+
+/** Test/dev hook — clears the geocode cache. Not exported on the
+ *  public surface; reachable via window for manual cache busting. */
+if (typeof window !== 'undefined') {
+  (window as unknown as { __aetherClearGeocodeCache?: () => void }).__aetherClearGeocodeCache =
+    () => geocodeCache.clear();
 }
