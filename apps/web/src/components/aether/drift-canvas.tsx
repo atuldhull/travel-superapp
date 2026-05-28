@@ -1,11 +1,12 @@
 'use client';
 
 /**
- * Drift — Aether's home surface, editorial rebuild.
+ * Drift — Aether's home surface, editorial rebuild (India edition).
  *
- * Magazine-grade composition: full-bleed Italian photography earning
- * the Warm Italian palette, display-serif headlines, structured below-
- * the-fold sections (Esperienze / Italia da gustare / trust signals).
+ * Magazine-grade composition: full-bleed Indian photography earning
+ * the Warm palette (Jaipur sandstone / saffron / henna), display-serif
+ * headlines, structured below-the-fold sections (Our experiences /
+ * Swaad / trust signals).
  *
  * The procedural sun + particle field that lived here in the first
  * Phase 0 cut moved out — they remain in @app/aether-canvas as
@@ -21,18 +22,26 @@ import { useCallback, useEffect } from 'react';
 import { useAudioEngine, useMotionPolicy, useTheme } from '@app/aether-core';
 import { EXPERIENCES, GUSTARE, HERO, creditUrl, photoUrl } from './photos';
 
-const EXPERIENCE_LABELS: ReadonlyArray<{ title: string; subtitle: string }> = [
-  { title: 'Borghi da scoprire', subtitle: 'Piccoli borghi, grandi emozioni.' },
-  { title: 'Cucina regionale', subtitle: 'Un viaggio nei sapori locali.' },
-  { title: 'Vigneti e cantine', subtitle: 'Degustazioni indimenticabili.' },
-  { title: 'Arte e cultura', subtitle: 'Capolavori senza tempo.' },
+const EXPERIENCE_LABELS: ReadonlyArray<{ title: string; subtitle: string; cta: string }> = [
+  { title: 'Royal heritage', subtitle: 'Forts, palaces & living history.', cta: 'Explore →' },
+  {
+    title: 'Regional cuisine',
+    subtitle: 'From thali to street, every state a flavour.',
+    cta: 'Taste →',
+  },
+  {
+    title: 'Himalayan retreats',
+    subtitle: 'High passes, quiet monasteries, mountain air.',
+    cta: 'Wander →',
+  },
+  { title: 'Coastal soul', subtitle: 'Backwaters, beaches & slow afternoons.', cta: 'Drift →' },
 ];
 
 const TRUST_SIGNALS: ReadonlyArray<{ icon: string; title: string; body: string }> = [
-  { icon: '◐', title: 'Esperienze autentiche', body: 'Selezionate a mano.' },
-  { icon: '⋄', title: 'Supporto locale', body: 'Siamo qui per te.' },
-  { icon: '✓', title: 'Prenotazione sicura', body: 'Senza sorprese.' },
-  { icon: '♻', title: 'Sostenibilità', body: 'Viaggiamo responsabilmente.' },
+  { icon: '◐', title: 'Curated journeys', body: 'Hand-picked, never generic.' },
+  { icon: '⋄', title: 'Local hosts', body: 'Real people who know the place.' },
+  { icon: '✓', title: 'Booking, secured', body: 'No surprises, no fine print.' },
+  { icon: '♻', title: 'Travel with care', body: 'Honour the land and the people.' },
 ];
 
 export function DriftCanvas(): React.ReactElement {
@@ -131,7 +140,7 @@ export function DriftCanvas(): React.ReactElement {
               marginBottom: theme.space.tight,
             }}
           >
-            TravelSuperApp · esperienze italiane
+            TravelSuperApp · यात्रा · journeys across Bharat
           </p>
           <h1
             style={{
@@ -141,11 +150,11 @@ export function DriftCanvas(): React.ReactElement {
               letterSpacing: '-0.025em',
               fontWeight: theme.text.display.weight,
               margin: 0,
-              maxWidth: '12ch',
+              maxWidth: '14ch',
               textShadow: '0 2px 24px rgba(24, 15, 11, 0.35)',
             }}
           >
-            Vivi l'Italia.
+            Live Bharat.
           </h1>
           <p
             style={{
@@ -157,10 +166,10 @@ export function DriftCanvas(): React.ReactElement {
               fontWeight: 400,
               margin: `${theme.space.tight}px 0 ${theme.space.comfy}px`,
               color: surface.soft,
-              maxWidth: '32ch',
+              maxWidth: '36ch',
             }}
           >
-            Scopri. Assapora. Ama.
+            Wander. Savour. Belong.
           </p>
           <p
             style={{
@@ -171,11 +180,12 @@ export function DriftCanvas(): React.ReactElement {
               opacity: 0.92,
               margin: 0,
               marginBottom: theme.space.loose,
-              maxWidth: '48ch',
+              maxWidth: '52ch',
             }}
           >
-            Dai borghi nascosti alle città d'arte, vivi esperienze autentiche tra cultura, sapori e
-            tradizioni — pianificate da un'intelligenza che capisce il viaggio.
+            From quiet Himalayan monasteries to the spice-warm streets of the south — twenty-eight
+            states, a thousand stories, one journey, planned by an intelligence that understands how
+            India is travelled.
           </p>
 
           <div style={{ display: 'flex', gap: theme.space.comfy, alignItems: 'center' }}>
@@ -197,7 +207,7 @@ export function DriftCanvas(): React.ReactElement {
                 letterSpacing: '0.01em',
               }}
             >
-              Scopri di più
+              Begin the yatra
               <span aria-hidden>→</span>
             </a>
 
@@ -257,7 +267,7 @@ export function DriftCanvas(): React.ReactElement {
               color: ink.base,
             }}
           >
-            Le nostre esperienze
+            Our experiences
           </h2>
           <p
             style={{
@@ -267,7 +277,7 @@ export function DriftCanvas(): React.ReactElement {
               margin: `${theme.space.tight}px 0 0`,
             }}
           >
-            Selezioniamo per te il meglio dell'Italia autentica.
+            Hand-curated journeys across India's twenty-eight states.
           </p>
         </div>
 
@@ -353,7 +363,7 @@ export function DriftCanvas(): React.ReactElement {
                       letterSpacing: '0.02em',
                     }}
                   >
-                    Esplora →
+                    {label.cta}
                   </span>
                 </div>
               </article>
@@ -371,7 +381,7 @@ export function DriftCanvas(): React.ReactElement {
           overflow: 'hidden',
           background: olive.deep,
         }}
-        aria-label="Italia da gustare"
+        aria-label="Swaad — taste of India"
       >
         <img
           src={photoUrl(GUSTARE, 2400)}
@@ -429,7 +439,7 @@ export function DriftCanvas(): React.ReactElement {
               textShadow: '0 2px 12px rgba(24, 15, 11, 0.35)',
             }}
           >
-            Italia da gustare
+            Swaad — a taste of India
           </h2>
           <p
             style={{
@@ -437,12 +447,12 @@ export function DriftCanvas(): React.ReactElement {
               fontSize: 'clamp(18px, 2vw, 22px)',
               fontStyle: 'italic',
               lineHeight: 1.5,
-              maxWidth: '38ch',
+              maxWidth: '42ch',
               margin: `${theme.space.comfy}px auto ${theme.space.loose}px`,
               color: surface.soft,
             }}
           >
-            Prodotti tipici, ricette tradizionali e storie di chi l'Italia la vive ogni giorno.
+            Spice routes, family recipes, and the people who have cooked them for centuries.
           </p>
           <a
             href="#blog"
@@ -461,7 +471,7 @@ export function DriftCanvas(): React.ReactElement {
               boxShadow: theme.elevation.raised.shadow,
             }}
           >
-            Scopri il blog
+            Read the journal
           </a>
         </div>
       </section>
@@ -473,7 +483,7 @@ export function DriftCanvas(): React.ReactElement {
           margin: '0 auto',
           padding: `${theme.space.hero}px ${theme.space.margin}px`,
         }}
-        aria-label="Perché TravelSuperApp"
+        aria-label="Why TravelSuperApp"
       >
         <div
           style={{
