@@ -13,6 +13,18 @@
  *
  * Photographer credit is still rendered in the EditorialFooter — the
  * fallback only replaces the visual, never the attribution.
+ *
+ * [AE54 note] We deliberately do NOT use next/image here. Aether's
+ * editorial layouts depend on:
+ *   • parallax refs (useParallax<HTMLImageElement>) — refs don't
+ *     forward through next/image without invasive prop-drilling.
+ *   • absolute/inset positioning with inline style — fine with
+ *     <Image fill /> but the inline overrides clash with the
+ *     wrapper <span> next/image injects.
+ *   • on-error fallback — next/image throws on error rather than
+ *     surfacing it cleanly.
+ * next/image is allowlisted in next.config.ts for any future surface
+ * that wants the CDN-optimised path; SafeImg covers the raw cases.
  */
 import { useState, type CSSProperties, type ImgHTMLAttributes } from 'react';
 import { useTheme } from '@app/aether-core';
