@@ -33,6 +33,7 @@ import {
 import { geocodeOne } from '../../../lib/geocode';
 import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
 import { useViewport } from '../use-viewport';
+import { useVoiceInput } from './use-voice-input';
 
 const QUICK_PROMPTS = [
   { label: 'Plan a trip', kind: 'plan' as const, href: '/aether/plan' },
@@ -126,6 +127,14 @@ export function Pulse(): React.ReactElement | null {
   } | null>(null);
 
   const hidden = pathname === '/aether/plan';
+
+  // Voice input — streams interim text into the field, commits final
+  // transcript on stop. The mic button hides if the browser doesn't
+  // ship SpeechRecognition (Firefox, older Safari).
+  const voice = useVoiceInput({
+    onInterim: (text) => setQ(text),
+    onFinal: (text) => setQ(text.trim()),
+  });
 
   useEffect(() => {
     if (open && inputRef.current !== null) {
@@ -505,9 +514,11 @@ export function Pulse(): React.ReactElement | null {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder={
-                messages.length === 0
-                  ? 'A place, a mood, a question…'
-                  : 'Refine — fewer days, cheaper, more art…'
+                voice.listening
+                  ? 'Listening…'
+                  : messages.length === 0
+                    ? 'A place, a mood, a question…'
+                    : 'Refine — fewer days, cheaper, more art…'
               }
               aria-label="Ask the assistant"
               disabled={pending}
@@ -515,15 +526,46 @@ export function Pulse(): React.ReactElement | null {
                 flex: 1,
                 padding: `${theme.space.tight}px ${theme.space.inline}px`,
                 borderRadius: theme.radius.pill,
-                border: `1px solid ${ink.whisper}`,
+                border: `1px solid ${voice.listening ? accent.deep : ink.whisper}`,
                 background: surface.base,
                 color: ink.base,
                 fontFamily: theme.font.ui,
                 fontSize: theme.text.body.size,
                 outline: 'none',
                 opacity: pending ? 0.6 : 1,
+                transition: 'border-color 220ms',
               }}
             />
+            {voice.supported && (
+              <button
+                type="button"
+                onClick={() => (voice.listening ? voice.stop() : voice.start())}
+                aria-label={voice.listening ? 'Stop voice input' : 'Speak instead of typing'}
+                aria-pressed={voice.listening}
+                title={voice.error !== null ? `Voice: ${voice.error}` : undefined}
+                style={{
+                  width: 36,
+                  height: 36,
+                  flexShrink: 0,
+                  borderRadius: theme.radius.pill,
+                  background: voice.listening ? accent.deep : 'transparent',
+                  border: `1px solid ${voice.listening ? accent.deep : ink.whisper}`,
+                  color: voice.listening ? surface.base : ink.soft,
+                  fontSize: 14,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'background 220ms, border-color 220ms, color 220ms',
+                  animation:
+                    voice.listening && motionPolicy === 'full'
+                      ? 'aether-pulse-dot 1.6s ease-in-out infinite'
+                      : 'none',
+                }}
+              >
+                {voice.listening ? '●' : '◐'}
+              </button>
+            )}
             <button
               type="submit"
               aria-label="Ask"
