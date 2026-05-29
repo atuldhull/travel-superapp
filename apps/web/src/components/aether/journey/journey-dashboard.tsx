@@ -118,6 +118,8 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
   const [shareCopied, setShareCopied] = useState<boolean>(false);
   const [shareError, setShareError] = useState<string | null>(null);
   const [duplicateError, setDuplicateError] = useState<string | null>(null);
+  const [exportingPdf, setExportingPdf] = useState<boolean>(false);
+  const [exportError, setExportError] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const invalidateThisTrip = (): void => {
     void queryClient.invalidateQueries({ queryKey: getTripControllerGetOneQueryKey(tripId) });
@@ -177,6 +179,39 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
   const accent = theme.palette.terracotta;
   const ochre = theme.palette.ochre;
   const olive = theme.palette.olive;
+
+  /** Lazy-loads @react-pdf/renderer + the doc component, renders the
+   *  PDF to a Blob, and triggers a download. Lazy because react-pdf
+   *  is heavy (~600KB gzipped) and only ~1% of viewers use it. */
+  async function exportPdf(): Promise<void> {
+    if (trip === undefined || exportingPdf) return;
+    setExportingPdf(true);
+    setExportError(null);
+    try {
+      const [{ pdf }, { TripPdfDoc }] = await Promise.all([
+        import('@react-pdf/renderer'),
+        import('./trip-pdf-doc'),
+      ]);
+      const blob = await pdf(<TripPdfDoc trip={trip} itinerary={itinerary ?? null} />).toBlob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `aether-${
+        trip.title
+          .replace(/[^a-z0-9-_ ]/gi, '')
+          .replace(/\s+/g, '-')
+          .toLowerCase() || 'journey'
+      }.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : 'PDF export failed.');
+    } finally {
+      setExportingPdf(false);
+    }
+  }
 
   return (
     <div
@@ -602,6 +637,26 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
                 >
                   {duplicateMutation.isPending ? 'Duplicating…' : 'Duplicate journey'}
                 </button>
+                <button
+                  type="button"
+                  onClick={() => void exportPdf()}
+                  disabled={exportingPdf}
+                  style={{
+                    padding: `${theme.space.hairline}px ${theme.space.comfy}px`,
+                    borderRadius: theme.radius.pill,
+                    background: 'transparent',
+                    border: `1px solid ${olive.deep}`,
+                    color: olive.deep,
+                    fontFamily: theme.font.ui,
+                    fontSize: theme.text.small.size,
+                    fontWeight: 600,
+                    cursor: exportingPdf ? 'wait' : 'pointer',
+                    opacity: exportingPdf ? 0.6 : 1,
+                  }}
+                  aria-label="Download this journey as a PDF"
+                >
+                  {exportingPdf ? 'Composing…' : 'Export PDF'}
+                </button>
                 <Link
                   href="/aether/me/journeys"
                   style={{
@@ -630,6 +685,19 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
                   }}
                 >
                   {duplicateError}
+                </p>
+              )}
+              {exportError !== null && (
+                <p
+                  role="alert"
+                  style={{
+                    marginTop: theme.space.tight,
+                    fontFamily: theme.font.ui,
+                    fontSize: theme.text.small.size,
+                    color: '#8a2418',
+                  }}
+                >
+                  {exportError}
                 </p>
               )}
             </Reveal>
