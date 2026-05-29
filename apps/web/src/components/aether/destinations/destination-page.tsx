@@ -27,6 +27,7 @@ import { photoUrl } from '../photos';
 import { SafeImg } from '../safe-img';
 import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
 import { type Destination } from './data';
+import { destinationAccent } from './palette';
 
 export interface DestinationPageProps {
   destination: Destination;
@@ -56,7 +57,11 @@ export function DestinationPage({ destination: d }: DestinationPageProps): React
 
   const ink = theme.color.ink;
   const surface = theme.color.surface;
-  const accent = theme.palette.terracotta;
+  // AE61 — per-destination accent (jaipur=sandstone-pink, alleppey=
+  // palm-teal, etc.). Falls back to terracotta for any unmapped slug.
+  // We feed this into the kicker pill, the eyebrows, and the Begin
+  // CTA so each destination feels like its own publication.
+  const accent = destinationAccent(d.slug);
   const ochre = theme.palette.ochre;
   const olive = theme.palette.olive;
 
@@ -136,7 +141,7 @@ export function DestinationPage({ destination: d }: DestinationPageProps): React
               marginBottom: theme.space.tight,
             }}
           >
-            ← Aether · {d.state}
+            ← Aether · {d.state} · <span style={{ color: accent.base }}>{accent.note}</span>
           </Link>
           <h1
             style={{
