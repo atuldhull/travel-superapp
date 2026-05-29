@@ -15,6 +15,10 @@
 5. [`04-sequencing.md`](04-sequencing.md) — six-phase plan, 14-30 month range depending on team posture.
 6. [`05-uncopyability.md`](05-uncopyability.md) — why this is a real moat, not vapor.
 7. [`06-decisions.md`](06-decisions.md) — the eight Phase-0 decisions, **locked**.
+8. [`07-implementation-log.md`](07-implementation-log.md) — chronological one-line record of every AE commit.
+9. [`08-data-flow.md`](08-data-flow.md) — ASCII diagrams of the seven main data flows.
+10. [`09-component-catalog.md`](09-component-catalog.md) — every component + which route mounts it.
+11. [`AETHER_E2E_KIT.md`](AETHER_E2E_KIT.md) — operator playbook (boot locally, walk surfaces, promote-admin, gate tests, launch flag).
 
 ## What we reuse from 1.0
 
