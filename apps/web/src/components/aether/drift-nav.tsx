@@ -22,6 +22,7 @@ import Link from 'next/link';
 import { useTheme } from '@app/aether-core';
 import { useViewport } from './use-viewport';
 import { AudioChip } from './audio-chip';
+import { AetherMark } from './aether-mark';
 
 export function DriftNav(): React.ReactElement {
   const theme = useTheme();
@@ -94,13 +95,9 @@ export function DriftNav(): React.ReactElement {
               borderRadius: theme.radius.pill,
               background: accent.base,
               color: surface.base,
-              fontFamily: theme.font.display,
-              fontSize: 16,
-              fontWeight: 600,
-              letterSpacing: '-0.04em',
             }}
           >
-            ॐ
+            <AetherMark size={18} title="Aether mark" />
           </span>
           <span
             style={{
