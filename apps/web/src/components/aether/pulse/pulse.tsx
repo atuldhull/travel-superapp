@@ -171,6 +171,33 @@ export function Pulse(): React.ReactElement | null {
     };
   }, [open]);
 
+  // Global keyboard shortcut to OPEN Pulse: Cmd/Ctrl+K or `/`
+  // (matches the conventions Linear/Vercel/GitHub trained users on).
+  // Skips when the user is typing into another input — `/` is a normal
+  // character then. Ignored on the planner page (Pulse is hidden).
+  useEffect(() => {
+    if (hidden) return;
+    const onKey = (e: KeyboardEvent): void => {
+      const isCmdK = (e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K');
+      const isSlash = e.key === '/' && !e.metaKey && !e.ctrlKey && !e.altKey;
+      if (!isCmdK && !isSlash) return;
+      // Ignore when focus is in any other text input / textarea / select
+      // / contenteditable element — `/` is a normal keystroke there.
+      const target = e.target as HTMLElement | null;
+      if (target !== null) {
+        const tag = target.tagName;
+        const editable = target.isContentEditable === true;
+        if (editable || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+          return;
+        }
+      }
+      e.preventDefault();
+      setOpen(true);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [hidden]);
+
   if (hidden) return null;
 
   const ink = theme.color.ink;
@@ -318,6 +345,20 @@ export function Pulse(): React.ReactElement | null {
               }}
             >
               Pulse · ask anything
+              {!isNarrow && (
+                <span
+                  style={{
+                    fontFamily: theme.font.mono,
+                    letterSpacing: '0.06em',
+                    color: ink.soft,
+                    opacity: 0.55,
+                    marginLeft: 6,
+                    fontWeight: 400,
+                  }}
+                >
+                  ⌘K · /
+                </span>
+              )}
             </span>
             <div style={{ display: 'flex', gap: 4 }}>
               {messages.length > 0 && (
@@ -761,8 +802,9 @@ export function Pulse(): React.ReactElement | null {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        aria-label={open ? 'Close assistant' : 'Open Aether assistant'}
+        aria-label={open ? 'Close assistant' : 'Open Aether assistant (Cmd+K or /)'}
         aria-expanded={open}
+        title={open ? 'Close (Esc)' : 'Open (Cmd+K · /)'}
         style={{
           width: 56,
           height: 56,
