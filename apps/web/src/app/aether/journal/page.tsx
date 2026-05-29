@@ -12,6 +12,13 @@ export const metadata: Metadata = {
   title: TITLE,
   description: DESC,
   robots: { index: false, follow: false },
+  // AE68 — autodiscovery for feed readers (NetNewsWire, Reeder, etc.)
+  alternates: {
+    types: {
+      'application/rss+xml': '/aether/journal/feed.xml',
+      'application/atom+xml': '/aether/journal/feed.atom',
+    },
+  },
   ...aetherOg(TITLE, DESC, { photoId: '1545048702-79362596cdc9' }),
 };
 
