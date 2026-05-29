@@ -130,6 +130,28 @@ rebases.
 | **AE57** | docs/aether/09-component-catalog.md              |
 | **AE58** | PROGRESS.md row + README mention                 |
 
+## Round 12 — Round E · stretch ✦ AE59–AE64
+
+| #        | Slice                                                                                                            | Commit    |
+| -------- | ---------------------------------------------------------------------------------------------------------------- | --------- |
+| **AE59** | Pulse voice input via Web Speech API (`useVoiceInput` hook)                                                      | `2a2d430` |
+| **AE60** | Hand-drawn `<AetherMark/>` SVG replaces the ॐ emoji in DriftNav                                                  | `a2702ac` |
+| **AE61** | Per-destination accent palette (`destinations/palette.ts`, 15 curated tones; hero eyebrow gains a slug-note tag) | `7c0551a` |
+| **AE62** | `/aether/dispatch` admin-only ops view (4-tile metrics + 10 active + 5 archived, `me.role==='admin'` gate)       | `3660260` |
+| **AE63** | Trip PDF export via `@react-pdf/renderer` (lazy-loaded on click, terracotta-cover A4 sheet)                      | `d86650a` |
+| **AE64** | `docs/aether/AETHER_E2E_KIT.md` operator playbook + README refs                                                  | `e0d64b6` |
+
+## Round 13 — Round F · breadth + polish ✦ AE65–AE70
+
+| #        | Slice                                                                                                          | Commit    |
+| -------- | -------------------------------------------------------------------------------------------------------------- | --------- |
+| **AE65** | Pulse keyboard shortcut — Cmd/Ctrl+K and `/` open the drawer (skips input/textarea focus); `⌘K · /` hint chip  | `7b559c2` |
+| **AE66** | Reading-progress sticky 2px terracotta bar on journal articles (`<ReadingProgress/>`)                          | `8254b85` |
+| **AE67** | `/aether/brand` press-kit page — mark sizes + palette swatches (click-to-copy) + 15 destination accents + type | (round F) |
+| **AE68** | Atom 1.0 alternative feed at `/aether/journal/feed.atom` + `<link rel="alternate">` autodiscovery              | `c926500` |
+| **AE69** | Atlas pin search filter — input narrows the regions list + dims non-matching map pins (no map recreate)        | `d28683c` |
+| **AE70** | Round F docs (this update) + autopilot + PROGRESS refresh                                                      | _this_    |
+
 ## Stop conditions reached / deferred
 
 - **Mobile parity** — Aether is web-only Phase 0 (locked decision pre-AE5).

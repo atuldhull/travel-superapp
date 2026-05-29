@@ -35,6 +35,8 @@ and the shells use motion / window / audio hooks that need DOM.
 | `<SafeImg>`          | `safe-img.tsx`                        | `<img>` with Aether-styled gradient fallback on 404                                                          | Every editorial card; NOT used for parallax-ref heroes                |
 | `<Reveal>`           | `drift-sections/reveal.tsx`           | IntersectionObserver fade-in wrapper                                                                         | Every editorial section                                               |
 | `<AetherA11yStyles>` | `aether-a11y-styles.tsx`              | Single `<style>` block injecting sandstone focus rings on `:focus-visible`                                   | Every shell                                                           |
+| `<AetherMark>`       | `aether-mark.tsx`                     | Hand-drawn SVG glyph (AE60). currentColor-inheriting; replaces the literal ॐ emoji                           | `<DriftNav/>`, `<BrandPage/>`                                         |
+| `<ReadingProgress>`  | `reading-progress.tsx`                | Fixed 2px terracotta scroll-progress bar (AE66), rAF-throttled, respects motion policy                       | `<JournalArticleView/>`                                               |
 
 ## Drift home (`/aether/drift`)
 
@@ -96,17 +98,20 @@ and the shells use motion / window / audio hooks that need DOM.
 | `/aether/account`       | `<AccountPage>` (`account/`)                | Identity dl + audio + motion + privacy sections + Sign out                               |
 | `/aether/onboarding`    | `<OnboardingPage>` (`onboarding/`)          | 3-beat first-time editorial welcome; marks `aether-onboarded=1` in localStorage on mount |
 | `/aether/shared/[code]` | `<SharedTripView>` (`shared/`)              | Public read-only view + clone CTA                                                        |
+| `/aether/dispatch`      | `<DispatchPage>` (`dispatch/`)              | AE62 admin-only metrics view; `me.role === 'admin'` gate                                 |
+| `/aether/brand`         | `<BrandPage>` (`brand/`)                    | AE67 press-kit (mark sizes · palette swatches · 15 destination accents · type specimens) |
 
 ## Hooks
 
-| Hook                                          | File              | Returns                                                |
-| --------------------------------------------- | ----------------- | ------------------------------------------------------ | ----------- | ------------------------------------------- |
-| `useViewport()`                               | `use-viewport.ts` | `{isNarrow ≤640, isMid 641-960}` SSR-safe              |
-| `useParallax<T>()`                            | `use-parallax.ts` | Ref forwarder + scroll-driven transform                |
-| (from `@app/aether-core`) `useTheme()`        | n/a               | Aether theme object                                    |
-| (from `@app/aether-core`) `useMotionPolicy()` | n/a               | `'full'                                                | 'essential' | 'none'`derived from`prefers-reduced-motion` |
-| (from `@app/aether-core`) `useAudioEngine()`  | n/a               | `{engine, status}` — controls + state of ambient audio |
-| `useAuthBootComplete()` / `useAuthToken()`    | (apps/web lib)    | Auth gate                                              |
+| Hook                                           | File                       | Returns                                                                   |
+| ---------------------------------------------- | -------------------------- | ------------------------------------------------------------------------- | ----------- | ------------------------------------------- |
+| `useViewport()`                                | `use-viewport.ts`          | `{isNarrow ≤640, isMid 641-960}` SSR-safe                                 |
+| `useVoiceInput({lang?, onInterim?, onFinal?})` | `pulse/use-voice-input.ts` | AE59 Web Speech API wrapper. `{supported, listening, error, start, stop}` |
+| `useParallax<T>()`                             | `use-parallax.ts`          | Ref forwarder + scroll-driven transform                                   |
+| (from `@app/aether-core`) `useTheme()`         | n/a                        | Aether theme object                                                       |
+| (from `@app/aether-core`) `useMotionPolicy()`  | n/a                        | `'full'                                                                   | 'essential' | 'none'`derived from`prefers-reduced-motion` |
+| (from `@app/aether-core`) `useAudioEngine()`   | n/a                        | `{engine, status}` — controls + state of ambient audio                    |
+| `useAuthBootComplete()` / `useAuthToken()`     | (apps/web lib)             | Auth gate                                                                 |
 
 ## Lib helpers (under `apps/web/src/lib/`)
 
