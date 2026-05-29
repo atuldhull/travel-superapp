@@ -14,7 +14,7 @@
  * above, numbered destination list below. The constellation sketch
  * we shipped in AE10 has been replaced — this is the real Atlas.
  */
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useTheme, useMotionPolicy } from '@app/aether-core';
 import { DriftNav } from '../drift-nav';
@@ -170,6 +170,23 @@ export function AtlasCanvas(): React.ReactElement {
   const { isNarrow } = useViewport();
   const mapDivRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<unknown>(null);
+  // AE69 — slug → marker ref so the filter effect can dim/show pins
+  // without recreating the map (preserves zoom + center).
+  const markersRef = useRef<Map<string, { setOpacity: (n: number) => void }>>(new Map());
+
+  // AE69 — filter input (case-insensitive substring on name / state /
+  // tagline). When empty, every pin is full-opacity.
+  const [query, setQuery] = useState<string>('');
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (q === '') return PINS;
+    return PINS.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.state.toLowerCase().includes(q) ||
+        p.tagline.toLowerCase().includes(q),
+    );
+  }, [query]);
 
   // Boot the Leaflet map once on mount. Dynamic import keeps Leaflet
   // out of any SSR path (already protected by AtlasLazy's ssr:false,
@@ -210,6 +227,7 @@ export function AtlasCanvas(): React.ReactElement {
         attribution: '',
       }).addTo(map);
 
+      markersRef.current.clear();
       const markers = PINS.map((p) => {
         // Terracotta-glow divIcon. The pulse ring + inner cream dot
         // give it the Aether look on the otherwise-OSM tiles.
@@ -234,6 +252,7 @@ export function AtlasCanvas(): React.ReactElement {
         marker.on('click', () => {
           window.location.href = `/aether/destinations/${p.slug}`;
         });
+        markersRef.current.set(p.slug, marker);
         return marker;
       });
 
@@ -251,6 +270,19 @@ export function AtlasCanvas(): React.ReactElement {
 
     return () => cleanup();
   }, []);
+
+  // AE69 — dim non-matching pins when filter has typed text. We don't
+  // remove them from the map (changing the marker set on every keystroke
+  // costs more than setOpacity does, and keeping them in place lets the
+  // user see how the filter narrows in spatial context).
+  useEffect(() => {
+    const matched = new Set(filtered.map((p) => p.slug));
+    const showAll = query.trim() === '';
+    for (const [slug, marker] of markersRef.current.entries()) {
+      const visible = showAll || matched.has(slug);
+      marker.setOpacity(visible ? 1 : 0.18);
+    }
+  }, [filtered, query]);
 
   const ink = theme.color.ink;
   const surface = theme.color.surface;
@@ -385,24 +417,108 @@ export function AtlasCanvas(): React.ReactElement {
         aria-labelledby="atlas-list-heading"
       >
         <Reveal>
-          <h2
-            id="atlas-list-heading"
+          <div
             style={{
-              fontFamily: theme.font.display,
-              fontSize: 'clamp(28px, 3vw, 40px)',
-              lineHeight: 1.1,
-              letterSpacing: '-0.02em',
-              fontWeight: 600,
-              margin: 0,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'baseline',
+              gap: theme.space.comfy,
+              flexWrap: 'wrap',
               marginBottom: theme.space.loose,
-              color: surface.base,
             }}
           >
-            Pick a thread to follow
-          </h2>
+            <h2
+              id="atlas-list-heading"
+              style={{
+                fontFamily: theme.font.display,
+                fontSize: 'clamp(28px, 3vw, 40px)',
+                lineHeight: 1.1,
+                letterSpacing: '-0.02em',
+                fontWeight: 600,
+                margin: 0,
+                color: surface.base,
+              }}
+            >
+              Pick a thread to follow
+            </h2>
+            <div
+              style={{
+                display: 'flex',
+                gap: theme.space.tight,
+                alignItems: 'center',
+                flexWrap: 'wrap',
+              }}
+            >
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Filter — city · state · word"
+                aria-label="Filter destinations"
+                style={{
+                  minWidth: 220,
+                  padding: `${theme.space.tight}px ${theme.space.inline}px`,
+                  borderRadius: theme.radius.pill,
+                  background: 'rgba(242, 232, 213, 0.08)',
+                  border: `1px solid rgba(242, 232, 213, 0.18)`,
+                  color: surface.base,
+                  fontFamily: theme.font.ui,
+                  fontSize: theme.text.small.size,
+                  outline: 'none',
+                }}
+              />
+              <span
+                style={{
+                  fontFamily: theme.font.mono,
+                  fontSize: 11,
+                  color: surface.soft,
+                  opacity: 0.62,
+                  letterSpacing: '0.14em',
+                }}
+              >
+                {filtered.length} / {PINS.length}
+              </span>
+              {query.trim() !== '' && (
+                <button
+                  type="button"
+                  onClick={() => setQuery('')}
+                  style={{
+                    padding: `${theme.space.hairline}px ${theme.space.comfy}px`,
+                    borderRadius: theme.radius.pill,
+                    background: 'transparent',
+                    border: `1px solid rgba(242, 232, 213, 0.25)`,
+                    color: surface.soft,
+                    fontFamily: theme.font.ui,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                  aria-label="Clear filter"
+                >
+                  clear
+                </button>
+              )}
+            </div>
+          </div>
         </Reveal>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          {PINS.map((p, idx) => (
+          {filtered.length === 0 && (
+            <Reveal>
+              <p
+                style={{
+                  fontFamily: theme.font.display,
+                  fontStyle: 'italic',
+                  fontSize: 18,
+                  color: surface.soft,
+                  opacity: 0.78,
+                  margin: 0,
+                  padding: `${theme.space.loose}px 0`,
+                }}
+              >
+                No threads match "{query}". Try another word.
+              </p>
+            </Reveal>
+          )}
+          {filtered.map((p, idx) => (
             <Reveal key={`row-${p.slug}`} delay={idx * 50}>
               <Link
                 href={`/aether/destinations/${p.slug}`}
