@@ -16,6 +16,7 @@ import { EditorialFooter } from '../drift-sections/editorial-footer';
 import { useParallax } from '../use-parallax';
 import { useViewport } from '../use-viewport';
 import { photoUrl } from '../photos';
+import { ReadingProgress } from '../reading-progress';
 import { type JournalArticle } from './data';
 
 export interface JournalArticleViewProps {
@@ -42,6 +43,7 @@ export function JournalArticleView({ article: a }: JournalArticleViewProps): Rea
         minHeight: '100vh',
       }}
     >
+      <ReadingProgress />
       <DriftNav />
 
       {/* Title block */}
