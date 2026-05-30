@@ -18,6 +18,23 @@ import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
 import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
 import { useViewport } from '../use-viewport';
+import { DESTINATIONS, ALL_SLUGS } from '../destinations/data';
+import { isInSeason } from '../destinations/seasons';
+
+/** AE107 — Tag the trip with the first known destination that the
+ *  title mentions AND that's currently in season. Returns the slug
+ *  for the linkability + a label for display, or null. */
+function trySeasonMatch(title: string): { slug: string; name: string } | null {
+  const hay = title.toLowerCase();
+  for (const slug of ALL_SLUGS) {
+    const d = DESTINATIONS[slug];
+    if (d === undefined) continue;
+    if (hay.includes(d.name.toLowerCase()) && isInSeason(slug)) {
+      return { slug, name: d.name };
+    }
+  }
+  return null;
+}
 
 type ListFilter = 'all' | 'draft' | 'archived';
 
@@ -430,6 +447,18 @@ export function JourneysIndex(): React.ReactElement {
                               <span style={{ color: ochre.deep }}>archived</span>
                             </>
                           )}
+                          {(() => {
+                            const match = trySeasonMatch(t.title);
+                            if (match === null) return null;
+                            return (
+                              <>
+                                <span aria-hidden>·</span>
+                                <span style={{ color: olive.deep, fontWeight: 600 }}>
+                                  {match.name} in season
+                                </span>
+                              </>
+                            );
+                          })()}
                         </div>
                       </div>
                       <span
