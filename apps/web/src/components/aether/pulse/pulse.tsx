@@ -69,6 +69,8 @@ import { lastUserPrompt } from './last-user-prompt';
 import { normalizePulsePrompt } from './normalize-prompt';
 // AE212 — request-body builder (fresh vs follow-up branch).
 import { buildSamplePlanRequest } from './build-sample-plan-request';
+// AE213 — defensive plan-text unwrap.
+import { extractPlanText } from './extract-plan-text';
 
 // AE72 + AE184 — types + storage key + parser extracted to
 // ./persisted-pulse.ts so the shape contract is unit-testable.
@@ -378,8 +380,8 @@ export function Pulse(): React.ReactElement | null {
         requestBody as unknown as Parameters<typeof tripControllerSamplePlan>[0],
       )) as unknown as { data: GenerateSamplePlanResponseDto };
       const d = res.data;
-      const planValue: unknown = d?.plan;
-      const plan = typeof planValue === 'string' ? planValue : '';
+      // AE213 — defensive unwrap (also tolerates older / wrapped shapes).
+      const plan = extractPlanText(res);
 
       if (plan === '') {
         setMessages((prev) => [
