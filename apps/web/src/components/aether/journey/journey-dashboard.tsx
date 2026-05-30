@@ -88,38 +88,9 @@ function readSummaryField(
   return typeof v === 'string' && v.trim().length > 0 ? v : null;
 }
 
-/** Format a HH:MM:SS / ISO string fragment as a soft 4:32 PM style. */
-function fmtTime(v: unknown): string | null {
-  const s = asIso(v);
-  if (s === null) return null;
-  // Itinerary times can be naked clock strings (e.g. "09:30:00") OR
-  // timestamps. Try Date first; if it doesn't parse, fall back to the
-  // raw HH:MM slice.
-  const d = new Date(s);
-  if (!Number.isNaN(d.getTime()) && s.length > 8) {
-    return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-  }
-  const match = /^(\d{1,2}):(\d{2})/.exec(s);
-  if (match !== null) {
-    const h = Number(match[1]);
-    const m = match[2];
-    const period = h >= 12 ? 'PM' : 'AM';
-    const h12 = h % 12 === 0 ? 12 : h % 12;
-    return `${h12}:${m} ${period}`;
-  }
-  return null;
-}
-
-/** Day-of-week + numeric date e.g. "Mon · Jun 3". */
-function fmtDayHead(v: unknown): string {
-  const iso = asIso(v);
-  if (iso === null) return '—';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '—';
-  const wk = d.toLocaleDateString(undefined, { weekday: 'short' });
-  const md = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  return `${wk} · ${md}`;
-}
+// AE186 + AE187 — fmtTime + fmtDayHead moved into the shared
+// aether-dates lib so they're unit-testable alongside asIso/fmtDate.
+import { fmtTime, fmtDayHead } from '@/lib/aether-dates';
 
 export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.ReactElement {
   const theme = useTheme();
