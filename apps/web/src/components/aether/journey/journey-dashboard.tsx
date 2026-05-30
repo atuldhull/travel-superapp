@@ -50,6 +50,8 @@ import {
 import { deriveChecklistSlug } from './derive-checklist-slug';
 // AE206 — timeline-dot colour routing extracted from the nested ternary.
 import { timelineDotColor } from './timeline-dot-color';
+// AE214 — facts-strip builder extracted (uses shared aether-dates).
+import { buildJourneyFacts } from './journey-facts';
 
 export interface JourneyDashboardProps {
   tripId: string;
@@ -501,22 +503,12 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
                 }}
               >
                 {[
-                  {
-                    label: 'Range',
-                    value:
-                      trip.startsOn !== null && trip.endsOn !== null
-                        ? `${fmtDate(trip.startsOn)} – ${fmtDate(trip.endsOn)}`
-                        : '—',
-                  },
-                  {
-                    label: 'Days',
-                    value:
-                      daysBetween(trip.startsOn, trip.endsOn) !== null
-                        ? String((daysBetween(trip.startsOn, trip.endsOn) ?? 0) + 1)
-                        : '—',
-                  },
-                  { label: 'Radius', value: `${trip.radiusKm}km` },
-                  { label: 'Drafted', value: fmtDate(trip.createdAt) },
+                  ...buildJourneyFacts({
+                    startsOn: asIso(trip.startsOn),
+                    endsOn: asIso(trip.endsOn),
+                    radiusKm: trip.radiusKm,
+                    createdAt: asIso(trip.createdAt),
+                  }),
                 ].map((f, idx) => (
                   <div
                     key={f.label}
