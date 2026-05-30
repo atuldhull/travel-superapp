@@ -136,6 +136,9 @@ export function Pulse(): React.ReactElement | null {
   const [q, setQ] = useState<string>('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [pending, setPending] = useState<boolean>(false);
+  // AE159 — rotate through 3 micro-copy phrases while pending so a
+  // long wait shows the assistant is still working, not stuck.
+  const [pendingPhraseIdx, setPendingPhraseIdx] = useState<number>(0);
   const [saving, setSaving] = useState<boolean>(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   // When save+share is chosen, hold the intent across the create
@@ -220,6 +223,21 @@ export function Pulse(): React.ReactElement | null {
     // AE106 — load the long-memory recent list (survives Reset).
     setRecent(readRecentPrompts());
   }, []);
+
+  // AE159 — phrase rotation while `pending` is true. Resets to 0 when
+  // pending flips off. Three phrases @ 1.5s interval; clamps at the
+  // last one so the wait reads "Almost there…" indefinitely.
+  useEffect(() => {
+    if (!pending) {
+      setPendingPhraseIdx(0);
+      return;
+    }
+    setPendingPhraseIdx(0);
+    const id = window.setInterval(() => {
+      setPendingPhraseIdx((i) => (i < 2 ? i + 1 : 2));
+    }, 1500);
+    return () => window.clearInterval(id);
+  }, [pending]);
 
   // AE96 — listen for `aether-pulse-open` events from other surfaces
   // (e.g. the journey dashboard's "Ask Pulse about this trip" button).
@@ -803,7 +821,7 @@ export function Pulse(): React.ReactElement | null {
                         : 'none',
                   }}
                 >
-                  Thinking…
+                  {['Reading…', 'Sketching the route…', 'Almost there…'][pendingPhraseIdx]}
                 </span>
               </div>
             )}
