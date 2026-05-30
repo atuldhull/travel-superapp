@@ -180,7 +180,22 @@ rebases.
 | **AE87** | Trip days timeline bar above day cards — segment per day, anchor-jumps to `#day-<id>`                                  | `64037be` |
 | **AE88** | Journal cross-links on destination pages via `relatedArticles(d)` helper + 3 vitest specs                              | `94587e3` |
 | **AE89** | jsdom render spec for `<ReadingProgress/>` (4 tests wrapped in AetherProvider)                                         | `860e8e4` |
-| **AE90** | Round H docs + autopilot + MEMORY refresh                                                                              | _this_    |
+| **AE90** | Round H docs + autopilot + MEMORY refresh                                                                              | `0d95e5a` |
+
+## Round 16 — Round I · polish + depth ✦ AE91–AE100
+
+| #         | Slice                                                                                                        | Commit    |
+| --------- | ------------------------------------------------------------------------------------------------------------ | --------- |
+| **AE91**  | Extract `pulse/slash-commands.ts` + 7 vitest specs (matcher + catalogue shape)                               | `4b48923` |
+| **AE92**  | `/aether/*` 404 page (`app/aether/not-found.tsx`, Server Component, hard-coded palette)                      | `1cea406` |
+| **AE93**  | Pulse-history Reset button on `/aether/account` (wipes the AE72 localStorage key)                            | `3b33d1b` |
+| **AE94**  | `<TripChecklist/>` per-trip prep list on journey dashboard (5-item starter, add/toggle/remove, localStorage) | `dfb50fc` |
+| **AE95**  | `/aether/about` gains a Press section linking `/aether/brand`                                                | `5ff6b07` |
+| **AE96**  | "Ask Pulse" button on journey dashboard via new `aether-pulse-open` CustomEvent bridge                       | `d37c4c0` |
+| **AE97**  | `?` keyboard help overlay mounted via `<AetherA11yStyles/>` (single edit, lands on every shell)              | `ae72b40` |
+| **AE98**  | jsdom render spec for `<TripShareCard/>` (4 tests, mocks `URL.createObjectURL`)                              | `6d6a2e7` |
+| **AE99**  | Journal article 'Visit destinations' cross-links via `relatedDestinations(a)` + 3 vitest specs               | `e976b0c` |
+| **AE100** | Round I docs + autopilot + MEMORY refresh                                                                    | _this_    |
 
 ## Stop conditions reached / deferred
 
