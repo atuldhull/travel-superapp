@@ -61,6 +61,8 @@ import { SLASH_COMMANDS, matchSlashCommands } from './slash-commands';
 import { decodePulseOpenEvent } from './bridge-event';
 // AE192 — pending phrase catalogue + index advance helper.
 import { nextPendingIdx, phraseAt } from './pending-phrases';
+// AE196 — shared clipboard helper (replaces inline navigator.clipboard).
+import { copyTextToClipboard } from '../../../lib/copy-text';
 
 // AE72 + AE184 — types + storage key + parser extracted to
 // ./persisted-pulse.ts so the shape contract is unit-testable.
@@ -764,15 +766,14 @@ export function Pulse(): React.ReactElement | null {
                   <button
                     type="button"
                     onClick={() => {
-                      if (typeof navigator === 'undefined' || navigator.clipboard === undefined) {
-                        return;
-                      }
-                      void navigator.clipboard.writeText(m.content);
-                      setCopiedBubbleIdx(idx);
-                      window.setTimeout(
-                        () => setCopiedBubbleIdx((cur) => (cur === idx ? null : cur)),
-                        1500,
-                      );
+                      void copyTextToClipboard(m.content).then((ok) => {
+                        if (!ok) return;
+                        setCopiedBubbleIdx(idx);
+                        window.setTimeout(
+                          () => setCopiedBubbleIdx((cur) => (cur === idx ? null : cur)),
+                          1500,
+                        );
+                      });
                     }}
                     aria-label={
                       copiedBubbleIdx === idx ? 'Copied to clipboard' : 'Copy this response'
