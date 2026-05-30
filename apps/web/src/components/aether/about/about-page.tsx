@@ -377,6 +377,91 @@ export function AboutPage(): React.ReactElement {
         </div>
       </section>
 
+      {/* AE95 — Press section. Quiet card linking to /aether/brand
+          for partners + journalists needing palette + mark + type. */}
+      <Reveal as="section">
+        <div
+          style={{
+            maxWidth: 880,
+            margin: '0 auto',
+            padding: `${theme.space.gutter}px ${theme.space.margin}px ${theme.space.gutter}px`,
+          }}
+        >
+          <div
+            style={{
+              padding: theme.space.loose,
+              borderRadius: theme.radius.lg,
+              background: theme.palette.ochre.whisper,
+              border: `1px solid ${theme.palette.ochre.deep}`,
+              display: 'grid',
+              gridTemplateColumns: isNarrow ? '1fr' : '1fr auto',
+              gap: theme.space.comfy,
+              alignItems: 'center',
+            }}
+          >
+            <div>
+              <p
+                style={{
+                  fontFamily: theme.font.ui,
+                  fontSize: 11,
+                  letterSpacing: '0.22em',
+                  textTransform: 'uppercase',
+                  color: theme.palette.ochre.deep,
+                  fontWeight: 600,
+                  margin: 0,
+                }}
+              >
+                Press · partners · designers
+              </p>
+              <h2
+                style={{
+                  fontFamily: theme.font.display,
+                  fontSize: 'clamp(24px, 2.8vw, 36px)',
+                  lineHeight: 1.15,
+                  letterSpacing: '-0.018em',
+                  fontWeight: 600,
+                  margin: `${theme.space.tight}px 0 0`,
+                  color: ink.base,
+                }}
+              >
+                Open the press kit.
+              </h2>
+              <p
+                style={{
+                  fontFamily: theme.font.display,
+                  fontStyle: 'italic',
+                  fontSize: 17,
+                  lineHeight: 1.55,
+                  color: ink.soft,
+                  margin: `${theme.space.tight}px 0 0`,
+                  maxWidth: '46ch',
+                }}
+              >
+                The mark, the palette, the per-destination accents, the type stack. Click any hex
+                value to copy it. Phase 2 ships a downloadable kit.
+              </p>
+            </div>
+            <Link
+              href="/aether/brand"
+              style={{
+                padding: `${theme.space.tight}px ${theme.space.loose}px`,
+                borderRadius: theme.radius.pill,
+                background: accent.base,
+                color: surface.base,
+                fontFamily: theme.font.ui,
+                fontSize: theme.text.button.size,
+                fontWeight: theme.text.button.weight,
+                textDecoration: 'none',
+                letterSpacing: '0.01em',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Open /aether/brand →
+            </Link>
+          </div>
+        </div>
+      </Reveal>
+
       {/* CTA */}
       <Reveal as="section">
         <div
