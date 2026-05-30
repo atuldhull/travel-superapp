@@ -12,10 +12,10 @@
 
 | Counter             | Value                                                                     |
 | ------------------- | ------------------------------------------------------------------------- |
-| Prompts completed   | 277 (267 prior + Round W: AE206–AE215, 10 slices)                         |
+| Prompts completed   | 287 (277 prior + Round X: AE216–AE225, 10 slices)                         |
 | Prompts in progress | 0                                                                         |
 | Prompts blocked     | 0                                                                         |
-| Last prompt         | `AE215` — Round W docs (helper canonicalisation + Pulse contract gates)   |
+| Last prompt         | `AE225` — Round X docs (contract canonicalisation + shared hook kit)      |
 | Last commit date    | 2026-05-30                                                                |
 | Phase               | Phase 1 — Featured-to-detail flow live for the public memory-book surface |
 
@@ -57,6 +57,7 @@
 | **Round U**     | AE195–AE202 | trip-share-card uses shared dates + `inclusiveDaysBetween` + 5 specs · Shared `copyTextToClipboard` + 6 specs · Pulse ↑ recall · Extract `lastUserPrompt` + 6 specs · Atlas `g` geolocate + 4 specs · KeyboardHelp lists g + ↑ · Extract `makeChecklistItemId` + 6 specs · Round U docs                                                                                                                  | ✅     |
 | **Round V**     | AE203–AE205 | Pulse ↓ clears input · 3 more `backupFilename` hostile-input specs · Round V docs                                                                                                                                                                                                                                                                                                                        | ✅     |
 | **Round W**     | AE206–AE215 | Extract `timelineDotColor` + 6 specs · Extract `normalizePulsePrompt` + 8 specs · 4 more timeline-grouping cross-month/year specs · `estimateReadingMinutes` + 12 specs · Extract Atlas `filterPins` + 10 specs · Shared `useCopyTapFeedback` + 5 jsdom specs · Extract `buildSamplePlanRequest` + 6 specs · Extract `extractPlanText` + 11 specs · Extract `buildJourneyFacts` + 9 specs · Round W docs | ✅     |
+| **Round X**     | AE216–AE225 | Extract `shouldShowSuggestions` + 7 specs · `deriveTripStatus` + 12 specs · `buildShareUrl` + 8 specs · Shared `useEscapeKey` + 6 jsdom specs · `buildArticleMetaLine` + 8 specs · `formatLat`/`formatLng`/`formatLatLng` + 15 specs · `appendBoundedMessage` + 7 specs · `plural`/`pluralise`/`countLabel` + 14 specs · Extract `readSummaryField` + 11 specs · Round X docs                            | ✅     |
 
 > **Operator-owed**: push the AE commits + flip `NEXT_PUBLIC_FEATURE_AETHER_PREVIEW=1` on prod for the soft launch. The route gate auto-404s when the env var is unset, so deploys with the flag off ship safely.
 

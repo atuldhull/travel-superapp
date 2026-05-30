@@ -381,6 +381,21 @@ rebases.
 | **AE214** | Extract `buildJourneyFacts` (Range·Days·Radius·Drafted) + 9 specs — uses shared `inclusiveDaysBetween`     | `c9cb451` |
 | **AE215** | Round W docs + autopilot + MEMORY refresh                                                                  | _this_    |
 
+## Round 31 — Round X · contract canonicalisation + shared kit ✦ AE216–AE225
+
+| #         | Slice                                                                                                       | Commit    |
+| --------- | ----------------------------------------------------------------------------------------------------------- | --------- |
+| **AE216** | Extract Pulse `shouldShowSuggestions` + 7 specs (recent.length < 3 threshold)                               | `4483363` |
+| **AE217** | `deriveTripStatus` 5-state classifier + 12 specs (draft/upcoming/active/past/archived)                      | `f383e5f` |
+| **AE218** | `buildShareUrl` legacy + aether surfaces + 8 specs (origin trim, code-encode, port-preserve)                | `cc1325b` |
+| **AE219** | Shared `useEscapeKey` hook + 6 jsdom specs (real KeyboardEvent dispatch, preventDefault gate)               | `82aff40` |
+| **AE220** | `buildArticleMetaLine` + 8 specs (segments + joined; trims; drops empty/0/negative)                         | `1b3dd5f` |
+| **AE221** | `formatLat`/`formatLng`/`formatLatLng` + 15 specs (4-decimal, hemisphere, ±180 boundary, NaN/Infinity dash) | `4b681fa` |
+| **AE222** | `appendBoundedMessage` + 7 specs (PULSE_MAX_MESSAGES=40, sliding window, no-mutate)                         | `a7e9025` |
+| **AE223** | `plural`/`pluralise`/`countLabel` kit + 14 specs (auto-s, explicit override, exotic plurals)                | `f62ea79` |
+| **AE224** | Extract `readSummaryField` + 11 specs (lifted from journey-dashboard, every guard locked)                   | `1b994ae` |
+| **AE225** | Round X docs + autopilot + MEMORY refresh                                                                   | _this_    |
+
 ## Stop conditions reached / deferred
 
 - **Mobile parity** — Aether is web-only Phase 0 (locked decision pre-AE5).
