@@ -26,7 +26,7 @@ import { DriftNav } from '../drift-nav';
 import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
 import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
-import { bundleLocalData } from './data-export';
+import { bundleLocalData, bundlePulseHistory } from './data-export';
 import { clearAccessToken } from '../../../lib/auth-store';
 import { useViewport } from '../use-viewport';
 
@@ -60,19 +60,11 @@ export function AccountPage(): React.ReactElement {
   const [dataExported, setDataExported] = useState<boolean>(false);
 
   /** AE140 — back up the Pulse conversation as JSON before clearing.
-   *  Wraps the same storage key (aether-pulse-history:v1) used by AE72;
-   *  filename includes ISO date so successive backups don't collide. */
+   *  AE160 — bundling logic moved to ./data-export.ts so it's testable. */
   function downloadPulseHistory(): void {
     if (typeof window === 'undefined') return;
     try {
-      const raw = window.localStorage.getItem('aether-pulse-history:v1');
-      const parsed = raw === null ? null : (JSON.parse(raw) as unknown);
-      const payload = {
-        version: 1,
-        exportedAt: new Date().toISOString(),
-        source: 'aether-pulse',
-        history: parsed,
-      };
+      const payload = bundlePulseHistory(window.localStorage);
       const today = new Date().toISOString().slice(0, 10);
       const blob = new Blob([JSON.stringify(payload, null, 2)], {
         type: 'application/json',
