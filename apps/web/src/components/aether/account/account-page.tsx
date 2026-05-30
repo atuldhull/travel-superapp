@@ -26,6 +26,7 @@ import { DriftNav } from '../drift-nav';
 import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
 import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
+import { bundleLocalData } from './data-export';
 import { clearAccessToken } from '../../../lib/auth-store';
 import { useViewport } from '../use-viewport';
 
@@ -81,32 +82,10 @@ export function AccountPage(): React.ReactElement {
   function downloadMyData(): void {
     if (typeof window === 'undefined') return;
     try {
-      const safeRead = (key: string): unknown => {
-        const raw = window.localStorage.getItem(key);
-        if (raw === null) return null;
-        try {
-          return JSON.parse(raw);
-        } catch {
-          return raw;
-        }
-      };
-      const checklists: Record<string, unknown> = {};
-      for (let i = 0; i < window.localStorage.length; i += 1) {
-        const k = window.localStorage.key(i);
-        if (k !== null && k.startsWith('aether-checklist:') && k.endsWith(':v1')) {
-          checklists[k] = safeRead(k);
-        }
-      }
-      const payload = {
-        version: 1,
-        exportedAt: new Date().toISOString(),
-        source: 'aether-account',
-        recentPrompts: safeRead('aether-pulse-recent:v1'),
-        pulseHistory: safeRead('aether-pulse-history:v1'),
-        checklists,
-        onboarded: safeRead('aether-onboarded') !== null,
-        audioOptOut: window.localStorage.getItem('aether-audio-opt-out') === '1',
-      };
+      // AE136 — bundling logic lives in ./data-export.ts so it can be
+      // unit-tested without rendering the page. The download wrapper
+      // (Blob + <a download>) stays here because it is DOM-coupled.
+      const payload = bundleLocalData(window.localStorage);
       const today = new Date().toISOString().slice(0, 10);
       const blob = new Blob([JSON.stringify(payload, null, 2)], {
         type: 'application/json',
