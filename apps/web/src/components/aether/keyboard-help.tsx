@@ -19,10 +19,15 @@ interface Shortcut {
 }
 
 const SHORTCUTS: ReadonlyArray<Shortcut> = [
-  { keys: ['⌘ K', '/'], label: 'Open Pulse · the AI drawer' },
+  { keys: ['⌘ K'], label: 'Open Pulse · the AI drawer' },
   { keys: ['Esc'], label: 'Close Pulse · this overlay' },
   { keys: ['/<cmd>'], label: 'Slash commands inside Pulse' },
   { keys: ['?'], label: 'Open this shortcut overlay' },
+  // AE145 — discovered after AE127 + AE121 shipped:
+  { keys: ['/'], label: 'Focus the Atlas filter' },
+  { keys: ['↑', '↓'], label: 'Move through the Atlas list / checklist' },
+  { keys: ['Space', '↵'], label: 'Toggle the focused checklist row' },
+  { keys: ['Del', 'Bksp'], label: 'Remove the focused checklist row (Undo for 5s)' },
 ];
 
 export function KeyboardHelp(): React.ReactElement | null {
