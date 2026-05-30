@@ -39,6 +39,39 @@ describe('haversineKm', () => {
   });
 });
 
+// ─── AE232 — boundary geography cases ──────────────────────────────
+describe('haversineKm — boundary cases (AE232)', () => {
+  it('equator + 1 degree latitude ≈ 111 km', () => {
+    const km = haversineKm({ lat: 0, lng: 0 }, { lat: 1, lng: 0 });
+    expect(km).toBeGreaterThan(110);
+    expect(km).toBeLessThan(112);
+  });
+
+  it('antipodal pair ≈ half Earth circumference (~20015 km)', () => {
+    const km = haversineKm({ lat: 0, lng: 0 }, { lat: 0, lng: 180 });
+    expect(km).toBeGreaterThan(20_000);
+    expect(km).toBeLessThan(20_040);
+  });
+
+  it('North → South pole is the full meridian (~20015 km)', () => {
+    const km = haversineKm({ lat: 90, lng: 0 }, { lat: -90, lng: 0 });
+    expect(km).toBeGreaterThan(20_000);
+    expect(km).toBeLessThan(20_040);
+  });
+
+  it('same lng, latitudinal 0.1°≈11.1km (10x check at 1°)', () => {
+    const km = haversineKm({ lat: 0, lng: 50 }, { lat: 0.1, lng: 50 });
+    expect(km).toBeGreaterThan(10.5);
+    expect(km).toBeLessThan(11.5);
+  });
+
+  it('Mumbai → Delhi ≈ 1150 km (sanity, ±5%)', () => {
+    const km = haversineKm({ lat: 19.076, lng: 72.8777 }, { lat: 28.6139, lng: 77.209 });
+    expect(km).toBeGreaterThan(1090);
+    expect(km).toBeLessThan(1210);
+  });
+});
+
 describe('nearestPin', () => {
   const candidates = [JAIPUR, MUMBAI, LEH];
 
