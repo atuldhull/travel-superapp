@@ -42,4 +42,33 @@ describe('relatedArticles', () => {
     // dataset — empty is the expected fallback.
     expect(Array.isArray(articles)).toBe(true);
   });
+
+  // ─── AE167: edge-case coverage ─────────────────────────────────────
+  it('does not crash on any curated destination', () => {
+    // Every dest in DESTINATIONS should produce a (possibly empty) array.
+    for (const slug of Object.keys(DESTINATIONS)) {
+      const d = DESTINATIONS[slug]!;
+      const out = relatedArticles(d);
+      expect(Array.isArray(out)).toBe(true);
+    }
+  });
+
+  it('never returns the same article twice', () => {
+    for (const slug of Object.keys(DESTINATIONS)) {
+      const d = DESTINATIONS[slug]!;
+      const out = relatedArticles(d);
+      const ids = out.map((a) => a.slug);
+      expect(new Set(ids).size).toBe(ids.length);
+    }
+  });
+
+  it('is case-insensitive on city / state names', () => {
+    // Sanity gate: the substring search is done on a lower-cased
+    // haystack, so a destination with a TitleCase state name still
+    // matches journal kickers that happen to lowercase it.
+    const leh = DESTINATIONS['leh']!;
+    const out1 = relatedArticles(leh);
+    const out2 = relatedArticles({ ...leh, state: leh.state.toUpperCase() } as never);
+    expect(out1.map((a) => a.slug)).toEqual(out2.map((a) => a.slug));
+  });
 });
