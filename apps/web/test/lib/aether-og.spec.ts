@@ -48,4 +48,31 @@ describe('aetherOg', () => {
     expect(images[0]?.width).toBe(1200);
     expect(images[0]?.height).toBe(630);
   });
+
+  // ─── AE179: extended ────────────────────────────────────────────────
+  it('returns a fresh object on each call (no shared mutation)', () => {
+    const a = aetherOg('T', 'D');
+    const b = aetherOg('T', 'D');
+    expect(a).not.toBe(b);
+    expect(a.openGraph).not.toBe(b.openGraph);
+  });
+
+  it('handles empty title / description without throwing', () => {
+    const out = aetherOg('', '');
+    expect(out.openGraph).toBeDefined();
+    expect(out.twitter).toBeDefined();
+  });
+
+  it('alt text uses the title verbatim (not the dek)', () => {
+    const out = aetherOg('The pink city', 'Editorial dek');
+    const images = (out.openGraph?.images ?? []) as Array<{ alt: string }>;
+    expect(images[0]?.alt).toBe('The pink city');
+  });
+
+  it('reuses the same image URL across openGraph + twitter blocks', () => {
+    const out = aetherOg('T', 'D', { photoId: 'shared-1' });
+    const ogUrl = String(((out.openGraph?.images ?? []) as Array<{ url: string }>)[0]?.url);
+    const twImages = (out.twitter as unknown as { images?: readonly string[] }).images ?? [];
+    expect(String(twImages[0])).toBe(ogUrl);
+  });
 });
