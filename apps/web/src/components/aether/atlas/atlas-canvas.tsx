@@ -683,6 +683,28 @@ export function AtlasCanvas(): React.ReactElement {
         </Reveal>
       </section>
 
+      {/* AE137 — sr-only aria-live announcer for the focused row.
+          Visually hidden via the AE52 .aether-sr-only utility (mounted
+          by <AetherA11yStyles/>); screen readers hear "Leh, Ladakh"
+          when arrow keys land on a new row. */}
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="aether-sr-only"
+        style={{
+          position: 'absolute',
+          left: -9999,
+          width: 1,
+          height: 1,
+          overflow: 'hidden',
+        }}
+      >
+        {focusedIdx >= 0 && filtered[focusedIdx] !== undefined
+          ? `${filtered[focusedIdx]?.name}, ${filtered[focusedIdx]?.state}`
+          : ''}
+      </div>
+
       {/* REGIONS LIST */}
       <section
         style={{
