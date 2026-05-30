@@ -18,6 +18,7 @@ import { useViewport } from '../use-viewport';
 import { photoUrl } from '../photos';
 import { ReadingProgress } from '../reading-progress';
 import { type JournalArticle } from './data';
+import { relatedDestinations } from './related-destinations';
 
 export interface JournalArticleViewProps {
   article: JournalArticle;
@@ -297,6 +298,119 @@ export function JournalArticleView({ article: a }: JournalArticleViewProps): Rea
           </div>
         </div>
       </Reveal>
+
+      {/* AE99 — Visit destinations mentioned in this story */}
+      {(() => {
+        const dests = relatedDestinations(a);
+        if (dests.length === 0) return null;
+        return (
+          <Reveal as="section">
+            <div
+              style={{
+                maxWidth: 1080,
+                margin: '0 auto',
+                padding: `${theme.space.gutter}px ${theme.space.margin}px ${theme.space.hero}px`,
+                borderTop: `1px solid ${ink.whisper}`,
+              }}
+              aria-labelledby={`visit-${a.slug}`}
+            >
+              <p
+                style={{
+                  fontFamily: theme.font.ui,
+                  fontSize: 11,
+                  letterSpacing: '0.22em',
+                  textTransform: 'uppercase',
+                  color: ochre.deep,
+                  fontWeight: 600,
+                  margin: `${theme.space.gutter}px 0 ${theme.space.tight}px`,
+                }}
+              >
+                Where to next
+              </p>
+              <h2
+                id={`visit-${a.slug}`}
+                style={{
+                  fontFamily: theme.font.display,
+                  fontSize: 'clamp(24px, 2.8vw, 36px)',
+                  lineHeight: 1.15,
+                  letterSpacing: '-0.018em',
+                  fontWeight: 600,
+                  margin: 0,
+                  marginBottom: theme.space.gutter,
+                  color: ink.base,
+                }}
+              >
+                Visit the places in this story.
+              </h2>
+              <ul
+                style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  margin: 0,
+                  display: 'grid',
+                  gridTemplateColumns: `repeat(auto-fit, minmax(220px, 1fr))`,
+                  gap: theme.space.comfy,
+                }}
+              >
+                {dests.map((d) => (
+                  <li key={d.slug}>
+                    <Link
+                      href={`/aether/destinations/${d.slug}`}
+                      style={{
+                        display: 'block',
+                        textDecoration: 'none',
+                        color: 'inherit',
+                        padding: theme.space.comfy,
+                        borderRadius: theme.radius.md,
+                        background: surface.soft,
+                        border: `1px solid ${olive.whisper}`,
+                      }}
+                    >
+                      <p
+                        style={{
+                          fontFamily: theme.font.ui,
+                          fontSize: 11,
+                          letterSpacing: '0.16em',
+                          textTransform: 'uppercase',
+                          color: accent.deep,
+                          fontWeight: 600,
+                          margin: 0,
+                        }}
+                      >
+                        {d.state}
+                      </p>
+                      <p
+                        style={{
+                          fontFamily: theme.font.display,
+                          fontSize: 22,
+                          fontWeight: 600,
+                          lineHeight: 1.15,
+                          margin: '4px 0 0',
+                          color: ink.base,
+                        }}
+                      >
+                        {d.name}
+                      </p>
+                      <p
+                        style={{
+                          marginTop: 6,
+                          fontFamily: theme.font.display,
+                          fontStyle: 'italic',
+                          fontSize: 14,
+                          color: ink.soft,
+                          lineHeight: 1.4,
+                        }}
+                      >
+                        {d.tagline}
+                      </p>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </Reveal>
+        );
+      })()}
 
       <EditorialFooter />
     </div>
