@@ -18,6 +18,7 @@ import { photoUrl } from '../photos';
 import { SafeImg } from '../safe-img';
 import { useViewport } from '../use-viewport';
 import { DESTINATIONS, ALL_SLUGS } from './data';
+import { isInSeason } from './seasons';
 
 type Filter = 'all' | 'heritage' | 'mountains' | 'coast' | 'cuisine';
 
@@ -291,6 +292,25 @@ export function DestinationsIndex(): React.ReactElement {
                       >
                         {d.name}
                       </h3>
+                      {isInSeason(slug) && (
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            marginTop: 6,
+                            padding: '3px 8px',
+                            borderRadius: theme.radius.pill,
+                            background: 'rgba(110, 123, 92, 0.78)',
+                            color: '#F2E8D5',
+                            fontFamily: theme.font.ui,
+                            fontSize: 10,
+                            letterSpacing: '0.18em',
+                            textTransform: 'uppercase',
+                            fontWeight: 600,
+                          }}
+                        >
+                          In season now
+                        </span>
+                      )}
                       <p
                         style={{
                           fontFamily: theme.font.ui,
