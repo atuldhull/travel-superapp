@@ -27,6 +27,8 @@ import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
 import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
 import { bundleLocalData, bundlePulseHistory } from './data-export';
+// AE188 — single-source filename builder for backups.
+import { backupFilename } from '../../../lib/backup-filename';
 import { clearAccessToken } from '../../../lib/auth-store';
 import { useViewport } from '../use-viewport';
 
@@ -65,14 +67,13 @@ export function AccountPage(): React.ReactElement {
     if (typeof window === 'undefined') return;
     try {
       const payload = bundlePulseHistory(window.localStorage);
-      const today = new Date().toISOString().slice(0, 10);
       const blob = new Blob([JSON.stringify(payload, null, 2)], {
         type: 'application/json',
       });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `aether-pulse-history-${today}.json`;
+      a.download = backupFilename('pulse-history');
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -112,14 +113,13 @@ export function AccountPage(): React.ReactElement {
       // unit-tested without rendering the page. The download wrapper
       // (Blob + <a download>) stays here because it is DOM-coupled.
       const payload = bundleLocalData(window.localStorage);
-      const today = new Date().toISOString().slice(0, 10);
       const blob = new Blob([JSON.stringify(payload, null, 2)], {
         type: 'application/json',
       });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `aether-my-data-${today}.json`;
+      a.download = backupFilename('my-data');
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
