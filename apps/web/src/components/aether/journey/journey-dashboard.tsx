@@ -41,35 +41,8 @@ import { useViewport } from '../use-viewport';
 import { TripShareCard } from './trip-share-card';
 import { TripChecklist } from './trip-checklist';
 import { TIMELINE_GROUP_THRESHOLD, groupByWeek, type TimelineEvent } from './timeline-grouping';
-
-/**
- * AE114 — derive a destination slug from a trip title by substring
- * match against the curated Atlas/destination slug list. Used to
- * pick a per-destination starter pack for <TripChecklist/>.
- * Returns undefined if no slug name appears in the title.
- */
-const CHECKLIST_DEST_SLUGS = [
-  'leh',
-  'spiti',
-  'darjeeling',
-  'shillong',
-  'jaipur',
-  'udaipur',
-  'bhuj',
-  'varanasi',
-  'mumbai',
-  'anjuna',
-  'hampi',
-  'coorg',
-  'pondicherry',
-  'madurai',
-  'alleppey',
-] as const;
-function deriveChecklistSlug(title: string | null | undefined): string | undefined {
-  if (typeof title !== 'string' || title.trim() === '') return undefined;
-  const haystack = title.toLowerCase();
-  return CHECKLIST_DEST_SLUGS.find((s) => haystack.includes(s));
-}
+// AE149 — derive-slug helper extracted so it can be unit-tested.
+import { deriveChecklistSlug } from './derive-checklist-slug';
 
 export interface JourneyDashboardProps {
   tripId: string;
