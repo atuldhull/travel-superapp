@@ -59,6 +59,40 @@ const DEFAULT_CENTER = { lat: 26.9124, lng: 75.7873 } as const; // Jaipur fallba
 const PULSE_STORAGE_KEY = 'aether-pulse-history:v1';
 const PULSE_MAX_MESSAGES = 40;
 
+/** AE106 — separate "long-memory" list of recent user prompts. Lives
+ *  outside the conversation persistence so Reset (in-drawer or on
+ *  /aether/account) does NOT clear it. Surfaces as quick chips on
+ *  the empty-state of the drawer. */
+const PULSE_RECENT_KEY = 'aether-pulse-recent:v1';
+const PULSE_RECENT_CAP = 10;
+
+function readRecentPrompts(): string[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.localStorage.getItem(PULSE_RECENT_KEY);
+    if (raw === null) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((s): s is string => typeof s === 'string').slice(0, PULSE_RECENT_CAP);
+  } catch {
+    return [];
+  }
+}
+
+function appendRecentPrompt(prompt: string): void {
+  if (typeof window === 'undefined') return;
+  const trimmed = prompt.trim();
+  if (trimmed === '') return;
+  try {
+    const prior = readRecentPrompts();
+    // Deduplicate (move to front).
+    const next = [trimmed, ...prior.filter((p) => p !== trimmed)].slice(0, PULSE_RECENT_CAP);
+    window.localStorage.setItem(PULSE_RECENT_KEY, JSON.stringify(next));
+  } catch {
+    /* quota / private mode */
+  }
+}
+
 interface PersistedPulse {
   readonly messages: ChatMessage[];
   readonly ctx: {
@@ -127,6 +161,8 @@ export function Pulse(): React.ReactElement | null {
   // mutation so onSuccess can chain into the share mutation.
   const [shareAfterSave, setShareAfterSave] = useState<boolean>(false);
   const [savedShareConfirm, setSavedShareConfirm] = useState<boolean>(false);
+  // AE106 — long-memory recent user prompts, separate from messages.
+  const [recent, setRecent] = useState<string[]>([]);
 
   const shareTrip = useTripControllerShare({
     mutation: {
@@ -195,10 +231,13 @@ export function Pulse(): React.ReactElement | null {
   // through the persistence effect below.
   useEffect(() => {
     const stored = readPulseStore();
-    if (stored === null) return;
-    if (stored.messages.length > 0) setMessages(stored.messages);
-    if (stored.ctx !== null) setCtx(stored.ctx);
-    if (stored.provider !== null) setProvider(stored.provider);
+    if (stored !== null) {
+      if (stored.messages.length > 0) setMessages(stored.messages);
+      if (stored.ctx !== null) setCtx(stored.ctx);
+      if (stored.provider !== null) setProvider(stored.provider);
+    }
+    // AE106 — load the long-memory recent list (survives Reset).
+    setRecent(readRecentPrompts());
   }, []);
 
   // AE96 — listen for `aether-pulse-open` events from other surfaces
@@ -326,6 +365,9 @@ export function Pulse(): React.ReactElement | null {
     setMessages((prev) => [...prev, { role: 'user', content: trimmed }]);
     setQ('');
     setPending(true);
+    // AE106 — long-memory recent list (survives Reset).
+    appendRecentPrompt(trimmed);
+    setRecent(readRecentPrompts());
 
     try {
       let title: string;
@@ -555,6 +597,65 @@ export function Pulse(): React.ReactElement | null {
                 >
                   How can the journey help today?
                 </p>
+
+                {/* AE106 — Recent prompts (long-memory, survives Reset) */}
+                {recent.length > 0 && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 4,
+                      marginBottom: theme.space.comfy,
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: theme.font.ui,
+                        fontSize: 10,
+                        letterSpacing: '0.18em',
+                        textTransform: 'uppercase',
+                        color: ochre.deep,
+                        fontWeight: 600,
+                        marginBottom: 4,
+                      }}
+                    >
+                      Recent
+                    </span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      {recent.slice(0, 3).map((r) => (
+                        <button
+                          type="button"
+                          key={r}
+                          onClick={() => {
+                            setQ(r);
+                            inputRef.current?.focus();
+                          }}
+                          style={{
+                            textAlign: 'left',
+                            padding: `${theme.space.hairline}px ${theme.space.inline}px`,
+                            borderRadius: theme.radius.sm,
+                            background: 'transparent',
+                            border: `1px solid ${ochre.whisper}`,
+                            color: ink.base,
+                            fontFamily: theme.font.display,
+                            fontStyle: 'italic',
+                            fontSize: 13,
+                            lineHeight: 1.4,
+                            cursor: 'pointer',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                          title={r}
+                          aria-label={`Reuse recent prompt: ${r}`}
+                        >
+                          {r}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   <span
                     style={{
