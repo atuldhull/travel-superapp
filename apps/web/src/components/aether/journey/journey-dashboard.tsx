@@ -1431,54 +1431,126 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
                       });
                     }
                     events.sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
-                    return events.map((e) => (
-                      <li
-                        key={`${e.kind}-${e.at}`}
-                        style={{ position: 'relative', padding: `0 0 ${theme.space.comfy}px 0` }}
-                      >
-                        <span
+
+                    /** AE141 — once events get long, group by ISO week
+                     *  so the eye can scan timeline arcs. Threshold of 8
+                     *  picked because a single trip rarely has more than
+                     *  a handful of organic events; past that they tend
+                     *  to be share-spam from one campaign and benefit
+                     *  from being collapsed under a week header. */
+                    function weekKey(iso: string): string {
+                      const d = new Date(iso);
+                      if (Number.isNaN(d.getTime())) return 'unknown';
+                      // ISO: week starts Monday. Shift to that Monday.
+                      const day = d.getDay(); // 0=Sun
+                      const shift = day === 0 ? -6 : 1 - day;
+                      const monday = new Date(d);
+                      monday.setDate(d.getDate() + shift);
+                      monday.setHours(0, 0, 0, 0);
+                      return monday.toISOString().slice(0, 10);
+                    }
+                    function weekLabel(iso: string): string {
+                      const d = new Date(iso);
+                      if (Number.isNaN(d.getTime())) return iso;
+                      return `Week of ${d.toLocaleDateString(undefined, {
+                        month: 'short',
+                        day: 'numeric',
+                      })}`;
+                    }
+
+                    function renderEventLi(e: (typeof events)[number]): React.ReactElement {
+                      return (
+                        <li
+                          key={`${e.kind}-${e.at}`}
+                          style={{
+                            position: 'relative',
+                            padding: `0 0 ${theme.space.comfy}px 0`,
+                          }}
+                        >
+                          <span
+                            aria-hidden
+                            style={{
+                              position: 'absolute',
+                              left: -29,
+                              top: 4,
+                              width: 12,
+                              height: 12,
+                              borderRadius: '50%',
+                              background:
+                                e.kind === 'archive'
+                                  ? ochre.deep
+                                  : e.kind === 'edit'
+                                    ? olive.deep
+                                    : e.kind === 'share'
+                                      ? ochre.glow
+                                      : accent.deep,
+                              boxShadow: `0 0 0 4px ${surface.base}`,
+                            }}
+                          />
+                          <div
+                            style={{
+                              fontFamily: theme.font.display,
+                              fontSize: 18,
+                              fontWeight: 600,
+                              color: ink.base,
+                              lineHeight: 1.2,
+                            }}
+                          >
+                            {e.label}
+                          </div>
+                          <div
+                            style={{
+                              fontFamily: theme.font.mono,
+                              fontSize: 11,
+                              color: ink.soft,
+                              letterSpacing: '0.08em',
+                              marginTop: 2,
+                            }}
+                          >
+                            {fmtDate(e.at)}
+                          </div>
+                        </li>
+                      );
+                    }
+
+                    if (events.length <= 8) {
+                      return events.map(renderEventLi);
+                    }
+
+                    // > 8: group by week. Render a tiny header before
+                    // each group; the rail line stays continuous since
+                    // headers are inside the same <ol>.
+                    const groups: Array<{ key: string; label: string; items: typeof events }> = [];
+                    let last: string | null = null;
+                    for (const e of events) {
+                      const wk = weekKey(e.at);
+                      if (wk !== last) {
+                        groups.push({ key: wk, label: weekLabel(e.at), items: [] });
+                        last = wk;
+                      }
+                      groups[groups.length - 1]?.items.push(e);
+                    }
+                    return groups.map((g) => (
+                      <div key={`wk-${g.key}`}>
+                        <li
                           aria-hidden
                           style={{
-                            position: 'absolute',
-                            left: -29,
-                            top: 4,
-                            width: 12,
-                            height: 12,
-                            borderRadius: '50%',
-                            background:
-                              e.kind === 'archive'
-                                ? ochre.deep
-                                : e.kind === 'edit'
-                                  ? olive.deep
-                                  : e.kind === 'share'
-                                    ? ochre.glow
-                                    : accent.deep,
-                            boxShadow: `0 0 0 4px ${surface.base}`,
-                          }}
-                        />
-                        <div
-                          style={{
-                            fontFamily: theme.font.display,
-                            fontSize: 18,
+                            listStyle: 'none',
+                            position: 'relative',
+                            padding: `0 0 6px 0`,
+                            marginLeft: -8,
+                            fontFamily: theme.font.ui,
+                            fontSize: 10,
+                            letterSpacing: '0.22em',
+                            textTransform: 'uppercase',
+                            color: olive.deep,
                             fontWeight: 600,
-                            color: ink.base,
-                            lineHeight: 1.2,
                           }}
                         >
-                          {e.label}
-                        </div>
-                        <div
-                          style={{
-                            fontFamily: theme.font.mono,
-                            fontSize: 11,
-                            color: ink.soft,
-                            letterSpacing: '0.08em',
-                            marginTop: 2,
-                          }}
-                        >
-                          {fmtDate(e.at)}
-                        </div>
-                      </li>
+                          {g.label}
+                        </li>
+                        {g.items.map(renderEventLi)}
+                      </div>
                     ));
                   })()}
                 </ol>
