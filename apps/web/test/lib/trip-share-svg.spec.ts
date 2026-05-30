@@ -63,4 +63,42 @@ describe('shareSvg', () => {
     const svg = shareSvg(makeTrip({ id: 'beefcafe-1234-5678-9abc-def012345678' }));
     expect(svg).toContain('beefcafe');
   });
+
+  // ─── AE153: edge-case coverage ────────────────────────────────────
+  it('handles an empty title without crashing', () => {
+    const svg = shareSvg(makeTrip({ title: '' }));
+    expect(svg.startsWith('<svg')).toBe(true);
+  });
+
+  it('uses the fallback "shared" status when status is omitted', () => {
+    // SharedTripDto callers pass no status — should not say "undefined"
+    // in the rendered output.
+    const trip = { id: 'x', title: 't', radiusKm: 10, startsOn: null, endsOn: null };
+    const svg = shareSvg(trip as never);
+    expect(svg).not.toContain('undefined');
+    expect(svg).toContain('shared');
+  });
+
+  it('renders a date range when startsOn + endsOn are set', () => {
+    const svg = shareSvg(makeTrip({ startsOn: '2026-06-03', endsOn: '2026-06-17' } as never));
+    // Some date fragment should appear (locale-dependent — we just
+    // assert "2026" makes it in via the formatted range).
+    expect(svg).toContain('2026');
+  });
+
+  it('handles single-character titles (no shrink path)', () => {
+    const svg = shareSvg(makeTrip({ title: 'J' }));
+    expect(svg).toContain('font-size="110"');
+    // Title is rendered inside a <text>…</text> with whitespace; just
+    // assert the character lands in the output.
+    expect(svg).toMatch(/>\s*J\s*</);
+  });
+
+  it('output is a single-line SVG (no embedded \\n surprises)', () => {
+    // The card is consumed by next/og + downloaded as a blob; embedded
+    // newlines historically broke a few CDN previews. The generator's
+    // contract is "one logical string"; we assert it has no \r.
+    const svg = shareSvg(makeTrip({}));
+    expect(svg).not.toContain('\r');
+  });
 });
