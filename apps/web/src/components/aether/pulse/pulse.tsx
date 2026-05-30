@@ -65,6 +65,8 @@ import { nextPendingIdx, phraseAt } from './pending-phrases';
 import { copyTextToClipboard } from '../../../lib/copy-text';
 // AE198 — last-user-prompt picker (for AE197 ArrowUp recall).
 import { lastUserPrompt } from './last-user-prompt';
+// AE207 — composer input normaliser (trim + length guard).
+import { normalizePulsePrompt } from './normalize-prompt';
 
 // AE72 + AE184 — types + storage key + parser extracted to
 // ./persisted-pulse.ts so the shape contract is unit-testable.
@@ -335,8 +337,10 @@ export function Pulse(): React.ReactElement | null {
 
   /** Generate or refine via the public sample-plan endpoint. */
   async function ask(userText: string): Promise<void> {
-    const trimmed = userText.trim();
-    if (trimmed === '') return;
+    // AE207 — single normaliser; rejects empty + over-long prompts.
+    const norm = normalizePulsePrompt(userText);
+    if (norm.ok === false) return;
+    const trimmed = norm.text;
 
     setMessages((prev) => [...prev, { role: 'user', content: trimmed }]);
     setQ('');
