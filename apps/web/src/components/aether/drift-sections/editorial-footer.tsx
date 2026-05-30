@@ -263,7 +263,18 @@ export function EditorialFooter(): React.ReactElement {
             opacity: 0.55,
           }}
         >
-          <span>© {new Date().getFullYear()} TravelSuperApp · Aether Phase 0 preview</span>
+          {/* AE157 — © year + AE75 build stamp (sha + iso time when set). */}
+          <span>
+            © {new Date().getFullYear()} TravelSuperApp · Aether Phase 0 preview
+            {process.env['NEXT_PUBLIC_BUILD_SHA'] !== undefined && (
+              <>
+                {' · '}
+                <span style={{ opacity: 0.7 }}>
+                  build {String(process.env['NEXT_PUBLIC_BUILD_SHA']).slice(0, 7)}
+                </span>
+              </>
+            )}
+          </span>
           <span>
             Photography on Unsplash by{' '}
             {[HERO, ...EXPERIENCES, GUSTARE, ...REGIONS, ...JOURNAL].map((p, i, arr) => (
