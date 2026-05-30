@@ -7,6 +7,7 @@ import {
   PULSE_RECENT_CAP,
   PULSE_RECENT_KEY,
   appendRecentPrompt,
+  clearRecentPrompts,
   readRecentPrompts,
 } from '../../src/components/aether/pulse/recent-prompts';
 
@@ -67,5 +68,33 @@ describe('recent-prompts', () => {
   it('filters out non-string entries', () => {
     window.localStorage.setItem(PULSE_RECENT_KEY, JSON.stringify(['a', 1, true, null, 'b']));
     expect(readRecentPrompts()).toEqual(['a', 'b']);
+  });
+
+  // ─── AE124: clearRecentPrompts (AE118) ────────────────────────────
+  it('clearRecentPrompts wipes the store', () => {
+    appendRecentPrompt('a');
+    appendRecentPrompt('b');
+    expect(readRecentPrompts()).toEqual(['b', 'a']);
+    clearRecentPrompts();
+    expect(readRecentPrompts()).toEqual([]);
+  });
+
+  it('clearRecentPrompts is idempotent (safe to call on empty store)', () => {
+    expect(readRecentPrompts()).toEqual([]);
+    clearRecentPrompts();
+    clearRecentPrompts();
+    expect(readRecentPrompts()).toEqual([]);
+  });
+
+  it('clearRecentPrompts only wipes its own key (does not touch unrelated keys)', () => {
+    window.localStorage.setItem('aether-pulse-history:v1', '[{"role":"user","text":"x"}]');
+    appendRecentPrompt('z');
+    clearRecentPrompts();
+    // Recent gone; sibling key survives.
+    expect(readRecentPrompts()).toEqual([]);
+    expect(window.localStorage.getItem('aether-pulse-history:v1')).toBe(
+      '[{"role":"user","text":"x"}]',
+    );
+    window.localStorage.removeItem('aether-pulse-history:v1');
   });
 });
