@@ -100,6 +100,8 @@ export function Pulse(): React.ReactElement | null {
   // AE159 — rotate through 3 micro-copy phrases while pending so a
   // long wait shows the assistant is still working, not stuck.
   const [pendingPhraseIdx, setPendingPhraseIdx] = useState<number>(0);
+  // AE189 — index of the assistant bubble that just got copied.
+  const [copiedBubbleIdx, setCopiedBubbleIdx] = useState<number | null>(null);
   const [saving, setSaving] = useState<boolean>(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   // When save+share is chosen, hold the intent across the create
@@ -736,6 +738,7 @@ export function Pulse(): React.ReactElement | null {
               <div
                 key={idx}
                 style={{
+                  position: 'relative',
                   alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
                   maxWidth: '88%',
                   padding: `${theme.space.tight}px ${theme.space.inline}px`,
@@ -752,6 +755,45 @@ export function Pulse(): React.ReactElement | null {
                 }}
               >
                 {m.content}
+                {/* AE189 — copy bubble button on assistant messages.
+                    Bottom-right inside the bubble; appears on hover so
+                    the silent message reading state isn't busy. */}
+                {m.role === 'assistant' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (typeof navigator === 'undefined' || navigator.clipboard === undefined) {
+                        return;
+                      }
+                      void navigator.clipboard.writeText(m.content);
+                      setCopiedBubbleIdx(idx);
+                      window.setTimeout(
+                        () => setCopiedBubbleIdx((cur) => (cur === idx ? null : cur)),
+                        1500,
+                      );
+                    }}
+                    aria-label={
+                      copiedBubbleIdx === idx ? 'Copied to clipboard' : 'Copy this response'
+                    }
+                    style={{
+                      position: 'absolute',
+                      right: 6,
+                      bottom: 4,
+                      background: 'transparent',
+                      border: 'none',
+                      color: copiedBubbleIdx === idx ? olive.deep : ink.soft,
+                      fontFamily: theme.font.ui,
+                      fontSize: 10,
+                      fontWeight: 600,
+                      letterSpacing: '0.02em',
+                      cursor: 'pointer',
+                      padding: '2px 6px',
+                      borderRadius: 4,
+                    }}
+                  >
+                    {copiedBubbleIdx === idx ? '✓ copied' : '⧉ copy'}
+                  </button>
+                )}
               </div>
             ))}
 
