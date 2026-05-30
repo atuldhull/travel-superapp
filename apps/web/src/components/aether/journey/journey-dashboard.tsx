@@ -1177,6 +1177,116 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
               </Reveal>
             )}
 
+            {/* AE77 — Activity timeline.
+                Derived purely from TripDto fields (no extra endpoint).
+                Each event is a {at, label, kind} tuple sorted ascending. */}
+            <Reveal>
+              <div style={{ marginTop: theme.space.hero }}>
+                <p
+                  style={{
+                    fontFamily: theme.font.ui,
+                    fontSize: 11,
+                    letterSpacing: '0.22em',
+                    textTransform: 'uppercase',
+                    color: ochre.deep,
+                    fontWeight: 600,
+                    margin: 0,
+                    marginBottom: theme.space.tight,
+                  }}
+                >
+                  This journey&apos;s life so far
+                </p>
+                <ol
+                  style={{
+                    listStyle: 'none',
+                    padding: 0,
+                    margin: 0,
+                    position: 'relative',
+                    paddingLeft: 22,
+                    borderLeft: `2px solid ${olive.whisper}`,
+                  }}
+                >
+                  {(() => {
+                    interface Evt {
+                      readonly at: string;
+                      readonly label: string;
+                      readonly kind: 'create' | 'edit' | 'archive';
+                    }
+                    const events: Evt[] = [];
+                    if (asIso(trip.createdAt) !== null) {
+                      events.push({
+                        at: trip.createdAt as unknown as string,
+                        label: 'Drafted',
+                        kind: 'create',
+                      });
+                    }
+                    if (
+                      asIso(trip.updatedAt) !== null &&
+                      asIso(trip.updatedAt) !== asIso(trip.createdAt)
+                    ) {
+                      events.push({
+                        at: trip.updatedAt as unknown as string,
+                        label: `Edited — version ${trip.version}`,
+                        kind: 'edit',
+                      });
+                    }
+                    const archivedAt = asIso(trip.archivedAt);
+                    if (archivedAt !== null) {
+                      events.push({ at: archivedAt, label: 'Archived', kind: 'archive' });
+                    }
+                    events.sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
+                    return events.map((e) => (
+                      <li
+                        key={`${e.kind}-${e.at}`}
+                        style={{ position: 'relative', padding: `0 0 ${theme.space.comfy}px 0` }}
+                      >
+                        <span
+                          aria-hidden
+                          style={{
+                            position: 'absolute',
+                            left: -29,
+                            top: 4,
+                            width: 12,
+                            height: 12,
+                            borderRadius: '50%',
+                            background:
+                              e.kind === 'archive'
+                                ? ochre.deep
+                                : e.kind === 'edit'
+                                  ? olive.deep
+                                  : accent.deep,
+                            boxShadow: `0 0 0 4px ${surface.base}`,
+                          }}
+                        />
+                        <div
+                          style={{
+                            fontFamily: theme.font.display,
+                            fontSize: 18,
+                            fontWeight: 600,
+                            color: ink.base,
+                            lineHeight: 1.2,
+                          }}
+                        >
+                          {e.label}
+                        </div>
+                        <div
+                          style={{
+                            fontFamily: theme.font.mono,
+                            fontSize: 11,
+                            color: ink.soft,
+                            letterSpacing: '0.08em',
+                            marginTop: 2,
+                          }}
+                        >
+                          {fmtDate(e.at)}
+                        </div>
+                      </li>
+                    ));
+                  })()}
+                </ol>
+              </div>
+            </Reveal>
+
             {/* Footer meta */}
             <Reveal>
               <div

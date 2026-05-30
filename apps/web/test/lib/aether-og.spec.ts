@@ -10,10 +10,13 @@ describe('aetherOg', () => {
     const out = aetherOg('Aether · Test', 'A test description.');
     expect(out.openGraph).toBeDefined();
     expect(out.twitter).toBeDefined();
-    expect(out.openGraph?.title).toBe('Aether · Test');
-    expect(out.openGraph?.description).toBe('A test description.');
-    expect(out.openGraph?.siteName).toBe('TravelSuperApp · Aether');
-    expect(out.openGraph?.type).toBe('website');
+    // The OG / Twitter Next types are heavily discriminated; cast via
+    // unknown to make assertions plainly.
+    const og = out.openGraph as unknown as Record<string, unknown>;
+    expect(og['title']).toBe('Aether · Test');
+    expect(og['description']).toBe('A test description.');
+    expect(og['siteName']).toBe('TravelSuperApp · Aether');
+    expect(og['type']).toBe('website');
   });
 
   it('defaults the OG image to the Taj Mahal hero id when no photoId given', () => {
@@ -32,8 +35,9 @@ describe('aetherOg', () => {
 
   it('builds a summary_large_image Twitter card sharing the same image', () => {
     const out = aetherOg('T', 'D', { photoId: 'xyz-789' });
-    expect(out.twitter?.card).toBe('summary_large_image');
-    const twImages = (out.twitter?.images ?? []) as readonly string[];
+    const tw = out.twitter as unknown as Record<string, unknown>;
+    expect(tw['card']).toBe('summary_large_image');
+    const twImages = (tw['images'] ?? []) as readonly string[];
     expect(twImages).toHaveLength(1);
     expect(String(twImages[0])).toContain('xyz-789');
   });
