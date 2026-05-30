@@ -20,6 +20,8 @@ import { useTheme } from '@app/aether-core';
 import { parseChecklistBackup } from './parse-checklist-backup';
 // AE188 — single-source filename builder for backups.
 import { backupFilename } from '../../../lib/backup-filename';
+// AE196 — shared clipboard helper (consolidates the textarea-fallback).
+import { copyTextToClipboard } from '../../../lib/copy-text';
 
 export interface ChecklistItem {
   readonly id: string;
@@ -338,24 +340,11 @@ export function TripChecklist({ tripId, destinationSlug }: TripChecklistProps): 
   async function copyBullets(): Promise<void> {
     const text = asBullets();
     if (text.trim() === '') return;
-    try {
-      // Clipboard API needs a secure context; fall back to a hidden
-      // textarea + document.execCommand for older browsers / file://.
-      if (navigator.clipboard !== undefined && window.isSecureContext) {
-        await navigator.clipboard.writeText(text);
-      } else {
-        const ta = document.createElement('textarea');
-        ta.value = text;
-        ta.style.position = 'fixed';
-        ta.style.opacity = '0';
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-      }
+    const ok = await copyTextToClipboard(text);
+    if (ok) {
       setCopyState('copied');
       window.setTimeout(() => setCopyState('idle'), 1800);
-    } catch {
+    } else {
       setCopyState('error');
       window.setTimeout(() => setCopyState('idle'), 2400);
     }
