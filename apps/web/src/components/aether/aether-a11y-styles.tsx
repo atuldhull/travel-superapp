@@ -13,7 +13,12 @@
  * The ring uses a sandstone-orange box-shadow (matches the terracotta
  * palette) so it reads as intentional rather than browser-default.
  * `:focus-visible` keeps mouse clicks from triggering the ring.
+ *
+ * AE97 — also renders <KeyboardHelp/> so every shell gets the `?`
+ * shortcut overlay for free, without needing a separate mount line
+ * in every shell file.
  */
+import { KeyboardHelp } from './keyboard-help';
 const CSS = `
 a:focus-visible,
 button:focus-visible,
@@ -45,5 +50,10 @@ summary:focus-visible {
 `;
 
 export function AetherA11yStyles(): React.ReactElement {
-  return <style dangerouslySetInnerHTML={{ __html: CSS }} />;
+  return (
+    <>
+      <style dangerouslySetInnerHTML={{ __html: CSS }} />
+      <KeyboardHelp />
+    </>
+  );
 }
