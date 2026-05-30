@@ -18,6 +18,8 @@ import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEven
 import { useTheme } from '@app/aether-core';
 // AE164 — JSON parsing for AE148 moved to a pure helper so it's testable.
 import { parseChecklistBackup } from './parse-checklist-backup';
+// AE188 — single-source filename builder for backups.
+import { backupFilename } from '../../../lib/backup-filename';
 
 export interface ChecklistItem {
   readonly id: string;
@@ -314,7 +316,6 @@ export function TripChecklist({ tripId, destinationSlug }: TripChecklistProps): 
   // `aether-checklist-<tripId>-<YYYY-MM-DD>.json`. No-op when empty.
   function downloadBackup(): void {
     if (items.length === 0) return;
-    const today = new Date().toISOString().slice(0, 10);
     const payload = {
       version: 1,
       tripId,
@@ -325,7 +326,7 @@ export function TripChecklist({ tripId, destinationSlug }: TripChecklistProps): 
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `aether-checklist-${tripId}-${today}.json`;
+    a.download = backupFilename(`checklist-${tripId}`);
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
