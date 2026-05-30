@@ -778,17 +778,63 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
                 </p>
               )}
               {exportError !== null && (
-                <p
+                <div
                   role="alert"
                   style={{
                     marginTop: theme.space.tight,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: theme.space.tight,
+                    flexWrap: 'wrap',
                     fontFamily: theme.font.ui,
                     fontSize: theme.text.small.size,
                     color: '#8a2418',
                   }}
                 >
-                  {exportError}
-                </p>
+                  <span>{exportError}</span>
+                  {/* AE147 — explicit retry that resets the preload
+                      flag so the dynamic import fires fresh, not from
+                      the (possibly half-failed) module cache. */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      preloadPdfOnce.current = false;
+                      setExportError(null);
+                      void exportPdf();
+                    }}
+                    style={{
+                      padding: `${theme.space.hairline}px ${theme.space.comfy}px`,
+                      borderRadius: theme.radius.pill,
+                      background: 'transparent',
+                      border: `1px solid #8a2418`,
+                      color: '#8a2418',
+                      fontFamily: theme.font.ui,
+                      fontSize: 11,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                    aria-label="Retry PDF export"
+                  >
+                    ↻ Try again
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setExportError(null)}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#8a2418',
+                      opacity: 0.6,
+                      cursor: 'pointer',
+                      fontSize: 14,
+                      padding: 2,
+                      lineHeight: 1,
+                    }}
+                    aria-label="Dismiss export error"
+                  >
+                    ×
+                  </button>
+                </div>
               )}
             </Reveal>
 
