@@ -16,6 +16,8 @@
  */
 import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { useTheme } from '@app/aether-core';
+// AE164 — JSON parsing for AE148 moved to a pure helper so it's testable.
+import { parseChecklistBackup } from './parse-checklist-backup';
 
 export interface ChecklistItem {
   readonly id: string;
@@ -289,30 +291,20 @@ export function TripChecklist({ tripId, destinationSlug }: TripChecklistProps): 
       window.setTimeout(() => setImportError(null), 4000);
     };
     reader.onload = (): void => {
-      try {
-        const raw = reader.result;
-        if (typeof raw !== 'string') throw new Error('not text');
-        const parsed = JSON.parse(raw) as unknown;
-        const itemsCandidate =
-          parsed !== null && typeof parsed === 'object' && 'items' in parsed
-            ? (parsed as { items: unknown }).items
-            : parsed; // also accept the raw array shape
-        if (!Array.isArray(itemsCandidate)) throw new Error('items missing');
-        const next = itemsCandidate.filter(
-          (it): it is ChecklistItem =>
-            typeof it === 'object' &&
-            it !== null &&
-            typeof (it as ChecklistItem).id === 'string' &&
-            typeof (it as ChecklistItem).text === 'string' &&
-            typeof (it as ChecklistItem).done === 'boolean',
-        );
-        if (next.length === 0) throw new Error('no valid items');
-        setItems(next);
-        setImportError(null);
-      } catch {
+      const raw = reader.result;
+      if (typeof raw !== 'string') {
+        setImportError('Could not read that file.');
+        window.setTimeout(() => setImportError(null), 4000);
+        return;
+      }
+      const next = parseChecklistBackup(raw);
+      if (next === null) {
         setImportError('That file does not look like a checklist backup.');
         window.setTimeout(() => setImportError(null), 4000);
+        return;
       }
+      setItems(next);
+      setImportError(null);
     };
     reader.readAsText(file);
   }
