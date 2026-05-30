@@ -732,6 +732,30 @@ export function DestinationPage({ destination: d }: DestinationPageProps): React
                 + Add to your {draftTrip.title} draft
               </Link>
             )}
+            {/* AE101 — Ask Pulse, pre-filled with this city */}
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof window === 'undefined') return;
+                const prefill = `A trip to ${d.name} (${d.state}). ${d.tagline} — three days, slow pace.`;
+                window.dispatchEvent(new CustomEvent('aether-pulse-open', { detail: { prefill } }));
+              }}
+              style={{
+                padding: `${theme.space.tight}px ${theme.space.loose}px`,
+                borderRadius: theme.radius.pill,
+                background: accent.whisper,
+                border: `1px solid ${accent.deep}`,
+                color: accent.deep,
+                fontFamily: theme.font.ui,
+                fontSize: theme.text.small.size,
+                fontWeight: 600,
+                cursor: 'pointer',
+                letterSpacing: '0.01em',
+              }}
+              aria-label={`Ask Pulse about ${d.name}`}
+            >
+              ✦ Ask Pulse about {d.name}
+            </button>
           </div>
         </div>
       </Reveal>
