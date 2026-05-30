@@ -13,7 +13,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useTheme } from '@app/aether-core';
-import { readRecentPrompts } from '../pulse/recent-prompts';
+import { clearRecentPrompts, readRecentPrompts } from '../pulse/recent-prompts';
 import {
   useAuthControllerMe,
   useTripControllerList,
@@ -92,6 +92,19 @@ export function MeHome(): React.ReactElement {
   function askAgain(prompt: string): void {
     if (typeof window === 'undefined') return;
     window.dispatchEvent(new CustomEvent('aether-pulse-open', { detail: { prefill: prompt } }));
+  }
+  // AE118 — confirm-then-clear so a misclick on a busy phone doesn't
+  // nuke the long-memory list. Confirm chip stays for 4s, then resets.
+  const [confirmClear, setConfirmClear] = useState<boolean>(false);
+  function onClearClicked(): void {
+    if (!confirmClear) {
+      setConfirmClear(true);
+      window.setTimeout(() => setConfirmClear(false), 4000);
+      return;
+    }
+    clearRecentPrompts();
+    setRecent([]);
+    setConfirmClear(false);
   }
 
   const ink = theme.color.ink;
@@ -380,17 +393,46 @@ export function MeHome(): React.ReactElement {
                 >
                   Recent prompts · {recent.length}
                 </p>
-                <span
+                <div
                   style={{
-                    fontFamily: theme.font.mono,
-                    fontSize: 10,
-                    letterSpacing: '0.14em',
-                    color: ink.soft,
-                    opacity: 0.65,
+                    display: 'flex',
+                    gap: theme.space.comfy,
+                    alignItems: 'baseline',
                   }}
                 >
-                  click to ask Pulse again
-                </span>
+                  <span
+                    style={{
+                      fontFamily: theme.font.mono,
+                      fontSize: 10,
+                      letterSpacing: '0.14em',
+                      color: ink.soft,
+                      opacity: 0.65,
+                    }}
+                  >
+                    click to ask Pulse again
+                  </span>
+                  {/* AE118 — confirm-then-clear */}
+                  <button
+                    type="button"
+                    onClick={onClearClicked}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: confirmClear ? accent.deep : ink.soft,
+                      fontFamily: theme.font.ui,
+                      fontSize: 11,
+                      cursor: 'pointer',
+                      letterSpacing: '0.02em',
+                      textDecoration: 'underline',
+                      fontWeight: confirmClear ? 600 : 400,
+                    }}
+                    aria-label={
+                      confirmClear ? 'Confirm clearing recent prompts' : 'Clear all recent prompts'
+                    }
+                  >
+                    {confirmClear ? 'tap again to confirm' : 'clear all'}
+                  </button>
+                </div>
               </div>
               <h2
                 style={{
