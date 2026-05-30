@@ -54,6 +54,19 @@ export function AccountPage(): React.ReactElement {
   const bootComplete = useAuthBootComplete();
   const isAuthed = bootComplete && token !== null;
   const [signingOut, setSigningOut] = useState<boolean>(false);
+  const [pulseCleared, setPulseCleared] = useState<boolean>(false);
+
+  /** AE93 — wipes Pulse's persisted conversation (AE72). */
+  function clearPulseHistory(): void {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.removeItem('aether-pulse-history:v1');
+      setPulseCleared(true);
+      window.setTimeout(() => setPulseCleared(false), 2000);
+    } catch {
+      /* quota / private mode — silently ignore */
+    }
+  }
 
   const meQuery = useAuthControllerMe({
     query: { enabled: isAuthed, retry: 1 },
@@ -484,6 +497,78 @@ export function AccountPage(): React.ReactElement {
                   Open the privacy panel
                   <span aria-hidden>→</span>
                 </Link>
+              </div>
+            </Reveal>
+
+            {/* AE93 — Pulse history (persisted conversation, AE72) */}
+            <Reveal>
+              <div
+                style={{
+                  marginTop: theme.space.gutter,
+                  padding: theme.space.loose,
+                  borderRadius: theme.radius.lg,
+                  background: surface.soft,
+                  border: `1px solid ${olive.whisper}`,
+                }}
+              >
+                <p
+                  style={{
+                    fontFamily: theme.font.ui,
+                    fontSize: 11,
+                    letterSpacing: '0.22em',
+                    textTransform: 'uppercase',
+                    color: olive.deep,
+                    fontWeight: 600,
+                    margin: 0,
+                  }}
+                >
+                  Pulse history
+                </p>
+                <h2
+                  style={{
+                    fontFamily: theme.font.display,
+                    fontSize: 'clamp(22px, 2.4vw, 30px)',
+                    lineHeight: 1.2,
+                    letterSpacing: '-0.014em',
+                    fontWeight: 600,
+                    margin: `${theme.space.tight}px 0 0`,
+                    color: ink.base,
+                  }}
+                >
+                  Persisted conversation.
+                </h2>
+                <p
+                  style={{
+                    fontFamily: theme.font.display,
+                    fontStyle: 'italic',
+                    fontSize: 17,
+                    lineHeight: 1.55,
+                    color: ink.soft,
+                    margin: `${theme.space.tight}px 0 ${theme.space.comfy}px`,
+                  }}
+                >
+                  Pulse remembers the last conversation in this browser so you can refine a sketched
+                  plan across reloads. Wipe it if you want to start clean — Pulse on this device
+                  will be a blank drawer again.
+                </p>
+                <button
+                  type="button"
+                  onClick={clearPulseHistory}
+                  style={{
+                    padding: `${theme.space.tight}px ${theme.space.loose}px`,
+                    borderRadius: theme.radius.pill,
+                    background: 'transparent',
+                    border: `1px solid ${olive.deep}`,
+                    color: olive.deep,
+                    fontFamily: theme.font.ui,
+                    fontSize: theme.text.button.size,
+                    fontWeight: theme.text.button.weight,
+                    cursor: 'pointer',
+                  }}
+                  aria-label="Clear Pulse conversation history"
+                >
+                  {pulseCleared ? '✓ Cleared' : 'Clear Pulse history'}
+                </button>
               </div>
             </Reveal>
 
