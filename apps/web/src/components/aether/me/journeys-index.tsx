@@ -18,23 +18,8 @@ import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
 import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
 import { useViewport } from '../use-viewport';
-import { DESTINATIONS, ALL_SLUGS } from '../destinations/data';
-import { isInSeason } from '../destinations/seasons';
-
-/** AE107 — Tag the trip with the first known destination that the
- *  title mentions AND that's currently in season. Returns the slug
- *  for the linkability + a label for display, or null. */
-function trySeasonMatch(title: string): { slug: string; name: string } | null {
-  const hay = title.toLowerCase();
-  for (const slug of ALL_SLUGS) {
-    const d = DESTINATIONS[slug];
-    if (d === undefined) continue;
-    if (hay.includes(d.name.toLowerCase()) && isInSeason(slug)) {
-      return { slug, name: d.name };
-    }
-  }
-  return null;
-}
+// AE183 — trySeasonMatch moved to ./try-season-match.ts so it's testable.
+import { trySeasonMatch } from './try-season-match';
 
 type ListFilter = 'all' | 'draft' | 'archived';
 
