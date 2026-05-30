@@ -426,6 +426,21 @@ rebases.
 | **AE244** | `selectPinBySlug` + `indexOfPinBySlug` + 10 specs (trim, null/-1 sentinels)                                 | `d2225ea` |
 | **AE245** | Round Z docs + autopilot + MEMORY refresh                                                                   | _this_    |
 
+## Round 34 — Round AA · lookup + storage + relative-time kit ✦ AE246–AE255
+
+| #         | Slice                                                                                               | Commit    |
+| --------- | --------------------------------------------------------------------------------------------------- | --------- |
+| **AE246** | `destinationBySlug` + `destinationBySlugCi` + 10 specs (mirror of AE244)                            | `a65f919` |
+| **AE247** | `useLocalStorageState` hook + 6 jsdom specs (on AE238 safe-storage; enabled=false short-circuit)    | `a53b316` |
+| **AE248** | `formatInSeasonMonths` + 12 specs (range / wraparound / multi-half / fallback comma list)           | `1059092` |
+| **AE249** | `articleBySlug` + `indexOfArticleBySlug` + 9 specs                                                  | `ecc9b46` |
+| **AE250** | `computeShareListStats` + 7 specs (total/revoked/live/mostRecentAt; empty-string revokedAt is live) | `2ff7f81` |
+| **AE251** | `atlasEmptyStateCopy` + 7 specs (4 routed messages for filter+season combos)                        | `b4682f8` |
+| **AE252** | `buildPulseHistoryExport` + 7 specs (versioned envelope; schema/version exposed)                    | `d93671a` |
+| **AE253** | `formatRelativeAether` + 14 specs (just-now/m/h/d/w/mo/y; future 'in <n><u>'; '' for null/garbage)  | `24a662e` |
+| **AE254** | `useStableId` hook + 6 jsdom specs (wraps useId, strips ':', CSS-selector-safe)                     | `7e553e2` |
+| **AE255** | Round AA docs + autopilot + MEMORY refresh                                                          | _this_    |
+
 ## Stop conditions reached / deferred
 
 - **Mobile parity** — Aether is web-only Phase 0 (locked decision pre-AE5).
