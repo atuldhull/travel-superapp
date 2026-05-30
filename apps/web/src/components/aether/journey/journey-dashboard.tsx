@@ -48,6 +48,8 @@ import {
 } from './timeline-grouping';
 // AE149 — derive-slug helper extracted so it can be unit-tested.
 import { deriveChecklistSlug } from './derive-checklist-slug';
+// AE206 — timeline-dot colour routing extracted from the nested ternary.
+import { timelineDotColor } from './timeline-dot-color';
 
 export interface JourneyDashboardProps {
   tripId: string;
@@ -1467,14 +1469,7 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
                               width: 12,
                               height: 12,
                               borderRadius: '50%',
-                              background:
-                                e.kind === 'archive'
-                                  ? ochre.deep
-                                  : e.kind === 'edit'
-                                    ? olive.deep
-                                    : e.kind === 'share'
-                                      ? ochre.glow
-                                      : accent.deep,
+                              background: timelineDotColor(e.kind, { ochre, olive, accent }),
                               boxShadow: `0 0 0 4px ${surface.base}`,
                             }}
                           />
