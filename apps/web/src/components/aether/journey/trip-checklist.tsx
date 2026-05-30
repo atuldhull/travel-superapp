@@ -324,8 +324,38 @@ export function TripChecklist({ tripId, destinationSlug }: TripChecklistProps): 
   function toggle(id: string): void {
     setItems((prev) => prev.map((it) => (it.id === id ? { ...it, done: !it.done } : it)));
   }
+  // AE129 — undo-snackbar state. Each remove() snapshots the item plus
+  // its index so undo can re-insert in place. The snackbar lasts 5s,
+  // then auto-dismisses. We hold one undoable removal at a time — a
+  // second remove() before undo overwrites the previous snapshot
+  // (matches Gmail behaviour for batched deletions).
+  const [undo, setUndo] = useState<{ item: ChecklistItem; idx: number } | null>(null);
+  const undoTimer = useRef<number | null>(null);
   function remove(id: string): void {
+    const idx = items.findIndex((it) => it.id === id);
+    if (idx === -1) return;
+    const removed = items[idx];
+    if (removed !== undefined) {
+      if (undoTimer.current !== null) window.clearTimeout(undoTimer.current);
+      setUndo({ item: removed, idx });
+      undoTimer.current = window.setTimeout(() => setUndo(null), 5000);
+    }
     setItems((prev) => prev.filter((it) => it.id !== id));
+  }
+  function applyUndo(): void {
+    setUndo((prev) => {
+      if (prev === null) return null;
+      const { item, idx } = prev;
+      setItems((items_) => {
+        // Splice back in at the original index; if list shrank, push.
+        const next = [...items_];
+        const clampIdx = Math.min(idx, next.length);
+        next.splice(clampIdx, 0, item);
+        return next;
+      });
+      if (undoTimer.current !== null) window.clearTimeout(undoTimer.current);
+      return null;
+    });
   }
   function add(e: FormEvent<HTMLFormElement>): void {
     e.preventDefault();
@@ -337,6 +367,11 @@ export function TripChecklist({ tripId, destinationSlug }: TripChecklistProps): 
   }
   function resetToStarter(): void {
     setItems(starterForSlug(destinationSlug));
+    // Clear undo state so the snackbar doesn't refer to an item that
+    // is now back in the list (and so getByText for the restored item
+    // doesn't match the snackbar AND the list row).
+    if (undoTimer.current !== null) window.clearTimeout(undoTimer.current);
+    setUndo(null);
   }
 
   return (
@@ -583,6 +618,83 @@ export function TripChecklist({ tripId, destinationSlug }: TripChecklistProps): 
           Add
         </button>
       </form>
+
+      {/* AE129 — Undo snackbar after a remove. Inline (not a portal)
+          so it stays scoped to the checklist card. Dismisses after 5s
+          via the timer in remove(); manual dismiss with Esc/×. */}
+      {undo !== null && (
+        <div
+          role="status"
+          aria-live="polite"
+          style={{
+            marginTop: theme.space.comfy,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: theme.space.comfy,
+            padding: `${theme.space.tight}px ${theme.space.inline}px`,
+            borderRadius: theme.radius.md,
+            background: ink.base,
+            color: surface.base,
+            fontFamily: theme.font.ui,
+            fontSize: 13,
+            boxShadow: '0 8px 24px rgba(24, 15, 11, 0.18)',
+          }}
+        >
+          <span>
+            Removed&nbsp;
+            <em
+              style={{ fontFamily: theme.font.display, fontStyle: 'italic', color: ochre.glow }}
+              // Wrap the restored item's text in guillemets so it's
+              // visually quoted but doesn't collide with `getByText`
+              // (which would match the exact string used in the list).
+            >
+              «{undo.item.text}»
+            </em>
+          </span>
+          <div style={{ display: 'flex', gap: theme.space.tight }}>
+            <button
+              type="button"
+              onClick={applyUndo}
+              style={{
+                background: ochre.glow,
+                color: ink.base,
+                border: 'none',
+                borderRadius: theme.radius.pill,
+                padding: `4px ${theme.space.inline}px`,
+                fontFamily: theme.font.ui,
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: 'pointer',
+                letterSpacing: '0.02em',
+              }}
+              aria-label={`Restore "${undo.item.text}" to the checklist`}
+            >
+              Undo
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (undoTimer.current !== null) window.clearTimeout(undoTimer.current);
+                setUndo(null);
+              }}
+              aria-label="Dismiss undo"
+              style={{
+                background: 'transparent',
+                color: surface.base,
+                border: 'none',
+                fontSize: 14,
+                lineHeight: 1,
+                padding: 4,
+                cursor: 'pointer',
+                opacity: 0.7,
+              }}
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
