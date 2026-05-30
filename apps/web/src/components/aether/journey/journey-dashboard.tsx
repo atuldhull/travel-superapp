@@ -13,7 +13,7 @@
  */
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useTheme } from '@app/aether-core';
 import {
   getTripControllerGetOneQueryKey,
@@ -191,6 +191,23 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
   });
   const tripShares: TripShareOwnerDto[] =
     (sharesQuery.data?.data as ListTripSharesResponseDto | undefined)?.shares ?? [];
+
+  // AE154 — total event count for the timeline kicker. Same input
+  // set as the in-render builder below; keeping the derivation here
+  // means the kicker can show "· 6 events" without lifting the JSX.
+  const timelineEventCount = useMemo(() => {
+    if (trip === undefined) return 0;
+    let n = 0;
+    if (asIso(trip.createdAt) !== null) n += 1;
+    if (asIso(trip.updatedAt) !== null && asIso(trip.updatedAt) !== asIso(trip.createdAt)) {
+      n += 1;
+    }
+    if (asIso(trip.archivedAt) !== null) n += 1;
+    for (const s of tripShares) {
+      if (asIso(s.createdAt) !== null) n += 1;
+    }
+    return n;
+  }, [trip, tripShares]);
 
   const ink = theme.color.ink;
   const surface = theme.color.surface;
@@ -1400,6 +1417,17 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
                   }}
                 >
                   This journey&apos;s life so far
+                  {timelineEventCount > 0 && (
+                    <span
+                      style={{
+                        marginLeft: 10,
+                        color: olive.deep,
+                        opacity: 0.85,
+                      }}
+                    >
+                      · {timelineEventCount} {timelineEventCount === 1 ? 'event' : 'events'}
+                    </span>
+                  )}
                 </p>
                 <ol
                   style={{
