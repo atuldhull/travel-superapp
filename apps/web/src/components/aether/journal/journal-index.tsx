@@ -18,14 +18,8 @@ import { photoUrl } from '../photos';
 import { SafeImg } from '../safe-img';
 import { useViewport } from '../use-viewport';
 import { JOURNAL_ARTICLES, ALL_JOURNAL_SLUGS } from './data';
-
-/** AE74 — extract the canonical tag stem from a kicker string like
- *  "Field notes · Old Delhi" → "Field notes". Multi-word stems are
- *  preserved; single-word kickers map to themselves. */
-function tagOf(kicker: string): string {
-  const idx = kicker.indexOf('·');
-  return (idx === -1 ? kicker : kicker.slice(0, idx)).trim();
-}
+// AE173 — tagOf moved to ./tag-of.ts so it's unit-testable.
+import { tagOf } from './tag-of';
 
 export function JournalIndex(): React.ReactElement {
   const theme = useTheme();

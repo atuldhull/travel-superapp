@@ -1,15 +1,10 @@
 /**
- * Tagging logic for the journal tag filter (AE74). The function is
- * defined inline in `journal-index.tsx`; replicated here so the
- * invariant ("stem before `·` is the canonical tag") is asserted
- * separately from the index component's render path.
+ * Tagging logic for the journal tag filter (AE74).
+ * Extracted to ./tag-of.ts in AE173 so the spec now imports the
+ * shipping helper instead of duplicating it.
  */
 import { describe, expect, it } from 'vitest';
-
-function tagOf(kicker: string): string {
-  const idx = kicker.indexOf('·');
-  return (idx === -1 ? kicker : kicker.slice(0, idx)).trim();
-}
+import { tagOf } from '../../src/components/aether/journal/tag-of';
 
 describe('journal tagOf', () => {
   it('splits at the bullet and trims', () => {
@@ -32,5 +27,16 @@ describe('journal tagOf', () => {
 
   it('multi-word stems before the bullet survive', () => {
     expect(tagOf('Field notes from the road · Place')).toBe('Field notes from the road');
+  });
+
+  // ─── AE173: extended edge cases ─────────────────────────────────────
+  it('stops at the first bullet when more than one is present', () => {
+    expect(tagOf('A · B · C')).toBe('A');
+  });
+
+  it('leaves the bullet character on the stem when it is not the standard middle-dot', () => {
+    // ASCII bullet `*` should NOT match — only middle-dot `·` is the
+    // separator convention.
+    expect(tagOf('Field notes * Place')).toBe('Field notes * Place');
   });
 });
