@@ -766,8 +766,22 @@ export function AtlasCanvas(): React.ReactElement {
                 ref={filterInputRef}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Filter — city · state · word — press / to focus"
-                aria-label="Filter destinations (press / to focus)"
+                // AE155 — Esc inside the filter clears the query and
+                // hops focus to row 0 of the listbox so arrow keys
+                // pick up where the user was filtering.
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    e.preventDefault();
+                    if (query !== '') {
+                      setQuery('');
+                    } else {
+                      // Filter already empty → just move focus.
+                      focusRow(0);
+                    }
+                  }
+                }}
+                placeholder="Filter — city · state · word — press / to focus, Esc to clear"
+                aria-label="Filter destinations (press / to focus, Esc to clear)"
                 style={{
                   minWidth: 220,
                   padding: `${theme.space.tight}px ${theme.space.inline}px`,
