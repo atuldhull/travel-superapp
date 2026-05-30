@@ -27,19 +27,20 @@
 - **Goal**: Phase 0 editorial preview of the Aether 2.0 surface — premium magazine-grade web layer for the Indian travel super-app, env-gated by `NEXT_PUBLIC_FEATURE_AETHER_PREVIEW=1`. Locked Warm Italian palette · Playfair + Inter type stack · motion + audio + photography respect.
 - **Detail**: see [`docs/aether/07-implementation-log.md`](docs/aether/07-implementation-log.md) (per-slice log), [`docs/aether/08-data-flow.md`](docs/aether/08-data-flow.md) (ASCII flows), [`docs/aether/09-component-catalog.md`](docs/aether/09-component-catalog.md) (every component + which page mounts it).
 
-| Round           | Slices    | Outcome                                                                                                               | Status |
-| --------------- | --------- | --------------------------------------------------------------------------------------------------------------------- | ------ |
-| **Foundations** | AE1–AE4   | Packages (`@app/aether-{motion,core,canvas}`) + Storybook                                                             | ✅     |
-| **Drift hero**  | AE5–AE8   | Editorial Indian Drift home — next/font, parallax, IO-reveals                                                         | ✅     |
-| **Surfaces**    | AE9–AE17  | Destinations + journal SSG · about · plan · index pages                                                               | ✅     |
-| **AI loop**     | AE18–AE29 | Plan → backend · Pulse FAB chat · save-as-trip · /journey/[id] · /me/journeys · Atlas Leaflet                         | ✅     |
-| **Polish**      | AE30–AE39 | SafeImg · AudioChip · mobile responsive sweep · hero carousel · share + archive · destination → plan · audio popover  | ✅     |
-| **Round A**     | AE40–AE45 | Itinerary day cards · photographer credit · duplicate · /me/shares · save+share combo · add-to-trip CTA               | ✅     |
-| **Round B**     | AE46–AE49 | /aether/onboarding · /account · /shared/[code] · /me aggregate                                                        | ✅     |
-| **Round C**     | AE50–AE54 | OG + Twitter meta · Playwright E2E · a11y focus rings · sitemap + RSS · next/image allowlist                          | ✅     |
-| **Round D**     | AE55–AE58 | Implementation log · data-flow doc · component catalog · PROGRESS update                                              | ✅     |
-| **Round E**     | AE59–AE64 | Pulse voice · `<AetherMark/>` SVG · per-destination accents · `/aether/dispatch` · trip PDF export · operator E2E kit | ✅     |
-| **Round F**     | AE65–AE70 | Pulse keyboard shortcut · reading-progress bar · `/aether/brand` press kit · Atom feed · Atlas search · Round F docs  | ✅     |
+| Round           | Slices    | Outcome                                                                                                                                                                       | Status |
+| --------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| **Foundations** | AE1–AE4   | Packages (`@app/aether-{motion,core,canvas}`) + Storybook                                                                                                                     | ✅     |
+| **Drift hero**  | AE5–AE8   | Editorial Indian Drift home — next/font, parallax, IO-reveals                                                                                                                 | ✅     |
+| **Surfaces**    | AE9–AE17  | Destinations + journal SSG · about · plan · index pages                                                                                                                       | ✅     |
+| **AI loop**     | AE18–AE29 | Plan → backend · Pulse FAB chat · save-as-trip · /journey/[id] · /me/journeys · Atlas Leaflet                                                                                 | ✅     |
+| **Polish**      | AE30–AE39 | SafeImg · AudioChip · mobile responsive sweep · hero carousel · share + archive · destination → plan · audio popover                                                          | ✅     |
+| **Round A**     | AE40–AE45 | Itinerary day cards · photographer credit · duplicate · /me/shares · save+share combo · add-to-trip CTA                                                                       | ✅     |
+| **Round B**     | AE46–AE49 | /aether/onboarding · /account · /shared/[code] · /me aggregate                                                                                                                | ✅     |
+| **Round C**     | AE50–AE54 | OG + Twitter meta · Playwright E2E · a11y focus rings · sitemap + RSS · next/image allowlist                                                                                  | ✅     |
+| **Round D**     | AE55–AE58 | Implementation log · data-flow doc · component catalog · PROGRESS update                                                                                                      | ✅     |
+| **Round E**     | AE59–AE64 | Pulse voice · `<AetherMark/>` SVG · per-destination accents · `/aether/dispatch` · trip PDF export · operator E2E kit                                                         | ✅     |
+| **Round F**     | AE65–AE70 | Pulse keyboard shortcut · reading-progress bar · `/aether/brand` press kit · Atom feed · Atlas search · Round F docs                                                          | ✅     |
+| **Round G**     | AE71–AE80 | Atlas geolocation · Pulse persistence · compare page · journal tags · `/aether/status` · vitest specs · activity timeline · Storybook stories · share-card SVG · Round G docs | ✅     |
 
 > **Operator-owed**: push the AE commits + flip `NEXT_PUBLIC_FEATURE_AETHER_PREVIEW=1` on prod for the soft launch. The route gate auto-404s when the env var is unset, so deploys with the flag off ship safely.
 

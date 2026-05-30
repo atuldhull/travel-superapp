@@ -152,6 +152,21 @@ rebases.
 | **AE69** | Atlas pin search filter — input narrows the regions list + dims non-matching map pins (no map recreate)        | `d28683c` |
 | **AE70** | Round F docs (this update) + autopilot + PROGRESS refresh                                                      | _this_    |
 
+## Round 14 — Round G · depth + persistence ✦ AE71–AE80
+
+| #        | Slice                                                                                                              | Commit    |
+| -------- | ------------------------------------------------------------------------------------------------------------------ | --------- |
+| **AE71** | Atlas geolocation "where am I" pin + nearest-destination chip (haversine over 15 pins, fit-bounds map pan)         | `51c89de` |
+| **AE72** | Pulse conversation persists across reloads — `aether-pulse-history:v1` localStorage key, defensive schema check    | `1123b04` |
+| **AE73** | `/aether/destinations/compare?a=&b=` side-by-side surface (twin hero band · facts table · ledes · paired CTAs)     | (round G) |
+| **AE74** | Journal kicker/tag filter chips (`tagOf(kicker)` extracts the stem before `·`)                                     | `270df85` |
+| **AE75** | `/aether/status` operator health page (feature-flag · API /health/ready ping every 30s · route counts · build sha) | (round G) |
+| **AE76** | Vitest unit specs for `aetherOg` + `destinationAccent` + journal `tagOf` (15 tests across 3 files)                 | (round G) |
+| **AE77** | Activity timeline on the journey dashboard (createdAt → updatedAt → archivedAt rail, derived from TripDto)         | `8773d7a` |
+| **AE78** | Storybook stories — AetherMark · ReadingProgress · DestinationAccents (3 self-contained Chromatic baselines)       | (round G) |
+| **AE79** | Trip share-card SVG generator — 1200×630 pure-SVG card · journey-dashboard toggle + download + 6 vitest specs      | `e3d18d6` |
+| **AE80** | Round G docs (this update) + autopilot + MEMORY refresh                                                            | _this_    |
+
 ## Stop conditions reached / deferred
 
 - **Mobile parity** — Aether is web-only Phase 0 (locked decision pre-AE5).

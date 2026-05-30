@@ -37,6 +37,7 @@ and the shells use motion / window / audio hooks that need DOM.
 | `<AetherA11yStyles>` | `aether-a11y-styles.tsx`              | Single `<style>` block injecting sandstone focus rings on `:focus-visible`                                   | Every shell                                                           |
 | `<AetherMark>`       | `aether-mark.tsx`                     | Hand-drawn SVG glyph (AE60). currentColor-inheriting; replaces the literal ॐ emoji                           | `<DriftNav/>`, `<BrandPage/>`                                         |
 | `<ReadingProgress>`  | `reading-progress.tsx`                | Fixed 2px terracotta scroll-progress bar (AE66), rAF-throttled, respects motion policy                       | `<JournalArticleView/>`                                               |
+| `<TripShareCard>`    | `journey/trip-share-card.tsx`         | AE79 inline 1200×630 SVG share-card preview + Download SVG. `shareSvg(trip)` is the pure helper.             | `<JourneyDashboard/>` (toggle)                                        |
 
 ## Drift home (`/aether/drift`)
 
@@ -90,16 +91,18 @@ and the shells use motion / window / audio hooks that need DOM.
 
 ## /aether/me/\* surfaces
 
-| Route                   | Component                                   | Notes                                                                                    |
-| ----------------------- | ------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `/aether/me`            | `<MeHome>` (`me-home/`)                     | 3-card landing (Journeys / Shares / Account) + stats strip                               |
-| `/aether/me/journeys`   | `<JourneysIndex>` (`me/`)                   | List of trips with status filter chips; "Your shares" deep-link                          |
-| `/aether/me/shares`     | `<SharesIndex>` + `<TripShareBand>` (`me/`) | Per-trip share index, Copy/Revoke per share                                              |
-| `/aether/account`       | `<AccountPage>` (`account/`)                | Identity dl + audio + motion + privacy sections + Sign out                               |
-| `/aether/onboarding`    | `<OnboardingPage>` (`onboarding/`)          | 3-beat first-time editorial welcome; marks `aether-onboarded=1` in localStorage on mount |
-| `/aether/shared/[code]` | `<SharedTripView>` (`shared/`)              | Public read-only view + clone CTA                                                        |
-| `/aether/dispatch`      | `<DispatchPage>` (`dispatch/`)              | AE62 admin-only metrics view; `me.role === 'admin'` gate                                 |
-| `/aether/brand`         | `<BrandPage>` (`brand/`)                    | AE67 press-kit (mark sizes · palette swatches · 15 destination accents · type specimens) |
+| Route                                | Component                                   | Notes                                                                                    |
+| ------------------------------------ | ------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `/aether/me`                         | `<MeHome>` (`me-home/`)                     | 3-card landing (Journeys / Shares / Account) + stats strip                               |
+| `/aether/me/journeys`                | `<JourneysIndex>` (`me/`)                   | List of trips with status filter chips; "Your shares" deep-link                          |
+| `/aether/me/shares`                  | `<SharesIndex>` + `<TripShareBand>` (`me/`) | Per-trip share index, Copy/Revoke per share                                              |
+| `/aether/account`                    | `<AccountPage>` (`account/`)                | Identity dl + audio + motion + privacy sections + Sign out                               |
+| `/aether/onboarding`                 | `<OnboardingPage>` (`onboarding/`)          | 3-beat first-time editorial welcome; marks `aether-onboarded=1` in localStorage on mount |
+| `/aether/shared/[code]`              | `<SharedTripView>` (`shared/`)              | Public read-only view + clone CTA                                                        |
+| `/aether/dispatch`                   | `<DispatchPage>` (`dispatch/`)              | AE62 admin-only metrics view; `me.role === 'admin'` gate                                 |
+| `/aether/brand`                      | `<BrandPage>` (`brand/`)                    | AE67 press-kit (mark sizes · palette swatches · 15 destination accents · type specimens) |
+| `/aether/status`                     | `<StatusPage>` (`status/`)                  | AE75 operator health (feature-flag · API ping every 30s · route counts · build sha)      |
+| `/aether/destinations/compare?a=&b=` | `<ComparePage>` (`destinations/compare/`)   | AE73 side-by-side compare (twin hero · facts table · ledes · paired CTAs)                |
 
 ## Hooks
 
