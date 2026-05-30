@@ -65,7 +65,9 @@ export function fmtDayHead(v: unknown): string {
   return `${wk} · ${md}`;
 }
 
-/** Inclusive day count between two ISOs (0 when either is null). */
+/** Exclusive day count between two ISOs. (Jun 1 → Jun 3 = 2 days.)
+ *  Returns null on null inputs or unparseable dates. Reverse range
+ *  clamps to 0. */
 export function daysBetween(a: unknown, b: unknown): number | null {
   const sa = asIso(a);
   const sb = asIso(b);
@@ -73,4 +75,12 @@ export function daysBetween(a: unknown, b: unknown): number | null {
   const ms = new Date(sb).getTime() - new Date(sa).getTime();
   if (Number.isNaN(ms)) return null;
   return Math.max(0, Math.round(ms / 86_400_000));
+}
+
+/** AE195 — inclusive day count (both endpoints counted, share-card
+ *  convention: Jun 3 → Jun 17 = 15 days). Returns null on bad input. */
+export function inclusiveDaysBetween(a: unknown, b: unknown): number | null {
+  const n = daysBetween(a, b);
+  if (n === null) return null;
+  return n + 1;
 }
