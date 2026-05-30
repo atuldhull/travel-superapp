@@ -55,6 +55,7 @@ export function AccountPage(): React.ReactElement {
   const isAuthed = bootComplete && token !== null;
   const [signingOut, setSigningOut] = useState<boolean>(false);
   const [pulseCleared, setPulseCleared] = useState<boolean>(false);
+  const [dataExported, setDataExported] = useState<boolean>(false);
 
   /** AE93 — wipes Pulse's persisted conversation (AE72). */
   function clearPulseHistory(): void {
@@ -63,6 +64,63 @@ export function AccountPage(): React.ReactElement {
       window.localStorage.removeItem('aether-pulse-history:v1');
       setPulseCleared(true);
       window.setTimeout(() => setPulseCleared(false), 2000);
+    } catch {
+      /* quota / private mode — silently ignore */
+    }
+  }
+
+  /** AE131 — bundle every locally-persisted Aether key into a single
+   *  JSON blob and trigger a download. The reader of the file gets:
+   *    - recentPrompts (AE106)
+   *    - pulseHistory  (AE72)
+   *    - checklists    (AE94, keyed by tripId)
+   *    - onboarded     (AE46)
+   *    - audioOptOut   (AE32/AE39)
+   *  No identity / token fields are included — those live in memory
+   *  + httpOnly cookies and are never localStorage-readable. */
+  function downloadMyData(): void {
+    if (typeof window === 'undefined') return;
+    try {
+      const safeRead = (key: string): unknown => {
+        const raw = window.localStorage.getItem(key);
+        if (raw === null) return null;
+        try {
+          return JSON.parse(raw);
+        } catch {
+          return raw;
+        }
+      };
+      const checklists: Record<string, unknown> = {};
+      for (let i = 0; i < window.localStorage.length; i += 1) {
+        const k = window.localStorage.key(i);
+        if (k !== null && k.startsWith('aether-checklist:') && k.endsWith(':v1')) {
+          checklists[k] = safeRead(k);
+        }
+      }
+      const payload = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        source: 'aether-account',
+        recentPrompts: safeRead('aether-pulse-recent:v1'),
+        pulseHistory: safeRead('aether-pulse-history:v1'),
+        checklists,
+        onboarded: safeRead('aether-onboarded') !== null,
+        audioOptOut: window.localStorage.getItem('aether-audio-opt-out') === '1',
+      };
+      const today = new Date().toISOString().slice(0, 10);
+      const blob = new Blob([JSON.stringify(payload, null, 2)], {
+        type: 'application/json',
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `aether-my-data-${today}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+      setDataExported(true);
+      window.setTimeout(() => setDataExported(false), 2000);
     } catch {
       /* quota / private mode — silently ignore */
     }
@@ -568,6 +626,78 @@ export function AccountPage(): React.ReactElement {
                   aria-label="Clear Pulse conversation history"
                 >
                   {pulseCleared ? '✓ Cleared' : 'Clear Pulse history'}
+                </button>
+              </div>
+            </Reveal>
+
+            {/* AE131 — download every Aether-stored local fact in one JSON */}
+            <Reveal>
+              <div
+                style={{
+                  marginTop: theme.space.gutter,
+                  padding: theme.space.loose,
+                  borderRadius: theme.radius.lg,
+                  background: surface.soft,
+                  border: `1px solid ${olive.whisper}`,
+                }}
+              >
+                <p
+                  style={{
+                    fontFamily: theme.font.ui,
+                    fontSize: 11,
+                    letterSpacing: '0.22em',
+                    textTransform: 'uppercase',
+                    color: olive.deep,
+                    fontWeight: 600,
+                    margin: 0,
+                  }}
+                >
+                  Your data
+                </p>
+                <h2
+                  style={{
+                    fontFamily: theme.font.display,
+                    fontSize: 'clamp(22px, 2.4vw, 30px)',
+                    lineHeight: 1.2,
+                    letterSpacing: '-0.014em',
+                    fontWeight: 600,
+                    margin: `${theme.space.tight}px 0 0`,
+                    color: ink.base,
+                  }}
+                >
+                  Take a copy with you.
+                </h2>
+                <p
+                  style={{
+                    fontFamily: theme.font.display,
+                    fontStyle: 'italic',
+                    fontSize: 17,
+                    lineHeight: 1.55,
+                    color: ink.soft,
+                    margin: `${theme.space.tight}px 0 ${theme.space.comfy}px`,
+                  }}
+                >
+                  Recent prompts, the Pulse conversation, every per-trip checklist, the audio
+                  preference, and whether you have seen the welcome. No tokens, no identity — those
+                  never touch local storage.
+                </p>
+                <button
+                  type="button"
+                  onClick={downloadMyData}
+                  style={{
+                    padding: `${theme.space.tight}px ${theme.space.loose}px`,
+                    borderRadius: theme.radius.pill,
+                    background: 'transparent',
+                    border: `1px solid ${ochre.deep}`,
+                    color: ochre.deep,
+                    fontFamily: theme.font.ui,
+                    fontSize: theme.text.button.size,
+                    fontWeight: theme.text.button.weight,
+                    cursor: 'pointer',
+                  }}
+                  aria-label="Download every locally-stored Aether fact as a JSON file"
+                >
+                  {dataExported ? '✓ Downloaded' : 'Download my data (.json)'}
                 </button>
               </div>
             </Reveal>
