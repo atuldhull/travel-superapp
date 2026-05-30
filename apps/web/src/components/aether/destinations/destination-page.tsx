@@ -29,6 +29,7 @@ import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
 import { type Destination } from './data';
 import { destinationAccent } from './palette';
 import { isInSeason } from './seasons';
+import { relatedArticles } from './related-journal';
 
 export interface DestinationPageProps {
   destination: Destination;
@@ -516,6 +517,141 @@ export function DestinationPage({ destination: d }: DestinationPageProps): React
           </div>
         </div>
       </section>
+
+      {/* AE88 — Read more (cross-link to journal articles tagged with
+          this city or state). Renders only when there's at least one
+          related article. */}
+      {(() => {
+        const articles = relatedArticles(d);
+        if (articles.length === 0) return null;
+        return (
+          <Reveal as="section">
+            <div
+              style={{
+                maxWidth: 1080,
+                margin: '0 auto',
+                padding: `${theme.space.gutter}px ${theme.space.margin}px`,
+                borderTop: `1px solid ${ink.whisper}`,
+              }}
+              aria-labelledby={`related-${d.slug}`}
+            >
+              <p
+                style={{
+                  fontFamily: theme.font.ui,
+                  fontSize: 11,
+                  letterSpacing: '0.22em',
+                  textTransform: 'uppercase',
+                  color: olive.deep,
+                  fontWeight: 600,
+                  margin: `${theme.space.gutter}px 0 ${theme.space.tight}px`,
+                }}
+              >
+                Read more from {d.name}
+              </p>
+              <h2
+                id={`related-${d.slug}`}
+                style={{
+                  fontFamily: theme.font.display,
+                  fontSize: 'clamp(24px, 2.8vw, 36px)',
+                  lineHeight: 1.15,
+                  letterSpacing: '-0.018em',
+                  fontWeight: 600,
+                  margin: 0,
+                  marginBottom: theme.space.gutter,
+                  color: ink.base,
+                }}
+              >
+                Long-form notes from this road.
+              </h2>
+              <ul
+                style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  margin: 0,
+                  display: 'grid',
+                  gridTemplateColumns: isNarrow
+                    ? '1fr'
+                    : `repeat(${Math.min(articles.length, 3)}, 1fr)`,
+                  gap: theme.space.gutter,
+                }}
+              >
+                {articles.map((a) => (
+                  <li key={a.slug}>
+                    <Link
+                      href={`/aether/journal/${a.slug}`}
+                      style={{
+                        display: 'block',
+                        textDecoration: 'none',
+                        color: 'inherit',
+                      }}
+                    >
+                      <div
+                        style={{
+                          aspectRatio: '4 / 3',
+                          borderRadius: theme.radius.lg,
+                          overflow: 'hidden',
+                          background: surface.deep,
+                          marginBottom: theme.space.comfy,
+                        }}
+                      >
+                        <SafeImg
+                          src={photoUrl(a.hero, 800)}
+                          alt={a.hero.alt}
+                          loading="lazy"
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            display: 'block',
+                          }}
+                        />
+                      </div>
+                      <p
+                        style={{
+                          fontFamily: theme.font.ui,
+                          fontSize: 11,
+                          letterSpacing: '0.16em',
+                          textTransform: 'uppercase',
+                          color: accent.base,
+                          fontWeight: 600,
+                          margin: 0,
+                          marginBottom: 6,
+                        }}
+                      >
+                        {a.kicker}
+                      </p>
+                      <h3
+                        style={{
+                          fontFamily: theme.font.display,
+                          fontSize: 'clamp(18px, 2vw, 24px)',
+                          lineHeight: 1.2,
+                          letterSpacing: '-0.012em',
+                          fontWeight: 600,
+                          margin: 0,
+                          color: ink.base,
+                        }}
+                      >
+                        {a.title}
+                      </h3>
+                      <p
+                        style={{
+                          marginTop: theme.space.tight,
+                          fontFamily: theme.font.ui,
+                          fontSize: theme.text.small.size,
+                          color: ink.soft,
+                          opacity: 0.78,
+                        }}
+                      >
+                        By {a.author} · {a.readMins} min
+                      </p>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </Reveal>
+        );
+      })()}
 
       {/* ─── FINAL CTA ────────────────────────────────────────────────── */}
       <Reveal as="section">
