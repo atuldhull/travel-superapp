@@ -60,69 +60,28 @@ import { SLASH_COMMANDS, matchSlashCommands } from './slash-commands';
 // AE163 — pure bridge-event decoder, extracted for testability.
 import { decodePulseOpenEvent } from './bridge-event';
 
-interface ChatMessage {
-  readonly role: 'user' | 'assistant';
-  readonly content: string;
-}
+// AE72 + AE184 — types + storage key + parser extracted to
+// ./persisted-pulse.ts so the shape contract is unit-testable.
+import {
+  PULSE_STORAGE_KEY,
+  parsePulseStore,
+  type ChatMessage,
+  type PersistedPulse,
+} from './persisted-pulse';
 
 const DEFAULT_CENTER = { lat: 26.9124, lng: 75.7873 } as const; // Jaipur fallback.
 
-/** AE72 — versioned localStorage key. Bump the suffix if the shape
- *  changes so stale reads are ignored rather than miscast. */
-const PULSE_STORAGE_KEY = 'aether-pulse-history:v1';
 const PULSE_MAX_MESSAGES = 40;
 
 // AE106 helpers moved to ./recent-prompts.ts in AE109 so they can
 // be unit-tested without spinning up the Pulse drawer.
 import { appendRecentPrompt, readRecentPrompts } from './recent-prompts';
 
-interface PersistedPulse {
-  readonly messages: ChatMessage[];
-  readonly ctx: {
-    readonly title: string;
-    readonly center: { readonly lat: number; readonly lng: number };
-    readonly plan: string;
-  } | null;
-  readonly provider: string | null;
-}
-
+// AE184 — readPulseStore now defers all parsing to parsePulseStore so
+// the validation rules can be exercised without a DOM stub.
 function readPulseStore(): PersistedPulse | null {
   if (typeof window === 'undefined') return null;
-  try {
-    const raw = window.localStorage.getItem(PULSE_STORAGE_KEY);
-    if (raw === null) return null;
-    const parsed = JSON.parse(raw) as unknown;
-    if (typeof parsed !== 'object' || parsed === null) return null;
-    const p = parsed as Partial<PersistedPulse>;
-    if (!Array.isArray(p.messages)) return null;
-    const messages = p.messages.filter(
-      (m): m is ChatMessage =>
-        typeof m === 'object' &&
-        m !== null &&
-        (m.role === 'user' || m.role === 'assistant') &&
-        typeof m.content === 'string',
-    );
-    const ctxRaw = p.ctx;
-    const ctx =
-      ctxRaw !== null &&
-      ctxRaw !== undefined &&
-      typeof ctxRaw === 'object' &&
-      typeof ctxRaw.title === 'string' &&
-      typeof ctxRaw.plan === 'string' &&
-      typeof ctxRaw.center === 'object' &&
-      typeof ctxRaw.center.lat === 'number' &&
-      typeof ctxRaw.center.lng === 'number'
-        ? {
-            title: ctxRaw.title,
-            plan: ctxRaw.plan,
-            center: { lat: ctxRaw.center.lat, lng: ctxRaw.center.lng },
-          }
-        : null;
-    const provider = typeof p.provider === 'string' ? p.provider : null;
-    return { messages, ctx, provider };
-  } catch {
-    return null;
-  }
+  return parsePulseStore(window.localStorage.getItem(PULSE_STORAGE_KEY));
 }
 
 export function Pulse(): React.ReactElement | null {
