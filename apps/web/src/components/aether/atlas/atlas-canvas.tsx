@@ -23,6 +23,7 @@ import { EditorialFooter } from '../drift-sections/editorial-footer';
 import { useViewport } from '../use-viewport';
 import { isInSeason } from '../destinations/seasons';
 import { destinationAccent } from '../destinations/palette';
+import { shouldFocusFilterOnSlash } from './slash-focus';
 
 interface Pin {
   readonly slug: string;
@@ -317,14 +318,12 @@ export function AtlasCanvas(): React.ReactElement {
   }, []);
 
   // AE127 — `/` focuses the filter input (editor convention).
-  // Only fires when the keypress originates outside form fields, so
-  // typing `/` inside the filter itself doesn't loop, and `?` for
-  // KeyboardHelp continues to coexist (different keys, same guard).
+  // Guard moved to ./slash-focus.ts so the matcher is unit-testable
+  // (AE144). The handler itself stays here because focusing the ref
+  // is DOM-coupled.
   useEffect(() => {
     const onKey = (e: globalThis.KeyboardEvent): void => {
-      if (e.key !== '/') return;
-      const tag = (e.target as HTMLElement | null)?.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if (!shouldFocusFilterOnSlash(e.key, e.target as HTMLElement | null)) return;
       const node = filterInputRef.current;
       if (node === null) return;
       e.preventDefault();
