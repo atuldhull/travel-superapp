@@ -212,6 +212,17 @@ rebases.
 | **AE109** | Extract `pulse/recent-prompts.ts` + 8 vitest specs (corrupt JSON, cap, dedupe-to-front)            | `2f543e1` |
 | **AE110** | Round J docs + autopilot + MEMORY refresh                                                          | _this_    |
 
+## Round 18 — Round K · sharper edges ✦ AE111–AE116
+
+| #         | Slice                                                                                                                              | Commit    |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| **AE111** | Atlas listbox keyboard nav — Arrow/Home/End traverse pins, `aria-activedescendant` follows focus, hint chip under heading          | `9dd6240` |
+| **AE112** | `/aether/me` Recent prompts card surfaces the AE106 long-memory store; one-tap re-asks via `aether-pulse-open` bridge              | `6cb6845` |
+| **AE113** | `<TripChecklist/>` "copy as bullets" — Clipboard API w/ textarea fallback, inline ✓ copied tick                                    | `0b6c1f9` |
+| **AE114** | Per-destination checklist starter packs (15 curated: Leh down-jacket / Anjuna scooter helmet / Varanasi slip-ons / etc.) + 7 specs | `0b6c1f9` |
+| **AE115** | Server-component `loading.tsx` for `/aether/destinations`, `/aether/destinations/[slug]`, `/aether/journey/[id]` — CSS shimmer     | `ddf6fcd` |
+| **AE116** | Round K docs + autopilot + MEMORY refresh                                                                                          | _this_    |
+
 ## Stop conditions reached / deferred
 
 - **Mobile parity** — Aether is web-only Phase 0 (locked decision pre-AE5).
