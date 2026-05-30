@@ -59,6 +59,8 @@ const SUGGESTED_PROMPTS: ReadonlyArray<string> = [
 import { SLASH_COMMANDS, matchSlashCommands } from './slash-commands';
 // AE163 — pure bridge-event decoder, extracted for testability.
 import { decodePulseOpenEvent } from './bridge-event';
+// AE192 — pending phrase catalogue + index advance helper.
+import { nextPendingIdx, phraseAt } from './pending-phrases';
 
 // AE72 + AE184 — types + storage key + parser extracted to
 // ./persisted-pulse.ts so the shape contract is unit-testable.
@@ -187,9 +189,9 @@ export function Pulse(): React.ReactElement | null {
     setRecent(readRecentPrompts());
   }, []);
 
-  // AE159 — phrase rotation while `pending` is true. Resets to 0 when
-  // pending flips off. Three phrases @ 1.5s interval; clamps at the
-  // last one so the wait reads "Almost there…" indefinitely.
+  // AE159 + AE192 — phrase rotation while `pending` is true. Catalogue
+  // + advance rule live in ./pending-phrases.ts so the index math is
+  // unit-tested.
   useEffect(() => {
     if (!pending) {
       setPendingPhraseIdx(0);
@@ -197,7 +199,7 @@ export function Pulse(): React.ReactElement | null {
     }
     setPendingPhraseIdx(0);
     const id = window.setInterval(() => {
-      setPendingPhraseIdx((i) => (i < 2 ? i + 1 : 2));
+      setPendingPhraseIdx((i) => nextPendingIdx(i));
     }, 1500);
     return () => window.clearInterval(id);
   }, [pending]);
@@ -820,7 +822,7 @@ export function Pulse(): React.ReactElement | null {
                         : 'none',
                   }}
                 >
-                  {['Reading…', 'Sketching the route…', 'Almost there…'][pendingPhraseIdx]}
+                  {phraseAt(pendingPhraseIdx)}
                 </span>
               </div>
             )}
