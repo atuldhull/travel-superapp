@@ -293,6 +293,21 @@ rebases.
 | **AE161** | Storybook for Activity timeline (3 variants: Flat / Eight / WeekGrouped) — Chromatic baseline for the AE141 rail | `ff396e8` |
 | **AE162** | Round P docs + autopilot + MEMORY refresh                                                                        | _this_    |
 
+## Round 24 — Round Q · extractions & spec coverage ✦ AE163–AE172
+
+| #         | Slice                                                                           | Commit    |
+| --------- | ------------------------------------------------------------------------------- | --------- |
+| **AE163** | Extract `decodePulseOpenEvent` from AE96+AE146 + 7 specs                        | `46e0ee9` |
+| **AE164** | Extract `parseChecklistBackup` from AE148 + 7 specs                             | `99e8cd2` |
+| **AE165** | Extract `countTimelineEvents` from AE154 + 6 specs                              | `5243e37` |
+| **AE166** | `loading.tsx` for `/aether/destinations/compare` + `/shared/[code]` + `/status` | `e005dca` |
+| **AE167** | 3 more `relatedArticles` edge specs (no-crash, no-dup, case-insensitive)        | `3691958` |
+| **AE168** | Storybook for `<DriftNav/>` (Default / Authed / AudioOn variants)               | `0bc28fc` |
+| **AE169** | `/aether/sitemap.xml` adds `/brand` + `/compare` + `/status` routes             | `eb03ac1` |
+| **AE170** | Extract `haversineKm` + `nearestPin` from atlas-canvas + 8 specs                | `13ce426` |
+| **AE171** | Shared `aether-dates` helpers (`asIso`, `fmtDate`, `daysBetween`) + 11 specs    | `740fa38` |
+| **AE172** | Round Q docs + autopilot + MEMORY refresh                                       | _this_    |
+
 ## Stop conditions reached / deferred
 
 - **Mobile parity** — Aether is web-only Phase 0 (locked decision pre-AE5).
