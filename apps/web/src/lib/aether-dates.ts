@@ -29,6 +29,42 @@ export function fmtDate(v: unknown): string {
   });
 }
 
+/** AE186 — itinerary clock formatter. Inputs come in two shapes:
+ *  • naked clock strings like "09:30:00" (most rows)
+ *  • full timestamps (occasionally)
+ *  We try Date parsing first when the input is long enough to be a
+ *  timestamp, then fall back to a regex on the HH:MM head. Returns
+ *  null on unrecognized input so callers can render nothing. */
+export function fmtTime(v: unknown): string | null {
+  const s = asIso(v);
+  if (s === null) return null;
+  const d = new Date(s);
+  if (!Number.isNaN(d.getTime()) && s.length > 8) {
+    return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  }
+  const match = /^(\d{1,2}):(\d{2})/.exec(s);
+  if (match !== null) {
+    const h = Number(match[1]);
+    const m = match[2];
+    const period = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 === 0 ? 12 : h % 12;
+    return `${h12}:${m} ${period}`;
+  }
+  return null;
+}
+
+/** AE187 — day-card header. "Mon · Jun 3" style. Returns "—" on
+ *  null / unparseable so the UI never shows "Invalid Date". */
+export function fmtDayHead(v: unknown): string {
+  const iso = asIso(v);
+  if (iso === null) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '—';
+  const wk = d.toLocaleDateString(undefined, { weekday: 'short' });
+  const md = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return `${wk} · ${md}`;
+}
+
 /** Inclusive day count between two ISOs (0 when either is null). */
 export function daysBetween(a: unknown, b: unknown): number | null {
   const sa = asIso(a);
