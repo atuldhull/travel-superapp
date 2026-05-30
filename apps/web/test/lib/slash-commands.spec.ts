@@ -58,4 +58,36 @@ describe('SLASH_COMMANDS catalogue', () => {
       expect(c.expand.length).toBeGreaterThan(0);
     }
   });
+
+  // ─── AE175: extended sanity ─────────────────────────────────────────
+  it('every cmd is unique (no duplicates)', () => {
+    const cmds = SLASH_COMMANDS.map((c) => c.cmd);
+    expect(new Set(cmds).size).toBe(cmds.length);
+  });
+
+  it('every cmd is lowercase + kebab-shaped (no spaces, no caps)', () => {
+    for (const c of SLASH_COMMANDS) {
+      expect(c.cmd).toBe(c.cmd.toLowerCase());
+      expect(c.cmd).not.toMatch(/\s/);
+    }
+  });
+
+  it('every expand string ends with a non-whitespace char', () => {
+    for (const c of SLASH_COMMANDS) {
+      const last = c.expand[c.expand.length - 1] ?? '';
+      expect(last).toMatch(/\S/);
+    }
+  });
+});
+
+describe('matchSlashCommands — sort stability', () => {
+  it('preserves catalogue order for matches', () => {
+    const tail: SlashCommand[] = [
+      { cmd: '/lima', hint: 'L1', expand: 'L1' },
+      { cmd: '/leo', hint: 'L2', expand: 'L2' },
+      { cmd: '/london', hint: 'L3', expand: 'L3' },
+    ];
+    const got = matchSlashCommands('/l', tail).map((c) => c.cmd);
+    expect(got).toEqual(['/lima', '/leo', '/london']);
+  });
 });
