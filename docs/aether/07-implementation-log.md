@@ -345,6 +345,19 @@ rebases.
 | **AE193** | 3 more shareSvg specs (21-char tier-2 88px, 29-char tier-3 72px, post-escape title survival)                      | `a32f94f` |
 | **AE194** | Round T docs + autopilot + MEMORY refresh                                                                         | _this_    |
 
+## Round 28 — Round U · keyboard polish + shared helpers ✦ AE195–AE202
+
+| #         | Slice                                                                                                  | Commit    |
+| --------- | ------------------------------------------------------------------------------------------------------ | --------- |
+| **AE195** | trip-share-card uses shared `aether-dates` + new `inclusiveDaysBetween` + 5 specs                      | `17455a6` |
+| **AE196** | Shared `copyTextToClipboard` helper used by AE113 + AE189; 6 specs (Clipboard API + textarea fallback) | `da181a6` |
+| **AE197** | Pulse composer recalls last user prompt on `↑` (empty composer guard)                                  | `ead6092` |
+| **AE198** | Extract `lastUserPrompt` picker + 6 specs (empty / all-assistant / single / latest skipping reply)     | `3d7adf6` |
+| **AE199** | Atlas `g` keyboard shortcut → geolocate + 4 specs (lowercase-only, INPUT/TEXTAREA/SELECT guard)        | `55264a5` |
+| **AE200** | KeyboardHelp lists new `g` + `↑` shortcuts                                                             | `9a26daa` |
+| **AE201** | Extract `makeChecklistItemId` + 6 specs (base36 ts + 4-digit base36 rand, injectable for tests)        | `5428788` |
+| **AE202** | Round U docs + autopilot + MEMORY refresh                                                              | _this_    |
+
 ## Stop conditions reached / deferred
 
 - **Mobile parity** — Aether is web-only Phase 0 (locked decision pre-AE5).
