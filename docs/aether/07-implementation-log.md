@@ -321,6 +321,16 @@ rebases.
 | **AE179** | 4 more `aetherOg` specs (freshness, empty inputs, alt=title verbatim, shared OG↔Twitter image URL)              | `8a80484` |
 | **AE180** | Round R docs + autopilot + MEMORY refresh                                                                       | _this_    |
 
+## Round 26 — Round S · structural extractions + Storybook ✦ AE181–AE185
+
+| #         | Slice                                                                                                     | Commit    |
+| --------- | --------------------------------------------------------------------------------------------------------- | --------- |
+| **AE181** | Storybook for `<EditorialFooter/>` (Default + WithBuildSha showing AE157 stamp)                           | `1e3d554` |
+| **AE182** | Extract Atlas `PINS` catalogue + 7 specs (15-pin sanity, India bbox, Leh-first/Alleppey-last endpoints)   | `d64d541` |
+| **AE183** | Extract `trySeasonMatch` from journeys-index + 6 specs (in-season, July Leh, multi-hit determinism)       | `d93464c` |
+| **AE184** | Extract `parsePulseStore` + AE72 types + 9 specs (malformed JSON, wrong shape, ctx coords, provider type) | `8c7c4f1` |
+| **AE185** | Round S docs + autopilot + MEMORY refresh                                                                 | _this_    |
+
 ## Stop conditions reached / deferred
 
 - **Mobile parity** — Aether is web-only Phase 0 (locked decision pre-AE5).
