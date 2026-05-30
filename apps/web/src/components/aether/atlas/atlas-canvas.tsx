@@ -21,6 +21,7 @@ import { DriftNav } from '../drift-nav';
 import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
 import { useViewport } from '../use-viewport';
+import { isInSeason } from '../destinations/seasons';
 
 interface Pin {
   readonly slug: string;
@@ -200,16 +201,23 @@ export function AtlasCanvas(): React.ReactElement {
   );
   const [geoError, setGeoError] = useState<string | null>(null);
   const [nearest, setNearest] = useState<{ pin: Pin; km: number } | null>(null);
+  // AE86 — seasonal toggle. When `seasonOnly` is true, only the
+  // destinations currently in season survive the filter.
+  const [seasonOnly, setSeasonOnly] = useState<boolean>(false);
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (q === '') return PINS;
-    return PINS.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.state.toLowerCase().includes(q) ||
-        p.tagline.toLowerCase().includes(q),
-    );
-  }, [query]);
+    return PINS.filter((p) => {
+      if (q !== '') {
+        const hits =
+          p.name.toLowerCase().includes(q) ||
+          p.state.toLowerCase().includes(q) ||
+          p.tagline.toLowerCase().includes(q);
+        if (!hits) return false;
+      }
+      if (seasonOnly && !isInSeason(p.slug)) return false;
+      return true;
+    });
+  }, [query, seasonOnly]);
 
   // Boot the Leaflet map once on mount. Dynamic import keeps Leaflet
   // out of any SSR path (already protected by AtlasLazy's ssr:false,
@@ -682,6 +690,26 @@ export function AtlasCanvas(): React.ReactElement {
                   clear
                 </button>
               )}
+              {/* AE86 — seasonal toggle */}
+              <button
+                type="button"
+                onClick={() => setSeasonOnly((s) => !s)}
+                aria-pressed={seasonOnly}
+                style={{
+                  padding: `${theme.space.hairline}px ${theme.space.comfy}px`,
+                  borderRadius: theme.radius.pill,
+                  background: seasonOnly ? 'rgba(110, 123, 92, 0.78)' : 'transparent',
+                  border: `1px solid ${seasonOnly ? 'rgba(110, 123, 92, 0.78)' : 'rgba(242, 232, 213, 0.25)'}`,
+                  color: surface.base,
+                  fontFamily: theme.font.ui,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  letterSpacing: '0.02em',
+                }}
+              >
+                {seasonOnly ? '◉ in season only' : '○ in season only'}
+              </button>
             </div>
           </div>
         </Reveal>
