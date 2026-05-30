@@ -441,6 +441,21 @@ rebases.
 | **AE254** | `useStableId` hook + 6 jsdom specs (wraps useId, strips ':', CSS-selector-safe)                     | `7e553e2` |
 | **AE255** | Round AA docs + autopilot + MEMORY refresh                                                          | _this_    |
 
+## Round 35 — Round AB · resolver + escape + aggregate kit ✦ AE256–AE265
+
+| #         | Slice                                                                                                  | Commit    |
+| --------- | ------------------------------------------------------------------------------------------------------ | --------- |
+| **AE256** | `findFirstItineraryDate` + 7 specs (trip.startsOn > earliest day > createdAt > null)                   | `b6b83c8` |
+| **AE257** | `escapeAttr` + `escapeAttrStrict` + 10 specs (5-char + control-char strip)                             | `5e7d25b` |
+| **AE258** | `sentenceCase` + 12 specs (ALL-CAPS→Sentence + keepAsIs proper noun preservation, word-boundary regex) | `90247a7` |
+| **AE259** | `aggregateMeCounts` + 6 specs (5-bucket + sum invariant + liveShares aggregation across trips)         | `9170f5f` |
+| **AE260** | `extractPullQuotes` + `strongestPullQuote` + 7 specs (filter by kind, longest-wins, null for empty)    | `b2780b5` |
+| **AE261** | `matchQuickPrompt` + `quickPrompts` + 11 specs (AE19 4-chip routing; case-insensitive label match)     | `4baf028` |
+| **AE262** | `zoomFromBBox` + 9 specs (Leaflet log2 z, [0,18] clamp, Indian bbox lands at z=3)                      | `f08cfe7` |
+| **AE263** | `pickFeaturedDestination` + 7 specs (in-season-first, day-of-year deterministic rotation)              | `0dfe622` |
+| **AE264** | `extractShareCode` + 11 specs (inverse of AE218; legacy + aether paths; strips ?+#; URIError null)     | `b6690bd` |
+| **AE265** | Round AB docs + autopilot + MEMORY refresh                                                             | _this_    |
+
 ## Stop conditions reached / deferred
 
 - **Mobile parity** — Aether is web-only Phase 0 (locked decision pre-AE5).
