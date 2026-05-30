@@ -167,6 +167,21 @@ rebases.
 | **AE79** | Trip share-card SVG generator — 1200×630 pure-SVG card · journey-dashboard toggle + download + 6 vitest specs      | `e3d18d6` |
 | **AE80** | Round G docs (this update) + autopilot + MEMORY refresh                                                            | _this_    |
 
+## Round 15 — Round H · breadth + tests ✦ AE81–AE90
+
+| #        | Slice                                                                                                                  | Commit    |
+| -------- | ---------------------------------------------------------------------------------------------------------------------- | --------- |
+| **AE81** | Aether-section favicon + apple-icon via Next 15 `icon.tsx` / `apple-icon.tsx` (edge ImageResponse, AetherMark on pill) | `83aa901` |
+| **AE82** | `<TripShareCard/>` re-mountable on `/aether/shared/[code]` — `shareSvg` now accepts structural `ShareCardTrip`         | `2bf90d6` |
+| **AE83** | "In season now" chip on destination cards + slug page hero. New `seasons.ts` + 9 vitest specs                          | `9073563` |
+| **AE84** | jsdom render spec for `<AetherMark/>` (5 tests)                                                                        | `79d1027` |
+| **AE85** | Pulse slash-command palette — 10 commands (/jaipur, /cheap, /two-days, etc.), live filter, single-tap expand           | `9e1cc87` |
+| **AE86** | Atlas "in season only" toggle pill (combines with the AE69 text filter)                                                | `1ccb115` |
+| **AE87** | Trip days timeline bar above day cards — segment per day, anchor-jumps to `#day-<id>`                                  | `64037be` |
+| **AE88** | Journal cross-links on destination pages via `relatedArticles(d)` helper + 3 vitest specs                              | `94587e3` |
+| **AE89** | jsdom render spec for `<ReadingProgress/>` (4 tests wrapped in AetherProvider)                                         | `860e8e4` |
+| **AE90** | Round H docs + autopilot + MEMORY refresh                                                                              | _this_    |
+
 ## Stop conditions reached / deferred
 
 - **Mobile parity** — Aether is web-only Phase 0 (locked decision pre-AE5).
