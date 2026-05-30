@@ -22,6 +22,8 @@ import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
 import { useViewport } from '../use-viewport';
 import { isInSeason } from '../destinations/seasons';
+// AE210 — pure filter combinator (text query AND season-toggle).
+import { filterPins } from './filter-pins';
 import { destinationAccent } from '../destinations/palette';
 import { shouldFocusFilterOnSlash } from './slash-focus';
 import { shouldGeolocateOnG } from './geolocate-shortcut';
@@ -74,20 +76,10 @@ export function AtlasCanvas(): React.ReactElement {
   // AE86 — seasonal toggle. When `seasonOnly` is true, only the
   // destinations currently in season survive the filter.
   const [seasonOnly, setSeasonOnly] = useState<boolean>(false);
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return PINS.filter((p) => {
-      if (q !== '') {
-        const hits =
-          p.name.toLowerCase().includes(q) ||
-          p.state.toLowerCase().includes(q) ||
-          p.tagline.toLowerCase().includes(q);
-        if (!hits) return false;
-      }
-      if (seasonOnly && !isInSeason(p.slug)) return false;
-      return true;
-    });
-  }, [query, seasonOnly]);
+  const filtered = useMemo(
+    () => filterPins(PINS, { query, seasonOnly, isInSeason }),
+    [query, seasonOnly],
+  );
 
   // Boot the Leaflet map once on mount. Dynamic import keeps Leaflet
   // out of any SSR path (already protected by AtlasLazy's ssr:false,
