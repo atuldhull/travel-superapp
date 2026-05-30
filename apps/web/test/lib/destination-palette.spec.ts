@@ -39,4 +39,32 @@ describe('destinationAccent', () => {
     const a = destinationAccent('alleppey');
     expect(a.note).toBe('palm-teal');
   });
+
+  // ─── AE178: extended sanity ────────────────────────────────────────
+  it('every curated accent has a whisper colour (hex or rgba)', () => {
+    for (const slug of ALL_SLUGS) {
+      const a = destinationAccent(slug);
+      // Whisper may be hex (#RRGGBB / #RRGGBBAA) OR rgba(...) — both
+      // are valid CSS colour syntaxes for the faint card-tint use.
+      expect(a.whisper).toMatch(/^(#[0-9a-fA-F]{6,8}|rgba?\([^)]+\))$/);
+    }
+  });
+
+  it('every note is short kebab-case (≤ 24 chars, no spaces)', () => {
+    for (const slug of ALL_SLUGS) {
+      const a = destinationAccent(slug);
+      expect(a.note.length).toBeLessThanOrEqual(24);
+      expect(a.note).not.toMatch(/\s/);
+    }
+  });
+
+  it('every note is unique (no two destinations share the same accent label)', () => {
+    const notes = ALL_SLUGS.map((s) => destinationAccent(s).note);
+    expect(new Set(notes).size).toBe(notes.length);
+  });
+
+  it('Leh maps to a thin-sky / high-altitude note', () => {
+    const a = destinationAccent('leh');
+    expect(a.note).toMatch(/sky|altitude|prayer|thin|high/i);
+  });
 });
