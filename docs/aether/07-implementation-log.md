@@ -195,7 +195,22 @@ rebases.
 | **AE97**  | `?` keyboard help overlay mounted via `<AetherA11yStyles/>` (single edit, lands on every shell)              | `ae72b40` |
 | **AE98**  | jsdom render spec for `<TripShareCard/>` (4 tests, mocks `URL.createObjectURL`)                              | `6d6a2e7` |
 | **AE99**  | Journal article 'Visit destinations' cross-links via `relatedDestinations(a)` + 3 vitest specs               | `e976b0c` |
-| **AE100** | Round I docs + autopilot + MEMORY refresh                                                                    | _this_    |
+| **AE100** | Round I docs + autopilot + MEMORY refresh                                                                    | `511fc2b` |
+
+## Round 17 — Round J · weave the loops ✦ AE101–AE110
+
+| #         | Slice                                                                                              | Commit    |
+| --------- | -------------------------------------------------------------------------------------------------- | --------- |
+| **AE101** | Per-destination 'Ask Pulse about <name>' button reusing AE96 CustomEvent bridge                    | `9c55ee6` |
+| **AE102** | Per-journal-article 'A trip like this' button — Pulse prefill from kicker + dek                    | `2a99255` |
+| **AE103** | jsdom render spec for `<TripChecklist/>` (6 tests, localStorage persistence assertion)             | `330e3f7` |
+| **AE104** | jsdom render spec for `<KeyboardHelp/>` (5 tests, `?`-in-INPUT skip guard)                         | `166fdce` |
+| **AE105** | `/aether/*` `error.tsx` 500 boundary — companion to AE92, reset() + status link                    | `6a30a70` |
+| **AE106** | Pulse 'Recent' prompt strip on empty-state + long-memory localStorage store (survives Reset)       | `09dda3c` |
+| **AE107** | `/aether/me/journeys` row tags `<Name> in season` when the title mentions an in-season destination | `3a78337` |
+| **AE108** | Atlas pin tooltip surfaces accent note + in-season row                                             | `7c78fc8` |
+| **AE109** | Extract `pulse/recent-prompts.ts` + 8 vitest specs (corrupt JSON, cap, dedupe-to-front)            | `2f543e1` |
+| **AE110** | Round J docs + autopilot + MEMORY refresh                                                          | _this_    |
 
 ## Stop conditions reached / deferred
 
