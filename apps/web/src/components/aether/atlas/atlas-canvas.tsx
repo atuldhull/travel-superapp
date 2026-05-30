@@ -24,6 +24,8 @@ import { useViewport } from '../use-viewport';
 import { isInSeason } from '../destinations/seasons';
 import { destinationAccent } from '../destinations/palette';
 import { shouldFocusFilterOnSlash } from './slash-focus';
+// AE170 — nearestPin math extracted to a pure helper for testability.
+import { nearestPin } from './haversine';
 
 interface Pin {
   readonly slug: string;
@@ -167,19 +169,8 @@ const DARK_ATTR =
 /** CartoDB Dark Matter labels only — overlays warm-tinted place names. */
 const DARK_LABELS = 'https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png';
 
-/** Haversine great-circle distance in km (AE71). Good to ~0.5% over
- *  India-scale distances; we don't need ellipsoid accuracy for "which
- *  destination is nearest to you?". */
-function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
-  const R = 6371;
-  const toRad = (deg: number): number => (deg * Math.PI) / 180;
-  const dLat = toRad(b.lat - a.lat);
-  const dLng = toRad(b.lng - a.lng);
-  const h =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
-  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
-}
+// AE170 — haversineKm + nearestPin live in ./haversine.ts now so the
+// math is unit-testable without the Leaflet shell.
 
 export function AtlasCanvas(): React.ReactElement {
   const theme = useTheme();
@@ -423,12 +414,8 @@ export function AtlasCanvas(): React.ReactElement {
         });
       });
       const here = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      // Find the nearest destination.
-      let best: { pin: Pin; km: number } | null = null;
-      for (const p of PINS) {
-        const km = haversineKm(here, { lat: p.lat, lng: p.lng });
-        if (best === null || km < best.km) best = { pin: p, km };
-      }
+      // AE170 — nearestPin handles the loop + empty-list null guard.
+      const best = nearestPin(here, PINS);
       setNearest(best);
       setGeoStatus('ok');
 
