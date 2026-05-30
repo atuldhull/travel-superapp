@@ -234,6 +234,26 @@ rebases.
 | **AE121** | `<TripChecklist/>` keyboard nav — Arrow Up/Down across rows, Space/Enter toggles, Delete/Backspace removes        | `c13f5c2` |
 | **AE122** | Round L docs + autopilot + MEMORY refresh                                                                         | _this_    |
 
+## Round 20 — Round M · density & a11y ✦ AE123–AE138
+
+| #         | Slice                                                                                                                               | Commit    |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| **AE123** | jsdom checklist keyboard nav spec (Arrow/Space/Enter/Delete/Backspace + rovingtab assertion)                                        | `aeabe3e` |
+| **AE124** | `clearRecentPrompts` specs — wipe, idempotent, only-my-key invariant                                                                | `aeabe3e` |
+| **AE125** | `loading.tsx` for `/aether/me`, `/me/journeys`, `/me/shares`, `/account`                                                            | `e070b1e` |
+| **AE126** | Atlas list row in-season chip (olive pill mirroring AE83 destination cards + AE107 journeys index)                                  | `535fb3e` |
+| **AE127** | Atlas `/` keyboard shortcut focuses filter input; guards INPUT/TEXTAREA bubble; placeholder gains hint                              | `535fb3e` |
+| **AE128** | Activity timeline surfaces `Shared a link · code…` events per minted share (one new dot kind, ochre.glow)                           | `85b6851` |
+| **AE129** | `<TripChecklist/>` undo snackbar after Delete — guillemet-wrapped item, 5s window, Restore Undo button + role=status                | `244ecdd` |
+| **AE130** | Storybook stories for TripChecklist (5 visual variants: default / Leh / mid / all-done / undo-visible)                              | `8f95c0d` |
+| **AE131** | `/aether/account` "Download my data" — bundles recent prompts + Pulse history + every checklist + onboarded + audio prefs into JSON | `131abbe` |
+| **AE132** | Pulse empty-state "Try one of these" seed prompts (3 evergreen; hidden when Recent has 3+)                                          | `26e2464` |
+| **AE134** | Seasons.ts edge-case specs (every slug in season some month, calendar minimum ≥2, monsoon + winter pins)                            | `ae4e8bb` |
+| **AE135** | Storybook story for `<KeyboardHelp/>` overlay (open state, design baseline)                                                         | `7304e3f` |
+| **AE136** | Extract `bundleLocalData` helper + 9 specs (privacy invariant, JSON parsing, version-suffix guard, audioOptOut exact-match)         | `6eb2de4` |
+| **AE137** | Atlas focused-row aria-live announcer (`<name>, <state>` via role=status sr-only div)                                               | `e89cbcf` |
+| **AE138** | Round M docs + autopilot + MEMORY refresh                                                                                           | _this_    |
+
 ## Stop conditions reached / deferred
 
 - **Mobile parity** — Aether is web-only Phase 0 (locked decision pre-AE5).
