@@ -11,7 +11,9 @@
  * Auth-gated identical to /aether/account.
  */
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { useTheme } from '@app/aether-core';
+import { readRecentPrompts } from '../pulse/recent-prompts';
 import {
   useAuthControllerMe,
   useTripControllerList,
@@ -79,6 +81,18 @@ export function MeHome(): React.ReactElement {
     (archivedQuery.data?.data as { trips?: TripDto[] } | undefined)?.trips ?? [];
   const drafts = activeTrips.filter((t) => t.status === 'draft').length;
   const totalTrips = activeTrips.length + archivedTrips.length;
+
+  // AE112 — surface the AE106 long-memory `aether-pulse-recent:v1`
+  // store. Read once on mount (client-only). One-tap dispatches the
+  // AE96 `aether-pulse-open` event so the Pulse drawer takes over.
+  const [recent, setRecent] = useState<string[]>([]);
+  useEffect(() => {
+    setRecent(readRecentPrompts());
+  }, []);
+  function askAgain(prompt: string): void {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(new CustomEvent('aether-pulse-open', { detail: { prefill: prompt } }));
+  }
 
   const ink = theme.color.ink;
   const surface = theme.color.surface;
@@ -330,6 +344,122 @@ export function MeHome(): React.ReactElement {
               </Reveal>
             ))}
           </div>
+        )}
+
+        {/* AE112 — Recent prompts (Pulse long memory) */}
+        {isAuthed && recent.length > 0 && (
+          <Reveal>
+            <div
+              style={{
+                marginTop: theme.space.hero,
+                padding: theme.space.loose,
+                borderRadius: theme.radius.lg,
+                background: surface.soft,
+                border: `1px solid ${olive.whisper}`,
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'baseline',
+                  flexWrap: 'wrap',
+                  gap: theme.space.comfy,
+                }}
+              >
+                <p
+                  style={{
+                    fontFamily: theme.font.ui,
+                    fontSize: 11,
+                    letterSpacing: '0.22em',
+                    textTransform: 'uppercase',
+                    color: ochre.deep,
+                    fontWeight: 600,
+                    margin: 0,
+                  }}
+                >
+                  Recent prompts · {recent.length}
+                </p>
+                <span
+                  style={{
+                    fontFamily: theme.font.mono,
+                    fontSize: 10,
+                    letterSpacing: '0.14em',
+                    color: ink.soft,
+                    opacity: 0.65,
+                  }}
+                >
+                  click to ask Pulse again
+                </span>
+              </div>
+              <h2
+                style={{
+                  fontFamily: theme.font.display,
+                  fontSize: 'clamp(24px, 2.6vw, 32px)',
+                  lineHeight: 1.2,
+                  letterSpacing: '-0.014em',
+                  fontWeight: 600,
+                  margin: `${theme.space.hairline}px 0 ${theme.space.tight}px`,
+                  color: ink.base,
+                }}
+              >
+                Questions worth asking again.
+              </h2>
+              <ul
+                style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  margin: 0,
+                  display: 'grid',
+                  gap: theme.space.hairline,
+                }}
+              >
+                {recent.map((prompt) => (
+                  <li key={prompt}>
+                    <button
+                      type="button"
+                      onClick={() => askAgain(prompt)}
+                      style={{
+                        width: '100%',
+                        textAlign: 'left',
+                        background: 'transparent',
+                        border: `1px solid ${ink.whisper}`,
+                        borderRadius: theme.radius.md,
+                        padding: `${theme.space.tight}px ${theme.space.inline}px`,
+                        cursor: 'pointer',
+                        fontFamily: theme.font.display,
+                        fontSize: 15,
+                        lineHeight: 1.45,
+                        color: ink.base,
+                        transition: 'border-color 220ms, background 220ms',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = accent.deep;
+                        e.currentTarget.style.background = ochre.whisper;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = ink.whisper;
+                        e.currentTarget.style.background = 'transparent';
+                      }}
+                    >
+                      <span
+                        aria-hidden
+                        style={{
+                          color: accent.deep,
+                          marginRight: 10,
+                          fontFamily: theme.font.mono,
+                          fontSize: 11,
+                        }}
+                      >
+                        ↻
+                      </span>
+                      {prompt}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </Reveal>
         )}
 
         {/* Quick paths */}
