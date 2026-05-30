@@ -270,6 +270,53 @@ export function TripChecklist({ tripId, destinationSlug }: TripChecklistProps): 
   }
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle');
 
+  /** AE148 — accept a previously-downloaded backup (AE119) and replace
+   *  the current list. The file is the JSON shape this component
+   *  produces: `{version, tripId, exportedAt, items: ChecklistItem[]}`.
+   *  We only require `items` to be a well-typed array; tripId is NOT
+   *  required to match (a user moving devices doesn't keep the same
+   *  cuid). Failure shows an inline error for 4s, no exception thrown. */
+  const [importError, setImportError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  function onImportFile(e: React.ChangeEvent<HTMLInputElement>): void {
+    const file = e.target.files?.[0];
+    // Always reset the input so the same file can be re-imported.
+    e.target.value = '';
+    if (file === undefined) return;
+    const reader = new FileReader();
+    reader.onerror = (): void => {
+      setImportError('Could not read that file.');
+      window.setTimeout(() => setImportError(null), 4000);
+    };
+    reader.onload = (): void => {
+      try {
+        const raw = reader.result;
+        if (typeof raw !== 'string') throw new Error('not text');
+        const parsed = JSON.parse(raw) as unknown;
+        const itemsCandidate =
+          parsed !== null && typeof parsed === 'object' && 'items' in parsed
+            ? (parsed as { items: unknown }).items
+            : parsed; // also accept the raw array shape
+        if (!Array.isArray(itemsCandidate)) throw new Error('items missing');
+        const next = itemsCandidate.filter(
+          (it): it is ChecklistItem =>
+            typeof it === 'object' &&
+            it !== null &&
+            typeof (it as ChecklistItem).id === 'string' &&
+            typeof (it as ChecklistItem).text === 'string' &&
+            typeof (it as ChecklistItem).done === 'boolean',
+        );
+        if (next.length === 0) throw new Error('no valid items');
+        setItems(next);
+        setImportError(null);
+      } catch {
+        setImportError('That file does not look like a checklist backup.');
+        window.setTimeout(() => setImportError(null), 4000);
+      }
+    };
+    reader.readAsText(file);
+  }
+
   // AE119 — download the current list as a JSON file. Lets users
   // back up before reset / before swapping browsers. Filename is
   // `aether-checklist-<tripId>-<YYYY-MM-DD>.json`. No-op when empty.
@@ -454,6 +501,32 @@ export function TripChecklist({ tripId, destinationSlug }: TripChecklistProps): 
           >
             backup .json
           </button>
+          {/* AE148 — import a previously-downloaded backup */}
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: ink.soft,
+              fontFamily: theme.font.ui,
+              fontSize: 11,
+              cursor: 'pointer',
+              letterSpacing: '0.02em',
+              textDecoration: 'underline',
+            }}
+            aria-label="Import a checklist JSON backup"
+          >
+            import .json
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/json,.json"
+            onChange={onImportFile}
+            style={{ display: 'none' }}
+            aria-hidden
+          />
           <button
             type="button"
             onClick={resetToStarter}
@@ -618,6 +691,21 @@ export function TripChecklist({ tripId, destinationSlug }: TripChecklistProps): 
           Add
         </button>
       </form>
+
+      {/* AE148 — inline import error (auto-clears after 4s) */}
+      {importError !== null && (
+        <p
+          role="alert"
+          style={{
+            marginTop: theme.space.tight,
+            fontFamily: theme.font.ui,
+            fontSize: 11,
+            color: '#8a2418',
+          }}
+        >
+          {importError}
+        </p>
+      )}
 
       {/* AE129 — Undo snackbar after a remove. Inline (not a portal)
           so it stays scoped to the checklist card. Dismisses after 5s
