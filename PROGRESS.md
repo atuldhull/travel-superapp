@@ -10,14 +10,14 @@
 
 ## Summary
 
-| Counter             | Value                                                                      |
-| ------------------- | -------------------------------------------------------------------------- |
-| Prompts completed   | 224 (219 prior + Round P: AE157–AE162, 5 active + 1 no-op)                 |
-| Prompts in progress | 0                                                                          |
-| Prompts blocked     | 0                                                                          |
-| Last prompt         | `AE162` — Round P docs (build-stamp + Pulse rotation + bundlePulseHistory) |
-| Last commit date    | 2026-05-30                                                                 |
-| Phase               | Phase 1 — Featured-to-detail flow live for the public memory-book surface  |
+| Counter             | Value                                                                                 |
+| ------------------- | ------------------------------------------------------------------------------------- |
+| Prompts completed   | 234 (224 prior + Round Q: AE163–AE172, 10 slices)                                     |
+| Prompts in progress | 0                                                                                     |
+| Prompts blocked     | 0                                                                                     |
+| Last prompt         | `AE172` — Round Q docs (10-slice round: 5 extractions w/ specs + skeletons + sitemap) |
+| Last commit date    | 2026-05-30                                                                            |
+| Phase               | Phase 1 — Featured-to-detail flow live for the public memory-book surface             |
 
 ---
 
@@ -50,6 +50,7 @@
 | **Round N**     | AE139–AE142 | PDF chunk preload-on-hover (perf) · Pulse-history `Backup .json` mirror · activity timeline ISO-week grouping (>8 events) · Round N docs                                                                                                                                                                                                                                                                | ✅     |
 | **Round O**     | AE143–AE156 | Extract timeline-grouping + 11 specs · Extract Atlas '/' guard + 6 specs · KeyboardHelp rows for AE127 + AE121 · Pulse `{submit:true}` auto-send · PDF retry button · TripChecklist JSON import · Extract `deriveChecklistSlug` + 7 specs · 6 more `loading.tsx` route skeletons · TripShareCard Storybook · 5 shareSvg edge specs · Activity timeline event-count chip · Atlas Esc · Round O docs      | ✅     |
 | **Round P**     | AE157–AE162 | EditorialFooter build-SHA stamp · Pulse pending phrase rotation (Reading…/Sketching…/Almost there…) · Extract `bundlePulseHistory` + 4 specs · ActivityTimeline Storybook (3 variants) · Round P docs                                                                                                                                                                                                   | ✅     |
+| **Round Q**     | AE163–AE172 | Extract `decodePulseOpenEvent` + 7 specs · Extract `parseChecklistBackup` + 7 specs · Extract `countTimelineEvents` + 6 specs · 3 more `loading.tsx` route skeletons · 3 more `relatedArticles` edge specs · DriftNav Storybook · `/aether/sitemap.xml` reflects new routes · Extract `haversineKm`+`nearestPin` + 8 specs · Shared `aether-dates` helpers + 11 specs · Round Q docs                    | ✅     |
 
 > **Operator-owed**: push the AE commits + flip `NEXT_PUBLIC_FEATURE_AETHER_PREVIEW=1` on prod for the soft launch. The route gate auto-404s when the env var is unset, so deploys with the flag off ship safely.
 
