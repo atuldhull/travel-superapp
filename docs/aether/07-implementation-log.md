@@ -366,6 +366,21 @@ rebases.
 | **AE204** | 3 more `backupFilename` hostile-input specs (path traversal stripped, char collapse, all-bad shape) | `a6cf146` |
 | **AE205** | Round V docs                                                                                        | _this_    |
 
+## Round 30 — Round W · helper canonicalisation + Pulse contract gates ✦ AE206–AE215
+
+| #         | Slice                                                                                                      | Commit    |
+| --------- | ---------------------------------------------------------------------------------------------------------- | --------- |
+| **AE206** | Extract `timelineDotColor` + 6 specs (kind→palette routing; archive/edit/share/create distinct)            | `b7aa21e` |
+| **AE207** | Extract `normalizePulsePrompt` + 8 specs (empty/too-long reasons, PULSE_PROMPT_MAX=2000, whitespace trim)  | `3ff1283` |
+| **AE208** | 4 more timeline-grouping specs — cross-month + Dec→Jan year flip + Mon-Jan-1 + groupByWeek boundary        | `d817712` |
+| **AE209** | `estimateReadingMinutes` (WPM helper) + 12 specs — empty=0, ceil+min-1, default 220wpm, body-array support | `4ca4b4f` |
+| **AE210** | Extract Atlas `filterPins` (text query AND season toggle, injected isInSeason) + 10 specs                  | `b2c92ae` |
+| **AE211** | Shared `useCopyTapFeedback` hook + 5 jsdom fake-timer specs (revert at exact windowMs, unmount cleanup)    | `2d73b06` |
+| **AE212** | Extract `buildSamplePlanRequest` + `isFollowUpBody` guard + 6 specs (fresh vs follow-up tagged union)      | `c8362ed` |
+| **AE213** | Extract `extractPlanText` defensive unwrap + 11 specs (null/non-object/non-string degenerate to '')        | `5ee81ad` |
+| **AE214** | Extract `buildJourneyFacts` (Range·Days·Radius·Drafted) + 9 specs — uses shared `inclusiveDaysBetween`     | `c9cb451` |
+| **AE215** | Round W docs + autopilot + MEMORY refresh                                                                  | _this_    |
+
 ## Stop conditions reached / deferred
 
 - **Mobile parity** — Aether is web-only Phase 0 (locked decision pre-AE5).
