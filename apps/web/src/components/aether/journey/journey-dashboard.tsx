@@ -661,6 +661,31 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
                 >
                   {exportingPdf ? 'Composing…' : 'Export PDF'}
                 </button>
+                {/* AE96 — open Pulse pre-filled with this trip's name */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof window === 'undefined') return;
+                    const prefill = `Refine the ${trip.title} journey — what should I rework?`;
+                    window.dispatchEvent(
+                      new CustomEvent('aether-pulse-open', { detail: { prefill } }),
+                    );
+                  }}
+                  style={{
+                    padding: `${theme.space.hairline}px ${theme.space.comfy}px`,
+                    borderRadius: theme.radius.pill,
+                    background: accent.whisper,
+                    border: `1px solid ${accent.deep}`,
+                    color: accent.deep,
+                    fontFamily: theme.font.ui,
+                    fontSize: theme.text.small.size,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                  aria-label="Ask Pulse about this trip"
+                >
+                  ✦ Ask Pulse
+                </button>
                 <Link
                   href="/aether/me/journeys"
                   style={{
