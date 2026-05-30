@@ -38,6 +38,35 @@ import { useViewport } from '../use-viewport';
 import { TripShareCard } from './trip-share-card';
 import { TripChecklist } from './trip-checklist';
 
+/**
+ * AE114 — derive a destination slug from a trip title by substring
+ * match against the curated Atlas/destination slug list. Used to
+ * pick a per-destination starter pack for <TripChecklist/>.
+ * Returns undefined if no slug name appears in the title.
+ */
+const CHECKLIST_DEST_SLUGS = [
+  'leh',
+  'spiti',
+  'darjeeling',
+  'shillong',
+  'jaipur',
+  'udaipur',
+  'bhuj',
+  'varanasi',
+  'mumbai',
+  'anjuna',
+  'hampi',
+  'coorg',
+  'pondicherry',
+  'madurai',
+  'alleppey',
+] as const;
+function deriveChecklistSlug(title: string | null | undefined): string | undefined {
+  if (typeof title !== 'string' || title.trim() === '') return undefined;
+  const haystack = title.toLowerCase();
+  return CHECKLIST_DEST_SLUGS.find((s) => haystack.includes(s));
+}
+
 export interface JourneyDashboardProps {
   tripId: string;
 }
@@ -1294,10 +1323,11 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
               </Reveal>
             )}
 
-            {/* AE94 — Checklist (per-trip, localStorage-backed) */}
+            {/* AE94 — Checklist (per-trip, localStorage-backed)
+                AE114 — destination-aware starter pack from trip.title */}
             <Reveal>
               <div style={{ marginTop: theme.space.hero }}>
-                <TripChecklist tripId={tripId} />
+                <TripChecklist tripId={tripId} destinationSlug={deriveChecklistSlug(trip.title)} />
               </div>
             </Reveal>
 
