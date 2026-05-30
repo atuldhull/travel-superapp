@@ -28,6 +28,8 @@ import { shouldFocusFilterOnSlash } from './slash-focus';
 import { nearestPin } from './haversine';
 // AE182 — pins moved to ./pins.ts so the data is test-reachable.
 import { PINS, type Pin } from './pins';
+// AE191 — Esc-in-filter decision extracted for testability.
+import { decideFilterEsc } from './esc-behaviour';
 
 /** CartoDB Dark Matter (no labels) — free, no key, espresso-feeling. */
 const DARK_TILES = 'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png';
@@ -620,19 +622,14 @@ export function AtlasCanvas(): React.ReactElement {
                 ref={filterInputRef}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                // AE155 — Esc inside the filter clears the query and
-                // hops focus to row 0 of the listbox so arrow keys
-                // pick up where the user was filtering.
+                // AE155 + AE191 — decision lives in ./esc-behaviour.ts
+                // so the two-branch rule is unit-testable.
                 onKeyDown={(e) => {
-                  if (e.key === 'Escape') {
-                    e.preventDefault();
-                    if (query !== '') {
-                      setQuery('');
-                    } else {
-                      // Filter already empty → just move focus.
-                      focusRow(0);
-                    }
-                  }
+                  const action = decideFilterEsc(e.key, query !== '');
+                  if (action === null) return;
+                  e.preventDefault();
+                  if (action === 'clear') setQuery('');
+                  else focusRow(0);
                 }}
                 placeholder="Filter — city · state · word — press / to focus, Esc to clear"
                 aria-label="Filter destinations (press / to focus, Esc to clear)"
