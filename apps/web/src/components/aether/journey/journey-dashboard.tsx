@@ -36,6 +36,7 @@ import { EditorialFooter } from '../drift-sections/editorial-footer';
 import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
 import { useViewport } from '../use-viewport';
 import { TripShareCard } from './trip-share-card';
+import { TripChecklist } from './trip-checklist';
 
 export interface JourneyDashboardProps {
   tripId: string;
@@ -1267,6 +1268,13 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
                 </div>
               </Reveal>
             )}
+
+            {/* AE94 — Checklist (per-trip, localStorage-backed) */}
+            <Reveal>
+              <div style={{ marginTop: theme.space.hero }}>
+                <TripChecklist tripId={tripId} />
+              </div>
+            </Reveal>
 
             {/* AE77 — Activity timeline.
                 Derived purely from TripDto fields (no extra endpoint).
