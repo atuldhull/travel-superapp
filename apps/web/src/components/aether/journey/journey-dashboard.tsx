@@ -40,7 +40,12 @@ import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
 import { useViewport } from '../use-viewport';
 import { TripShareCard } from './trip-share-card';
 import { TripChecklist } from './trip-checklist';
-import { TIMELINE_GROUP_THRESHOLD, groupByWeek, type TimelineEvent } from './timeline-grouping';
+import {
+  TIMELINE_GROUP_THRESHOLD,
+  countTimelineEvents,
+  groupByWeek,
+  type TimelineEvent,
+} from './timeline-grouping';
 // AE149 — derive-slug helper extracted so it can be unit-tested.
 import { deriveChecklistSlug } from './derive-checklist-slug';
 
@@ -192,21 +197,16 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
   const tripShares: TripShareOwnerDto[] =
     (sharesQuery.data?.data as ListTripSharesResponseDto | undefined)?.shares ?? [];
 
-  // AE154 — total event count for the timeline kicker. Same input
-  // set as the in-render builder below; keeping the derivation here
-  // means the kicker can show "· 6 events" without lifting the JSX.
+  // AE154 — total event count for the timeline kicker.
+  // AE165 — count math extracted to ./timeline-grouping.ts.
   const timelineEventCount = useMemo(() => {
     if (trip === undefined) return 0;
-    let n = 0;
-    if (asIso(trip.createdAt) !== null) n += 1;
-    if (asIso(trip.updatedAt) !== null && asIso(trip.updatedAt) !== asIso(trip.createdAt)) {
-      n += 1;
-    }
-    if (asIso(trip.archivedAt) !== null) n += 1;
-    for (const s of tripShares) {
-      if (asIso(s.createdAt) !== null) n += 1;
-    }
-    return n;
+    return countTimelineEvents({
+      createdAt: asIso(trip.createdAt),
+      updatedAt: asIso(trip.updatedAt),
+      archivedAt: asIso(trip.archivedAt),
+      shareCreatedAts: tripShares.map((s) => asIso(s.createdAt)),
+    });
   }, [trip, tripShares]);
 
   const ink = theme.color.ink;

@@ -57,6 +57,25 @@ export function weekLabel(iso: string): string {
   })}`;
 }
 
+/** AE165 — count the events a trip will surface in the timeline.
+ *  Matches the in-render builder: createdAt counts (if present);
+ *  updatedAt counts iff it differs from createdAt; archivedAt counts
+ *  if present; one event per share with a valid createdAt. */
+export interface TimelineEventCountInputs {
+  readonly createdAt: string | null;
+  readonly updatedAt: string | null;
+  readonly archivedAt: string | null;
+  readonly shareCreatedAts: ReadonlyArray<string | null>;
+}
+export function countTimelineEvents(inputs: TimelineEventCountInputs): number {
+  let n = 0;
+  if (inputs.createdAt !== null) n += 1;
+  if (inputs.updatedAt !== null && inputs.updatedAt !== inputs.createdAt) n += 1;
+  if (inputs.archivedAt !== null) n += 1;
+  for (const at of inputs.shareCreatedAts) if (at !== null) n += 1;
+  return n;
+}
+
 /** Group already-sorted events into ISO-week buckets. Each group
  *  carries the Monday key and a label sourced from the first event in
  *  the bucket (so the label tracks the calendar week boundary). */

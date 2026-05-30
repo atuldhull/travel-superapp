@@ -14,6 +14,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   TIMELINE_GROUP_THRESHOLD,
+  countTimelineEvents,
   groupByWeek,
   weekKey,
   weekLabel,
@@ -97,5 +98,74 @@ describe('TIMELINE_GROUP_THRESHOLD', () => {
   it('is a positive integer (sanity gate for the dashboard switch)', () => {
     expect(Number.isInteger(TIMELINE_GROUP_THRESHOLD)).toBe(true);
     expect(TIMELINE_GROUP_THRESHOLD).toBeGreaterThan(0);
+  });
+});
+
+// ─── AE165: countTimelineEvents ─────────────────────────────────────
+describe('countTimelineEvents', () => {
+  it('returns 0 when every field is null', () => {
+    expect(
+      countTimelineEvents({
+        createdAt: null,
+        updatedAt: null,
+        archivedAt: null,
+        shareCreatedAts: [],
+      }),
+    ).toBe(0);
+  });
+
+  it('counts only createdAt for a fresh draft', () => {
+    expect(
+      countTimelineEvents({
+        createdAt: '2026-06-01T00:00:00Z',
+        updatedAt: null,
+        archivedAt: null,
+        shareCreatedAts: [],
+      }),
+    ).toBe(1);
+  });
+
+  it('does NOT double-count updatedAt when it equals createdAt', () => {
+    expect(
+      countTimelineEvents({
+        createdAt: '2026-06-01T00:00:00Z',
+        updatedAt: '2026-06-01T00:00:00Z',
+        archivedAt: null,
+        shareCreatedAts: [],
+      }),
+    ).toBe(1);
+  });
+
+  it('counts an archive event', () => {
+    expect(
+      countTimelineEvents({
+        createdAt: '2026-06-01T00:00:00Z',
+        updatedAt: '2026-06-02T00:00:00Z',
+        archivedAt: '2026-06-03T00:00:00Z',
+        shareCreatedAts: [],
+      }),
+    ).toBe(3);
+  });
+
+  it('counts every share with a non-null createdAt', () => {
+    expect(
+      countTimelineEvents({
+        createdAt: '2026-06-01T00:00:00Z',
+        updatedAt: null,
+        archivedAt: null,
+        shareCreatedAts: ['2026-06-02T00:00:00Z', '2026-06-03T00:00:00Z'],
+      }),
+    ).toBe(3);
+  });
+
+  it('skips shares with null createdAt', () => {
+    expect(
+      countTimelineEvents({
+        createdAt: '2026-06-01T00:00:00Z',
+        updatedAt: null,
+        archivedAt: null,
+        shareCreatedAts: [null, '2026-06-02T00:00:00Z', null],
+      }),
+    ).toBe(2);
   });
 });
