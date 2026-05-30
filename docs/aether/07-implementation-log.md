@@ -282,6 +282,17 @@ rebases.
 | **AE155** | Atlas Esc inside filter clears query or hops focus to row 0; placeholder gains hint                                   | `1f4ac4c` |
 | **AE156** | Round O docs + autopilot + MEMORY refresh                                                                             | _this_    |
 
+## Round 23 — Round P · stamps & micro-copy ✦ AE157–AE162
+
+| #         | Slice                                                                                                            | Commit    |
+| --------- | ---------------------------------------------------------------------------------------------------------------- | --------- |
+| **AE157** | EditorialFooter shows the 7-char `NEXT_PUBLIC_BUILD_SHA` next to © year (silent when env unset)                  | `b1f31de` |
+| **AE158** | No-op — onboarding already shipped a `Skip · explore on my own` button (verified)                                | —         |
+| **AE159** | Pulse pending bubble rotates `Reading… → Sketching the route… → Almost there…` (1.5s, clamps at last)            | `1572e72` |
+| **AE160** | Extract `bundlePulseHistory` helper + 4 specs (empty, JSON parsed, non-JSON fallback, privacy invariant)         | `601fed4` |
+| **AE161** | Storybook for Activity timeline (3 variants: Flat / Eight / WeekGrouped) — Chromatic baseline for the AE141 rail | `ff396e8` |
+| **AE162** | Round P docs + autopilot + MEMORY refresh                                                                        | _this_    |
+
 ## Stop conditions reached / deferred
 
 - **Mobile parity** — Aether is web-only Phase 0 (locked decision pre-AE5).
