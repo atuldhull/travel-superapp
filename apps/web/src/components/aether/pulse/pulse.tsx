@@ -71,6 +71,8 @@ import { normalizePulsePrompt } from './normalize-prompt';
 import { buildSamplePlanRequest } from './build-sample-plan-request';
 // AE213 — defensive plan-text unwrap.
 import { extractPlanText } from './extract-plan-text';
+// AE216 — seed-suggestions visibility gate.
+import { shouldShowSuggestions } from './should-show-suggestions';
 
 // AE72 + AE184 — types + storage key + parser extracted to
 // ./persisted-pulse.ts so the shape contract is unit-testable.
@@ -642,7 +644,7 @@ export function Pulse(): React.ReactElement | null {
                 {/* AE132 — 3 curated seed prompts so a first-time user
                     has something to tap. Hidden when Recent already
                     surfaces 3+ prompts (no point duplicating). */}
-                {recent.length < 3 && (
+                {shouldShowSuggestions({ recentCount: recent.length }) && (
                   <div
                     style={{
                       display: 'flex',
