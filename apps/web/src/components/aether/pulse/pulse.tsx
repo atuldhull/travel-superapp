@@ -49,6 +49,60 @@ interface ChatMessage {
 
 const DEFAULT_CENTER = { lat: 26.9124, lng: 75.7873 } as const; // Jaipur fallback.
 
+/** AE72 — versioned localStorage key. Bump the suffix if the shape
+ *  changes so stale reads are ignored rather than miscast. */
+const PULSE_STORAGE_KEY = 'aether-pulse-history:v1';
+const PULSE_MAX_MESSAGES = 40;
+
+interface PersistedPulse {
+  readonly messages: ChatMessage[];
+  readonly ctx: {
+    readonly title: string;
+    readonly center: { readonly lat: number; readonly lng: number };
+    readonly plan: string;
+  } | null;
+  readonly provider: string | null;
+}
+
+function readPulseStore(): PersistedPulse | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(PULSE_STORAGE_KEY);
+    if (raw === null) return null;
+    const parsed = JSON.parse(raw) as unknown;
+    if (typeof parsed !== 'object' || parsed === null) return null;
+    const p = parsed as Partial<PersistedPulse>;
+    if (!Array.isArray(p.messages)) return null;
+    const messages = p.messages.filter(
+      (m): m is ChatMessage =>
+        typeof m === 'object' &&
+        m !== null &&
+        (m.role === 'user' || m.role === 'assistant') &&
+        typeof m.content === 'string',
+    );
+    const ctxRaw = p.ctx;
+    const ctx =
+      ctxRaw !== null &&
+      ctxRaw !== undefined &&
+      typeof ctxRaw === 'object' &&
+      typeof ctxRaw.title === 'string' &&
+      typeof ctxRaw.plan === 'string' &&
+      typeof ctxRaw.center === 'object' &&
+      typeof ctxRaw.center.lat === 'number' &&
+      typeof ctxRaw.center.lng === 'number'
+        ? {
+            title: ctxRaw.title,
+            plan: ctxRaw.plan,
+            center: { lat: ctxRaw.center.lat, lng: ctxRaw.center.lng },
+          }
+        : null;
+    const provider = typeof p.provider === 'string' ? p.provider : null;
+    return { messages, ctx, provider };
+  } catch {
+    return null;
+  }
+}
+
 export function Pulse(): React.ReactElement | null {
   const theme = useTheme();
   const motionPolicy = useMotionPolicy();
@@ -118,15 +172,51 @@ export function Pulse(): React.ReactElement | null {
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  // Threaded refinement state — sent to follow-up samplePlan calls so
+  // Threaded refinement context — sent to follow-up samplePlan calls so
   // the model edits the prior plan instead of writing a new one.
-  const ctxRef = useRef<{
-    title: string;
-    center: { lat: number; lng: number };
-    plan: string;
-  } | null>(null);
+  // AE72 — promoted from useRef to useState so the persistence effect
+  // can listen to changes.
+  interface PulseCtx {
+    readonly title: string;
+    readonly center: { readonly lat: number; readonly lng: number };
+    readonly plan: string;
+  }
+  const [ctx, setCtx] = useState<PulseCtx | null>(null);
 
   const hidden = pathname === '/aether/plan';
+
+  // AE72 — restore prior conversation + ctx + provider on mount. We
+  // do it once (no deps); subsequent changes flow the other direction
+  // through the persistence effect below.
+  useEffect(() => {
+    const stored = readPulseStore();
+    if (stored === null) return;
+    if (stored.messages.length > 0) setMessages(stored.messages);
+    if (stored.ctx !== null) setCtx(stored.ctx);
+    if (stored.provider !== null) setProvider(stored.provider);
+  }, []);
+
+  // AE72 — persist on every change. Caps messages at PULSE_MAX_MESSAGES
+  // from the end so the localStorage entry never grows unbounded.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const payload: PersistedPulse = {
+      messages: messages.slice(-PULSE_MAX_MESSAGES),
+      ctx,
+      provider,
+    };
+    try {
+      // Skip write when there's nothing to remember — avoids stamping
+      // an empty entry over a useful one when the tab boots before
+      // restore lands.
+      if (payload.messages.length === 0 && payload.ctx === null && payload.provider === null) {
+        return;
+      }
+      window.localStorage.setItem(PULSE_STORAGE_KEY, JSON.stringify(payload));
+    } catch {
+      /* quota / private mode — silently degrade */
+    }
+  }, [messages, ctx, provider]);
 
   // Voice input — streams interim text into the field, commits final
   // transcript on stop. The mic button hides if the browser doesn't
@@ -218,11 +308,11 @@ export function Pulse(): React.ReactElement | null {
     try {
       let title: string;
       let center: { lat: number; lng: number };
-      const isFollowUp = ctxRef.current !== null;
+      const isFollowUp = ctx !== null;
 
       if (isFollowUp) {
-        title = ctxRef.current!.title;
-        center = ctxRef.current!.center;
+        title = ctx.title;
+        center = { lat: ctx.center.lat, lng: ctx.center.lng };
       } else {
         const hit = await geocodeOne(trimmed, 'India', DEFAULT_CENTER);
         title = hit?.label ?? trimmed;
@@ -235,7 +325,7 @@ export function Pulse(): React.ReactElement | null {
             center,
             radiusKm: 50,
             instruction: trimmed,
-            priorPlan: ctxRef.current?.plan ?? '',
+            priorPlan: ctx?.plan ?? '',
           }
         : { title, center, radiusKm: 50 };
 
@@ -257,7 +347,7 @@ export function Pulse(): React.ReactElement | null {
         ]);
       } else {
         setMessages((prev) => [...prev, { role: 'assistant', content: plan }]);
-        ctxRef.current = { title, center, plan };
+        setCtx({ title, center: { lat: center.lat, lng: center.lng }, plan });
         if (d?.provider) setProvider(d.provider);
       }
     } catch {
@@ -282,7 +372,15 @@ export function Pulse(): React.ReactElement | null {
   const handleReset = (): void => {
     setMessages([]);
     setProvider(null);
-    ctxRef.current = null;
+    setCtx(null);
+    // AE72 — clear persistence too so a fresh tab starts empty.
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.removeItem(PULSE_STORAGE_KEY);
+      } catch {
+        /* ignore quota / private mode */
+      }
+    }
   };
 
   return (
@@ -649,7 +747,7 @@ export function Pulse(): React.ReactElement | null {
             {provider !== null && <span>via {provider}</span>}
           </div>
 
-          {messages.length > 0 && ctxRef.current !== null && (
+          {messages.length > 0 && ctx !== null && (
             <>
               {saveError !== null && (
                 <div
@@ -698,8 +796,7 @@ export function Pulse(): React.ReactElement | null {
                     router.push('/login?next=/aether/me/journeys');
                     return;
                   }
-                  if (ctxRef.current === null) return;
-                  const ctx = ctxRef.current;
+                  if (ctx === null) return;
                   setSaving(true);
                   createTrip.mutate({
                     data: {
@@ -747,8 +844,7 @@ export function Pulse(): React.ReactElement | null {
                   type="button"
                   onClick={() => {
                     setSaveError(null);
-                    if (ctxRef.current === null) return;
-                    const ctx = ctxRef.current;
+                    if (ctx === null) return;
                     setShareAfterSave(true);
                     setSaving(true);
                     createTrip.mutate({
