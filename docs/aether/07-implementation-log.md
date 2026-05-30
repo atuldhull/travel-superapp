@@ -331,6 +331,20 @@ rebases.
 | **AE184** | Extract `parsePulseStore` + AE72 types + 9 specs (malformed JSON, wrong shape, ctx coords, provider type) | `8c7c4f1` |
 | **AE185** | Round S docs + autopilot + MEMORY refresh                                                                 | _this_    |
 
+## Round 27 — Round T · pure-helper sweep ✦ AE186–AE194
+
+| #         | Slice                                                                                                             | Commit    |
+| --------- | ----------------------------------------------------------------------------------------------------------------- | --------- |
+| **AE186** | Move `fmtTime` into shared `aether-dates` lib + 3 specs (naked HH:MM, midnight/noon/11:45 PM, garbage)            | `99eb182` |
+| **AE187** | Move `fmtDayHead` into shared `aether-dates` lib + 2 specs (—-on-bad, weekday·short-date pattern)                 | `99eb182` |
+| **AE188** | Extract `backupFilename` builder + 7 specs (sanitize chars, trim dashes, dated suffix, used by AE119/AE131/AE140) | `a78a330` |
+| **AE189** | Copy-bubble button on assistant Pulse messages (1.5s ✓ copied tick, per-idx state)                                | `2ad1d0b` |
+| **AE190** | Storybook ActivityTimeline `JustOne` variant (fresh-draft trip with 1 event)                                      | `3db482e` |
+| **AE191** | Extract Atlas `decideFilterEsc` + 4 specs (clear / focus-row-0 / null / case-sensitive)                           | `d2a038b` |
+| **AE192** | Extract `PENDING_PHRASES` + `nextPendingIdx` + `phraseAt` + 7 specs (clamp-at-last for AE159)                     | `cbefca4` |
+| **AE193** | 3 more shareSvg specs (21-char tier-2 88px, 29-char tier-3 72px, post-escape title survival)                      | `a32f94f` |
+| **AE194** | Round T docs + autopilot + MEMORY refresh                                                                         | _this_    |
+
 ## Stop conditions reached / deferred
 
 - **Mobile parity** — Aether is web-only Phase 0 (locked decision pre-AE5).
