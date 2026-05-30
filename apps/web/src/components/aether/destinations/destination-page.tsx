@@ -28,6 +28,7 @@ import { SafeImg } from '../safe-img';
 import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
 import { type Destination } from './data';
 import { destinationAccent } from './palette';
+import { isInSeason } from './seasons';
 
 export interface DestinationPageProps {
   destination: Destination;
@@ -171,6 +172,25 @@ export function DestinationPage({ destination: d }: DestinationPageProps): React
           >
             {d.tagline}
           </p>
+          {isInSeason(d.slug) && (
+            <span
+              style={{
+                display: 'inline-block',
+                marginTop: theme.space.comfy,
+                padding: '4px 12px',
+                borderRadius: theme.radius.pill,
+                background: 'rgba(110, 123, 92, 0.85)',
+                color: surface.base,
+                fontFamily: theme.font.ui,
+                fontSize: 11,
+                letterSpacing: '0.22em',
+                textTransform: 'uppercase',
+                fontWeight: 600,
+              }}
+            >
+              In season now
+            </span>
+          )}
         </div>
       </section>
 
