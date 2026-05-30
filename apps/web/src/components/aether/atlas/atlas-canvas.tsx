@@ -164,6 +164,20 @@ const DARK_ATTR =
 /** CartoDB Dark Matter labels only — overlays warm-tinted place names. */
 const DARK_LABELS = 'https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png';
 
+/** Haversine great-circle distance in km (AE71). Good to ~0.5% over
+ *  India-scale distances; we don't need ellipsoid accuracy for "which
+ *  destination is nearest to you?". */
+function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+  const R = 6371;
+  const toRad = (deg: number): number => (deg * Math.PI) / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
 export function AtlasCanvas(): React.ReactElement {
   const theme = useTheme();
   const motionPolicy = useMotionPolicy();
@@ -177,6 +191,15 @@ export function AtlasCanvas(): React.ReactElement {
   // AE69 — filter input (case-insensitive substring on name / state /
   // tagline). When empty, every pin is full-opacity.
   const [query, setQuery] = useState<string>('');
+
+  // AE71 — "Where am I" geolocation state. The map's user marker is
+  // kept in a ref so subsequent geolocate calls can replace it.
+  const userMarkerRef = useRef<{ remove: () => void } | null>(null);
+  const [geoStatus, setGeoStatus] = useState<'idle' | 'locating' | 'denied' | 'unavailable' | 'ok'>(
+    'idle',
+  );
+  const [geoError, setGeoError] = useState<string | null>(null);
+  const [nearest, setNearest] = useState<{ pin: Pin; km: number } | null>(null);
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (q === '') return PINS;
@@ -290,6 +313,79 @@ export function AtlasCanvas(): React.ReactElement {
   const ochre = theme.palette.ochre;
   const olive = theme.palette.olive;
 
+  /** AE71 — "Where am I?" Geolocates the user, drops an ochre pin at
+   *  their position, computes nearest destination via haversine, and
+   *  pans the map to fit both. Calls fail gracefully with calm copy. */
+  async function locateMe(): Promise<void> {
+    if (typeof navigator === 'undefined' || navigator.geolocation === undefined) {
+      setGeoStatus('unavailable');
+      setGeoError('Your browser does not expose geolocation.');
+      return;
+    }
+    setGeoStatus('locating');
+    setGeoError(null);
+    try {
+      const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: false,
+          maximumAge: 60_000,
+          timeout: 12_000,
+        });
+      });
+      const here = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      // Find the nearest destination.
+      let best: { pin: Pin; km: number } | null = null;
+      for (const p of PINS) {
+        const km = haversineKm(here, { lat: p.lat, lng: p.lng });
+        if (best === null || km < best.km) best = { pin: p, km };
+      }
+      setNearest(best);
+      setGeoStatus('ok');
+
+      // Plant / replace the user marker on the map.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const map = mapInstanceRef.current as any;
+      if (map !== null && map !== undefined) {
+        const L = (await import('leaflet')).default;
+        if (userMarkerRef.current !== null) userMarkerRef.current.remove();
+        const userIcon = L.divIcon({
+          className: 'aether-pin-me',
+          html: `<span class="aether-pin-me-ring"></span><span class="aether-pin-me-dot"></span>`,
+          iconSize: [22, 22],
+          iconAnchor: [11, 11],
+        });
+        const marker = L.marker([here.lat, here.lng], { icon: userIcon, title: 'You' }).addTo(map);
+        marker.bindTooltip(
+          `<div class="aether-pin-tooltip">
+            <div class="aether-pin-tooltip-name">You</div>
+            <div class="aether-pin-tooltip-state">~${Math.round(pos.coords.accuracy)}m accuracy</div>
+          </div>`,
+          { className: 'aether-pin-tooltip-wrap', direction: 'top', offset: [0, -8] },
+        );
+        userMarkerRef.current = marker as { remove: () => void };
+        // Fit user + nearest pin together.
+        if (best !== null) {
+          const bounds = L.latLngBounds([
+            [here.lat, here.lng],
+            [best.pin.lat, best.pin.lng],
+          ]);
+          map.fitBounds(bounds, { padding: [80, 80], maxZoom: 7 });
+        } else {
+          map.setView([here.lat, here.lng], 6);
+        }
+      }
+    } catch (err) {
+      const code = (err as GeolocationPositionError | undefined)?.code;
+      if (code === 1) {
+        setGeoStatus('denied');
+        setGeoError('Location permission denied. Re-enable it in the URL bar.');
+      } else {
+        setGeoStatus('unavailable');
+        setGeoError(err instanceof Error ? err.message : 'Could not read your location.');
+      }
+    }
+  }
+
   return (
     <div
       style={{
@@ -355,6 +451,95 @@ export function AtlasCanvas(): React.ReactElement {
             Ten places, one country, the routes between them. Click a pin to land on its page; hover
             to read the line.
           </p>
+
+          {/* AE71 — Where am I + nearest-destination chip */}
+          <div
+            style={{
+              marginTop: theme.space.loose,
+              display: 'inline-flex',
+              gap: theme.space.tight,
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => void locateMe()}
+              disabled={geoStatus === 'locating'}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: `${theme.space.tight}px ${theme.space.comfy}px`,
+                borderRadius: theme.radius.pill,
+                background: geoStatus === 'ok' ? accent.base : 'rgba(242, 232, 213, 0.10)',
+                border: `1px solid ${
+                  geoStatus === 'ok' ? accent.base : 'rgba(242, 232, 213, 0.25)'
+                }`,
+                color: surface.base,
+                fontFamily: theme.font.ui,
+                fontSize: theme.text.small.size,
+                fontWeight: 600,
+                cursor: geoStatus === 'locating' ? 'wait' : 'pointer',
+                opacity: geoStatus === 'locating' ? 0.7 : 1,
+                letterSpacing: '0.02em',
+              }}
+              aria-label="Show my position on the map"
+            >
+              <span aria-hidden style={{ color: ochre.glow }}>
+                ◎
+              </span>
+              {geoStatus === 'locating'
+                ? 'Reading the sky…'
+                : geoStatus === 'ok'
+                  ? 'You’re on the map'
+                  : 'Where am I?'}
+            </button>
+            {nearest !== null && (
+              <Link
+                href={`/aether/destinations/${nearest.pin.slug}`}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: `${theme.space.tight}px ${theme.space.comfy}px`,
+                  borderRadius: theme.radius.pill,
+                  background: 'rgba(242, 232, 213, 0.08)',
+                  border: `1px solid rgba(242, 232, 213, 0.22)`,
+                  color: surface.base,
+                  fontFamily: theme.font.ui,
+                  fontSize: theme.text.small.size,
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  letterSpacing: '0.02em',
+                }}
+              >
+                <span style={{ color: ochre.glow }}>Nearest</span>
+                <span>· {nearest.pin.name}</span>
+                <span style={{ opacity: 0.66, fontFamily: theme.font.mono, fontSize: 11 }}>
+                  {Math.round(nearest.km)} km
+                </span>
+                <span aria-hidden style={{ color: accent.glow }}>
+                  →
+                </span>
+              </Link>
+            )}
+          </div>
+          {geoError !== null && (
+            <p
+              role="alert"
+              style={{
+                marginTop: theme.space.tight,
+                fontFamily: theme.font.ui,
+                fontSize: 11,
+                color: '#E89A8A',
+                opacity: 0.85,
+              }}
+            >
+              {geoError}
+            </p>
+          )}
         </div>
       </Reveal>
 
@@ -633,6 +818,33 @@ export function AtlasCanvas(): React.ReactElement {
         @keyframes aether-pin-pulse {
           0%, 100% { transform: scale(1); opacity: 0.85; }
           50%      { transform: scale(1.4); opacity: 0.35; }
+        }
+
+        /* AE71 — user position marker. Ochre instead of terracotta so
+           the user pin reads as 'you' rather than 'a destination'. */
+        .aether-pin-me {
+          position: relative;
+          width: 22px;
+          height: 22px;
+        }
+        .aether-pin-me-ring {
+          position: absolute;
+          inset: 0;
+          border-radius: 50%;
+          background: radial-gradient(circle, ${ochre.glow} 0%, rgba(194, 138, 74, 0) 70%);
+          ${motionPolicy === 'full' ? 'animation: aether-pin-pulse 3.2s ease-in-out infinite;' : ''}
+        }
+        .aether-pin-me-dot {
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          width: 8px;
+          height: 8px;
+          margin-left: -4px;
+          margin-top: -4px;
+          border-radius: 50%;
+          background: ${surface.base};
+          box-shadow: 0 0 0 2px ${ochre.deep}, 0 0 10px ${ochre.glow};
         }
 
         .aether-pin-tooltip-wrap {
