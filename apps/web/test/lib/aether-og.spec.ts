@@ -1,0 +1,47 @@
+/**
+ * Unit tests for `lib/aether-og.ts` — the shared OG + Twitter Card
+ * metadata builder used by every Aether route's `page.tsx`.
+ */
+import { describe, expect, it } from 'vitest';
+import { aetherOg } from '../../src/lib/aether-og';
+
+describe('aetherOg', () => {
+  it('returns openGraph + twitter blocks with the canonical shape', () => {
+    const out = aetherOg('Aether · Test', 'A test description.');
+    expect(out.openGraph).toBeDefined();
+    expect(out.twitter).toBeDefined();
+    expect(out.openGraph?.title).toBe('Aether · Test');
+    expect(out.openGraph?.description).toBe('A test description.');
+    expect(out.openGraph?.siteName).toBe('TravelSuperApp · Aether');
+    expect(out.openGraph?.type).toBe('website');
+  });
+
+  it('defaults the OG image to the Taj Mahal hero id when no photoId given', () => {
+    const out = aetherOg('T', 'D');
+    const images = (out.openGraph?.images ?? []) as Array<{ url: string; alt: string }>;
+    expect(images.length).toBe(1);
+    expect(images[0]?.url).toContain('1564507592333-c60657eea523');
+    expect(images[0]?.alt).toBe('T');
+  });
+
+  it('uses the supplied photoId when provided', () => {
+    const out = aetherOg('T', 'D', { photoId: 'abc-123' });
+    const images = (out.openGraph?.images ?? []) as Array<{ url: string }>;
+    expect(images[0]?.url).toContain('abc-123');
+  });
+
+  it('builds a summary_large_image Twitter card sharing the same image', () => {
+    const out = aetherOg('T', 'D', { photoId: 'xyz-789' });
+    expect(out.twitter?.card).toBe('summary_large_image');
+    const twImages = (out.twitter?.images ?? []) as readonly string[];
+    expect(twImages).toHaveLength(1);
+    expect(String(twImages[0])).toContain('xyz-789');
+  });
+
+  it('sets the OG image dimensions to the 1200x630 OG canonical', () => {
+    const out = aetherOg('T', 'D');
+    const images = (out.openGraph?.images ?? []) as Array<{ width: number; height: number }>;
+    expect(images[0]?.width).toBe(1200);
+    expect(images[0]?.height).toBe(630);
+  });
+});
