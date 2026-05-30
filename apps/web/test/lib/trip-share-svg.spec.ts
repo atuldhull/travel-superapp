@@ -101,4 +101,28 @@ describe('shareSvg', () => {
     const svg = shareSvg(makeTrip({}));
     expect(svg).not.toContain('\r');
   });
+
+  // ─── AE193: title-shrink boundary ───────────────────────────────────
+  it('20-char threshold drops the size from 110 to 88', () => {
+    // The renderer has three tiers: ≤20 → 110, 21–28 → 88, >28 → 72.
+    // A 21-char title is in the 88 band.
+    const title = 'Title with twenty-one';
+    expect(title.length).toBe(21);
+    const svg = shareSvg(makeTrip({ title }));
+    expect(svg).toContain('font-size="88"');
+  });
+
+  it('29 chars (one over the top tier) drops to the shrunk size 72', () => {
+    const title = 'A 29-character travel titleee';
+    expect(title.length).toBe(29);
+    const svg = shareSvg(makeTrip({ title }));
+    expect(svg).toContain('font-size="72"');
+  });
+
+  it('renders rendered title text after the escape pass', () => {
+    // The title MUST survive into the rendered string — easy to break
+    // if a future code-mod accidentally replaces the body.
+    const svg = shareSvg(makeTrip({ title: 'Yatra' }));
+    expect(svg).toContain('Yatra');
+  });
 });
