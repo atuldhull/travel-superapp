@@ -14,7 +14,7 @@
  * cheapest way to give users a "what to pack" surface that survives
  * across reloads on the same device.
  */
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { useTheme } from '@app/aether-core';
 
 export interface ChecklistItem {
@@ -221,6 +221,46 @@ export function TripChecklist({ tripId, destinationSlug }: TripChecklistProps): 
 
   const remaining = useMemo(() => items.filter((it) => !it.done).length, [items]);
 
+  // AE121 — keyboard nav on the list. Each row hosts a hidden focusable
+  // wrapper (tabIndex=0) so Arrow Up/Down moves between rows, Space
+  // toggles done, Delete/Backspace removes. The native checkbox keeps
+  // its mouse behaviour; this only adds keyboard parity.
+  const rowRefs = useRef<Map<string, HTMLLIElement>>(new Map());
+  function focusItemAt(idx: number): void {
+    if (items.length === 0) return;
+    const wrapped = ((idx % items.length) + items.length) % items.length;
+    const target = items[wrapped];
+    if (target === undefined) return;
+    const node = rowRefs.current.get(target.id);
+    if (node !== undefined) node.focus();
+  }
+  function onItemKey(e: KeyboardEvent<HTMLLIElement>, idx: number, id: string): void {
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        focusItemAt(idx + 1);
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        focusItemAt(idx - 1);
+        break;
+      case ' ':
+      case 'Enter':
+        e.preventDefault();
+        toggle(id);
+        break;
+      case 'Delete':
+      case 'Backspace':
+        e.preventDefault();
+        remove(id);
+        // After remove, focus the previous neighbour (or the new first).
+        window.requestAnimationFrame(() => focusItemAt(Math.max(0, idx - 1)));
+        break;
+      default:
+        break;
+    }
+  }
+
   // AE113 — render the current list as a plain-text bullet block,
   // suitable for pasting into WhatsApp / Notes / iMessage. Done items
   // use ✓ + strikethrough-style prefix; undone items use [ ].
@@ -229,6 +269,32 @@ export function TripChecklist({ tripId, destinationSlug }: TripChecklistProps): 
     return lines.join('\n');
   }
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle');
+
+  // AE119 — download the current list as a JSON file. Lets users
+  // back up before reset / before swapping browsers. Filename is
+  // `aether-checklist-<tripId>-<YYYY-MM-DD>.json`. No-op when empty.
+  function downloadBackup(): void {
+    if (items.length === 0) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const payload = {
+      version: 1,
+      tripId,
+      exportedAt: new Date().toISOString(),
+      items,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `aether-checklist-${tripId}-${today}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    // Revoke after the download has been initiated. Spec says any
+    // download triggered before revocation is unaffected.
+    window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+  }
+
   async function copyBullets(): Promise<void> {
     const text = asBullets();
     if (text.trim() === '') return;
@@ -333,6 +399,26 @@ export function TripChecklist({ tripId, destinationSlug }: TripChecklistProps): 
                 ? 'copy failed'
                 : 'copy as bullets'}
           </button>
+          {/* AE119 — download a JSON backup of the current list */}
+          <button
+            type="button"
+            onClick={downloadBackup}
+            disabled={items.length === 0}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: ink.soft,
+              fontFamily: theme.font.ui,
+              fontSize: 11,
+              cursor: items.length === 0 ? 'not-allowed' : 'pointer',
+              letterSpacing: '0.02em',
+              textDecoration: 'underline',
+              opacity: items.length === 0 ? 0.5 : 1,
+            }}
+            aria-label="Download checklist as JSON backup"
+          >
+            backup .json
+          </button>
           <button
             type="button"
             onClick={resetToStarter}
@@ -387,9 +473,19 @@ export function TripChecklist({ tripId, destinationSlug }: TripChecklistProps): 
           gap: 4,
         }}
       >
-        {items.map((it) => (
+        {items.map((it, idx) => (
           <li
             key={it.id}
+            ref={(el) => {
+              if (el === null) {
+                rowRefs.current.delete(it.id);
+              } else {
+                rowRefs.current.set(it.id, el);
+              }
+            }}
+            tabIndex={0}
+            onKeyDown={(e) => onItemKey(e, idx, it.id)}
+            aria-keyshortcuts="Space ArrowUp ArrowDown Delete"
             style={{
               display: 'grid',
               gridTemplateColumns: '24px 1fr auto',
