@@ -254,6 +254,15 @@ rebases.
 | **AE137** | Atlas focused-row aria-live announcer (`<name>, <state>` via role=status sr-only div)                                               | `e89cbcf` |
 | **AE138** | Round M docs + autopilot + MEMORY refresh                                                                                           | _this_    |
 
+## Round 21 — Round N · perf & backup ✦ AE139–AE142
+
+| #         | Slice                                                                                                | Commit    |
+| --------- | ---------------------------------------------------------------------------------------------------- | --------- |
+| **AE139** | Export-PDF button pre-warms `@react-pdf/renderer` chunk on hover/focus (ref-gated, retry on failure) | `50a520a` |
+| **AE140** | `/aether/account` "Backup .json" mirrors AE119 for the Pulse conversation (next to AE93 Clear)       | `afe0e5e` |
+| **AE141** | Activity timeline groups by ISO week (Monday-rooted) when events > 8; ≤8 stays flat                  | `52876cf` |
+| **AE142** | Round N docs + autopilot + MEMORY refresh                                                            | _this_    |
+
 ## Stop conditions reached / deferred
 
 - **Mobile parity** — Aether is web-only Phase 0 (locked decision pre-AE5).
