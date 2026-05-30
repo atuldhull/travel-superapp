@@ -24,6 +24,7 @@ import { useViewport } from '../use-viewport';
 import { isInSeason } from '../destinations/seasons';
 import { destinationAccent } from '../destinations/palette';
 import { shouldFocusFilterOnSlash } from './slash-focus';
+import { shouldGeolocateOnG } from './geolocate-shortcut';
 // AE170 — nearestPin math extracted to a pure helper for testability.
 import { nearestPin } from './haversine';
 // AE182 — pins moved to ./pins.ts so the data is test-reachable.
@@ -183,16 +184,26 @@ export function AtlasCanvas(): React.ReactElement {
   // is DOM-coupled.
   useEffect(() => {
     const onKey = (e: globalThis.KeyboardEvent): void => {
-      if (!shouldFocusFilterOnSlash(e.key, e.target as HTMLElement | null)) return;
-      const node = filterInputRef.current;
-      if (node === null) return;
-      e.preventDefault();
-      node.focus();
-      node.select();
+      const tgt = e.target as HTMLElement | null;
+      if (shouldFocusFilterOnSlash(e.key, tgt)) {
+        const node = filterInputRef.current;
+        if (node === null) return;
+        e.preventDefault();
+        node.focus();
+        node.select();
+        return;
+      }
+      // AE199 — `g` (when not in a form field) triggers geolocate,
+      // mirroring the AE127 `/` shortcut for the other Atlas action.
+      if (shouldGeolocateOnG(e.key, tgt)) {
+        if (geoStatus === 'locating') return;
+        e.preventDefault();
+        void locateMe();
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [geoStatus]);
 
   // AE69 — dim non-matching pins when filter has typed text. We don't
   // remove them from the map (changing the marker set on every keystroke
