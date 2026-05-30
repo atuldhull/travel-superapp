@@ -282,19 +282,48 @@ export function JournalArticleView({ article: a }: JournalArticleViewProps): Rea
                 The journal index →
               </Link>
             </div>
-            <Link
-              href="/aether/drift"
-              style={{
-                fontFamily: theme.font.ui,
-                fontSize: theme.text.small.size,
-                fontWeight: 600,
-                color: accent.deep,
-                textDecoration: 'none',
-                letterSpacing: '0.02em',
-              }}
-            >
-              ← Back to Drift
-            </Link>
+            <div style={{ display: 'flex', gap: theme.space.tight, flexWrap: 'wrap' }}>
+              {/* AE102 — Ask Pulse for a trip in this story's vibe */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof window === 'undefined') return;
+                  const prefill = `A trip in the spirit of "${a.title}" — ${a.dek}`;
+                  window.dispatchEvent(
+                    new CustomEvent('aether-pulse-open', { detail: { prefill } }),
+                  );
+                }}
+                style={{
+                  padding: `${theme.space.hairline}px ${theme.space.comfy}px`,
+                  borderRadius: theme.radius.pill,
+                  background: accent.whisper,
+                  border: `1px solid ${accent.deep}`,
+                  color: accent.deep,
+                  fontFamily: theme.font.ui,
+                  fontSize: theme.text.small.size,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  letterSpacing: '0.01em',
+                }}
+                aria-label="Ask Pulse for a trip like this story"
+              >
+                ✦ A trip like this
+              </button>
+              <Link
+                href="/aether/drift"
+                style={{
+                  padding: `${theme.space.hairline}px ${theme.space.comfy}px`,
+                  fontFamily: theme.font.ui,
+                  fontSize: theme.text.small.size,
+                  fontWeight: 600,
+                  color: accent.deep,
+                  textDecoration: 'none',
+                  letterSpacing: '0.02em',
+                }}
+              >
+                ← Back to Drift
+              </Link>
+            </div>
           </div>
         </div>
       </Reveal>
