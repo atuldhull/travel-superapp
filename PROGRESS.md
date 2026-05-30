@@ -12,10 +12,10 @@
 
 | Counter             | Value                                                                     |
 | ------------------- | ------------------------------------------------------------------------- |
-| Prompts completed   | 337 (327 prior + Round AC: AE266–AE275, 10 slices)                        |
+| Prompts completed   | 347 (337 prior + Round AD: AE276–AE285, 10 slices)                        |
 | Prompts in progress | 0                                                                         |
 | Prompts blocked     | 0                                                                         |
-| Last prompt         | `AE275` — Round AC docs (sitemap + RSS + tooltip + photo-url kit)         |
+| Last prompt         | `AE285` — Round AD docs (message + summary + zoom-strategy kit)           |
 | Last commit date    | 2026-05-30                                                                |
 | Phase               | Phase 1 — Featured-to-detail flow live for the public memory-book surface |
 
@@ -63,6 +63,7 @@
 | **Round AA**    | AE246–AE255 | `destinationBySlug` + Ci + 10 specs · `useLocalStorageState` + 6 jsdom specs · `formatInSeasonMonths` + 12 specs · `articleBySlug` + 9 specs · `computeShareListStats` + 7 specs · `atlasEmptyStateCopy` + 7 specs · `buildPulseHistoryExport` + 7 specs · `formatRelativeAether` + 14 specs · `useStableId` + 6 jsdom specs · Round AA docs                                                             | ✅     |
 | **Round AB**    | AE256–AE265 | `findFirstItineraryDate` + 7 specs · `escapeAttr` + 10 specs · `sentenceCase` + 12 specs · `aggregateMeCounts` + 6 specs · `extractPullQuotes` + 7 specs · `matchQuickPrompt` + 11 specs · `zoomFromBBox` + 9 specs · `pickFeaturedDestination` + 7 specs · `extractShareCode` + 11 specs · Round AB docs                                                                                                | ✅     |
 | **Round AC**    | AE266–AE275 | `shouldShowThinkingDot` + 6 specs · `buildPhotoUrl` + 9 specs · `useIntersectionOnce` + 4 jsdom specs · `buildDestinationTagline` + 7 specs · `destinationSitemapEntries` + 9 specs · `journalSitemapEntries` + 7 specs · `buildShareCardTagline` + 7 specs · `buildAtlasTooltipHtml` + 6 specs · `buildRssItem` + 8 specs · Round AC docs                                                               | ✅     |
+| **Round AD**    | AE276–AE285 | `suggestedDuplicateName` + 10 specs · `formatBytes` + 14 specs · `extractDomain` + 11 specs · `buildShareMessage` + 8 specs · `summariseRecentActivity` + 8 specs · `pickZoomStrategy` + 7 specs · `shouldAttachContext` + 11 specs · `shareCardTitleSize` + 11 specs · `sleep` + 5 specs · Round AD docs                                                                                                | ✅     |
 
 > **Operator-owed**: push the AE commits + flip `NEXT_PUBLIC_FEATURE_AETHER_PREVIEW=1` on prod for the soft launch. The route gate auto-404s when the env var is unset, so deploys with the flag off ship safely.
 

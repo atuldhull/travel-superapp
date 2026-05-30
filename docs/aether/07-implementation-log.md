@@ -471,6 +471,21 @@ rebases.
 | **AE274** | `buildRssItem` + 8 specs (RFC 2822 pubDate, conditional dc:creator/description, epoch fallback)    | `5b3cd06` |
 | **AE275** | Round AC docs + autopilot + MEMORY refresh                                                         | _this_    |
 
+## Round 37 — Round AD · message + summary + zoom-strategy kit ✦ AE276–AE285
+
+| #         | Slice                                                                                                    | Commit    |
+| --------- | -------------------------------------------------------------------------------------------------------- | --------- |
+| **AE276** | `suggestedDuplicateName` + 10 specs (' (copy)' → ' (copy 2)' chain; cap 100)                             | `5bb9320` |
+| **AE277** | `formatBytes` + 14 specs (binary/decimal units; NaN/Inf/neg → '—')                                       | `e061240` |
+| **AE278** | `extractDomain` + 11 specs (URL parse, www strip, lowercased, fathom.video sanity)                       | `b616474` |
+| **AE279** | `buildShareMessage` + 8 specs (title\\ntagline\\nurl; 240-char tagline cap with ellipsis)                | `cbf4cf0` |
+| **AE280** | `summariseRecentActivity` + 8 specs (verb routing; tie picks first encountered; ignores updated=created) | `ef884cf` |
+| **AE281** | `pickZoomStrategy` + 7 specs (snap if Δ≤1 or Δ>6; reducedMotion always snap)                             | `40ea150` |
+| **AE282** | `shouldAttachContext` + 11 specs (6 fresh-start phrases; case-insensitive substring)                     | `272e303` |
+| **AE283** | `shareCardTitleSize` + 11 specs (3-tier 110/88/72 at 20/28 boundaries; AE193 fixtures locked)            | `69c81aa` |
+| **AE284** | `sleep` + 5 fake-timer specs (AbortSignal cancel; pre-aborted rejects immediately; negative clamp)       | `2d14e06` |
+| **AE285** | Round AD docs + autopilot + MEMORY refresh                                                               | _this_    |
+
 ## Stop conditions reached / deferred
 
 - **Mobile parity** — Aether is web-only Phase 0 (locked decision pre-AE5).
