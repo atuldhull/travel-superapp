@@ -238,3 +238,9 @@ type Story = StoryObj<typeof TimelineRail>;
 export const Flat: Story = { args: { events: FLAT_EVENTS } };
 export const Eight: Story = { args: { events: EIGHT_EVENTS } };
 export const WeekGrouped: Story = { args: { events: ELEVEN_EVENTS, grouped: true } };
+
+// AE190 — a freshly-drafted trip with only the Drafted event.
+const JUST_ONE: ReadonlyArray<Evt> = [
+  { at: '2026-05-30T18:32:00', kind: 'create', label: 'Drafted' },
+];
+export const JustOne: Story = { args: { events: JUST_ONE } };
