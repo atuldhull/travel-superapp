@@ -40,6 +40,7 @@ import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
 import { useViewport } from '../use-viewport';
 import { TripShareCard } from './trip-share-card';
 import { TripChecklist } from './trip-checklist';
+import { TIMELINE_GROUP_THRESHOLD, groupByWeek, type TimelineEvent } from './timeline-grouping';
 
 /**
  * AE114 — derive a destination slug from a trip title by substring
@@ -1392,11 +1393,9 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
                   }}
                 >
                   {(() => {
-                    interface Evt {
-                      readonly at: string;
-                      readonly label: string;
-                      readonly kind: 'create' | 'edit' | 'archive' | 'share';
-                    }
+                    // AE143 — TimelineEvent moved to ./timeline-grouping.ts
+                    // so the grouping math is unit-testable.
+                    type Evt = TimelineEvent;
                     const events: Evt[] = [];
                     if (asIso(trip.createdAt) !== null) {
                       events.push({
@@ -1431,32 +1430,6 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
                       });
                     }
                     events.sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
-
-                    /** AE141 — once events get long, group by ISO week
-                     *  so the eye can scan timeline arcs. Threshold of 8
-                     *  picked because a single trip rarely has more than
-                     *  a handful of organic events; past that they tend
-                     *  to be share-spam from one campaign and benefit
-                     *  from being collapsed under a week header. */
-                    function weekKey(iso: string): string {
-                      const d = new Date(iso);
-                      if (Number.isNaN(d.getTime())) return 'unknown';
-                      // ISO: week starts Monday. Shift to that Monday.
-                      const day = d.getDay(); // 0=Sun
-                      const shift = day === 0 ? -6 : 1 - day;
-                      const monday = new Date(d);
-                      monday.setDate(d.getDate() + shift);
-                      monday.setHours(0, 0, 0, 0);
-                      return monday.toISOString().slice(0, 10);
-                    }
-                    function weekLabel(iso: string): string {
-                      const d = new Date(iso);
-                      if (Number.isNaN(d.getTime())) return iso;
-                      return `Week of ${d.toLocaleDateString(undefined, {
-                        month: 'short',
-                        day: 'numeric',
-                      })}`;
-                    }
 
                     function renderEventLi(e: (typeof events)[number]): React.ReactElement {
                       return (
@@ -1513,23 +1486,14 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
                       );
                     }
 
-                    if (events.length <= 8) {
+                    if (events.length <= TIMELINE_GROUP_THRESHOLD) {
                       return events.map(renderEventLi);
                     }
 
-                    // > 8: group by week. Render a tiny header before
-                    // each group; the rail line stays continuous since
+                    // Group by week. Render a tiny header before each
+                    // group; the rail line stays continuous because
                     // headers are inside the same <ol>.
-                    const groups: Array<{ key: string; label: string; items: typeof events }> = [];
-                    let last: string | null = null;
-                    for (const e of events) {
-                      const wk = weekKey(e.at);
-                      if (wk !== last) {
-                        groups.push({ key: wk, label: weekLabel(e.at), items: [] });
-                        last = wk;
-                      }
-                      groups[groups.length - 1]?.items.push(e);
-                    }
+                    const groups = groupByWeek(events);
                     return groups.map((g) => (
                       <div key={`wk-${g.key}`}>
                         <li
