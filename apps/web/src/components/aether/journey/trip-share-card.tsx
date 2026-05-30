@@ -49,25 +49,9 @@ const COL = {
   olive: '#6E7B5C',
 };
 
-function asIso(v: unknown): string | null {
-  return typeof v === 'string' ? v : null;
-}
-
-function fmtDate(v: unknown): string {
-  const iso = asIso(v);
-  if (iso === null) return '—';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-}
-
-function daysBetween(a: unknown, b: unknown): number | null {
-  const sa = asIso(a);
-  const sb = asIso(b);
-  if (sa === null || sb === null) return null;
-  const ms = new Date(sb).getTime() - new Date(sa).getTime();
-  return Math.max(0, Math.round(ms / 86_400_000)) + 1;
-}
+// AE195 — date helpers consolidated into the shared aether-dates lib.
+// trip-share-card uses the inclusive variant (Jun 3 → Jun 17 = 15 days).
+import { asIso, fmtDate, inclusiveDaysBetween as daysBetween } from '@/lib/aether-dates';
 
 /** Crude SVG-safe text — escapes the five XML metachars so titles
  *  with `<`, `>`, `&`, `"`, `'` don't break the markup. */

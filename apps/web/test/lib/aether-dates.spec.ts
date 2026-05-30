@@ -2,7 +2,14 @@
  * Vitest specs for the AE171 shared Aether date helpers.
  */
 import { describe, expect, it } from 'vitest';
-import { asIso, daysBetween, fmtDate, fmtDayHead, fmtTime } from '../../src/lib/aether-dates';
+import {
+  asIso,
+  daysBetween,
+  fmtDate,
+  fmtDayHead,
+  fmtTime,
+  inclusiveDaysBetween,
+} from '../../src/lib/aether-dates';
 
 describe('asIso', () => {
   it('passes ISO strings through unchanged', () => {
@@ -89,5 +96,25 @@ describe('daysBetween', () => {
   });
   it('returns null on unparseable strings', () => {
     expect(daysBetween('foo', 'bar')).toBeNull();
+  });
+});
+
+// ─── AE195: inclusiveDaysBetween (share-card convention) ──────────
+describe('inclusiveDaysBetween', () => {
+  it('returns null when either input is null', () => {
+    expect(inclusiveDaysBetween(null, '2026-06-01')).toBeNull();
+    expect(inclusiveDaysBetween('2026-06-01', null)).toBeNull();
+  });
+  it('returns 1 for same-day (inclusive of both endpoints)', () => {
+    expect(inclusiveDaysBetween('2026-06-01', '2026-06-01')).toBe(1);
+  });
+  it('returns 15 for Jun 3 → Jun 17 (the canonical share-card span)', () => {
+    expect(inclusiveDaysBetween('2026-06-03', '2026-06-17')).toBe(15);
+  });
+  it('clamps reverse ranges to 1 (start+1 floor)', () => {
+    expect(inclusiveDaysBetween('2026-06-17', '2026-06-03')).toBe(1);
+  });
+  it('returns null on garbage input', () => {
+    expect(inclusiveDaysBetween('foo', 'bar')).toBeNull();
   });
 });
