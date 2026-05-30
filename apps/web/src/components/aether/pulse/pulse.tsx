@@ -42,67 +42,10 @@ const QUICK_PROMPTS = [
   { label: 'See the map', kind: 'map' as const, href: '/aether/atlas' },
 ];
 
-/** AE85 — slash-command palette. When the input starts with `/`, the
- *  palette filters this list by the suffix and offers single-tap
- *  templated prompts. Each command's `expand` is the text we drop
- *  into the input (the user can edit before sending). */
-interface SlashCommand {
-  readonly cmd: string;
-  readonly hint: string;
-  readonly expand: string;
-}
-const SLASH_COMMANDS: ReadonlyArray<SlashCommand> = [
-  {
-    cmd: '/jaipur',
-    hint: 'Three slow days in Rajasthan',
-    expand: 'A trip to Jaipur, three days, slow pace, palaces and food',
-  },
-  {
-    cmd: '/leh',
-    hint: 'Trans-Himalayan high desert',
-    expand: 'A trip to Leh, four days, monasteries and the high passes',
-  },
-  {
-    cmd: '/alleppey',
-    hint: 'Backwaters, slow time',
-    expand: 'A trip to Alleppey, three days, houseboat and palm-fringed backwaters',
-  },
-  {
-    cmd: '/varanasi',
-    hint: 'The oldest living city',
-    expand: 'A trip to Varanasi, two days, dawn boat ride and ghats',
-  },
-  {
-    cmd: '/cheap',
-    hint: 'Make it as cheap as possible',
-    expand: 'Same plan, but the cheapest possible version',
-  },
-  {
-    cmd: '/luxury',
-    hint: 'Premium tier',
-    expand: 'Same plan, but the most premium version',
-  },
-  {
-    cmd: '/two-days',
-    hint: 'Compress to two days',
-    expand: 'Same plan, but two days',
-  },
-  {
-    cmd: '/five-days',
-    hint: 'Stretch to five days',
-    expand: 'Same plan, but five days',
-  },
-  {
-    cmd: '/quiet',
-    hint: 'No crowds, more dawn',
-    expand: 'Same plan, but quieter — no crowds, more dawn light',
-  },
-  {
-    cmd: '/festival',
-    hint: 'Around the active festival',
-    expand: 'A trip timed around whichever festival is happening in India right now',
-  },
-];
+// AE85 slash-command palette — the data + matcher live in
+// ./slash-commands.ts so they can be unit-tested without spinning
+// up the Pulse drawer (AE91).
+import { SLASH_COMMANDS, matchSlashCommands } from './slash-commands';
 
 interface ChatMessage {
   readonly role: 'user' | 'assistant';
@@ -703,10 +646,7 @@ export function Pulse(): React.ReactElement | null {
               with '/'. Filters by the suffix after the slash. */}
           {q.startsWith('/') &&
             (() => {
-              const stem = q.slice(1).toLowerCase();
-              const matches = SLASH_COMMANDS.filter(
-                (c) => stem === '' || c.cmd.slice(1).startsWith(stem),
-              ).slice(0, 6);
+              const matches = matchSlashCommands(q, SLASH_COMMANDS).slice(0, 6);
               if (matches.length === 0) return null;
               return (
                 <div
