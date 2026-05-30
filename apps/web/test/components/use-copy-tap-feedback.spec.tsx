@@ -3,6 +3,7 @@
  * "✓ copied" tap-feedback hook.
  */
 import { act, render } from '@testing-library/react';
+import type { ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useCopyTapFeedback } from '../../src/components/aether/use-copy-tap-feedback';
 
@@ -11,7 +12,7 @@ interface ProbeRef {
   flash: () => void;
 }
 
-function Probe({ windowMs, out }: { windowMs?: number; out: ProbeRef }): JSX.Element {
+function Probe({ windowMs, out }: { windowMs?: number; out: ProbeRef }): ReactElement {
   const { copied, flash } = useCopyTapFeedback(windowMs);
   // Mirror to the shared ref so the spec can read state without DOM.
   out.copied = copied;

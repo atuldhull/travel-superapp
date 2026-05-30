@@ -67,6 +67,8 @@ import { copyTextToClipboard } from '../../../lib/copy-text';
 import { lastUserPrompt } from './last-user-prompt';
 // AE207 — composer input normaliser (trim + length guard).
 import { normalizePulsePrompt } from './normalize-prompt';
+// AE212 — request-body builder (fresh vs follow-up branch).
+import { buildSamplePlanRequest } from './build-sample-plan-request';
 
 // AE72 + AE184 — types + storage key + parser extracted to
 // ./persisted-pulse.ts so the shape contract is unit-testable.
@@ -363,15 +365,14 @@ export function Pulse(): React.ReactElement | null {
         center = hit ? { lat: hit.lat, lng: hit.lng } : DEFAULT_CENTER;
       }
 
-      const requestBody = isFollowUp
-        ? {
-            title,
-            center,
-            radiusKm: 50,
-            instruction: trimmed,
-            priorPlan: ctx?.plan ?? '',
-          }
-        : { title, center, radiusKm: 50 };
+      // AE212 — request-body shape lives in the pure builder.
+      const requestBody = buildSamplePlanRequest({
+        title,
+        center,
+        radiusKm: 50,
+        ctx,
+        instruction: trimmed,
+      });
 
       const res = (await tripControllerSamplePlan(
         requestBody as unknown as Parameters<typeof tripControllerSamplePlan>[0],
