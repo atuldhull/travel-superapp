@@ -13,7 +13,7 @@
  */
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTheme } from '@app/aether-core';
 import {
   getTripControllerGetOneQueryKey,
@@ -223,6 +223,22 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
   const accent = theme.palette.terracotta;
   const ochre = theme.palette.ochre;
   const olive = theme.palette.olive;
+
+  /**
+   * AE139 — pre-warm the PDF chunk on mouseenter / focus so the click
+   * feels instant. The browser caches the import; calling it twice is
+   * cheap. The cache is a module-level Set so multiple hovers on the
+   * page during one session don't restart the network fetch.
+   */
+  const preloadPdfOnce = useRef<boolean>(false);
+  function preloadPdfChunk(): void {
+    if (preloadPdfOnce.current) return;
+    preloadPdfOnce.current = true;
+    // Fire-and-forget; failure is recovered the next click.
+    void Promise.all([import('@react-pdf/renderer'), import('./trip-pdf-doc')]).catch(() => {
+      preloadPdfOnce.current = false; // let click retry
+    });
+  }
 
   /** Lazy-loads @react-pdf/renderer + the doc component, renders the
    *  PDF to a Blob, and triggers a download. Lazy because react-pdf
@@ -684,6 +700,10 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
                 <button
                   type="button"
                   onClick={() => void exportPdf()}
+                  // AE139 — pre-warm the @react-pdf chunk so the
+                  // click→download path skips a ~600KB cold fetch.
+                  onMouseEnter={preloadPdfChunk}
+                  onFocus={preloadPdfChunk}
                   disabled={exportingPdf}
                   style={{
                     padding: `${theme.space.hairline}px ${theme.space.comfy}px`,
