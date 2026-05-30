@@ -44,4 +44,20 @@ describe('backupFilename', () => {
       expect(backupFilename(scope, FIXED).endsWith('.json')).toBe(true);
     }
   });
+
+  // ─── AE204: hostile-input gating ──────────────────────────────────
+  it('strips path-separator chars (no directory traversal)', () => {
+    expect(backupFilename('../../etc/passwd', FIXED)).toBe('aether-etc-passwd-2026-05-30.json');
+    expect(backupFilename('a/b\\c', FIXED)).toBe('aether-a-b-c-2026-05-30.json');
+  });
+
+  it('collapses runs of unsafe chars into a single dash', () => {
+    expect(backupFilename('!!!!hello????', FIXED)).toBe('aether-hello-2026-05-30.json');
+  });
+
+  it('a scope made of only unsafe chars degenerates to no scope', () => {
+    // After stripping + trimming, an all-bad scope yields just
+    // `aether--2026-05-30.json`. Document that explicitly.
+    expect(backupFilename('!!!', FIXED)).toBe('aether--2026-05-30.json');
+  });
 });
