@@ -70,6 +70,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'yearly',
       priority: 0.3,
     },
+    // AE169 — Phase 0 routes that ship after the original sitemap.
+    {
+      url: `${SITE_URL}/aether/brand`,
+      lastModified: now,
+      changeFrequency: 'yearly',
+      priority: 0.4,
+    },
+    {
+      url: `${SITE_URL}/aether/destinations/compare`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.6,
+    },
+    {
+      url: `${SITE_URL}/aether/status`,
+      lastModified: now,
+      changeFrequency: 'daily',
+      priority: 0.2,
+    },
   ];
 
   const destinationRoutes: MetadataRoute.Sitemap = ALL_SLUGS.map((slug) => ({
