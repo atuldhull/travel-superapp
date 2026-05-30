@@ -12,10 +12,10 @@
 
 | Counter             | Value                                                                     |
 | ------------------- | ------------------------------------------------------------------------- |
-| Prompts completed   | 317 (307 prior + Round AA: AE246–AE255, 10 slices)                        |
+| Prompts completed   | 327 (317 prior + Round AB: AE256–AE265, 10 slices)                        |
 | Prompts in progress | 0                                                                         |
 | Prompts blocked     | 0                                                                         |
-| Last prompt         | `AE255` — Round AA docs (lookup + storage + relative-time kit)            |
+| Last prompt         | `AE265` — Round AB docs (resolver + escape + aggregate kit)               |
 | Last commit date    | 2026-05-30                                                                |
 | Phase               | Phase 1 — Featured-to-detail flow live for the public memory-book surface |
 
@@ -61,6 +61,7 @@
 | **Round Y**     | AE226–AE235 | `computeChecklistProgress` + 7 specs · `clamp`/`clamp01` + 13 specs · `safeJsonParse` + 11 specs · `useDebouncedValue` + 5 jsdom specs · `pinsBBox` + 7 specs · `roleVisuals` + 5 specs · 5 more haversine boundary specs · `isoDateOnly` + 10 specs · `buildJourneyRowStatusLine` + 9 specs · Round Y docs                                                                                              | ✅     |
 | **Round Z**     | AE236–AE245 | `sortArticlesNewestFirst` + 7 specs · `groupTripsByStatus` + 5 specs · `safe-storage` kit + 8 specs · `itineraryDayLabel` + 7 specs · `buildQueryString`/`appendQuery` + 13 specs · `articleHref`/`articleAbsoluteHref` + 10 specs · `destinationHref`/`compareHref` + 12 specs · `formatPlanText` + 12 specs · `selectPinBySlug`/`indexOfPinBySlug` + 10 specs · Round Z docs                           | ✅     |
 | **Round AA**    | AE246–AE255 | `destinationBySlug` + Ci + 10 specs · `useLocalStorageState` + 6 jsdom specs · `formatInSeasonMonths` + 12 specs · `articleBySlug` + 9 specs · `computeShareListStats` + 7 specs · `atlasEmptyStateCopy` + 7 specs · `buildPulseHistoryExport` + 7 specs · `formatRelativeAether` + 14 specs · `useStableId` + 6 jsdom specs · Round AA docs                                                             | ✅     |
+| **Round AB**    | AE256–AE265 | `findFirstItineraryDate` + 7 specs · `escapeAttr` + 10 specs · `sentenceCase` + 12 specs · `aggregateMeCounts` + 6 specs · `extractPullQuotes` + 7 specs · `matchQuickPrompt` + 11 specs · `zoomFromBBox` + 9 specs · `pickFeaturedDestination` + 7 specs · `extractShareCode` + 11 specs · Round AB docs                                                                                                | ✅     |
 
 > **Operator-owed**: push the AE commits + flip `NEXT_PUBLIC_FEATURE_AETHER_PREVIEW=1` on prod for the soft launch. The route gate auto-404s when the env var is unset, so deploys with the flag off ship safely.
 
