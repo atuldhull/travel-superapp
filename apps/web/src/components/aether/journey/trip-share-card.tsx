@@ -23,7 +23,20 @@
  */
 import { useState } from 'react';
 import { useTheme } from '@app/aether-core';
-import type { TripDto } from '@app/sdk';
+
+/** AE82 — broadened input shape so the share card also accepts a
+ *  shared/cloned trip (SharedTripDto has no `status` / `version`).
+ *  TripDto callers pass through unchanged; SharedTripDto callers
+ *  satisfy the same structural shape minus `status`. */
+export interface ShareCardTrip {
+  readonly id: string;
+  readonly title: string;
+  readonly radiusKm: number;
+  readonly startsOn: unknown;
+  readonly endsOn: unknown;
+  /** Optional — omitted for SharedTripDto callers. */
+  readonly status?: string;
+}
 
 const COL = {
   cream: '#F2E8D5',
@@ -67,7 +80,7 @@ function svgEscape(s: string): string {
     .replace(/'/g, '&apos;');
 }
 
-export function shareSvg(trip: TripDto): string {
+export function shareSvg(trip: ShareCardTrip): string {
   const title = svgEscape(trip.title);
   const startsOn = asIso(trip.startsOn);
   const endsOn = asIso(trip.endsOn);
@@ -112,7 +125,7 @@ export function shareSvg(trip: TripDto): string {
     <text x="720" y="478" fill="${COL.ink}" font-size="22" font-weight="600">${days ?? '—'}</text>
 
     <text x="900" y="450" fill="${COL.inkSoft}" font-size="14" font-weight="600" letter-spacing="2">STATUS</text>
-    <text x="900" y="478" fill="${COL.terracottaDeep}" font-size="22" font-weight="600">${svgEscape(trip.status)}</text>
+    <text x="900" y="478" fill="${COL.terracottaDeep}" font-size="22" font-weight="600">${svgEscape(trip.status ?? 'shared')}</text>
   </g>
   <!-- footer -->
   <text x="80" y="603" fill="${COL.ochreGlow}" font-family="JetBrains Mono, ui-monospace, monospace" font-size="14" letter-spacing="2">
@@ -132,7 +145,9 @@ export function shareSvg(trip: TripDto): string {
 }
 
 export interface TripShareCardProps {
-  readonly trip: TripDto;
+  /** TripDto satisfies ShareCardTrip structurally; SharedTripDto
+   *  callers can omit `status`. */
+  readonly trip: ShareCardTrip;
 }
 
 /** Compact preview + Download button. Mounted from the journey
