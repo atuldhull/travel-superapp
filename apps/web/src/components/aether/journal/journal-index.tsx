@@ -8,6 +8,7 @@
  * two-up grid. Each card mirrors the JournalPreview style — same
  * kicker / serif title / read-time / photograph language.
  */
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useTheme, useMotionPolicy } from '@app/aether-core';
 import { DriftNav } from '../drift-nav';
@@ -18,6 +19,14 @@ import { SafeImg } from '../safe-img';
 import { useViewport } from '../use-viewport';
 import { JOURNAL_ARTICLES, ALL_JOURNAL_SLUGS } from './data';
 
+/** AE74 — extract the canonical tag stem from a kicker string like
+ *  "Field notes · Old Delhi" → "Field notes". Multi-word stems are
+ *  preserved; single-word kickers map to themselves. */
+function tagOf(kicker: string): string {
+  const idx = kicker.indexOf('·');
+  return (idx === -1 ? kicker : kicker.slice(0, idx)).trim();
+}
+
 export function JournalIndex(): React.ReactElement {
   const theme = useTheme();
   const motionPolicy = useMotionPolicy();
@@ -26,6 +35,18 @@ export function JournalIndex(): React.ReactElement {
   const articles = ALL_JOURNAL_SLUGS.map((slug) => JOURNAL_ARTICLES[slug]!);
   const featured = articles[0]!;
   const rest = articles.slice(1);
+
+  // AE74 — derive tags + filter state.
+  const allTags = useMemo<string[]>(() => {
+    const set = new Set<string>();
+    for (const a of articles) set.add(tagOf(a.kicker));
+    return Array.from(set);
+  }, [articles]);
+  const [activeTag, setActiveTag] = useState<string | null>(null);
+  const visibleRest = useMemo(
+    () => (activeTag === null ? rest : rest.filter((a) => tagOf(a.kicker) === activeTag)),
+    [rest, activeTag],
+  );
 
   const ink = theme.color.ink;
   const surface = theme.color.surface;
@@ -257,11 +278,86 @@ export function JournalIndex(): React.ReactElement {
                 opacity: 0.6,
               }}
             >
-              {articles.length} pieces · updated monthly
+              {visibleRest.length} / {rest.length} pieces · updated monthly
             </span>
           </div>
         </Reveal>
 
+        {/* AE74 — tag chip strip */}
+        <Reveal>
+          <div
+            style={{
+              display: 'flex',
+              gap: theme.space.tight,
+              flexWrap: 'wrap',
+              marginBottom: theme.space.gutter,
+            }}
+          >
+            {[null, ...allTags].map((t) => {
+              const active = activeTag === t;
+              const label = t ?? 'All field notes';
+              return (
+                <button
+                  type="button"
+                  key={t ?? '__all'}
+                  onClick={() => setActiveTag(t)}
+                  aria-pressed={active}
+                  style={{
+                    padding: `${theme.space.tight}px ${theme.space.comfy}px`,
+                    borderRadius: theme.radius.pill,
+                    border: `1px solid ${active ? accent.base : ink.whisper}`,
+                    background: active ? accent.base : 'transparent',
+                    color: active ? surface.base : ink.base,
+                    fontFamily: theme.font.ui,
+                    fontSize: theme.text.small.size,
+                    fontWeight: 600,
+                    letterSpacing: '0.01em',
+                    cursor: 'pointer',
+                    transition: 'background 220ms, border-color 220ms, color 220ms',
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </Reveal>
+
+        {visibleRest.length === 0 && (
+          <Reveal>
+            <p
+              style={{
+                fontFamily: theme.font.display,
+                fontStyle: 'italic',
+                fontSize: 18,
+                color: ink.soft,
+                opacity: 0.78,
+                margin: 0,
+                padding: `${theme.space.loose}px 0`,
+              }}
+            >
+              Nothing here under &ldquo;{activeTag}&rdquo;.{' '}
+              <button
+                type="button"
+                onClick={() => setActiveTag(null)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  padding: 0,
+                  color: accent.deep,
+                  fontFamily: theme.font.display,
+                  fontStyle: 'italic',
+                  fontSize: 18,
+                  textDecoration: 'underline',
+                  cursor: 'pointer',
+                }}
+              >
+                Clear the filter
+              </button>
+              .
+            </p>
+          </Reveal>
+        )}
         <div
           style={{
             display: 'grid',
@@ -269,7 +365,7 @@ export function JournalIndex(): React.ReactElement {
             gap: theme.space.gutter,
           }}
         >
-          {rest.map((a, idx) => (
+          {visibleRest.map((a, idx) => (
             <Reveal key={a.slug} delay={idx * 90}>
               <Link
                 href={`/aether/journal/${a.slug}`}
