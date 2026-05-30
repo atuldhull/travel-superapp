@@ -10,14 +10,14 @@
 
 ## Summary
 
-| Counter             | Value                                                                            |
-| ------------------- | -------------------------------------------------------------------------------- |
-| Prompts completed   | 205 (201 prior + Round N: AE139–AE142, 4 slices)                                 |
-| Prompts in progress | 0                                                                                |
-| Prompts blocked     | 0                                                                                |
-| Last prompt         | `AE142` — Round N docs (PDF preload + Pulse backup + ISO-week timeline grouping) |
-| Last commit date    | 2026-05-30                                                                       |
-| Phase               | Phase 1 — Featured-to-detail flow live for the public memory-book surface        |
+| Counter             | Value                                                                         |
+| ------------------- | ----------------------------------------------------------------------------- |
+| Prompts completed   | 219 (205 prior + Round O: AE143–AE156, 14 slices)                             |
+| Prompts in progress | 0                                                                             |
+| Prompts blocked     | 0                                                                             |
+| Last prompt         | `AE156` — Round O docs (14-slice round: extraction + skeletons + a11y polish) |
+| Last commit date    | 2026-05-30                                                                    |
+| Phase               | Phase 1 — Featured-to-detail flow live for the public memory-book surface     |
 
 ---
 
@@ -48,6 +48,7 @@
 | **Round L**     | AE117–AE122 | Atlas listbox focus row 0 on Tab-in · /me Recent prompts 'clear all' · checklist JSON backup · loading.tsx for /journal + /journal/[slug] + /atlas · checklist keyboard nav (Arrow/Space/Delete) · Round L docs                                                                                                                                                                                         | ✅     |
 | **Round M**     | AE123–AE138 | Keyboard nav specs · `clearRecentPrompts` specs · loading.tsx for /me + /account routes · Atlas in-season row chip + '/' filter shortcut · activity-timeline Shared events · checklist undo snackbar · TripChecklist + KeyboardHelp Storybook · /account JSON data export · Pulse seed prompts · seasons edge-case specs · `bundleLocalData` extracted + 9 specs · Atlas focus aria-live · Round M docs | ✅     |
 | **Round N**     | AE139–AE142 | PDF chunk preload-on-hover (perf) · Pulse-history `Backup .json` mirror · activity timeline ISO-week grouping (>8 events) · Round N docs                                                                                                                                                                                                                                                                | ✅     |
+| **Round O**     | AE143–AE156 | Extract timeline-grouping + 11 specs · Extract Atlas '/' guard + 6 specs · KeyboardHelp rows for AE127 + AE121 · Pulse `{submit:true}` auto-send · PDF retry button · TripChecklist JSON import · Extract `deriveChecklistSlug` + 7 specs · 6 more `loading.tsx` route skeletons · TripShareCard Storybook · 5 shareSvg edge specs · Activity timeline event-count chip · Atlas Esc · Round O docs      | ✅     |
 
 > **Operator-owed**: push the AE commits + flip `NEXT_PUBLIC_FEATURE_AETHER_PREVIEW=1` on prod for the soft launch. The route gate auto-404s when the env var is unset, so deploys with the flag off ship safely.
 
