@@ -63,6 +63,8 @@ import { decodePulseOpenEvent } from './bridge-event';
 import { nextPendingIdx, phraseAt } from './pending-phrases';
 // AE196 — shared clipboard helper (replaces inline navigator.clipboard).
 import { copyTextToClipboard } from '../../../lib/copy-text';
+// AE198 — last-user-prompt picker (for AE197 ArrowUp recall).
+import { lastUserPrompt } from './last-user-prompt';
 
 // AE72 + AE184 — types + storage key + parser extracted to
 // ./persisted-pulse.ts so the shape contract is unit-testable.
@@ -932,17 +934,16 @@ export function Pulse(): React.ReactElement | null {
               ref={inputRef}
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              // AE197 — ↑ on the empty composer recalls the most-recent
-              // user prompt. Useful for "refine" follow-ups when the
-              // user wants to tweak their last question. Only fires
-              // when the input is empty so an editor isn't blown away.
+              // AE197 + AE198 — ↑ on the empty composer recalls the
+              // most-recent user prompt. Picker extracted to
+              // ./last-user-prompt.ts so the rule is unit-testable.
               onKeyDown={(e) => {
                 if (e.key !== 'ArrowUp') return;
                 if (q !== '') return;
-                const lastUser = [...messages].reverse().find((m) => m.role === 'user');
-                if (lastUser === undefined) return;
+                const last = lastUserPrompt(messages);
+                if (last === null) return;
                 e.preventDefault();
-                setQ(lastUser.content);
+                setQ(last);
               }}
               placeholder={
                 voice.listening
