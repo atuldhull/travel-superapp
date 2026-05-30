@@ -358,6 +358,14 @@ rebases.
 | **AE201** | Extract `makeChecklistItemId` + 6 specs (base36 ts + 4-digit base36 rand, injectable for tests)        | `5428788` |
 | **AE202** | Round U docs + autopilot + MEMORY refresh                                                              | _this_    |
 
+## Round 29 — Round V · tiny polish ✦ AE203–AE205
+
+| #         | Slice                                                                                               | Commit    |
+| --------- | --------------------------------------------------------------------------------------------------- | --------- |
+| **AE203** | Pulse composer `↓` clears the input (mirror of AE197 `↑` recall, guarded to non-empty)              | `bc23ea2` |
+| **AE204** | 3 more `backupFilename` hostile-input specs (path traversal stripped, char collapse, all-bad shape) | `a6cf146` |
+| **AE205** | Round V docs                                                                                        | _this_    |
+
 ## Stop conditions reached / deferred
 
 - **Mobile parity** — Aether is web-only Phase 0 (locked decision pre-AE5).
