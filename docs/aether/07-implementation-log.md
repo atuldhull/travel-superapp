@@ -411,6 +411,21 @@ rebases.
 | **AE234** | `buildJourneyRowStatusLine` + 9 specs (status·days·shares·in-season segments)                    | `7e29b15` |
 | **AE235** | Round Y docs + autopilot + MEMORY refresh                                                        | _this_    |
 
+## Round 33 — Round Z · sort/partition/format/href kit ✦ AE236–AE245
+
+| #         | Slice                                                                                                       | Commit    |
+| --------- | ----------------------------------------------------------------------------------------------------------- | --------- |
+| **AE236** | `sortArticlesNewestFirst` + 7 specs (publishedOn desc, stable tiebreak, unparseable→end)                    | `8d1ce7c` |
+| **AE237** | `groupTripsByStatus` + 5 specs (5-bucket partition via AE217; preserves order; sum invariant)               | `38de80d` |
+| **AE238** | `safe-storage` kit (read/write/json/remove) + 8 specs (SSR-safe, throw-safe, cyclic-write false)            | `b19db01` |
+| **AE239** | `itineraryDayLabel` + 7 specs ({num,label,anchorId}; tripId prefix; 'day-' invariant)                       | `8997b7a` |
+| **AE240** | `buildQueryString` + `appendQuery` + 13 specs (omit null/empty, sorted, URL-encode, smart ? vs &)           | `256b518` |
+| **AE241** | `articleHref` + `articleAbsoluteHref` + 10 specs (trim, '' for empty, encode, origin trim)                  | `32721ae` |
+| **AE242** | `destinationHref` + absolute + `compareHref` + 12 specs (mirror of AE241 + AE73 compare permalink)          | `8bdee9e` |
+| **AE243** | `formatPlanText` + 12 specs (drops 'Plan:'/'Itinerary:' header line, collapses 3+ blanks → 2, preserves md) | `89ddc33` |
+| **AE244** | `selectPinBySlug` + `indexOfPinBySlug` + 10 specs (trim, null/-1 sentinels)                                 | `d2225ea` |
+| **AE245** | Round Z docs + autopilot + MEMORY refresh                                                                   | _this_    |
+
 ## Stop conditions reached / deferred
 
 - **Mobile parity** — Aether is web-only Phase 0 (locked decision pre-AE5).
