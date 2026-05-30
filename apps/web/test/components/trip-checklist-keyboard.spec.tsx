@@ -28,12 +28,12 @@ function renderChecklist(): void {
   );
 }
 
-function rowOf(text: string): HTMLLIElement {
+function rowOf(text: string | RegExp): HTMLLIElement {
   // Find the <li> ancestor of the row's text span — rows are the only
   // focusable list items.
   const el = screen.getByText(text);
   const li = el.closest('li');
-  if (li === null) throw new Error(`No <li> ancestor for "${text}"`);
+  if (li === null) throw new Error(`No <li> ancestor for "${String(text)}"`);
   return li as HTMLLIElement;
 }
 
