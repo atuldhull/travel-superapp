@@ -12,10 +12,10 @@
 
 | Counter             | Value                                                                     |
 | ------------------- | ------------------------------------------------------------------------- |
-| Prompts completed   | 287 (277 prior + Round X: AE216–AE225, 10 slices)                         |
+| Prompts completed   | 297 (287 prior + Round Y: AE226–AE235, 10 slices)                         |
 | Prompts in progress | 0                                                                         |
 | Prompts blocked     | 0                                                                         |
-| Last prompt         | `AE225` — Round X docs (contract canonicalisation + shared hook kit)      |
+| Last prompt         | `AE235` — Round Y docs (helpers kit + Pulse/journey contracts)            |
 | Last commit date    | 2026-05-30                                                                |
 | Phase               | Phase 1 — Featured-to-detail flow live for the public memory-book surface |
 
@@ -58,6 +58,7 @@
 | **Round V**     | AE203–AE205 | Pulse ↓ clears input · 3 more `backupFilename` hostile-input specs · Round V docs                                                                                                                                                                                                                                                                                                                        | ✅     |
 | **Round W**     | AE206–AE215 | Extract `timelineDotColor` + 6 specs · Extract `normalizePulsePrompt` + 8 specs · 4 more timeline-grouping cross-month/year specs · `estimateReadingMinutes` + 12 specs · Extract Atlas `filterPins` + 10 specs · Shared `useCopyTapFeedback` + 5 jsdom specs · Extract `buildSamplePlanRequest` + 6 specs · Extract `extractPlanText` + 11 specs · Extract `buildJourneyFacts` + 9 specs · Round W docs | ✅     |
 | **Round X**     | AE216–AE225 | Extract `shouldShowSuggestions` + 7 specs · `deriveTripStatus` + 12 specs · `buildShareUrl` + 8 specs · Shared `useEscapeKey` + 6 jsdom specs · `buildArticleMetaLine` + 8 specs · `formatLat`/`formatLng`/`formatLatLng` + 15 specs · `appendBoundedMessage` + 7 specs · `plural`/`pluralise`/`countLabel` + 14 specs · Extract `readSummaryField` + 11 specs · Round X docs                            | ✅     |
+| **Round Y**     | AE226–AE235 | `computeChecklistProgress` + 7 specs · `clamp`/`clamp01` + 13 specs · `safeJsonParse` + 11 specs · `useDebouncedValue` + 5 jsdom specs · `pinsBBox` + 7 specs · `roleVisuals` + 5 specs · 5 more haversine boundary specs · `isoDateOnly` + 10 specs · `buildJourneyRowStatusLine` + 9 specs · Round Y docs                                                                                              | ✅     |
 
 > **Operator-owed**: push the AE commits + flip `NEXT_PUBLIC_FEATURE_AETHER_PREVIEW=1` on prod for the soft launch. The route gate auto-404s when the env var is unset, so deploys with the flag off ship safely.
 
