@@ -35,6 +35,7 @@ import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
 import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
 import { useViewport } from '../use-viewport';
+import { TripShareCard } from './trip-share-card';
 
 export interface JourneyDashboardProps {
   tripId: string;
@@ -120,6 +121,8 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
   const [duplicateError, setDuplicateError] = useState<string | null>(null);
   const [exportingPdf, setExportingPdf] = useState<boolean>(false);
   const [exportError, setExportError] = useState<string | null>(null);
+  // AE79 — share card preview toggle.
+  const [showShareCard, setShowShareCard] = useState<boolean>(false);
   const queryClient = useQueryClient();
   const invalidateThisTrip = (): void => {
     void queryClient.invalidateQueries({ queryKey: getTripControllerGetOneQueryKey(tripId) });
@@ -844,8 +847,37 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
                     {shareError}
                   </p>
                 )}
+                {/* AE79 — share card toggle */}
+                <button
+                  type="button"
+                  onClick={() => setShowShareCard((v) => !v)}
+                  style={{
+                    marginTop: theme.space.tight,
+                    padding: `${theme.space.hairline}px ${theme.space.comfy}px`,
+                    borderRadius: theme.radius.pill,
+                    background: 'transparent',
+                    border: `1px solid ${ochre.deep}`,
+                    color: ochre.deep,
+                    fontFamily: theme.font.ui,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    letterSpacing: '0.02em',
+                  }}
+                  aria-expanded={showShareCard}
+                >
+                  {showShareCard ? 'Hide share card ▴' : 'Show share card ▾'}
+                </button>
               </div>
             </Reveal>
+
+            {showShareCard && (
+              <Reveal>
+                <div style={{ marginTop: theme.space.gutter }}>
+                  <TripShareCard trip={trip} />
+                </div>
+              </Reveal>
+            )}
 
             {/* Itinerary — real days when present, calm stub otherwise. */}
             {hasItinerary ? (
