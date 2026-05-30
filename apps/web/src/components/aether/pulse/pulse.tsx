@@ -932,6 +932,18 @@ export function Pulse(): React.ReactElement | null {
               ref={inputRef}
               value={q}
               onChange={(e) => setQ(e.target.value)}
+              // AE197 — ↑ on the empty composer recalls the most-recent
+              // user prompt. Useful for "refine" follow-ups when the
+              // user wants to tweak their last question. Only fires
+              // when the input is empty so an editor isn't blown away.
+              onKeyDown={(e) => {
+                if (e.key !== 'ArrowUp') return;
+                if (q !== '') return;
+                const lastUser = [...messages].reverse().find((m) => m.role === 'user');
+                if (lastUser === undefined) return;
+                e.preventDefault();
+                setQ(lastUser.content);
+              }}
               placeholder={
                 voice.listening
                   ? 'Listening…'
