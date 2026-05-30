@@ -14,7 +14,7 @@
  * above, numbered destination list below. The constellation sketch
  * we shipped in AE10 has been replaced — this is the real Atlas.
  */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import Link from 'next/link';
 import { useTheme, useMotionPolicy } from '@app/aether-core';
 import { DriftNav } from '../drift-nav';
@@ -189,6 +189,10 @@ export function AtlasCanvas(): React.ReactElement {
   // AE69 — slug → marker ref so the filter effect can dim/show pins
   // without recreating the map (preserves zoom + center).
   const markersRef = useRef<Map<string, { setOpacity: (n: number) => void }>>(new Map());
+  // AE111 — slug → anchor ref for the destinations list rows.
+  // Lets the listbox keyboard handler move focus across rows.
+  const rowRefs = useRef<Map<string, HTMLAnchorElement>>(new Map());
+  const [focusedIdx, setFocusedIdx] = useState<number>(-1);
 
   // AE69 — filter input (case-insensitive substring on name / state /
   // tagline). When empty, every pin is full-opacity.
@@ -327,6 +331,56 @@ export function AtlasCanvas(): React.ReactElement {
   const accent = theme.palette.terracotta;
   const ochre = theme.palette.ochre;
   const olive = theme.palette.olive;
+
+  // AE111 — focus the row at index `idx`, also dim/highlight its pin on
+  // the map by raising opacity briefly. Bounds-checked against the
+  // current `filtered` list so wraparound is harmless.
+  const focusRow = useCallback(
+    (idx: number): void => {
+      if (filtered.length === 0) return;
+      const wrapped = ((idx % filtered.length) + filtered.length) % filtered.length;
+      const slug = filtered[wrapped]?.slug;
+      if (slug === undefined) return;
+      const el = rowRefs.current.get(slug);
+      if (el !== undefined) {
+        el.focus();
+        setFocusedIdx(wrapped);
+      }
+    },
+    [filtered],
+  );
+
+  // AE111 — Arrow keys / Home / End on the listbox. Enter is left to
+  // the native <Link> behaviour (Enter on a focused anchor follows it).
+  const onListKey = useCallback(
+    (e: KeyboardEvent<HTMLDivElement>): void => {
+      if (filtered.length === 0) return;
+      const current = focusedIdx < 0 ? 0 : focusedIdx;
+      switch (e.key) {
+        case 'ArrowDown':
+        case 'j':
+          e.preventDefault();
+          focusRow(current + 1);
+          break;
+        case 'ArrowUp':
+        case 'k':
+          e.preventDefault();
+          focusRow(current - 1);
+          break;
+        case 'Home':
+          e.preventDefault();
+          focusRow(0);
+          break;
+        case 'End':
+          e.preventDefault();
+          focusRow(filtered.length - 1);
+          break;
+        default:
+          break;
+      }
+    },
+    [filtered.length, focusedIdx, focusRow],
+  );
 
   /** AE71 — "Where am I?" Geolocates the user, drops an ochre pin at
    *  their position, computes nearest destination via haversine, and
@@ -627,20 +681,36 @@ export function AtlasCanvas(): React.ReactElement {
               marginBottom: theme.space.loose,
             }}
           >
-            <h2
-              id="atlas-list-heading"
-              style={{
-                fontFamily: theme.font.display,
-                fontSize: 'clamp(28px, 3vw, 40px)',
-                lineHeight: 1.1,
-                letterSpacing: '-0.02em',
-                fontWeight: 600,
-                margin: 0,
-                color: surface.base,
-              }}
-            >
-              Pick a thread to follow
-            </h2>
+            <div>
+              <h2
+                id="atlas-list-heading"
+                style={{
+                  fontFamily: theme.font.display,
+                  fontSize: 'clamp(28px, 3vw, 40px)',
+                  lineHeight: 1.1,
+                  letterSpacing: '-0.02em',
+                  fontWeight: 600,
+                  margin: 0,
+                  color: surface.base,
+                }}
+              >
+                Pick a thread to follow
+              </h2>
+              {/* AE111 — keyboard hint */}
+              <p
+                style={{
+                  marginTop: 6,
+                  fontFamily: theme.font.mono,
+                  fontSize: 10,
+                  letterSpacing: '0.16em',
+                  textTransform: 'uppercase',
+                  color: surface.soft,
+                  opacity: 0.55,
+                }}
+              >
+                ↑↓ arrows · ⏎ to open · / ? for help
+              </p>
+            </div>
             <div
               style={{
                 display: 'flex',
@@ -720,7 +790,17 @@ export function AtlasCanvas(): React.ReactElement {
             </div>
           </div>
         </Reveal>
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <div
+          role="listbox"
+          aria-label="Destinations list — use arrow keys, Enter to open"
+          aria-activedescendant={
+            focusedIdx >= 0 && filtered[focusedIdx] !== undefined
+              ? `atlas-row-${filtered[focusedIdx]?.slug}`
+              : undefined
+          }
+          onKeyDown={onListKey}
+          style={{ display: 'flex', flexDirection: 'column' }}
+        >
           {filtered.length === 0 && (
             <Reveal>
               <p
@@ -741,7 +821,18 @@ export function AtlasCanvas(): React.ReactElement {
           {filtered.map((p, idx) => (
             <Reveal key={`row-${p.slug}`} delay={idx * 50}>
               <Link
+                id={`atlas-row-${p.slug}`}
+                role="option"
+                aria-selected={focusedIdx === idx}
                 href={`/aether/destinations/${p.slug}`}
+                ref={(el) => {
+                  if (el === null) {
+                    rowRefs.current.delete(p.slug);
+                  } else {
+                    rowRefs.current.set(p.slug, el);
+                  }
+                }}
+                onFocus={() => setFocusedIdx(idx)}
                 style={{
                   display: 'grid',
                   gridTemplateColumns: '80px 1fr 1fr auto',
