@@ -396,6 +396,21 @@ rebases.
 | **AE224** | Extract `readSummaryField` + 11 specs (lifted from journey-dashboard, every guard locked)                   | `1b994ae` |
 | **AE225** | Round X docs + autopilot + MEMORY refresh                                                                   | _this_    |
 
+## Round 32 — Round Y · helpers kit + Pulse / journey contracts ✦ AE226–AE235
+
+| #         | Slice                                                                                            | Commit    |
+| --------- | ------------------------------------------------------------------------------------------------ | --------- |
+| **AE226** | `computeChecklistProgress` + 7 specs (total/done/fraction/percent/allDone)                       | `73eaca2` |
+| **AE227** | `clamp` + `clamp01` + 13 specs (NaN-pass, min/max swap-tolerance)                                | `3795c34` |
+| **AE228** | `safeJsonParse` + 11 specs (null/non-string/empty/malformed/JSON-null literal)                   | `4e138d1` |
+| **AE229** | `useDebouncedValue` + 5 jsdom fake-timer specs (first-render imm, last-write-wins, unmount safe) | `d0f0fc9` |
+| **AE230** | `pinsBBox` + 7 specs (empty→null, single→degenerate, NaN/Inf null, S<=N + W<=E invariants)       | `65087ff` |
+| **AE231** | `roleVisuals` + 5 specs (user vs assistant align/accentKey/weight contract)                      | `d9db1b5` |
+| **AE232** | 5 more haversine specs (equator 1°≈111km, antipodal/pole→pole ≈ 20015km, Mumbai→Delhi ≈ 1150km)  | `d5a0247` |
+| **AE233** | `isoDateOnly` + 10 specs (local YYYY-MM-DD; NOT toISOString().slice — IST shift documented)      | `2d7a09f` |
+| **AE234** | `buildJourneyRowStatusLine` + 9 specs (status·days·shares·in-season segments)                    | `7e29b15` |
+| **AE235** | Round Y docs + autopilot + MEMORY refresh                                                        | _this_    |
+
 ## Stop conditions reached / deferred
 
 - **Mobile parity** — Aether is web-only Phase 0 (locked decision pre-AE5).
