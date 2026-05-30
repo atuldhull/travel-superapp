@@ -10,14 +10,14 @@
 
 ## Summary
 
-| Counter             | Value                                                                                          |
-| ------------------- | ---------------------------------------------------------------------------------------------- |
-| Prompts completed   | 256 (247 prior + Round T: AE186–AE194, 9 slices)                                               |
-| Prompts in progress | 0                                                                                              |
-| Prompts blocked     | 0                                                                                              |
-| Last prompt         | `AE194` — Round T docs (pure-helper sweep: fmt + backupFilename + Esc + phrases + copy-bubble) |
-| Last commit date    | 2026-05-30                                                                                     |
-| Phase               | Phase 1 — Featured-to-detail flow live for the public memory-book surface                      |
+| Counter             | Value                                                                                        |
+| ------------------- | -------------------------------------------------------------------------------------------- |
+| Prompts completed   | 264 (256 prior + Round U: AE195–AE202, 8 slices)                                             |
+| Prompts in progress | 0                                                                                            |
+| Prompts blocked     | 0                                                                                            |
+| Last prompt         | `AE202` — Round U docs (kbd polish: ↑ recall + g geolocate + shared copy-text + dates merge) |
+| Last commit date    | 2026-05-30                                                                                   |
+| Phase               | Phase 1 — Featured-to-detail flow live for the public memory-book surface                    |
 
 ---
 
@@ -54,6 +54,7 @@
 | **Round R**     | AE173–AE180 | Extract `tagOf` + 2 specs · Pulse drawer Storybook (4 variants) · 4 more slash-commands specs · `DESTINATIONS` data-shape gate · `JOURNAL_ARTICLES` data-shape gate · 4 more `destinationAccent` specs · 4 more `aetherOg` specs · Round R docs                                                                                                                                                         | ✅     |
 | **Round S**     | AE181–AE185 | EditorialFooter Storybook · Extract Atlas `PINS` + 7 specs · Extract `trySeasonMatch` + 6 specs · Extract `parsePulseStore` + 9 specs · Round S docs                                                                                                                                                                                                                                                    | ✅     |
 | **Round T**     | AE186–AE194 | Move `fmtTime`+`fmtDayHead` to shared lib + 5 specs · Extract `backupFilename` + 7 specs · Pulse copy-bubble button · ActivityTimeline `JustOne` story variant · Extract Atlas `decideFilterEsc` + 4 specs · Extract `PENDING_PHRASES`+`nextPendingIdx`+`phraseAt` + 7 specs · 3 more shareSvg shrink specs · Round T docs                                                                              | ✅     |
+| **Round U**     | AE195–AE202 | trip-share-card uses shared dates + `inclusiveDaysBetween` + 5 specs · Shared `copyTextToClipboard` + 6 specs · Pulse ↑ recall · Extract `lastUserPrompt` + 6 specs · Atlas `g` geolocate + 4 specs · KeyboardHelp lists g + ↑ · Extract `makeChecklistItemId` + 6 specs · Round U docs                                                                                                                 | ✅     |
 
 > **Operator-owed**: push the AE commits + flip `NEXT_PUBLIC_FEATURE_AETHER_PREVIEW=1` on prod for the soft launch. The route gate auto-404s when the env var is unset, so deploys with the flag off ship safely.
 
