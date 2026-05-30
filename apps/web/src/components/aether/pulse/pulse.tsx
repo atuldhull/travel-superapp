@@ -938,6 +938,12 @@ export function Pulse(): React.ReactElement | null {
               // most-recent user prompt. Picker extracted to
               // ./last-user-prompt.ts so the rule is unit-testable.
               onKeyDown={(e) => {
+                // AE203 — ↓ clears the composer (mirror of ↑ recall).
+                if (e.key === 'ArrowDown' && q !== '') {
+                  e.preventDefault();
+                  setQ('');
+                  return;
+                }
                 if (e.key !== 'ArrowUp') return;
                 if (q !== '') return;
                 const last = lastUserPrompt(messages);
