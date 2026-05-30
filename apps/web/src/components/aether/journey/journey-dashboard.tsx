@@ -911,6 +911,63 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
                   >
                     The shape of your yatra.
                   </h2>
+
+                  {/* AE87 — Days timeline bar. One terracotta segment
+                      per day, taller when the day has items, dimmer
+                      when empty. Click jumps to the matching card. */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: 4,
+                      marginBottom: theme.space.gutter,
+                      paddingBottom: theme.space.tight,
+                      borderBottom: `1px solid ${olive.whisper}`,
+                      overflowX: 'auto',
+                    }}
+                    role="list"
+                    aria-label="Day timeline"
+                  >
+                    {days.map((day) => {
+                      const num = day.dayIndex + 1;
+                      const isFilled = day.items.length > 0;
+                      return (
+                        <a
+                          key={`bar-${day.id}`}
+                          href={`#day-${day.id}`}
+                          role="listitem"
+                          aria-label={`Day ${num} · ${day.items.length} ${day.items.length === 1 ? 'item' : 'items'}`}
+                          title={`Day ${num} · ${day.items.length} items`}
+                          style={{
+                            flex: '1 1 0',
+                            minWidth: 22,
+                            height: isFilled ? 28 : 14,
+                            borderRadius: 4,
+                            background: isFilled ? accent.base : olive.whisper,
+                            border: `1px solid ${isFilled ? accent.deep : olive.deep}`,
+                            display: 'flex',
+                            alignItems: 'flex-end',
+                            justifyContent: 'center',
+                            paddingBottom: 2,
+                            fontFamily: theme.font.mono,
+                            fontSize: 9,
+                            color: isFilled ? surface.base : ink.soft,
+                            letterSpacing: '0.04em',
+                            textDecoration: 'none',
+                            transition: 'transform 220ms cubic-bezier(0.42, 0, 0.18, 1)',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-2px)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                          }}
+                        >
+                          {num}
+                        </a>
+                      );
+                    })}
+                  </div>
+
                   <ol
                     style={{
                       listStyle: 'none',
@@ -933,6 +990,7 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
                       return (
                         <li
                           key={day.id}
+                          id={`day-${day.id}`}
                           style={{
                             padding: theme.space.loose,
                             borderRadius: theme.radius.lg,
@@ -941,6 +999,7 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
                             display: 'grid',
                             gridTemplateColumns: isNarrow ? '1fr' : '88px 1fr',
                             gap: theme.space.comfy,
+                            scrollMarginTop: 80,
                           }}
                         >
                           {/* Numeral cap — display-serif, terracotta */}
