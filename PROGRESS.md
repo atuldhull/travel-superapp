@@ -10,14 +10,14 @@
 
 ## Summary
 
-| Counter             | Value                                                                                        |
-| ------------------- | -------------------------------------------------------------------------------------------- |
-| Prompts completed   | 264 (256 prior + Round U: AE195–AE202, 8 slices)                                             |
-| Prompts in progress | 0                                                                                            |
-| Prompts blocked     | 0                                                                                            |
-| Last prompt         | `AE202` — Round U docs (kbd polish: ↑ recall + g geolocate + shared copy-text + dates merge) |
-| Last commit date    | 2026-05-30                                                                                   |
-| Phase               | Phase 1 — Featured-to-detail flow live for the public memory-book surface                    |
+| Counter             | Value                                                                     |
+| ------------------- | ------------------------------------------------------------------------- |
+| Prompts completed   | 267 (264 prior + Round V: AE203–AE205, 3 slices)                          |
+| Prompts in progress | 0                                                                         |
+| Prompts blocked     | 0                                                                         |
+| Last prompt         | `AE205` — Round V docs (↓ clear + backupFilename hostile-input specs)     |
+| Last commit date    | 2026-05-30                                                                |
+| Phase               | Phase 1 — Featured-to-detail flow live for the public memory-book surface |
 
 ---
 
@@ -55,6 +55,7 @@
 | **Round S**     | AE181–AE185 | EditorialFooter Storybook · Extract Atlas `PINS` + 7 specs · Extract `trySeasonMatch` + 6 specs · Extract `parsePulseStore` + 9 specs · Round S docs                                                                                                                                                                                                                                                    | ✅     |
 | **Round T**     | AE186–AE194 | Move `fmtTime`+`fmtDayHead` to shared lib + 5 specs · Extract `backupFilename` + 7 specs · Pulse copy-bubble button · ActivityTimeline `JustOne` story variant · Extract Atlas `decideFilterEsc` + 4 specs · Extract `PENDING_PHRASES`+`nextPendingIdx`+`phraseAt` + 7 specs · 3 more shareSvg shrink specs · Round T docs                                                                              | ✅     |
 | **Round U**     | AE195–AE202 | trip-share-card uses shared dates + `inclusiveDaysBetween` + 5 specs · Shared `copyTextToClipboard` + 6 specs · Pulse ↑ recall · Extract `lastUserPrompt` + 6 specs · Atlas `g` geolocate + 4 specs · KeyboardHelp lists g + ↑ · Extract `makeChecklistItemId` + 6 specs · Round U docs                                                                                                                 | ✅     |
+| **Round V**     | AE203–AE205 | Pulse ↓ clears input · 3 more `backupFilename` hostile-input specs · Round V docs                                                                                                                                                                                                                                                                                                                       | ✅     |
 
 > **Operator-owed**: push the AE commits + flip `NEXT_PUBLIC_FEATURE_AETHER_PREVIEW=1` on prod for the soft launch. The route gate auto-404s when the env var is unset, so deploys with the flag off ship safely.
 
