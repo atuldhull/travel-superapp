@@ -35,3 +35,16 @@ export function appendRecentPrompt(prompt: string): void {
     /* quota / private mode */
   }
 }
+
+/**
+ * AE118 — wipe the Recent prompts list (e.g. from `/aether/me`).
+ * Idempotent; safe to call when the key doesn't exist. SSR-safe.
+ */
+export function clearRecentPrompts(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.removeItem(PULSE_RECENT_KEY);
+  } catch {
+    /* private mode */
+  }
+}
