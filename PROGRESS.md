@@ -10,14 +10,14 @@
 
 ## Summary
 
-| Counter             | Value                                                                        |
-| ------------------- | ---------------------------------------------------------------------------- |
-| Prompts completed   | 180 (174 prior + Round K: AE111–AE116)                                       |
-| Prompts in progress | 0                                                                            |
-| Prompts blocked     | 0                                                                            |
-| Last prompt         | `AE116` — Round K docs refresh (Atlas a11y + checklist starters + skeletons) |
-| Last commit date    | 2026-05-30                                                                   |
-| Phase               | Phase 1 — Featured-to-detail flow live for the public memory-book surface    |
+| Counter             | Value                                                                                                        |
+| ------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Prompts completed   | 186 (180 prior + Round L: AE117–AE122)                                                                       |
+| Prompts in progress | 0                                                                                                            |
+| Prompts blocked     | 0                                                                                                            |
+| Last prompt         | `AE122` — Round L docs refresh (focus-on-listbox + clear-all + JSON backup + more skeletons + checklist kbd) |
+| Last commit date    | 2026-05-30                                                                                                   |
+| Phase               | Phase 1 — Featured-to-detail flow live for the public memory-book surface                                    |
 
 ---
 
@@ -45,6 +45,7 @@
 | **Round I**     | AE91–AE100  | Slash-commands extracted + tests · `/aether/*` 404 · Pulse-history Reset on account · per-trip checklist · /about Press section · 'Ask Pulse' button via CustomEvent · `?` keyboard help · `<TripShareCard/>` jsdom spec · journal 'Visit destinations' cross-links · Round I docs | ✅     |
 | **Round J**     | AE101–AE110 | Per-dest + per-article Ask-Pulse · `<TripChecklist/>` + `<KeyboardHelp/>` jsdom specs · `/aether/*` error.tsx · Pulse 'Recent' chips · /me/journeys in-season tag · Atlas accent tooltip · recent-prompts extracted + 8 specs · Round J docs                                       | ✅     |
 | **Round K**     | AE111–AE116 | Atlas listbox keyboard nav · /me Recent prompts card · checklist 'copy as bullets' · 15 per-destination checklist starter packs + 7 specs · loading.tsx skeletons (destinations + journey) · Round K docs                                                                          | ✅     |
+| **Round L**     | AE117–AE122 | Atlas listbox focus row 0 on Tab-in · /me Recent prompts 'clear all' · checklist JSON backup · loading.tsx for /journal + /journal/[slug] + /atlas · checklist keyboard nav (Arrow/Space/Delete) · Round L docs                                                                    | ✅     |
 
 > **Operator-owed**: push the AE commits + flip `NEXT_PUBLIC_FEATURE_AETHER_PREVIEW=1` on prod for the soft launch. The route gate auto-404s when the env var is unset, so deploys with the flag off ship safely.
 
