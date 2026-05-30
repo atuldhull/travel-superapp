@@ -22,6 +22,8 @@ import { parseChecklistBackup } from './parse-checklist-backup';
 import { backupFilename } from '../../../lib/backup-filename';
 // AE196 — shared clipboard helper (consolidates the textarea-fallback).
 import { copyTextToClipboard } from '../../../lib/copy-text';
+// AE201 — id generator extracted so the format is unit-testable.
+import { makeChecklistItemId } from './checklist-id';
 
 export interface ChecklistItem {
   readonly id: string;
@@ -390,7 +392,7 @@ export function TripChecklist({ tripId, destinationSlug }: TripChecklistProps): 
     e.preventDefault();
     const text = draft.trim();
     if (text === '') return;
-    const id = `u-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e4).toString(36)}`;
+    const id = makeChecklistItemId();
     setItems((prev) => [...prev, { id, text, done: false }]);
     setDraft('');
   }
