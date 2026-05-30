@@ -11,7 +11,7 @@
  * The starter is the 5-item generic STARTER (no destinationSlug), so we
  * know the row order at the top of every test.
  */
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { AetherProvider } from '@app/aether-core';
 import { theme } from '@app/aether-motion';
@@ -101,7 +101,9 @@ describe('<TripChecklist/> keyboard nav', () => {
       // schedules a microtask; flush it explicitly.
       await new Promise((r) => window.requestAnimationFrame(() => r(undefined)));
     });
-    expect(screen.queryByText(/Cash \+ UPI/)).not.toBeInTheDocument();
+    // Item gone from the LIST (the AE129 undo snackbar still references it).
+    const list = screen.getByRole('list');
+    expect(within(list).queryByText(/Cash \+ UPI/)).not.toBeInTheDocument();
     expect(screen.getByText(/Checklist · 4 left/)).toBeInTheDocument();
     // Focus should have moved to row 1 (previous neighbour).
     const row1 = rowOf('Photo ID + photocopy');
@@ -116,6 +118,29 @@ describe('<TripChecklist/> keyboard nav', () => {
       fireEvent.keyDown(target, { key: 'Backspace' });
       await new Promise((r) => window.requestAnimationFrame(() => r(undefined)));
     });
-    expect(screen.queryByText(/Power bank/)).not.toBeInTheDocument();
+    const list = screen.getByRole('list');
+    expect(within(list).queryByText(/Power bank/)).not.toBeInTheDocument();
+  });
+
+  // ─── AE129: undo snackbar after Delete ────────────────────────────
+  it('shows an undo snackbar after Delete and restores on click', async () => {
+    renderChecklist();
+    const row = rowOf('Photo ID + photocopy');
+    row.focus();
+    await act(async () => {
+      fireEvent.keyDown(row, { key: 'Delete' });
+      await new Promise((r) => window.requestAnimationFrame(() => r(undefined)));
+    });
+    // Snackbar is announced via role=status; "Undo" button visible
+    const undoBtn = screen.getByRole('button', { name: /Restore "Photo ID \+ photocopy"/ });
+    expect(undoBtn).toBeInTheDocument();
+    // Item gone from the LIST
+    const listAfterRemove = screen.getByRole('list');
+    expect(within(listAfterRemove).queryByText('Photo ID + photocopy')).not.toBeInTheDocument();
+    // Click undo → row returns
+    fireEvent.click(undoBtn);
+    const listAfterUndo = screen.getByRole('list');
+    expect(within(listAfterUndo).getByText('Photo ID + photocopy')).toBeInTheDocument();
+    expect(screen.getByText(/Checklist · 5 left/)).toBeInTheDocument();
   });
 });

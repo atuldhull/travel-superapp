@@ -66,7 +66,11 @@ describe('<TripChecklist/>', () => {
     renderChecklist();
     const removeBtn = screen.getByLabelText('Remove "Photo ID + photocopy" from the list');
     fireEvent.click(removeBtn);
-    expect(screen.queryByText('Photo ID + photocopy')).not.toBeInTheDocument();
+    // Gone from the LIST. The AE129 undo-snackbar still references it
+    // via the guillemet-wrapped text «Photo ID + photocopy», so we
+    // scope to the list to keep this assertion narrow.
+    const list = screen.getByRole('list');
+    expect(within(list).queryByText('Photo ID + photocopy')).not.toBeInTheDocument();
     expect(screen.getByText(/Checklist · 4 left/)).toBeInTheDocument();
   });
 
