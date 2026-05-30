@@ -25,9 +25,12 @@ const SHORTCUTS: ReadonlyArray<Shortcut> = [
   { keys: ['?'], label: 'Open this shortcut overlay' },
   // AE145 — discovered after AE127 + AE121 shipped:
   { keys: ['/'], label: 'Focus the Atlas filter' },
+  { keys: ['g'], label: 'Find me on the map' },
   { keys: ['↑', '↓'], label: 'Move through the Atlas list / checklist' },
   { keys: ['Space', '↵'], label: 'Toggle the focused checklist row' },
   { keys: ['Del', 'Bksp'], label: 'Remove the focused checklist row (Undo for 5s)' },
+  // AE200 — Pulse composer convention:
+  { keys: ['↑'], label: 'Recall your last Pulse prompt (empty composer)' },
 ];
 
 export function KeyboardHelp(): React.ReactElement | null {
