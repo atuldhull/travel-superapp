@@ -223,6 +223,17 @@ rebases.
 | **AE115** | Server-component `loading.tsx` for `/aether/destinations`, `/aether/destinations/[slug]`, `/aether/journey/[id]` — CSS shimmer     | `ddf6fcd` |
 | **AE116** | Round K docs + autopilot + MEMORY refresh                                                                                          | _this_    |
 
+## Round 19 — Round L · keyboard & calm ✦ AE117–AE122
+
+| #         | Slice                                                                                                             | Commit    |
+| --------- | ----------------------------------------------------------------------------------------------------------------- | --------- |
+| **AE117** | Atlas listbox focus row 0 when tabbed into from chrome (`tabIndex` flip + container onFocus)                      | `5701974` |
+| **AE118** | `/aether/me` Recent prompts "clear all" — confirm-then-wipe + `clearRecentPrompts()` helper next to read/append   | `ecbac9d` |
+| **AE119** | `<TripChecklist/>` "backup .json" — `{version, tripId, exportedAt, items}` downloaded via blob URL                | `c13f5c2` |
+| **AE120** | `loading.tsx` for `/aether/journal`, `/aether/journal/[slug]`, `/aether/atlas` (Atlas uses inverted dark shimmer) | `3394b85` |
+| **AE121** | `<TripChecklist/>` keyboard nav — Arrow Up/Down across rows, Space/Enter toggles, Delete/Backspace removes        | `c13f5c2` |
+| **AE122** | Round L docs + autopilot + MEMORY refresh                                                                         | _this_    |
+
 ## Stop conditions reached / deferred
 
 - **Mobile parity** — Aether is web-only Phase 0 (locked decision pre-AE5).
