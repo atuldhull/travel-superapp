@@ -94,6 +94,35 @@ describe('groupByWeek', () => {
   });
 });
 
+// ─── AE208: boundary cases — cross-month + cross-year ───────────────
+describe('weekKey — boundary cases (AE208)', () => {
+  it('snaps a Mon-of-the-week that lives in a previous month', () => {
+    // 2026-09-02 is a Wed. The Mon before it is 2026-08-31 (in Aug).
+    expect(weekKey('2026-09-02T10:00:00')).toBe('2026-08-31');
+  });
+
+  it('snaps a Sunday at year boundary back across Dec→Jan', () => {
+    // 2027-01-03 is a Sunday → Monday before is 2026-12-28 (prev year).
+    expect(weekKey('2027-01-03T15:00:00')).toBe('2026-12-28');
+  });
+
+  it('keeps a Mon-Jan-1 on itself (no roll back)', () => {
+    // 2024-01-01 is a Monday.
+    expect(weekKey('2024-01-01T00:00:00')).toBe('2024-01-01');
+  });
+
+  it('groupByWeek opens a new bucket across the Dec→Jan year flip', () => {
+    const evts = [
+      { at: '2026-12-30T08:00:00', label: 'a', kind: 'create' as const }, // Wed of week 2026-12-28
+      { at: '2027-01-04T08:00:00', label: 'b', kind: 'edit' as const }, // Mon of 2027-01-04
+    ];
+    const got = groupByWeek(evts);
+    expect(got.length).toBe(2);
+    expect(got[0]?.key).toBe('2026-12-28');
+    expect(got[1]?.key).toBe('2027-01-04');
+  });
+});
+
 describe('TIMELINE_GROUP_THRESHOLD', () => {
   it('is a positive integer (sanity gate for the dashboard switch)', () => {
     expect(Number.isInteger(TIMELINE_GROUP_THRESHOLD)).toBe(true);
