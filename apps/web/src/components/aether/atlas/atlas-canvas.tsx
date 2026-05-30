@@ -198,6 +198,9 @@ export function AtlasCanvas(): React.ReactElement {
   // tagline). When empty, every pin is full-opacity.
   const [query, setQuery] = useState<string>('');
 
+  // AE127 — filter input ref so '/' shortcut can focus it.
+  const filterInputRef = useRef<HTMLInputElement | null>(null);
+
   // AE71 — "Where am I" geolocation state. The map's user marker is
   // kept in a ref so subsequent geolocate calls can replace it.
   const userMarkerRef = useRef<{ remove: () => void } | null>(null);
@@ -311,6 +314,25 @@ export function AtlasCanvas(): React.ReactElement {
     })();
 
     return () => cleanup();
+  }, []);
+
+  // AE127 — `/` focuses the filter input (editor convention).
+  // Only fires when the keypress originates outside form fields, so
+  // typing `/` inside the filter itself doesn't loop, and `?` for
+  // KeyboardHelp continues to coexist (different keys, same guard).
+  useEffect(() => {
+    const onKey = (e: globalThis.KeyboardEvent): void => {
+      if (e.key !== '/') return;
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      const node = filterInputRef.current;
+      if (node === null) return;
+      e.preventDefault();
+      node.focus();
+      node.select();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, []);
 
   // AE69 — dim non-matching pins when filter has typed text. We don't
@@ -720,10 +742,11 @@ export function AtlasCanvas(): React.ReactElement {
               }}
             >
               <input
+                ref={filterInputRef}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Filter — city · state · word"
-                aria-label="Filter destinations"
+                placeholder="Filter — city · state · word — press / to focus"
+                aria-label="Filter destinations (press / to focus)"
                 style={{
                   minWidth: 220,
                   padding: `${theme.space.tight}px ${theme.space.inline}px`,
@@ -898,6 +921,29 @@ export function AtlasCanvas(): React.ReactElement {
                   }}
                 >
                   {p.tagline}
+                  {/* AE126 — in-season chip on the list row (mirror AE83
+                      destination cards + AE107 journeys index). Olive so
+                      it reads as 'now', not as another accent. */}
+                  {isInSeason(p.slug) && (
+                    <span
+                      style={{
+                        marginLeft: 10,
+                        padding: '2px 8px',
+                        borderRadius: 999,
+                        fontFamily: theme.font.ui,
+                        fontStyle: 'normal',
+                        fontSize: 10,
+                        fontWeight: 600,
+                        letterSpacing: '0.14em',
+                        textTransform: 'uppercase',
+                        background: 'rgba(110, 123, 92, 0.22)',
+                        color: olive.glow,
+                        verticalAlign: 'middle',
+                      }}
+                    >
+                      ◐ in season
+                    </span>
+                  )}
                 </span>
                 <span
                   style={{
