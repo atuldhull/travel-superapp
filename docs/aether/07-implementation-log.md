@@ -456,6 +456,21 @@ rebases.
 | **AE264** | `extractShareCode` + 11 specs (inverse of AE218; legacy + aether paths; strips ?+#; URIError null)     | `b6690bd` |
 | **AE265** | Round AB docs + autopilot + MEMORY refresh                                                             | _this_    |
 
+## Round 36 — Round AC · sitemap + RSS + tooltip + photo-url kit ✦ AE266–AE275
+
+| #         | Slice                                                                                              | Commit    |
+| --------- | -------------------------------------------------------------------------------------------------- | --------- |
+| **AE266** | `shouldShowThinkingDot` + 6 specs (220ms min, composer-text gate)                                  | `82adff6` |
+| **AE267** | `buildPhotoUrl` + 9 specs (Unsplash sized URL, photo- prefix auto-add, https-only)                 | `86bfd45` |
+| **AE268** | `useIntersectionOnce` hook + 4 jsdom specs (one-shot IO, disabled short-circuit, fake-IO stub)     | `839091b` |
+| **AE269** | `buildDestinationTagline` + 7 specs (state · tagline · In season; drops empties)                   | `c17fbc8` |
+| **AE270** | `destinationSitemapEntries` + 9 specs (uses AE242 href, alpha sort, per-entry lastmod or fallback) | `1488ec5` |
+| **AE271** | `journalSitemapEntries` + 7 specs (newest first, updatedAt → publishedOn → fallback)               | `9b05709` |
+| **AE272** | `buildShareCardTagline` + 7 specs (uses AE195 inclusiveDaysBetween + AE223 countLabel)             | `57022d3` |
+| **AE273** | `buildAtlasTooltipHtml` + 6 specs (uses AE257 escapeAttr; conditional in-season + accentNote rows) | `86af243` |
+| **AE274** | `buildRssItem` + 8 specs (RFC 2822 pubDate, conditional dc:creator/description, epoch fallback)    | `5b3cd06` |
+| **AE275** | Round AC docs + autopilot + MEMORY refresh                                                         | _this_    |
+
 ## Stop conditions reached / deferred
 
 - **Mobile parity** — Aether is web-only Phase 0 (locked decision pre-AE5).
