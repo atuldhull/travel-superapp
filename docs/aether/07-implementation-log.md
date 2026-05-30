@@ -263,6 +263,25 @@ rebases.
 | **AE141** | Activity timeline groups by ISO week (Monday-rooted) when events > 8; ≤8 stays flat                  | `52876cf` |
 | **AE142** | Round N docs + autopilot + MEMORY refresh                                                            | _this_    |
 
+## Round 22 — Round O · helpers, skeletons & a11y ✦ AE143–AE156
+
+| #         | Slice                                                                                                                 | Commit    |
+| --------- | --------------------------------------------------------------------------------------------------------------------- | --------- |
+| **AE143** | Extract timeline-grouping helpers (`TIMELINE_GROUP_THRESHOLD`, `weekKey`, `weekLabel`, `groupByWeek`) + 11 specs      | `5ce8850` |
+| **AE144** | Extract `shouldFocusFilterOnSlash` Atlas guard + 6 specs (INPUT/TEXTAREA/SELECT/missing-target/non-slash)             | `79cb3db` |
+| **AE145** | KeyboardHelp adds rows for AE127 `/` filter + AE121 list/checklist nav (↑↓ Space Del)                                 | `c34b0be` |
+| **AE146** | `aether-pulse-open` accepts `{submit: true}` to auto-send (delayed 220ms so open animation lands)                     | `1fc401d` |
+| **AE147** | PDF export error gets `↻ Try again` retry (resets preload flag) + `×` dismiss                                         | `e372624` |
+| **AE148** | `<TripChecklist/>` JSON import (round-trip with AE119) — file picker, ChecklistItem validation, 4s inline error       | `e2cb173` |
+| **AE149** | Extract `deriveChecklistSlug` helper + 7 specs (null/empty/case-insensitive/first-hit/15-slug-catalogue)              | `fcd8d28` |
+| **AE150** | `loading.tsx` for `/aether/about` + `/plan` + `/onboarding` + `/brand` (4 server-component skeletons)                 | `cccebe9` |
+| **AE151** | `loading.tsx` for `/aether/drift` + `/aether/dispatch` (2 more skeletons)                                             | `40313fc` |
+| **AE152** | Storybook for `<TripShareCard/>` (3 variants: TwoWeekItinerary / SingleDay / UndatedDraft) on dark presenter backdrop | `f423ea0` |
+| **AE153** | 5 more shareSvg edge specs (empty title / no-status fallback / dated range / 1-char no-shrink / no \\r)               | `cdc4e98` |
+| **AE154** | Activity timeline kicker shows `· N events` count (useMemo from same input set as builder, singular/plural correct)   | `13e367e` |
+| **AE155** | Atlas Esc inside filter clears query or hops focus to row 0; placeholder gains hint                                   | `1f4ac4c` |
+| **AE156** | Round O docs + autopilot + MEMORY refresh                                                                             | _this_    |
+
 ## Stop conditions reached / deferred
 
 - **Mobile parity** — Aether is web-only Phase 0 (locked decision pre-AE5).
