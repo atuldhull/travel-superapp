@@ -793,12 +793,23 @@ export function AtlasCanvas(): React.ReactElement {
         <div
           role="listbox"
           aria-label="Destinations list — use arrow keys, Enter to open"
+          tabIndex={focusedIdx >= 0 ? -1 : 0}
           aria-activedescendant={
             focusedIdx >= 0 && filtered[focusedIdx] !== undefined
               ? `atlas-row-${filtered[focusedIdx]?.slug}`
               : undefined
           }
           onKeyDown={onListKey}
+          // AE117 — when the listbox itself receives focus (Tab from
+          // chrome above), forward focus to row 0 so arrows just work.
+          // We only forward when no row is currently focused; once a
+          // row owns focus, tabIndex={-1} above hides the container
+          // from the tab order so Shift+Tab leaves cleanly.
+          onFocus={(e) => {
+            if (e.target === e.currentTarget && focusedIdx < 0 && filtered.length > 0) {
+              focusRow(0);
+            }
+          }}
           style={{ display: 'flex', flexDirection: 'column' }}
         >
           {filtered.length === 0 && (
