@@ -67,3 +67,67 @@ describe('seasonLabel', () => {
     expect(seasonLabel('jaipur', at(5))).toBe('Off-peak');
   });
 });
+
+// ─── AE134: edge-case month coverage ──────────────────────────────
+describe('seasonality — edge months', () => {
+  it('every slug has at least one in-season month within Jan–Dec', () => {
+    // Sanity gate: ensure no slug is defined with an empty month-set
+    // (which would silently disable its in-season chip everywhere).
+    const slugs = [
+      'leh',
+      'spiti',
+      'darjeeling',
+      'shillong',
+      'jaipur',
+      'udaipur',
+      'bhuj',
+      'varanasi',
+      'mumbai',
+      'anjuna',
+      'hampi',
+      'coorg',
+      'pondicherry',
+      'madurai',
+      'alleppey',
+    ];
+    for (const slug of slugs) {
+      let ever = false;
+      for (let m = 1; m <= 12; m += 1) {
+        if (isInSeason(slug, at(m))) {
+          ever = true;
+          break;
+        }
+      }
+      expect(ever).toBe(true);
+    }
+  });
+
+  it('high-Himalaya slugs (Leh, Spiti) are out in deep winter (Jan)', () => {
+    expect(isInSeason('leh', at(1))).toBe(false);
+    expect(isInSeason('spiti', at(1))).toBe(false);
+  });
+
+  it('Mumbai is out during peak monsoon (July)', () => {
+    expect(isInSeason('mumbai', at(7))).toBe(false);
+  });
+
+  it('Coorg is in season during winter (Jan)', () => {
+    expect(isInSeason('coorg', at(1))).toBe(true);
+  });
+
+  it('inSeasonSlugs returns at least 2 slugs every month (no empty windows)', () => {
+    // The low floor (Apr-Aug) is the high-Himalaya pair Leh + Spiti, and
+    // Apr-May adds Darjeeling + Shillong. Two slugs is the genuine
+    // calendar minimum, not 4 — keep this assertion realistic.
+    for (let m = 1; m <= 12; m += 1) {
+      const got = inSeasonSlugs(at(m));
+      expect(got.length).toBeGreaterThanOrEqual(2);
+    }
+  });
+
+  it('inSeasonSlugs is stable across the same date (idempotent)', () => {
+    const a = inSeasonSlugs(at(3));
+    const b = inSeasonSlugs(at(3));
+    expect(a).toEqual(b);
+  });
+});
