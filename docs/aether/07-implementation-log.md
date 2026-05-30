@@ -486,6 +486,21 @@ rebases.
 | **AE284** | `sleep` + 5 fake-timer specs (AbortSignal cancel; pre-aborted rejects immediately; negative clamp)       | `2d14e06` |
 | **AE285** | Round AD docs + autopilot + MEMORY refresh                                                               | _this_    |
 
+## Round 38 — Round AE · formatter + grouping + voice-state kit ✦ AE286–AE295
+
+| #         | Slice                                                                                              | Commit    |
+| --------- | -------------------------------------------------------------------------------------------------- | --------- |
+| **AE286** | `formatIsoTime` + 7 specs (HH:MM local from ISO; null/garbage → '')                                | `0c2620b` |
+| **AE287** | `groupByState` + 8 specs (state buckets; 'Other' fallback; alpha key order; input-order within)    | `261180f` |
+| **AE288** | `stripMarkdown` + 12 specs (bold/italic/code/heading/bullet/link; preserves standalone \*)         | `babbd99` |
+| **AE289** | `formatPercent` + 10 specs (clamp [0,1]; round whole; decimals opt; NaN/Inf → '—')                 | `5e063db` |
+| **AE290** | `voiceStateLabel` + `voiceStateAriaLive` + 9 specs (5 distinct labels; assertive for error/denied) | `da52bb3` |
+| **AE291** | `normalizeWhitespace` + 8 specs (collapse runs + trim)                                             | `4391a64` |
+| **AE292** | `formatDistanceKm` + 9 specs (<1km meters; <10km 1-dec km; ≥10km whole km)                         | `7268b53` |
+| **AE293** | `seasonChipLabel` + 7 specs (4-state router: in-season/best-month/shoulder/off)                    | `b728eca` |
+| **AE294** | `shortTripTitle` + 9 specs (word-boundary cut with ellipsis; SHORT_TITLE_DEFAULT=28; unicode-safe) | `b8c0546` |
+| **AE295** | Round AE docs + autopilot + MEMORY refresh                                                         | _this_    |
+
 ## Stop conditions reached / deferred
 
 - **Mobile parity** — Aether is web-only Phase 0 (locked decision pre-AE5).
