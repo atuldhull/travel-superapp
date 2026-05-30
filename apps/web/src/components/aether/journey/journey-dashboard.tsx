@@ -82,15 +82,8 @@ function fmtDate(v: unknown): string {
   });
 }
 
-/** Pull a string field off the itinerary day's free-form summary blob. */
-function readSummaryField(
-  summary: ItineraryDayDto['summary'],
-  key: 'title' | 'subtitle' | 'theme' | 'note',
-): string | null {
-  if (summary === null) return null;
-  const v = (summary as Record<string, unknown>)[key];
-  return typeof v === 'string' && v.trim().length > 0 ? v : null;
-}
+// AE224 — readSummaryField extracted (see read-summary-field.ts).
+import { readSummaryField } from './read-summary-field';
 
 // AE186 + AE187 — fmtTime + fmtDayHead moved into the shared
 // aether-dates lib so they're unit-testable alongside asIso/fmtDate.
