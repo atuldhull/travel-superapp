@@ -2,7 +2,7 @@
  * Vitest specs for the AE171 shared Aether date helpers.
  */
 import { describe, expect, it } from 'vitest';
-import { asIso, daysBetween, fmtDate } from '../../src/lib/aether-dates';
+import { asIso, daysBetween, fmtDate, fmtDayHead, fmtTime } from '../../src/lib/aether-dates';
 
 describe('asIso', () => {
   it('passes ISO strings through unchanged', () => {
@@ -35,6 +35,40 @@ describe('fmtDate', () => {
     const got = fmtDate('2026-05-30T00:00:00');
     expect(got).toMatch(/2026/);
     expect(got).not.toBe('—');
+  });
+});
+
+// ─── AE186: fmtTime (itinerary clock) ─────────────────────────────
+describe('fmtTime', () => {
+  it('returns null for null / non-string', () => {
+    expect(fmtTime(null)).toBeNull();
+    expect(fmtTime(undefined)).toBeNull();
+    expect(fmtTime(42)).toBeNull();
+  });
+  it('parses naked "HH:MM" clock strings as 12-hr with AM/PM', () => {
+    expect(fmtTime('09:30')).toBe('9:30 AM');
+    expect(fmtTime('09:30:00')).toBe('9:30 AM');
+    expect(fmtTime('00:00:00')).toBe('12:00 AM');
+    expect(fmtTime('12:00:00')).toBe('12:00 PM');
+    expect(fmtTime('23:45:00')).toBe('11:45 PM');
+  });
+  it('returns null for clearly unparseable inputs', () => {
+    expect(fmtTime('garbage')).toBeNull();
+  });
+});
+
+// ─── AE187: fmtDayHead (day-card header) ──────────────────────────
+describe('fmtDayHead', () => {
+  it('returns "—" on null / non-string / unparseable', () => {
+    expect(fmtDayHead(null)).toBe('—');
+    expect(fmtDayHead(undefined)).toBe('—');
+    expect(fmtDayHead('not-a-date')).toBe('—');
+  });
+  it('renders weekday · short-date for a known date', () => {
+    // We assert shape, not the exact locale output.
+    const got = fmtDayHead('2026-06-03T00:00:00');
+    expect(got).not.toBe('—');
+    expect(got).toMatch(/.+ · .+/);
   });
 });
 
