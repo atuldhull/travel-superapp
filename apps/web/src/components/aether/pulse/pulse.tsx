@@ -201,6 +201,23 @@ export function Pulse(): React.ReactElement | null {
     if (stored.provider !== null) setProvider(stored.provider);
   }, []);
 
+  // AE96 — listen for `aether-pulse-open` events from other surfaces
+  // (e.g. the journey dashboard's "Ask Pulse about this trip" button).
+  // detail.prefill drops into the input + focuses it.
+  useEffect(() => {
+    if (hidden) return;
+    const onOpen = (e: Event): void => {
+      const detail = (e as CustomEvent<{ prefill?: string }>).detail;
+      setOpen(true);
+      if (typeof detail?.prefill === 'string' && detail.prefill.trim() !== '') {
+        setQ(detail.prefill);
+        window.setTimeout(() => inputRef.current?.focus(), 50);
+      }
+    };
+    window.addEventListener('aether-pulse-open', onOpen);
+    return () => window.removeEventListener('aether-pulse-open', onOpen);
+  }, [hidden]);
+
   // AE72 — persist on every change. Caps messages at PULSE_MAX_MESSAGES
   // from the end so the localStorage entry never grows unbounded.
   useEffect(() => {
