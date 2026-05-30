@@ -224,14 +224,26 @@ export function Pulse(): React.ReactElement | null {
   // AE96 — listen for `aether-pulse-open` events from other surfaces
   // (e.g. the journey dashboard's "Ask Pulse about this trip" button).
   // detail.prefill drops into the input + focuses it.
+  // AE146 — when detail.submit === true, also ask() immediately so a
+  // surface that knows the user's intent (e.g. "A trip like this" on
+  // a journal article) can skip the prefill→tap-send dance.
   useEffect(() => {
     if (hidden) return;
     const onOpen = (e: Event): void => {
-      const detail = (e as CustomEvent<{ prefill?: string }>).detail;
+      const detail = (e as CustomEvent<{ prefill?: string; submit?: boolean }>).detail;
       setOpen(true);
-      if (typeof detail?.prefill === 'string' && detail.prefill.trim() !== '') {
-        setQ(detail.prefill);
+      const prefill = typeof detail?.prefill === 'string' ? detail.prefill.trim() : '';
+      if (prefill !== '') {
+        setQ(prefill);
         window.setTimeout(() => inputRef.current?.focus(), 50);
+        if (detail?.submit === true) {
+          // Fire after the open animation so the user sees the prompt
+          // land, then the assistant bubble appears.
+          window.setTimeout(() => {
+            void ask(prefill);
+            setQ('');
+          }, 220);
+        }
       }
     };
     window.addEventListener('aether-pulse-open', onOpen);
