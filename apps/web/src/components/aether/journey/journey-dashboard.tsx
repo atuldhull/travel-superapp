@@ -21,12 +21,15 @@ import {
   useTripControllerDuplicate,
   useTripControllerGetItinerary,
   useTripControllerGetOne,
+  useTripControllerListShares,
   useTripControllerShare,
   useTripControllerUnarchive,
   type ItineraryDayDto,
   type ItineraryItemDto,
   type ItineraryListResponseDto,
+  type ListTripSharesResponseDto,
   type TripDto,
+  type TripShareOwnerDto,
   type TripShareResponseDto,
 } from '@app/sdk';
 import { useQueryClient } from '@tanstack/react-query';
@@ -206,6 +209,14 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
   const itinerary = itineraryQuery.data?.data as ItineraryListResponseDto | undefined;
   const days: ItineraryDayDto[] = itinerary?.days ?? [];
   const hasItinerary = days.length > 0;
+
+  // AE128 — list existing shares to enrich the activity timeline with
+  // 'Shared a link' events. Cheap call, idempotent, retry once.
+  const sharesQuery = useTripControllerListShares(tripId, {
+    query: { enabled: isAuthed && trip !== undefined, retry: 1 },
+  });
+  const tripShares: TripShareOwnerDto[] =
+    (sharesQuery.data?.data as ListTripSharesResponseDto | undefined)?.shares ?? [];
 
   const ink = theme.color.ink;
   const surface = theme.color.surface;
@@ -1364,7 +1375,7 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
                     interface Evt {
                       readonly at: string;
                       readonly label: string;
-                      readonly kind: 'create' | 'edit' | 'archive';
+                      readonly kind: 'create' | 'edit' | 'archive' | 'share';
                     }
                     const events: Evt[] = [];
                     if (asIso(trip.createdAt) !== null) {
@@ -1388,6 +1399,17 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
                     if (archivedAt !== null) {
                       events.push({ at: archivedAt, label: 'Archived', kind: 'archive' });
                     }
+                    // AE128 — surface one event per minted share.
+                    for (const s of tripShares) {
+                      const createdAtIso = asIso(s.createdAt);
+                      if (createdAtIso === null) continue;
+                      const codeFrag = s.shareCode.slice(0, 6);
+                      events.push({
+                        at: createdAtIso,
+                        label: `Shared a link · ${codeFrag}…`,
+                        kind: 'share',
+                      });
+                    }
                     events.sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
                     return events.map((e) => (
                       <li
@@ -1408,7 +1430,9 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
                                 ? ochre.deep
                                 : e.kind === 'edit'
                                   ? olive.deep
-                                  : accent.deep,
+                                  : e.kind === 'share'
+                                    ? ochre.glow
+                                    : accent.deep,
                             boxShadow: `0 0 0 4px ${surface.base}`,
                           }}
                         />
