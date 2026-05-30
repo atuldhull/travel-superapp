@@ -9,6 +9,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
   bundleLocalData,
+  bundlePulseHistory,
   type AetherLocalDataPayload,
 } from '../../src/components/aether/account/data-export';
 
@@ -117,5 +118,49 @@ describe('bundleLocalData', () => {
     storage.setItem('aether-pulse-recent:v1', 'this-is-not-json{{{');
     const out = bundleLocalData(storage);
     expect(out.recentPrompts).toBe('this-is-not-json{{{');
+  });
+});
+
+// ─── AE160: bundlePulseHistory ─────────────────────────────────────
+describe('bundlePulseHistory', () => {
+  let s: MemoryStorage;
+  beforeEach(() => {
+    s = new MemoryStorage();
+  });
+
+  it('returns version=1 + source="aether-pulse" + null history on empty', () => {
+    const out = bundlePulseHistory(s, new Date('2026-05-30T12:00:00Z'));
+    expect(out.version).toBe(1);
+    expect(out.source).toBe('aether-pulse');
+    expect(out.exportedAt).toBe('2026-05-30T12:00:00.000Z');
+    expect(out.history).toBeNull();
+  });
+
+  it('parses the AE72 history value as JSON', () => {
+    const history = [
+      { role: 'user', content: 'plan jaipur' },
+      { role: 'assistant', content: 'three days' },
+    ];
+    s.setItem('aether-pulse-history:v1', JSON.stringify(history));
+    const out = bundlePulseHistory(s);
+    expect(out.history).toEqual(history);
+  });
+
+  it('falls back to raw string when stored value is non-JSON', () => {
+    s.setItem('aether-pulse-history:v1', 'not-json');
+    const out = bundlePulseHistory(s);
+    expect(out.history).toBe('not-json');
+  });
+
+  it('does NOT leak unrelated keys', () => {
+    s.setItem('access-token', 'SECRET');
+    s.setItem('aether-pulse-recent:v1', JSON.stringify(['x']));
+    s.setItem('aether-pulse-history:v1', '[]');
+    const out = bundlePulseHistory(s);
+    const ser = JSON.stringify(out);
+    expect(ser).not.toContain('SECRET');
+    // Recent prompts belong to the AE131 full bundle, not the Pulse-
+    // history-only one.
+    expect(ser).not.toContain('aether-pulse-recent');
   });
 });

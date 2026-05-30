@@ -34,6 +34,28 @@ function safeRead(storage: Storage, key: string): unknown {
   }
 }
 
+/** AE160 — Pulse-history-only backup payload (smaller than the full
+ *  AE131 bundle). Used by the "Backup .json" button next to Clear. */
+export interface AetherPulseHistoryPayload {
+  readonly version: 1;
+  readonly exportedAt: string;
+  readonly source: 'aether-pulse';
+  readonly history: unknown;
+}
+
+/** Pure helper for the AE140 Pulse-history backup. */
+export function bundlePulseHistory(
+  storage: Storage,
+  now: Date = new Date(),
+): AetherPulseHistoryPayload {
+  return {
+    version: 1,
+    exportedAt: now.toISOString(),
+    source: 'aether-pulse',
+    history: safeRead(storage, 'aether-pulse-history:v1'),
+  };
+}
+
 /** Pure helper — accepts a Storage so tests can pass a fresh mock and
  *  the production code passes `window.localStorage`. */
 export function bundleLocalData(storage: Storage, now: Date = new Date()): AetherLocalDataPayload {
