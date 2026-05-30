@@ -42,6 +42,17 @@ const QUICK_PROMPTS = [
   { label: 'See the map', kind: 'map' as const, href: '/aether/atlas' },
 ];
 
+/** AE132 — three evergreen seed prompts for first-time users (when
+ *  Recent has fewer than 3 entries). Mixed: one introspective, one
+ *  practical, one curious — so a user finds at least one they want
+ *  to tap. Phrased as a user would, so they survive being run as-is
+ *  through Pulse's planner. */
+const SUGGESTED_PROMPTS: ReadonlyArray<string> = [
+  'A slow five days somewhere in season near me.',
+  'Plan two weekends back-to-back — one for ruins, one for the coast.',
+  'Where should I go that nobody Instagram-knows yet?',
+];
+
 // AE85 slash-command palette — the data + matcher live in
 // ./slash-commands.ts so they can be unit-tested without spinning
 // up the Pulse drawer (AE91).
@@ -620,6 +631,62 @@ export function Pulse(): React.ReactElement | null {
                           aria-label={`Reuse recent prompt: ${r}`}
                         >
                           {r}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* AE132 — 3 curated seed prompts so a first-time user
+                    has something to tap. Hidden when Recent already
+                    surfaces 3+ prompts (no point duplicating). */}
+                {recent.length < 3 && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 4,
+                      marginBottom: theme.space.comfy,
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: theme.font.ui,
+                        fontSize: 10,
+                        letterSpacing: '0.18em',
+                        textTransform: 'uppercase',
+                        color: olive.deep,
+                        fontWeight: 600,
+                        marginBottom: 4,
+                      }}
+                    >
+                      Try one of these
+                    </span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      {SUGGESTED_PROMPTS.map((p) => (
+                        <button
+                          type="button"
+                          key={p}
+                          onClick={() => {
+                            setQ(p);
+                            inputRef.current?.focus();
+                          }}
+                          style={{
+                            textAlign: 'left',
+                            padding: `${theme.space.hairline}px ${theme.space.inline}px`,
+                            borderRadius: theme.radius.sm,
+                            background: 'transparent',
+                            border: `1px solid ${olive.whisper}`,
+                            color: ink.base,
+                            fontFamily: theme.font.display,
+                            fontStyle: 'italic',
+                            fontSize: 13,
+                            lineHeight: 1.4,
+                            cursor: 'pointer',
+                          }}
+                          aria-label={`Use suggested prompt: ${p}`}
+                        >
+                          {p}
                         </button>
                       ))}
                     </div>
