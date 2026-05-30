@@ -22,6 +22,7 @@ import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
 import { useViewport } from '../use-viewport';
 import { isInSeason } from '../destinations/seasons';
+import { destinationAccent } from '../destinations/palette';
 
 interface Pin {
   readonly slug: string;
@@ -272,11 +273,17 @@ export function AtlasCanvas(): React.ReactElement {
           iconAnchor: [12, 12],
         });
         const marker = L.marker([p.lat, p.lng], { icon, title: p.name }).addTo(map);
+        // AE108 — tooltip now surfaces accent note + season status.
+        const accentInfo = destinationAccent(p.slug);
+        const seasonRow = isInSeason(p.slug)
+          ? `<div class="aether-pin-tooltip-season">◐ in season now</div>`
+          : '';
         marker.bindTooltip(
           `<div class="aether-pin-tooltip">
             <div class="aether-pin-tooltip-name">${p.name}</div>
-            <div class="aether-pin-tooltip-state">${p.state}</div>
+            <div class="aether-pin-tooltip-state">${p.state} · <span style="color:${accentInfo.base}">${accentInfo.note}</span></div>
             <div class="aether-pin-tooltip-tag">${p.tagline}</div>
+            ${seasonRow}
           </div>`,
           { className: 'aether-pin-tooltip-wrap', direction: 'top', offset: [0, -8] },
         );
@@ -911,6 +918,18 @@ export function AtlasCanvas(): React.ReactElement {
           margin-top: 4px;
           max-width: 220px;
           line-height: 1.4;
+        }
+        /* AE108 — season row in pin tooltip */
+        .aether-pin-tooltip-season {
+          font-family: ${theme.font.ui};
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+          color: ${olive.deep};
+          margin-top: 6px;
+          padding-top: 4px;
+          border-top: 1px solid ${ink.whisper};
         }
 
         /* Leaflet zoom-control restyle to match Aether palette */
