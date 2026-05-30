@@ -308,6 +308,19 @@ rebases.
 | **AE171** | Shared `aether-dates` helpers (`asIso`, `fmtDate`, `daysBetween`) + 11 specs    | `740fa38` |
 | **AE172** | Round Q docs + autopilot + MEMORY refresh                                       | _this_    |
 
+## Round 25 — Round R · spec coverage + Storybook ✦ AE173–AE180
+
+| #         | Slice                                                                                                           | Commit    |
+| --------- | --------------------------------------------------------------------------------------------------------------- | --------- |
+| **AE173** | Extract journal `tagOf` to sibling file + 2 more specs (first-bullet stop, ASCII `*` is NOT a separator)        | `ceecd94` |
+| **AE174** | Storybook for `<Pulse/>` drawer — 4 variants (EmptyFirstTimer / RecentReturning / InConversation / SlashOpen)   | `6cb5de2` |
+| **AE175** | 4 more slash-commands sanity specs (uniqueness, kebab/lowercase, expand non-whitespace, sort stability)         | `31ba4d4` |
+| **AE176** | Data-shape gate for `DESTINATIONS` — 7 specs (15-slug count, no dup, every slug maps, kebab, hero photo fields) | `10a4519` |
+| **AE177** | Data-shape gate for `JOURNAL_ARTICLES` — 7 specs (count ≥ 6, body is array of blocks, kicker has `·`)           | `a33dfb2` |
+| **AE178** | 4 more `destinationAccent` specs (whisper hex-or-rgba, note kebab ≤24, unique notes, Leh = sky-tone)            | `e1a5647` |
+| **AE179** | 4 more `aetherOg` specs (freshness, empty inputs, alt=title verbatim, shared OG↔Twitter image URL)              | `8a80484` |
+| **AE180** | Round R docs + autopilot + MEMORY refresh                                                                       | _this_    |
+
 ## Stop conditions reached / deferred
 
 - **Mobile parity** — Aether is web-only Phase 0 (locked decision pre-AE5).
