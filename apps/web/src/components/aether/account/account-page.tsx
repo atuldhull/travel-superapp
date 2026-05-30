@@ -56,7 +56,41 @@ export function AccountPage(): React.ReactElement {
   const isAuthed = bootComplete && token !== null;
   const [signingOut, setSigningOut] = useState<boolean>(false);
   const [pulseCleared, setPulseCleared] = useState<boolean>(false);
+  const [pulseExported, setPulseExported] = useState<boolean>(false);
   const [dataExported, setDataExported] = useState<boolean>(false);
+
+  /** AE140 — back up the Pulse conversation as JSON before clearing.
+   *  Wraps the same storage key (aether-pulse-history:v1) used by AE72;
+   *  filename includes ISO date so successive backups don't collide. */
+  function downloadPulseHistory(): void {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = window.localStorage.getItem('aether-pulse-history:v1');
+      const parsed = raw === null ? null : (JSON.parse(raw) as unknown);
+      const payload = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        source: 'aether-pulse',
+        history: parsed,
+      };
+      const today = new Date().toISOString().slice(0, 10);
+      const blob = new Blob([JSON.stringify(payload, null, 2)], {
+        type: 'application/json',
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `aether-pulse-history-${today}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+      setPulseExported(true);
+      window.setTimeout(() => setPulseExported(false), 2000);
+    } catch {
+      /* quota / private mode / corrupt JSON — silently ignore */
+    }
+  }
 
   /** AE93 — wipes Pulse's persisted conversation (AE72). */
   function clearPulseHistory(): void {
@@ -588,24 +622,45 @@ export function AccountPage(): React.ReactElement {
                   plan across reloads. Wipe it if you want to start clean — Pulse on this device
                   will be a blank drawer again.
                 </p>
-                <button
-                  type="button"
-                  onClick={clearPulseHistory}
-                  style={{
-                    padding: `${theme.space.tight}px ${theme.space.loose}px`,
-                    borderRadius: theme.radius.pill,
-                    background: 'transparent',
-                    border: `1px solid ${olive.deep}`,
-                    color: olive.deep,
-                    fontFamily: theme.font.ui,
-                    fontSize: theme.text.button.size,
-                    fontWeight: theme.text.button.weight,
-                    cursor: 'pointer',
-                  }}
-                  aria-label="Clear Pulse conversation history"
-                >
-                  {pulseCleared ? '✓ Cleared' : 'Clear Pulse history'}
-                </button>
+                <div style={{ display: 'flex', gap: theme.space.tight, flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={clearPulseHistory}
+                    style={{
+                      padding: `${theme.space.tight}px ${theme.space.loose}px`,
+                      borderRadius: theme.radius.pill,
+                      background: 'transparent',
+                      border: `1px solid ${olive.deep}`,
+                      color: olive.deep,
+                      fontFamily: theme.font.ui,
+                      fontSize: theme.text.button.size,
+                      fontWeight: theme.text.button.weight,
+                      cursor: 'pointer',
+                    }}
+                    aria-label="Clear Pulse conversation history"
+                  >
+                    {pulseCleared ? '✓ Cleared' : 'Clear Pulse history'}
+                  </button>
+                  {/* AE140 — back up the conversation first */}
+                  <button
+                    type="button"
+                    onClick={downloadPulseHistory}
+                    style={{
+                      padding: `${theme.space.tight}px ${theme.space.loose}px`,
+                      borderRadius: theme.radius.pill,
+                      background: 'transparent',
+                      border: `1px solid ${ink.whisper}`,
+                      color: ink.soft,
+                      fontFamily: theme.font.ui,
+                      fontSize: theme.text.button.size,
+                      fontWeight: theme.text.button.weight,
+                      cursor: 'pointer',
+                    }}
+                    aria-label="Download Pulse history as JSON"
+                  >
+                    {pulseExported ? '✓ Downloaded' : 'Backup .json'}
+                  </button>
+                </div>
               </div>
             </Reveal>
 
