@@ -14,7 +14,7 @@
  * dev pip, future editorial cards inside a surface) can pick up the
  * current surface's accent without prop-drilling.
  */
-import { useEffect, useMemo, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, type ReactNode } from 'react';
 import { useCurrentSurface } from './manager';
 import {
   DEFAULT_SURFACE_PALETTE,
@@ -24,12 +24,47 @@ import {
   type SurfacePaletteSlots,
 } from './palette';
 
-/** Resolved palette for the current Surface. Falls back to
- *  `DEFAULT_SURFACE_PALETTE` when no Surface is active or its
- *  `palette` slot is empty. */
+/**
+ * Override context (AE384). When a `<SurfacePaletteOverride palette={...}>`
+ * is mounted above a consumer of `useSurfacePalette()`, the override wins
+ * over the registered Surface's palette. Use case: Atlas tints itself
+ * from the active trip's destination slug instead of the registry-baked
+ * "deeper earth" default.
+ *
+ * Setting the override to `null` means "no override — defer to the
+ * Surface's own palette". Trees that don't mount the provider see the
+ * AE381 behaviour unchanged.
+ */
+const SurfacePaletteOverrideContext = createContext<SurfacePalette | null>(null);
+
+export interface SurfacePaletteOverrideProps {
+  /** When set, replaces whatever `useSurfacePalette()` would otherwise
+   *  return. Pass `null` for no override (defer to Surface). */
+  palette: SurfacePalette | null;
+  children: ReactNode;
+}
+
+/** Provider that swaps the active palette without touching the registered
+ *  Surface. The Atlas shell mounts this with the trip-derived palette. */
+export function SurfacePaletteOverride({
+  palette,
+  children,
+}: SurfacePaletteOverrideProps): React.ReactElement {
+  return (
+    <SurfacePaletteOverrideContext.Provider value={palette}>
+      {children}
+    </SurfacePaletteOverrideContext.Provider>
+  );
+}
+
+/** Resolved palette for the current Surface. AE384 prefers a non-null
+ *  `<SurfacePaletteOverride>` value above the consumer; otherwise falls
+ *  back to the AE381 behaviour: surface's own palette or
+ *  `DEFAULT_SURFACE_PALETTE`. */
 export function useSurfacePalette(): SurfacePalette {
+  const override = useContext(SurfacePaletteOverrideContext);
   const current = useCurrentSurface();
-  return useMemo(() => paletteForSurface(current), [current]);
+  return useMemo(() => override ?? paletteForSurface(current), [override, current]);
 }
 
 /** Same as `useSurfacePalette()` but projected into named slots. */

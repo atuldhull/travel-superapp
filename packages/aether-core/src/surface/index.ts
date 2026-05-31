@@ -48,8 +48,18 @@ export {
 } from './palette';
 
 export {
+  SurfacePaletteOverride,
   SurfacePaletteVars,
   useSurfacePalette,
   useSurfacePaletteSlots,
+  type SurfacePaletteOverrideProps,
   type SurfacePaletteVarsProps,
 } from './palette-hooks';
+
+export {
+  DESTINATION_PALETTES,
+  extractDestinationSlugFromTitle,
+  hasCuratedPalette,
+  paletteCuratedSlugs,
+  paletteForDestination,
+} from './destination-palettes';

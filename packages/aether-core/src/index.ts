@@ -97,8 +97,19 @@ export {
   type SurfacePaletteSlots,
 } from './surface/palette';
 export {
+  SurfacePaletteOverride,
   SurfacePaletteVars,
   useSurfacePalette,
   useSurfacePaletteSlots,
+  type SurfacePaletteOverrideProps,
   type SurfacePaletteVarsProps,
 } from './surface/palette-hooks';
+
+// AE384 — per-destination palette catalogue + slug extractor.
+export {
+  DESTINATION_PALETTES,
+  extractDestinationSlugFromTitle,
+  hasCuratedPalette,
+  paletteCuratedSlugs,
+  paletteForDestination,
+} from './surface/destination-palettes';

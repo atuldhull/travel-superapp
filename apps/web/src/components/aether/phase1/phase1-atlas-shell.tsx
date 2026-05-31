@@ -26,10 +26,14 @@ import { SurfaceAudioLayer, useSceneAudioBridge } from '@app/aether-audio';
 import { SurfaceCanvas } from '@app/aether-canvas';
 import {
   SurfaceManagerProvider,
+  SurfacePaletteOverride,
   SurfacePaletteVars,
+  extractDestinationSlugFromTitle,
+  paletteForDestination,
   useCurrentSurface,
   useSurfaceManager,
   type SurfaceMountProps,
+  type SurfacePalette,
 } from '@app/aether-core';
 import {
   useTripControllerGetItinerary,
@@ -116,6 +120,15 @@ function Phase1AtlasInner({ tripId }: { tripId: string }): React.ReactElement {
   const isPending = tripQuery.isPending || itineraryQuery.isPending;
   const isError = tripQuery.isError || itineraryQuery.isError;
 
+  // AE384 — derive a palette from the trip's destination. The title is
+  // the cheapest signal we have today ("Five days in Leh" → 'leh');
+  // later slices can layer in primary-place lookup via placeId.
+  const tripPaletteOverride = useMemo<SurfacePalette | null>(() => {
+    const slug = extractDestinationSlugFromTitle(trip?.title);
+    if (slug === null) return null;
+    return paletteForDestination(slug);
+  }, [trip?.title]);
+
   // Same dev-only operator pip as the Drift shell.
   const [audio, setAudio] = useState<{ drone: number; events: number }>({
     drone: -60,
@@ -140,21 +153,23 @@ function Phase1AtlasInner({ tripId }: { tripId: string }): React.ReactElement {
 
   return (
     <TripDataProvider trip={trip} days={days} isPending={isPending} isError={isError}>
-      <div style={{ width: '100%', height: '100vh', position: 'relative' }}>
-        <SurfacePaletteVars />
-        <SurfaceCanvas ariaLabel={`Atlas — ${trip?.title ?? 'loading'}`}>
-          <Suspense fallback={null}>
-            <ActiveSurfaceMount />
-          </Suspense>
-        </SurfaceCanvas>
-        <SurfaceAudioLayer onChannelWrite={audioBridge.onChannelWrite} />
-        <Phase1DevNav />
-        <div style={pipStyle} aria-hidden>
-          {current?.id ?? '—'} · {trip?.title ?? '…'} · {days.length} day
-          {days.length === 1 ? '' : 's'} · audio {audioBridge.status} · drone{' '}
-          {audio.drone.toFixed(0)} · events {audio.events.toFixed(0)}
+      <SurfacePaletteOverride palette={tripPaletteOverride}>
+        <div style={{ width: '100%', height: '100vh', position: 'relative' }}>
+          <SurfacePaletteVars />
+          <SurfaceCanvas ariaLabel={`Atlas — ${trip?.title ?? 'loading'}`}>
+            <Suspense fallback={null}>
+              <ActiveSurfaceMount />
+            </Suspense>
+          </SurfaceCanvas>
+          <SurfaceAudioLayer onChannelWrite={audioBridge.onChannelWrite} />
+          <Phase1DevNav />
+          <div style={pipStyle} aria-hidden>
+            {current?.id ?? '—'} · {trip?.title ?? '…'} · {days.length} day
+            {days.length === 1 ? '' : 's'} · audio {audioBridge.status} · drone{' '}
+            {audio.drone.toFixed(0)} · events {audio.events.toFixed(0)}
+          </div>
         </div>
-      </div>
+      </SurfacePaletteOverride>
     </TripDataProvider>
   );
 }
