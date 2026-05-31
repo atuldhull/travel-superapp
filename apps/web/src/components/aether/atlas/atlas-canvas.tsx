@@ -33,6 +33,8 @@ import { nearestPin } from './haversine';
 import { PINS, type Pin } from './pins';
 // AE191 — Esc-in-filter decision extracted for testability.
 import { decideFilterEsc } from './esc-behaviour';
+// AE324 — shared modulo wrap (was inlined here + in trip-checklist).
+import { wrapRowIndex } from './wrap-row-index';
 
 /** CartoDB Dark Matter (no labels) — free, no key, espresso-feeling. */
 const DARK_TILES = 'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png';
@@ -221,8 +223,9 @@ export function AtlasCanvas(): React.ReactElement {
   // current `filtered` list so wraparound is harmless.
   const focusRow = useCallback(
     (idx: number): void => {
-      if (filtered.length === 0) return;
-      const wrapped = ((idx % filtered.length) + filtered.length) % filtered.length;
+      // AE324 — shared wrap helper; returns -1 for an empty list.
+      const wrapped = wrapRowIndex(idx, filtered.length);
+      if (wrapped < 0) return;
       const slug = filtered[wrapped]?.slug;
       if (slug === undefined) return;
       const el = rowRefs.current.get(slug);
