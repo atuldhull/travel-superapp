@@ -40,6 +40,8 @@ import { fmtDate } from '../../../lib/aether-dates';
 import { buildShareUrl } from '../../../lib/format-share-url';
 // AE334 — shared clipboard helper (was inlined navigator.clipboard).
 import { copyTextToClipboard } from '../../../lib/copy-text';
+// AE346 — shared trips-extractor (replaces ad-hoc unsafe cast).
+import { tripsFromQuery } from '../../../lib/trips-from-query';
 
 function fmtExpiry(v: unknown): string | null {
   const iso = typeof v === 'string' ? v : null;
@@ -313,9 +315,9 @@ export function SharesIndex(): React.ReactElement {
     { limit: '50', archived: 'true' },
     { query: { enabled: isAuthed } },
   );
-  const activeTrips = (activeQuery.data?.data as { trips?: TripDto[] } | undefined)?.trips ?? [];
-  const archivedTrips =
-    (archivedQuery.data?.data as { trips?: TripDto[] } | undefined)?.trips ?? [];
+  // AE346 — shared extractor.
+  const activeTrips = tripsFromQuery<TripDto>(activeQuery);
+  const archivedTrips = tripsFromQuery<TripDto>(archivedQuery);
   const trips: readonly TripDto[] = [...activeTrips, ...archivedTrips];
 
   const ink = theme.color.ink;
