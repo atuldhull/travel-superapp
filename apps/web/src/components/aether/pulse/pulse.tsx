@@ -85,6 +85,8 @@ import { shouldAttachContext } from './should-attach-context';
 import { buildShareUrl } from '../../../lib/format-share-url';
 // AE345 — message bubble style (was 8 inline role-ternaries per render).
 import { pulseMessageBubbleStyle } from './pulse-bubble-style';
+// AE352 — shared value-keyed transient flag for "copied bubble idx".
+import { useTransientValue } from '../use-transient-value';
 
 // AE72 + AE184 — types + storage key + parser extracted to
 // ./persisted-pulse.ts so the shape contract is unit-testable.
@@ -127,7 +129,10 @@ export function Pulse(): React.ReactElement | null {
   // long wait shows the assistant is still working, not stuck.
   const [pendingPhraseIdx, setPendingPhraseIdx] = useState<number>(0);
   // AE189 — index of the assistant bubble that just got copied.
-  const [copiedBubbleIdx, setCopiedBubbleIdx] = useState<number | null>(null);
+  // AE352 — was useState<number|null>+inline setTimeout-then-null;
+  // the shared hook clears + restarts on every new idx (which matches
+  // the prior "cur === idx ? null : cur" guard's effective behaviour).
+  const [copiedBubbleIdx, setCopiedBubbleIdx] = useTransientValue<number>(1500);
   const [saving, setSaving] = useState<boolean>(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   // When save+share is chosen, hold the intent across the create
@@ -794,11 +799,8 @@ export function Pulse(): React.ReactElement | null {
                     onClick={() => {
                       void copyTextToClipboard(m.content).then((ok) => {
                         if (!ok) return;
+                        // AE352 — hook owns the 1500ms auto-clear.
                         setCopiedBubbleIdx(idx);
-                        window.setTimeout(
-                          () => setCopiedBubbleIdx((cur) => (cur === idx ? null : cur)),
-                          1500,
-                        );
                       });
                     }}
                     aria-label={
