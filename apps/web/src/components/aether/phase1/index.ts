@@ -72,3 +72,8 @@ export {
   nowCardTransitionMs,
   type LifecycleDurationsMs,
 } from './now-card-lifecycle';
+export {
+  handlerKeyForPhase,
+  useLifecycleEvents,
+  type LifecycleEventHandlers,
+} from './use-lifecycle-events';
