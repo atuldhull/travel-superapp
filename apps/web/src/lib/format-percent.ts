@@ -8,6 +8,7 @@
  *
  * NaN / non-finite input → '—'.
  */
+import { clamp01 } from './clamp';
 
 export interface FormatPercentOptions {
   readonly decimals?: number;
@@ -15,7 +16,8 @@ export interface FormatPercentOptions {
 
 export function formatPercent(fraction: number, opts: FormatPercentOptions = {}): string {
   if (!Number.isFinite(fraction)) return '—';
-  const clamped = Math.max(0, Math.min(1, fraction));
+  // AE344 — clamp01 (was inline Math.max/Math.min). Behaviour identical.
+  const clamped = clamp01(fraction);
   const n = clamped * 100;
   const digits = opts.decimals ?? 0;
   return `${n.toFixed(digits)}%`;
