@@ -42,6 +42,7 @@ import {
   type ItineraryItemDto,
   type ItineraryListResponseDto,
 } from '@app/sdk';
+import { openPulse } from '../pulse/open-pulse';
 import { createAetherPhase1Registry } from './aether-registry';
 import { Phase1ContinuumBar } from './phase1-continuum-bar';
 import { Phase1ContinuumReceiverToast } from './phase1-continuum-receiver-toast';
@@ -178,8 +179,15 @@ function Phase1AtlasInner({ tripId }: { tripId: string }): React.ReactElement {
             </SurfaceCanvas>
             <SurfaceAudioLayer onChannelWrite={audioBridge.onChannelWrite} />
             <Phase1DevNav />
-            {/* AE389 — always-present Pulse 60px corner glow. */}
-            <Phase1PulseOverlay />
+            {/* AE389 — always-present Pulse 60px corner glow.
+                AE392 — Atlas pre-fills the Pulse prompt with the open
+                trip's title (when available) so a tap on the glow asks
+                Pulse about THIS trip rather than starting cold. */}
+            <Phase1PulseOverlay
+              onActivate={() =>
+                openPulse(trip?.title !== undefined ? `About my ${trip.title}: ` : '')
+              }
+            />
             {/* AE390 — Continuum cross-device handoff bar. The active
                 trip id rides as a handoff extra so the receiver can
                 deep-link directly back into the same journey. */}

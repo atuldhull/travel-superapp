@@ -25,6 +25,7 @@ import {
   useSurfaceManager,
   type SurfaceMountProps,
 } from '@app/aether-core';
+import { openPulse } from '../pulse/open-pulse';
 import { createAetherPhase1Registry } from './aether-registry';
 import { CompassBearingProvider } from './compass-bearing-context';
 import { Phase1ContinuumBar } from './phase1-continuum-bar';
@@ -94,8 +95,9 @@ function Phase1CompassInner(): React.ReactElement {
       </SurfaceCanvas>
       <SurfaceAudioLayer onChannelWrite={audioBridge.onChannelWrite} />
       <Phase1DevNav active="compass" />
-      {/* AE389 — always-present Pulse 60px corner glow. */}
-      <Phase1PulseOverlay />
+      {/* AE389 — always-present Pulse 60px corner glow.
+          AE392 — tap → Pulse drawer opens via AE96 CustomEvent bridge. */}
+      <Phase1PulseOverlay onActivate={() => openPulse('')} />
       {/* AE390 — Continuum cross-device handoff bar. */}
       <Phase1ContinuumBar />
       {/* AE391 — receiver toast for inbound handoffs. */}

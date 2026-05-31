@@ -23,6 +23,7 @@ import {
   useSurfaceManager,
   type SurfaceMountProps,
 } from '@app/aether-core';
+import { openPulse } from '../pulse/open-pulse';
 import { createAetherPhase1Registry } from './aether-registry';
 import { DriftNowCard } from './drift-now-card';
 import { Phase1ContinuumBar } from './phase1-continuum-bar';
@@ -104,8 +105,12 @@ function Phase1Inner(): React.ReactElement {
       <SurfaceAudioLayer onChannelWrite={audioBridge.onChannelWrite} />
       <DriftNowCard />
       <Phase1DevNav active="drift" />
-      {/* AE389 — always-present Pulse 60px corner glow. */}
-      <Phase1PulseOverlay />
+      {/* AE389 — always-present Pulse 60px corner glow.
+          AE392 — tapping the glow opens the editorial Pulse drawer via
+          the AE96 `aether-pulse-open` CustomEvent bridge. The drawer
+          itself ships from the outer DriftShell so it can persist
+          across Phase 0 / Phase 1 flag flips. */}
+      <Phase1PulseOverlay onActivate={() => openPulse('')} />
       {/* AE390 — Continuum cross-device handoff bar. */}
       <Phase1ContinuumBar />
       {/* AE391 — receiver side: surface a small "Continued from
