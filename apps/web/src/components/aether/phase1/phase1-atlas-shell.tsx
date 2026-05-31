@@ -44,6 +44,7 @@ import {
 } from '@app/sdk';
 import { createAetherPhase1Registry } from './aether-registry';
 import { Phase1ContinuumBar } from './phase1-continuum-bar';
+import { Phase1ContinuumReceiverToast } from './phase1-continuum-receiver-toast';
 import { Phase1DevNav } from './phase1-dev-nav';
 import { Phase1PulseOverlay } from './phase1-pulse-overlay';
 import { TripDataProvider, type TripDataLike } from './trip-data-context';
@@ -183,6 +184,8 @@ function Phase1AtlasInner({ tripId }: { tripId: string }): React.ReactElement {
                 trip id rides as a handoff extra so the receiver can
                 deep-link directly back into the same journey. */}
             <Phase1ContinuumBar extras={{ trip: tripId }} />
+            {/* AE391 — receiver toast for inbound handoffs. */}
+            <Phase1ContinuumReceiverToast />
             <div style={pipStyle} aria-hidden>
               {current?.id ?? '—'} · {trip?.title ?? '…'} · {days.length} day
               {days.length === 1 ? '' : 's'} · weather {simulatedWeather} · audio{' '}
