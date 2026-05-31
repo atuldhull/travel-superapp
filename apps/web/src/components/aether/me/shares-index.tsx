@@ -36,6 +36,8 @@ import { useViewport } from '../use-viewport';
 import { countLabel } from '../../../lib/pluralise';
 // AE326 — shared fmtDate (was duplicated here + in dispatch/journeys).
 import { fmtDate } from '../../../lib/aether-dates';
+// AE333 — canonical share-URL builder (was inlined here + in pulse).
+import { buildShareUrl } from '../../../lib/format-share-url';
 
 function fmtExpiry(v: unknown): string | null {
   const iso = typeof v === 'string' ? v : null;
@@ -160,7 +162,8 @@ function TripShareBand({ trip }: { readonly trip: TripDto }): React.ReactElement
           }}
         >
           {shares.map((s) => {
-            const sharedUrl = `${origin}/shared/${s.shareCode}`;
+            // AE333 — buildShareUrl encodes oddball codes + handles origin.
+            const sharedUrl = buildShareUrl({ origin, code: s.shareCode });
             const expiry = fmtExpiry(s.expiresAt);
             const revoked = !s.publicRead;
             return (
