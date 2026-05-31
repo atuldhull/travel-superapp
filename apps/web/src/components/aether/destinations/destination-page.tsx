@@ -35,6 +35,8 @@ import { relatedArticles } from './related-journal';
 import { openPulse } from '../pulse/open-pulse';
 // AE346 — shared trips-extractor (replaces ad-hoc unsafe cast).
 import { tripsFromQuery } from '../../../lib/trips-from-query';
+// AE361 — shared 2-digit ordinal label.
+import { ordinalLabel } from '../../../lib/ordinal-digits';
 
 export interface DestinationPageProps {
   destination: Destination;
@@ -361,7 +363,7 @@ export function DestinationPage({ destination: d }: DestinationPageProps): React
                       marginBottom: 6,
                     }}
                   >
-                    {String(idx + 1).padStart(2, '0')} · Moment
+                    {ordinalLabel(idx)} · Moment
                   </div>
                   <h3
                     style={{

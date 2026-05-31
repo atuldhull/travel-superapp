@@ -23,6 +23,8 @@ import type {
 } from '@app/sdk';
 // AE328 — shared asIso/fmtDate/fmtTime (was duplicated here pre-AE328).
 import { asIso, fmtDate, fmtTime as fmtTimeRaw } from '../../../lib/aether-dates';
+// AE361 — shared 2-digit ordinal label.
+import { ordinalDigits } from '../../../lib/ordinal-digits';
 
 const COL = {
   cream: '#F2E8D5',
@@ -236,7 +238,7 @@ export function TripPdfDoc({ trip, itinerary }: TripPdfDocProps): React.ReactEle
             );
             return (
               <View key={day.id} style={styles.dayRow} wrap={false}>
-                <Text style={styles.dayCap}>{String(num).padStart(2, '0')}</Text>
+                <Text style={styles.dayCap}>{ordinalDigits(num)}</Text>
                 <View style={styles.dayBody}>
                   <Text style={styles.dayKicker}>
                     Day {num} · {fmtDate(day.date)}
