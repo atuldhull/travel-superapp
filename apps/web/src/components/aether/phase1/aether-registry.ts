@@ -33,8 +33,9 @@ export function createAetherPhase1Registry(): SurfaceRegistry {
       phase: 1,
       keySignature: 'leh',
       route: { kind: 'pattern', pathname: '/aether/journey/:id' },
-      // mount loader lands in a future AE prompt; until then SurfaceMountFrame
-      // shows the calm placeholder for this surface.
+      // AE378 wires the first cut: timeline rail + day markers + place orbs.
+      // Later slices add weather shaders, draggable orbs, real skyline.
+      mount: () => import('./atlas-phase1-scene'),
     },
     {
       id: 'compass',
