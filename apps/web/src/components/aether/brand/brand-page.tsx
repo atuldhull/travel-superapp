@@ -24,6 +24,8 @@ import { useViewport } from '../use-viewport';
 import { AetherMark } from '../aether-mark';
 import { destinationAccent } from '../destinations/palette';
 import { ALL_SLUGS, DESTINATIONS } from '../destinations/data';
+// AE334 — shared clipboard helper (was inlined navigator.clipboard).
+import { copyTextToClipboard } from '../../../lib/copy-text';
 
 interface PaletteSwatch {
   readonly label: string;
@@ -56,8 +58,8 @@ export function BrandPage(): React.ReactElement {
   const olive = theme.palette.olive;
 
   function copy(text: string): void {
-    if (typeof navigator === 'undefined' || !navigator.clipboard) return;
-    void navigator.clipboard.writeText(text).then(() => {
+    void copyTextToClipboard(text).then((ok) => {
+      if (!ok) return;
       setCopied(text);
       window.setTimeout(() => setCopied(null), 1600);
     });

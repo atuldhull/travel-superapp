@@ -38,6 +38,8 @@ import { countLabel } from '../../../lib/pluralise';
 import { fmtDate } from '../../../lib/aether-dates';
 // AE333 — canonical share-URL builder (was inlined here + in pulse).
 import { buildShareUrl } from '../../../lib/format-share-url';
+// AE334 — shared clipboard helper (was inlined navigator.clipboard).
+import { copyTextToClipboard } from '../../../lib/copy-text';
 
 function fmtExpiry(v: unknown): string | null {
   const iso = typeof v === 'string' ? v : null;
@@ -229,12 +231,11 @@ function TripShareBand({ trip }: { readonly trip: TripDto }): React.ReactElement
                       <button
                         type="button"
                         onClick={() => {
-                          if (typeof navigator !== 'undefined' && navigator.clipboard) {
-                            void navigator.clipboard.writeText(sharedUrl).then(() => {
-                              setCopiedCode(s.shareCode);
-                              window.setTimeout(() => setCopiedCode(null), 2000);
-                            });
-                          }
+                          void copyTextToClipboard(sharedUrl).then((ok) => {
+                            if (!ok) return;
+                            setCopiedCode(s.shareCode);
+                            window.setTimeout(() => setCopiedCode(null), 2000);
+                          });
                         }}
                         style={{
                           padding: `${theme.space.hairline}px ${theme.space.comfy}px`,
