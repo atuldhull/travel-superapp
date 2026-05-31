@@ -4,6 +4,7 @@ export { Phase1AtlasShell, type Phase1AtlasShellProps } from './phase1-atlas-she
 export { Phase1CompassShell, type Phase1CompassShellProps } from './phase1-compass-shell';
 export { createAetherPhase1Registry } from './aether-registry';
 export {
+  BREATHING_LIFECYCLE_PLAN,
   DEFAULT_LIFECYCLE_PLAN,
   nextPhaseInChain,
   nextScheduledPhase,
@@ -46,3 +47,12 @@ export {
   useCompassBearing,
   type CompassBearingProviderProps,
 } from './compass-bearing-context';
+export {
+  DEFAULT_DISSOLVE_MS,
+  delayedNavigate,
+  useDissolvingNavigate,
+  type DelayedNavigateCancel,
+  type DissolvingNavigate,
+} from './dissolving-navigate';
+export { DissolvingLink, isInAppClick, type DissolvingLinkProps } from './dissolving-link';
+export { Phase1DevNav, type Phase1DevNavProps } from './phase1-dev-nav';
