@@ -54,6 +54,8 @@ import { timelineDotColor } from './timeline-dot-color';
 import { buildJourneyFacts } from './journey-facts';
 // AE309 — relative-time formatter for the footer 'last edited' chip.
 import { formatRelativeAether } from '../../../lib/relative-time-aether';
+// AE310 — canonical share-URL builder used by the share-mutation onSuccess.
+import { buildShareUrl } from '../../../lib/format-share-url';
 
 export interface JourneyDashboardProps {
   tripId: string;
@@ -130,8 +132,10 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
   const shareMutation = useTripControllerShare({
     mutation: {
       onSuccess: (created: TripShareResponseDto) => {
+        // AE310 — buildShareUrl centralises the legacy /shared/<code> path
+        // + the trailing-slash + URL-encoding contract.
         const origin = typeof window !== 'undefined' ? window.location.origin : '';
-        setShareUrl(`${origin}/shared/${created.shareCode}`);
+        setShareUrl(buildShareUrl({ origin, code: created.shareCode }));
         setShareError(null);
       },
       onError: (err: unknown) => {
