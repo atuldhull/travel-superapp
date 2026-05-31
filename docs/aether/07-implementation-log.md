@@ -538,7 +538,30 @@ rebases.
 | **AE316** | Daily Featured destination card on /destinations (pickFeaturedDestination + selectBestMonth + seasonChipLabel) | `a926dae` |
 | **AE317** | /me Recent-activity one-liner via summariseRecentActivity ("Edited X · 2h ago")                                | `d35defd` |
 | **AE318** | reading-progress fill uses AE227 clamp01 (Math.min/max removed)                                                | `dd5db09` |
-| **AE319** | Round AH docs + MEMORY refresh                                                                                 | _this_    |
+| **AE319** | Round AH docs + MEMORY refresh                                                                                 | `7338f9b` |
+
+## Round 42 — Round AI · helper wires + aether-dates consolidation ✦ AE320–AE330
+
+The first round to mix three modes in one pass: feature-wire (AE320,
+AE321), pure-helper extraction with paired specs (AE322, AE327,
+AE329), and large-scale consumer migration (AE323–AE326, AE328 —
+~120 LOC of duplicated date helpers consolidated onto `aether-dates`).
+Net: vitest 1143 → 1164 (+21 specs), zero new behaviour churn for the
+consolidation slices.
+
+| #         | Slice                                                                                                               | Commit    |
+| --------- | ------------------------------------------------------------------------------------------------------------------- | --------- |
+| **AE320** | PDF export filename routes through `backupFilename` + optional `ext` arg (3 new specs)                              | `1a7194b` |
+| **AE321** | Pulse `ask()` drops `priorPlan` when prompt matches a fresh-start phrase (uses AE282 `shouldAttachContext`)         | `c513914` |
+| **AE322** | Extract `formatChecklistAsBullets` + 6 specs (✓ / • prefixes preserved)                                             | `f5a5a9f` |
+| **AE323** | `<TripChecklist/>` localStorage onto `safe-storage` + `safeJsonParse` (SSR + quota guards now shared)               | `f5a5a9f` |
+| **AE324** | `wrapRowIndex` consumer migration (Atlas listbox + checklist `focusItemAt` swap)                                    | `28ad114` |
+| **AE325** | journey-dashboard + shared-trip-view: asIso/fmtDate/daysBetween onto `aether-dates` (-69 LOC)                       | `a5c704a` |
+| **AE326** | dispatch + journeys-index + shares-index `fmtDate` consolidation (-23 LOC)                                          | `ec9d579` |
+| **AE327** | Extract `summariseTripStats` + 6 specs; wired into `<MeHome/>` (single tested predicate for "drafts within active") | `f409dbe` |
+| **AE328** | trip-pdf-doc asIso/fmtDate/fmtTime onto `aether-dates` (fmtTime null wrapped to '—' for PDF slots, -20 LOC)         | `f409dbe` |
+| **AE329** | Extract `interpretGeolocationError` + 6 specs; wired in Atlas (code 1 → denied, anything else → unavailable)        | `da~~~~`  |
+| **AE330** | Round AI docs                                                                                                       | _this_    |
 
 ## Stop conditions reached / deferred
 
