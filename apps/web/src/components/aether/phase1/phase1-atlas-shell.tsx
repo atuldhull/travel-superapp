@@ -39,6 +39,7 @@ import {
   type ItineraryListResponseDto,
 } from '@app/sdk';
 import { createAetherPhase1Registry } from './aether-registry';
+import { Phase1DevNav } from './phase1-dev-nav';
 import { TripDataProvider, type TripDataLike } from './trip-data-context';
 import type { AtlasDayLike } from './atlas-orbs';
 import { BREATHING_LIFECYCLE_PLAN, useLifecycleAutoDriver } from './use-lifecycle-driver';
@@ -147,6 +148,7 @@ function Phase1AtlasInner({ tripId }: { tripId: string }): React.ReactElement {
           </Suspense>
         </SurfaceCanvas>
         <SurfaceAudioLayer onChannelWrite={audioBridge.onChannelWrite} />
+        <Phase1DevNav />
         <div style={pipStyle} aria-hidden>
           {current?.id ?? '—'} · {trip?.title ?? '…'} · {days.length} day
           {days.length === 1 ? '' : 's'} · audio {audioBridge.status} · drone{' '}
