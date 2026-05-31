@@ -19,6 +19,7 @@ import {
   getTripControllerGetOneQueryKey,
   useTripControllerArchive,
   useTripControllerDuplicate,
+  useTripControllerUpdate,
   useTripControllerGetItinerary,
   useTripControllerGetOne,
   useTripControllerListShares,
@@ -67,6 +68,9 @@ import { openPulse } from '../pulse/open-pulse';
 import { copyTextToClipboard } from '../../../lib/copy-text';
 // AE338 — timeline event derivation extracted for testability.
 import { buildTimelineEvents } from './build-timeline-events';
+// AE368 — client-side rename after duplicate so the suffix isn't the
+// server's hardcoded ' (copy)' when the source already ends in it.
+import { suggestedDuplicateName } from './duplicate-suggested-name';
 // AE348 — shared transient ✓-chip hook (was inline setTimeout(setX, 2000)).
 import { useTransientFlag } from '../use-transient-flag';
 
@@ -106,11 +110,35 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
   const unarchiveMutation = useTripControllerUnarchive({
     mutation: { onSuccess: invalidateThisTrip },
   });
+  // AE368 — follow-up rename used when the server's hardcoded
+  // ' (copy)' suffix doesn't match the AE276 suggestedDuplicateName
+  // (e.g. source already ends in '(copy)' → suggested is '(copy 2)').
+  const renameAfterDuplicate = useTripControllerUpdate({
+    mutation: {
+      onError: () => {
+        // Rename failed; the duplicate still succeeded with the
+        // server's default title. Don't surface an error — the user
+        // can rename from the dashboard.
+      },
+    },
+  });
   const duplicateMutation = useTripControllerDuplicate({
     mutation: {
       onSuccess: (created: { data: TripDto }) => {
         const dup = created.data;
         setDuplicateError(null);
+        // AE368 — if the suggested name differs from what the server
+        // emitted (i.e. the source already had a copy suffix), chain
+        // a PATCH /trips/:id rename before navigation. The mutation
+        // fires fire-and-forget; the destination journey-dashboard
+        // re-fetches via useTripControllerGetOne on mount so the
+        // displayed title will reflect the new name either way.
+        if (trip !== undefined) {
+          const suggested = suggestedDuplicateName(trip.title);
+          if (suggested !== dup.title) {
+            renameAfterDuplicate.mutate({ id: dup.id, data: { title: suggested } });
+          }
+        }
         router.push(`/aether/journey/${dup.id}`);
       },
       onError: (err: unknown) => {
