@@ -23,7 +23,6 @@ import {
 import { DriftNav } from '../drift-nav';
 import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
-import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
 import { useViewport } from '../use-viewport';
 // AE317 — recent-activity one-liner for the /me header card.
 import { summariseRecentActivity } from '../me/recent-activity-summary';
@@ -36,6 +35,8 @@ import { openPulse } from '../pulse/open-pulse';
 import { useConfirmTwoStep } from '../use-confirm-two-step';
 // AE346 — shared trips-extractor (replaces ad-hoc unsafe cast).
 import { tripsFromQuery } from '../../../lib/trips-from-query';
+// AE354 — composite auth hook (was 3-line trio inlined per surface).
+import { useAetherAuth } from '../use-aether-auth';
 
 interface CardSpec {
   readonly kicker: string;
@@ -72,9 +73,8 @@ const CARDS: ReadonlyArray<CardSpec> = [
 export function MeHome(): React.ReactElement {
   const theme = useTheme();
   const { isNarrow } = useViewport();
-  const token = useAuthToken();
-  const bootComplete = useAuthBootComplete();
-  const isAuthed = bootComplete && token !== null;
+  // AE354 — composite auth hook collapses the prior 3-line trio.
+  const { isAuthed, bootComplete } = useAetherAuth();
 
   const meQuery = useAuthControllerMe({ query: { enabled: isAuthed, retry: 1 } });
   const me = meQuery.data?.data as WhoAmIResponseDto | undefined;
