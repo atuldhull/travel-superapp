@@ -32,46 +32,10 @@ import { useViewport } from '../use-viewport';
 // AE312 — canonical singular/plural helper for "N days".
 import { countLabel } from '../../../lib/pluralise';
 import { TripShareCard } from '../journey/trip-share-card';
-
-function asIso(v: unknown): string | null {
-  return typeof v === 'string' ? v : null;
-}
-
-function fmtDate(v: unknown): string {
-  const iso = asIso(v);
-  if (iso === null) return '—';
-  return new Date(iso).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-}
-
-function fmtDayHead(v: unknown): string {
-  const iso = asIso(v);
-  if (iso === null) return '—';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '—';
-  const wk = d.toLocaleDateString(undefined, { weekday: 'short' });
-  const md = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  return `${wk} · ${md}`;
-}
-
-function fmtTime(v: unknown): string | null {
-  const s = asIso(v);
-  if (s === null) return null;
-  const d = new Date(s);
-  if (!Number.isNaN(d.getTime()) && s.length > 8) {
-    return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-  }
-  const m = /^(\d{1,2}):(\d{2})/.exec(s);
-  if (m === null) return null;
-  const h = Number(m[1]);
-  const mm = m[2];
-  const period = h >= 12 ? 'PM' : 'AM';
-  const h12 = h % 12 === 0 ? 12 : h % 12;
-  return `${h12}:${mm} ${period}`;
-}
+// AE325 — every date helper (asIso/fmtDate/fmtDayHead/fmtTime/
+// daysBetween) now lives in aether-dates so /shared/ and /journey
+// share the same locale + parsing rules.
+import { asIso, daysBetween, fmtDate, fmtDayHead, fmtTime } from '../../../lib/aether-dates';
 
 function readSummaryField(
   summary: ItineraryDayDto['summary'],
@@ -80,14 +44,6 @@ function readSummaryField(
   if (summary === null) return null;
   const v = (summary as Record<string, unknown>)[key];
   return typeof v === 'string' && v.trim().length > 0 ? v : null;
-}
-
-function daysBetween(a: unknown, b: unknown): number | null {
-  const sa = asIso(a);
-  const sb = asIso(b);
-  if (sa === null || sb === null) return null;
-  const ms = new Date(sb).getTime() - new Date(sa).getTime();
-  return Math.max(0, Math.round(ms / 86_400_000));
 }
 
 export function SharedTripView({ code }: { readonly code: string }): React.ReactElement {
