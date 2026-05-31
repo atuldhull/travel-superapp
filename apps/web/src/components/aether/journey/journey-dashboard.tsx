@@ -66,6 +66,8 @@ import { openPulse } from '../pulse/open-pulse';
 import { copyTextToClipboard } from '../../../lib/copy-text';
 // AE338 — timeline event derivation extracted for testability.
 import { buildTimelineEvents } from './build-timeline-events';
+// AE348 — shared transient ✓-chip hook (was inline setTimeout(setX, 2000)).
+import { useTransientFlag } from '../use-transient-flag';
 
 export interface JourneyDashboardProps {
   tripId: string;
@@ -85,7 +87,8 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
   const addPlace = searchParams.get('addPlace');
   const { isNarrow } = useViewport();
   const [shareUrl, setShareUrl] = useState<string | null>(null);
-  const [shareCopied, setShareCopied] = useState<boolean>(false);
+  // AE348 — was inline setTimeout(setShareCopied, 2000); shared hook.
+  const [shareCopied, flashShareCopied] = useTransientFlag(2000);
   const [shareError, setShareError] = useState<string | null>(null);
   const [duplicateError, setDuplicateError] = useState<string | null>(null);
   const [exportingPdf, setExportingPdf] = useState<boolean>(false);
@@ -883,8 +886,7 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
                       onClick={() => {
                         void copyTextToClipboard(shareUrl).then((ok) => {
                           if (!ok) return;
-                          setShareCopied(true);
-                          window.setTimeout(() => setShareCopied(false), 2000);
+                          flashShareCopied();
                         });
                       }}
                       style={{
