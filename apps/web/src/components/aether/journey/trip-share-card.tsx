@@ -56,6 +56,8 @@ import { asIso, fmtDate, inclusiveDaysBetween as daysBetween } from '@/lib/aethe
 // escapeAttr produces &#39; for ' vs the old &apos;; both are valid
 // XML refs that render to the same character — behaviour preserved.
 import { escapeAttr as svgEscape } from '@/lib/escape-attr';
+// AE336 — share-card title-shrink tiering (was inline ternary).
+import { shareCardTitleSize } from './share-card-title-tier';
 
 export function shareSvg(trip: ShareCardTrip): string {
   const title = svgEscape(trip.title);
@@ -66,9 +68,10 @@ export function shareSvg(trip: ShareCardTrip): string {
       ? `${fmtDate(trip.startsOn)} → ${fmtDate(trip.endsOn)}`
       : 'Range to be set';
   const days = daysBetween(trip.startsOn, trip.endsOn);
-  // Pick a title font size that scales down for longer titles.
-  const titleLen = trip.title.length;
-  const titleFs = titleLen > 28 ? 72 : titleLen > 20 ? 88 : 110;
+  // AE336 — title-shrink rule now lives in shareCardTitleSize so the
+  // 3-tier boundaries are unit-locked. trim() inside the helper is
+  // behaviour-equivalent for non-whitespace titles.
+  const titleFs = shareCardTitleSize(trip.title);
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
   <!-- background -->
   <rect width="1200" height="630" fill="${COL.cream}"/>
