@@ -1,14 +1,16 @@
 /**
- * Aether Phase 1 — Surface registry factory.
+ * Aether Surface registry factory.
  *
- * Boots a `SurfaceRegistry` (from @app/aether-core) with the Phase 1
- * Surfaces and their route bindings. AE377 wires only **Drift** for now;
- * Atlas + Compass + Pulse + Continuum register as no-mount placeholders
- * so the manager has the right shape for the eventual scenes.
+ * Boots a `SurfaceRegistry` (from @app/aether-core) with all surfaces
+ * `apps/web` knows how to mount. The function name still carries the
+ * Phase 1 prefix for historical reasons (AE377 onwards); AE398+ adds
+ * Phase 2 surfaces (Lumen first) into the same registry — `phase` is
+ * just a field on each entry and the route matcher doesn't filter on
+ * it, so a Phase 1 shell happily mounts Lumen if a future test wires
+ * an outer route override.
  *
- * The mount loader for Drift returns the R3F-backed scene component lazily
- * so the chunk only loads when the route actually hits `/aether/drift` and
- * the Phase 1 flag is on.
+ * Each mount loader returns the R3F-backed scene component lazily so
+ * the chunk only loads when the route actually hits its bound URL.
  */
 import { createSurfaceRegistry, type SurfaceRegistry } from '@app/aether-core';
 
@@ -82,6 +84,27 @@ export function createAetherPhase1Registry(): SurfaceRegistry {
       // R3F scene to mount; the bar renders inline via
       // `<Phase1ContinuumBar>` from each shell. The `mount` loader is
       // intentionally absent.
+    },
+    {
+      // AE398 — Lumen, the memory studio. Photos float in a 3D cloud
+      // sorted by capture time on the X axis + user rating on the Y
+      // axis. First scaffold mounts at `/aether/memory/:id` (the
+      // memory book id). Future slices wire `useMediaControllerListByTrip`
+      // for the photo set + CLIP-embedding "arrange by mood" voice
+      // commands (per 02-surfaces.md §4).
+      id: 'lumen',
+      phase: 2,
+      // Lumen leans into the gallery feel — deeper ink + creamy paper +
+      // warm ochre highlight + olive accent. The palette is dimmer than
+      // Drift so photos pop as the focal element.
+      palette: ['#140C08', '#EFE5D2', '#A37C3B', '#D6B280', '#5C6A50'],
+      // Audio key signature stays unset for now — Phase 2 audio slice
+      // picks a curated "gallery hush" pad rather than a destination key.
+      route: { kind: 'pattern', pathname: '/aether/memory/:id' },
+      // AE399 wires the first cut R3F scene (photo planes positioned
+      // via AE398 `layoutPhotoCloud`). Until that lands the route still
+      // resolves; SurfaceMountFrame just shows its placeholder.
+      mount: () => import('../phase2/lumen-phase2-scene'),
     },
   ]);
 }
