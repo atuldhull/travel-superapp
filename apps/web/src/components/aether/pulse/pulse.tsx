@@ -88,6 +88,9 @@ import { buildShareUrl } from '../../../lib/format-share-url';
 import { pulseMessageBubbleStyle } from './pulse-bubble-style';
 // AE352 — shared value-keyed transient flag for "copied bubble idx".
 import { useTransientValue } from '../use-transient-value';
+// AE363/AE364 — pure cursor-mention helpers + destination slug list.
+import { applyMentionCompletion, currentMentionAtCursor } from './current-mention';
+import { ALL_SLUGS, DESTINATIONS } from '../destinations/data';
 
 // AE72 + AE184 — types + storage key + parser extracted to
 // ./persisted-pulse.ts so the shape contract is unit-testable.
@@ -123,6 +126,9 @@ export function Pulse(): React.ReactElement | null {
   const { token, bootComplete, isAuthed } = useAetherAuth();
   const [open, setOpen] = useState<boolean>(false);
   const [q, setQ] = useState<string>('');
+  // AE364 — cursor position for the @-mention autocomplete (tracked
+  // via onChange + onKeyUp + onClick). Defaults to end-of-text.
+  const [cursorPos, setCursorPos] = useState<number>(0);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [pending, setPending] = useState<boolean>(false);
   // AE159 — rotate through 3 micro-copy phrases while pending so a
@@ -945,6 +951,117 @@ export function Pulse(): React.ReactElement | null {
               );
             })()}
 
+          {/* AE364 — @-mention autocomplete drawer. Shown when the cursor
+              sits inside an @<partial-slug> and the slash drawer isn't
+              already on. Filters ALL_SLUGS by the partial query. */}
+          {!q.startsWith('/') &&
+            (() => {
+              const m = currentMentionAtCursor(q, cursorPos);
+              if (m === null) return null;
+              const partial = m.query;
+              const matches = ALL_SLUGS.filter((slug) => slug.startsWith(partial)).slice(0, 6);
+              if (matches.length === 0) return null;
+              return (
+                <div
+                  role="listbox"
+                  aria-label="Destination mention suggestions"
+                  style={{
+                    marginTop: theme.space.tight,
+                    paddingTop: theme.space.tight,
+                    borderTop: `1px solid ${olive.whisper}`,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 2,
+                  }}
+                >
+                  {matches.map((slug) => {
+                    const dest = DESTINATIONS[slug];
+                    if (dest === undefined) return null;
+                    return (
+                      <button
+                        type="button"
+                        key={slug}
+                        onMouseDown={(e) => {
+                          // Use mouseDown so the input doesn't blur first
+                          // (which would close the drawer before we run).
+                          e.preventDefault();
+                          const next = applyMentionCompletion(q, cursorPos, slug);
+                          setQ(next.text);
+                          setCursorPos(next.cursor);
+                          window.requestAnimationFrame(() => {
+                            const node = inputRef.current;
+                            if (node !== null) {
+                              node.focus();
+                              try {
+                                node.setSelectionRange(next.cursor, next.cursor);
+                              } catch {
+                                /* some browsers reject programmatic selection on hidden inputs */
+                              }
+                            }
+                          });
+                        }}
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'auto 1fr auto',
+                          alignItems: 'center',
+                          gap: theme.space.tight,
+                          padding: `6px 8px`,
+                          borderRadius: theme.radius.sm,
+                          background: 'transparent',
+                          border: 'none',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          width: '100%',
+                          fontFamily: theme.font.ui,
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = olive.whisper;
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'transparent';
+                        }}
+                      >
+                        <code
+                          style={{
+                            fontFamily: theme.font.mono,
+                            fontSize: 11,
+                            color: accent.deep,
+                            fontWeight: 600,
+                            letterSpacing: '0.04em',
+                          }}
+                        >
+                          @{slug}
+                        </code>
+                        <span
+                          style={{
+                            fontFamily: theme.font.display,
+                            fontStyle: 'italic',
+                            fontSize: 13,
+                            color: ink.base,
+                            lineHeight: 1.3,
+                          }}
+                        >
+                          {dest.name}, {dest.state}
+                        </span>
+                        <span
+                          aria-hidden
+                          style={{
+                            fontFamily: theme.font.ui,
+                            fontSize: 10,
+                            color: ink.soft,
+                            opacity: 0.65,
+                            letterSpacing: '0.1em',
+                          }}
+                        >
+                          ↵
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
           {/* Input bar */}
           <form
             onSubmit={handleSubmit}
@@ -959,7 +1076,20 @@ export function Pulse(): React.ReactElement | null {
             <input
               ref={inputRef}
               value={q}
-              onChange={(e) => setQ(e.target.value)}
+              onChange={(e) => {
+                setQ(e.target.value);
+                // AE364 — track cursor on every keystroke for the
+                // @-mention autocomplete reader.
+                setCursorPos(e.target.selectionStart ?? e.target.value.length);
+              }}
+              onKeyUp={(e) => {
+                const ss = (e.target as HTMLInputElement).selectionStart;
+                if (typeof ss === 'number') setCursorPos(ss);
+              }}
+              onClick={(e) => {
+                const ss = (e.target as HTMLInputElement).selectionStart;
+                if (typeof ss === 'number') setCursorPos(ss);
+              }}
               // AE197 + AE198 — ↑ on the empty composer recalls the
               // most-recent user prompt. Picker extracted to
               // ./last-user-prompt.ts so the rule is unit-testable.
