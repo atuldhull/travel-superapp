@@ -35,6 +35,8 @@ import { PINS, type Pin } from './pins';
 import { decideFilterEsc } from './esc-behaviour';
 // AE324 — shared modulo wrap (was inlined here + in trip-checklist).
 import { wrapRowIndex } from './wrap-row-index';
+// AE329 — error → {status,message} mapping moved to a pure helper.
+import { interpretGeolocationError } from './geo-error';
 
 /** CartoDB Dark Matter (no labels) — free, no key, espresso-feeling. */
 const DARK_TILES = 'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png';
@@ -327,14 +329,10 @@ export function AtlasCanvas(): React.ReactElement {
         }
       }
     } catch (err) {
-      const code = (err as GeolocationPositionError | undefined)?.code;
-      if (code === 1) {
-        setGeoStatus('denied');
-        setGeoError('Location permission denied. Re-enable it in the URL bar.');
-      } else {
-        setGeoStatus('unavailable');
-        setGeoError(err instanceof Error ? err.message : 'Could not read your location.');
-      }
+      // AE329 — code 1 → denied; anything else → unavailable.
+      const outcome = interpretGeolocationError(err);
+      setGeoStatus(outcome.status);
+      setGeoError(outcome.message);
     }
   }
 
