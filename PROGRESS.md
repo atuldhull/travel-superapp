@@ -12,10 +12,10 @@
 
 | Counter             | Value                                                                     |
 | ------------------- | ------------------------------------------------------------------------- |
-| Prompts completed   | 367 (357 prior + Round AF: AE296–AE305, 10 slices)                        |
+| Prompts completed   | 377 (367 prior + Round AG: AE306–AE315, 10 slices)                        |
 | Prompts in progress | 0                                                                         |
 | Prompts blocked     | 0                                                                         |
-| Last prompt         | `AE305` — Round AF docs (wrap + RNG + bbox-center + mention kit)          |
+| Last prompt         | `AE315` — Round AG docs (consumer migrations: helpers → call sites)       |
 | Last commit date    | 2026-05-31                                                                |
 | Phase               | Phase 1 — Featured-to-detail flow live for the public memory-book surface |
 
@@ -66,6 +66,7 @@
 | **Round AD**    | AE276–AE285 | `suggestedDuplicateName` + 10 specs · `formatBytes` + 14 specs · `extractDomain` + 11 specs · `buildShareMessage` + 8 specs · `summariseRecentActivity` + 8 specs · `pickZoomStrategy` + 7 specs · `shouldAttachContext` + 11 specs · `shareCardTitleSize` + 11 specs · `sleep` + 5 specs · Round AD docs                                                                                                | ✅     |
 | **Round AE**    | AE286–AE295 | `formatIsoTime` + 7 specs · `groupByState` + 8 specs · `stripMarkdown` + 12 specs · `formatPercent` + 10 specs · `voiceStateLabel`/`voiceStateAriaLive` + 9 specs · `normalizeWhitespace` + 8 specs · `formatDistanceKm` + 9 specs · `seasonChipLabel` + 7 specs · `shortTripTitle` + 9 specs · Round AE docs                                                                                            | ✅     |
 | **Round AF**    | AE296–AE305 | `wrapRowIndex` + 7 specs · `svgToDataUrl` + 8 specs · `selectBestMonth` + 8 specs · `makeRng` (mulberry32) + 11 specs · `shuffleWith` + 8 specs · `sortItineraryDays` + 7 specs · `centerOfPins` + 6 specs · `formatPercentDelta` + 10 specs · `extractMentions` + 10 specs · Round AF docs                                                                                                              | ✅     |
+| **Round AG**    | AE306–AE315 | Consumer migrations: recent-prompts/parsePulseStore/parseChecklistBackup → safeJsonParse · journey-dashboard footer relative-time · journey-dashboard share buildShareUrl · journey-dashboard + shared-trip-view + shares-index countLabel · Pulse auto-send sleep · Pulse setMessages bounded append                                                                                                    | ✅     |
 
 > **Operator-owed**: push the AE commits + flip `NEXT_PUBLIC_FEATURE_AETHER_PREVIEW=1` on prod for the soft launch. The route gate auto-404s when the env var is unset, so deploys with the flag off ship safely.
 
