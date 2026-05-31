@@ -46,6 +46,8 @@ import {
 } from '@app/sdk';
 import { useAetherAuth } from '../use-aether-auth';
 import { LumenDataProvider } from './lumen-data-context';
+import { LumenFocusAnnouncer } from './lumen-focus-announcer';
+import { LumenSelectionProvider } from './lumen-selection-context';
 import type { LumenPhotoLike } from './lumen-cloud';
 
 export interface Phase2LumenShellProps {
@@ -133,26 +135,30 @@ function Phase2LumenInner({ bookId }: { bookId: string }): React.ReactElement {
   };
 
   return (
-    <LumenDataProvider bookId={bookId} photos={photos} isPending={isPending} isError={isError}>
-      <div style={{ width: '100%', height: '100vh', position: 'relative' }}>
-        <SurfacePaletteVars />
-        <SurfaceCanvas ariaLabel={`Lumen — memory book ${bookId}`}>
-          <Suspense fallback={null}>
-            <ActiveSurfaceMount />
-          </Suspense>
-        </SurfaceCanvas>
-        <SurfaceAudioLayer onChannelWrite={audioBridge.onChannelWrite} />
-        <Phase1DevNav />
-        <Phase1PulseOverlay onActivate={() => openPulse('')} />
-        <Phase1ContinuumBar extras={{ book: bookId }} />
-        <Phase1ContinuumReceiverToast />
-        <div style={pipStyle} aria-hidden>
-          {current?.id ?? '—'} · book {bookId} · {photos.length} photo
-          {photos.length === 1 ? '' : 's'} · audio {audioBridge.status} · drone{' '}
-          {audio.drone.toFixed(0)} · events {audio.events.toFixed(0)}
+    <LumenSelectionProvider>
+      <LumenDataProvider bookId={bookId} photos={photos} isPending={isPending} isError={isError}>
+        <div style={{ width: '100%', height: '100vh', position: 'relative' }}>
+          <SurfacePaletteVars />
+          <SurfaceCanvas ariaLabel={`Lumen — memory book ${bookId}`}>
+            <Suspense fallback={null}>
+              <ActiveSurfaceMount />
+            </Suspense>
+          </SurfaceCanvas>
+          <SurfaceAudioLayer onChannelWrite={audioBridge.onChannelWrite} />
+          <Phase1DevNav />
+          <Phase1PulseOverlay onActivate={() => openPulse('')} />
+          <Phase1ContinuumBar extras={{ book: bookId }} />
+          <Phase1ContinuumReceiverToast />
+          {/* AE403 — sr-only announcer for keyboard focus changes. */}
+          <LumenFocusAnnouncer />
+          <div style={pipStyle} aria-hidden>
+            {current?.id ?? '—'} · book {bookId} · {photos.length} photo
+            {photos.length === 1 ? '' : 's'} · audio {audioBridge.status} · drone{' '}
+            {audio.drone.toFixed(0)} · events {audio.events.toFixed(0)}
+          </div>
         </div>
-      </div>
-    </LumenDataProvider>
+      </LumenDataProvider>
+    </LumenSelectionProvider>
   );
 }
 

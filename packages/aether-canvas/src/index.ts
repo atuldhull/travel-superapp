@@ -54,4 +54,5 @@ export {
 } from './particle-burst';
 export { WeatherStreaks, streakYAt, type WeatherStreaksProps } from './weather-streaks';
 // AE401 — textured photo plane primitive used by Lumen (Phase 2).
-export { PhotoPlane, type PhotoPlaneProps } from './photo-plane';
+// AE404 — exposes the pure `aspectFromTexture` helper alongside.
+export { PhotoPlane, aspectFromTexture, type PhotoPlaneProps } from './photo-plane';
