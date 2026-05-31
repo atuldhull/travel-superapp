@@ -17,7 +17,7 @@
  */
 import Link from 'next/link';
 import { useMotionPolicy, useTheme } from '@app/aether-core';
-import { useTripControllerList, type TripDto } from '@app/sdk';
+import { type TripDto } from '@app/sdk';
 import { DriftNav } from '../drift-nav';
 import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
@@ -33,10 +33,10 @@ import { isInSeason } from './seasons';
 import { relatedArticles } from './related-journal';
 // AE331 — shared CustomEvent dispatcher for the AE96 Pulse-open bridge.
 import { openPulse } from '../pulse/open-pulse';
-// AE346 — shared trips-extractor (replaces ad-hoc unsafe cast).
-import { tripsFromQuery } from '../../../lib/trips-from-query';
 // AE361 — shared 2-digit ordinal label.
 import { ordinalLabel } from '../../../lib/ordinal-digits';
+// AE362 — composite trip-list hook.
+import { useAetherTripList } from '../use-aether-trip-list';
 
 export interface DestinationPageProps {
   destination: Destination;
@@ -54,15 +54,14 @@ export function DestinationPage({ destination: d }: DestinationPageProps): React
   // append endpoint lands in Phase 1).
   // AE355 — composite auth hook.
   const { token, bootComplete, isAuthed } = useAetherAuth();
-  const tripsQuery = useTripControllerList(
-    { limit: '5', archived: 'false' },
-    { query: { enabled: isAuthed } },
-  );
-  // AE346 — shared extractor; the AE327 stats summariser already
-  // canonicalises the "draft" predicate, but for "first draft trip"
-  // (one item, not a count) we keep the .find inline.
-  const draftTrip: TripDto | null =
-    tripsFromQuery<TripDto>(tripsQuery).find((t) => t.status === 'draft') ?? null;
+  // AE362 — composite hook. For "first draft trip" the .find stays
+  // inline since the summariser is count-only.
+  const { trips } = useAetherTripList({
+    archived: false,
+    limit: '5',
+    enabled: isAuthed,
+  });
+  const draftTrip: TripDto | null = trips.find((t) => t.status === 'draft') ?? null;
 
   const ink = theme.color.ink;
   const surface = theme.color.surface;
