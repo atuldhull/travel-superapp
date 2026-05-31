@@ -65,37 +65,12 @@ export interface JourneyDashboardProps {
   tripId: string;
 }
 
-/** Coerce orval's odd nullable union types (TripDtoStartsOn etc.) into
- *  plain string | null. At runtime these fields are always ISO strings
- *  or null — the schema wrapper is a type-generation artefact. */
-function asIso(v: unknown): string | null {
-  return typeof v === 'string' ? v : null;
-}
-
-function daysBetween(a: unknown, b: unknown): number | null {
-  const sa = asIso(a);
-  const sb = asIso(b);
-  if (sa === null || sb === null) return null;
-  const ms = new Date(sb).getTime() - new Date(sa).getTime();
-  return Math.max(0, Math.round(ms / 86_400_000));
-}
-
-function fmtDate(v: unknown): string {
-  const iso = asIso(v);
-  if (iso === null) return '—';
-  return new Date(iso).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-}
-
 // AE224 — readSummaryField extracted (see read-summary-field.ts).
 import { readSummaryField } from './read-summary-field';
 
-// AE186 + AE187 — fmtTime + fmtDayHead moved into the shared
-// aether-dates lib so they're unit-testable alongside asIso/fmtDate.
-import { fmtTime, fmtDayHead } from '@/lib/aether-dates';
+// AE186/AE187/AE325 — every date helper now lives in aether-dates.
+// (asIso, fmtDate, daysBetween were duplicated inline before AE325.)
+import { asIso, daysBetween, fmtDate, fmtDayHead, fmtTime } from '@/lib/aether-dates';
 
 export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.ReactElement {
   const theme = useTheme();
