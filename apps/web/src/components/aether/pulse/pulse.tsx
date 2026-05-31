@@ -75,6 +75,8 @@ import { extractPlanText } from './extract-plan-text';
 import { shouldShowSuggestions } from './should-show-suggestions';
 // AE313 — canonical Promise-based delay for the AE146 auto-send.
 import { sleep } from '../../../lib/sleep';
+// AE314 — bounded append for chat messages (cap at PULSE_MAX_MESSAGES).
+import { appendBoundedMessage } from './append-message';
 
 // AE72 + AE184 — types + storage key + parser extracted to
 // ./persisted-pulse.ts so the shape contract is unit-testable.
@@ -350,7 +352,7 @@ export function Pulse(): React.ReactElement | null {
     if (norm.ok === false) return;
     const trimmed = norm.text;
 
-    setMessages((prev) => [...prev, { role: 'user', content: trimmed }]);
+    setMessages((prev) => appendBoundedMessage(prev, { role: 'user', content: trimmed }));
     setQ('');
     setPending(true);
     // AE106 — long-memory recent list (survives Reset).
@@ -388,28 +390,26 @@ export function Pulse(): React.ReactElement | null {
       const plan = extractPlanText(res);
 
       if (plan === '') {
-        setMessages((prev) => [
-          ...prev,
-          {
+        setMessages((prev) =>
+          appendBoundedMessage(prev, {
             role: 'assistant',
             content:
               "Couldn't sketch this one. Try a more specific place, or open the full planner via Plan a trip below.",
-          },
-        ]);
+          }),
+        );
       } else {
-        setMessages((prev) => [...prev, { role: 'assistant', content: plan }]);
+        setMessages((prev) => appendBoundedMessage(prev, { role: 'assistant', content: plan }));
         setCtx({ title, center: { lat: center.lat, lng: center.lng }, plan });
         if (d?.provider) setProvider(d.provider);
       }
     } catch {
-      setMessages((prev) => [
-        ...prev,
-        {
+      setMessages((prev) =>
+        appendBoundedMessage(prev, {
           role: 'assistant',
           content:
             'The intelligence is unreachable right now. The planner page still works — Plan a trip below.',
-        },
-      ]);
+        }),
+      );
     } finally {
       setPending(false);
     }
