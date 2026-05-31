@@ -625,7 +625,28 @@ for value-keyed ✓-chip feedback. vitest 1230 → 1254 (+24 specs).
 | **AE354** | Extract `useAetherAuth` + 5 specs (composite token/bootComplete/isAuthed hook); me-home first consumer              | `_`       |
 | **AE355** | 9 Aether surfaces migrate to useAetherAuth (account/destination/dispatch/journey/journeys/pulse/plan/shared/shares) | `bb8ab8e` |
 | **AE356** | Add `fmtDateOrNull` + 6 specs (variant returning null; account + shares-index consume — was duplicated fns)         | `1f01c9b` |
-| **AE357** | Round AL docs                                                                                                       | _this_    |
+| **AE357** | Round AL docs                                                                                                       | `6cde936` |
+
+## Round 46 — Round AM · Atlas permalink + Pulse @mention + doc refresh ✦ AE358–AE367
+
+Three real user-visible features (Atlas URL round-trip, `@mention`
+autocomplete, ordinal-numbering consolidation), one more big consumer
+migration (5 surfaces onto `useAetherTripList`), and a doc refresh
+pass that pulls `08-data-flow.md` + `09-component-catalog.md` back in
+sync with the post-AI-AM helper kit. vitest 1254 → 1316 (+62 specs).
+
+| #         | Slice                                                                                                                                                                       | Commit    |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| **AE358** | Extract Atlas permalink kit (`parseAtlasParams` + `buildAtlasQuery` + `atlasParamsEqual`) + 18 specs                                                                        | `_`       |
+| **AE359** | Wire Atlas to `?q=&season=&focus=`: seed state from URL on mount, debounced URL writeback (`router.replace`, scroll:false), boot focus restore via rAF                      | `d053b42` |
+| **AE360** | Auto-drop stale `focusSlug` from URL when filter excludes it                                                                                                                | `14304ee` |
+| **AE361** | Extract `ordinalDigits` + `ordinalLabel` + 15 specs; **6 surfaces migrate** (atlas/dispatch/about/destination/journeys/trip-pdf)                                            | `_`       |
+| **AE362** | Extract `useAetherTripList` + 10 specs; **5 surfaces migrate** (me-home/journeys/shares/dispatch/destination) — folds orval call + `tripsFromQuery` into one composite hook | `_`       |
+| **AE363** | Extract `currentMentionAtCursor` + `applyMentionCompletion` + 19 specs (cursor-aware @-mention detector for Pulse)                                                          | `_`       |
+| **AE364** | Pulse `@`-mention autocomplete drawer (live ALL_SLUGS filter, onMouseDown completion w/ `setSelectionRange` cursor restore)                                                 | `dffe9fc` |
+| **AE365** | Refresh `docs/aether/08-data-flow.md` — adds Atlas permalink + Pulse @mention diagrams + canonical helper-substitution table                                                | `d11fbae` |
+| **AE366** | Refresh `docs/aether/09-component-catalog.md` — full hooks section incl. new useAetherAuth/TripList/TransientFlag/Value; lib catalog reorganised by area                    | `97437f3` |
+| **AE367** | Round AM docs                                                                                                                                                               | _this_    |
 
 ## Stop conditions reached / deferred
 
