@@ -9,6 +9,7 @@
  * but at full density (no truncation).
  */
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useTheme, useMotionPolicy } from '@app/aether-core';
 import { DriftNav } from '../drift-nav';
@@ -24,6 +25,8 @@ import { pickFeaturedDestination } from './featured-pick';
 import { selectBestMonth } from './select-best-month';
 import { seasonChipLabel } from './season-chip-label';
 import { destinationHref } from './destination-href';
+// AE370 — Atlas permalink builder for the "Show on Atlas" CTA.
+import { buildAtlasQuery } from '../atlas/atlas-permalink';
 
 type Filter = 'all' | 'heritage' | 'mountains' | 'coast' | 'cuisine';
 
@@ -60,6 +63,7 @@ export function DestinationsIndex(): React.ReactElement {
   const theme = useTheme();
   const motionPolicy = useMotionPolicy();
   const { isNarrow } = useViewport();
+  const router = useRouter();
   const [filter, setFilter] = useState<Filter>('all');
 
   const ink = theme.color.ink;
@@ -356,6 +360,45 @@ export function DestinationsIndex(): React.ReactElement {
                           'linear-gradient(180deg, rgba(24, 15, 11, 0) 35%, rgba(24, 15, 11, 0.78) 100%)',
                       }}
                     />
+                    {/* AE370 — "Show on Atlas" focus deep-link. <button>
+                        with onClick + router.push so the outer wrapping
+                        <Link> stays valid HTML (no nested anchors). */}
+                    <button
+                      type="button"
+                      aria-label={`Show ${d.name} on the Atlas map`}
+                      onClick={(e) => {
+                        // Stop the outer <Link> from navigating to the
+                        // destination detail page.
+                        e.preventDefault();
+                        e.stopPropagation();
+                        router.push(
+                          `/aether/atlas${buildAtlasQuery({
+                            q: '',
+                            season: false,
+                            focus: slug,
+                          })}`,
+                        );
+                      }}
+                      style={{
+                        position: 'absolute',
+                        top: theme.space.comfy,
+                        right: theme.space.comfy,
+                        padding: `4px 10px`,
+                        borderRadius: theme.radius.pill,
+                        background: 'rgba(24, 15, 11, 0.55)',
+                        border: `1px solid rgba(242, 232, 213, 0.35)`,
+                        color: surface.base,
+                        fontFamily: theme.font.ui,
+                        fontSize: 10,
+                        letterSpacing: '0.18em',
+                        textTransform: 'uppercase',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        backdropFilter: 'blur(4px)',
+                      }}
+                    >
+                      On Atlas →
+                    </button>
                     <div
                       style={{
                         position: 'absolute',
