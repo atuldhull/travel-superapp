@@ -17,6 +17,7 @@
     "e2e:update": "playwright test --update-snapshots"
   },
   "dependencies": {
+    "@app/aether-audio": "workspace:*",
     "@app/aether-canvas": "workspace:*",
     "@app/aether-core": "workspace:*",
     "@app/aether-motion": "workspace:*",
