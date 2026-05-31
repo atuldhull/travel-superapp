@@ -22,8 +22,7 @@
  * placeholder + Suspense fallback handle the visual). When the trip
  * has no itinerary days yet, only the rail renders.
  */
-import { useTheme } from '@app/aether-core';
-import type { SurfaceMountProps } from '@app/aether-core';
+import { useSurfacePaletteSlots, type SurfaceMountProps } from '@app/aether-core';
 import {
   DEFAULT_ATLAS_LAYOUT,
   layoutDayMarkers,
@@ -34,7 +33,10 @@ import {
 import { useTripData } from './trip-data-context';
 
 export default function AtlasPhase1Scene(_props: SurfaceMountProps): React.ReactElement {
-  const theme = useTheme();
+  // AE381 — Atlas's per-surface palette (deeper terracotta + warmer
+  // gold) tints the rail + orbs so the trip studio reads more grounded
+  // than the Drift home.
+  const palette = useSurfacePaletteSlots();
   const { days, isPending } = useTripData();
 
   // Hide everything while we don't yet have data — the SurfaceCanvas
@@ -44,9 +46,9 @@ export default function AtlasPhase1Scene(_props: SurfaceMountProps): React.React
   const orbs = layoutOrbsForTrip(days, DEFAULT_ATLAS_LAYOUT);
   const markers = layoutDayMarkers(days, DEFAULT_ATLAS_LAYOUT);
 
-  const railColor = theme.palette.terracotta.deep ?? theme.palette.terracotta.base;
-  const markerColor = theme.palette.ochre.glow;
-  const orbAccent = theme.palette.ochre.glow;
+  const railColor = palette.accent;
+  const markerColor = palette.glow;
+  const orbAccent = palette.glow;
 
   return (
     <>

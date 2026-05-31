@@ -84,3 +84,21 @@ export {
   type SurfaceManagerState,
 } from './surface/manager';
 export { SurfaceMountFrame, type SurfaceMountFrameProps } from './surface/mount';
+
+// Phase 1 (AE381) — per-surface palette derivation + CSS-vars bridge.
+export {
+  DEFAULT_SURFACE_PALETTE,
+  blendHex,
+  blendPalettes,
+  isValidPalette,
+  paletteForSurface,
+  slotsFor,
+  type SurfacePalette,
+  type SurfacePaletteSlots,
+} from './surface/palette';
+export {
+  SurfacePaletteVars,
+  useSurfacePalette,
+  useSurfacePaletteSlots,
+  type SurfacePaletteVarsProps,
+} from './surface/palette-hooks';

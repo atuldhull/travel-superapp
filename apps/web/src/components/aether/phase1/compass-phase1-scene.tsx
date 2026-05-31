@@ -20,8 +20,7 @@
  * after the basic compass is felt-out.
  */
 import { useMemo } from 'react';
-import { useTheme } from '@app/aether-core';
-import type { SurfaceMountProps } from '@app/aether-core';
+import { useSurfacePaletteSlots, useTheme, type SurfaceMountProps } from '@app/aether-core';
 import { CARDINALS, bearingPositionOnRing, normalizeBearing } from './compass-rose';
 import { useCompassBearing } from './compass-bearing-context';
 
@@ -39,11 +38,22 @@ const ALTITUDE_OFFSET = 0.18;
 export default function CompassPhase1Scene(_props: SurfaceMountProps): React.ReactElement {
   const theme = useTheme();
   const bearing = useCompassBearing();
+  // AE381 — Compass's per-surface palette leads with olive (the
+  // navigation hue) and uses terracotta only as support so the needle
+  // tip still reads as the actionable element.
+  const palette = useSurfacePaletteSlots();
 
-  const discColor = theme.color.surface.base;
-  const markerColor = theme.palette.ochre.glow;
-  const needleColor = theme.palette.terracotta.glow;
-  const altitudeColor = theme.palette.olive.whisper ?? theme.palette.olive.base;
+  // Disc + altitude ring stay cream + palette-glow for legibility (the
+  // rose is the substrate, not the focal point). Needle tip uses the
+  // surface's `support` slot which Compass registers as terracotta —
+  // it pops against the olive accent.
+  const discColor = palette.surface;
+  const markerColor = palette.accent;
+  const needleColor = palette.support;
+  const altitudeColor = palette.glow;
+  // Keep theme reference for the tail colour which intentionally
+  // de-emphasises against the bright tip.
+  const tailColor = theme.palette.olive.base;
 
   // Pre-compute marker positions (deterministic so SSR-snapshot ready).
   const markerLayouts = useMemo(
@@ -100,7 +110,7 @@ export default function CompassPhase1Scene(_props: SurfaceMountProps): React.Rea
         {/* Tail: a smaller olive cone in the opposite direction. */}
         <mesh position={[0, 0, -NEEDLE_LENGTH / 3]} rotation={[-Math.PI / 2, 0, 0]}>
           <coneGeometry args={[0.07, NEEDLE_LENGTH * 0.6, 18]} />
-          <meshStandardMaterial color={theme.palette.olive.base} roughness={0.55} />
+          <meshStandardMaterial color={tailColor} roughness={0.55} />
         </mesh>
         {/* Hub — small sphere at the pivot. */}
         <mesh position={[0, 0.02, 0]}>

@@ -26,6 +26,7 @@ import { SurfaceAudioLayer, useSceneAudioBridge } from '@app/aether-audio';
 import { SurfaceCanvas } from '@app/aether-canvas';
 import {
   SurfaceManagerProvider,
+  SurfacePaletteVars,
   useCurrentSurface,
   useSurfaceManager,
   type SurfaceMountProps,
@@ -137,6 +138,7 @@ function Phase1AtlasInner({ tripId }: { tripId: string }): React.ReactElement {
   return (
     <TripDataProvider trip={trip} days={days} isPending={isPending} isError={isError}>
       <div style={{ width: '100%', height: '100vh', position: 'relative' }}>
+        <SurfacePaletteVars />
         <SurfaceCanvas ariaLabel={`Atlas — ${trip?.title ?? 'loading'}`}>
           <Suspense fallback={null}>
             <ActiveSurfaceMount />
