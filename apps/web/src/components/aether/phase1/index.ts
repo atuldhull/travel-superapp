@@ -130,3 +130,14 @@ export {
   Phase1ContinuumReceiverToast,
   type Phase1ContinuumReceiverToastProps,
 } from './phase1-continuum-receiver-toast';
+export {
+  daysUntil,
+  nowCardPersonalised,
+  pickUpcomingTrip,
+  type UpcomingTripLike,
+} from './upcoming-trip';
+export {
+  UpcomingTripProvider,
+  useUpcomingTrip,
+  type UpcomingTripProviderProps,
+} from './upcoming-trip-context';

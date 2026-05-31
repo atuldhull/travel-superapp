@@ -22,8 +22,9 @@
  */
 import { useMemo, type CSSProperties } from 'react';
 import { useSurfaceLifecycle, type SurfaceLifecyclePhase } from '@app/aether-core';
-import { nowCardContent, nowCardContentNow } from './now-card-content';
 import { nowCardCssForPhase } from './now-card-lifecycle';
+import { nowCardPersonalised } from './upcoming-trip';
+import { useUpcomingTrip } from './upcoming-trip-context';
 
 export interface DriftNowCardProps {
   /** Override the time. Tests + Storybook pin this; the live shell omits it. */
@@ -101,9 +102,13 @@ function DriftNowCardInner({
 }: Omit<DriftNowCardProps, 'disableLifecycle'> & {
   phase: SurfaceLifecyclePhase | null;
 }): React.ReactElement | null {
+  // AE393 — read the upcoming trip from context (null outside provider).
+  // The personalised helper falls back to AE385 time-of-day when no
+  // trip qualifies, so the call is safe in every shell.
+  const upcomingTrip = useUpcomingTrip();
   const content = useMemo(
-    () => (at !== undefined ? nowCardContent(at) : nowCardContentNow()),
-    [at],
+    () => nowCardPersonalised(at !== undefined ? at : new Date(), upcomingTrip),
+    [at, upcomingTrip],
   );
   if (hidden === true) return null;
   const containerStyle: CSSProperties =
