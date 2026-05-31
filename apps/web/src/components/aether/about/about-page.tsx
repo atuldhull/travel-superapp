@@ -17,6 +17,8 @@ import { EditorialFooter } from '../drift-sections/editorial-footer';
 import { useParallax } from '../use-parallax';
 import { useViewport } from '../use-viewport';
 import { photoUrl } from '../photos';
+// AE361 — shared 2-digit ordinal label.
+import { ordinalLabel } from '../../../lib/ordinal-digits';
 
 interface Belief {
   readonly title: string;
@@ -243,7 +245,7 @@ export function AboutPage(): React.ReactElement {
                     minWidth: '2.2ch',
                   }}
                 >
-                  {String(idx + 1).padStart(2, '0')}
+                  {ordinalLabel(idx)}
                 </span>
                 <div>
                   <h3

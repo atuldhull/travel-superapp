@@ -25,6 +25,8 @@ import { trySeasonMatch } from './try-season-match';
 import { fmtDate } from '../../../lib/aether-dates';
 // AE346 — shared trips-extractor (replaces ad-hoc unsafe cast).
 import { tripsFromQuery } from '../../../lib/trips-from-query';
+// AE361 — shared 2-digit ordinal label.
+import { ordinalLabel } from '../../../lib/ordinal-digits';
 
 type ListFilter = 'all' | 'draft' | 'archived';
 
@@ -385,7 +387,7 @@ export function JourneysIndex(): React.ReactElement {
                           color: olive.deep,
                         }}
                       >
-                        {String(idx + 1).padStart(2, '0')}
+                        {ordinalLabel(idx)}
                       </span>
                       <div>
                         <h3
