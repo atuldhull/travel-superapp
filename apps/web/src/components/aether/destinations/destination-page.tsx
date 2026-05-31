@@ -30,6 +30,8 @@ import { type Destination } from './data';
 import { destinationAccent } from './palette';
 import { isInSeason } from './seasons';
 import { relatedArticles } from './related-journal';
+// AE331 — shared CustomEvent dispatcher for the AE96 Pulse-open bridge.
+import { openPulse } from '../pulse/open-pulse';
 
 export interface DestinationPageProps {
   destination: Destination;
@@ -736,9 +738,9 @@ export function DestinationPage({ destination: d }: DestinationPageProps): React
             <button
               type="button"
               onClick={() => {
-                if (typeof window === 'undefined') return;
-                const prefill = `A trip to ${d.name} (${d.state}). ${d.tagline} — three days, slow pace.`;
-                window.dispatchEvent(new CustomEvent('aether-pulse-open', { detail: { prefill } }));
+                openPulse(
+                  `A trip to ${d.name} (${d.state}). ${d.tagline} — three days, slow pace.`,
+                );
               }}
               style={{
                 padding: `${theme.space.tight}px ${theme.space.loose}px`,
