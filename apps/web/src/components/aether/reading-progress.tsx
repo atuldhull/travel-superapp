@@ -14,6 +14,8 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { useMotionPolicy, useTheme } from '@app/aether-core';
+// AE318 — canonical [0,1] clamp.
+import { clamp01 } from '../../lib/clamp';
 
 export function ReadingProgress(): React.ReactElement {
   const theme = useTheme();
@@ -28,7 +30,7 @@ export function ReadingProgress(): React.ReactElement {
       const doc = document.documentElement;
       const scrollTop = window.scrollY || doc.scrollTop;
       const scrollHeight = doc.scrollHeight - doc.clientHeight;
-      const next = scrollHeight <= 0 ? 0 : Math.min(1, Math.max(0, scrollTop / scrollHeight));
+      const next = scrollHeight <= 0 ? 0 : clamp01(scrollTop / scrollHeight);
       setPct(next);
     };
 
