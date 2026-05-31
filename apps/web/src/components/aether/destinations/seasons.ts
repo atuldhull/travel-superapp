@@ -71,3 +71,9 @@ export function inSeasonSlugs(now: Date = new Date()): string[] {
 export function seasonLabel(slug: string, now: Date = new Date()): string {
   return isInSeason(slug, now) ? 'In season now' : 'Off-peak';
 }
+
+/** AE316 — expose the raw in-season month-set so callers (AE298
+ *  selectBestMonth, AE316 featured-card) can derive richer labels. */
+export function monthsForSlug(slug: string): ReadonlySet<number> {
+  return SEASONS[slug] ?? new Set<number>();
+}
