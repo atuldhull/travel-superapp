@@ -24,6 +24,7 @@ import {
   type SurfaceMountProps,
 } from '@app/aether-core';
 import { createAetherPhase1Registry } from './aether-registry';
+import { DriftNowCard } from './drift-now-card';
 import { Phase1DevNav } from './phase1-dev-nav';
 import { BREATHING_LIFECYCLE_PLAN, useLifecycleAutoDriver } from './use-lifecycle-driver';
 
@@ -98,6 +99,7 @@ function Phase1Inner(): React.ReactElement {
         </Suspense>
       </SurfaceCanvas>
       <SurfaceAudioLayer onChannelWrite={audioBridge.onChannelWrite} />
+      <DriftNowCard />
       <Phase1DevNav active="drift" />
       <div style={pipStyle} aria-hidden>
         {current?.id ?? '—'} · audio {audioBridge.status} · drone {audio.drone.toFixed(0)} · events{' '}
