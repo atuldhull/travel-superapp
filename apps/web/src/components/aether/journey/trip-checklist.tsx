@@ -24,6 +24,8 @@ import { backupFilename } from '../../../lib/backup-filename';
 import { copyTextToClipboard } from '../../../lib/copy-text';
 // AE201 — id generator extracted so the format is unit-testable.
 import { makeChecklistItemId } from './checklist-id';
+// AE322 — bullets formatter extracted so it's testable + reusable.
+import { formatChecklistAsBullets } from './format-checklist-bullets';
 
 export interface ChecklistItem {
   readonly id: string;
@@ -270,11 +272,11 @@ export function TripChecklist({ tripId, destinationSlug }: TripChecklistProps): 
   }
 
   // AE113 — render the current list as a plain-text bullet block,
-  // suitable for pasting into WhatsApp / Notes / iMessage. Done items
-  // use ✓ + strikethrough-style prefix; undone items use [ ].
+  // suitable for pasting into WhatsApp / Notes / iMessage. AE322
+  // moved the formatter into a pure helper; we keep the wrapper for
+  // call-site brevity.
   function asBullets(): string {
-    const lines = items.map((it) => (it.done ? `✓ ${it.text}` : `• ${it.text}`));
-    return lines.join('\n');
+    return formatChecklistAsBullets(items);
   }
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle');
 
