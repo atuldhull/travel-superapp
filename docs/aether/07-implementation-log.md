@@ -667,6 +667,23 @@ items are operator-owned (push + prod env-flag + EAS/Apple/Play).
 | **AE372** | Storybook variants — `PulseBubble.stories.tsx` (3 turns: short / fresh / long) using AE345 `pulseMessageBubbleStyle` + `PulseMentionDrawer.stories.tsx` (PartialQuery / HighlightSecond / NarrowedToOne)                                                                                                                                  | `_`       |
 | **AE373** | Round AN docs (PROGRESS counter + 07-impl-log + memory snapshot)                                                                                                                                                                                                                                                                          | _this_    |
 
+## Round 48 — Aether 2.0 Phase 1 kickoff · Surface manager ✦ AE374
+
+User said "start phase 1" after the editorial preview locked at AE373.
+This is a different horizon than rounds W-AN — Phase 1 ships the real
+R3F + WebGPU + Tone.js runtime per `docs/aether/01-architecture.md`.
+
+AE374 establishes the spine: `@app/aether-core` grows a Surface
+manager (registry + lifecycle FSM + route → scene mapping) that
+AE375 (`@app/aether-canvas` R3F primitives) and AE376
+(`@app/aether-audio` Tone.js) slot into. No 3D yet — that's AE375;
+no audio runtime touched — that's AE376. AE377 then mounts the first
+3D Drift surface behind `NEXT_PUBLIC_FEATURE_AETHER_PHASE1=1`.
+
+| #         | Slice                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Commit |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| **AE374** | `@app/aether-core` Surface manager. New `surface/` subtree: `types.ts` (Surface · SurfaceId · SurfaceLifecyclePhase · SurfaceRouteMatch · SurfaceMountProps · SurfaceMountLoader) · `lifecycle.ts` (SURFACE_PHASE_ORDER + nextLifecyclePhase + isTerminalPhase + canTransition, with `listening` self-loop allowed) · `route-to-surface.ts` (literal / pattern `:slug` / predicate / overlay match kinds + overlaySurfaces extractor) · `registry.ts` (SurfaceRegistry + createSurfaceRegistry, duplicate-id throws, frozen list snapshots) · `manager.tsx` (`<SurfaceManagerProvider>` + useSurfaceManager / useCurrentSurface / useSurfaceLifecycle, hooks throw outside provider, setRoute resets phase to idle) · `mount.tsx` (`<SurfaceMountFrame>` lazy-loads `surface.mount` via Suspense, calm default placeholder, surface override prop for Storybook). Re-exports from root + `./surface` sub-path export. 44 new jest specs across 5 files. aether-core test count 24 → 68. Web vitest 1331/1331 unchanged | _next_ |
+
 ## Stop conditions reached / deferred
 
 - **Mobile parity** — Aether is web-only Phase 0 (locked decision pre-AE5).

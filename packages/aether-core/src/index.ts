@@ -2,8 +2,14 @@
  * @app/aether-core — runtime providers + hooks.
  *
  * One root: `<AetherProvider>`.
- * Five hooks: `useTheme`, `useMotionPolicy`, `useReducedMotion`,
- * `usePremium`, `useAudioEngine`, `usePerception`.
+ * Hooks: `useTheme`, `useMotionPolicy`, `useReducedMotion`, `usePremium`,
+ * `useAudioEngine`, `usePerception` (Phase 0) +
+ * `useSurfaceManager`, `useCurrentSurface`, `useSurfaceLifecycle` (Phase 1, AE374).
+ *
+ * The Phase 1 Surface module also re-exports from `./surface`; consumers
+ * can import either from the root (`@app/aether-core`) or sub-path
+ * (`@app/aether-core/surface`) — the sub-path keeps non-Aether-runtime
+ * apps from pulling the surface tree.
  *
  * Decisions locked: docs/aether/06-decisions.md.
  */
@@ -51,3 +57,30 @@ export {
   type AudioEngineConfig,
   type AudioEngineEvents,
 } from './audio-engine';
+
+// Phase 1 (AE374) — Surface manager + lifecycle + route → scene map.
+export type {
+  Surface,
+  SurfaceId,
+  SurfaceLifecyclePhase,
+  SurfaceMountLoader,
+  SurfaceMountProps,
+  SurfaceRouteMatch,
+} from './surface/types';
+export {
+  SURFACE_PHASE_ORDER,
+  canTransition,
+  isTerminalPhase,
+  nextLifecyclePhase,
+} from './surface/lifecycle';
+export { matchSurfaceRoute, overlaySurfaces, routeToSurface } from './surface/route-to-surface';
+export { SurfaceRegistry, createSurfaceRegistry } from './surface/registry';
+export {
+  SurfaceManagerProvider,
+  useCurrentSurface,
+  useSurfaceLifecycle,
+  useSurfaceManager,
+  type SurfaceManagerProviderProps,
+  type SurfaceManagerState,
+} from './surface/manager';
+export { SurfaceMountFrame, type SurfaceMountFrameProps } from './surface/mount';
