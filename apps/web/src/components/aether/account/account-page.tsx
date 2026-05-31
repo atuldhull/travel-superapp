@@ -36,16 +36,8 @@ import { useViewport } from '../use-viewport';
 import { useTransientFlag } from '../use-transient-flag';
 // AE353 — shared id-elision rule (was a private function above).
 import { shortId } from '../../../lib/short-id';
-
-function fmtDate(v: unknown): string | null {
-  const iso = typeof v === 'string' ? v : null;
-  if (iso === null) return null;
-  return new Date(iso).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-}
+// AE356 — shared null-returning fmtDate variant.
+import { fmtDateOrNull as fmtDate } from '../../../lib/aether-dates';
 
 export function AccountPage(): React.ReactElement {
   const theme = useTheme();

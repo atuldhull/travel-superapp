@@ -6,6 +6,7 @@ import {
   asIso,
   daysBetween,
   fmtDate,
+  fmtDateOrNull,
   fmtDayHead,
   fmtTime,
   inclusiveDaysBetween,
@@ -116,5 +117,39 @@ describe('inclusiveDaysBetween', () => {
   });
   it('returns null on garbage input', () => {
     expect(inclusiveDaysBetween('foo', 'bar')).toBeNull();
+  });
+});
+
+// ─── AE356: fmtDateOrNull (variant of fmtDate that returns null) ──
+describe('fmtDateOrNull', () => {
+  it('returns a locale string for a valid ISO date', () => {
+    expect(fmtDateOrNull('2026-06-01')).toMatch(/2026/);
+  });
+
+  it('returns null for null input (vs fmtDate "—")', () => {
+    expect(fmtDateOrNull(null)).toBeNull();
+    expect(fmtDate(null)).toBe('—');
+  });
+
+  it('returns null for undefined', () => {
+    expect(fmtDateOrNull(undefined)).toBeNull();
+  });
+
+  it('returns null for non-string input', () => {
+    expect(fmtDateOrNull(12345)).toBeNull();
+    expect(fmtDateOrNull({})).toBeNull();
+  });
+
+  it('returns null for unparseable date strings', () => {
+    expect(fmtDateOrNull('not a date')).toBeNull();
+  });
+
+  it('handles whitespace-shaped null path consistently with fmtDate', () => {
+    // asIso treats empty / whitespace strings as null (typeof check
+    // passes but the date parser fails). fmtDateOrNull returns null.
+    expect(fmtDateOrNull('')).toBe(
+      // empty string → asIso returns '' (not null), new Date('') is invalid → null.
+      null,
+    );
   });
 });

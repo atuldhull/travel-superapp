@@ -29,6 +29,21 @@ export function fmtDate(v: unknown): string {
   });
 }
 
+/** AE356 — variant that returns `null` on null/bad input instead of
+ *  `"—"`. Use this when the caller wants to omit the row entirely
+ *  (e.g. share expiry: "expires Aug 1" vs absent), not show a dash. */
+export function fmtDateOrNull(v: unknown): string | null {
+  const iso = asIso(v);
+  if (iso === null) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
 /** AE186 — itinerary clock formatter. Inputs come in two shapes:
  *  • naked clock strings like "09:30:00" (most rows)
  *  • full timestamps (occasionally)
