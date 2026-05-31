@@ -18,7 +18,12 @@ import { photoUrl } from '../photos';
 import { SafeImg } from '../safe-img';
 import { useViewport } from '../use-viewport';
 import { DESTINATIONS, ALL_SLUGS } from './data';
-import { isInSeason } from './seasons';
+import { isInSeason, monthsForSlug } from './seasons';
+// AE316 — daily featured destination + best-month chip.
+import { pickFeaturedDestination } from './featured-pick';
+import { selectBestMonth } from './select-best-month';
+import { seasonChipLabel } from './season-chip-label';
+import { destinationHref } from './destination-href';
 
 type Filter = 'all' | 'heritage' | 'mountains' | 'coast' | 'cuisine';
 
@@ -67,6 +72,22 @@ export function DestinationsIndex(): React.ReactElement {
     if (filter === 'all') return true;
     return FILTER_MAP[slug]?.includes(filter) ?? false;
   });
+
+  // AE316 — daily featured destination. Rotates by day-of-year, prefers
+  // any pin in-season today. Only surfaced on the 'all' tab so it
+  // doesn't fight the filter chips.
+  const allSlugs = ALL_SLUGS.map((slug) => ({ slug }));
+  const featured = pickFeaturedDestination(allSlugs, new Date(), { isInSeason });
+  const featuredData = featured !== null ? DESTINATIONS[featured.slug] : undefined;
+  const featuredBest =
+    featured !== null ? selectBestMonth({ months: monthsForSlug(featured.slug) }) : null;
+  const featuredChip =
+    featured !== null
+      ? seasonChipLabel({
+          inSeason: isInSeason(featured.slug),
+          bestMonth: featuredBest,
+        })
+      : '';
 
   return (
     <div
@@ -183,6 +204,84 @@ export function DestinationsIndex(): React.ReactElement {
           })}
         </div>
       </Reveal>
+
+      {/* AE316 — daily featured destination (only on the 'all' tab) */}
+      {filter === 'all' && featured !== null && featuredData !== undefined && (
+        <Reveal as="section">
+          <div
+            style={{
+              maxWidth: 1280,
+              margin: `0 auto ${theme.space.loose}px`,
+              padding: `0 ${theme.space.margin}px`,
+            }}
+            aria-label="Featured destination today"
+          >
+            <Link
+              href={destinationHref(featured.slug)}
+              style={{
+                display: 'block',
+                position: 'relative',
+                borderRadius: theme.radius.lg,
+                overflow: 'hidden',
+                textDecoration: 'none',
+                color: surface.base,
+                aspectRatio: '21 / 9',
+                background: ink.base,
+                boxShadow: `0 8px 32px ${ink.whisper}`,
+              }}
+            >
+              <SafeImg
+                src={photoUrl(featuredData.hero, 1600)}
+                alt={featuredData.hero.alt}
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  opacity: 0.78,
+                }}
+              />
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  padding: `${theme.space.gutter}px ${theme.space.loose}px`,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'flex-end',
+                  background: `linear-gradient(180deg, transparent 30%, rgba(0,0,0,0.55) 100%)`,
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: 11,
+                    letterSpacing: '0.18em',
+                    textTransform: 'uppercase',
+                    color: ochre.base,
+                    fontWeight: 700,
+                    marginBottom: theme.space.tight,
+                  }}
+                >
+                  Today's pick {featuredChip !== '' && <> · {featuredChip}</>}
+                </span>
+                <h2
+                  style={{
+                    fontFamily: theme.font.display,
+                    fontSize: 'clamp(32px, 5vw, 60px)',
+                    lineHeight: 1.05,
+                    letterSpacing: '-0.02em',
+                    fontWeight: 600,
+                    margin: 0,
+                  }}
+                >
+                  {featuredData.name}
+                </h2>
+              </div>
+            </Link>
+          </div>
+        </Reveal>
+      )}
 
       {/* Grid */}
       <section
