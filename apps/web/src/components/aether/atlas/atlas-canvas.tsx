@@ -267,6 +267,15 @@ export function AtlasCanvas(): React.ReactElement {
     [filtered],
   );
 
+  // AE360 — drop `focusSlug` when the filter excludes it, so the URL
+  // doesn't keep advertising a focus the user can no longer see. Runs
+  // every time `filtered` changes; cheap (linear over 15 pins).
+  useEffect(() => {
+    if (focusSlug === null) return;
+    const stillVisible = filtered.some((p) => p.slug === focusSlug);
+    if (!stillVisible) setFocusSlug(null);
+  }, [filtered, focusSlug]);
+
   // AE359 — initial-mount focus restore. If the URL had `?focus=<slug>`
   // and that slug exists in the current `filtered` set, scroll the
   // matching row into view and focus it. Runs once; the ref prevents
