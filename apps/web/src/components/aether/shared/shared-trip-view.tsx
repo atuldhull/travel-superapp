@@ -29,6 +29,8 @@ import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
 import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
 import { useViewport } from '../use-viewport';
+// AE312 — canonical singular/plural helper for "N days".
+import { countLabel } from '../../../lib/pluralise';
 import { TripShareCard } from '../journey/trip-share-card';
 
 function asIso(v: unknown): string | null {
@@ -461,7 +463,7 @@ export function SharedTripView({ code }: { readonly code: string }): React.React
                       marginBottom: theme.space.tight,
                     }}
                   >
-                    Day by day · {trip.days.length} {trip.days.length === 1 ? 'day' : 'days'}
+                    Day by day · {countLabel(trip.days.length, 'day')}
                   </p>
                   <h2
                     style={{

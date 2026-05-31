@@ -32,6 +32,8 @@ import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
 import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
 import { useViewport } from '../use-viewport';
+// AE312 — canonical singular/plural for "N share(s)".
+import { countLabel } from '../../../lib/pluralise';
 
 function fmtDate(v: unknown): string {
   const iso = typeof v === 'string' ? v : null;
@@ -125,7 +127,7 @@ function TripShareBand({ trip }: { readonly trip: TripDto }): React.ReactElement
                 margin: 0,
               }}
             >
-              {trip.status} · {shares.length} {shares.length === 1 ? 'share' : 'shares'}
+              {trip.status} · {countLabel(shares.length, 'share')}
             </p>
             <h3
               style={{
