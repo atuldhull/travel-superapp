@@ -25,7 +25,7 @@ import {
   easedPhaseProgress,
   type BurstMode,
 } from '@app/aether-canvas';
-import type { SurfaceMountProps } from '@app/aether-core';
+import { useSurfacePaletteSlots, type SurfaceMountProps } from '@app/aether-core';
 
 /** AE375 default phase durations — we mirror them here so the burst
  *  progress lines up with the camera fade. */
@@ -36,6 +36,11 @@ const PHASE_DURATIONS = {
 } as const;
 
 export default function DriftPhase1Scene({ phase }: SurfaceMountProps): React.ReactElement {
+  // AE381 — Drift's per-surface palette feeds the burst + ambient field
+  // accents. The Drift registry palette = sunset (ochre glow + warm
+  // terracotta accent + olive support).
+  const palette = useSurfacePaletteSlots();
+
   // The burst mode is the surface's lifecycle phase mapped onto a 3-state
   // particle direction. Idle / settling / listening → at-rest at bounds.
   const burstMode = useMemo<BurstMode>(() => {
@@ -63,10 +68,22 @@ export default function DriftPhase1Scene({ phase }: SurfaceMountProps): React.Re
 
   return (
     <>
+      {/* DepthFog colour falls back to theme cream; we don't override
+          here so the fog stays neutral while the foreground accents
+          carry the surface identity. */}
       <DepthFog near={6} far={22} />
       <SunDisk position={[0, 0.4, 0]} radius={1.8} />
-      <AmbientField count={600} bounds={[12, 8, 10]} />
-      <ParticleBurst count={180} radius={7} mode={burstMode} progress={burstProgress} />
+      {/* AmbientField particles take the surface's `glow` slot — for
+          Drift this is the locked ochre. */}
+      <AmbientField count={600} bounds={[12, 8, 10]} color={palette.glow} />
+      {/* The burst's primary colour is the surface accent. */}
+      <ParticleBurst
+        count={180}
+        radius={7}
+        mode={burstMode}
+        progress={burstProgress}
+        color={palette.accent}
+      />
     </>
   );
 }

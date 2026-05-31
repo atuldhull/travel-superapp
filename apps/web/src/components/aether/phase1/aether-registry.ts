@@ -22,6 +22,8 @@ export function createAetherPhase1Registry(): SurfaceRegistry {
       id: 'drift',
       phase: 1,
       keySignature: 'goa',
+      // AE381 — Drift gets the locked Warm Italian baseline. Sunset
+      // ochre + terracotta over cream.
       palette: ['#1A0F09', '#F2E8D5', '#C2614A', '#E8B777', '#6E7B5C'],
       route: { kind: 'literal', pathname: '/aether/drift' },
       // The R3F scene module lives next door; lazy-loaded so non-Phase-1
@@ -32,6 +34,10 @@ export function createAetherPhase1Registry(): SurfaceRegistry {
       id: 'atlas',
       phase: 1,
       keySignature: 'leh',
+      // AE381 — Atlas (the trip studio) earths into the deeper
+      // terracotta and a warmer gold; it should feel inhabited, not
+      // bright.
+      palette: ['#180F0B', '#F2E8D5', '#9A4836', '#D6A05F', '#6E7B5C'],
       route: { kind: 'pattern', pathname: '/aether/journey/:id' },
       // AE378 wires the first cut: timeline rail + day markers + place orbs.
       // Later slices add weather shaders, draggable orbs, real skyline.
@@ -41,6 +47,10 @@ export function createAetherPhase1Registry(): SurfaceRegistry {
       id: 'compass',
       phase: 1,
       keySignature: 'jaipur',
+      // AE381 — Compass leads with olive (the navigation hue) and uses
+      // terracotta only as support so the needle still reads as a
+      // direction prompt, not the focal point.
+      palette: ['#1A0F09', '#F2E8D5', '#6E7B5C', '#A8B596', '#C2614A'],
       route: { kind: 'literal', pathname: '/aether/atlas' },
       // AE379 wires the first cut: compass rose + cardinal markers +
       // bearing needle. Later slices add Mapbox 3D buildings, route

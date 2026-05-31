@@ -20,6 +20,7 @@ import { SurfaceAudioLayer, useSceneAudioBridge } from '@app/aether-audio';
 import { SurfaceCanvas } from '@app/aether-canvas';
 import {
   SurfaceManagerProvider,
+  SurfacePaletteVars,
   useCurrentSurface,
   useSurfaceManager,
   type SurfaceMountProps,
@@ -80,6 +81,7 @@ function Phase1CompassInner(): React.ReactElement {
 
   return (
     <div style={{ width: '100%', height: '100vh', position: 'relative' }}>
+      <SurfacePaletteVars />
       <SurfaceCanvas ariaLabel="Compass — Phase 1 surface">
         <Suspense fallback={null}>
           <ActiveSurfaceMount />

@@ -18,6 +18,7 @@ import { SurfaceAudioLayer, useSceneAudioBridge } from '@app/aether-audio';
 import { SurfaceCanvas } from '@app/aether-canvas';
 import {
   SurfaceManagerProvider,
+  SurfacePaletteVars,
   useCurrentSurface,
   useSurfaceManager,
   type SurfaceMountProps,
@@ -88,6 +89,7 @@ function Phase1Inner(): React.ReactElement {
 
   return (
     <div style={{ width: '100%', height: '100vh', position: 'relative' }}>
+      <SurfacePaletteVars />
       <SurfaceCanvas ariaLabel={`Aether Phase 1 surface — ${current?.id ?? 'idle'}`}>
         <Suspense fallback={null}>
           <ActiveSurfaceMount />
