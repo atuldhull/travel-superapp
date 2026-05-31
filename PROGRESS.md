@@ -12,12 +12,12 @@
 
 | Counter             | Value                                                                      |
 | ------------------- | -------------------------------------------------------------------------- |
-| Prompts completed   | 435 (429 prior + Round AN: AE368–AE373, 6 slices)                          |
+| Prompts completed   | 436 (435 prior + AE374 — Phase 1 kickoff: Surface manager)                 |
 | Prompts in progress | 0                                                                          |
 | Prompts blocked     | 0                                                                          |
-| Last prompt         | `AE373` — Round AN docs (AE276 unblocked + @mention nav + Atlas deep-link) |
+| Last prompt         | `AE374` — Aether 2.0 Phase 1 kickoff: `@app/aether-core` Surface manager   |
 | Last commit date    | 2026-05-31                                                                 |
-| Phase               | Phase 1 — Featured-to-detail flow live for the public memory-book surface  |
+| Phase               | Aether 2.0 Phase 1 — R3F trip-loop rebuild (kickoff: Surface manager live) |
 
 ---
 
@@ -76,6 +76,20 @@
 | **Round AN**    | AE368–AE373 | **AE276 unblocked** — duplicate chains a `PATCH /trips/:id` rename when AE276 `suggestedDuplicateName` differs from the server's hardcoded `(copy)` suffix (e.g. source already ends in `(copy)` → suggested is `(copy 2)`) · **@mention drawer keyboard nav** — Arrow/Enter/Tab/Escape + `aria-selected` highlight + `aria-activedescendant`, mouse-hover syncs with keyboard cursor, Escape closes by inserting a separator · **Atlas focus deep-link CTA** — "On Atlas →" badge on every destination row dispatches `router.push('/aether/atlas?focus=<slug>')` via `buildAtlasQuery`; `<button>` w/ stopPropagation keeps the outer wrapping `<Link>` valid HTML · **`expandMentions` + 15 specs** — wired into Pulse `ask()` so `@leh` reaches the planner as `Leh (Ladakh)` (raw user prompt still displayed unchanged) · Storybook variants for `PulseBubble` (AE345) + `PulseMentionDrawer` (AE364) · Round AN docs | ✅     |
 
 > **Operator-owed** (push-only after this round; everything else above is done): push the AE commits + flip `NEXT_PUBLIC_FEATURE_AETHER_PREVIEW=1` on prod for the soft launch. The route gate auto-404s when the env var is unset, so deploys with the flag off ship safely.
+
+---
+
+## AE 2.0 — Phase 1 (R3F trip-loop rebuild · IN-PROGRESS)
+
+- **Started**: 2026-05-31 (after the editorial preview locked at AE373)
+- **Goal**: replace the 1.0 trip-loop with the Aether-native runtime. Phase 1 ships **Drift** (`/` home), **Atlas** (`/trips/[id]`), **Pulse** (always-present AI), **Compass Bird** (desktop nav), and the **Continuum bar** (basic QR handoff). Old web routes still serve the rest until Phase 2.
+- **Stack** (per [`docs/aether/01-architecture.md`](docs/aether/01-architecture.md)): R3F 9.x + drei + postprocessing · WebGPU when supported (WebGL2 fallback) · Tone.js audio worklet · Cannon-es physics · CSS Houdini palette (web) / Skia (mobile).
+- **Flag**: `NEXT_PUBLIC_FEATURE_AETHER_PHASE1=1` (off by default; Phase 0 routes keep `AETHER_PREVIEW`).
+- **Source-of-truth**: [`docs/aether/00-vision.md`](docs/aether/00-vision.md) → [`docs/aether/06-decisions.md`](docs/aether/06-decisions.md).
+
+| Slice | What                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Status |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| AE374 | **`@app/aether-core` Surface manager** — `Surface` / `SurfaceId` / `SurfaceLifecyclePhase` / `SurfaceRouteMatch` data model · pure lifecycle FSM (`idle → materialising → settling → listening → dissolving → idle`, `listening` self-loop allowed, terminal = idle) · pure route matcher (literal / pattern `:slug` / predicate / overlay) · `SurfaceRegistry` + `createSurfaceRegistry(seed)` (frozen snapshots, duplicate-id throws) · `<SurfaceManagerProvider>` w/ `useSurfaceManager` / `useCurrentSurface` / `useSurfaceLifecycle` hooks (throw outside provider; overlays always exposed; `setRoute` resets phase to idle) · `<SurfaceMountFrame>` lazy-loads `surface.mount` via `Suspense` w/ default calm placeholder; `surface` override prop for Storybook · re-exports from package root + `./surface` sub-path · **44 new jest specs** (lifecycle / route / registry / manager / mount). aether-core: 24 → 68 tests. Web vitest 1331/1331 — no regressions. | ✅     |
 
 ---
 
