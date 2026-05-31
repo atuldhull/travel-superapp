@@ -24,11 +24,8 @@ export interface FeaturedPickOptions {
   readonly isInSeason: (slug: string) => boolean;
 }
 
-function dayOfYear(d: Date): number {
-  const start = new Date(d.getFullYear(), 0, 0);
-  const diff = d.getTime() - start.getTime();
-  return Math.floor(diff / 86_400_000);
-}
+// AE341 — shared dayOfYear helper (was inlined here before extraction).
+import { dayOfYear } from '../../../lib/day-of-year';
 
 export function pickFeaturedDestination<D extends FeaturedCandidate>(
   destinations: ReadonlyArray<D>,
