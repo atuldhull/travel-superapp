@@ -77,3 +77,13 @@ export {
   useLifecycleEvents,
   type LifecycleEventHandlers,
 } from './use-lifecycle-events';
+export {
+  simulatedWeatherFor,
+  weatherForSlugMonth,
+  weatherHasParticles,
+  weatherStreakCount,
+  weatherStreakIntensity,
+  type MonthZeroIndexed,
+  type WeatherState,
+} from './weather-simulation';
+export { WeatherProvider, useWeather, type WeatherProviderProps } from './weather-context';

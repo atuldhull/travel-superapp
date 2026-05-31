@@ -23,6 +23,7 @@
  * has no itinerary days yet, only the rail renders.
  */
 import { useSurfacePaletteSlots, type SurfaceMountProps } from '@app/aether-core';
+import { WeatherStreaks } from '@app/aether-canvas';
 import {
   DEFAULT_ATLAS_LAYOUT,
   layoutDayMarkers,
@@ -31,6 +32,12 @@ import {
   orbSizeForItem,
 } from './atlas-orbs';
 import { useTripData } from './trip-data-context';
+import { useWeather } from './weather-context';
+import {
+  weatherHasParticles,
+  weatherStreakCount,
+  weatherStreakIntensity,
+} from './weather-simulation';
 
 export default function AtlasPhase1Scene(_props: SurfaceMountProps): React.ReactElement {
   // AE381 — Atlas's per-surface palette (deeper terracotta + warmer
@@ -38,6 +45,9 @@ export default function AtlasPhase1Scene(_props: SurfaceMountProps): React.React
   // than the Drift home.
   const palette = useSurfacePaletteSlots();
   const { days, isPending } = useTripData();
+  // AE388 — simulated weather from the AE388 WeatherProvider. Streaks
+  // mount when state ∈ {rain, storm}; clear skips the field entirely.
+  const weather = useWeather();
 
   // Hide everything while we don't yet have data — the SurfaceCanvas
   // outer placeholder owns the loading visual.
@@ -49,6 +59,7 @@ export default function AtlasPhase1Scene(_props: SurfaceMountProps): React.React
   const railColor = palette.accent;
   const markerColor = palette.glow;
   const orbAccent = palette.glow;
+  const showWeather = weatherHasParticles(weather);
 
   return (
     <>
@@ -87,6 +98,16 @@ export default function AtlasPhase1Scene(_props: SurfaceMountProps): React.React
           />
         </mesh>
       ))}
+
+      {/* AE388 — weather streaks. Storm = denser + faster than rain. */}
+      {showWeather && (
+        <WeatherStreaks
+          count={weatherStreakCount(weather)}
+          intensity={weatherStreakIntensity(weather)}
+          bounds={[16, 10, 12]}
+          speed={6}
+        />
+      )}
     </>
   );
 }
