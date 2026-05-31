@@ -12,6 +12,8 @@
  */
 import { useEffect, useRef, type RefObject } from 'react';
 import { useMotionPolicy } from '@app/aether-core';
+// AE343 — shared clamp (was inline Math.max/Math.min).
+import { clamp } from '../../lib/clamp';
 
 export interface UseParallaxOptions {
   /** Speed multiplier. 0.4 = element moves 40% as fast as scroll. */
@@ -52,7 +54,7 @@ export function useParallax<T extends HTMLElement = HTMLDivElement>(
       const distance = center - viewportCenter;
       // Negate so element drifts UP as you scroll down (classic parallax).
       const raw = -distance * speed;
-      const clamped = Math.max(-maxOffset, Math.min(maxOffset, raw));
+      const clamped = clamp(raw, -maxOffset, maxOffset);
       const tx =
         axis === 'x' ? `translate3d(${clamped}px, 0, 0)` : `translate3d(0, ${clamped}px, 0)`;
       ref.current.style.transform = tx;
