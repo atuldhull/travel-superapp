@@ -19,6 +19,8 @@ import { photoUrl } from '../photos';
 import { ReadingProgress } from '../reading-progress';
 import { type JournalArticle } from './data';
 import { relatedDestinations } from './related-destinations';
+// AE331 — shared CustomEvent dispatcher for the AE96 Pulse-open bridge.
+import { openPulse } from '../pulse/open-pulse';
 
 export interface JournalArticleViewProps {
   article: JournalArticle;
@@ -287,11 +289,7 @@ export function JournalArticleView({ article: a }: JournalArticleViewProps): Rea
               <button
                 type="button"
                 onClick={() => {
-                  if (typeof window === 'undefined') return;
-                  const prefill = `A trip in the spirit of "${a.title}" — ${a.dek}`;
-                  window.dispatchEvent(
-                    new CustomEvent('aether-pulse-open', { detail: { prefill } }),
-                  );
+                  openPulse(`A trip in the spirit of "${a.title}" — ${a.dek}`);
                 }}
                 style={{
                   padding: `${theme.space.hairline}px ${theme.space.comfy}px`,
