@@ -501,6 +501,21 @@ rebases.
 | **AE294** | `shortTripTitle` + 9 specs (word-boundary cut with ellipsis; SHORT_TITLE_DEFAULT=28; unicode-safe) | `b8c0546` |
 | **AE295** | Round AE docs + autopilot + MEMORY refresh                                                         | _this_    |
 
+## Round 39 — Round AF · wrap + RNG + bbox-center + mention kit ✦ AE296–AE305
+
+| #         | Slice                                                                                                      | Commit    |
+| --------- | ---------------------------------------------------------------------------------------------------------- | --------- |
+| **AE296** | `wrapRowIndex` + 7 specs (Atlas listbox cursor wrap; -1 sentinel for empty)                                | `754e96b` |
+| **AE297** | `svgToDataUrl` + 8 specs (utf8 + base64 modes; round-trips; '' for empty)                                  | `4a83081` |
+| **AE298** | `selectBestMonth` + 8 specs (next-in-season-from-now; wrap; null for empty/all-12)                         | `9935420` |
+| **AE299** | `makeRng` (mulberry32) + 11 specs (deterministic seed; next/nextInt/pick; defensive on 0/NaN)              | `b77e6d8` |
+| **AE300** | `shuffleWith` (Fisher-Yates + injected RNG) + 8 specs (deterministic; no mutation; preserves multiset)     | `9ee3971` |
+| **AE301** | `sortItineraryDays` + 7 specs (null-dated to end; tie preserves input order; new array)                    | `dc17873` |
+| **AE302** | `centerOfPins` + 6 specs (bbox midpoint, NOT centroid; pairs with AE230 + AE262)                           | `39eb9fb` |
+| **AE303** | `formatPercentDelta` + 10 specs (↑/↓/· glyph; '—' for NaN/Inf; -0 treated as zero)                         | `5275b2d` |
+| **AE304** | `extractMentions` + 10 specs (@slug autocomplete prep; lowercased + de-duped; quirk-doc'd email behaviour) | `37e23f1` |
+| **AE305** | Round AF docs + autopilot + MEMORY refresh                                                                 | _this_    |
+
 ## Stop conditions reached / deferred
 
 - **Mobile parity** — Aether is web-only Phase 0 (locked decision pre-AE5).
