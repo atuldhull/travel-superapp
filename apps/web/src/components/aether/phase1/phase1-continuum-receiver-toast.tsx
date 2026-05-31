@@ -38,6 +38,11 @@ export interface Phase1ContinuumReceiverToastProps {
   /** Initial dismissed state — tests + Storybook can pin this. Default
    *  false (the toast appears on landing). */
   readonly initialDismissed?: boolean;
+  /** AE394 — replace the default formatter output with surface-specific
+   *  text. The Atlas shell uses this to inject the trip title (which
+   *  the AE391 generic formatter couldn't know about). When undefined
+   *  / null, falls back to `formatContinuumLandingMessage(extras)`. */
+  readonly messageOverride?: string | null;
 }
 
 const DEFAULT_AUTO_DISMISS_MS = 4500;
@@ -68,6 +73,7 @@ function Phase1ContinuumReceiverToastInner({
   autoDismissMs = DEFAULT_AUTO_DISMISS_MS,
   bottomOffsetPx = 36,
   initialDismissed = false,
+  messageOverride,
 }: Phase1ContinuumReceiverToastProps & { landing: ContinuumLanding }): React.ReactElement | null {
   const [dismissed, setDismissed] = useState<boolean>(initialDismissed);
 
@@ -85,7 +91,10 @@ function Phase1ContinuumReceiverToastInner({
   const onDismiss = useCallback(() => setDismissed(true), []);
 
   if (!landing.isHandoff || dismissed) return null;
-  const message = formatContinuumLandingMessage(landing.extras);
+  const message =
+    messageOverride !== undefined && messageOverride !== null && messageOverride !== ''
+      ? messageOverride
+      : formatContinuumLandingMessage(landing.extras);
 
   const containerStyle: CSSProperties = {
     position: 'fixed',

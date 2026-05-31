@@ -192,8 +192,18 @@ function Phase1AtlasInner({ tripId }: { tripId: string }): React.ReactElement {
                 trip id rides as a handoff extra so the receiver can
                 deep-link directly back into the same journey. */}
             <Phase1ContinuumBar extras={{ trip: tripId }} />
-            {/* AE391 — receiver toast for inbound handoffs. */}
-            <Phase1ContinuumReceiverToast />
+            {/* AE391 — receiver toast for inbound handoffs.
+                AE394 — when the loaded trip's title is known, replace
+                the generic toast message with one that names the trip
+                so the user sees "Continued from another device · <title>"
+                instead of the generic "trip restored" hint. */}
+            <Phase1ContinuumReceiverToast
+              messageOverride={
+                trip?.title !== undefined && trip.title !== ''
+                  ? `Continued from another device · ${trip.title}`
+                  : null
+              }
+            />
             <div style={pipStyle} aria-hidden>
               {current?.id ?? '—'} · {trip?.title ?? '…'} · {days.length} day
               {days.length === 1 ? '' : 's'} · weather {simulatedWeather} · audio{' '}
