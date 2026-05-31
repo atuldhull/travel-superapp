@@ -27,6 +27,9 @@ import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
 import { useViewport } from '../use-viewport';
 // AE317 — recent-activity one-liner for the /me header card.
 import { summariseRecentActivity } from '../me/recent-activity-summary';
+// AE327 — derived stats moved to a pure helper so the predicate (and
+// any future stat) lives in one tested place.
+import { summariseTripStats } from '../me/trip-stats-summary';
 
 interface CardSpec {
   readonly kicker: string;
@@ -81,8 +84,11 @@ export function MeHome(): React.ReactElement {
   const activeTrips = (activeQuery.data?.data as { trips?: TripDto[] } | undefined)?.trips ?? [];
   const archivedTrips =
     (archivedQuery.data?.data as { trips?: TripDto[] } | undefined)?.trips ?? [];
-  const drafts = activeTrips.filter((t) => t.status === 'draft').length;
-  const totalTrips = activeTrips.length + archivedTrips.length;
+  // AE327 — derived stats via shared helper.
+  const { drafts, totalTrips } = summariseTripStats({
+    active: activeTrips,
+    archived: archivedTrips,
+  });
 
   // AE317 — surface the most-recent edit/draft/archive as a calm
   // one-liner. summariseRecentActivity sorts by timestamp + verb-
