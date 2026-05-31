@@ -27,16 +27,26 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { AdditiveBlending, type Mesh, type MeshBasicMaterial } from 'three';
-import { useMotionPolicy } from '@app/aether-core';
-import { useSurfacePaletteSlots, useSurfaceLifecycle } from '@app/aether-core';
+import {
+  useMotionPolicy,
+  useSurfaceLifecycle,
+  useSurfacePaletteSlots,
+  type SurfaceMountProps,
+} from '@app/aether-core';
 import { moodFromPhase, pulseBreathAt, pulseBreathStatic, type PulseMood } from './pulse-breathing';
 
-export interface PulsePhase1SceneProps {
-  /** Override the auto-derived mood. Storybook + low-battery callers
-   *  pass this; the default Phase 1 path derives mood from the active
-   *  route-bound Surface's lifecycle phase. */
+/** AE389/AE396 — the Pulse scene can be mounted two ways:
+ *  - via `<Phase1PulseOverlay>`'s private Canvas (production path), which
+ *    passes `{mood?}` only
+ *  - via the registry's `mount` loader (Storybook / Mirror admin), which
+ *    passes the standard `SurfaceMountProps = {surface, phase}`
+ *
+ *  Accept both shapes so the same module satisfies both contracts; the
+ *  scene reads `mood` from props (when overridden) and reads phase from
+ *  the manager hook anyway, so the SurfaceMountProps fields are ignored. */
+export type PulsePhase1SceneProps = Partial<SurfaceMountProps> & {
   readonly mood?: PulseMood;
-}
+};
 
 /** Sphere radius in scene units. The overlay's small camera frames the
  *  sphere at ~80% viewport so it pops as a glow without filling the box. */

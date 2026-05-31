@@ -9,16 +9,21 @@ import { describe, expect, it } from 'vitest';
 import { createAetherPhase1Registry } from '../../src/components/aether/phase1/aether-registry';
 
 describe('createAetherPhase1Registry', () => {
-  it('registers the five Phase 1 surfaces', () => {
+  it('registers all Phase 1 surfaces (AE398: + Lumen for Phase 2)', () => {
     const r = createAetherPhase1Registry();
-    expect(r.size).toBe(5);
+    // 5 Phase 1 + 1 Phase 2 (Lumen, AE398).
+    expect(r.size).toBe(6);
     const ids = r.list().map((s) => s.id);
-    expect(ids).toEqual(['drift', 'atlas', 'compass', 'pulse', 'continuum']);
+    expect(ids).toEqual(['drift', 'atlas', 'compass', 'pulse', 'continuum', 'lumen']);
   });
 
-  it('every registered surface is phase 1', () => {
+  it('the 5 Phase 1 surfaces have phase: 1; Lumen has phase: 2', () => {
     const r = createAetherPhase1Registry();
     for (const s of r.list()) {
+      if (s.id === 'lumen') {
+        expect(s.phase).toBe(2);
+        continue;
+      }
       expect(s.phase).toBe(1);
     }
   });
