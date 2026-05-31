@@ -1,6 +1,6 @@
 # Aether — TravelSuperApp 2.0 frontend
 
-> **Status: Phase 0 in progress (2026-05-28).** 1.0 S-series shipped; all eight Phase-0-blocking decisions are answered (see [`06-decisions.md`](06-decisions.md)). Brand language locked to **Warm Italian tactile**; v2 launch milestone is Phase 1 trip-loop (~6 months solo).
+> **Status: Phase 1 shipped (2026-05-31).** Drift / Atlas / Compass Bird / Pulse / Continuum bar all live behind `NEXT_PUBLIC_FEATURE_AETHER_PHASE1=1`. See [`10-phase1-closeout.md`](10-phase1-closeout.md) for the surface inventory + capability stack. Phase 0 editorial preview (`NEXT_PUBLIC_FEATURE_AETHER_PREVIEW=1`) remains the default when the Phase 1 flag is off. Brand language locked to **Warm Italian tactile**.
 >
 > Codename for the complete frontend rebuild. Discards every current `apps/web/src/` and `apps/mobile/app/` pixel; keeps the API + `@app/sdk` + workers + ai-service untouched.
 >
@@ -19,6 +19,7 @@
 9. [`08-data-flow.md`](08-data-flow.md) — ASCII diagrams of the seven main data flows.
 10. [`09-component-catalog.md`](09-component-catalog.md) — every component + which route mounts it.
 11. [`AETHER_E2E_KIT.md`](AETHER_E2E_KIT.md) — operator playbook (boot locally, walk surfaces, promote-admin, gate tests, launch flag).
+12. [`10-phase1-closeout.md`](10-phase1-closeout.md) — Phase 1 surface inventory, capability stack, deferred work, full commit chain AE374 → AE397.
 
 ## What we reuse from 1.0
 
