@@ -106,5 +106,20 @@ export function createAetherPhase1Registry(): SurfaceRegistry {
       // resolves; SurfaceMountFrame just shows its placeholder.
       mount: () => import('../phase2/lumen-phase2-scene'),
     },
+    {
+      // AE407 — Vault, the bookings + commerce surface. Per
+      // 02-surfaces.md §8 prices float as weighted glyphs. First cut
+      // mounts at /aether/vault with placeholder fixtures; the R3F
+      // shader + Stripe Checkout iframe land in later slices.
+      id: 'vault',
+      phase: 2,
+      // Vault leans deeper into the warm earth so prices read as
+      // material — terracotta over a creamier paper.
+      palette: ['#1A0F09', '#F2E8D5', '#B0644A', '#D6A05F', '#6E7B5C'],
+      route: { kind: 'literal', pathname: '/aether/vault' },
+      // No R3F scene yet — the Vault shell renders its glyph grid as
+      // a 2D overlay above the (placeholder) canvas. Future slice
+      // wires a real R3F glyph-physics scene + sets `mount`.
+    },
   ]);
 }
