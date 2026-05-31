@@ -25,7 +25,8 @@ import { useParallax } from '../use-parallax';
 import { useViewport } from '../use-viewport';
 import { photoUrl } from '../photos';
 import { SafeImg } from '../safe-img';
-import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
+// AE355 — composite auth hook.
+import { useAetherAuth } from '../use-aether-auth';
 import { type Destination } from './data';
 import { destinationAccent } from './palette';
 import { isInSeason } from './seasons';
@@ -49,9 +50,8 @@ export function DestinationPage({ destination: d }: DestinationPageProps): React
   // to. Picks the most recent in-flight draft. The journey dashboard
   // reads ?addPlace= and shows the staging banner (Phase 0 stub — the
   // append endpoint lands in Phase 1).
-  const token = useAuthToken();
-  const bootComplete = useAuthBootComplete();
-  const isAuthed = bootComplete && token !== null;
+  // AE355 — composite auth hook.
+  const { token, bootComplete, isAuthed } = useAetherAuth();
   const tripsQuery = useTripControllerList(
     { limit: '5', archived: 'false' },
     { query: { enabled: isAuthed } },

@@ -31,7 +31,8 @@ import {
   type TripShareResponseDto,
 } from '@app/sdk';
 import { geocodeOne } from '../../../lib/geocode';
-import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
+// AE355 — composite auth hook.
+import { useAetherAuth } from '../use-aether-auth';
 import { useViewport } from '../use-viewport';
 import { useVoiceInput } from './use-voice-input';
 
@@ -118,9 +119,8 @@ export function Pulse(): React.ReactElement | null {
   const { isNarrow } = useViewport();
   const pathname = usePathname();
   const router = useRouter();
-  const token = useAuthToken();
-  const bootComplete = useAuthBootComplete();
-  const isAuthed = bootComplete && token !== null;
+  // AE355 — composite auth hook.
+  const { token, bootComplete, isAuthed } = useAetherAuth();
   const [open, setOpen] = useState<boolean>(false);
   const [q, setQ] = useState<string>('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
