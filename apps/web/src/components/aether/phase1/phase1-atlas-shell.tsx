@@ -44,6 +44,7 @@ import {
 } from '@app/sdk';
 import { createAetherPhase1Registry } from './aether-registry';
 import { Phase1DevNav } from './phase1-dev-nav';
+import { Phase1PulseOverlay } from './phase1-pulse-overlay';
 import { TripDataProvider, type TripDataLike } from './trip-data-context';
 import type { AtlasDayLike } from './atlas-orbs';
 import { BREATHING_LIFECYCLE_PLAN, useLifecycleAutoDriver } from './use-lifecycle-driver';
@@ -175,6 +176,8 @@ function Phase1AtlasInner({ tripId }: { tripId: string }): React.ReactElement {
             </SurfaceCanvas>
             <SurfaceAudioLayer onChannelWrite={audioBridge.onChannelWrite} />
             <Phase1DevNav />
+            {/* AE389 — always-present Pulse 60px corner glow. */}
+            <Phase1PulseOverlay />
             <div style={pipStyle} aria-hidden>
               {current?.id ?? '—'} · {trip?.title ?? '…'} · {days.length} day
               {days.length === 1 ? '' : 's'} · weather {simulatedWeather} · audio{' '}
