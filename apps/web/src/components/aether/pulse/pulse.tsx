@@ -91,6 +91,8 @@ import { useTransientValue } from '../use-transient-value';
 // AE363/AE364 — pure cursor-mention helpers + destination slug list.
 import { applyMentionCompletion, currentMentionAtCursor } from './current-mention';
 import { ALL_SLUGS, DESTINATIONS } from '../destinations/data';
+// AE371 — expand `@slug` → "Name (State)" before sending to the planner.
+import { expandMentions } from './expand-mentions';
 
 // AE72 + AE184 — types + storage key + parser extracted to
 // ./persisted-pulse.ts so the shape contract is unit-testable.
@@ -414,6 +416,11 @@ export function Pulse(): React.ReactElement | null {
     const norm = normalizePulsePrompt(userText);
     if (norm.ok === false) return;
     const trimmed = norm.text;
+    // AE371 — expand `@slug` → "Name (State)" before geocoding /
+    // sample-plan. Display still shows the raw user prompt; only the
+    // wire-bound copy gets the expansion. DESTINATIONS is keyed by the
+    // canonical lowercase slug so the lookup matches as-is.
+    const expanded = expandMentions(trimmed, DESTINATIONS);
 
     setMessages((prev) => appendBoundedMessage(prev, { role: 'user', content: trimmed }));
     setQ('');
@@ -429,7 +436,7 @@ export function Pulse(): React.ReactElement | null {
       // new trip to ..." we treat the call as fresh even if `ctx` is
       // populated (drop priorPlan + re-geocode), so the model doesn't
       // anchor on the prior plan.
-      const attach = shouldAttachContext({ prompt: trimmed, hasContext: ctx !== null });
+      const attach = shouldAttachContext({ prompt: expanded, hasContext: ctx !== null });
       const effectiveCtx = attach ? ctx : null;
       const isFollowUp = effectiveCtx !== null;
 
@@ -437,18 +444,20 @@ export function Pulse(): React.ReactElement | null {
         title = effectiveCtx.title;
         center = { lat: effectiveCtx.center.lat, lng: effectiveCtx.center.lng };
       } else {
-        const hit = await geocodeOne(trimmed, 'India', DEFAULT_CENTER);
-        title = hit?.label ?? trimmed;
+        const hit = await geocodeOne(expanded, 'India', DEFAULT_CENTER);
+        title = hit?.label ?? expanded;
         center = hit ? { lat: hit.lat, lng: hit.lng } : DEFAULT_CENTER;
       }
 
       // AE212 — request-body shape lives in the pure builder.
+      // AE371 — `instruction` uses the expanded form so refinements
+      // like "@leh cheaper" reach the LLM as "Leh (Ladakh) cheaper".
       const requestBody = buildSamplePlanRequest({
         title,
         center,
         radiusKm: 50,
         ctx: effectiveCtx,
-        instruction: trimmed,
+        instruction: expanded,
       });
 
       const res = (await tripControllerSamplePlan(
