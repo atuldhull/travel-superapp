@@ -6,9 +6,9 @@ Pair this with `07-implementation-log.md` (history) and `09-component-catalog.md
 
 > Every flow respects the same auth posture as the main app: access
 > tokens in memory only, refresh tokens in httpOnly cookies, no
-> localStorage tokens. Routes that need auth gate on `useAetherAuth()
-.isAuthed` (the AE354 composite hook — equivalent to the prior
-> `useAuthBootComplete() && useAuthToken() !== null` trio).
+> localStorage tokens. Routes that need auth gate on
+> `useAetherAuth().isAuthed` (the AE354 composite hook — equivalent to
+> the prior `useAuthBootComplete() && useAuthToken() !== null` trio).
 
 ---
 
