@@ -16,8 +16,21 @@ import { useMemo } from 'react';
 import { AetherProvider } from '@app/aether-core';
 import { theme as baseTheme, type Theme } from '@app/aether-motion';
 import { DriftCanvas } from './drift-canvas';
+import { Phase1DriftShell } from './phase1';
 import { Pulse } from './pulse/pulse';
 import { AetherA11yStyles } from './aether-a11y-styles';
+
+/**
+ * Phase 1 flag (AE377): swap the Phase 0 editorial DriftCanvas for the
+ * R3F Surface mounted via AE374 manager / AE375 canvas bridge / AE376
+ * audio layer. Off by default so production traffic still gets the
+ * editorial preview while the Phase 1 work-in-progress sits behind a
+ * second env var.
+ *
+ * Read once at module load so Fast Refresh doesn't flip modes mid-session;
+ * restart the dev server to switch.
+ */
+const PHASE1_ENABLED = process.env['NEXT_PUBLIC_FEATURE_AETHER_PHASE1'] === '1';
 
 export function DriftShell(): React.ReactElement {
   // Compose an apps/web-specific theme that prepends the next/font CSS
@@ -43,7 +56,7 @@ export function DriftShell(): React.ReactElement {
   return (
     <AetherProvider premiumTier={null} audioOptOut={false} theme={theme}>
       <AetherA11yStyles />
-      <DriftCanvas />
+      {PHASE1_ENABLED ? <Phase1DriftShell /> : <DriftCanvas />}
       <Pulse />
     </AetherProvider>
   );
