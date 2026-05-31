@@ -36,3 +36,11 @@ export {
   type ChannelWriteFn,
   type SurfaceAudioLayerProps,
 } from './surface-audio-layer';
+export {
+  INITIAL_CHANNEL_SNAPSHOT,
+  computeEdgeTransitions,
+  hasAnyAction,
+  type BridgeActions,
+  type ChannelSnapshot,
+} from './scene-audio-bridge';
+export { useSceneAudioBridge, type SceneAudioBridge } from './use-scene-audio-bridge';
