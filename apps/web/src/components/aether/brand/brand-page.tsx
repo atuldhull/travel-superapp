@@ -26,6 +26,8 @@ import { destinationAccent } from '../destinations/palette';
 import { ALL_SLUGS, DESTINATIONS } from '../destinations/data';
 // AE334 — shared clipboard helper (was inlined navigator.clipboard).
 import { copyTextToClipboard } from '../../../lib/copy-text';
+// AE351 — value-keyed transient flag (was inline setTimeout).
+import { useTransientValue } from '../use-transient-value';
 
 interface PaletteSwatch {
   readonly label: string;
@@ -49,7 +51,8 @@ const CORE: ReadonlyArray<PaletteSwatch> = [
 export function BrandPage(): React.ReactElement {
   const theme = useTheme();
   const { isNarrow } = useViewport();
-  const [copied, setCopied] = useState<string | null>(null);
+  // AE351 — was useState<string|null>+inline setTimeout; shared hook.
+  const [copied, setCopied] = useTransientValue<string>(1600);
 
   const ink = theme.color.ink;
   const surface = theme.color.surface;
@@ -61,7 +64,6 @@ export function BrandPage(): React.ReactElement {
     void copyTextToClipboard(text).then((ok) => {
       if (!ok) return;
       setCopied(text);
-      window.setTimeout(() => setCopied(null), 1600);
     });
   }
 
