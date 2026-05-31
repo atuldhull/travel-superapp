@@ -20,7 +20,7 @@
  */
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useMotionPolicy, useTheme } from '@app/aether-core';
 import {
   tripControllerSamplePlan,
@@ -129,6 +129,10 @@ export function Pulse(): React.ReactElement | null {
   // AE364 — cursor position for the @-mention autocomplete (tracked
   // via onChange + onKeyUp + onClick). Defaults to end-of-text.
   const [cursorPos, setCursorPos] = useState<number>(0);
+  // AE369 — keyboard cursor inside the @mention drawer (Arrow keys).
+  // Clamped to the current matches.length so dropping out of bounds
+  // can't crash the renderer.
+  const [mentionIdx, setMentionIdx] = useState<number>(0);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [pending, setPending] = useState<boolean>(false);
   // AE159 — rotate through 3 micro-copy phrases while pending so a
@@ -364,6 +368,45 @@ export function Pulse(): React.ReactElement | null {
   const accent = theme.palette.terracotta;
   const ochre = theme.palette.ochre;
   const olive = theme.palette.olive;
+
+  // AE369 — lift the @mention drawer's data so both the keyboard
+  // handler (Arrow / Enter) and the JSX render branch agree. Hidden
+  // when the slash-command palette is up.
+  const mention = q.startsWith('/') ? null : currentMentionAtCursor(q, cursorPos);
+  const mentionMatches = useMemo(() => {
+    if (mention === null) return [] as string[];
+    return ALL_SLUGS.filter((slug) => slug.startsWith(mention.query)).slice(0, 6);
+  }, [mention]);
+  // Clamp mentionIdx whenever matches shrink so an old highlight
+  // doesn't point past the new list.
+  useEffect(() => {
+    if (mentionMatches.length === 0) {
+      if (mentionIdx !== 0) setMentionIdx(0);
+      return;
+    }
+    if (mentionIdx >= mentionMatches.length) setMentionIdx(0);
+  }, [mentionMatches.length, mentionIdx]);
+
+  /** AE369 — apply the slug at the current keyboard cursor + restore
+   *  the input focus + selectionRange. Shared by Enter, click, and
+   *  the older mousedown handler. */
+  const completeMentionAt = (slug: string): void => {
+    const next = applyMentionCompletion(q, cursorPos, slug);
+    setQ(next.text);
+    setCursorPos(next.cursor);
+    setMentionIdx(0);
+    window.requestAnimationFrame(() => {
+      const node = inputRef.current;
+      if (node !== null) {
+        node.focus();
+        try {
+          node.setSelectionRange(next.cursor, next.cursor);
+        } catch {
+          /* some browsers reject programmatic selection on hidden inputs */
+        }
+      }
+    });
+  };
 
   /** Generate or refine via the public sample-plan endpoint. */
   async function ask(userText: string): Promise<void> {
@@ -951,20 +994,22 @@ export function Pulse(): React.ReactElement | null {
               );
             })()}
 
-          {/* AE364 — @-mention autocomplete drawer. Shown when the cursor
-              sits inside an @<partial-slug> and the slash drawer isn't
-              already on. Filters ALL_SLUGS by the partial query. */}
-          {!q.startsWith('/') &&
+          {/* AE364 — @-mention autocomplete drawer. AE369 lifted the
+              matches into `mentionMatches` so the keyboard handler on
+              the input can drive selection. */}
+          {mention !== null &&
+            mentionMatches.length > 0 &&
             (() => {
-              const m = currentMentionAtCursor(q, cursorPos);
-              if (m === null) return null;
-              const partial = m.query;
-              const matches = ALL_SLUGS.filter((slug) => slug.startsWith(partial)).slice(0, 6);
-              if (matches.length === 0) return null;
+              const matches = mentionMatches;
               return (
                 <div
                   role="listbox"
                   aria-label="Destination mention suggestions"
+                  aria-activedescendant={
+                    matches[mentionIdx] !== undefined
+                      ? `mention-row-${matches[mentionIdx]}`
+                      : undefined
+                  }
                   style={{
                     marginTop: theme.space.tight,
                     paddingTop: theme.space.tight,
@@ -974,31 +1019,31 @@ export function Pulse(): React.ReactElement | null {
                     gap: 2,
                   }}
                 >
-                  {matches.map((slug) => {
+                  {matches.map((slug, idx) => {
                     const dest = DESTINATIONS[slug];
                     if (dest === undefined) return null;
+                    const isActive = idx === mentionIdx;
                     return (
                       <button
                         type="button"
                         key={slug}
+                        id={`mention-row-${slug}`}
+                        role="option"
+                        aria-selected={isActive}
                         onMouseDown={(e) => {
                           // Use mouseDown so the input doesn't blur first
                           // (which would close the drawer before we run).
                           e.preventDefault();
-                          const next = applyMentionCompletion(q, cursorPos, slug);
-                          setQ(next.text);
-                          setCursorPos(next.cursor);
-                          window.requestAnimationFrame(() => {
-                            const node = inputRef.current;
-                            if (node !== null) {
-                              node.focus();
-                              try {
-                                node.setSelectionRange(next.cursor, next.cursor);
-                              } catch {
-                                /* some browsers reject programmatic selection on hidden inputs */
-                              }
-                            }
-                          });
+                          completeMentionAt(slug);
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = olive.whisper;
+                          setMentionIdx(idx);
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = isActive
+                            ? olive.whisper
+                            : 'transparent';
                         }}
                         style={{
                           display: 'grid',
@@ -1007,18 +1052,12 @@ export function Pulse(): React.ReactElement | null {
                           gap: theme.space.tight,
                           padding: `6px 8px`,
                           borderRadius: theme.radius.sm,
-                          background: 'transparent',
+                          background: isActive ? olive.whisper : 'transparent',
                           border: 'none',
                           cursor: 'pointer',
                           textAlign: 'left',
                           width: '100%',
                           fontFamily: theme.font.ui,
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = olive.whisper;
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = 'transparent';
                         }}
                       >
                         <code
@@ -1093,7 +1132,41 @@ export function Pulse(): React.ReactElement | null {
               // AE197 + AE198 — ↑ on the empty composer recalls the
               // most-recent user prompt. Picker extracted to
               // ./last-user-prompt.ts so the rule is unit-testable.
+              // AE369 — when the @mention drawer is open, Arrow / Enter
+              // / Escape drive the drawer instead of the composer.
               onKeyDown={(e) => {
+                // AE369 — @mention drawer keyboard nav (highest precedence).
+                if (mention !== null && mentionMatches.length > 0) {
+                  if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    setMentionIdx((i) => (i + 1) % mentionMatches.length);
+                    return;
+                  }
+                  if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    setMentionIdx((i) => (i - 1 + mentionMatches.length) % mentionMatches.length);
+                    return;
+                  }
+                  if (e.key === 'Enter' || e.key === 'Tab') {
+                    const slug = mentionMatches[mentionIdx];
+                    if (slug !== undefined) {
+                      e.preventDefault();
+                      completeMentionAt(slug);
+                      return;
+                    }
+                  }
+                  if (e.key === 'Escape') {
+                    // Closes by typing a separator: insert a space at the
+                    // cursor so currentMentionAtCursor returns null. Cheap +
+                    // doesn't fight the existing drawer-gate logic.
+                    e.preventDefault();
+                    const head = q.slice(0, cursorPos);
+                    const tail = q.slice(cursorPos);
+                    setQ(`${head} ${tail}`);
+                    setCursorPos(cursorPos + 1);
+                    return;
+                  }
+                }
                 // AE203 — ↓ clears the composer (mirror of ↑ recall).
                 if (e.key === 'ArrowDown' && q !== '') {
                   e.preventDefault();
