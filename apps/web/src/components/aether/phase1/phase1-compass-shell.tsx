@@ -28,6 +28,7 @@ import {
 import { createAetherPhase1Registry } from './aether-registry';
 import { CompassBearingProvider } from './compass-bearing-context';
 import { Phase1ContinuumBar } from './phase1-continuum-bar';
+import { Phase1ContinuumReceiverToast } from './phase1-continuum-receiver-toast';
 import { Phase1DevNav } from './phase1-dev-nav';
 import { Phase1PulseOverlay } from './phase1-pulse-overlay';
 import { BREATHING_LIFECYCLE_PLAN, useLifecycleAutoDriver } from './use-lifecycle-driver';
@@ -97,6 +98,8 @@ function Phase1CompassInner(): React.ReactElement {
       <Phase1PulseOverlay />
       {/* AE390 — Continuum cross-device handoff bar. */}
       <Phase1ContinuumBar />
+      {/* AE391 — receiver toast for inbound handoffs. */}
+      <Phase1ContinuumReceiverToast />
       <div style={pipStyle} aria-hidden>
         {current?.id ?? '—'} · audio {audioBridge.status} · drone {audio.drone.toFixed(0)} · events{' '}
         {audio.events.toFixed(0)}
