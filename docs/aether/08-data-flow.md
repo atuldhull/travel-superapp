@@ -6,9 +6,9 @@ Pair this with `07-implementation-log.md` (history) and `09-component-catalog.md
 
 > Every flow respects the same auth posture as the main app: access
 > tokens in memory only, refresh tokens in httpOnly cookies, no
-> localStorage tokens. Routes that need auth gate on
-> `useAuthBootComplete() && useAuthToken() !== null` before firing
-> any hook.
+> localStorage tokens. Routes that need auth gate on `useAetherAuth()
+.isAuthed` (the AE354 composite hook — equivalent to the prior
+> `useAuthBootComplete() && useAuthToken() !== null` trio).
 
 ---
 
@@ -259,7 +259,81 @@ useAuthControllerMe     show sign-in wall
                  archived) + 3 large cards → /journeys, /shares, /account
 ```
 
-## 7. RSS + sitemap
+## 7. Atlas permalink (AE358–AE360)
+
+Round-trip URL ↔ state for the Atlas surface so a copied URL re-opens
+filtered + focused on the same pin.
+
+```
+                    URL: /aether/atlas?q=leh&season=1&focus=leh
+                                │
+                                │ mount: read window.location.search
+                                ▼
+                    parseAtlasParams({q, season, focus})
+                                │
+                                ├─ seeds useState<q>          → '/leh'
+                                ├─ seeds useState<seasonOnly> → true
+                                └─ seeds useState<focusSlug>  → 'leh'
+                                │
+                                │ user types / toggles / focuses rows
+                                ▼
+                    {q, seasonOnly, focusSlug} change
+                                │
+                                │ 250ms debounce
+                                ▼
+                    buildAtlasQuery({q, season, focus})
+                                │
+                                ▼
+                    router.replace(`${pathname}?...`, { scroll: false })
+                                │
+                                ├─ atlasParamsEqual gates redundant writes
+                                └─ focusSlug auto-clears when filter excludes it
+```
+
+`focusRow(idx)` mirrors `focusSlug = filtered[idx].slug` so the cursor
+position and the URL stay in sync; a copied URL with `?focus=<slug>`
+runs `focusRow(matchingIdx)` once on mount via `requestAnimationFrame`.
+
+## 8. Pulse @-mention autocomplete (AE363/AE364)
+
+```
+                user types "Plan @le" in the Pulse composer
+                                │
+                                │ onChange / onKeyUp / onClick
+                                ▼
+                tracked: cursorPos (selectionStart)
+                                │
+                                ▼
+                currentMentionAtCursor(q, cursorPos)
+                                │
+                                ├── null ─────── no drawer
+                                │
+                                └── {start, end, query} ──┐
+                                                          ▼
+                                                 ALL_SLUGS.filter(s =>
+                                                   s.startsWith(query)
+                                                 ).slice(0, 6)
+                                                          │
+                                                          ▼
+                                            <button> drawer (role=listbox)
+                                                  rendered above the input
+                                                          │
+                                              onMouseDown (NOT onClick — so
+                                              input doesn't blur first)
+                                                          │
+                                                          ▼
+                                        applyMentionCompletion(q, cursorPos, slug)
+                                                          │
+                                                          ▼
+                                              setQ(next.text)
+                                              setCursorPos(next.cursor)
+                                              inputRef.setSelectionRange(...)
+```
+
+Slash-command drawer (AE85) and mention drawer are mutually exclusive
+(mention drawer hides when `q.startsWith('/')`).
+
+## 9. RSS + sitemap
 
 Build-time discovery (no auth, no DB).
 
@@ -280,3 +354,27 @@ Build-time discovery (no auth, no DB).
 
 _Diagrams are illustrative; the source of truth is the code under
 `apps/web/src/components/aether/` and `apps/web/src/app/aether/`._
+
+---
+
+## Cross-cutting hooks and helpers (added by Rounds AI–AM)
+
+Surfaces composed during AI–AM rely on a small canonical kit instead
+of inlined patterns. When reading any data flow above, mentally
+substitute:
+
+| Pattern (legacy)                                                                      | Canonical helper                                            |
+| ------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ---------------------------------------- |
+| `useAuthToken()` + `useAuthBootComplete()` + `bootComplete && token !== null`         | `useAetherAuth()` (AE354)                                   |
+| `useTripControllerList({...},{...})` + `tripsFromQuery<TripDto>(query)`               | `useAetherTripList({archived, limit, enabled})` (AE362)     |
+| `(q.data?.data as { trips?: TripDto[] }                                               | undefined)?.trips ?? []`                                    | `tripsFromQuery<TripDto>(query)` (AE346) |
+| `window.dispatchEvent(new CustomEvent('aether-pulse-open', { detail: { prefill } }))` | `openPulse(prefill, {submit?})` (AE331)                     |
+| `navigator.clipboard.writeText(text)` + textarea fallback                             | `copyTextToClipboard(text)` (AE196)                         |
+| inline `setX(true); setTimeout(() => setX(false), 2000)`                              | `useTransientFlag(2000)` (AE347)                            |
+| inline `setX(value); setTimeout(() => setX(null), ms)`                                | `useTransientValue<T>(ms)` (AE351)                          |
+| inline `if (!armed) { setArmed(true); setTimeout(..., 4000) }`                        | `useConfirmTwoStep(action, ms)` (AE332)                     |
+| `${origin}/shared/${shareCode}` / `/aether/shared/${shareCode}`                       | `buildShareUrl({ origin, code, surface? })` (AE218)         |
+| inline `Math.max(0, Math.min(1, x))`                                                  | `clamp01(x)` (AE227) / `clamp(x, lo, hi)`                   |
+| inline `String(idx + 1).padStart(2, '0')`                                             | `ordinalLabel(idx)` (AE361)                                 |
+| inline asIso / fmtDate / fmtTime / daysBetween                                        | `@/lib/aether-dates` (AE171)                                |
+| inline `try/JSON.parse + window.localStorage.getItem`                                 | `readJSON(key, fallback)` (AE238) + `safeJsonParse` (AE228) |
