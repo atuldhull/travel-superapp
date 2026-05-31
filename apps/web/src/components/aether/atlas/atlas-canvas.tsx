@@ -16,6 +16,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import { useTheme, useMotionPolicy } from '@app/aether-core';
 import { DriftNav } from '../drift-nav';
 import { Reveal } from '../drift-sections/reveal';
@@ -37,6 +38,8 @@ import { decideFilterEsc } from './esc-behaviour';
 import { wrapRowIndex } from './wrap-row-index';
 // AE329 — error → {status,message} mapping moved to a pure helper.
 import { interpretGeolocationError } from './geo-error';
+// AE358/AE359 — URL ↔ Atlas state kit (?q=&season=&focus=).
+import { atlasParamsEqual, buildAtlasQuery, parseAtlasParams } from './atlas-permalink';
 
 /** CartoDB Dark Matter (no labels) — free, no key, espresso-feeling. */
 const DARK_TILES = 'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png';
@@ -52,6 +55,22 @@ export function AtlasCanvas(): React.ReactElement {
   const theme = useTheme();
   const motionPolicy = useMotionPolicy();
   const { isNarrow } = useViewport();
+  // AE359 — permalink seed. usePathname + useRouter let us replace the
+  // URL without scrolling or pushing history (so back-button still
+  // exits Atlas cleanly). Initial read is sync from useSearchParams.
+  const router = useRouter();
+  const pathname = usePathname();
+  const initialParams = useMemo(
+    // useSearchParams is reactive on the server but we only want the
+    // value at mount-time — re-binding inside a useMemo on mount-only
+    // deps gives us the seed without re-firing on every change.
+    () =>
+      parseAtlasParams(
+        typeof window === 'undefined' ? null : new URLSearchParams(window.location.search),
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
   const mapDivRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<unknown>(null);
   // AE69 — slug → marker ref so the filter effect can dim/show pins
@@ -64,7 +83,9 @@ export function AtlasCanvas(): React.ReactElement {
 
   // AE69 — filter input (case-insensitive substring on name / state /
   // tagline). When empty, every pin is full-opacity.
-  const [query, setQuery] = useState<string>('');
+  // AE359 — seeded from the `?q=` permalink so a copied URL re-opens
+  // with the same filter pre-applied.
+  const [query, setQuery] = useState<string>(initialParams.q);
 
   // AE127 — filter input ref so '/' shortcut can focus it.
   const filterInputRef = useRef<HTMLInputElement | null>(null);
@@ -79,7 +100,11 @@ export function AtlasCanvas(): React.ReactElement {
   const [nearest, setNearest] = useState<{ pin: Pin; km: number } | null>(null);
   // AE86 — seasonal toggle. When `seasonOnly` is true, only the
   // destinations currently in season survive the filter.
-  const [seasonOnly, setSeasonOnly] = useState<boolean>(false);
+  // AE359 — seeded from the `?season=1` permalink.
+  const [seasonOnly, setSeasonOnly] = useState<boolean>(initialParams.season);
+  // AE359 — focused-pin slug from `?focus=`. Stays in sync with the
+  // listbox cursor so users can copy the URL while a row is highlighted.
+  const [focusSlug, setFocusSlug] = useState<string | null>(initialParams.focus);
   const filtered = useMemo(
     () => filterPins(PINS, { query, seasonOnly, isInSeason }),
     [query, seasonOnly],
@@ -234,10 +259,46 @@ export function AtlasCanvas(): React.ReactElement {
       if (el !== undefined) {
         el.focus();
         setFocusedIdx(wrapped);
+        // AE359 — mirror focused slug into permalink state so a copied
+        // URL spotlight-restores the same pin.
+        setFocusSlug(slug);
       }
     },
     [filtered],
   );
+
+  // AE359 — initial-mount focus restore. If the URL had `?focus=<slug>`
+  // and that slug exists in the current `filtered` set, scroll the
+  // matching row into view and focus it. Runs once; the ref prevents
+  // re-fire on later filter changes.
+  const didRestoreFocusRef = useRef<boolean>(false);
+  useEffect(() => {
+    if (didRestoreFocusRef.current) return;
+    if (initialParams.focus === null) return;
+    if (filtered.length === 0) return;
+    const idx = filtered.findIndex((p) => p.slug === initialParams.focus);
+    if (idx < 0) return;
+    didRestoreFocusRef.current = true;
+    // Defer so the rowRefs are populated.
+    window.requestAnimationFrame(() => focusRow(idx));
+  }, [filtered, focusRow, initialParams.focus]);
+
+  // AE359 — write the URL when state changes. Debounced 250ms so a fast
+  // typist doesn't thrash router.replace; uses { scroll: false } so the
+  // visible map doesn't reset. atlasParamsEqual gates redundant writes
+  // (initial mount with matching URL → no-op).
+  useEffect(() => {
+    const handle = window.setTimeout(() => {
+      const next = { q: query, season: seasonOnly, focus: focusSlug };
+      const current = parseAtlasParams(
+        typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null,
+      );
+      if (atlasParamsEqual(current, next)) return;
+      const suffix = buildAtlasQuery(next);
+      router.replace(`${pathname}${suffix}`, { scroll: false });
+    }, 250);
+    return () => window.clearTimeout(handle);
+  }, [query, seasonOnly, focusSlug, pathname, router]);
 
   // AE111 — Arrow keys / Home / End on the listbox. Enter is left to
   // the native <Link> behaviour (Enter on a focused anchor follows it).
