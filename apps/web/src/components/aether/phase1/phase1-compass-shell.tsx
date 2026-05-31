@@ -28,6 +28,7 @@ import {
 import { createAetherPhase1Registry } from './aether-registry';
 import { CompassBearingProvider } from './compass-bearing-context';
 import { Phase1DevNav } from './phase1-dev-nav';
+import { Phase1PulseOverlay } from './phase1-pulse-overlay';
 import { BREATHING_LIFECYCLE_PLAN, useLifecycleAutoDriver } from './use-lifecycle-driver';
 
 export interface Phase1CompassShellProps {
@@ -91,6 +92,8 @@ function Phase1CompassInner(): React.ReactElement {
       </SurfaceCanvas>
       <SurfaceAudioLayer onChannelWrite={audioBridge.onChannelWrite} />
       <Phase1DevNav active="compass" />
+      {/* AE389 — always-present Pulse 60px corner glow. */}
+      <Phase1PulseOverlay />
       <div style={pipStyle} aria-hidden>
         {current?.id ?? '—'} · audio {audioBridge.status} · drone {audio.drone.toFixed(0)} · events{' '}
         {audio.events.toFixed(0)}

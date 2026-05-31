@@ -87,3 +87,17 @@ export {
   type WeatherState,
 } from './weather-simulation';
 export { WeatherProvider, useWeather, type WeatherProviderProps } from './weather-context';
+export {
+  moodFromPhase,
+  pulseBreathAt,
+  pulseBreathParams,
+  pulseBreathStatic,
+  type PulseBreathParams,
+  type PulseBreathState,
+  type PulseMood,
+} from './pulse-breathing';
+export {
+  Phase1PulseOverlay,
+  Phase1PulseOverlayStandalone,
+  type Phase1PulseOverlayProps,
+} from './phase1-pulse-overlay';
