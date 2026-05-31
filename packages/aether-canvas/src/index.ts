@@ -52,3 +52,4 @@ export {
   type BurstMode,
   type ParticleBurstProps,
 } from './particle-burst';
+export { WeatherStreaks, streakYAt, type WeatherStreaksProps } from './weather-streaks';
