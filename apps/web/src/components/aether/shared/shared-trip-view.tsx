@@ -27,7 +27,8 @@ import {
 import { DriftNav } from '../drift-nav';
 import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
-import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
+// AE355 — composite auth hook.
+import { useAetherAuth } from '../use-aether-auth';
 import { useViewport } from '../use-viewport';
 // AE312 — canonical singular/plural helper for "N days".
 import { countLabel } from '../../../lib/pluralise';
@@ -50,9 +51,8 @@ export function SharedTripView({ code }: { readonly code: string }): React.React
   const theme = useTheme();
   const { isNarrow } = useViewport();
   const router = useRouter();
-  const token = useAuthToken();
-  const bootComplete = useAuthBootComplete();
-  const isAuthed = bootComplete && token !== null;
+  // AE355 — composite auth hook.
+  const { token, bootComplete, isAuthed } = useAetherAuth();
   const [cloneError, setCloneError] = useState<string | null>(null);
   // AE82 — share-card preview toggle (re-share what we received).
   const [showShareCard, setShowShareCard] = useState<boolean>(false);
