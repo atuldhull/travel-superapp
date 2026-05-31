@@ -141,9 +141,9 @@ export function Pulse(): React.ReactElement | null {
         // AE333 — buildShareUrl owns the trailing-slash + code-encoding rule.
         const origin = typeof window !== 'undefined' ? window.location.origin : '';
         const shareUrl = buildShareUrl({ origin, code: created.shareCode });
-        if (typeof navigator !== 'undefined' && navigator.clipboard) {
-          void navigator.clipboard.writeText(shareUrl);
-        }
+        // AE334 — copyTextToClipboard uses the same Clipboard-API +
+        // textarea-fallback ladder as the rest of the app.
+        void copyTextToClipboard(shareUrl);
         setSavedShareConfirm(true);
         // Drop the confirmation after a beat, then open the journey.
         window.setTimeout(() => {
