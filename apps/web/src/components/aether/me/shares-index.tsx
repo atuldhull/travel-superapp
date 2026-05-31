@@ -19,7 +19,6 @@ import { useState } from 'react';
 import { useTheme } from '@app/aether-core';
 import {
   getTripControllerListSharesQueryKey,
-  useTripControllerList,
   useTripControllerListShares,
   useTripControllerRevokeShare,
   type ListTripSharesResponseDto,
@@ -41,8 +40,8 @@ import { fmtDate } from '../../../lib/aether-dates';
 import { buildShareUrl } from '../../../lib/format-share-url';
 // AE334 — shared clipboard helper (was inlined navigator.clipboard).
 import { copyTextToClipboard } from '../../../lib/copy-text';
-// AE346 — shared trips-extractor (replaces ad-hoc unsafe cast).
-import { tripsFromQuery } from '../../../lib/trips-from-query';
+// AE362 — composite trip-list hook (folds orval call + tripsFromQuery).
+import { useAetherTripList } from '../use-aether-trip-list';
 // AE351 — value-keyed transient flag (was inline setTimeout(set, null)).
 import { useTransientValue } from '../use-transient-value';
 
@@ -303,19 +302,19 @@ export function SharesIndex(): React.ReactElement {
   // AE355 — composite auth hook.
   const { token, bootComplete, isAuthed } = useAetherAuth();
 
-  // Pull both active + archived trips so all shares are findable.
-  const activeQuery = useTripControllerList(
-    { limit: '50', archived: 'false' },
-    { query: { enabled: isAuthed } },
-  );
-  const archivedQuery = useTripControllerList(
-    { limit: '50', archived: 'true' },
-    { query: { enabled: isAuthed } },
-  );
-  // AE346 — shared extractor.
-  const activeTrips = tripsFromQuery<TripDto>(activeQuery);
-  const archivedTrips = tripsFromQuery<TripDto>(archivedQuery);
-  const trips: readonly TripDto[] = [...activeTrips, ...archivedTrips];
+  // AE362 — composite hook pulls both active + archived so all shares
+  // are findable (shares can exist on archived trips too).
+  const activeQuery = useAetherTripList({
+    archived: false,
+    limit: '50',
+    enabled: isAuthed,
+  });
+  const archivedQuery = useAetherTripList({
+    archived: true,
+    limit: '50',
+    enabled: isAuthed,
+  });
+  const trips: readonly TripDto[] = [...activeQuery.trips, ...archivedQuery.trips];
 
   const ink = theme.color.ink;
   const surface = theme.color.surface;

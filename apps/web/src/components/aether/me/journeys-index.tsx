@@ -12,7 +12,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useTheme } from '@app/aether-core';
-import { useTripControllerList, type TripDto } from '@app/sdk';
+import { type TripDto } from '@app/sdk';
 import { DriftNav } from '../drift-nav';
 import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
@@ -23,10 +23,10 @@ import { useViewport } from '../use-viewport';
 import { trySeasonMatch } from './try-season-match';
 // AE326 — shared fmtDate (was duplicated here + in dispatch/shares).
 import { fmtDate } from '../../../lib/aether-dates';
-// AE346 — shared trips-extractor (replaces ad-hoc unsafe cast).
-import { tripsFromQuery } from '../../../lib/trips-from-query';
 // AE361 — shared 2-digit ordinal label.
 import { ordinalLabel } from '../../../lib/ordinal-digits';
+// AE362 — composite trip-list hook.
+import { useAetherTripList } from '../use-aether-trip-list';
 
 type ListFilter = 'all' | 'draft' | 'archived';
 
@@ -39,18 +39,19 @@ export function JourneysIndex(): React.ReactElement {
 
   // Active list (non-archived) + archived list — separate calls so the
   // toggle is instant.
-  const activeQuery = useTripControllerList(
-    { limit: '50', archived: 'false' },
-    { query: { enabled: isAuthed } },
-  );
-  const archivedQuery = useTripControllerList(
-    { limit: '50', archived: 'true' },
-    { query: { enabled: isAuthed && filter === 'archived' } },
-  );
-
-  // AE346 — shared extractor (no more inline cast).
-  const activeTrips = tripsFromQuery<TripDto>(activeQuery);
-  const archivedTrips = tripsFromQuery<TripDto>(archivedQuery);
+  // AE362 — composite hook (folds orval call + tripsFromQuery into one).
+  const activeQuery = useAetherTripList({
+    archived: false,
+    limit: '50',
+    enabled: isAuthed,
+  });
+  const archivedQuery = useAetherTripList({
+    archived: true,
+    limit: '50',
+    enabled: isAuthed && filter === 'archived',
+  });
+  const activeTrips = activeQuery.trips;
+  const archivedTrips = archivedQuery.trips;
 
   // Apply the filter.
   const items: readonly TripDto[] =

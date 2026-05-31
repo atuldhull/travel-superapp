@@ -15,12 +15,7 @@
  */
 import Link from 'next/link';
 import { useTheme } from '@app/aether-core';
-import {
-  useAuthControllerMe,
-  useTripControllerList,
-  type TripDto,
-  type WhoAmIResponseDto,
-} from '@app/sdk';
+import { useAuthControllerMe, type TripDto, type WhoAmIResponseDto } from '@app/sdk';
 import { DriftNav } from '../drift-nav';
 import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
@@ -32,10 +27,10 @@ import { useViewport } from '../use-viewport';
 import { fmtDate } from '../../../lib/aether-dates';
 // AE339 — shared trip-stats summariser (same predicate as me-home).
 import { summariseTripStats } from '../me/trip-stats-summary';
-// AE346 — shared trips-extractor (replaces ad-hoc unsafe cast).
-import { tripsFromQuery } from '../../../lib/trips-from-query';
 // AE361 — shared 2-digit ordinal label.
 import { ordinalLabel } from '../../../lib/ordinal-digits';
+// AE362 — composite trip-list hook.
+import { useAetherTripList } from '../use-aether-trip-list';
 
 export function DispatchPage(): React.ReactElement {
   const theme = useTheme();
@@ -48,18 +43,17 @@ export function DispatchPage(): React.ReactElement {
   const isAdmin = me?.role === 'admin';
 
   // We over-fetch (100 of each) — admin volume is tiny by definition.
-  const activeQuery = useTripControllerList(
-    { limit: '100', archived: 'false' },
-    { query: { enabled: isAuthed && isAdmin } },
-  );
-  const archivedQuery = useTripControllerList(
-    { limit: '100', archived: 'true' },
-    { query: { enabled: isAuthed && isAdmin } },
-  );
-
-  // AE346 — shared extractor (no more inline cast).
-  const activeTrips = tripsFromQuery<TripDto>(activeQuery);
-  const archivedTrips = tripsFromQuery<TripDto>(archivedQuery);
+  // AE362 — composite hook (folds orval call + tripsFromQuery into one).
+  const { trips: activeTrips } = useAetherTripList({
+    archived: false,
+    limit: '100',
+    enabled: isAuthed && isAdmin,
+  });
+  const { trips: archivedTrips } = useAetherTripList({
+    archived: true,
+    limit: '100',
+    enabled: isAuthed && isAdmin,
+  });
   // AE339 — drafts predicate shared with /me.
   const { drafts } = summariseTripStats({ active: activeTrips, archived: archivedTrips });
 
