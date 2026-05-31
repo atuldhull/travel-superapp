@@ -646,7 +646,26 @@ sync with the post-AI-AM helper kit. vitest 1254 → 1316 (+62 specs).
 | **AE364** | Pulse `@`-mention autocomplete drawer (live ALL_SLUGS filter, onMouseDown completion w/ `setSelectionRange` cursor restore)                                                 | `dffe9fc` |
 | **AE365** | Refresh `docs/aether/08-data-flow.md` — adds Atlas permalink + Pulse @mention diagrams + canonical helper-substitution table                                                | `d11fbae` |
 | **AE366** | Refresh `docs/aether/09-component-catalog.md` — full hooks section incl. new useAetherAuth/TripList/TransientFlag/Value; lib catalog reorganised by area                    | `97437f3` |
-| **AE367** | Round AM docs                                                                                                                                                               | _this_    |
+| **AE367** | Round AM docs                                                                                                                                                               | `6b657c7` |
+
+## Round 47 — Round AN · AE276 unblocked + @mention nav + Atlas deep-link ✦ AE368–AE373
+
+User said "finish everything except the push". This round empties the
+backlog: AE276 was wrongly listed as blocked (it's a 2-step client
+flow: duplicate then PATCH-rename), the @mention drawer gets full
+keyboard nav, destination cards get a focus-deep-link to Atlas, and
+mentions expand to canonical names before reaching the planner.
+vitest 1316 → 1331 (+15 specs). After this round the only "open"
+items are operator-owned (push + prod env-flag + EAS/Apple/Play).
+
+| #         | Slice                                                                                                                                                                                                                                                                                                                                     | Commit    |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| **AE368** | **Unblock AE276** — `useTripControllerDuplicate.onSuccess` chains `useTripControllerUpdate.mutate({title: suggestedDuplicateName(trip.title)})` when the server's hardcoded ` (copy)` doesn't match the suggested suffix (e.g. source already had `(copy)` → suggested `(copy 2)`). Rename failure is silent — the duplicate still landed | `c9813e9` |
+| **AE369** | @mention drawer keyboard nav — ArrowDown/Up wraps, Enter/Tab completes, Escape closes by inserting a separator. `aria-selected` + `aria-activedescendant` for AT support. Mouse hover syncs with keyboard cursor                                                                                                                          | `64e3952` |
+| **AE370** | `/aether/destinations` cards get "On Atlas →" focus deep-link CTA — `<button>` + `router.push('/aether/atlas?focus=<slug>')` via `buildAtlasQuery`; stopPropagation keeps outer `<Link>` valid                                                                                                                                            | `b2b8895` |
+| **AE371** | Extract `expandMentions` + 15 specs; Pulse `ask()` expands the trimmed prompt before geocode + sample-plan so `@leh` reaches the planner as `Leh (Ladakh)`. Raw user prompt still rendered unchanged                                                                                                                                      | `_`       |
+| **AE372** | Storybook variants — `PulseBubble.stories.tsx` (3 turns: short / fresh / long) using AE345 `pulseMessageBubbleStyle` + `PulseMentionDrawer.stories.tsx` (PartialQuery / HighlightSecond / NarrowedToOne)                                                                                                                                  | `_`       |
+| **AE373** | Round AN docs (PROGRESS counter + 07-impl-log + memory snapshot)                                                                                                                                                                                                                                                                          | _this_    |
 
 ## Stop conditions reached / deferred
 
