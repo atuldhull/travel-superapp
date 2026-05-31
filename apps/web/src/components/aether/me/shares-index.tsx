@@ -42,6 +42,8 @@ import { buildShareUrl } from '../../../lib/format-share-url';
 import { copyTextToClipboard } from '../../../lib/copy-text';
 // AE346 — shared trips-extractor (replaces ad-hoc unsafe cast).
 import { tripsFromQuery } from '../../../lib/trips-from-query';
+// AE351 — value-keyed transient flag (was inline setTimeout(set, null)).
+import { useTransientValue } from '../use-transient-value';
 
 function fmtExpiry(v: unknown): string | null {
   const iso = typeof v === 'string' ? v : null;
@@ -59,7 +61,8 @@ function fmtExpiry(v: unknown): string | null {
 function TripShareBand({ trip }: { readonly trip: TripDto }): React.ReactElement | null {
   const theme = useTheme();
   const queryClient = useQueryClient();
-  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  // AE351 — was useState<string|null>+inline setTimeout; shared hook.
+  const [copiedCode, setCopiedCode] = useTransientValue<string>(2000);
   const [revokeError, setRevokeError] = useState<string | null>(null);
 
   const sharesQuery = useTripControllerListShares(trip.id, {
@@ -236,7 +239,6 @@ function TripShareBand({ trip }: { readonly trip: TripDto }): React.ReactElement
                           void copyTextToClipboard(sharedUrl).then((ok) => {
                             if (!ok) return;
                             setCopiedCode(s.shareCode);
-                            window.setTimeout(() => setCopiedCode(null), 2000);
                           });
                         }}
                         style={{
