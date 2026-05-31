@@ -21,6 +21,8 @@ import type {
   ItineraryListResponseDto,
   TripDto,
 } from '@app/sdk';
+// AE328 — shared asIso/fmtDate/fmtTime (was duplicated here pre-AE328).
+import { asIso, fmtDate, fmtTime as fmtTimeRaw } from '../../../lib/aether-dates';
 
 const COL = {
   cream: '#F2E8D5',
@@ -159,32 +161,10 @@ const styles = StyleSheet.create({
   },
 });
 
-function asIso(v: unknown): string | null {
-  return typeof v === 'string' ? v : null;
-}
-
-function fmtDate(v: unknown): string {
-  const iso = asIso(v);
-  if (iso === null) return '—';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-}
-
+// AE328 — local fmtTime wrapper: shared returns string | null but the
+// PDF wants a non-null string for every slot. Coalesce to '—'.
 function fmtTime(v: unknown): string {
-  const s = asIso(v);
-  if (s === null) return '—';
-  const d = new Date(s);
-  if (!Number.isNaN(d.getTime()) && s.length > 8) {
-    return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-  }
-  const m = /^(\d{1,2}):(\d{2})/.exec(s);
-  if (m === null) return '—';
-  const h = Number(m[1]);
-  const mm = m[2];
-  const period = h >= 12 ? 'PM' : 'AM';
-  const h12 = h % 12 === 0 ? 12 : h % 12;
-  return `${h12}:${mm} ${period}`;
+  return fmtTimeRaw(v) ?? '—';
 }
 
 function readSummaryField(
