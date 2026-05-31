@@ -14,12 +14,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useTheme } from '@app/aether-core';
 import { clearRecentPrompts, readRecentPrompts } from '../pulse/recent-prompts';
-import {
-  useAuthControllerMe,
-  useTripControllerList,
-  type TripDto,
-  type WhoAmIResponseDto,
-} from '@app/sdk';
+import { useAuthControllerMe, type TripDto, type WhoAmIResponseDto } from '@app/sdk';
 import { DriftNav } from '../drift-nav';
 import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
@@ -33,10 +28,10 @@ import { summariseTripStats } from '../me/trip-stats-summary';
 import { openPulse } from '../pulse/open-pulse';
 // AE332 — two-step confirm hook (was inlined; auto-disarms after 4s).
 import { useConfirmTwoStep } from '../use-confirm-two-step';
-// AE346 — shared trips-extractor (replaces ad-hoc unsafe cast).
-import { tripsFromQuery } from '../../../lib/trips-from-query';
 // AE354 — composite auth hook (was 3-line trio inlined per surface).
 import { useAetherAuth } from '../use-aether-auth';
+// AE362 — composite trip-list hook (folds orval call + tripsFromQuery).
+import { useAetherTripList } from '../use-aether-trip-list';
 
 interface CardSpec {
   readonly kicker: string;
@@ -78,18 +73,17 @@ export function MeHome(): React.ReactElement {
 
   const meQuery = useAuthControllerMe({ query: { enabled: isAuthed, retry: 1 } });
   const me = meQuery.data?.data as WhoAmIResponseDto | undefined;
-  const activeQuery = useTripControllerList(
-    { limit: '100', archived: 'false' },
-    { query: { enabled: isAuthed } },
-  );
-  const archivedQuery = useTripControllerList(
-    { limit: '100', archived: 'true' },
-    { query: { enabled: isAuthed } },
-  );
-
-  // AE346 — shared extractor (no more inline `as { trips?: TripDto[] }`).
-  const activeTrips = tripsFromQuery<TripDto>(activeQuery);
-  const archivedTrips = tripsFromQuery<TripDto>(archivedQuery);
+  // AE362 — composite hook (folds orval call + tripsFromQuery into one).
+  const { trips: activeTrips } = useAetherTripList({
+    archived: false,
+    limit: '100',
+    enabled: isAuthed,
+  });
+  const { trips: archivedTrips } = useAetherTripList({
+    archived: true,
+    limit: '100',
+    enabled: isAuthed,
+  });
   // AE327 — derived stats via shared helper.
   const { drafts, totalTrips } = summariseTripStats({
     active: activeTrips,
