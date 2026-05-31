@@ -64,3 +64,11 @@ export {
   type TimeBand,
 } from './now-card-content';
 export { DriftNowCard, type DriftNowCardProps } from './drift-now-card';
+export {
+  DEFAULT_NOW_CARD_DURATIONS,
+  nowCardCssForPhase,
+  nowCardOpacityForPhase,
+  nowCardScaleForPhase,
+  nowCardTransitionMs,
+  type LifecycleDurationsMs,
+} from './now-card-lifecycle';

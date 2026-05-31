@@ -110,34 +110,34 @@ describe('<DriftNowCard/>', () => {
   }
 
   it('renders the eyebrow + suggestion + verb', () => {
-    const { getByText } = render(<DriftNowCard at={dateAt(8)} />);
+    const { getByText } = render(<DriftNowCard at={dateAt(8)} disableLifecycle />);
     expect(getByText('Morning')).toBeTruthy();
     expect(getByText('Sketch the day ahead.')).toBeTruthy();
     expect(getByText('Plan')).toBeTruthy();
   });
 
   it('updates content when at prop changes', () => {
-    const { getByText, rerender } = render(<DriftNowCard at={dateAt(8)} />);
+    const { getByText, rerender } = render(<DriftNowCard at={dateAt(8)} disableLifecycle />);
     expect(getByText('Morning')).toBeTruthy();
-    rerender(<DriftNowCard at={dateAt(22)} />);
+    rerender(<DriftNowCard at={dateAt(22)} disableLifecycle />);
     expect(getByText('Night')).toBeTruthy();
     expect(getByText('Dream')).toBeTruthy();
   });
 
   it('exposes aria-label for the surface-time band', () => {
-    const { container } = render(<DriftNowCard at={dateAt(14)} />);
+    const { container } = render(<DriftNowCard at={dateAt(14)} disableLifecycle />);
     const aside = container.querySelector('aside');
     expect(aside?.getAttribute('aria-label')).toBe('Now: Afternoon');
   });
 
   it('verb button carries data-aether-now-verb', () => {
-    const { container } = render(<DriftNowCard at={dateAt(19)} />);
+    const { container } = render(<DriftNowCard at={dateAt(19)} disableLifecycle />);
     const btn = container.querySelector('[data-aether-now-verb]');
     expect(btn?.getAttribute('data-aether-now-verb')).toBe('Reflect');
   });
 
   it('hidden prop returns null', () => {
-    const { container } = render(<DriftNowCard at={dateAt(8)} hidden />);
+    const { container } = render(<DriftNowCard at={dateAt(8)} hidden disableLifecycle />);
     expect(container.querySelector('aside')).toBeNull();
   });
 });

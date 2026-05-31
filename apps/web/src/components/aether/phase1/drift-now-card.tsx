@@ -21,20 +21,26 @@
  * AE382 re-materialises). The 60-min tick is cheap to add later.
  */
 import { useMemo, type CSSProperties } from 'react';
+import { useSurfaceLifecycle, type SurfaceLifecyclePhase } from '@app/aether-core';
 import { nowCardContent, nowCardContentNow } from './now-card-content';
+import { nowCardCssForPhase } from './now-card-lifecycle';
 
 export interface DriftNowCardProps {
   /** Override the time. Tests + Storybook pin this; the live shell omits it. */
   readonly at?: Date | number;
   /** Hide the card (e.g. when the user has dismissed it for this session). */
   readonly hidden?: boolean;
+  /** Skip the lifecycle-driven opacity/scale fade — useful for Storybook
+   *  fixtures that don't mount the SurfaceManagerProvider. */
+  readonly disableLifecycle?: boolean;
 }
 
-const containerStyle: CSSProperties = {
+const baseContainerStyle: CSSProperties = {
   position: 'absolute',
   top: '50%',
   left: '50%',
-  transform: 'translate(-50%, -160%)',
+  // transform + opacity + transition are merged in below based on the
+  // active lifecycle phase (AE386) so the card breathes with the surface.
   zIndex: 5,
   pointerEvents: 'auto',
   display: 'flex',
@@ -84,12 +90,26 @@ const verbStyle: CSSProperties = {
   cursor: 'pointer',
 };
 
-export function DriftNowCard({ at, hidden = false }: DriftNowCardProps): React.ReactElement | null {
+/** Internal render — receives the resolved phase (or null when the
+ *  lifecycle is intentionally disabled). The wrapper above decides
+ *  whether to call `useSurfaceLifecycle()` so we don't break the
+ *  rules-of-hooks contract. */
+function DriftNowCardInner({
+  at,
+  hidden,
+  phase,
+}: Omit<DriftNowCardProps, 'disableLifecycle'> & {
+  phase: SurfaceLifecyclePhase | null;
+}): React.ReactElement | null {
   const content = useMemo(
     () => (at !== undefined ? nowCardContent(at) : nowCardContentNow()),
     [at],
   );
-  if (hidden) return null;
+  if (hidden === true) return null;
+  const containerStyle: CSSProperties =
+    phase === null
+      ? { ...baseContainerStyle, transform: 'translate(-50%, -160%)' }
+      : { ...baseContainerStyle, ...nowCardCssForPhase(phase) };
   return (
     <aside style={containerStyle} aria-label={`Now: ${content.headline}`}>
       <span style={eyebrowStyle}>{content.headline}</span>
@@ -99,4 +119,23 @@ export function DriftNowCard({ at, hidden = false }: DriftNowCardProps): React.R
       </button>
     </aside>
   );
+}
+
+/** Wrapper that calls `useSurfaceLifecycle()` — must sit inside a
+ *  `<SurfaceManagerProvider>`. */
+function DriftNowCardWithLifecycle(
+  props: Omit<DriftNowCardProps, 'disableLifecycle'>,
+): React.ReactElement | null {
+  const phase = useSurfaceLifecycle();
+  return <DriftNowCardInner {...props} phase={phase} />;
+}
+
+export function DriftNowCard({
+  disableLifecycle = false,
+  ...rest
+}: DriftNowCardProps): React.ReactElement | null {
+  if (disableLifecycle) {
+    return <DriftNowCardInner {...rest} phase={null} />;
+  }
+  return <DriftNowCardWithLifecycle {...rest} />;
 }
