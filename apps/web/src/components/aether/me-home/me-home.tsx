@@ -30,6 +30,8 @@ import { summariseRecentActivity } from '../me/recent-activity-summary';
 // AE327 — derived stats moved to a pure helper so the predicate (and
 // any future stat) lives in one tested place.
 import { summariseTripStats } from '../me/trip-stats-summary';
+// AE331 — shared CustomEvent dispatcher for the AE96 Pulse-open bridge.
+import { openPulse } from '../pulse/open-pulse';
 
 interface CardSpec {
   readonly kicker: string;
@@ -111,8 +113,7 @@ export function MeHome(): React.ReactElement {
     setRecent(readRecentPrompts());
   }, []);
   function askAgain(prompt: string): void {
-    if (typeof window === 'undefined') return;
-    window.dispatchEvent(new CustomEvent('aether-pulse-open', { detail: { prefill: prompt } }));
+    openPulse(prompt);
   }
   // AE118 — confirm-then-clear so a misclick on a busy phone doesn't
   // nuke the long-memory list. Confirm chip stays for 4s, then resets.

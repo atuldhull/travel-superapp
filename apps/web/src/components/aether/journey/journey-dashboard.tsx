@@ -60,6 +60,8 @@ import { buildShareUrl } from '../../../lib/format-share-url';
 import { countLabel } from '../../../lib/pluralise';
 // AE320 — canonical aether-<scope>-<YYYY-MM-DD>.<ext> filename builder.
 import { backupFilename } from '../../../lib/backup-filename';
+// AE331 — shared CustomEvent dispatcher for the AE96 Pulse-open bridge.
+import { openPulse } from '../pulse/open-pulse';
 
 export interface JourneyDashboardProps {
   tripId: string;
@@ -662,11 +664,7 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
                 <button
                   type="button"
                   onClick={() => {
-                    if (typeof window === 'undefined') return;
-                    const prefill = `Refine the ${trip.title} journey — what should I rework?`;
-                    window.dispatchEvent(
-                      new CustomEvent('aether-pulse-open', { detail: { prefill } }),
-                    );
+                    openPulse(`Refine the ${trip.title} journey — what should I rework?`);
                   }}
                   style={{
                     padding: `${theme.space.hairline}px ${theme.space.comfy}px`,
