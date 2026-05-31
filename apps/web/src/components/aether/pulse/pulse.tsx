@@ -83,6 +83,8 @@ import { appendBoundedMessage } from './append-message';
 import { shouldAttachContext } from './should-attach-context';
 // AE333 — shared share-URL builder (was inlined here + in shares-index).
 import { buildShareUrl } from '../../../lib/format-share-url';
+// AE345 — message bubble style (was 8 inline role-ternaries per render).
+import { pulseMessageBubbleStyle } from './pulse-bubble-style';
 
 // AE72 + AE184 — types + storage key + parser extracted to
 // ./persisted-pulse.ts so the shape contract is unit-testable.
@@ -769,19 +771,17 @@ export function Pulse(): React.ReactElement | null {
                 key={idx}
                 style={{
                   position: 'relative',
-                  alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
                   maxWidth: '88%',
                   padding: `${theme.space.tight}px ${theme.space.inline}px`,
                   borderRadius: theme.radius.lg,
-                  background: m.role === 'user' ? accent.base : surface.base,
-                  color: m.role === 'user' ? surface.base : ink.base,
-                  fontFamily: m.role === 'user' ? theme.font.ui : theme.font.display,
-                  fontSize: m.role === 'user' ? theme.text.small.size : 14,
-                  lineHeight: m.role === 'user' ? 1.5 : 1.6,
                   whiteSpace: 'pre-wrap',
                   wordBreak: 'break-word',
-                  border: m.role === 'assistant' ? `1px solid ${ink.whisper}` : 'none',
-                  boxShadow: m.role === 'user' ? '0 2px 8px rgba(194, 97, 74, 0.25)' : 'none',
+                  // AE345 — 8 inline role-ternaries (align/bg/color/
+                  // fontFamily/fontSize/lineHeight/border/boxShadow)
+                  // moved into pulseMessageBubbleStyle. The static
+                  // axes above (radius, maxWidth, padding, wrap) stay
+                  // here.
+                  ...pulseMessageBubbleStyle(m.role, theme),
                 }}
               >
                 {m.content}
