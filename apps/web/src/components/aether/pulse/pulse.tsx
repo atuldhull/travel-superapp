@@ -81,6 +81,8 @@ import { appendBoundedMessage } from './append-message';
 // new trip to…", "start over", etc.). Without this guard the model
 // keeps editing the previous plan instead of starting over.
 import { shouldAttachContext } from './should-attach-context';
+// AE333 — shared share-URL builder (was inlined here + in shares-index).
+import { buildShareUrl } from '../../../lib/format-share-url';
 
 // AE72 + AE184 — types + storage key + parser extracted to
 // ./persisted-pulse.ts so the shape contract is unit-testable.
@@ -136,8 +138,9 @@ export function Pulse(): React.ReactElement | null {
   const shareTrip = useTripControllerShare({
     mutation: {
       onSuccess: (created: TripShareResponseDto, vars: { id: string }) => {
+        // AE333 — buildShareUrl owns the trailing-slash + code-encoding rule.
         const origin = typeof window !== 'undefined' ? window.location.origin : '';
-        const shareUrl = `${origin}/shared/${created.shareCode}`;
+        const shareUrl = buildShareUrl({ origin, code: created.shareCode });
         if (typeof navigator !== 'undefined' && navigator.clipboard) {
           void navigator.clipboard.writeText(shareUrl);
         }
