@@ -2,7 +2,7 @@
   "name": "@app/aether-core",
   "version": "0.0.0",
   "private": true,
-  "description": "Aether runtime — composite provider (theme + audio + perception + premium + reduced-motion) and the hooks that read them. Audio engine lazy-loads Tone.js so non-audio surfaces keep a thin bundle.",
+  "description": "Aether runtime — composite provider (theme + audio + perception + premium + reduced-motion) + Phase 1 Surface manager (registry + lifecycle FSM + route → 3D scene mapping). Audio engine lazy-loads Tone.js so non-audio surfaces keep a thin bundle.",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
@@ -14,6 +14,10 @@
     "./audio-engine": {
       "types": "./src/audio-engine.ts",
       "default": "./src/audio-engine.ts"
+    },
+    "./surface": {
+      "types": "./src/surface/index.ts",
+      "default": "./src/surface/index.ts"
     }
   },
   "scripts": {
