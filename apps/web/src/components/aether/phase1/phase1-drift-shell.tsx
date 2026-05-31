@@ -24,7 +24,7 @@ import {
   type SurfaceMountProps,
 } from '@app/aether-core';
 import { createAetherPhase1Registry } from './aether-registry';
-import { useLifecycleAutoDriver } from './use-lifecycle-driver';
+import { BREATHING_LIFECYCLE_PLAN, useLifecycleAutoDriver } from './use-lifecycle-driver';
 
 /** The outer shell — owns the registry + provider. */
 export function Phase1DriftShell(): React.ReactElement {
@@ -56,8 +56,9 @@ function Phase1Inner(): React.ReactElement {
     }
   }, [pathname, setRoute]);
 
-  // Auto-step idle → materialising → settling → listening on mount.
-  useLifecycleAutoDriver();
+  // AE382 — looping plan so the dissolve actually plays out and the
+  // audio bridge gets to fade the drone down + back up on a breath.
+  useLifecycleAutoDriver(BREATHING_LIFECYCLE_PLAN);
 
   // Audio-channel state — surfaced via a tiny status pip the operator
   // can scan for "is the surface alive?" in dev. Production hides it

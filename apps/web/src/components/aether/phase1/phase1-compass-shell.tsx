@@ -27,7 +27,7 @@ import {
 } from '@app/aether-core';
 import { createAetherPhase1Registry } from './aether-registry';
 import { CompassBearingProvider } from './compass-bearing-context';
-import { useLifecycleAutoDriver } from './use-lifecycle-driver';
+import { BREATHING_LIFECYCLE_PLAN, useLifecycleAutoDriver } from './use-lifecycle-driver';
 
 export interface Phase1CompassShellProps {
   /** Target bearing in degrees. Defaults to 0 (north). */
@@ -56,7 +56,8 @@ function Phase1CompassInner(): React.ReactElement {
     if (typeof pathname === 'string' && pathname !== '') setRoute(pathname);
   }, [pathname, setRoute]);
 
-  useLifecycleAutoDriver();
+  // AE382 — looping plan; closes the lifecycle so dissolve fires.
+  useLifecycleAutoDriver(BREATHING_LIFECYCLE_PLAN);
 
   const [audio, setAudio] = useState<{ drone: number; events: number }>({
     drone: -60,

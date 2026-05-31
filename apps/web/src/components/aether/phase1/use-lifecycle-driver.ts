@@ -13,31 +13,63 @@
  *   idle → materialising → settling → listening
  *
  * over the configured durations (defaults to the AE375 / AE376 stack:
- * 0.7s + 0.5s + 0.5s). Dissolving is not auto-triggered — it's owned by
- * the navigation event (a future slice will wire `router.events` to
- * call `setPhase('dissolving')` before the next route mounts).
+ * 0.7s + 0.5s + 0.5s).
+ *
+ * AE382 closes the loop. When `LifecyclePlan.listeningHoldMs` is set
+ * (the `BREATHING_LIFECYCLE_PLAN` preset does this) the FSM continues:
+ *
+ *   listening → dissolving → idle → materialising → … (cycle)
+ *
+ * The dissolve duration is `dissolvingMs`. The Next.js 15 App Router
+ * removed the `router.events` API the original plan called for, so
+ * navigation-triggered dissolves (router events → setPhase) aren't
+ * available; the listening-hold loop is the closest equivalent that
+ * still exercises every phase, and it lets demos + dev users see the
+ * full 5-phase animation without navigating.
  */
 import { useEffect } from 'react';
 import { useSurfaceManager, type SurfaceLifecyclePhase } from '@app/aether-core';
 
 export interface LifecyclePlan {
-  /** Seconds to wait before transitioning idle → materialising. */
+  /** Wait ms before idle → materialising. */
   readonly idleHoldMs: number;
   /** Materialising → settling. */
   readonly materialisingMs: number;
   /** Settling → listening. */
   readonly settlingMs: number;
+  /** Dissolving → idle. */
+  readonly dissolvingMs: number;
+  /** When set, listening will dissolve after this many ms (closes the
+   *  loop). When omitted, listening is the terminal phase (the AE377
+   *  default behaviour — useful for surfaces that don't loop). */
+  readonly listeningHoldMs?: number;
 }
 
+/** The original AE377 plan — no loop. The lifecycle stops at listening
+ *  and stays there until external code calls `setPhase('dissolving')`. */
 export const DEFAULT_LIFECYCLE_PLAN: LifecyclePlan = {
   idleHoldMs: 60,
   materialisingMs: 700,
   settlingMs: 500,
+  dissolvingMs: 500,
 };
 
-/** Pure: which phase the FSM should advance to next, ignoring time. Used
- *  by the hook to look up the destination phase, and exposed for tests. */
-export function nextPhaseInChain(phase: SurfaceLifecyclePhase): SurfaceLifecyclePhase | null {
+/** AE382 — looping preset. Listening holds for 8s, then dissolves and
+ *  re-materialises. Used by the Phase 1 shells so the dissolve audio
+ *  fade-down + camera pull-back actually play out, and so demos see the
+ *  full lifecycle cycling without navigation. */
+export const BREATHING_LIFECYCLE_PLAN: LifecyclePlan = {
+  ...DEFAULT_LIFECYCLE_PLAN,
+  listeningHoldMs: 8000,
+};
+
+/** Pure: which phase the FSM should advance to next, ignoring time. The
+ *  plan controls whether listening is terminal (returns null) or loops
+ *  through dissolving → idle. */
+export function nextPhaseInChain(
+  phase: SurfaceLifecyclePhase,
+  plan: LifecyclePlan = DEFAULT_LIFECYCLE_PLAN,
+): SurfaceLifecyclePhase | null {
   switch (phase) {
     case 'idle':
       return 'materialising';
@@ -45,18 +77,21 @@ export function nextPhaseInChain(phase: SurfaceLifecyclePhase): SurfaceLifecycle
       return 'settling';
     case 'settling':
       return 'listening';
-    // Listening = steady-state, dissolving = navigation-triggered; both
-    // refuse auto-advance.
     case 'listening':
+      return plan.listeningHoldMs !== undefined ? 'dissolving' : null;
     case 'dissolving':
-      return null;
+      // Dissolving auto-advances back to idle only when the plan has
+      // listeningHoldMs (i.e. we're in a looping plan). External code
+      // calling setPhase('dissolving') outside a looping plan should
+      // own the transition back to idle itself.
+      return plan.listeningHoldMs !== undefined ? 'idle' : null;
   }
 }
 
 /** Pure: the delay (in ms) the hook should wait before advancing OUT of
- *  this phase. `listening` + `dissolving` return 0 because they don't
- *  participate in auto-advance — the hook will short-circuit on the
- *  null return from `nextPhaseInChain` before reading the delay. */
+ *  this phase. Listening returns `listeningHoldMs ?? 0` so the hook
+ *  short-circuits on the null return from `nextPhaseInChain` when the
+ *  plan has no listening hold. */
 export function phaseDelayFor(phase: SurfaceLifecyclePhase, plan: LifecyclePlan): number {
   switch (phase) {
     case 'idle':
@@ -66,8 +101,9 @@ export function phaseDelayFor(phase: SurfaceLifecyclePhase, plan: LifecyclePlan)
     case 'settling':
       return plan.settlingMs;
     case 'listening':
+      return plan.listeningHoldMs ?? 0;
     case 'dissolving':
-      return 0;
+      return plan.dissolvingMs;
   }
 }
 
@@ -81,7 +117,7 @@ export function nextScheduledPhase(
   elapsedMs: number,
   plan: LifecyclePlan,
 ): SurfaceLifecyclePhase | null {
-  const next = nextPhaseInChain(phase);
+  const next = nextPhaseInChain(phase, plan);
   if (next === null) return null;
   return elapsedMs >= phaseDelayFor(phase, plan) ? next : null;
 }
@@ -96,7 +132,7 @@ export function useLifecycleAutoDriver(plan: LifecyclePlan = DEFAULT_LIFECYCLE_P
 
   useEffect(() => {
     if (current === null) return undefined;
-    const next = nextPhaseInChain(phase);
+    const next = nextPhaseInChain(phase, plan);
     if (next === null) return undefined;
     const delay = phaseDelayFor(phase, plan);
     const handle = window.setTimeout(() => {
