@@ -46,15 +46,10 @@ import { tripsFromQuery } from '../../../lib/trips-from-query';
 // AE351 — value-keyed transient flag (was inline setTimeout(set, null)).
 import { useTransientValue } from '../use-transient-value';
 
-function fmtExpiry(v: unknown): string | null {
-  const iso = typeof v === 'string' ? v : null;
-  if (iso === null) return null;
-  return new Date(iso).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-}
+// AE356 — fmtExpiry was a private clone of the null-returning date
+// formatter. Re-export the shared variant under the local name so the
+// call sites need no further change.
+import { fmtDateOrNull as fmtExpiry } from '../../../lib/aether-dates';
 
 /** One trip's row of shares. Each <TripShareBand> mounts its own
  *  useTripControllerListShares — keeping the hook call in a child
