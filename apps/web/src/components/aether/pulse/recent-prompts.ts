@@ -6,34 +6,27 @@
  * Lives outside the AE72 conversation persistence so Reset (in-drawer
  * or on /aether/account) does NOT clear it. The list is capped to
  * PULSE_RECENT_CAP entries; appends dedupe (newest moves to front).
+ *
+ * AE306 — migrated to AE228 safeJsonParse + AE238 safe-storage so the
+ * SSR/throw-safety + JSON contract live in one place.
  */
+import { readJSON, removeStorage, writeJSON } from '../../../lib/safe-storage';
+
 export const PULSE_RECENT_KEY = 'aether-pulse-recent:v1';
 export const PULSE_RECENT_CAP = 10;
 
 export function readRecentPrompts(): string[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = window.localStorage.getItem(PULSE_RECENT_KEY);
-    if (raw === null) return [];
-    const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter((s): s is string => typeof s === 'string').slice(0, PULSE_RECENT_CAP);
-  } catch {
-    return [];
-  }
+  const parsed = readJSON<unknown>(PULSE_RECENT_KEY, []);
+  if (!Array.isArray(parsed)) return [];
+  return parsed.filter((s): s is string => typeof s === 'string').slice(0, PULSE_RECENT_CAP);
 }
 
 export function appendRecentPrompt(prompt: string): void {
-  if (typeof window === 'undefined') return;
   const trimmed = prompt.trim();
   if (trimmed === '') return;
-  try {
-    const prior = readRecentPrompts();
-    const next = [trimmed, ...prior.filter((p) => p !== trimmed)].slice(0, PULSE_RECENT_CAP);
-    window.localStorage.setItem(PULSE_RECENT_KEY, JSON.stringify(next));
-  } catch {
-    /* quota / private mode */
-  }
+  const prior = readRecentPrompts();
+  const next = [trimmed, ...prior.filter((p) => p !== trimmed)].slice(0, PULSE_RECENT_CAP);
+  writeJSON(PULSE_RECENT_KEY, next);
 }
 
 /**
@@ -41,10 +34,5 @@ export function appendRecentPrompt(prompt: string): void {
  * Idempotent; safe to call when the key doesn't exist. SSR-safe.
  */
 export function clearRecentPrompts(): void {
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.removeItem(PULSE_RECENT_KEY);
-  } catch {
-    /* private mode */
-  }
+  removeStorage(PULSE_RECENT_KEY);
 }
