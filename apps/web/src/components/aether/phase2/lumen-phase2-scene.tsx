@@ -27,6 +27,7 @@ import {
 } from '@app/aether-core';
 import { DEFAULT_LUMEN_LAYOUT, layoutPhotoCloud } from './lumen-cloud';
 import { useLumenData } from './lumen-data-context';
+import { LumenPhotoSlot } from './lumen-photo-slot';
 
 export default function LumenPhase2Scene(_props: SurfaceMountProps): React.ReactElement {
   const palette = useSurfacePaletteSlots();
@@ -65,31 +66,20 @@ export default function LumenPhase2Scene(_props: SurfaceMountProps): React.React
         <meshStandardMaterial color={palette.glow} roughness={0.8} transparent opacity={0.55} />
       </mesh>
 
-      {/* Photo planes. */}
+      {/* AE401 — per-asset photo slots. Each slot owns its own
+          `useMediaControllerDownloadUrl(assetId)` query and renders
+          `<PhotoPlane>` with the resolved presigned URL; the plane
+          shows its palette-glow fallback until the texture loads, so
+          the cloud reads "alive" while individual photos resolve. */}
       {photosVisible &&
         planes.map((p) => (
-          <group key={p.id} position={p.position}>
-            <mesh>
-              <planeGeometry args={[p.size, p.size * 0.66]} />
-              <meshStandardMaterial
-                color={palette.glow}
-                roughness={0.85}
-                metalness={0.05}
-                transparent
-                opacity={0.92 * lifecycleOpacity}
-              />
-            </mesh>
-            {/* Border frame — slightly larger, palette-accent. */}
-            <mesh position={[0, 0, -0.005]}>
-              <planeGeometry args={[p.size * 1.05, p.size * 0.66 * 1.05]} />
-              <meshStandardMaterial
-                color={palette.accent}
-                roughness={0.5}
-                transparent
-                opacity={0.7 * lifecycleOpacity}
-              />
-            </mesh>
-          </group>
+          <LumenPhotoSlot
+            key={p.id}
+            assetId={p.id}
+            size={p.size}
+            position={p.position}
+            opacity={lifecycleOpacity}
+          />
         ))}
     </>
   );
