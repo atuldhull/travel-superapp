@@ -41,7 +41,7 @@ import {
 import { createAetherPhase1Registry } from './aether-registry';
 import { TripDataProvider, type TripDataLike } from './trip-data-context';
 import type { AtlasDayLike } from './atlas-orbs';
-import { useLifecycleAutoDriver } from './use-lifecycle-driver';
+import { BREATHING_LIFECYCLE_PLAN, useLifecycleAutoDriver } from './use-lifecycle-driver';
 
 export interface Phase1AtlasShellProps {
   readonly tripId: string;
@@ -69,7 +69,9 @@ function Phase1AtlasInner({ tripId }: { tripId: string }): React.ReactElement {
     if (typeof pathname === 'string' && pathname !== '') setRoute(pathname);
   }, [pathname, setRoute]);
 
-  useLifecycleAutoDriver();
+  // AE382 — looping plan; closes the lifecycle so the dissolve fade
+  // (camera pull-back + drone fade-down) plays out before the next cycle.
+  useLifecycleAutoDriver(BREATHING_LIFECYCLE_PLAN);
 
   const tripQuery = useTripControllerGetOne(tripId);
   const itineraryQuery = useTripControllerGetItinerary(tripId);
