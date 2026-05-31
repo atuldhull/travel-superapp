@@ -56,6 +56,8 @@ import { buildJourneyFacts } from './journey-facts';
 import { formatRelativeAether } from '../../../lib/relative-time-aether';
 // AE310 — canonical share-URL builder used by the share-mutation onSuccess.
 import { buildShareUrl } from '../../../lib/format-share-url';
+// AE311 — singular/plural helper for "N days" / "N items".
+import { countLabel } from '../../../lib/pluralise';
 
 export interface JourneyDashboardProps {
   tripId: string;
@@ -982,7 +984,7 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
                       marginBottom: theme.space.tight,
                     }}
                   >
-                    Day by day · {days.length} {days.length === 1 ? 'day' : 'days'}
+                    Day by day · {countLabel(days.length, 'day')}
                   </p>
                   <h2
                     style={{
@@ -1022,7 +1024,7 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
                           key={`bar-${day.id}`}
                           href={`#day-${day.id}`}
                           role="listitem"
-                          aria-label={`Day ${num} · ${day.items.length} ${day.items.length === 1 ? 'item' : 'items'}`}
+                          aria-label={`Day ${num} · ${countLabel(day.items.length, 'item')}`}
                           title={`Day ${num} · ${day.items.length} items`}
                           style={{
                             flex: '1 1 0',
