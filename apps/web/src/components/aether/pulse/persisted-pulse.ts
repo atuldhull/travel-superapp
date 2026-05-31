@@ -28,16 +28,16 @@ export const PULSE_STORAGE_KEY = 'aether-pulse-history:v1';
 
 /** Parse the raw stored JSON string into a sanitized PersistedPulse,
  *  or return null when the payload is missing / malformed / wrong
- *  shape. Callers should treat null as "start fresh". */
+ *  shape. Callers should treat null as "start fresh".
+ *
+ *  AE307 — JSON.parse + the empty-/null-/malformed guard now go
+ *  through AE228 safeJsonParse so the contract lives in one place. */
+import { safeJsonParse } from '../../../lib/safe-json-parse';
+
 export function parsePulseStore(raw: string | null): PersistedPulse | null {
-  if (raw === null) return null;
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    return null;
-  }
-  if (typeof parsed !== 'object' || parsed === null) return null;
+  const parsed = safeJsonParse<unknown>(raw, null);
+  if (parsed === null) return null;
+  if (typeof parsed !== 'object') return null;
   const p = parsed as Partial<PersistedPulse>;
   if (!Array.isArray(p.messages)) return null;
   const messages = p.messages.filter(
