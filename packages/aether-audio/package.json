@@ -1,0 +1,57 @@
+{
+  "name": "@app/aether-audio",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Aether audio layer (Phase 1, AE376) — per-destination key signatures, in-scale note picker, lifecycle-driven scene mixer, and the <SurfaceAudioLayer> React component that wires AE2's Tone.js engine to AE374's Surface manager. Pure helpers live in src/; React layer pulls @app/aether-core for the manager + AudioEngineProvider.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./destination-keys": {
+      "types": "./src/destination-keys.ts",
+      "default": "./src/destination-keys.ts"
+    },
+    "./note-picker": {
+      "types": "./src/note-picker.ts",
+      "default": "./src/note-picker.ts"
+    },
+    "./scene-mixer": {
+      "types": "./src/scene-mixer.ts",
+      "default": "./src/scene-mixer.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src test",
+    "test": "jest --passWithNoTests",
+    "test:watch": "jest --watch"
+  },
+  "dependencies": {
+    "@app/aether-motion": "workspace:*",
+    "@app/aether-core": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "tone": "^15.0.0"
+  },
+  "peerDependenciesMeta": {
+    "tone": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@app/eslint-config": "workspace:*",
+    "@app/tsconfig": "workspace:*",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.10.5",
+    "@types/react": "^19.0.0",
+    "jest": "^29.7.0",
+    "react": "^19.0.0",
+    "ts-jest": "^29.2.5",
+    "typescript": "^5.7.2"
+  }
+}
