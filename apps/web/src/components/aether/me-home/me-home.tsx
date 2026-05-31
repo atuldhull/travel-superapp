@@ -34,6 +34,8 @@ import { summariseTripStats } from '../me/trip-stats-summary';
 import { openPulse } from '../pulse/open-pulse';
 // AE332 — two-step confirm hook (was inlined; auto-disarms after 4s).
 import { useConfirmTwoStep } from '../use-confirm-two-step';
+// AE346 — shared trips-extractor (replaces ad-hoc unsafe cast).
+import { tripsFromQuery } from '../../../lib/trips-from-query';
 
 interface CardSpec {
   readonly kicker: string;
@@ -85,9 +87,9 @@ export function MeHome(): React.ReactElement {
     { query: { enabled: isAuthed } },
   );
 
-  const activeTrips = (activeQuery.data?.data as { trips?: TripDto[] } | undefined)?.trips ?? [];
-  const archivedTrips =
-    (archivedQuery.data?.data as { trips?: TripDto[] } | undefined)?.trips ?? [];
+  // AE346 — shared extractor (no more inline `as { trips?: TripDto[] }`).
+  const activeTrips = tripsFromQuery<TripDto>(activeQuery);
+  const archivedTrips = tripsFromQuery<TripDto>(archivedQuery);
   // AE327 — derived stats via shared helper.
   const { drafts, totalTrips } = summariseTripStats({
     active: activeTrips,

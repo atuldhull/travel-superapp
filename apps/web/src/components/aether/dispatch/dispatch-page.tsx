@@ -31,6 +31,8 @@ import { useViewport } from '../use-viewport';
 import { fmtDate } from '../../../lib/aether-dates';
 // AE339 — shared trip-stats summariser (same predicate as me-home).
 import { summariseTripStats } from '../me/trip-stats-summary';
+// AE346 — shared trips-extractor (replaces ad-hoc unsafe cast).
+import { tripsFromQuery } from '../../../lib/trips-from-query';
 
 export function DispatchPage(): React.ReactElement {
   const theme = useTheme();
@@ -53,9 +55,9 @@ export function DispatchPage(): React.ReactElement {
     { query: { enabled: isAuthed && isAdmin } },
   );
 
-  const activeTrips = (activeQuery.data?.data as { trips?: TripDto[] } | undefined)?.trips ?? [];
-  const archivedTrips =
-    (archivedQuery.data?.data as { trips?: TripDto[] } | undefined)?.trips ?? [];
+  // AE346 — shared extractor (no more inline cast).
+  const activeTrips = tripsFromQuery<TripDto>(activeQuery);
+  const archivedTrips = tripsFromQuery<TripDto>(archivedQuery);
   // AE339 — drafts predicate shared with /me.
   const { drafts } = summariseTripStats({ active: activeTrips, archived: archivedTrips });
 
