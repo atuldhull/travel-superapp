@@ -42,6 +42,10 @@ export function createAetherPhase1Registry(): SurfaceRegistry {
       phase: 1,
       keySignature: 'jaipur',
       route: { kind: 'literal', pathname: '/aether/atlas' },
+      // AE379 wires the first cut: compass rose + cardinal markers +
+      // bearing needle. Later slices add Mapbox 3D buildings, route
+      // ribbons, and AR Eye mode on mobile.
+      mount: () => import('./compass-phase1-scene'),
     },
     {
       id: 'pulse',

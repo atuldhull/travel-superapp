@@ -1,6 +1,7 @@
-/** Aether Phase 1 — Surface registry + Drift + Atlas shells barrel. */
+/** Aether Phase 1 — Surface registry + Drift + Atlas + Compass shells barrel. */
 export { Phase1DriftShell } from './phase1-drift-shell';
 export { Phase1AtlasShell, type Phase1AtlasShellProps } from './phase1-atlas-shell';
+export { Phase1CompassShell, type Phase1CompassShellProps } from './phase1-compass-shell';
 export { createAetherPhase1Registry } from './aether-registry';
 export {
   DEFAULT_LIFECYCLE_PLAN,
@@ -31,3 +32,17 @@ export {
   type TripDataLike,
   type TripDataProviderProps,
 } from './trip-data-context';
+export {
+  CARDINALS,
+  angularDistance,
+  bearingPositionOnRing,
+  bearingToVec3,
+  cardinalAt,
+  normalizeBearing,
+  type CompassPosition,
+} from './compass-rose';
+export {
+  CompassBearingProvider,
+  useCompassBearing,
+  type CompassBearingProviderProps,
+} from './compass-bearing-context';
