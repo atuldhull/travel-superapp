@@ -32,6 +32,8 @@ import { summariseRecentActivity } from '../me/recent-activity-summary';
 import { summariseTripStats } from '../me/trip-stats-summary';
 // AE331 — shared CustomEvent dispatcher for the AE96 Pulse-open bridge.
 import { openPulse } from '../pulse/open-pulse';
+// AE332 — two-step confirm hook (was inlined; auto-disarms after 4s).
+import { useConfirmTwoStep } from '../use-confirm-two-step';
 
 interface CardSpec {
   readonly kicker: string;
@@ -115,19 +117,14 @@ export function MeHome(): React.ReactElement {
   function askAgain(prompt: string): void {
     openPulse(prompt);
   }
-  // AE118 — confirm-then-clear so a misclick on a busy phone doesn't
-  // nuke the long-memory list. Confirm chip stays for 4s, then resets.
-  const [confirmClear, setConfirmClear] = useState<boolean>(false);
-  function onClearClicked(): void {
-    if (!confirmClear) {
-      setConfirmClear(true);
-      window.setTimeout(() => setConfirmClear(false), 4000);
-      return;
-    }
+  // AE118/AE332 — confirm-then-clear via the shared useConfirmTwoStep
+  // hook. The hook handles arm + auto-disarm + cleanup; we just pass
+  // the action. Local var name kept (`confirmClear`) so the JSX styling
+  // / aria-label switches don't churn.
+  const { armed: confirmClear, onPress: onClearClicked } = useConfirmTwoStep(() => {
     clearRecentPrompts();
     setRecent([]);
-    setConfirmClear(false);
-  }
+  }, 4000);
 
   const ink = theme.color.ink;
   const surface = theme.color.surface;
