@@ -16,7 +16,7 @@
  */
 import { lazy, Suspense, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { usePathname } from 'next/navigation';
-import { SurfaceAudioLayer } from '@app/aether-audio';
+import { SurfaceAudioLayer, useSceneAudioBridge } from '@app/aether-audio';
 import { SurfaceCanvas } from '@app/aether-canvas';
 import {
   SurfaceManagerProvider,
@@ -61,6 +61,7 @@ function Phase1CompassInner(): React.ReactElement {
     drone: -60,
     events: -60,
   });
+  const audioBridge = useSceneAudioBridge(setAudio);
   const isDev = process.env.NODE_ENV !== 'production';
   const pipStyle: CSSProperties = {
     position: 'fixed',
@@ -84,9 +85,10 @@ function Phase1CompassInner(): React.ReactElement {
           <ActiveSurfaceMount />
         </Suspense>
       </SurfaceCanvas>
-      <SurfaceAudioLayer onChannelWrite={setAudio} />
+      <SurfaceAudioLayer onChannelWrite={audioBridge.onChannelWrite} />
       <div style={pipStyle} aria-hidden>
-        {current?.id ?? '—'} · drone {audio.drone.toFixed(0)} · events {audio.events.toFixed(0)}
+        {current?.id ?? '—'} · audio {audioBridge.status} · drone {audio.drone.toFixed(0)} · events{' '}
+        {audio.events.toFixed(0)}
       </div>
     </div>
   );
