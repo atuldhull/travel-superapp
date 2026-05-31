@@ -64,6 +64,8 @@ import { backupFilename } from '../../../lib/backup-filename';
 import { openPulse } from '../pulse/open-pulse';
 // AE334 — shared clipboard helper (was inlined navigator.clipboard).
 import { copyTextToClipboard } from '../../../lib/copy-text';
+// AE338 — timeline event derivation extracted for testability.
+import { buildTimelineEvents } from './build-timeline-events';
 
 export interface JourneyDashboardProps {
   tripId: string;
@@ -1385,43 +1387,22 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
                   }}
                 >
                   {(() => {
-                    // AE143 — TimelineEvent moved to ./timeline-grouping.ts
-                    // so the grouping math is unit-testable.
-                    type Evt = TimelineEvent;
-                    const events: Evt[] = [];
-                    if (asIso(trip.createdAt) !== null) {
-                      events.push({
-                        at: trip.createdAt as unknown as string,
-                        label: 'Drafted',
-                        kind: 'create',
-                      });
-                    }
-                    if (
-                      asIso(trip.updatedAt) !== null &&
-                      asIso(trip.updatedAt) !== asIso(trip.createdAt)
-                    ) {
-                      events.push({
-                        at: trip.updatedAt as unknown as string,
-                        label: `Edited — version ${trip.version}`,
-                        kind: 'edit',
-                      });
-                    }
-                    const archivedAt = asIso(trip.archivedAt);
-                    if (archivedAt !== null) {
-                      events.push({ at: archivedAt, label: 'Archived', kind: 'archive' });
-                    }
-                    // AE128 — surface one event per minted share.
-                    for (const s of tripShares) {
-                      const createdAtIso = asIso(s.createdAt);
-                      if (createdAtIso === null) continue;
-                      const codeFrag = s.shareCode.slice(0, 6);
-                      events.push({
-                        at: createdAtIso,
-                        label: `Shared a link · ${codeFrag}…`,
-                        kind: 'share',
-                      });
-                    }
-                    events.sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
+                    // AE143/AE338 — TimelineEvent derivation moved to
+                    // ./build-timeline-events.ts so the contract (kind
+                    // selection, version label, share dedupe) lives in
+                    // tested code; the JSX below still owns rendering.
+                    const events = buildTimelineEvents({
+                      trip: {
+                        createdAt: asIso(trip.createdAt),
+                        updatedAt: asIso(trip.updatedAt),
+                        archivedAt: asIso(trip.archivedAt),
+                        version: typeof trip.version === 'number' ? trip.version : null,
+                      },
+                      shares: tripShares.map((s) => ({
+                        createdAt: asIso(s.createdAt),
+                        shareCode: s.shareCode,
+                      })),
+                    });
 
                     function renderEventLi(e: (typeof events)[number]): React.ReactElement {
                       return (
