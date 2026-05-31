@@ -35,3 +35,21 @@ export {
 } from './manager';
 
 export { SurfaceMountFrame, type SurfaceMountFrameProps } from './mount';
+
+export {
+  DEFAULT_SURFACE_PALETTE,
+  blendHex,
+  blendPalettes,
+  isValidPalette,
+  paletteForSurface,
+  slotsFor,
+  type SurfacePalette,
+  type SurfacePaletteSlots,
+} from './palette';
+
+export {
+  SurfacePaletteVars,
+  useSurfacePalette,
+  useSurfacePaletteSlots,
+  type SurfacePaletteVarsProps,
+} from './palette-hooks';
