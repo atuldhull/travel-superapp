@@ -73,6 +73,8 @@ import { buildSamplePlanRequest } from './build-sample-plan-request';
 import { extractPlanText } from './extract-plan-text';
 // AE216 — seed-suggestions visibility gate.
 import { shouldShowSuggestions } from './should-show-suggestions';
+// AE313 — canonical Promise-based delay for the AE146 auto-send.
+import { sleep } from '../../../lib/sleep';
 
 // AE72 + AE184 — types + storage key + parser extracted to
 // ./persisted-pulse.ts so the shape contract is unit-testable.
@@ -228,12 +230,12 @@ export function Pulse(): React.ReactElement | null {
         setQ(prefill);
         window.setTimeout(() => inputRef.current?.focus(), 50);
         if (shouldSubmit) {
-          // Fire after the open animation so the user sees the prompt
-          // land, then the assistant bubble appears.
-          window.setTimeout(() => {
+          // AE313 — sleep() replaces a bare setTimeout so the delay is
+          // expressed as a promise (matches the rest of ask() being async).
+          void sleep(220).then(() => {
             void ask(prefill);
             setQ('');
-          }, 220);
+          });
         }
       }
     };
