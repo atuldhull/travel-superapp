@@ -24,7 +24,8 @@ import {
 import { DriftNav } from '../drift-nav';
 import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
-import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
+// AE355 — composite auth hook.
+import { useAetherAuth } from '../use-aether-auth';
 import { useViewport } from '../use-viewport';
 
 // AE326 — shared fmtDate (was duplicated here + in journeys/shares).
@@ -37,9 +38,8 @@ import { tripsFromQuery } from '../../../lib/trips-from-query';
 export function DispatchPage(): React.ReactElement {
   const theme = useTheme();
   const { isNarrow } = useViewport();
-  const token = useAuthToken();
-  const bootComplete = useAuthBootComplete();
-  const isAuthed = bootComplete && token !== null;
+  // AE355 — composite auth hook.
+  const { token, bootComplete, isAuthed } = useAetherAuth();
 
   const meQuery = useAuthControllerMe({ query: { enabled: isAuthed, retry: 1 } });
   const me = meQuery.data?.data as WhoAmIResponseDto | undefined;

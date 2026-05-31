@@ -25,7 +25,8 @@ import { useTripControllerCreate, type TripDto } from '@app/sdk';
 import { DriftNav } from '../drift-nav';
 import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
-import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
+// AE355 — composite auth hook.
+import { useAetherAuth } from '../use-aether-auth';
 import { geocodeOne } from '../../../lib/geocode';
 import { useViewport } from '../use-viewport';
 
@@ -76,9 +77,8 @@ export function PlanPage(): React.ReactElement {
   const { isNarrow } = useViewport();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const token = useAuthToken();
-  const bootComplete = useAuthBootComplete();
-  const isAuthed = bootComplete && token !== null;
+  // AE355 — composite auth hook.
+  const { token, bootComplete, isAuthed } = useAetherAuth();
   const createTrip = useTripControllerCreate({
     mutation: {
       onSuccess: (created: TripDto) => {

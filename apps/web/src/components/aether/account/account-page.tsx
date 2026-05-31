@@ -25,7 +25,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { DriftNav } from '../drift-nav';
 import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
-import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
+// AE355 — composite auth hook (collapses the prior 3-line useToken/Boot trio).
+import { useAetherAuth } from '../use-aether-auth';
 import { bundleLocalData, bundlePulseHistory } from './data-export';
 // AE188 — single-source filename builder for backups.
 import { backupFilename } from '../../../lib/backup-filename';
@@ -52,9 +53,8 @@ export function AccountPage(): React.ReactElement {
   const { isNarrow } = useViewport();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const token = useAuthToken();
-  const bootComplete = useAuthBootComplete();
-  const isAuthed = bootComplete && token !== null;
+  // AE355 — composite auth hook.
+  const { token, bootComplete, isAuthed } = useAetherAuth();
   const [signingOut, setSigningOut] = useState<boolean>(false);
   // AE347 — three transient ✓-chips collapse onto the shared hook.
   const [pulseCleared, flashPulseCleared] = useTransientFlag(2000);

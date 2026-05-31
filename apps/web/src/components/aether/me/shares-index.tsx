@@ -30,7 +30,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { DriftNav } from '../drift-nav';
 import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
-import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
+// AE355 — composite auth hook.
+import { useAetherAuth } from '../use-aether-auth';
 import { useViewport } from '../use-viewport';
 // AE312 — canonical singular/plural for "N share(s)".
 import { countLabel } from '../../../lib/pluralise';
@@ -304,9 +305,8 @@ function TripShareBand({ trip }: { readonly trip: TripDto }): React.ReactElement
 export function SharesIndex(): React.ReactElement {
   const theme = useTheme();
   const { isNarrow } = useViewport();
-  const token = useAuthToken();
-  const bootComplete = useAuthBootComplete();
-  const isAuthed = bootComplete && token !== null;
+  // AE355 — composite auth hook.
+  const { token, bootComplete, isAuthed } = useAetherAuth();
 
   // Pull both active + archived trips so all shares are findable.
   const activeQuery = useTripControllerList(

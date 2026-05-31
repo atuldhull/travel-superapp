@@ -16,7 +16,8 @@ import { useTripControllerList, type TripDto } from '@app/sdk';
 import { DriftNav } from '../drift-nav';
 import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
-import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
+// AE355 — composite auth hook.
+import { useAetherAuth } from '../use-aether-auth';
 import { useViewport } from '../use-viewport';
 // AE183 — trySeasonMatch moved to ./try-season-match.ts so it's testable.
 import { trySeasonMatch } from './try-season-match';
@@ -30,9 +31,8 @@ type ListFilter = 'all' | 'draft' | 'archived';
 export function JourneysIndex(): React.ReactElement {
   const theme = useTheme();
   const { isNarrow } = useViewport();
-  const token = useAuthToken();
-  const bootComplete = useAuthBootComplete();
-  const isAuthed = bootComplete && token !== null;
+  // AE355 — composite auth hook.
+  const { token, bootComplete, isAuthed } = useAetherAuth();
   const [filter, setFilter] = useState<ListFilter>('all');
 
   // Active list (non-archived) + archived list — separate calls so the

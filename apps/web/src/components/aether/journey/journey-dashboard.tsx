@@ -36,7 +36,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { DriftNav } from '../drift-nav';
 import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
-import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
+// AE355 — composite auth hook.
+import { useAetherAuth } from '../use-aether-auth';
 import { useViewport } from '../use-viewport';
 import { TripShareCard } from './trip-share-card';
 import { TripChecklist } from './trip-checklist';
@@ -131,9 +132,8 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
       },
     },
   });
-  const token = useAuthToken();
-  const bootComplete = useAuthBootComplete();
-  const isAuthed = bootComplete && token !== null;
+  // AE355 — composite auth hook.
+  const { token, bootComplete, isAuthed } = useAetherAuth();
 
   // Only fetch once auth has settled (avoids a stampede of 401s on first
   // paint before the silent-refresh resolves).
