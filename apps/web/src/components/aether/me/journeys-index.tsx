@@ -20,18 +20,10 @@ import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
 import { useViewport } from '../use-viewport';
 // AE183 — trySeasonMatch moved to ./try-season-match.ts so it's testable.
 import { trySeasonMatch } from './try-season-match';
+// AE326 — shared fmtDate (was duplicated here + in dispatch/shares).
+import { fmtDate } from '../../../lib/aether-dates';
 
 type ListFilter = 'all' | 'draft' | 'archived';
-
-function fmtDate(v: unknown): string {
-  const iso = typeof v === 'string' ? v : null;
-  if (iso === null) return '—';
-  return new Date(iso).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-}
 
 export function JourneysIndex(): React.ReactElement {
   const theme = useTheme();
