@@ -25,6 +25,8 @@ import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
 import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
 import { useViewport } from '../use-viewport';
+// AE317 — recent-activity one-liner for the /me header card.
+import { summariseRecentActivity } from '../me/recent-activity-summary';
 
 interface CardSpec {
   readonly kicker: string;
@@ -81,6 +83,19 @@ export function MeHome(): React.ReactElement {
     (archivedQuery.data?.data as { trips?: TripDto[] } | undefined)?.trips ?? [];
   const drafts = activeTrips.filter((t) => t.status === 'draft').length;
   const totalTrips = activeTrips.length + archivedTrips.length;
+
+  // AE317 — surface the most-recent edit/draft/archive as a calm
+  // one-liner. summariseRecentActivity sorts by timestamp + verb-
+  // routes, so the UI just renders the .line. (Named `recentActivity`
+  // to avoid colliding with the existing AE112 `recent` prompts list.)
+  const recentActivity = summariseRecentActivity(
+    [...activeTrips, ...archivedTrips].map((t) => ({
+      title: t.title,
+      createdAt: typeof t.createdAt === 'string' ? t.createdAt : null,
+      updatedAt: typeof t.updatedAt === 'string' ? t.updatedAt : null,
+      archivedAt: typeof t.archivedAt === 'string' ? t.archivedAt : null,
+    })),
+  );
 
   // AE112 — surface the AE106 long-memory `aether-pulse-recent:v1`
   // store. Read once on mount (client-only). One-tap dispatches the
@@ -204,12 +219,57 @@ export function MeHome(): React.ReactElement {
           </Reveal>
         )}
 
+        {/* AE317 — Recent activity one-liner (when there is any) */}
+        {isAuthed && recentActivity !== null && (
+          <Reveal>
+            <div
+              style={{
+                marginTop: theme.space.hero,
+                padding: `${theme.space.comfy}px ${theme.space.gutter}px`,
+                border: `1px solid ${ink.whisper}`,
+                borderRadius: theme.radius.lg,
+                background: surface.soft,
+                display: 'flex',
+                alignItems: 'baseline',
+                justifyContent: 'space-between',
+                gap: theme.space.comfy,
+                flexWrap: 'wrap',
+              }}
+              role="status"
+              aria-label="Most recent activity"
+            >
+              <span
+                style={{
+                  fontFamily: theme.font.ui,
+                  fontSize: 11,
+                  letterSpacing: '0.18em',
+                  textTransform: 'uppercase',
+                  color: ink.soft,
+                  fontWeight: 600,
+                }}
+              >
+                Recent
+              </span>
+              <span
+                style={{
+                  fontFamily: theme.font.display,
+                  fontSize: 'clamp(18px, 2vw, 22px)',
+                  fontStyle: 'italic',
+                  color: ink.base,
+                }}
+              >
+                {recentActivity.line}
+              </span>
+            </div>
+          </Reveal>
+        )}
+
         {/* Quick stats strip */}
         {isAuthed && (
           <Reveal>
             <div
               style={{
-                marginTop: theme.space.hero,
+                marginTop: theme.space.loose,
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
                 border: `1px solid ${ink.whisper}`,
