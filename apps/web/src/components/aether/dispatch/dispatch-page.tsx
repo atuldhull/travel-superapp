@@ -34,6 +34,8 @@ import { fmtDate } from '../../../lib/aether-dates';
 import { summariseTripStats } from '../me/trip-stats-summary';
 // AE346 — shared trips-extractor (replaces ad-hoc unsafe cast).
 import { tripsFromQuery } from '../../../lib/trips-from-query';
+// AE361 — shared 2-digit ordinal label.
+import { ordinalLabel } from '../../../lib/ordinal-digits';
 
 export function DispatchPage(): React.ReactElement {
   const theme = useTheme();
@@ -324,7 +326,7 @@ export function DispatchPage(): React.ReactElement {
                               letterSpacing: '0.14em',
                             }}
                           >
-                            {String(idx + 1).padStart(2, '0')}
+                            {ordinalLabel(idx)}
                           </span>
                           <div>
                             <div

@@ -40,6 +40,8 @@ import { wrapRowIndex } from './wrap-row-index';
 import { interpretGeolocationError } from './geo-error';
 // AE358/AE359 — URL ↔ Atlas state kit (?q=&season=&focus=).
 import { atlasParamsEqual, buildAtlasQuery, parseAtlasParams } from './atlas-permalink';
+// AE361 — shared 2-digit ordinal (was 6 inline String(idx+1).padStart calls).
+import { ordinalLabel } from '../../../lib/ordinal-digits';
 
 /** CartoDB Dark Matter (no labels) — free, no key, espresso-feeling. */
 const DARK_TILES = 'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png';
@@ -855,7 +857,7 @@ export function AtlasCanvas(): React.ReactElement {
                     color: olive.soft,
                   }}
                 >
-                  {String(idx + 1).padStart(2, '0')}
+                  {ordinalLabel(idx)}
                 </span>
                 <span
                   style={{
