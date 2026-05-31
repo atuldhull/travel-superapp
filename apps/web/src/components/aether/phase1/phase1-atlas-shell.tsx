@@ -50,7 +50,9 @@ import { Phase1DevNav } from './phase1-dev-nav';
 import { Phase1PulseOverlay } from './phase1-pulse-overlay';
 import { TripDataProvider, type TripDataLike } from './trip-data-context';
 import type { AtlasDayLike } from './atlas-orbs';
+import { coordsForDestination } from './destination-coords';
 import { BREATHING_LIFECYCLE_PLAN, useLifecycleAutoDriver } from './use-lifecycle-driver';
+import { useRealWeather } from './use-real-weather';
 import { WeatherProvider } from './weather-context';
 import { simulatedWeatherFor, type WeatherState } from './weather-simulation';
 
@@ -144,6 +146,15 @@ function Phase1AtlasInner({ tripId }: { tripId: string }): React.ReactElement {
     return simulatedWeatherFor(slug, at);
   }, [trip?.title, trip?.startsOn]);
 
+  // AE395 — try Open-Meteo for the real weather at the trip's
+  // destination on its start date. Falls back to AE388 simulation
+  // when coords aren't curated, the date isn't set, or the fetch
+  // fails (no-key API, but transient errors are possible).
+  const tripSlug = useMemo(() => extractDestinationSlugFromTitle(trip?.title), [trip?.title]);
+  const coords = useMemo(() => coordsForDestination(tripSlug), [tripSlug]);
+  const real = useRealWeather(coords, trip?.startsOn ?? null);
+  const weather: WeatherState = real.weather !== null ? real.weather : simulatedWeather;
+
   // Same dev-only operator pip as the Drift shell.
   const [audio, setAudio] = useState<{ drone: number; events: number }>({
     drone: -60,
@@ -169,7 +180,7 @@ function Phase1AtlasInner({ tripId }: { tripId: string }): React.ReactElement {
   return (
     <TripDataProvider trip={trip} days={days} isPending={isPending} isError={isError}>
       <SurfacePaletteOverride palette={tripPaletteOverride}>
-        <WeatherProvider weather={simulatedWeather}>
+        <WeatherProvider weather={weather}>
           <div style={{ width: '100%', height: '100vh', position: 'relative' }}>
             <SurfacePaletteVars />
             <SurfaceCanvas ariaLabel={`Atlas — ${trip?.title ?? 'loading'}`}>
@@ -206,9 +217,9 @@ function Phase1AtlasInner({ tripId }: { tripId: string }): React.ReactElement {
             />
             <div style={pipStyle} aria-hidden>
               {current?.id ?? '—'} · {trip?.title ?? '…'} · {days.length} day
-              {days.length === 1 ? '' : 's'} · weather {simulatedWeather} · audio{' '}
-              {audioBridge.status} · drone {audio.drone.toFixed(0)} · events{' '}
-              {audio.events.toFixed(0)}
+              {days.length === 1 ? '' : 's'} · weather {weather}
+              {real.weather !== null ? ' (real)' : ' (sim)'} · audio {audioBridge.status} · drone{' '}
+              {audio.drone.toFixed(0)} · events {audio.events.toFixed(0)}
             </div>
           </div>
         </WeatherProvider>

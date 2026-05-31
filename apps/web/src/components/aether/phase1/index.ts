@@ -141,3 +141,10 @@ export {
   useUpcomingTrip,
   type UpcomingTripProviderProps,
 } from './upcoming-trip-context';
+export {
+  coordsForDestination,
+  curatedCoordSlugs,
+  type DestinationCoords,
+} from './destination-coords';
+export { isoDateOnly, openMeteoUrl, parseOpenMeteoDaily, weatherCodeToState } from './open-meteo';
+export { useRealWeather, type UseRealWeatherResult } from './use-real-weather';
