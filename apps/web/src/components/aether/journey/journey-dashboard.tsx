@@ -52,6 +52,8 @@ import { deriveChecklistSlug } from './derive-checklist-slug';
 import { timelineDotColor } from './timeline-dot-color';
 // AE214 — facts-strip builder extracted (uses shared aether-dates).
 import { buildJourneyFacts } from './journey-facts';
+// AE309 — relative-time formatter for the footer 'last edited' chip.
+import { formatRelativeAether } from '../../../lib/relative-time-aether';
 
 export interface JourneyDashboardProps {
   tripId: string;
@@ -1539,7 +1541,12 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
               >
                 <span>trip id · {tripId}</span>
                 <span>
-                  last edited · {fmtDate(trip.updatedAt)} · version {trip.version}
+                  {/* AE309 — relative time replaces locale-date for a calmer "5h ago" feel.
+                      Falls back to fmtDate when the value is too far past for the relative
+                      formatter to feel useful. */}
+                  last edited ·{' '}
+                  {formatRelativeAether(asIso(trip.updatedAt)) || fmtDate(trip.updatedAt)} · version{' '}
+                  {trip.version}
                 </span>
               </div>
             </Reveal>
