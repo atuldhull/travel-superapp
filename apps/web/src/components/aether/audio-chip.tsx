@@ -31,18 +31,21 @@ interface AudioChipProps {
 const STORAGE_VOLUME = 'aether-audio-volume';
 const STORAGE_MUTED = 'aether-audio-muted';
 
+// AE342 — shared clamp + safe-storage replace the inline SSR-guard
+// + try/Number()/Math.max/Math.min ladder.
+import { clamp } from '../../lib/clamp';
+import { readStorage } from '../../lib/safe-storage';
+
 function readStoredVolume(): number {
-  if (typeof window === 'undefined') return -6;
-  const raw = window.localStorage.getItem(STORAGE_VOLUME);
+  const raw = readStorage(STORAGE_VOLUME);
   if (raw === null) return -6;
   const n = Number(raw);
   if (!Number.isFinite(n)) return -6;
-  return Math.max(-60, Math.min(0, n));
+  return clamp(n, -60, 0);
 }
 
 function readStoredMuted(): boolean {
-  if (typeof window === 'undefined') return false;
-  return window.localStorage.getItem(STORAGE_MUTED) === '1';
+  return readStorage(STORAGE_MUTED) === '1';
 }
 
 export function AudioChip({ inverted = false }: AudioChipProps): React.ReactElement | null {
