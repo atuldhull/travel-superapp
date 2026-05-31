@@ -26,6 +26,9 @@ import { copyTextToClipboard } from '../../../lib/copy-text';
 import { makeChecklistItemId } from './checklist-id';
 // AE322 — bullets formatter extracted so it's testable + reusable.
 import { formatChecklistAsBullets } from './format-checklist-bullets';
+// AE323 — lift read/write through the safe-storage + safe-json-parse
+// kits so the SSR + incognito + quota-error paths are shared.
+import { readJSON, writeJSON } from '../../../lib/safe-storage';
 
 export interface ChecklistItem {
   readonly id: string;
@@ -167,24 +170,20 @@ function storageKey(tripId: string): string {
 }
 
 function readStore(tripId: string): ChecklistItem[] | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = window.localStorage.getItem(storageKey(tripId));
-    if (raw === null) return null;
-    const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) return null;
-    const items = parsed.filter(
-      (it): it is ChecklistItem =>
-        typeof it === 'object' &&
-        it !== null &&
-        typeof (it as ChecklistItem).id === 'string' &&
-        typeof (it as ChecklistItem).text === 'string' &&
-        typeof (it as ChecklistItem).done === 'boolean',
-    );
-    return items;
-  } catch {
-    return null;
-  }
+  // AE323 — was ~12 lines of SSR-guard + try/JSON.parse + filter.
+  // safe-storage handles SSR + incognito; safeJsonParse handles bad
+  // payloads; the structural filter is the only thing left here.
+  const parsed = readJSON<unknown>(storageKey(tripId), null);
+  if (parsed === null || !Array.isArray(parsed)) return null;
+  const items = parsed.filter(
+    (it): it is ChecklistItem =>
+      typeof it === 'object' &&
+      it !== null &&
+      typeof (it as ChecklistItem).id === 'string' &&
+      typeof (it as ChecklistItem).text === 'string' &&
+      typeof (it as ChecklistItem).done === 'boolean',
+  );
+  return items;
 }
 
 export interface TripChecklistProps {
@@ -215,12 +214,10 @@ export function TripChecklist({ tripId, destinationSlug }: TripChecklistProps): 
 
   // Persist on every change after hydration.
   useEffect(() => {
-    if (!hydrated || typeof window === 'undefined') return;
-    try {
-      window.localStorage.setItem(storageKey(tripId), JSON.stringify(items));
-    } catch {
-      /* quota / private mode */
-    }
+    if (!hydrated) return;
+    // AE323 — writeJSON is SSR + quota safe; returns false on failure
+    // but the user-facing behaviour is identical (no toast — silent).
+    writeJSON(storageKey(tripId), items);
   }, [items, tripId, hydrated]);
 
   const ink = theme.color.ink;
