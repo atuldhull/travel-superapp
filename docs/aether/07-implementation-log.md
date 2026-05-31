@@ -561,7 +561,29 @@ consolidation slices.
 | **AE327** | Extract `summariseTripStats` + 6 specs; wired into `<MeHome/>` (single tested predicate for "drafts within active") | `f409dbe` |
 | **AE328** | trip-pdf-doc asIso/fmtDate/fmtTime onto `aether-dates` (fmtTime null wrapped to '—' for PDF slots, -20 LOC)         | `f409dbe` |
 | **AE329** | Extract `interpretGeolocationError` + 6 specs; wired in Atlas (code 1 → denied, anything else → unavailable)        | `da~~~~`  |
-| **AE330** | Round AI docs                                                                                                       | _this_    |
+| **AE330** | Round AI docs                                                                                                       | `39a8d80` |
+
+## Round 43 — Round AJ · shared-kit-isation across surfaces ✦ AE331–AE340
+
+Mix of extraction + consumer migration: 3 new helpers + paired specs
+(`openPulse`, `useConfirmTwoStep`, `buildTimelineEvents`) and 6
+migrations that swap inline `navigator.clipboard`, hand-rolled
+share-URL strings, ad-hoc SVG escapes, ternary title-size selectors,
+ad-hoc meta-line spans, and the third "draft predicate" copy onto
+canonical helpers. vitest 1164 → 1189 (+25 specs).
+
+| #         | Slice                                                                                                          | Commit    |
+| --------- | -------------------------------------------------------------------------------------------------------------- | --------- |
+| **AE331** | Extract `openPulse(prefill, {submit?})` + 7 jsdom specs; consumed by destination + journal + me-home + journey | `_`       |
+| **AE332** | Extract `useConfirmTwoStep(action, windowMs)` + 8 jsdom specs; wired into me-home Clear-all                    | `_`       |
+| **AE333** | Pulse share-mutation + shares-index share URL onto canonical `buildShareUrl`                                   | `51127ea` |
+| **AE334** | 4 inline `navigator.clipboard.writeText` → shared `copyTextToClipboard` (Pulse, brand, shares-index, journey)  | `2732d21` |
+| **AE335** | trip-share-card `svgEscape` → shared `escapeAttr` (5-char + control-char strip)                                | `2091f0a` |
+| **AE336** | trip-share-card `titleFs` ternary → shared `shareCardTitleSize` (3-tier 110/88/72)                             | `8cef2f8` |
+| **AE337** | journal-article meta line → shared `buildArticleMetaLine` (segments + middle-dot rendering)                    | `5f771e2` |
+| **AE338** | Extract `buildTimelineEvents` + 10 specs (4 contract points: create/edit/archive/share); wired in journey      | `_`       |
+| **AE339** | dispatch-page drafts count → shared `summariseTripStats` (3rd consumer)                                        | `5d3453d` |
+| **AE340** | Round AJ docs                                                                                                  | _this_    |
 
 ## Stop conditions reached / deferred
 
