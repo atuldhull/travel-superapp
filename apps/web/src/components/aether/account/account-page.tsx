@@ -31,6 +31,8 @@ import { bundleLocalData, bundlePulseHistory } from './data-export';
 import { backupFilename } from '../../../lib/backup-filename';
 import { clearAccessToken } from '../../../lib/auth-store';
 import { useViewport } from '../use-viewport';
+// AE347 — shared transient-flag hook (was 3 inline setTimeout(setX, 2000)).
+import { useTransientFlag } from '../use-transient-flag';
 
 function fmtDate(v: unknown): string | null {
   const iso = typeof v === 'string' ? v : null;
@@ -57,9 +59,10 @@ export function AccountPage(): React.ReactElement {
   const bootComplete = useAuthBootComplete();
   const isAuthed = bootComplete && token !== null;
   const [signingOut, setSigningOut] = useState<boolean>(false);
-  const [pulseCleared, setPulseCleared] = useState<boolean>(false);
-  const [pulseExported, setPulseExported] = useState<boolean>(false);
-  const [dataExported, setDataExported] = useState<boolean>(false);
+  // AE347 — three transient ✓-chips collapse onto the shared hook.
+  const [pulseCleared, flashPulseCleared] = useTransientFlag(2000);
+  const [pulseExported, flashPulseExported] = useTransientFlag(2000);
+  const [dataExported, flashDataExported] = useTransientFlag(2000);
 
   /** AE140 — back up the Pulse conversation as JSON before clearing.
    *  AE160 — bundling logic moved to ./data-export.ts so it's testable. */
@@ -78,8 +81,7 @@ export function AccountPage(): React.ReactElement {
       a.click();
       document.body.removeChild(a);
       window.setTimeout(() => URL.revokeObjectURL(url), 1500);
-      setPulseExported(true);
-      window.setTimeout(() => setPulseExported(false), 2000);
+      flashPulseExported();
     } catch {
       /* quota / private mode / corrupt JSON — silently ignore */
     }
@@ -90,8 +92,7 @@ export function AccountPage(): React.ReactElement {
     if (typeof window === 'undefined') return;
     try {
       window.localStorage.removeItem('aether-pulse-history:v1');
-      setPulseCleared(true);
-      window.setTimeout(() => setPulseCleared(false), 2000);
+      flashPulseCleared();
     } catch {
       /* quota / private mode — silently ignore */
     }
@@ -124,8 +125,7 @@ export function AccountPage(): React.ReactElement {
       a.click();
       document.body.removeChild(a);
       window.setTimeout(() => URL.revokeObjectURL(url), 1500);
-      setDataExported(true);
-      window.setTimeout(() => setDataExported(false), 2000);
+      flashDataExported();
     } catch {
       /* quota / private mode — silently ignore */
     }
