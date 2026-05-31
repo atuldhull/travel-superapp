@@ -12,10 +12,10 @@
 
 | Counter             | Value                                                                     |
 | ------------------- | ------------------------------------------------------------------------- |
-| Prompts completed   | 412 (402 prior + Round AK: AE341–AE350, 10 slices)                        |
+| Prompts completed   | 419 (412 prior + Round AL: AE351–AE357, 7 slices)                         |
 | Prompts in progress | 0                                                                         |
 | Prompts blocked     | 0                                                                         |
-| Last prompt         | `AE350` — Round AK docs (3 helpers + 6 migrations, dayOfYear/sha/etc.)    |
+| Last prompt         | `AE357` — Round AL docs (auth-trio collapsed across 10 surfaces)          |
 | Last commit date    | 2026-05-31                                                                |
 | Phase               | Phase 1 — Featured-to-detail flow live for the public memory-book surface |
 
@@ -71,6 +71,7 @@
 | **Round AI**    | AE320–AE330 | PDF filename via `backupFilename`+ext (+3 specs) · Pulse drops priorPlan on fresh-start phrase · `formatChecklistAsBullets` + 6 specs · trip-checklist localStorage onto safe-storage · `wrapRowIndex` consumer in atlas + checklist · asIso/fmtDate/daysBetween consolidated onto `aether-dates` (journey + shared + dispatch + journeys + shares + trip-pdf-doc, -120 LOC dedup) · `summariseTripStats` + 6 specs · `interpretGeolocationError` + 6 specs · Round AI docs                                                                                                                            | ✅     |
 | **Round AJ**    | AE331–AE340 | `openPulse` CustomEvent dispatcher + 7 specs (consumed by 4 surfaces) · `useConfirmTwoStep` + 8 jsdom specs (wired in me-home) · Pulse + shares-index URLs onto `buildShareUrl` · 4 inline `navigator.clipboard` → `copyTextToClipboard` (Pulse, brand, shares-index, journey-dashboard) · trip-share-card `svgEscape` → shared `escapeAttr` · trip-share-card `titleFs` → shared `shareCardTitleSize` · journal-article meta line → shared `buildArticleMetaLine` · `buildTimelineEvents` + 10 specs (wired in journey-dashboard) · dispatch-page drafts → `summariseTripStats` · Round AJ docs       | ✅     |
 | **Round AK**    | AE341–AE350 | `dayOfYear` + 10 specs (featured-pick consumes) · audio-chip stored-volume onto `clamp`+`safe-storage` · use-parallax inline clamp → shared `clamp` · format-percent inline clamp → `clamp01` · `pulseMessageBubbleStyle` + 8 specs (unblocks AE231 — Pulse 8-axis role styling now in tested helper) · `tripsFromQuery` + 7 specs (5 surfaces migrate, kills inline `as { trips?: TripDto[] }` cast) · `useTransientFlag` + 8 jsdom specs (account-page consumes 3x) · journey-dashboard `shareCopied` onto useTransientFlag · `formatBuildSha` + 8 specs (editorial-footer consumes) · Round AK docs | ✅     |
+| **Round AL**    | AE351–AE357 | `useTransientValue<T>` + 6 jsdom specs (shares-index + brand + Pulse copiedBubbleIdx consume) · Pulse copiedBubbleIdx onto useTransientValue · `shortId` + 7 specs (account consumes; was a private fn) · `useAetherAuth` + 5 specs (composite auth hook) · **9 Aether surfaces migrate to useAetherAuth** (account/destination/dispatch/journey/journeys/me/me/pulse/plan/shared all collapse the 3-line `token/bootComplete/isAuthed` trio) · `fmtDateOrNull` + 6 specs (variant of fmtDate that returns null instead of '—'; account + shares consume) · Round AL docs                              | ✅     |
 
 > **Operator-owed**: push the AE commits + flip `NEXT_PUBLIC_FEATURE_AETHER_PREVIEW=1` on prod for the soft launch. The route gate auto-404s when the env var is unset, so deploys with the flag off ship safely.
 

@@ -607,7 +607,25 @@ tested helper. vitest 1189 → 1230 (+41 specs).
 | **AE347** | Extract `useTransientFlag` + 8 jsdom specs; account-page consumes 3x                             | `_`       |
 | **AE348** | journey-dashboard `shareCopied` onto `useTransientFlag` (4th consumer)                           | `e16d098` |
 | **AE349** | Extract `formatBuildSha` + 8 specs; editorial-footer consumes                                    | `_`       |
-| **AE350** | Round AK docs                                                                                    | _this_    |
+| **AE350** | Round AK docs                                                                                    | `219cb0b` |
+
+## Round 45 — Round AL · auth-trio collapse + value-keyed transient flags ✦ AE351–AE357
+
+Three new helpers + paired specs (`useTransientValue`, `shortId`,
+`useAetherAuth`, `fmtDateOrNull`) plus the biggest single migration of
+the session: **9 Aether surfaces collapse the 3-line auth trio onto
+useAetherAuth**. Pulse + shares-index also adopt useTransientValue
+for value-keyed ✓-chip feedback. vitest 1230 → 1254 (+24 specs).
+
+| #         | Slice                                                                                                               | Commit    |
+| --------- | ------------------------------------------------------------------------------------------------------------------- | --------- |
+| **AE351** | Extract `useTransientValue<T>` + 6 jsdom specs (sibling of AE347 useTransientFlag for value-keyed flashes)          | `_`       |
+| **AE352** | Pulse copiedBubbleIdx onto `useTransientValue` (was setState+inline setTimeout-then-null guard)                     | `d55d5a8` |
+| **AE353** | Extract `shortId` + 7 specs (4-then-…-then-4 elision; account consumes; was private fn)                             | `_`       |
+| **AE354** | Extract `useAetherAuth` + 5 specs (composite token/bootComplete/isAuthed hook); me-home first consumer              | `_`       |
+| **AE355** | 9 Aether surfaces migrate to useAetherAuth (account/destination/dispatch/journey/journeys/pulse/plan/shared/shares) | `bb8ab8e` |
+| **AE356** | Add `fmtDateOrNull` + 6 specs (variant returning null; account + shares-index consume — was duplicated fns)         | `1f01c9b` |
+| **AE357** | Round AL docs                                                                                                       | _this_    |
 
 ## Stop conditions reached / deferred
 
