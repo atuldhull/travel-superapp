@@ -33,6 +33,8 @@ import { clearAccessToken } from '../../../lib/auth-store';
 import { useViewport } from '../use-viewport';
 // AE347 — shared transient-flag hook (was 3 inline setTimeout(setX, 2000)).
 import { useTransientFlag } from '../use-transient-flag';
+// AE353 — shared id-elision rule (was a private function above).
+import { shortId } from '../../../lib/short-id';
 
 function fmtDate(v: unknown): string | null {
   const iso = typeof v === 'string' ? v : null;
@@ -42,11 +44,6 @@ function fmtDate(v: unknown): string | null {
     month: 'short',
     day: 'numeric',
   });
-}
-
-function shortId(sub: string): string {
-  if (sub.length <= 8) return sub;
-  return `${sub.slice(0, 4)}…${sub.slice(-4)}`;
 }
 
 export function AccountPage(): React.ReactElement {
