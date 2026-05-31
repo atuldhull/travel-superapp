@@ -60,12 +60,28 @@ export function createAetherPhase1Registry(): SurfaceRegistry {
     {
       id: 'pulse',
       phase: 1,
+      // AE389 — Pulse's palette tracks the host surface, but the
+      // overlay's tiny private Canvas falls back to ochre when no
+      // surface palette is provided.
+      palette: ['#1A0F09', '#F2E8D5', '#C2614A', '#E8B777', '#6E7B5C'],
       route: { kind: 'overlay' },
+      // AE396 — symmetric mount loader. The Phase 1 shell renders the
+      // Pulse glow via `<Phase1PulseOverlay>` (HTML container + private
+      // <Canvas>) rather than through `<SurfaceMountFrame>`, but the
+      // mount loader is registered so Storybook fixtures + the future
+      // Mirror admin tree can lazy-load the same scene via the standard
+      // path. The fact that overlays don't get auto-mounted by the
+      // route resolver keeps the production rendering path untouched.
+      mount: () => import('./pulse-phase1-scene'),
     },
     {
       id: 'continuum',
       phase: 1,
       route: { kind: 'overlay' },
+      // AE390 — Continuum is HTML-only (4px edge-line + popover). No
+      // R3F scene to mount; the bar renders inline via
+      // `<Phase1ContinuumBar>` from each shell. The `mount` loader is
+      // intentionally absent.
     },
   ]);
 }
