@@ -101,3 +101,21 @@ export {
   Phase1PulseOverlayStandalone,
   type Phase1PulseOverlayProps,
 } from './phase1-pulse-overlay';
+export {
+  CONTINUUM_QUERY_KEY,
+  buildContinuumUrl,
+  continuumSigilSeed,
+  isContinuumUrl,
+  parseContinuumUrl,
+  type ContinuumExtras,
+  type ContinuumState,
+} from './continuum-state';
+export {
+  DEFAULT_SIGIL_SIZE,
+  buildSigilGrid,
+  hashSeed,
+  sigilEquals,
+  sigilFilledCount,
+  type SigilGrid,
+} from './continuum-sigil';
+export { Phase1ContinuumBar, type Phase1ContinuumBarProps } from './phase1-continuum-bar';
