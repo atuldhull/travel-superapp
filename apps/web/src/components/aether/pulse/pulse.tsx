@@ -77,6 +77,10 @@ import { shouldShowSuggestions } from './should-show-suggestions';
 import { sleep } from '../../../lib/sleep';
 // AE314 — bounded append for chat messages (cap at PULSE_MAX_MESSAGES).
 import { appendBoundedMessage } from './append-message';
+// AE321 — drop priorPlan when the user signals a fresh start ("plan a
+// new trip to…", "start over", etc.). Without this guard the model
+// keeps editing the previous plan instead of starting over.
+import { shouldAttachContext } from './should-attach-context';
 
 // AE72 + AE184 — types + storage key + parser extracted to
 // ./persisted-pulse.ts so the shape contract is unit-testable.
@@ -362,11 +366,17 @@ export function Pulse(): React.ReactElement | null {
     try {
       let title: string;
       let center: { lat: number; lng: number };
-      const isFollowUp = ctx !== null;
+      // AE321 — fresh-start phrase guard. If the user typed "plan a
+      // new trip to ..." we treat the call as fresh even if `ctx` is
+      // populated (drop priorPlan + re-geocode), so the model doesn't
+      // anchor on the prior plan.
+      const attach = shouldAttachContext({ prompt: trimmed, hasContext: ctx !== null });
+      const effectiveCtx = attach ? ctx : null;
+      const isFollowUp = effectiveCtx !== null;
 
       if (isFollowUp) {
-        title = ctx.title;
-        center = { lat: ctx.center.lat, lng: ctx.center.lng };
+        title = effectiveCtx.title;
+        center = { lat: effectiveCtx.center.lat, lng: effectiveCtx.center.lng };
       } else {
         const hit = await geocodeOne(trimmed, 'India', DEFAULT_CENTER);
         title = hit?.label ?? trimmed;
@@ -378,7 +388,7 @@ export function Pulse(): React.ReactElement | null {
         title,
         center,
         radiusKm: 50,
-        ctx,
+        ctx: effectiveCtx,
         instruction: trimmed,
       });
 
