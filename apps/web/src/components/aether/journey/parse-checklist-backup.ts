@@ -9,15 +9,13 @@
  * Extracted from `trip-checklist.tsx`'s `onImportFile` so the JSON
  * branch can be unit-tested without a FileReader / DOM stub.
  */
+import { safeJsonParse } from '../../../lib/safe-json-parse';
 import type { ChecklistItem } from './trip-checklist';
 
 export function parseChecklistBackup(raw: string): ChecklistItem[] | null {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    return null;
-  }
+  // AE308 — replaces try/JSON.parse with the canonical safe parser.
+  const parsed = safeJsonParse<unknown>(raw, null);
+  if (parsed === null) return null;
   const itemsCandidate =
     parsed !== null && typeof parsed === 'object' && 'items' in parsed
       ? (parsed as { items: unknown }).items
