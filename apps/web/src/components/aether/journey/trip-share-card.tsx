@@ -52,17 +52,10 @@ const COL = {
 // AE195 — date helpers consolidated into the shared aether-dates lib.
 // trip-share-card uses the inclusive variant (Jun 3 → Jun 17 = 15 days).
 import { asIso, fmtDate, inclusiveDaysBetween as daysBetween } from '@/lib/aether-dates';
-
-/** Crude SVG-safe text — escapes the five XML metachars so titles
- *  with `<`, `>`, `&`, `"`, `'` don't break the markup. */
-function svgEscape(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
-}
+// AE335 — shared 5-char SVG/HTML escape (was inlined as svgEscape).
+// escapeAttr produces &#39; for ' vs the old &apos;; both are valid
+// XML refs that render to the same character — behaviour preserved.
+import { escapeAttr as svgEscape } from '@/lib/escape-attr';
 
 export function shareSvg(trip: ShareCardTrip): string {
   const title = svgEscape(trip.title);
