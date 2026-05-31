@@ -516,6 +516,21 @@ rebases.
 | **AE304** | `extractMentions` + 10 specs (@slug autocomplete prep; lowercased + de-duped; quirk-doc'd email behaviour) | `37e23f1` |
 | **AE305** | Round AF docs + autopilot + MEMORY refresh                                                                 | _this_    |
 
+## Round 40 — Round AG · consumer migrations (helpers → call sites) ✦ AE306–AE315
+
+| #         | Slice                                                                                                | Commit    |
+| --------- | ---------------------------------------------------------------------------------------------------- | --------- |
+| **AE306** | recent-prompts.ts → AE228 safeJsonParse + AE238 safe-storage (~12 lines deleted; all 11 specs green) | `4ef32ce` |
+| **AE307** | parsePulseStore → AE228 safeJsonParse (try/catch replaced; AE184 specs green)                        | `d23fd84` |
+| **AE308** | parseChecklistBackup → AE228 safeJsonParse (AE164 specs green)                                       | `83e6df3` |
+| **AE309** | journey-dashboard footer 'last edited' uses AE253 formatRelativeAether (fmtDate fallback)            | `3fa765b` |
+| **AE310** | journey-dashboard share mutation uses AE218 buildShareUrl (URL-encodes oddball codes)                | `42cc989` |
+| **AE311** | journey-dashboard 'N days/items' uses AE223 countLabel (2 inline ternaries removed)                  | `85215c4` |
+| **AE312** | shared-trip-view + shares-index use AE223 countLabel (2 more inline ternaries removed)               | `96c2605` |
+| **AE313** | Pulse AE146 auto-send delay uses AE284 sleep (Promise-shaped delay)                                  | `035de0a` |
+| **AE314** | Pulse all 4 setMessages append paths use AE222 appendBoundedMessage (in-memory cap at 40)            | `45e433d` |
+| **AE315** | Round AG docs + MEMORY refresh                                                                       | _this_    |
+
 ## Stop conditions reached / deferred
 
 - **Mobile parity** — Aether is web-only Phase 0 (locked decision pre-AE5).
