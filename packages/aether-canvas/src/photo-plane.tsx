@@ -23,7 +23,10 @@ export interface PhotoPlaneProps {
   readonly url?: string | null;
   /** Plane width in world units. Default 1.6. */
   readonly size?: number;
-  /** Height / width ratio. Default 0.66 (landscape). */
+  /** Height / width ratio. Default 0.66 (landscape). When a texture
+   *  loads (AE404), the plane re-reads its true aspect from
+   *  `texture.image.width / height` and overrides this default; pass
+   *  an explicit value to force a fixed aspect (e.g. for Storybook). */
   readonly aspect?: number;
   /** Position passed straight through to the inner group. */
   readonly position?: readonly [number, number, number];
@@ -33,6 +36,21 @@ export interface PhotoPlaneProps {
   readonly borderColor?: string | null;
   /** Material opacity multiplier (0..1). */
   readonly opacity?: number;
+}
+
+/** AE404 — pure helper: read the loaded texture's true aspect ratio
+ *  (height / width) so the plane displays photos at their real shape.
+ *  Returns the fallback when the texture isn't loaded or the image
+ *  isn't measurable (e.g. before decoding, or for procedural textures
+ *  without an image source). Exported so jsdom tests can pin it. */
+export function aspectFromTexture(texture: Texture | null, fallback: number): number {
+  if (texture === null) return fallback;
+  const img = (texture as { image?: { width?: number; height?: number } }).image;
+  if (img === undefined || img === null) return fallback;
+  const w = img.width ?? 0;
+  const h = img.height ?? 0;
+  if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return fallback;
+  return h / w;
 }
 
 const DEFAULT_SIZE = 1.6;
@@ -83,7 +101,11 @@ export function PhotoPlane({
     };
   }, [url]);
 
-  const planeHeight = useMemo(() => size * aspect, [size, aspect]);
+  // AE404 — once the texture loads, prefer its real aspect over the
+  // caller's `aspect` prop. The fallback keeps the placeholder shape
+  // stable while the texture is still streaming in.
+  const resolvedAspect = useMemo(() => aspectFromTexture(texture, aspect), [texture, aspect]);
+  const planeHeight = useMemo(() => size * resolvedAspect, [size, resolvedAspect]);
 
   return (
     <group position={[position[0], position[1], position[2]]}>
