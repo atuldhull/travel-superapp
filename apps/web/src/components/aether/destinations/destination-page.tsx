@@ -32,6 +32,8 @@ import { isInSeason } from './seasons';
 import { relatedArticles } from './related-journal';
 // AE331 — shared CustomEvent dispatcher for the AE96 Pulse-open bridge.
 import { openPulse } from '../pulse/open-pulse';
+// AE346 — shared trips-extractor (replaces ad-hoc unsafe cast).
+import { tripsFromQuery } from '../../../lib/trips-from-query';
 
 export interface DestinationPageProps {
   destination: Destination;
@@ -54,10 +56,11 @@ export function DestinationPage({ destination: d }: DestinationPageProps): React
     { limit: '5', archived: 'false' },
     { query: { enabled: isAuthed } },
   );
-  const draftTrip: TripDto | null = (() => {
-    const list = (tripsQuery.data?.data as { trips?: TripDto[] } | undefined)?.trips ?? [];
-    return list.find((t) => t.status === 'draft') ?? null;
-  })();
+  // AE346 — shared extractor; the AE327 stats summariser already
+  // canonicalises the "draft" predicate, but for "first draft trip"
+  // (one item, not a count) we keep the .find inline.
+  const draftTrip: TripDto | null =
+    tripsFromQuery<TripDto>(tripsQuery).find((t) => t.status === 'draft') ?? null;
 
   const ink = theme.color.ink;
   const surface = theme.color.surface;

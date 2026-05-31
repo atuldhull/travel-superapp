@@ -22,6 +22,8 @@ import { useViewport } from '../use-viewport';
 import { trySeasonMatch } from './try-season-match';
 // AE326 — shared fmtDate (was duplicated here + in dispatch/shares).
 import { fmtDate } from '../../../lib/aether-dates';
+// AE346 — shared trips-extractor (replaces ad-hoc unsafe cast).
+import { tripsFromQuery } from '../../../lib/trips-from-query';
 
 type ListFilter = 'all' | 'draft' | 'archived';
 
@@ -44,9 +46,9 @@ export function JourneysIndex(): React.ReactElement {
     { query: { enabled: isAuthed && filter === 'archived' } },
   );
 
-  const activeTrips = (activeQuery.data?.data as { trips?: TripDto[] } | undefined)?.trips ?? [];
-  const archivedTrips =
-    (archivedQuery.data?.data as { trips?: TripDto[] } | undefined)?.trips ?? [];
+  // AE346 — shared extractor (no more inline cast).
+  const activeTrips = tripsFromQuery<TripDto>(activeQuery);
+  const archivedTrips = tripsFromQuery<TripDto>(archivedQuery);
 
   // Apply the filter.
   const items: readonly TripDto[] =
