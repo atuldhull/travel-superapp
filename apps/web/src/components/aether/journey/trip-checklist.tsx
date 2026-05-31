@@ -29,6 +29,9 @@ import { formatChecklistAsBullets } from './format-checklist-bullets';
 // AE323 — lift read/write through the safe-storage + safe-json-parse
 // kits so the SSR + incognito + quota-error paths are shared.
 import { readJSON, writeJSON } from '../../../lib/safe-storage';
+// AE324 — shared modular-arithmetic helper for the AE121 keyboard
+// nav (was inlined here + in atlas-canvas before).
+import { wrapRowIndex } from '../atlas/wrap-row-index';
 
 export interface ChecklistItem {
   readonly id: string;
@@ -234,8 +237,10 @@ export function TripChecklist({ tripId, destinationSlug }: TripChecklistProps): 
   // its mouse behaviour; this only adds keyboard parity.
   const rowRefs = useRef<Map<string, HTMLLIElement>>(new Map());
   function focusItemAt(idx: number): void {
-    if (items.length === 0) return;
-    const wrapped = ((idx % items.length) + items.length) % items.length;
+    // AE324 — was an inlined `((idx % n) + n) % n` modulo. wrapRowIndex
+    // returns -1 for an empty list so we treat -1 as "nothing to focus".
+    const wrapped = wrapRowIndex(idx, items.length);
+    if (wrapped < 0) return;
     const target = items[wrapped];
     if (target === undefined) return;
     const node = rowRefs.current.get(target.id);
