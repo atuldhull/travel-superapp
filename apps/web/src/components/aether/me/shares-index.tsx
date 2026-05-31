@@ -34,16 +34,8 @@ import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
 import { useViewport } from '../use-viewport';
 // AE312 — canonical singular/plural for "N share(s)".
 import { countLabel } from '../../../lib/pluralise';
-
-function fmtDate(v: unknown): string {
-  const iso = typeof v === 'string' ? v : null;
-  if (iso === null) return '—';
-  return new Date(iso).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-}
+// AE326 — shared fmtDate (was duplicated here + in dispatch/journeys).
+import { fmtDate } from '../../../lib/aether-dates';
 
 function fmtExpiry(v: unknown): string | null {
   const iso = typeof v === 'string' ? v : null;

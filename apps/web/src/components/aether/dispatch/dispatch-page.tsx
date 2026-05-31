@@ -27,15 +27,8 @@ import { EditorialFooter } from '../drift-sections/editorial-footer';
 import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
 import { useViewport } from '../use-viewport';
 
-function fmtDate(v: unknown): string {
-  const iso = typeof v === 'string' ? v : null;
-  if (iso === null) return '—';
-  return new Date(iso).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-}
+// AE326 — shared fmtDate (was duplicated here + in journeys/shares).
+import { fmtDate } from '../../../lib/aether-dates';
 
 export function DispatchPage(): React.ReactElement {
   const theme = useTheme();
