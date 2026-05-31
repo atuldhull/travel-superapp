@@ -24,12 +24,16 @@ import {
   type SurfaceMountProps,
 } from '@app/aether-core';
 import { openPulse } from '../pulse/open-pulse';
+import { useAetherAuth } from '../use-aether-auth';
+import { useAetherTripList } from '../use-aether-trip-list';
 import { createAetherPhase1Registry } from './aether-registry';
 import { DriftNowCard } from './drift-now-card';
 import { Phase1ContinuumBar } from './phase1-continuum-bar';
 import { Phase1ContinuumReceiverToast } from './phase1-continuum-receiver-toast';
 import { Phase1DevNav } from './phase1-dev-nav';
 import { Phase1PulseOverlay } from './phase1-pulse-overlay';
+import { pickUpcomingTrip, type UpcomingTripLike } from './upcoming-trip';
+import { UpcomingTripProvider } from './upcoming-trip-context';
 import { BREATHING_LIFECYCLE_PLAN, useLifecycleAutoDriver } from './use-lifecycle-driver';
 
 /** The outer shell — owns the registry + provider. */
@@ -66,6 +70,27 @@ function Phase1Inner(): React.ReactElement {
   // audio bridge gets to fade the drone down + back up on a breath.
   useLifecycleAutoDriver(BREATHING_LIFECYCLE_PLAN);
 
+  // AE393 — read the user's active trip list (gated on auth so a
+  // signed-out session doesn't hit the API) and pick the nearest
+  // upcoming. Null when none qualify; the Now Card then falls back
+  // to AE385 time-of-day baseline.
+  const { isAuthed } = useAetherAuth();
+  const { trips } = useAetherTripList({ archived: false, limit: '50', enabled: isAuthed });
+  const upcomingTrip = useMemo<UpcomingTripLike | null>(() => {
+    if (!isAuthed) return null;
+    const normalised: ReadonlyArray<UpcomingTripLike> = trips.map((t) => ({
+      id: t.id,
+      title: t.title,
+      // Orval TripDto's runtime nullable fields ship as `string | null`
+      // via AE321 asIso — they may also be undefined when omitted.
+      startsOn: typeof t.startsOn === 'string' ? t.startsOn : null,
+      endsOn: typeof t.endsOn === 'string' ? t.endsOn : null,
+      status: typeof t.status === 'string' ? t.status : null,
+      archivedAt: typeof t.archivedAt === 'string' ? t.archivedAt : null,
+    }));
+    return pickUpcomingTrip(normalised);
+  }, [isAuthed, trips]);
+
   // Audio-channel state — surfaced via a tiny status pip the operator
   // can scan for "is the surface alive?" in dev. Production hides it
   // (display: none).
@@ -95,32 +120,34 @@ function Phase1Inner(): React.ReactElement {
   };
 
   return (
-    <div style={{ width: '100%', height: '100vh', position: 'relative' }}>
-      <SurfacePaletteVars />
-      <SurfaceCanvas ariaLabel={`Aether Phase 1 surface — ${current?.id ?? 'idle'}`}>
-        <Suspense fallback={null}>
-          <ActiveSurfaceMount />
-        </Suspense>
-      </SurfaceCanvas>
-      <SurfaceAudioLayer onChannelWrite={audioBridge.onChannelWrite} />
-      <DriftNowCard />
-      <Phase1DevNav active="drift" />
-      {/* AE389 — always-present Pulse 60px corner glow.
+    <UpcomingTripProvider trip={upcomingTrip}>
+      <div style={{ width: '100%', height: '100vh', position: 'relative' }}>
+        <SurfacePaletteVars />
+        <SurfaceCanvas ariaLabel={`Aether Phase 1 surface — ${current?.id ?? 'idle'}`}>
+          <Suspense fallback={null}>
+            <ActiveSurfaceMount />
+          </Suspense>
+        </SurfaceCanvas>
+        <SurfaceAudioLayer onChannelWrite={audioBridge.onChannelWrite} />
+        <DriftNowCard />
+        <Phase1DevNav active="drift" />
+        {/* AE389 — always-present Pulse 60px corner glow.
           AE392 — tapping the glow opens the editorial Pulse drawer via
           the AE96 `aether-pulse-open` CustomEvent bridge. The drawer
           itself ships from the outer DriftShell so it can persist
           across Phase 0 / Phase 1 flag flips. */}
-      <Phase1PulseOverlay onActivate={() => openPulse('')} />
-      {/* AE390 — Continuum cross-device handoff bar. */}
-      <Phase1ContinuumBar />
-      {/* AE391 — receiver side: surface a small "Continued from
+        <Phase1PulseOverlay onActivate={() => openPulse('')} />
+        {/* AE390 — Continuum cross-device handoff bar. */}
+        <Phase1ContinuumBar />
+        {/* AE391 — receiver side: surface a small "Continued from
           another device" toast when the URL carries the marker. */}
-      <Phase1ContinuumReceiverToast />
-      <div style={pipStyle} aria-hidden>
-        {current?.id ?? '—'} · audio {audioBridge.status} · drone {audio.drone.toFixed(0)} · events{' '}
-        {audio.events.toFixed(0)}
+        <Phase1ContinuumReceiverToast />
+        <div style={pipStyle} aria-hidden>
+          {current?.id ?? '—'} · audio {audioBridge.status} · drone {audio.drone.toFixed(0)} ·
+          events {audio.events.toFixed(0)} · upcoming {upcomingTrip?.title ?? 'none'}
+        </div>
       </div>
-    </div>
+    </UpcomingTripProvider>
   );
 }
 
