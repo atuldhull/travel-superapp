@@ -583,7 +583,31 @@ canonical helpers. vitest 1164 → 1189 (+25 specs).
 | **AE337** | journal-article meta line → shared `buildArticleMetaLine` (segments + middle-dot rendering)                    | `5f771e2` |
 | **AE338** | Extract `buildTimelineEvents` + 10 specs (4 contract points: create/edit/archive/share); wired in journey      | `_`       |
 | **AE339** | dispatch-page drafts count → shared `summariseTripStats` (3rd consumer)                                        | `5d3453d` |
-| **AE340** | Round AJ docs                                                                                                  | _this_    |
+| **AE340** | Round AJ docs                                                                                                  | `ae42efa` |
+
+## Round 44 — Round AK · helpers + clamp/storage/role-style sweep ✦ AE341–AE350
+
+Five new helpers + paired specs (`dayOfYear`, `pulseMessageBubbleStyle`,
+`tripsFromQuery`, `useTransientFlag`, `formatBuildSha`) and 5
+consumer migrations that fold inline `Math.max/Math.min` onto
+`clamp`/`clamp01`, swap 5 ad-hoc `as { trips?: TripDto[] }` casts
+for the shared extractor, and migrate 3 transient ✓-chips + the
+share-copied chip onto `useTransientFlag`. **AE345 unblocks the
+AE231 backlog item** — Pulse's 8-axis bubble style now lives in a
+tested helper. vitest 1189 → 1230 (+41 specs).
+
+| #         | Slice                                                                                            | Commit    |
+| --------- | ------------------------------------------------------------------------------------------------ | --------- |
+| **AE341** | Extract `dayOfYear` + 10 specs; featured-pick consumes (replaces private copy)                   | `_`       |
+| **AE342** | audio-chip stored volume → shared `clamp` + `safe-storage` (-5 LOC + SSR contract aligned)       | `59a735f` |
+| **AE343** | use-parallax inline `Math.max/Math.min` → shared `clamp`                                         | `5c6c62d` |
+| **AE344** | format-percent inline clamp → shared `clamp01` (behaviour identical)                             | `9ac80fa` |
+| **AE345** | Extract `pulseMessageBubbleStyle` + 8 specs — unblocks AE231 (8 visual axes per role now tested) | `_`       |
+| **AE346** | Extract `tripsFromQuery` + 7 specs; 5 surfaces migrate                                           | `_`       |
+| **AE347** | Extract `useTransientFlag` + 8 jsdom specs; account-page consumes 3x                             | `_`       |
+| **AE348** | journey-dashboard `shareCopied` onto `useTransientFlag` (4th consumer)                           | `e16d098` |
+| **AE349** | Extract `formatBuildSha` + 8 specs; editorial-footer consumes                                    | `_`       |
+| **AE350** | Round AK docs                                                                                    | _this_    |
 
 ## Stop conditions reached / deferred
 
