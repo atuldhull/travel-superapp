@@ -12,6 +12,8 @@ import Link from 'next/link';
 import { useTheme } from '@app/aether-core';
 import { HERO, EXPERIENCES, GUSTARE, REGIONS, JOURNAL, creditUrl } from '../photos';
 import { useViewport } from '../use-viewport';
+// AE349 — shared formatter for the AE75 build SHA stamp.
+import { formatBuildSha } from '../../../lib/format-build-sha';
 
 interface FooterColumn {
   readonly title: string;
@@ -263,17 +265,20 @@ export function EditorialFooter(): React.ReactElement {
             opacity: 0.55,
           }}
         >
-          {/* AE157 — © year + AE75 build stamp (sha + iso time when set). */}
+          {/* AE157 — © year + AE75 build stamp (sha + iso time when set).
+              AE349 — short-SHA formatter shared with /aether/status. */}
           <span>
             © {new Date().getFullYear()} TravelSuperApp · Aether Phase 0 preview
-            {process.env['NEXT_PUBLIC_BUILD_SHA'] !== undefined && (
-              <>
-                {' · '}
-                <span style={{ opacity: 0.7 }}>
-                  build {String(process.env['NEXT_PUBLIC_BUILD_SHA']).slice(0, 7)}
-                </span>
-              </>
-            )}
+            {(() => {
+              const shortSha = formatBuildSha(process.env['NEXT_PUBLIC_BUILD_SHA']);
+              if (shortSha === null) return null;
+              return (
+                <>
+                  {' · '}
+                  <span style={{ opacity: 0.7 }}>build {shortSha}</span>
+                </>
+              );
+            })()}
           </span>
           <span>
             Photography on Unsplash by{' '}
