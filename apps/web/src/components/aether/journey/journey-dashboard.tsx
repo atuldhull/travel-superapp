@@ -62,6 +62,8 @@ import { countLabel } from '../../../lib/pluralise';
 import { backupFilename } from '../../../lib/backup-filename';
 // AE331 — shared CustomEvent dispatcher for the AE96 Pulse-open bridge.
 import { openPulse } from '../pulse/open-pulse';
+// AE334 — shared clipboard helper (was inlined navigator.clipboard).
+import { copyTextToClipboard } from '../../../lib/copy-text';
 
 export interface JourneyDashboardProps {
   tripId: string;
@@ -877,12 +879,11 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
                     <button
                       type="button"
                       onClick={() => {
-                        if (typeof navigator !== 'undefined' && navigator.clipboard) {
-                          void navigator.clipboard.writeText(shareUrl).then(() => {
-                            setShareCopied(true);
-                            window.setTimeout(() => setShareCopied(false), 2000);
-                          });
-                        }
+                        void copyTextToClipboard(shareUrl).then((ok) => {
+                          if (!ok) return;
+                          setShareCopied(true);
+                          window.setTimeout(() => setShareCopied(false), 2000);
+                        });
                       }}
                       style={{
                         padding: `${theme.space.tight}px ${theme.space.comfy}px`,
