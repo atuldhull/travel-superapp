@@ -14,19 +14,21 @@
 
 **Deliverable:** a single prototype Surface (Drift) running on web; can demo to validate the language. Old `apps/web` still serves production traffic.
 
-## Phase 1 — The Trip Loop (weeks 7-18)
+## Phase 1 — The Trip Loop (weeks 7-18) — **shipped 2026-05-31**
 
 **Goal:** the planning loop is fully Aether-native on web.
 
-| Surface                 | Replaces                     |
-| ----------------------- | ---------------------------- |
-| **Atlas** (#3)          | `/trips/[id]` and sub-routes |
-| **Drift** (#1)          | `/` home                     |
-| **Pulse** (#7)          | always-present AI            |
-| **Compass Bird** (#5)   | desktop navigation, map-pick |
-| **Continuum bar** (#10) | basic QR handoff             |
+| Surface                 | Replaces                     | Status                                                                             |
+| ----------------------- | ---------------------------- | ---------------------------------------------------------------------------------- |
+| **Atlas** (#3)          | `/trips/[id]` and sub-routes | ✅ AE378 + AE384 + AE388 + AE394 + AE395                                           |
+| **Drift** (#1)          | `/` home                     | ✅ AE377 + AE385 + AE386 + AE393                                                   |
+| **Pulse** (#7)          | always-present AI            | ✅ AE389 + AE392 + AE396                                                           |
+| **Compass Bird** (#5)   | desktop navigation, map-pick | ✅ AE379 (basic rose; Mapbox 3D buildings deferred)                                |
+| **Continuum bar** (#10) | basic QR handoff             | ✅ AE390 + AE391 (deep-link fallback; WebTransport state-sync deferred to Phase 4) |
 
 Old web routes still serve the rest of the surfaces (memory book, social, etc.). Internal alpha to ~20 users.
+
+Detailed inventory + capability stack in [`10-phase1-closeout.md`](10-phase1-closeout.md).
 
 ## Phase 2 — Memory + Voice (weeks 19-28)
 
