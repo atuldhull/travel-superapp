@@ -47,6 +47,8 @@ import { Phase1DevNav } from './phase1-dev-nav';
 import { TripDataProvider, type TripDataLike } from './trip-data-context';
 import type { AtlasDayLike } from './atlas-orbs';
 import { BREATHING_LIFECYCLE_PLAN, useLifecycleAutoDriver } from './use-lifecycle-driver';
+import { WeatherProvider } from './weather-context';
+import { simulatedWeatherFor, type WeatherState } from './weather-simulation';
 
 export interface Phase1AtlasShellProps {
   readonly tripId: string;
@@ -129,6 +131,15 @@ function Phase1AtlasInner({ tripId }: { tripId: string }): React.ReactElement {
     return paletteForDestination(slug);
   }, [trip?.title]);
 
+  // AE388 — simulated weather for the trip. Slug derived from title;
+  // date from the trip's startsOn (or "now" if absent). Empty / unknown
+  // slugs return 'clear' so the streaks stay off.
+  const simulatedWeather = useMemo<WeatherState>(() => {
+    const slug = extractDestinationSlugFromTitle(trip?.title);
+    const at = trip?.startsOn ?? new Date();
+    return simulatedWeatherFor(slug, at);
+  }, [trip?.title, trip?.startsOn]);
+
   // Same dev-only operator pip as the Drift shell.
   const [audio, setAudio] = useState<{ drone: number; events: number }>({
     drone: -60,
@@ -154,21 +165,24 @@ function Phase1AtlasInner({ tripId }: { tripId: string }): React.ReactElement {
   return (
     <TripDataProvider trip={trip} days={days} isPending={isPending} isError={isError}>
       <SurfacePaletteOverride palette={tripPaletteOverride}>
-        <div style={{ width: '100%', height: '100vh', position: 'relative' }}>
-          <SurfacePaletteVars />
-          <SurfaceCanvas ariaLabel={`Atlas — ${trip?.title ?? 'loading'}`}>
-            <Suspense fallback={null}>
-              <ActiveSurfaceMount />
-            </Suspense>
-          </SurfaceCanvas>
-          <SurfaceAudioLayer onChannelWrite={audioBridge.onChannelWrite} />
-          <Phase1DevNav />
-          <div style={pipStyle} aria-hidden>
-            {current?.id ?? '—'} · {trip?.title ?? '…'} · {days.length} day
-            {days.length === 1 ? '' : 's'} · audio {audioBridge.status} · drone{' '}
-            {audio.drone.toFixed(0)} · events {audio.events.toFixed(0)}
+        <WeatherProvider weather={simulatedWeather}>
+          <div style={{ width: '100%', height: '100vh', position: 'relative' }}>
+            <SurfacePaletteVars />
+            <SurfaceCanvas ariaLabel={`Atlas — ${trip?.title ?? 'loading'}`}>
+              <Suspense fallback={null}>
+                <ActiveSurfaceMount />
+              </Suspense>
+            </SurfaceCanvas>
+            <SurfaceAudioLayer onChannelWrite={audioBridge.onChannelWrite} />
+            <Phase1DevNav />
+            <div style={pipStyle} aria-hidden>
+              {current?.id ?? '—'} · {trip?.title ?? '…'} · {days.length} day
+              {days.length === 1 ? '' : 's'} · weather {simulatedWeather} · audio{' '}
+              {audioBridge.status} · drone {audio.drone.toFixed(0)} · events{' '}
+              {audio.events.toFixed(0)}
+            </div>
           </div>
-        </div>
+        </WeatherProvider>
       </SurfacePaletteOverride>
     </TripDataProvider>
   );
