@@ -21,6 +21,8 @@ import { type JournalArticle } from './data';
 import { relatedDestinations } from './related-destinations';
 // AE331 — shared CustomEvent dispatcher for the AE96 Pulse-open bridge.
 import { openPulse } from '../pulse/open-pulse';
+// AE337 — shared article meta-line builder (was 3 inline spans).
+import { buildArticleMetaLine } from './article-meta-line';
 
 export interface JournalArticleViewProps {
   article: JournalArticle;
@@ -117,11 +119,23 @@ export function JournalArticleView({ article: a }: JournalArticleViewProps): Rea
               opacity: 0.78,
             }}
           >
-            <span>By {a.author}</span>
-            <span aria-hidden>·</span>
-            <span>{a.readMins} min read</span>
-            <span aria-hidden>·</span>
-            <span>{a.publishedOn}</span>
+            {/* AE337 — segments + middle-dots driven by the shared
+                builder so missing author / 0-min read don't leave a
+                dangling separator. */}
+            {buildArticleMetaLine({
+              author: a.author,
+              readMins: a.readMins,
+              publishedOn: a.publishedOn,
+            }).segments.map((seg, i, arr) => (
+              <span key={seg}>
+                <span>{seg}</span>
+                {i < arr.length - 1 && (
+                  <span aria-hidden style={{ marginInline: 6 }}>
+                    ·
+                  </span>
+                )}
+              </span>
+            ))}
           </div>
         </Reveal>
       </section>
