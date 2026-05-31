@@ -60,4 +60,18 @@ describe('backupFilename', () => {
     // `aether--2026-05-30.json`. Document that explicitly.
     expect(backupFilename('!!!', FIXED)).toBe('aether--2026-05-30.json');
   });
+
+  // ─── AE320: optional extension ────────────────────────────────────
+  it('honours a custom `pdf` extension', () => {
+    expect(backupFilename('journey-leh', FIXED, 'pdf')).toBe('aether-journey-leh-2026-05-30.pdf');
+  });
+
+  it('strips a leading dot from the extension (`.pdf` → `pdf`)', () => {
+    expect(backupFilename('x', FIXED, '.pdf')).toBe('aether-x-2026-05-30.pdf');
+  });
+
+  it('strips unsafe extension chars and falls back to `bin` if empty', () => {
+    expect(backupFilename('x', FIXED, 'p df')).toBe('aether-x-2026-05-30.pdf');
+    expect(backupFilename('x', FIXED, '!!!')).toBe('aether-x-2026-05-30.bin');
+  });
 });

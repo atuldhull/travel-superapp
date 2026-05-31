@@ -58,6 +58,8 @@ import { formatRelativeAether } from '../../../lib/relative-time-aether';
 import { buildShareUrl } from '../../../lib/format-share-url';
 // AE311 — singular/plural helper for "N days" / "N items".
 import { countLabel } from '../../../lib/pluralise';
+// AE320 — canonical aether-<scope>-<YYYY-MM-DD>.<ext> filename builder.
+import { backupFilename } from '../../../lib/backup-filename';
 
 export interface JourneyDashboardProps {
   tripId: string;
@@ -223,12 +225,15 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `aether-${
+      // AE320 — was hand-rolled `aether-<slug>.pdf`; route through the
+      // shared backupFilename builder so the slug rule matches every
+      // other Aether download and we pick up a date stamp for free.
+      const slug =
         trip.title
           .replace(/[^a-z0-9-_ ]/gi, '')
           .replace(/\s+/g, '-')
-          .toLowerCase() || 'journey'
-      }.pdf`;
+          .toLowerCase() || 'journey';
+      a.download = backupFilename(`journey-${slug}`, new Date(), 'pdf');
       document.body.appendChild(a);
       a.click();
       a.remove();
