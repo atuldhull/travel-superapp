@@ -531,6 +531,15 @@ rebases.
 | **AE314** | Pulse all 4 setMessages append paths use AE222 appendBoundedMessage (in-memory cap at 40)            | `45e433d` |
 | **AE315** | Round AG docs + MEMORY refresh                                                                       | _this_    |
 
+## Round 41 — Round AH · real-world feature wiring ✦ AE316–AE319
+
+| #         | Slice                                                                                                          | Commit    |
+| --------- | -------------------------------------------------------------------------------------------------------------- | --------- |
+| **AE316** | Daily Featured destination card on /destinations (pickFeaturedDestination + selectBestMonth + seasonChipLabel) | `a926dae` |
+| **AE317** | /me Recent-activity one-liner via summariseRecentActivity ("Edited X · 2h ago")                                | `d35defd` |
+| **AE318** | reading-progress fill uses AE227 clamp01 (Math.min/max removed)                                                | `dd5db09` |
+| **AE319** | Round AH docs + MEMORY refresh                                                                                 | _this_    |
+
 ## Stop conditions reached / deferred
 
 - **Mobile parity** — Aether is web-only Phase 0 (locked decision pre-AE5).
