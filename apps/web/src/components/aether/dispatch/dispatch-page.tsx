@@ -29,6 +29,8 @@ import { useViewport } from '../use-viewport';
 
 // AE326 — shared fmtDate (was duplicated here + in journeys/shares).
 import { fmtDate } from '../../../lib/aether-dates';
+// AE339 — shared trip-stats summariser (same predicate as me-home).
+import { summariseTripStats } from '../me/trip-stats-summary';
 
 export function DispatchPage(): React.ReactElement {
   const theme = useTheme();
@@ -54,7 +56,8 @@ export function DispatchPage(): React.ReactElement {
   const activeTrips = (activeQuery.data?.data as { trips?: TripDto[] } | undefined)?.trips ?? [];
   const archivedTrips =
     (archivedQuery.data?.data as { trips?: TripDto[] } | undefined)?.trips ?? [];
-  const drafts = activeTrips.filter((t) => t.status === 'draft').length;
+  // AE339 — drafts predicate shared with /me.
+  const { drafts } = summariseTripStats({ active: activeTrips, archived: archivedTrips });
 
   const ink = theme.color.ink;
   const surface = theme.color.surface;
