@@ -203,6 +203,7 @@ export function TripShareCard({ trip }: TripShareCardProps): React.ReactElement 
           type="button"
           onClick={download}
           disabled={downloading}
+          aria-label={`Download share card SVG for ${trip.title}`}
           style={{
             padding: `${theme.space.hairline}px ${theme.space.comfy}px`,
             borderRadius: theme.radius.pill,
@@ -221,6 +222,8 @@ export function TripShareCard({ trip }: TripShareCardProps): React.ReactElement 
       {/* Preview — the SVG markup rendered inline, scaled by the
           container width via the SVG's intrinsic viewBox. */}
       <div
+        role="img"
+        aria-label={`Share card preview for ${trip.title}`}
         style={{
           width: '100%',
           aspectRatio: '1200 / 630',
