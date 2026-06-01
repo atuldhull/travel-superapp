@@ -18,7 +18,7 @@
  * pass feels roughly 1.2s of motion before the user starts interacting.
  * Caller can override per surface via `LifecyclePhaseDurations`.
  */
-import type { SurfaceLifecyclePhase } from '@app/aether-core';
+import type { SurfaceLifecyclePhase } from './surface-lifecycle-phase';
 
 /** Per-phase duration in seconds. `idle` + `listening` are ambient phases
  *  (no clamped end) — their durations are interpreted as "elapsed time

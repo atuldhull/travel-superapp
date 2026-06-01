@@ -10,6 +10,11 @@
 
 export const AETHER_CANVAS_SHARED_VERSION = '0.0.1';
 
+// AE526 — canvas-shared mirror of `SurfaceLifecyclePhase` so consumers
+// import the type from one place without transiting `@app/aether-core`
+// (which would pull React types into native consumers).
+export type { SurfaceLifecyclePhase } from './surface-lifecycle-phase';
+
 // AE454 — lifecycle progress + camera-pose math.
 export {
   DEFAULT_PHASE_DURATIONS,
