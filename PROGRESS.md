@@ -10,14 +10,14 @@
 
 ## Summary
 
-| Counter             | Value                                                       |
-| ------------------- | ----------------------------------------------------------- |
-| Prompts completed   | 512 (Round AJ: AE431-AE451 Phase 4 prep + Phase 2/3 polish) |
-| Prompts in progress | 0                                                           |
-| Prompts blocked     | 0                                                           |
-| Last prompt         | `AE452` — Round AJ progress doc                             |
-| Last commit date    | 2026-06-01                                                  |
-| Phase               | **Aether 2.0 Phase 3 SHIPPED** — Round AJ closeout doc      |
+| Counter             | Value                                                      |
+| ------------------- | ---------------------------------------------------------- |
+| Prompts completed   | 523 (Round AK: AE453-AE466 canvas-shared + Phase 1 polish) |
+| Prompts in progress | 0                                                          |
+| Prompts blocked     | AE458, AE460, AE465, AE467 — see Round AK closeout         |
+| Last prompt         | `AE468` — Round AK progress doc                            |
+| Last commit date    | 2026-06-01                                                 |
+| Phase               | **Round AK SHIPPED** — `@app/aether-canvas-shared` live    |
 
 ---
 
