@@ -10,14 +10,14 @@
 
 ## Summary
 
-| Counter             | Value                                                   |
-| ------------------- | ------------------------------------------------------- |
-| Prompts completed   | 564 (Round AQ: AE505-AE511 canvas-shared beh specs +7)  |
-| Prompts in progress | 0                                                       |
-| Prompts blocked     | 0                                                       |
-| Last prompt         | `AE511` — canvas-shared vault-glyphs spec               |
-| Last commit date    | 2026-06-01                                              |
-| Phase               | **Round AQ SHIPPED** — canvas-shared own beh specs +296 |
+| Counter             | Value                                                                   |
+| ------------------- | ----------------------------------------------------------------------- |
+| Prompts completed   | 569 (Round AR: AE513-AE517 Phase 4 kickoff +5)                          |
+| Prompts in progress | 0                                                                       |
+| Prompts blocked     | 0                                                                       |
+| Last prompt         | `AE517` — Round AR closeout                                             |
+| Last commit date    | 2026-06-01                                                              |
+| Phase               | **Phase 4 STARTED** — 3 decisions locked + 3 native packages scaffolded |
 
 ---
 
