@@ -23,6 +23,7 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import { bootSdk } from '../lib/sdk';
 import { persistOptions, queryClient } from '../lib/offline-cache';
 import { usePushNotifications } from '../lib/use-push-notifications';
+import { AetherPulseGlow } from '../src/aether/pulse-glow';
 
 export default function RootLayout() {
   const [ready, setReady] = useState(false);
@@ -67,6 +68,10 @@ export default function RootLayout() {
             <Stack.Screen name="trips/[id]" options={{ title: 'Trip' }} />
             <Stack.Screen name="memory-books/[id]" options={{ title: 'Memory book' }} />
           </Stack>
+          {/* AE527 — Aether Pulse glow rendered above the Stack so it
+              persists across navigation. pointerEvents='none' inside the
+              component keeps it from blocking taps. */}
+          <AetherPulseGlow />
         </PersistQueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
