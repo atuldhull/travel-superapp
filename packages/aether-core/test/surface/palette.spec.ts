@@ -231,3 +231,59 @@ describe('PALETTE_SLOT_NAMES + paletteSlotName + paletteSlotIndex (AE441)', () =
     });
   });
 });
+
+/** AE476 — boundary specs for paletteSlotIndex + paletteSlotName beyond
+ *  the nominal cases AE441 already covers. */
+describe('paletteSlotIndex edge cases (AE476)', () => {
+  it('empty string returns -1', () => {
+    expect(paletteSlotIndex('')).toBe(-1);
+  });
+
+  it('mixed-case names return -1 (lookup is case-sensitive)', () => {
+    expect(paletteSlotIndex('Ink')).toBe(-1);
+    expect(paletteSlotIndex('INK')).toBe(-1);
+    expect(paletteSlotIndex('Surface')).toBe(-1);
+    expect(paletteSlotIndex('SUPPORT')).toBe(-1);
+  });
+
+  it('names padded with whitespace return -1 (no trimming)', () => {
+    expect(paletteSlotIndex('  ink  ')).toBe(-1);
+    expect(paletteSlotIndex(' ink')).toBe(-1);
+    expect(paletteSlotIndex('ink ')).toBe(-1);
+  });
+
+  it('partial substrings of a valid slot return -1', () => {
+    expect(paletteSlotIndex('in')).toBe(-1);
+    expect(paletteSlotIndex('surf')).toBe(-1);
+    expect(paletteSlotIndex('supportx')).toBe(-1);
+  });
+});
+
+describe('paletteSlotName edge cases (AE476)', () => {
+  it('Number.NEGATIVE_INFINITY returns null', () => {
+    expect(paletteSlotName(Number.NEGATIVE_INFINITY)).toBeNull();
+  });
+
+  it('non-integer 0.5 returns null', () => {
+    expect(paletteSlotName(0.5)).toBeNull();
+  });
+
+  it('integer-valued floats (1.0) are accepted by Number.isInteger and map normally', () => {
+    // Number.isInteger(1.0) === true — this is JS spec, not a bug.
+    expect(paletteSlotName(1.0)).toBe('surface');
+  });
+
+  it('Number.MAX_SAFE_INTEGER returns null (out of range)', () => {
+    expect(paletteSlotName(Number.MAX_SAFE_INTEGER)).toBeNull();
+  });
+
+  it('Number.MIN_SAFE_INTEGER returns null (out of range)', () => {
+    expect(paletteSlotName(Number.MIN_SAFE_INTEGER)).toBeNull();
+  });
+});
+
+describe('PALETTE_SLOT_NAMES length invariant (AE476)', () => {
+  it('PALETTE_SLOT_NAMES length matches DEFAULT_SURFACE_PALETTE length', () => {
+    expect(PALETTE_SLOT_NAMES.length).toBe(DEFAULT_SURFACE_PALETTE.length);
+  });
+});
