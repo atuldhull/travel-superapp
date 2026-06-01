@@ -12,12 +12,12 @@
 
 | Counter             | Value                                                   |
 | ------------------- | ------------------------------------------------------- |
-| Prompts completed   | 556 (Round AP: AE497-AE503 canvas-shared beh specs +7)  |
+| Prompts completed   | 564 (Round AQ: AE505-AE511 canvas-shared beh specs +7)  |
 | Prompts in progress | 0                                                       |
 | Prompts blocked     | 0                                                       |
-| Last prompt         | `AE503` — canvas-shared echo-feed spec                  |
+| Last prompt         | `AE511` — canvas-shared vault-glyphs spec               |
 | Last commit date    | 2026-06-01                                              |
-| Phase               | **Round AP SHIPPED** — canvas-shared own beh specs +252 |
+| Phase               | **Round AQ SHIPPED** — canvas-shared own beh specs +296 |
 
 ---
 
