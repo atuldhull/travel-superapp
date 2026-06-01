@@ -38,12 +38,16 @@ export { SurfaceMountFrame, type SurfaceMountFrameProps } from './mount';
 
 export {
   DEFAULT_SURFACE_PALETTE,
+  PALETTE_SLOT_NAMES,
   blendHex,
   blendPalettes,
   isValidPalette,
   paletteForSurface,
+  paletteSlotIndex,
+  paletteSlotName,
   slotsFor,
   type SurfacePalette,
+  type SurfacePaletteSlotName,
   type SurfacePaletteSlots,
 } from './palette';
 

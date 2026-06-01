@@ -66,6 +66,37 @@ export interface SurfacePaletteSlots {
   readonly support: string;
 }
 
+/** Ordered slot names — index in this list matches the SurfacePalette
+ *  tuple position. Frozen so consumers can't mutate the table. Phase 4
+ *  native port needs this to map palette indices to React-Context
+ *  property names (no CSS vars on RN). */
+export type SurfacePaletteSlotName = keyof SurfacePaletteSlots;
+
+export const PALETTE_SLOT_NAMES: ReadonlyArray<SurfacePaletteSlotName> = Object.freeze([
+  'ink',
+  'surface',
+  'accent',
+  'glow',
+  'support',
+] as const);
+
+/** Convert a palette tuple index (0..4) into its slot name. Returns
+ *  `null` for out-of-range / NaN inputs so callers can defensively
+ *  guard. Used by `<SurfacePaletteVars/>` when it stamps CSS vars
+ *  AND by the native palette context provider. */
+export function paletteSlotName(index: number): SurfacePaletteSlotName | null {
+  if (!Number.isInteger(index)) return null;
+  if (index < 0 || index >= PALETTE_SLOT_NAMES.length) return null;
+  return PALETTE_SLOT_NAMES[index];
+}
+
+/** Inverse of `paletteSlotName`: look up the tuple index for a slot.
+ *  Returns -1 when the name isn't a known slot. */
+export function paletteSlotIndex(name: string): number {
+  const i = PALETTE_SLOT_NAMES.indexOf(name as SurfacePaletteSlotName);
+  return i;
+}
+
 /** Project a palette into named slots. Tested without React. */
 export function slotsFor(palette: SurfacePalette): SurfacePaletteSlots {
   return {
