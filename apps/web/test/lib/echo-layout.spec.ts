@@ -113,3 +113,85 @@ describe('visibleEchoSlots (pure)', () => {
     expect(visibleEchoSlots([], 0)).toEqual([]);
   });
 });
+
+// AE466 — boundary conditions for the echo card stack: offsets 3/4/5
+// on scale + opacity (the "peripheral cards we still render but barely"
+// vs the "don't render at all" cliff), and visibleEchoSlots under the
+// three degenerate inputs the AE420 swipe controller can hand us
+// (single-item feed, empty feed, out-of-range active index from a fast
+// double-swipe near the boundary, and a defensive negative activeIndex).
+describe('echoCardScale (AE466 offsets 3+)', () => {
+  it('offset 3 → 0.7 (peripheral plateau)', () => {
+    expect(echoCardScale(0, 3)).toBeCloseTo(0.7, 5);
+    expect(echoCardScale(6, 3)).toBeCloseTo(0.7, 5);
+  });
+  it('offset 4 → 0.7 (same peripheral plateau)', () => {
+    expect(echoCardScale(7, 3)).toBeCloseTo(0.7, 5);
+    expect(echoCardScale(0, 4)).toBeCloseTo(0.7, 5);
+  });
+  it('offset 5 → 0.7', () => {
+    expect(echoCardScale(0, 5)).toBeCloseTo(0.7, 5);
+    expect(echoCardScale(10, 5)).toBeCloseTo(0.7, 5);
+  });
+  it('huge offset stays at the 0.7 plateau (does not collapse to 0)', () => {
+    expect(echoCardScale(0, 1000)).toBeCloseTo(0.7, 5);
+  });
+});
+
+describe('echoCardOpacity (AE466 offsets 3+ stay at 0)', () => {
+  it('offset 3 → 0', () => {
+    expect(echoCardOpacity(0, 3)).toBe(0);
+    expect(echoCardOpacity(6, 3)).toBe(0);
+  });
+  it('offset 4 → 0', () => {
+    expect(echoCardOpacity(7, 3)).toBe(0);
+    expect(echoCardOpacity(0, 4)).toBe(0);
+  });
+  it('offset 5 → 0', () => {
+    expect(echoCardOpacity(0, 5)).toBe(0);
+    expect(echoCardOpacity(10, 5)).toBe(0);
+  });
+  it('huge offset stays at 0 (does not flip negative)', () => {
+    expect(echoCardOpacity(0, 1000)).toBe(0);
+  });
+});
+
+describe('visibleEchoSlots (AE466 boundary inputs)', () => {
+  it('single-item feed at activeIndex 0 → that one item', () => {
+    const slots = visibleEchoSlots([{ id: 'only' }], 0);
+    expect(slots).toHaveLength(1);
+    expect(slots[0]).toEqual({ item: { id: 'only' }, index: 0 });
+  });
+  it('single-item feed at activeIndex 0 → active card has scale 1 + opacity 1', () => {
+    const slots = visibleEchoSlots([{ id: 'only' }], 0);
+    expect(echoCardScale(slots[0].index, 0)).toBe(1);
+    expect(echoCardOpacity(slots[0].index, 0)).toBe(1);
+  });
+  it('empty feed at activeIndex 0 → empty result (already tested elsewhere; restated for AE466 contract)', () => {
+    expect(visibleEchoSlots([], 0)).toEqual([]);
+  });
+  it('empty feed at any activeIndex → empty result (never throws)', () => {
+    expect(visibleEchoSlots([], 5)).toEqual([]);
+    expect(visibleEchoSlots([], -1)).toEqual([]);
+    expect(visibleEchoSlots([], 999)).toEqual([]);
+  });
+  it('activeIndex >= items.length → returns no slots (every offset > 2)', () => {
+    const items = [{ id: 'a' }, { id: 'b' }, { id: 'c' }] as const;
+    expect(visibleEchoSlots(items, 10)).toEqual([]);
+    expect(visibleEchoSlots(items, 100)).toEqual([]);
+  });
+  it('activeIndex one past the end → last two items remain visible (offsets 1, 2)', () => {
+    const items = [{ id: 'a' }, { id: 'b' }, { id: 'c' }] as const;
+    const slots = visibleEchoSlots(items, 3);
+    expect(slots.map((s) => s.item.id)).toEqual(['b', 'c']);
+  });
+  it('negative activeIndex → first two items remain visible (defensive)', () => {
+    const items = [{ id: 'a' }, { id: 'b' }, { id: 'c' }, { id: 'd' }] as const;
+    const slots = visibleEchoSlots(items, -1);
+    expect(slots.map((s) => s.item.id)).toEqual(['a', 'b']);
+  });
+  it('deeply-negative activeIndex → empty (every offset > 2)', () => {
+    const items = [{ id: 'a' }, { id: 'b' }, { id: 'c' }] as const;
+    expect(visibleEchoSlots(items, -10)).toEqual([]);
+  });
+});

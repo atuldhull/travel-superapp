@@ -195,3 +195,71 @@ describe('formatEchoPostedAt (pure)', () => {
     expect(formatEchoPostedAt('not-an-iso', now)).toBe('');
   });
 });
+
+// AE466 — boundary conditions for the Echo feed gesture + day/week
+// cliff + lowercase-hex paths. The swipe direction has a documented
+// vertical-preference on ties; the day-7 boundary flips d → w; the
+// boostHexColor lowercase path needs an exact-output assertion so we
+// catch any future drift in either the parse step (which already
+// accepts /[0-9a-f]{6}/i) or the toUpperCase() formatting step.
+describe('echoSwipeDirectionFromDelta (AE466 exact-tie pixel deltas)', () => {
+  it('positive tie (dx === dy, both above noise) → down (vertical preference, dy > 0)', () => {
+    expect(echoSwipeDirectionFromDelta(30, 30)).toBe('down');
+    expect(echoSwipeDirectionFromDelta(100, 100)).toBe('down');
+  });
+  it('negative tie (dx === dy, both negative above noise) → up (vertical preference, dy < 0)', () => {
+    expect(echoSwipeDirectionFromDelta(-30, -30)).toBe('up');
+    expect(echoSwipeDirectionFromDelta(-100, -100)).toBe('up');
+  });
+  it('mixed-sign tie with positive dx + negative dy → up', () => {
+    expect(echoSwipeDirectionFromDelta(30, -30)).toBe('up');
+  });
+  it('mixed-sign tie with negative dx + positive dy → down', () => {
+    expect(echoSwipeDirectionFromDelta(-30, 30)).toBe('down');
+  });
+  it('exactly at the noise threshold on one axis with no movement on the other → null', () => {
+    expect(echoSwipeDirectionFromDelta(ECHO_SWIPE_NOISE_PX - 1, 0)).toBeNull();
+    expect(echoSwipeDirectionFromDelta(0, ECHO_SWIPE_NOISE_PX - 1)).toBeNull();
+  });
+  it('exactly at the noise threshold on both axes → fires (>= absX check is inclusive of the equal axis)', () => {
+    // both abs equal ECHO_SWIPE_NOISE_PX, so neither axis is under the floor; vertical wins on tie.
+    expect(echoSwipeDirectionFromDelta(ECHO_SWIPE_NOISE_PX, ECHO_SWIPE_NOISE_PX)).toBe('down');
+  });
+});
+
+describe('formatEchoPostedAt (AE466 day-7 boundary cliff)', () => {
+  const now = new Date('2026-06-01T12:00:00.000Z').getTime();
+  it('day 6 (144h ago) → "6d" (still days bucket)', () => {
+    expect(formatEchoPostedAt('2026-05-26T12:00:00.000Z', now)).toBe('6d');
+  });
+  it('day 7 (168h ago) → "1w" (flips to weeks bucket)', () => {
+    expect(formatEchoPostedAt('2026-05-25T12:00:00.000Z', now)).toBe('1w');
+  });
+  it('just under day 7 (167h ago) → still "6d"', () => {
+    expect(formatEchoPostedAt('2026-05-25T13:00:00.000Z', now)).toBe('6d');
+  });
+  it('just over day 7 (169h ago) → "1w"', () => {
+    expect(formatEchoPostedAt('2026-05-25T11:00:00.000Z', now)).toBe('1w');
+  });
+});
+
+describe('boostHexColor (AE466 lowercase hex path)', () => {
+  it('lowercase "#4060a0" with factor 2 produces the same output as uppercase "#4060A0"', () => {
+    expect(boostHexColor('#4060a0', 2)).toBe(boostHexColor('#4060A0', 2));
+  });
+  it('lowercase "#4060a0" with factor 2 → "#6699FF" (max-channel saturates, scale = 255/160 = 1.59375)', () => {
+    // 0x40 * 1.59375 = 102 = 0x66; 0x60 * 1.59375 = 153 = 0x99; 0xA0 * 1.59375 = 255 = 0xFF.
+    expect(boostHexColor('#4060a0', 2)).toBe('#6699FF');
+  });
+  it('lowercase output without leading # is still parsed + output uppercase with #', () => {
+    expect(boostHexColor('4060a0', 2)).toBe('#6699FF');
+  });
+  it('lowercase + uppercase + mixed-case inputs all produce the same uppercase output', () => {
+    const a = boostHexColor('#4060a0', 2);
+    const b = boostHexColor('#4060A0', 2);
+    const c = boostHexColor('#4060Aa'.replace('Aa', 'a0'), 2);
+    expect(a).toBe(b);
+    expect(b).toBe(c);
+    expect(a).toBe(a.toUpperCase());
+  });
+});
