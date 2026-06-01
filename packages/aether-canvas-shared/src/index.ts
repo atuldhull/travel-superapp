@@ -130,3 +130,61 @@ export {
   curatedCoordSlugs,
   type DestinationCoords,
 } from './destination-coords';
+
+// AE469 — Genie state machine + particle dissolution + camera + recorder.
+export {
+  genieIsActive,
+  genieMicAriaLabel,
+  genieMicRingColor,
+  genieOnError,
+  genieOnMicPress,
+  genieOnMicRelease,
+  genieOnStt,
+  genieReset,
+  genieStateLabel,
+  type GenieState,
+} from './genie-state';
+
+export {
+  GENIE_DISSOLVE_MS,
+  GENIE_PARTICLE_BASE_RADIUS,
+  GENIE_PARTICLE_COUNT,
+  canvasDimensions,
+  easeInOutCubic,
+  particleAt,
+  particleInitialPosition,
+  particleRadius,
+  particleRestOpacity,
+  particleRestPosition,
+} from './genie-particles';
+
+export {
+  DEFAULT_CAMERA_FACING_MODE,
+  DEFAULT_CAPTURE_QUALITY,
+  DETECTION_PLACEHOLDER_LABEL,
+  GENIE_CAPTURE_MODES,
+  cameraStatusLabel,
+  canCaptureStill,
+  canStartCamera,
+  captureModeDescription,
+  captureModeGlyph,
+  captureModeLabel,
+  formatDetectionLabel,
+  isCameraStreaming,
+  type GenieCameraStatus,
+  type GenieCaptureMode,
+} from './genie-camera';
+
+export {
+  MAX_RECORDING_MS,
+  RECORDER_MIME_PREFERENCES,
+  RECORDER_TICK_MS,
+  canStartRecording,
+  formatRecordingDuration,
+  genieMimeExtension,
+  isRecorderBusy,
+  pickAudioMimeType,
+  recorderStatusLabel,
+  shouldAutoStop,
+  type GenieRecorderStatus,
+} from './genie-recorder';
