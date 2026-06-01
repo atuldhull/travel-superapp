@@ -13,11 +13,11 @@
 
 ## What's live
 
-| Surface | Route                 | Scene state                                                                                                 | Slice IDs        |
-| ------- | --------------------- | ----------------------------------------------------------------------------------------------------------- | ---------------- |
-| Lumen   | `/aether/memory/[id]` | R3F photo cloud with real textures, click-to-zoom, keyboard nav, presigned URL cache, museum arc + pinch-in | AE398-AE405, 409 |
-| Genie   | overlay modal         | State-machine modal (idle → listening → processing → transcribed); no STT yet                               | AE406            |
-| Vault   | `/aether/vault`       | 2D placeholder glyph grid sized by AE407 math; no Stripe yet                                                | AE407            |
+| Surface | Route                 | Scene state                                                                                                          | Slice IDs                |
+| ------- | --------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| Lumen   | `/aether/memory/[id]` | R3F photo cloud, click-to-zoom, keyboard nav, presigned URL cache, museum arc + pinch-in, 5 layout strategies        | AE398-AE405, AE409-AE410 |
+| Genie   | overlay modal         | State-machine modal + MediaRecorder capture + camera mode + particle dissolution; STT + ML-Kit detection still later | AE406, AE411-AE413       |
+| Vault   | `/aether/vault`       | R3F floating-glyph ring (size by amount, per-glyph bob, drop halo) + 2D label overlay; Stripe still pending          | AE407, AE414             |
 
 ## Lumen — capability stack
 
@@ -87,7 +87,7 @@ Camera mode (AE413):
 
 **Not yet wired** — the captured audio blob does not yet POST to ai-service `/v1/transcribe`; the captured still does not yet POST to a `/v1/detect-objects` endpoint; typeset-in-3D transcript still later. The full 5000-particle GPU dissolution waits for the genie modal to lift into the R3F canvas (SVG-based 120-particle swarm ships today as the honest first cut). Genie trigger from Pulse hold-to-talk lands in AE416.
 
-## Vault — capability stack (AE407)
+## Vault — capability stack (AE407 + AE414)
 
 Pure `vault-glyphs.ts`:
 
@@ -105,7 +105,14 @@ Shell + route:
 - `app/aether/vault/page.tsx` Server Component + `vault-lazy.tsx` Client dynamic boundary
 - Registered on the surface registry (`phase: 2`, literal `/aether/vault`)
 
-**Not yet wired** — R3F custom shader for glyph physics, Stripe Checkout iframe in the booking flow, real prices from `useStaysControllerSearch` / `useTransportControllerRoutes`.
+R3F scene (AE414):
+
+- Pure `vault-glyph-positions.ts` — `glyphRingPosition(i, total, radius)` lays glyphs on a horizontal XZ ring; `glyphFloatY(i, t, amp?, freq?, phase?)` per-frame vertical bob, phase-shifted per glyph; `glyphSphereScale(amount, min, max, base)` linearly maps amount to `[0.7×base, 1.3×base]` with NaN + degenerate-range safety; `glyphHaloIntensity(dropped, intensity?)` 0 unless `priceDroppedRecently(history)`; defaults: radius 4, amplitude 0.18, frequency 1.4 rad/s, base scale 0.55, phase 0.7
+- Shared sample catalogue `vault-sample-prices.ts` — 4 fixture prices + cached `SAMPLE_VAULT_MIN_AMOUNT` / `SAMPLE_VAULT_MAX_AMOUNT` so the R3F scene + the 2D label overlay agree on weighting
+- `vault-phase2-scene.tsx` R3F default export — soft ambient + directional light, a thin torus ring backdrop tinted by `palette.support`, then one `<VaultGlyph>` per fixture (sphere geo, `meshStandardMaterial` accent + emissive when dropped, `useFrame` lerps Y via `glyphFloatY` + adds 0.005 rad / frame spin)
+- Aether registry adds `mount: () => import('../phase2/vault-phase2-scene')` so SurfaceMountFrame lazy-loads the chunk only when `/aether/vault` is visited
+
+**Not yet wired** — drei `<Html>` to attach the labels to each sphere in 3D (current cut keeps the AE407 2D HTML grid layered above the canvas), Stripe Checkout iframe in the booking flow, real prices from `useStaysControllerSearch` / `useTransportControllerRoutes`.
 
 ## Test totals (post AE407)
 
@@ -114,7 +121,7 @@ Shell + route:
 | `@app/aether-core`   | 122   | 0                                                           |
 | `@app/aether-canvas` | 77    | +8 (AE404 `aspectFromTexture`)                              |
 | `@app/aether-audio`  | 71    | 0                                                           |
-| `apps/web`           | 1961  | +279 across +15 files (Lumen + Genie + Vault + AE409-AE413) |
+| `apps/web`           | 1987  | +305 across +16 files (Lumen + Genie + Vault + AE409-AE414) |
 
 Typecheck clean across packages + apps/web. 0 new lint errors.
 
@@ -131,7 +138,7 @@ Typecheck clean across packages + apps/web. 0 new lint errors.
 3. **AE411 — MediaRecorder capture + duration — SHIPPED** (2026-06-01). Pure helpers + `useGenieRecorder()` hook + modal wiring all live; the captured blob still has to round-trip through ai-service `/v1/transcribe` in AE411b once `pip install .[stt]` ships.
 4. **AE412 — SVG particle dissolution — SHIPPED** (2026-06-01). 120-particle SVG swirl on open + dissolve on close. Full GPU 5000-particle version + typeset-in-3D transcript still pending.
 5. **AE413 — camera-mode scaffold — SHIPPED** (2026-06-01). Live `<video>` feed + still capture via `useGenieCamera()`; ML-Kit detection over the still lands in AE413b once the endpoint ships.
-6. **AE414+ Vault R3F shader** for floating weighted glyphs + glyph-physics
+6. **AE414 — Vault R3F floating-glyph ring — SHIPPED** (2026-06-01). Sphere ring + per-glyph bob + drop halo. Custom shader physics + drei `<Html>` labels still later.
 7. **AE415+ Vault Stripe Checkout** wrapped in Aether material
 8. **AE416+ Pulse → Genie wiring** — hold the Pulse glow to open the Genie modal
 9. **Phase 2 closeout doc** when all of the above land
