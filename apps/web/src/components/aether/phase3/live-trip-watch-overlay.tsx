@@ -101,6 +101,7 @@ export function LiveTripWatchOverlay({
     <aside
       data-aether-live-trip-watch
       data-aether-live-trip-tier={tier}
+      role="status"
       aria-label="Live trip watch"
       style={style}
     >
