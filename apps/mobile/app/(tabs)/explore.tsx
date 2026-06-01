@@ -29,6 +29,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'expo-router';
 import {
   useNearMeControllerNearMe,
   type NearMeNowResponseDto,
@@ -36,6 +37,10 @@ import {
 } from '@app/sdk';
 import { DEFAULT_CENTER, useGeolocation } from '../../lib/use-geolocation';
 import { useOnlineStatus } from '../../lib/use-online-status';
+
+/** Phase 4 feature flag (mirror of web NEXT_PUBLIC_FEATURE_AETHER_PHASE1).
+ *  Gates the Aether preview entry points. */
+const AETHER_ENABLED = process.env.EXPO_PUBLIC_FEATURE_AETHER_PHASE1 === '1';
 
 interface ApiError extends Error {
   readonly code?: string;
@@ -94,6 +99,15 @@ export default function ExploreScreen() {
         <Text style={styles.muted}>
           Up to 5 nearest places + walking routes + today's weather + a safety chip.
         </Text>
+
+        {AETHER_ENABLED ? (
+          <Link href="/aether/drift" asChild>
+            <TouchableOpacity style={styles.aetherBanner}>
+              <Text style={styles.aetherBannerText}>Aether preview: open Drift</Text>
+              <Text style={styles.aetherBannerArrow}>{'->'}</Text>
+            </TouchableOpacity>
+          </Link>
+        ) : null}
 
         <View style={styles.row}>
           <TouchableOpacity style={styles.button} onPress={() => void geo.relocate()}>
@@ -280,5 +294,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#ddd',
+  },
+  aetherBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: '#1A1714',
+  },
+  aetherBannerText: {
+    color: '#E8B777',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  aetherBannerArrow: {
+    color: '#C2614A',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });
