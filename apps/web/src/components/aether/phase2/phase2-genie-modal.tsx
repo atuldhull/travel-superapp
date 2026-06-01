@@ -27,6 +27,18 @@ import {
 import { canStartRecording, formatRecordingDuration, recorderStatusLabel } from './genie-recorder';
 import { GenieDissolveOverlay } from './genie-dissolve-overlay';
 import { useGenieRecorder } from './use-genie-recorder';
+import {
+  DETECTION_PLACEHOLDER_LABEL,
+  GENIE_CAPTURE_MODES,
+  cameraStatusLabel,
+  canCaptureStill,
+  canStartCamera,
+  captureModeDescription,
+  captureModeGlyph,
+  captureModeLabel,
+  type GenieCaptureMode,
+} from './genie-camera';
+import { useGenieCamera } from './use-genie-camera';
 
 export interface Phase2GenieModalProps {
   /** Whether the modal is mounted. The trigger toggles this externally. */
@@ -34,6 +46,9 @@ export interface Phase2GenieModalProps {
   /** Initial state on mount. Defaults to 'idle'. Storybook + tests
    *  pin this so the modal renders in any state without UI clicks. */
   readonly initialState?: GenieState;
+  /** AE413 — initial capture mode. The toggle inside the modal lets
+   *  the user switch at runtime; Storybook pins this. */
+  readonly initialMode?: GenieCaptureMode;
   /** Optional transcript snippet shown when state === 'transcribed'. */
   readonly transcript?: string;
   /** Called when the user closes the modal. */
@@ -46,6 +61,7 @@ export interface Phase2GenieModalProps {
 export function Phase2GenieModal({
   open = false,
   initialState = 'idle',
+  initialMode = 'voice',
   transcript,
   onClose,
   onStateChange,
@@ -58,23 +74,44 @@ export function Phase2GenieModal({
   // release stops it. The resulting blob is held in the hook for the
   // AE411b STT round trip; the modal surfaces the duration counter.
   const recorder = useGenieRecorder();
+  // AE413 — camera capture lane. Mode toggle picks between voice + camera.
+  const camera = useGenieCamera();
+  const [mode, setMode] = useState<GenieCaptureMode>(initialMode);
 
-  // Sync initialState on (re)open — tests can flip props.
+  // Sync initialState + mode on (re)open — tests can flip props.
   useEffect(() => {
     if (open) {
       setState(initialState);
+      setMode(initialMode);
       setClosing(false);
     }
-  }, [open, initialState]);
+  }, [open, initialState, initialMode]);
+
+  // AE413 — auto-start / auto-stop the camera with the mode toggle.
+  // When the user flips to camera mode we ask for permission; when they
+  // flip back the stream is released so the camera light goes off.
+  useEffect(() => {
+    if (!open || closing) return;
+    if (mode === 'camera') {
+      if (canStartCamera(camera.status)) void camera.start();
+    } else {
+      camera.stop();
+    }
+    // We intentionally omit `camera` from the deps array — the handle
+    // is recreated on every render and would loop. The hook handles
+    // its own internal state for re-entrant calls.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, open, closing]);
 
   // AE412 — request close: kick the dissolve-out, the overlay's
   // `onClosed` fires after the swarm scatters; THAT's when we tell the
   // parent to unmount.
   const requestClose = useCallback((): void => {
     recorder.reset();
+    camera.reset();
     setState(genieReset());
     setClosing(true);
-  }, [recorder]);
+  }, [camera, recorder]);
 
   // Esc closes.
   useEffect(() => {
@@ -186,37 +223,138 @@ export function Phase2GenieModal({
         ×
       </button>
       <h2 data-aether-genie-headline style={headlineStyle}>
-        {headline}
+        {mode === 'camera' ? 'Point and tap to capture' : headline}
       </h2>
-      <button
-        type="button"
-        data-aether-genie-mic
-        aria-label={genieMicAriaLabel(state)}
-        aria-pressed={state === 'listening'}
-        style={micButtonStyle}
-        onPointerDown={() => {
-          transition(genieOnMicPress);
-          if (canStartRecording(recorder.status)) void recorder.start();
-        }}
-        onPointerUp={() => {
-          transition(genieOnMicRelease);
-          recorder.stop();
-        }}
-        onPointerCancel={() => {
-          transition(genieOnMicRelease);
-          recorder.stop();
-        }}
-        onPointerLeave={() => {
-          if (state === 'listening') {
+      {mode === 'voice' && (
+        <button
+          type="button"
+          data-aether-genie-mic
+          aria-label={genieMicAriaLabel(state)}
+          aria-pressed={state === 'listening'}
+          style={micButtonStyle}
+          onPointerDown={() => {
+            transition(genieOnMicPress);
+            if (canStartRecording(recorder.status)) void recorder.start();
+          }}
+          onPointerUp={() => {
             transition(genieOnMicRelease);
             recorder.stop();
-          }
-        }}
-      >
-        {state === 'listening' ? '◉' : '●'}
-      </button>
+          }}
+          onPointerCancel={() => {
+            transition(genieOnMicRelease);
+            recorder.stop();
+          }}
+          onPointerLeave={() => {
+            if (state === 'listening') {
+              transition(genieOnMicRelease);
+              recorder.stop();
+            }
+          }}
+        >
+          {state === 'listening' ? '◉' : '●'}
+        </button>
+      )}
+      {/* AE413 — camera mode: live video + capture button. The mic is
+          hidden in this mode; the mode toggle below switches lanes. */}
+      {mode === 'camera' && (
+        <div
+          data-aether-genie-camera
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 12,
+            maxWidth: 560,
+          }}
+        >
+          {camera.capturedDataUrl === null ? (
+            <video
+              ref={camera.videoRef}
+              autoPlay
+              muted
+              playsInline
+              data-aether-genie-camera-feed
+              style={{
+                width: 'min(80vw, 480px)',
+                aspectRatio: '4 / 3',
+                background: 'rgba(0,0,0,0.6)',
+                borderRadius: 18,
+                border: '2px solid var(--aether-palette-glow, #E8B777)',
+                objectFit: 'cover',
+              }}
+            />
+          ) : (
+            // Frozen still preview after capture.
+            <img
+              src={camera.capturedDataUrl}
+              alt="Captured still"
+              data-aether-genie-camera-still
+              style={{
+                width: 'min(80vw, 480px)',
+                aspectRatio: '4 / 3',
+                borderRadius: 18,
+                border: '2px solid var(--aether-palette-accent, #C2614A)',
+                objectFit: 'cover',
+              }}
+            />
+          )}
+          <button
+            type="button"
+            data-aether-genie-capture
+            aria-label={camera.capturedDataUrl === null ? 'Capture still' : 'Capture another still'}
+            disabled={camera.capturedDataUrl === null && !canCaptureStill(camera.status)}
+            onClick={() => {
+              if (camera.capturedDataUrl !== null) {
+                // Restart the live feed for the next shot.
+                void camera.start();
+              } else {
+                camera.capture();
+              }
+            }}
+            style={{
+              width: 72,
+              height: 72,
+              borderRadius: '50%',
+              border: '3px solid var(--aether-palette-accent, #C2614A)',
+              background: 'transparent',
+              color: 'var(--aether-palette-surface, #F2E8D5)',
+              cursor: 'pointer',
+              fontSize: 22,
+            }}
+          >
+            {camera.capturedDataUrl === null ? '◯' : '↺'}
+          </button>
+          {camera.capturedDataUrl !== null && (
+            <p
+              data-aether-genie-detection-placeholder
+              style={{
+                fontSize: 12,
+                opacity: 0.7,
+                fontFamily: 'JetBrains Mono, monospace',
+                letterSpacing: '0.04em',
+                margin: 0,
+              }}
+            >
+              {DETECTION_PLACEHOLDER_LABEL}
+            </p>
+          )}
+          {camera.status === 'error' && camera.error !== null && (
+            <p
+              data-aether-genie-camera-error
+              style={{
+                fontSize: 12,
+                color: '#E47A6B',
+                margin: 0,
+                textAlign: 'center',
+              }}
+            >
+              {camera.error}
+            </p>
+          )}
+        </div>
+      )}
       {/* AE411 — live duration counter while recording. */}
-      {recorder.status === 'recording' && (
+      {mode === 'voice' && recorder.status === 'recording' && (
         <p
           data-aether-genie-duration
           aria-live="off"
@@ -285,7 +423,7 @@ export function Phase2GenieModal({
           {recorder.mimeType !== null ? `· ${recorder.mimeType}` : ''} — STT lands later
         </p>
       )}
-      {recorder.status === 'error' && recorder.error !== null && (
+      {mode === 'voice' && recorder.status === 'error' && recorder.error !== null && (
         <p
           data-aether-genie-recorder-error
           style={{
@@ -299,6 +437,67 @@ export function Phase2GenieModal({
           {recorder.error}
         </p>
       )}
+      {/* AE413 — sr-only status line for the camera lane. */}
+      <span
+        role="status"
+        aria-live="polite"
+        data-aether-genie-camera-status
+        style={{
+          position: 'absolute',
+          width: 1,
+          height: 1,
+          padding: 0,
+          margin: -1,
+          overflow: 'hidden',
+          clip: 'rect(0,0,0,0)',
+          whiteSpace: 'nowrap',
+          border: 0,
+        }}
+      >
+        {cameraStatusLabel(camera.status)}
+      </span>
+      {/* AE413 — mode toggle: Voice / Camera pill bar. */}
+      <nav
+        data-aether-genie-mode-toggle
+        aria-label="Genie capture mode"
+        style={{
+          display: 'flex',
+          gap: 6,
+          padding: 4,
+          borderRadius: 999,
+          background: 'rgba(255, 255, 255, 0.06)',
+          marginTop: 8,
+        }}
+      >
+        {GENIE_CAPTURE_MODES.map((m) => {
+          const active = m === mode;
+          return (
+            <button
+              key={m}
+              type="button"
+              aria-pressed={active}
+              aria-label={captureModeDescription(m)}
+              title={captureModeDescription(m)}
+              onClick={() => setMode(m)}
+              style={{
+                padding: '6px 14px',
+                borderRadius: 999,
+                border: 'none',
+                cursor: 'pointer',
+                background: active ? 'var(--aether-palette-accent, #C2614A)' : 'transparent',
+                color: active
+                  ? 'var(--aether-palette-ink, #1A0F09)'
+                  : 'var(--aether-palette-surface, #F2E8D5)',
+                fontSize: 12,
+                fontFamily: 'Inter, system-ui, sans-serif',
+                letterSpacing: '0.04em',
+              }}
+            >
+              {captureModeGlyph(m)} {captureModeLabel(m)}
+            </button>
+          );
+        })}
+      </nav>
       <p
         style={{
           fontSize: 11,
@@ -308,7 +507,7 @@ export function Phase2GenieModal({
           margin: 0,
         }}
       >
-        Phase 2 preview · STT lands later
+        Phase 2 preview · {mode === 'voice' ? 'STT' : 'ML Kit'} lands later
       </p>
     </div>
   );

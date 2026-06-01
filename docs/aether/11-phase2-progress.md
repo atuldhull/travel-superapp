@@ -78,7 +78,14 @@ Particle dissolution overlay (AE412):
 - `<GenieDissolveOverlay>` SVG with N circles driven by `requestAnimationFrame`; `open=true` → swirl in, `open=false` → swirl out + `onClosed?.()` when done
 - Mounted inside `<Phase2GenieModal>` z-99 (below the modal chrome z-100); the modal stays mounted through the dissolve-out so the swarm scatters BEFORE the parent unmounts
 
-**Not yet wired** — the captured blob does not yet POST to ai-service `/v1/transcribe`; typeset-in-3D transcript + camera mode still later. The full 5000-particle GPU dissolution waits for the genie modal to lift into the R3F canvas (SVG-based 120-particle swarm ships today as the honest first cut). Genie trigger from Pulse hold-to-talk lands in AE416.
+Camera mode (AE413):
+
+- Pure `genie-camera.ts` — `GenieCaptureMode = 'voice' | 'camera'` union + `GENIE_CAPTURE_MODES` ordered list; `captureModeLabel` / `captureModeGlyph` / `captureModeDescription` for the toggle UI; `GenieCameraStatus` lifecycle (`idle`/`requesting`/`streaming`/`captured`/`error`); `cameraStatusLabel` aria-live copy; `isCameraStreaming` / `canCaptureStill` / `canStartCamera` gates; `formatDetectionLabel(label, confidence)` "Coconut tree (87%)" stub; `DEFAULT_CAMERA_FACING_MODE = 'environment'`; `DEFAULT_CAPTURE_QUALITY = 0.85`; `DETECTION_PLACEHOLDER_LABEL` honest copy
+- React `use-genie-camera.tsx` — `useGenieCamera()` wraps `getUserMedia({video: {facingMode: 'environment'}})`, attaches `srcObject` via a `videoRef`, `capture()` draws the current frame to a hidden canvas → JPEG dataURL, releases the stream on stop / unmount; returns `{status, stream, capturedDataUrl, error, videoRef, start, stop, capture, reset}`
+- `<Phase2GenieModal>` adds a Voice / Camera pill toggle below the main capture surface; camera mode replaces the mic with a `<video>` feed + a circular capture button; after capture the still freezes and a `Recognising — ML Kit lands later` placeholder appears, click `↺` to retake; sr-only `role=status` mirrors the camera lane
+- Mode-aware footer: `Phase 2 preview · STT lands later` (voice) / `Phase 2 preview · ML Kit lands later` (camera)
+
+**Not yet wired** — the captured audio blob does not yet POST to ai-service `/v1/transcribe`; the captured still does not yet POST to a `/v1/detect-objects` endpoint; typeset-in-3D transcript still later. The full 5000-particle GPU dissolution waits for the genie modal to lift into the R3F canvas (SVG-based 120-particle swarm ships today as the honest first cut). Genie trigger from Pulse hold-to-talk lands in AE416.
 
 ## Vault — capability stack (AE407)
 
@@ -107,7 +114,7 @@ Shell + route:
 | `@app/aether-core`   | 122   | 0                                                           |
 | `@app/aether-canvas` | 77    | +8 (AE404 `aspectFromTexture`)                              |
 | `@app/aether-audio`  | 71    | 0                                                           |
-| `apps/web`           | 1940  | +258 across +14 files (Lumen + Genie + Vault + AE409-AE412) |
+| `apps/web`           | 1961  | +279 across +15 files (Lumen + Genie + Vault + AE409-AE413) |
 
 Typecheck clean across packages + apps/web. 0 new lint errors.
 
@@ -123,7 +130,7 @@ Typecheck clean across packages + apps/web. 0 new lint errors.
 2. **AE410 — layout strategies + arrange menu — SHIPPED** (2026-06-01). CLIP backend still pending — the mood strategy stubs to the time-cloud until ai-service `/v1/embeddings` lands.
 3. **AE411 — MediaRecorder capture + duration — SHIPPED** (2026-06-01). Pure helpers + `useGenieRecorder()` hook + modal wiring all live; the captured blob still has to round-trip through ai-service `/v1/transcribe` in AE411b once `pip install .[stt]` ships.
 4. **AE412 — SVG particle dissolution — SHIPPED** (2026-06-01). 120-particle SVG swirl on open + dissolve on close. Full GPU 5000-particle version + typeset-in-3D transcript still pending.
-5. **AE413+ Genie camera mode** — ML Kit detection over the live camera feed
+5. **AE413 — camera-mode scaffold — SHIPPED** (2026-06-01). Live `<video>` feed + still capture via `useGenieCamera()`; ML-Kit detection over the still lands in AE413b once the endpoint ships.
 6. **AE414+ Vault R3F shader** for floating weighted glyphs + glyph-physics
 7. **AE415+ Vault Stripe Checkout** wrapped in Aether material
 8. **AE416+ Pulse → Genie wiring** — hold the Pulse glow to open the Genie modal
