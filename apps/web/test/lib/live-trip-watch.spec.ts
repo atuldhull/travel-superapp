@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   LIVE_FRESHNESS_MS,
   STALE_THRESHOLD_MS,
+  presenceAgoLabel,
   presenceAnnouncement,
   presenceDotColor,
   presenceFreshness,
@@ -148,5 +149,44 @@ describe('presenceAnnouncement (pure)', () => {
     expect(line).toContain('Live trip-watch');
     expect(line.toLowerCase()).toContain('walking');
     expect(line).toContain('km/h');
+  });
+});
+
+describe('presenceAgoLabel (pure, AE440)', () => {
+  it('sub-minute deltas render as "Xs ago"', () => {
+    expect(presenceAgoLabel(0)).toBe('0s ago');
+    expect(presenceAgoLabel(8_000)).toBe('8s ago');
+    expect(presenceAgoLabel(59_999)).toBe('59s ago');
+  });
+  it('sub-hour deltas render as "Xm ago"', () => {
+    expect(presenceAgoLabel(60_000)).toBe('1m ago');
+    expect(presenceAgoLabel(180_000)).toBe('3m ago');
+    expect(presenceAgoLabel(3_599_999)).toBe('59m ago');
+  });
+  it('hour-scale deltas render as "Xh ago"', () => {
+    expect(presenceAgoLabel(3_600_000)).toBe('1h ago');
+    expect(presenceAgoLabel(7_200_000)).toBe('2h ago');
+    expect(presenceAgoLabel(48 * 3_600_000)).toBe('48h ago');
+  });
+  it('negative deltas clamp to 0s', () => {
+    expect(presenceAgoLabel(-100_000)).toBe('0s ago');
+  });
+  it('NaN / Infinity collapse to "0s ago"', () => {
+    expect(presenceAgoLabel(Number.NaN)).toBe('0s ago');
+    expect(presenceAgoLabel(Number.POSITIVE_INFINITY)).toBe('0s ago');
+    expect(presenceAgoLabel(Number.NEGATIVE_INFINITY)).toBe('0s ago');
+  });
+  it('presenceFreshnessLabel routes through presenceAgoLabel', () => {
+    const ago: LiveTripPresence = {
+      tripId: 't',
+      lat: 0,
+      lng: 0,
+      speedKmH: 0,
+      mode: 'still',
+      reportedAt: new Date(Date.now() - 8_000).toISOString(),
+    };
+    const label = presenceFreshnessLabel(ago);
+    expect(label).toContain('Live · ');
+    expect(label).toMatch(/[0-9]+s ago$/);
   });
 });
