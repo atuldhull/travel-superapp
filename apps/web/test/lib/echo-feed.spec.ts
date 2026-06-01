@@ -114,6 +114,41 @@ describe('boostHexColor (pure)', () => {
     expect(boostHexColor('4060a0', 1.5)).toMatch(/^#[0-9A-F]{6}$/);
     expect(boostHexColor('#4060A0', 1.5)).toMatch(/^#[0-9A-F]{6}$/);
   });
+  // AE442 — edge cases pushing the helper through saturated / single-channel / degenerate inputs.
+  it('pure black returns the input unchanged (no scaling possible)', () => {
+    expect(boostHexColor('#000000', 2)).toBe('#000000');
+  });
+  it('pure white stays at #FFFFFF (already saturated)', () => {
+    expect(boostHexColor('#FFFFFF', 2)).toBe('#FFFFFF');
+  });
+  it('single-channel red boosts close to pure red when factor saturates the max channel', () => {
+    // 0x7F * 2 = 0xFE (factor 2 caps below the 255/127 ratio).
+    expect(boostHexColor('#7F0000', 2)).toBe('#FE0000');
+    // 0x0F * (255/15) = 0xFF (factor >> the implicit max ratio).
+    expect(boostHexColor('#0F0000', 100)).toBe('#FF0000');
+  });
+  it('factor < 1 attenuates (no clamp at 1.0 floor)', () => {
+    const dim = boostHexColor('#FF0000', 0.5);
+    const n = parseInt(dim.slice(1), 16);
+    const r = (n >> 16) & 0xff;
+    expect(r).toBeLessThan(0xff);
+  });
+  it('trims surrounding whitespace before parsing', () => {
+    expect(boostHexColor('  #4060A0  ', 1)).toMatch(/^#[0-9A-F]{6}$/);
+  });
+  it('mixed case hex is parsed normally', () => {
+    expect(boostHexColor('#aBcDeF', 1)).toMatch(/^#[0-9A-F]{6}$/);
+  });
+  it('output is always uppercase even with lowercase input', () => {
+    const out = boostHexColor('#a0a0a0', 1.5);
+    expect(out).toBe(out.toUpperCase());
+  });
+  it('hex too short returns the input unchanged', () => {
+    expect(boostHexColor('#fff', 1.5)).toBe('#fff');
+  });
+  it('hex too long returns the input unchanged', () => {
+    expect(boostHexColor('#FFFFFFFF', 1.5)).toBe('#FFFFFFFF');
+  });
 });
 
 describe('echoPaletteFromDominantColor (pure)', () => {
