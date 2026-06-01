@@ -41,42 +41,12 @@ import {
   glyphSize,
   priceDroppedRecently,
   priceSparkline,
-  type VaultPriceLike,
 } from './vault-glyphs';
-
-/** Phase 2 placeholder price catalogue. Realistic enough that the
- *  shape feels true; real prices come from useStaysControllerSearch /
- *  useTransportControllerRoutes in a later slice. */
-const SAMPLE_PRICES: ReadonlyArray<VaultPriceLike> = Object.freeze([
-  {
-    id: 'leh-stay-7d',
-    label: 'Leh — sky garden stay (7 nights)',
-    amountMinor: 4200000,
-    currency: 'INR',
-    history: [4500000, 4480000, 4450000, 4420000, 4380000, 4250000, 4200000],
-  },
-  {
-    id: 'goa-stay-3d',
-    label: 'Goa — palm villa (3 nights)',
-    amountMinor: 1800000,
-    currency: 'INR',
-    history: [1900000, 1880000, 1870000, 1840000, 1820000, 1810000, 1800000],
-  },
-  {
-    id: 'jaipur-flight',
-    label: 'Mumbai → Jaipur — return',
-    amountMinor: 980000,
-    currency: 'INR',
-    history: [1050000, 1020000, 1010000, 1000000, 990000, 985000, 980000],
-  },
-  {
-    id: 'kerala-houseboat',
-    label: 'Alleppey — houseboat (2 nights)',
-    amountMinor: 2600000,
-    currency: 'INR',
-    history: [2700000, 2680000, 2660000, 2640000, 2620000, 2610000, 2600000],
-  },
-]);
+import {
+  SAMPLE_VAULT_MAX_AMOUNT,
+  SAMPLE_VAULT_MIN_AMOUNT,
+  SAMPLE_VAULT_PRICES,
+} from './vault-sample-prices';
 
 export function Phase2VaultShell(): React.ReactElement {
   const registry = useMemo(() => createAetherPhase1Registry(), []);
@@ -122,9 +92,10 @@ function Phase2VaultInner(): React.ReactElement {
     display: isDev ? 'block' : 'none',
   };
 
-  // Min/max across the catalogue for glyph weighting.
-  const minAmount = useMemo(() => Math.min(...SAMPLE_PRICES.map((p) => p.amountMinor)), []);
-  const maxAmount = useMemo(() => Math.max(...SAMPLE_PRICES.map((p) => p.amountMinor)), []);
+  // AE414 — shared min/max + sample set with the R3F scene so the
+  // 2D labels + 3D spheres weight identically.
+  const minAmount = SAMPLE_VAULT_MIN_AMOUNT;
+  const maxAmount = SAMPLE_VAULT_MAX_AMOUNT;
 
   return (
     <div style={{ width: '100%', height: '100vh', position: 'relative' }}>
@@ -155,7 +126,7 @@ function Phase2VaultInner(): React.ReactElement {
           pointerEvents: 'none',
         }}
       >
-        {SAMPLE_PRICES.map((p) => {
+        {SAMPLE_VAULT_PRICES.map((p) => {
           const size = glyphSize(p.amountMinor, minAmount, maxAmount) * 80;
           const opacity = glyphOpacity(p.amountMinor, minAmount, maxAmount);
           const dropped = p.history !== undefined && priceDroppedRecently(p.history);
@@ -210,7 +181,8 @@ function Phase2VaultInner(): React.ReactElement {
         })}
       </div>
       <div style={pipStyle} aria-hidden>
-        {current?.id ?? '—'} · vault · {SAMPLE_PRICES.length} glyphs · audio {audioBridge.status}
+        {current?.id ?? '—'} · vault · {SAMPLE_VAULT_PRICES.length} glyphs · audio{' '}
+        {audioBridge.status}
       </div>
     </div>
   );
