@@ -68,11 +68,17 @@ Component `<Phase2GenieModal>`:
 - Live `M:SS` duration counter while recording
 - Capture summary (`Captured 0:08 · 14 kB · audio/webm;codecs=opus — STT lands later`) on stop
 - sr-only `role=status aria-live=polite` announcer pipes `recorderStatusLabel`
-- Esc closes (resets recorder + state machine)
+- Esc closes (kicks the AE412 dissolve out, then unmounts)
 - Transcript card appears when state === transcribed (still stub copy)
 - "Phase 2 preview · STT lands later" footer
 
-**Not yet wired** — the captured blob does not yet POST to ai-service `/v1/transcribe`; particle dissolution + typeset-in-3D transcript + camera mode also still later. Genie trigger from Pulse hold-to-talk lands in AE416.
+Particle dissolution overlay (AE412):
+
+- Pure `genie-particles.ts` — `GENIE_PARTICLE_COUNT=120`, `GENIE_DISSOLVE_MS=850`, `particleInitialPosition` (scattered across viewport, deterministic seed), `particleRestPosition` (clustered into a ring in the lower third, angle spread + ±24px radial jitter), `particleRadius` (cubic falloff so most are base, a few are highlights), `particleRestOpacity` (per-particle 0.35-0.80), `easeInOutCubic` (symmetric ease), `particleAt(i, t, w, h)` interpolates between initial / rest with opacity `e * rest`, `canvasDimensions` (safe defaults)
+- `<GenieDissolveOverlay>` SVG with N circles driven by `requestAnimationFrame`; `open=true` → swirl in, `open=false` → swirl out + `onClosed?.()` when done
+- Mounted inside `<Phase2GenieModal>` z-99 (below the modal chrome z-100); the modal stays mounted through the dissolve-out so the swarm scatters BEFORE the parent unmounts
+
+**Not yet wired** — the captured blob does not yet POST to ai-service `/v1/transcribe`; typeset-in-3D transcript + camera mode still later. The full 5000-particle GPU dissolution waits for the genie modal to lift into the R3F canvas (SVG-based 120-particle swarm ships today as the honest first cut). Genie trigger from Pulse hold-to-talk lands in AE416.
 
 ## Vault — capability stack (AE407)
 
@@ -101,7 +107,7 @@ Shell + route:
 | `@app/aether-core`   | 122   | 0                                                           |
 | `@app/aether-canvas` | 77    | +8 (AE404 `aspectFromTexture`)                              |
 | `@app/aether-audio`  | 71    | 0                                                           |
-| `apps/web`           | 1914  | +232 across +13 files (Lumen + Genie + Vault + AE409-AE411) |
+| `apps/web`           | 1940  | +258 across +14 files (Lumen + Genie + Vault + AE409-AE412) |
 
 Typecheck clean across packages + apps/web. 0 new lint errors.
 
@@ -116,7 +122,7 @@ Typecheck clean across packages + apps/web. 0 new lint errors.
 1. **AE409 — museum arc + wheel-pinch — SHIPPED** (2026-06-01)
 2. **AE410 — layout strategies + arrange menu — SHIPPED** (2026-06-01). CLIP backend still pending — the mood strategy stubs to the time-cloud until ai-service `/v1/embeddings` lands.
 3. **AE411 — MediaRecorder capture + duration — SHIPPED** (2026-06-01). Pure helpers + `useGenieRecorder()` hook + modal wiring all live; the captured blob still has to round-trip through ai-service `/v1/transcribe` in AE411b once `pip install .[stt]` ships.
-4. **AE412+ Genie GPU particle dissolution** + typeset-in-3D transcript
+4. **AE412 — SVG particle dissolution — SHIPPED** (2026-06-01). 120-particle SVG swirl on open + dissolve on close. Full GPU 5000-particle version + typeset-in-3D transcript still pending.
 5. **AE413+ Genie camera mode** — ML Kit detection over the live camera feed
 6. **AE414+ Vault R3F shader** for floating weighted glyphs + glyph-physics
 7. **AE415+ Vault Stripe Checkout** wrapped in Aether material
