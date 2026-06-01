@@ -30,6 +30,7 @@
 20. [`18-round-al-progress.md`](18-round-al-progress.md) — Round AL inventory (AE469-AE481): canvas-shared completion (Genie + Continuum + Mirror + Echo + Lumen interactions + Vault + url-ttl + now-card-lifecycle + upcoming-trip → 35 total modules) + cross-package lifecycle integration spec + a11y sweep + url-ttl + palette edge specs + shape-gate spec.
 21. [`19-round-am-progress.md`](19-round-am-progress.md) — Round AM inventory (AE483-AE487): Phase 1 + Phase 2 API surface shape-gates (catches any silent barrel rename) + data-flow doc §8 refresh + component catalog refresh (35-module canvas-shared inventory grouped into 11 buckets).
 22. [`20-round-an-progress.md`](20-round-an-progress.md) — Round AN inventory (AE488-AE490): Phase 3 barrel + shape-gate (closes the three-layer barrel coverage) + canvas-shared invariants spec (21 mathematical laws: sphere-surface, unit-vector, monotonicity, bounds, etc.).
+23. [`21-round-ao-progress.md`](21-round-ao-progress.md) — Round AO inventory (AE491-AE495): canvas-shared own behavioural specs for 5 high-value modules (url-ttl + genie-state FSM + pulse-hold-to-talk + lumen-pinch + vault-checkout) so the Phase 4 native port can re-export and verify the math without the web suite. jest 33 → 142.
 
 ## What we reuse from 1.0
 

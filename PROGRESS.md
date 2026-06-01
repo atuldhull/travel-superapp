@@ -10,14 +10,14 @@
 
 ## Summary
 
-| Counter             | Value                                                  |
-| ------------------- | ------------------------------------------------------ |
-| Prompts completed   | 543 (Round AN: AE488-AE490 phase3 + invariants)        |
-| Prompts in progress | 0                                                      |
-| Prompts blocked     | 0                                                      |
-| Last prompt         | `AE490` — Round AN progress doc                        |
-| Last commit date    | 2026-06-01                                             |
-| Phase               | **Round AN SHIPPED** — 3-layer shape gate + invariants |
+| Counter             | Value                                                   |
+| ------------------- | ------------------------------------------------------- |
+| Prompts completed   | 548 (Round AO: AE491-AE495 canvas-shared behavioural)   |
+| Prompts in progress | 0                                                       |
+| Prompts blocked     | 0                                                       |
+| Last prompt         | `AE495` — canvas-shared vault-checkout spec             |
+| Last commit date    | 2026-06-01                                              |
+| Phase               | **Round AO SHIPPED** — canvas-shared own beh specs +109 |
 
 ---
 
