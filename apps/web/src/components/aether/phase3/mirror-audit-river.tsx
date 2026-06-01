@@ -44,6 +44,7 @@ export function MirrorAuditRiver({
   return (
     <aside
       data-aether-mirror-audit-river
+      role="log"
       aria-label="Audit log river"
       style={{
         position: 'absolute',
