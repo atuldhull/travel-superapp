@@ -108,3 +108,34 @@ export function isRecorderBusy(status: GenieRecorderStatus): boolean {
 export function canStartRecording(status: GenieRecorderStatus): boolean {
   return status === 'idle' || status === 'stopped' || status === 'error';
 }
+
+/** Map an audio MIME type to its preferred file extension. Used by the
+ *  AE411 download path + the eventual Whisper upload helper so the
+ *  blob arrives at /v1/transcribe with the right extension regardless
+ *  of which browser picked the codec.
+ *
+ *  Unknown / null / empty MIME → "webm" (the AE411 first-preference
+ *  default; safest browser-wide). */
+export function genieMimeExtension(mime: string | null | undefined): string {
+  if (mime === null || mime === undefined || mime === '') return 'webm';
+  const lower = mime.toLowerCase().split(';')[0]?.trim() ?? '';
+  switch (lower) {
+    case 'audio/webm':
+      return 'webm';
+    case 'audio/mp4':
+    case 'audio/mp4a-latm':
+    case 'audio/aac':
+      return 'm4a';
+    case 'audio/ogg':
+      return 'ogg';
+    case 'audio/wav':
+    case 'audio/wave':
+    case 'audio/x-wav':
+      return 'wav';
+    case 'audio/mpeg':
+    case 'audio/mp3':
+      return 'mp3';
+    default:
+      return 'webm';
+  }
+}

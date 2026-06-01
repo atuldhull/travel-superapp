@@ -6,6 +6,7 @@ import {
   RECORDER_TICK_MS,
   canStartRecording,
   formatRecordingDuration,
+  genieMimeExtension,
   isRecorderBusy,
   pickAudioMimeType,
   recorderStatusLabel,
@@ -142,5 +143,44 @@ describe('canStartRecording (pure)', () => {
     expect(canStartRecording('requesting')).toBe(false);
     expect(canStartRecording('recording')).toBe(false);
     expect(canStartRecording('stopping')).toBe(false);
+  });
+});
+
+describe('genieMimeExtension (AE451)', () => {
+  it('null / undefined / empty → "webm" default', () => {
+    expect(genieMimeExtension(null)).toBe('webm');
+    expect(genieMimeExtension(undefined)).toBe('webm');
+    expect(genieMimeExtension('')).toBe('webm');
+  });
+  it('audio/webm (with codec param) → "webm"', () => {
+    expect(genieMimeExtension('audio/webm')).toBe('webm');
+    expect(genieMimeExtension('audio/webm;codecs=opus')).toBe('webm');
+  });
+  it('audio/mp4 family → "m4a"', () => {
+    expect(genieMimeExtension('audio/mp4')).toBe('m4a');
+    expect(genieMimeExtension('audio/mp4;codecs=mp4a.40.2')).toBe('m4a');
+    expect(genieMimeExtension('audio/aac')).toBe('m4a');
+    expect(genieMimeExtension('audio/mp4a-latm')).toBe('m4a');
+  });
+  it('audio/ogg + codecs → "ogg"', () => {
+    expect(genieMimeExtension('audio/ogg')).toBe('ogg');
+    expect(genieMimeExtension('audio/ogg;codecs=opus')).toBe('ogg');
+  });
+  it('wav variants → "wav"', () => {
+    expect(genieMimeExtension('audio/wav')).toBe('wav');
+    expect(genieMimeExtension('audio/wave')).toBe('wav');
+    expect(genieMimeExtension('audio/x-wav')).toBe('wav');
+  });
+  it('mp3 variants → "mp3"', () => {
+    expect(genieMimeExtension('audio/mpeg')).toBe('mp3');
+    expect(genieMimeExtension('audio/mp3')).toBe('mp3');
+  });
+  it('case-insensitive', () => {
+    expect(genieMimeExtension('AUDIO/WEBM')).toBe('webm');
+    expect(genieMimeExtension('Audio/Mp4')).toBe('m4a');
+  });
+  it('unknown MIME falls back to "webm"', () => {
+    expect(genieMimeExtension('application/octet-stream')).toBe('webm');
+    expect(genieMimeExtension('text/plain')).toBe('webm');
   });
 });
