@@ -1,19 +1,31 @@
 /**
- * V.UX.27 — bottom-tab layout. Four tabs mirror the web's primary
+ * Phase 4 / Round AS (AE519) â€” Tamagui stripped; uses plain RN primitives.
+ * Will be retired entirely when the Aether mobile surface ships.
+ *
+ * V.UX.27 â€” bottom-tab layout. Four tabs mirror the web's primary
  * surfaces: Trips, Explore (near-me + discover), Inbox (notifications),
  * Profile (whoami + sign-out).
  *
- * Sub-prompt 3 swapped the placeholder icons for lucide-react-native
- * via @tamagui/lucide-icons (auto react-native-svg peer). Active tint
- * tracks the brand colour so the tab bar feels on-brand.
- *
- * Installed by prompt [V.UX.27].
+ * Tab icons were previously lucide-react-native via @tamagui/lucide-icons.
+ * To keep the patch surface small and avoid pulling in a new icon library,
+ * they are rendered as short text glyphs. TODO: replace with proper icons
+ * once the Phase 4 Aether mobile surface lands.
  */
 import { Tabs } from 'expo-router';
-import { Compass, Inbox, MapPin, User } from '@tamagui/lucide-icons';
+import { Text, StyleSheet } from 'react-native';
 
 const ACTIVE = '#1d4ed8';
 const INACTIVE = '#525252';
+
+type TabIconProps = {
+  color: string;
+  size: number;
+  label: string;
+};
+
+function TabIcon({ color, size, label }: TabIconProps) {
+  return <Text style={[styles.tabIcon, { color, fontSize: size }]}>{label}</Text>;
+}
 
 export default function TabsLayout() {
   return (
@@ -29,7 +41,7 @@ export default function TabsLayout() {
         options={{
           title: 'Trips',
           tabBarLabel: 'Trips',
-          tabBarIcon: ({ color, size }) => <MapPin color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => <TabIcon color={color} size={size} label="T" />,
         }}
       />
       <Tabs.Screen
@@ -37,7 +49,7 @@ export default function TabsLayout() {
         options={{
           title: 'Explore',
           tabBarLabel: 'Explore',
-          tabBarIcon: ({ color, size }) => <Compass color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => <TabIcon color={color} size={size} label="E" />,
         }}
       />
       <Tabs.Screen
@@ -45,7 +57,7 @@ export default function TabsLayout() {
         options={{
           title: 'Inbox',
           tabBarLabel: 'Inbox',
-          tabBarIcon: ({ color, size }) => <Inbox color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => <TabIcon color={color} size={size} label="I" />,
         }}
       />
       <Tabs.Screen
@@ -53,9 +65,16 @@ export default function TabsLayout() {
         options={{
           title: 'Profile',
           tabBarLabel: 'Profile',
-          tabBarIcon: ({ color, size }) => <User color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => <TabIcon color={color} size={size} label="P" />,
         }}
       />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  tabIcon: {
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+});
