@@ -202,3 +202,72 @@ describe('resolveMuseumTarget (pure)', () => {
     expect(resolveMuseumTarget(orphan, 'focus', planes)).toEqual([9, 9, 9]);
   });
 });
+
+describe('museumArcPositions (AE443 edge cases)', () => {
+  function p(id: string, pos: readonly [number, number, number]) {
+    return { id, position: pos, size: 1, url: null } as const;
+  }
+  it('single other plane sits at centre of arc (angle = 0)', () => {
+    const planes = [p('focus', [0, 0, 0]), p('other', [5, 0, 0])];
+    const map = museumArcPositions(planes, 'focus');
+    const target = map.get('other')!;
+    // angle = 0 → x ≈ fx, z ≈ fz - radius
+    expect(target[0]).toBeCloseTo(0, 5);
+    expect(target[2]).toBeCloseTo(-DEFAULT_MUSEUM_ARC.radius, 5);
+  });
+  it('two other planes flank focus left + right', () => {
+    const planes = [p('focus', [0, 0, 0]), p('left', [-3, 0, 0]), p('right', [3, 0, 0])];
+    const map = museumArcPositions(planes, 'focus');
+    const left = map.get('left')!;
+    const right = map.get('right')!;
+    expect(left[0]).toBeLessThan(0);
+    expect(right[0]).toBeGreaterThan(0);
+  });
+  it('all planes on same X tie-break by id (stable)', () => {
+    const planes = [p('focus', [0, 0, 0]), p('beta', [2, 0, 0]), p('alpha', [2, 0, 0])];
+    const map1 = museumArcPositions(planes, 'focus');
+    const map2 = museumArcPositions(planes, 'focus');
+    expect(map1.get('alpha')).toEqual(map2.get('alpha'));
+    expect(map1.get('beta')).toEqual(map2.get('beta'));
+  });
+  it('vertical compression with extreme rating axis stays bounded', () => {
+    const planes = [p('focus', [0, 0, 0]), p('high', [3, 100, 0])];
+    const map = museumArcPositions(planes, 'focus');
+    const t = map.get('high')!;
+    // vert-comp default 0.35 → y ≈ 35
+    expect(t[1]).toBeCloseTo(35, 0);
+  });
+  it('config override flattens arc radius', () => {
+    const planes = [p('focus', [0, 0, 0]), p('other', [3, 0, 0])];
+    const map = museumArcPositions(planes, 'focus', {
+      ...DEFAULT_MUSEUM_ARC,
+      radius: 1.5,
+    });
+    const t = map.get('other')!;
+    expect(t[2]).toBeCloseTo(-1.5, 5);
+  });
+  it('depthOffset pushes the arc further back along -Z', () => {
+    const planes = [p('focus', [0, 0, 0]), p('other', [3, 0, 0])];
+    const map = museumArcPositions(planes, 'focus', {
+      ...DEFAULT_MUSEUM_ARC,
+      depthOffset: 2,
+    });
+    const t = map.get('other')!;
+    expect(t[2]).toBeCloseTo(-DEFAULT_MUSEUM_ARC.radius - 2, 5);
+  });
+  it('focused plane present in result map at its own position', () => {
+    const planes = [p('focus', [1, 2, 3]), p('other', [5, 0, 0])];
+    const map = museumArcPositions(planes, 'focus');
+    expect(map.get('focus')).toEqual([1, 2, 3]);
+  });
+  it('null focus → empty map', () => {
+    const planes = [p('a', [0, 0, 0])];
+    const map = museumArcPositions(planes, null);
+    expect(map.size).toBe(0);
+  });
+  it('unknown focus id → empty map', () => {
+    const planes = [p('a', [0, 0, 0])];
+    const map = museumArcPositions(planes, 'never-existed');
+    expect(map.size).toBe(0);
+  });
+});
