@@ -57,6 +57,18 @@ export function presenceFreshness(
   return 'stale';
 }
 
+/** Pretty "Xs ago" / "Xm ago" / "Xh ago" string for a positive duration.
+ *  Negative deltas clamp to 0; NaN/Infinity collapse to "0s ago" so the
+ *  overlay never reads as `NaN ago`. Extracted so other surfaces (live
+ *  presence / Echo / Mirror) can reuse one consistent age format. */
+export function presenceAgoLabel(deltaMs: number): string {
+  if (!Number.isFinite(deltaMs)) return '0s ago';
+  const delta = Math.max(0, deltaMs);
+  if (delta < 60_000) return `${Math.floor(delta / 1_000)}s ago`;
+  if (delta < 3_600_000) return `${Math.floor(delta / 60_000)}m ago`;
+  return `${Math.floor(delta / 3_600_000)}h ago`;
+}
+
 /** Human-readable "Live · 8s ago" / "Recent · 2m ago" / "Stale" line. */
 export function presenceFreshnessLabel(
   frame: LiveTripPresence | null,
@@ -67,12 +79,7 @@ export function presenceFreshnessLabel(
   if (!Number.isFinite(t)) return 'No live signal';
   const delta = Math.max(0, now - t);
   const tier = presenceFreshness(frame, now);
-  const ago =
-    delta < 60_000
-      ? `${Math.floor(delta / 1_000)}s ago`
-      : delta < 3_600_000
-        ? `${Math.floor(delta / 60_000)}m ago`
-        : `${Math.floor(delta / 3_600_000)}h ago`;
+  const ago = presenceAgoLabel(delta);
   switch (tier) {
     case 'live':
       return `Live · ${ago}`;
