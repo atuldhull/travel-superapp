@@ -4,7 +4,11 @@
 > ([`04-sequencing.md`](04-sequencing.md), weeks 41-56): "Every Surface
 > ships native-quality on mobile." This document scopes the work, lists
 > the existing mobile-workspace state, and locks the per-surface port
-> order. Code does NOT start until decisions #1–#3 below are answered.
+> order.
+>
+> **Decisions locked 2026-06-01 — Phase 4 code in progress.** See the
+> "Decisions — locked" section below. Round AR (AE513 → AE517) kicks
+> off the three foundation packages.
 
 ## Goal
 
@@ -83,23 +87,20 @@ Before any surface ports, three foundations need to land:
    precomputed AAC drone loops keyed by destination. The pure
    `scene-mixer.ts` math ships verbatim.
 
-## Decisions to lock before code
+## Decisions — locked 2026-06-01
 
-Three choices block Phase 4 implementation:
+The three blocking choices were locked at the recommended defaults
+when Phase 4 work started:
 
-1. **Tamagui-out** vs **Tamagui-in** — The web Aether stripped Tamagui;
-   the mobile shell still has it. Recommendation: strip it (parity with
-   web's no-design-system stance). Trade-off: Tamagui's reanimated +
-   theming primitives are useful — but every theme decision must match
-   the web's `<SurfacePalette*>` machinery so a parallel system would
-   create drift.
-2. **Skia vs R3F native** — `@react-three/fiber/native` works but is
-   heavier; Skia is lighter but is 2D. Recommendation: **R3F native for
-   surfaces with depth (Drift / Atlas / Lumen / Compass / Vault / Echo)
-   and Skia-only for the flat surfaces (Pulse glow / Mirror admin)**.
-3. **Single-binary expo build vs separate per-store builds** —
-   Recommendation: single binary, same `EXPO_PUBLIC_FEATURE_AETHER_PHASE1`
-   gate.
+| #   | Decision           | Locked answer                                                                                                                                   |
+| --- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Tamagui-out vs in  | **Tamagui-out** — parity with web's no-design-system stance; drop the dep + replace primitives.                                                 |
+| 2   | Skia vs R3F native | **R3F-native for depth, Skia-flat for flat** — R3F via expo-three for Drift/Atlas/Lumen/Compass/Vault/Echo; Skia for Pulse glow + Mirror admin. |
+| 3   | Build target       | **Single binary, env-flag gated** — one Expo binary for both stores, `EXPO_PUBLIC_FEATURE_AETHER_PHASE1` mirrors the web flag.                  |
+
+These three set the foundation for the cross-cutting work below.
+Code starts with the three foundation packages (AE514 → AE516) and
+the surface ports follow once the foundations typecheck cleanly.
 
 ## Timeline (per `04-sequencing.md`)
 
