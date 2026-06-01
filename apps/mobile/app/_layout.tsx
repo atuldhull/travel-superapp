@@ -24,9 +24,14 @@ import { bootSdk } from '../lib/sdk';
 import { persistOptions, queryClient } from '../lib/offline-cache';
 import { usePushNotifications } from '../lib/use-push-notifications';
 import { AetherPulseGlow } from '../src/aether/pulse-glow';
+import { useReducedMotionNative } from '../lib/use-reduced-motion-native';
 
 export default function RootLayout() {
   const [ready, setReady] = useState(false);
+  // AE532 - OS Reduce Motion feed for every Aether mobile surface.
+  // Threaded into <AetherPulseGlow/> so its breathing loop collapses to
+  // a static envelope when the user has Reduce Motion enabled.
+  const reducedMotion = useReducedMotionNative();
   // [S-D4] Wire the notification-tap deep-link handler at root so it
   // catches notifications regardless of which surface the user lands
   // on. Permission ask + Expo-token fetch are NOT auto-triggered â€”
@@ -71,7 +76,7 @@ export default function RootLayout() {
           {/* AE527 — Aether Pulse glow rendered above the Stack so it
               persists across navigation. pointerEvents='none' inside the
               component keeps it from blocking taps. */}
-          <AetherPulseGlow />
+          <AetherPulseGlow reducedMotion={reducedMotion} />
         </PersistQueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
