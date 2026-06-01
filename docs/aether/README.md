@@ -1,6 +1,6 @@
 # Aether — TravelSuperApp 2.0 frontend
 
-> **Status: Phase 1 + 2 + 3 scaffolds shipped + Round AJ polish + Round AK shared-canvas extraction (2026-06-01).** All ten surfaces from `02-surfaces.md` are scaffolded behind `NEXT_PUBLIC_FEATURE_AETHER_PHASE1=1` except **Compass Eye AR** (deferred to Phase 5 per decision #8). Phase 3 closeout at [`14-phase3-closeout.md`](14-phase3-closeout.md); the Phase 4 mobile-parity plan is at [`15-phase4-plan.md`](15-phase4-plan.md); Round AJ (AE431-AE451) at [`16-round-aj-progress.md`](16-round-aj-progress.md). Backend b-slices (Whisper STT, CLIP, ML-Kit, Stripe, WebTransport feed, live admin SDK, presence stream) remain owed. Brand language locked to **Warm Italian tactile**.
+> **Status: Phase 1 + 2 + 3 scaffolds shipped + Round AJ polish + Round AK + Round AL canvas-shared completion (2026-06-01).** All ten surfaces from `02-surfaces.md` are scaffolded behind `NEXT_PUBLIC_FEATURE_AETHER_PHASE1=1` except **Compass Eye AR** (deferred to Phase 5 per decision #8). Phase 3 closeout at [`14-phase3-closeout.md`](14-phase3-closeout.md); the Phase 4 mobile-parity plan is at [`15-phase4-plan.md`](15-phase4-plan.md); Round AJ (AE431-AE451) at [`16-round-aj-progress.md`](16-round-aj-progress.md). Backend b-slices (Whisper STT, CLIP, ML-Kit, Stripe, WebTransport feed, live admin SDK, presence stream) remain owed. Brand language locked to **Warm Italian tactile**.
 >
 > Codename for the complete frontend rebuild. Discards every current `apps/web/src/` and `apps/mobile/app/` pixel; keeps the API + `@app/sdk` + workers + ai-service untouched.
 >
@@ -27,6 +27,7 @@
 17. [`15-phase4-plan.md`](15-phase4-plan.md) — Phase 4 mobile-parity plan: per-surface port order, decision locks (Tamagui-out / R3F-native vs Skia / single-binary), operator-owed for EAS + stores bootstrap.
 18. [`16-round-aj-progress.md`](16-round-aj-progress.md) — Round AJ inventory (AE431-AE451): Phase 4 prep + Phase 2/3 polish — 9 Storybook variant sets, 4 jsdom integration spec files, 6 helper extractions / edge-case spec sweeps, 2 loading.tsx skeletons.
 19. [`17-round-ak-progress.md`](17-round-ak-progress.md) — Round AK inventory (AE453-AE466): `@app/aether-canvas-shared` workspace package + Phase 1 polish — 10 pure modules moved to shared, Phase 1 shell integration specs, Lumen integration specs, 4 Storybook stories, 2 loading skeletons, 36 Phase 3 edge specs.
+20. [`18-round-al-progress.md`](18-round-al-progress.md) — Round AL inventory (AE469-AE481): canvas-shared completion (Genie + Continuum + Mirror + Echo + Lumen interactions + Vault + url-ttl + now-card-lifecycle + upcoming-trip → 35 total modules) + cross-package lifecycle integration spec + a11y sweep + url-ttl + palette edge specs + shape-gate spec.
 
 ## What we reuse from 1.0
 
