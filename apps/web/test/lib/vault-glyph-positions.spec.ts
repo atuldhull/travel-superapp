@@ -130,3 +130,75 @@ describe('glyphHaloIntensity (pure)', () => {
     expect(glyphHaloIntensity(true, 0.8)).toBe(0.8);
   });
 });
+
+describe('glyphRingPosition (AE444 edge cases)', () => {
+  it('single glyph sits at +radius on the X axis', () => {
+    const pos = glyphRingPosition(0, 1);
+    expect(pos[0]).toBeCloseTo(DEFAULT_VAULT_RING_RADIUS, 5);
+    expect(pos[1]).toBeCloseTo(0, 5);
+    expect(pos[2]).toBeCloseTo(0, 5);
+  });
+  it('Y coordinate is always 0 (ring is in the XZ plane)', () => {
+    for (let i = 0; i < 8; i += 1) {
+      expect(glyphRingPosition(i, 8)[1]).toBe(0);
+    }
+  });
+  it('every glyph sits on a circle of the given radius', () => {
+    const r = 3;
+    for (let i = 0; i < 12; i += 1) {
+      const [x, , z] = glyphRingPosition(i, 12, r);
+      expect(Math.sqrt(x * x + z * z)).toBeCloseTo(r, 5);
+    }
+  });
+  it('total = 0 collapses to total = 1 (safety against div-by-zero)', () => {
+    const pos = glyphRingPosition(0, 0);
+    expect(pos[0]).toBeCloseTo(DEFAULT_VAULT_RING_RADIUS, 5);
+  });
+  it('negative total collapses to 1 (Math.max guard)', () => {
+    const pos = glyphRingPosition(0, -5);
+    expect(pos[0]).toBeCloseTo(DEFAULT_VAULT_RING_RADIUS, 5);
+  });
+  it('index past total wraps via angle = i/total × 2π', () => {
+    // index = total wraps back to the start position.
+    const a = glyphRingPosition(0, 6);
+    const b = glyphRingPosition(6, 6);
+    expect(a[0]).toBeCloseTo(b[0], 5);
+    expect(a[2]).toBeCloseTo(b[2], 5);
+  });
+  it('opposite indices in an even-total ring are anti-symmetric', () => {
+    const a = glyphRingPosition(0, 4);
+    const b = glyphRingPosition(2, 4);
+    expect(a[0]).toBeCloseTo(-b[0], 5);
+    expect(a[2]).toBeCloseTo(-b[2], 5);
+  });
+  it('custom radius scales the X/Z components linearly', () => {
+    const r2 = glyphRingPosition(1, 4, 2);
+    const r4 = glyphRingPosition(1, 4, 4);
+    expect(r4[0]).toBeCloseTo(r2[0] * 2, 5);
+    expect(r4[2]).toBeCloseTo(r2[2] * 2, 5);
+  });
+});
+
+describe('glyphFloatY (AE444 edge cases)', () => {
+  it('time = 0 + phase = 0 → amplitude × sin(0) = 0', () => {
+    expect(glyphFloatY(0, 0)).toBeCloseTo(0, 5);
+  });
+  it('NaN time → 0', () => {
+    expect(glyphFloatY(0, Number.NaN)).toBe(0);
+  });
+  it('Infinity time → 0 (defensive)', () => {
+    expect(glyphFloatY(0, Number.POSITIVE_INFINITY)).toBe(0);
+  });
+  it('result stays bounded by amplitude', () => {
+    for (let t = 0; t < 10; t += 0.13) {
+      const y = glyphFloatY(3, t);
+      expect(Math.abs(y)).toBeLessThanOrEqual(DEFAULT_VAULT_FLOAT_AMPLITUDE + 1e-9);
+    }
+  });
+  it('phase offset per index breaks lock-step with neighbours', () => {
+    // Two glyphs at the same time but different indices should
+    // generally read different Y values (collisions are possible
+    // but rare for our phase offset).
+    expect(glyphFloatY(0, 0.5)).not.toBe(glyphFloatY(1, 0.5));
+  });
+});
