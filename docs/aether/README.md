@@ -32,6 +32,7 @@
 22. [`20-round-an-progress.md`](20-round-an-progress.md) — Round AN inventory (AE488-AE490): Phase 3 barrel + shape-gate (closes the three-layer barrel coverage) + canvas-shared invariants spec (21 mathematical laws: sphere-surface, unit-vector, monotonicity, bounds, etc.).
 23. [`21-round-ao-progress.md`](21-round-ao-progress.md) — Round AO inventory (AE491-AE495): canvas-shared own behavioural specs for 5 high-value modules (url-ttl + genie-state FSM + pulse-hold-to-talk + lumen-pinch + vault-checkout) so the Phase 4 native port can re-export and verify the math without the web suite. jest 33 → 142.
 24. [`22-round-ap-progress.md`](22-round-ap-progress.md) — Round AP inventory (AE497-AE503): workflow-driven behavioural specs for 7 more modules (continuum-state + weather-simulation + lumen-museum + vault-sample-prices + genie-recorder + mirror-globe + echo-feed) — 12 of 35 canvas-shared modules now have own behavioural coverage. jest 142 → 394.
+25. [`23-round-aq-progress.md`](23-round-aq-progress.md) — Round AQ inventory (AE505-AE511): workflow-driven behavioural specs for 7 more modules (lifecycle-camera + continuum-sigil + lumen-cloud + lumen-strategies + atlas-orbs + destination-coords + vault-glyphs) — 19 of 35 canvas-shared modules now have own behavioural coverage. jest 394 → 690.
 
 ## What we reuse from 1.0
 
