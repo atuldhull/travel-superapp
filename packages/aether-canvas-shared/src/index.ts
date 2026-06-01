@@ -272,3 +272,49 @@ export {
   type LiveTripFreshness,
   type LiveTripPresence,
 } from './live-trip-watch';
+
+// AE478 — Lumen interactions (museum / pinch / strategies / selection / keyboard).
+export {
+  DEFAULT_MUSEUM_ARC,
+  museumArcPositions,
+  resolveMuseumTarget,
+  type MuseumArcConfig,
+} from './lumen-museum';
+
+export {
+  PINCH_DELTA_THRESHOLD,
+  nearestPlaneToCenter,
+  nextFocusForPinch,
+  wheelToPinchIntent,
+  type LumenPinchIntent,
+  type LumenPinchWheelEvent,
+} from './lumen-pinch';
+
+export {
+  LUMEN_LAYOUT_STRATEGIES,
+  applyLayoutStrategy,
+  isStrategyImplemented,
+  layoutByGrid,
+  layoutByMoodStub,
+  layoutBySpiral,
+  layoutByWall,
+  layoutStrategyDescription,
+  layoutStrategyLabel,
+  type LumenLayoutStrategy,
+} from './lumen-strategies';
+
+export {
+  LUMEN_OVERVIEW_TARGET,
+  cameraTargetForPhoto,
+  planeOpacityForFocus,
+  planeScaleForFocus,
+  resolveLumenCameraTarget,
+  type LumenCameraTarget,
+} from './lumen-selection';
+
+export {
+  arrowDirectionFromKey,
+  lumenFocusAnnouncement,
+  nextPhotoInDirection,
+  type LumenArrowDirection,
+} from './lumen-keyboard';
