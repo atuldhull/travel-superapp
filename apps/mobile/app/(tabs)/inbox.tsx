@@ -1,23 +1,24 @@
 /**
- * V.UX.27 — Inbox tab. Mirrors the web's V.UX.26 `/inbox` surface
+ * Phase 4 / Round AS (AE519) â€” Tamagui stripped; uses plain RN primitives.
+ * Will be retired entirely when the Aether mobile surface ships.
+ *
+ * V.UX.27 â€” Inbox tab. Mirrors the web's V.UX.26 `/inbox` surface
  * with mobile-native gestures: pull-to-refresh + swipe-left-to-archive
  * via `react-native-gesture-handler`'s `Swipeable`. Tapping the
- * red action behind the row archives + optimistically removes it.
- *
- * The `📥` tap-button is preserved as a fallback — accessible to
- * users who can't perform the swipe gesture (motor-impairment) and
- * the Expo `--web` target where Swipeable's hit area is finicky.
- *
- * Sub-prompt 2 added the swipe gesture; sub-prompt 1 shipped only
- * the tap-button.
- *
- * Installed by prompt [V.UX.27].
+ * action button archives + optimistically removes the row.
  */
 import { useCallback, useRef } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, View } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { Redirect } from 'expo-router';
-import { Button, Text, XStack, YStack } from 'tamagui';
 import {
   useNotificationsControllerArchive,
   useNotificationsControllerListMine,
@@ -56,10 +57,8 @@ export default function InboxScreen() {
   const items = body?.notifications ?? [];
 
   return (
-    <YStack flex={1} backgroundColor="$background" padding="$4" gap="$3">
-      <Text fontSize={18} fontWeight="700">
-        Inbox
-      </Text>
+    <View style={styles.container}>
+      <Text style={styles.heading}>Inbox</Text>
       {list.isLoading && items.length === 0 ? (
         <ActivityIndicator />
       ) : (
@@ -67,7 +66,7 @@ export default function InboxScreen() {
           data={items}
           keyExtractor={(n) => n.id}
           refreshControl={<RefreshControl refreshing={list.isRefetching} onRefresh={onRefresh} />}
-          ListEmptyComponent={<Text color="$color10">No notifications yet.</Text>}
+          ListEmptyComponent={<Text style={styles.emptyText}>No notifications yet.</Text>}
           renderItem={({ item }) => {
             const payload = (item.payload ?? {}) as { subject?: string };
             let rowRef: Swipeable | null = null;
@@ -83,18 +82,8 @@ export default function InboxScreen() {
                   openRef.current = rowRef;
                 }}
                 renderRightActions={() => (
-                  <View
-                    style={{
-                      backgroundColor: '#b91c1c',
-                      justifyContent: 'center',
-                      paddingHorizontal: 20,
-                      marginBottom: 8,
-                      borderRadius: 8,
-                    }}
-                  >
-                    <Text color="white" fontWeight="700">
-                      Archive
-                    </Text>
+                  <View style={styles.archiveAction}>
+                    <Text style={styles.archiveActionText}>Archive</Text>
                   </View>
                 )}
                 onSwipeableOpen={() => {
@@ -102,32 +91,85 @@ export default function InboxScreen() {
                   rowRef?.close();
                 }}
               >
-                <XStack
-                  paddingVertical="$2"
-                  paddingHorizontal="$3"
-                  marginBottom="$2"
-                  borderRadius="$3"
-                  backgroundColor="$color3"
-                  gap="$2"
-                  alignItems="center"
-                >
-                  <YStack flex={1}>
-                    <Text fontWeight="600" fontSize={14}>
-                      {payload.subject ?? item.templateId}
+                <View style={styles.row}>
+                  <View style={styles.rowBody}>
+                    <Text style={styles.rowTitle}>{payload.subject ?? item.templateId}</Text>
+                    <Text style={styles.rowMeta}>
+                      {item.status} - {new Date(item.createdAt).toLocaleString()}
                     </Text>
-                    <Text fontSize={12} color="$color10">
-                      {item.status} · {new Date(item.createdAt).toLocaleString()}
-                    </Text>
-                  </YStack>
-                  <Button size="$2" onPress={() => doArchive(item.id)}>
-                    📥
-                  </Button>
-                </XStack>
+                  </View>
+                  <TouchableOpacity style={styles.archiveButton} onPress={() => doArchive(item.id)}>
+                    <Text style={styles.archiveButtonText}>Archive</Text>
+                  </TouchableOpacity>
+                </View>
               </Swipeable>
             );
           }}
         />
       )}
-    </YStack>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    padding: 16,
+  },
+  heading: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  emptyText: {
+    color: '#666',
+    fontSize: 14,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginBottom: 8,
+    borderRadius: 8,
+    backgroundColor: '#f3f4f6',
+    gap: 8,
+  },
+  rowBody: {
+    flex: 1,
+    flexDirection: 'column',
+  },
+  rowTitle: {
+    fontWeight: '600',
+    fontSize: 14,
+    color: '#111',
+  },
+  rowMeta: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  archiveAction: {
+    backgroundColor: '#b91c1c',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 8,
+    borderRadius: 8,
+  },
+  archiveActionText: {
+    color: '#fff',
+    fontWeight: '700',
+  },
+  archiveButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: '#e5e7eb',
+  },
+  archiveButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#111',
+  },
+});

@@ -1,16 +1,16 @@
 /**
- * V.UX.27 — Trips tab. Mirrors the web's `/trips` route: lists the
+ * Phase 4 / Round AS (AE519) -- Tamagui stripped; uses plain RN primitives.
+ * Will be retired entirely when the Aether mobile surface ships.
+ *
+ * V.UX.27 -- Trips tab. Mirrors the web's `/trips` route: lists the
  * caller's owned trips + the trips they're a collaborator on.
  *
  * Pull-to-refresh hooks the React-Query refetch. Offline behaviour
  * is automatic via the persisted query cache (lib/offline-cache.ts).
- *
- * Installed by prompt [V.UX.27].
  */
 import { useCallback } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { Link, Redirect } from 'expo-router';
-import { Text, YStack } from 'tamagui';
 import { useTripControllerList, type ListTripsResponseDto, type TripDto } from '@app/sdk';
 import { useAuthToken } from '../../lib/use-auth-token';
 import { useOnlineStatus } from '../../lib/use-online-status';
@@ -38,17 +38,13 @@ export default function TripsScreen() {
   const all = [...owned, ...collaborated];
 
   return (
-    <YStack flex={1} backgroundColor="$background" padding="$4" gap="$3">
+    <View style={styles.container}>
       {!online ? (
         <View style={styles.offline}>
-          <Text color="white" fontSize={12}>
-            ✈️ You&apos;re offline — showing the last cached trips.
-          </Text>
+          <Text style={styles.offlineText}>You are offline -- showing the last cached trips.</Text>
         </View>
       ) : null}
-      <Text fontSize={18} fontWeight="700">
-        Your trips
-      </Text>
+      <Text style={styles.heading}>Your trips</Text>
       {trips.isLoading && all.length === 0 ? (
         <ActivityIndicator />
       ) : (
@@ -57,25 +53,35 @@ export default function TripsScreen() {
           keyExtractor={(t: TripDto) => t.id}
           refreshControl={<RefreshControl refreshing={trips.isRefetching} onRefresh={onRefresh} />}
           ListEmptyComponent={
-            <Text color="$color10">No trips yet. Create one on the web app.</Text>
+            <Text style={styles.emptyText}>No trips yet. Create one on the web app.</Text>
           }
           renderItem={({ item }) => (
             <Link href={{ pathname: '/trips/[id]', params: { id: item.id } }} asChild>
               <View style={styles.row}>
-                <Text fontWeight="600">{item.title}</Text>
-                <Text fontSize={12} color="$color10">
-                  {item.status} · radius {item.radiusKm} km
+                <Text style={styles.rowTitle}>{item.title}</Text>
+                <Text style={styles.rowMeta}>
+                  {item.status} - radius {item.radiusKm} km
                 </Text>
               </View>
             </Link>
           )}
         />
       )}
-    </YStack>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    padding: 16,
+    gap: 12,
+  },
+  heading: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
   row: {
     paddingVertical: 12,
     paddingHorizontal: 12,
@@ -83,9 +89,25 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
     marginBottom: 8,
   },
+  rowTitle: {
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  rowMeta: {
+    fontSize: 12,
+    color: '#6b7280',
+  },
+  emptyText: {
+    color: '#6b7280',
+    fontSize: 14,
+  },
   offline: {
     backgroundColor: '#b45309',
     padding: 8,
     borderRadius: 6,
+  },
+  offlineText: {
+    color: '#ffffff',
+    fontSize: 12,
   },
 });
