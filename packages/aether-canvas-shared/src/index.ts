@@ -370,3 +370,20 @@ export {
   msUntilExpiry,
   refetchDelayMs,
 } from './url-ttl';
+
+// AE480 — Now Card lifecycle CSS + upcoming-trip personalisation.
+export {
+  DEFAULT_NOW_CARD_DURATIONS,
+  nowCardCssForPhase,
+  nowCardOpacityForPhase,
+  nowCardScaleForPhase,
+  nowCardTransitionMs,
+  type LifecycleDurationsMs,
+} from './now-card-lifecycle';
+
+export {
+  daysUntil,
+  nowCardPersonalised,
+  pickUpcomingTrip,
+  type UpcomingTripLike,
+} from './upcoming-trip';
