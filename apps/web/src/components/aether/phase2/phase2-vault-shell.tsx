@@ -49,6 +49,7 @@ import {
 } from './vault-sample-prices';
 import { VaultCheckoutPanel } from './vault-checkout-panel';
 import type { VaultPriceLike } from './vault-glyphs';
+import { Phase2GenieModal } from './phase2-genie-modal';
 
 export function Phase2VaultShell(): React.ReactElement {
   const registry = useMemo(() => createAetherPhase1Registry(), []);
@@ -101,6 +102,8 @@ function Phase2VaultInner(): React.ReactElement {
 
   // AE415 — checkout state: which price the user tapped (null = panel closed).
   const [selectedPrice, setSelectedPrice] = useState<VaultPriceLike | null>(null);
+  // AE416 — Pulse hold-to-talk opens the Genie modal.
+  const [genieOpen, setGenieOpen] = useState<boolean>(false);
 
   return (
     <div style={{ width: '100%', height: '100vh', position: 'relative' }}>
@@ -112,7 +115,9 @@ function Phase2VaultInner(): React.ReactElement {
       </SurfaceCanvas>
       <SurfaceAudioLayer onChannelWrite={audioBridge.onChannelWrite} />
       <Phase1DevNav />
-      <Phase1PulseOverlay onActivate={() => openPulse('')} />
+      <Phase1PulseOverlay onActivate={() => openPulse('')} onHoldOpen={() => setGenieOpen(true)} />
+      {/* AE416 — Genie modal opens on Pulse hold. */}
+      <Phase2GenieModal open={genieOpen} onClose={() => setGenieOpen(false)} />
       <Phase1ContinuumBar />
       <Phase1ContinuumReceiverToast />
       {/* AE407 — first-cut 2D glyph grid overlay. R3F custom shader

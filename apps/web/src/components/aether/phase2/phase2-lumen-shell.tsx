@@ -50,6 +50,7 @@ import { LumenDataProvider } from './lumen-data-context';
 import { LumenFocusAnnouncer } from './lumen-focus-announcer';
 import { LumenSelectionProvider } from './lumen-selection-context';
 import { LumenStrategyProvider } from './lumen-strategy-context';
+import { Phase2GenieModal } from './phase2-genie-modal';
 import type { LumenPhotoLike } from './lumen-cloud';
 
 export interface Phase2LumenShellProps {
@@ -119,6 +120,8 @@ function Phase2LumenInner({ bookId }: { bookId: string }): React.ReactElement {
     events: -60,
   });
   const audioBridge = useSceneAudioBridge(setAudio);
+  // AE416 — Pulse hold-to-talk opens the Genie modal.
+  const [genieOpen, setGenieOpen] = useState<boolean>(false);
 
   const isDev = process.env.NODE_ENV !== 'production';
   const pipStyle: CSSProperties = {
@@ -149,7 +152,12 @@ function Phase2LumenInner({ bookId }: { bookId: string }): React.ReactElement {
             </SurfaceCanvas>
             <SurfaceAudioLayer onChannelWrite={audioBridge.onChannelWrite} />
             <Phase1DevNav />
-            <Phase1PulseOverlay onActivate={() => openPulse('')} />
+            <Phase1PulseOverlay
+              onActivate={() => openPulse('')}
+              onHoldOpen={() => setGenieOpen(true)}
+            />
+            {/* AE416 — Genie modal opens on Pulse hold. */}
+            <Phase2GenieModal open={genieOpen} onClose={() => setGenieOpen(false)} />
             <Phase1ContinuumBar extras={{ book: bookId }} />
             <Phase1ContinuumReceiverToast />
             {/* AE403 — sr-only announcer for keyboard focus changes. */}
