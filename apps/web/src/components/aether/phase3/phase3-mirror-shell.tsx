@@ -29,6 +29,7 @@ import { Phase1PulseOverlay } from '../phase1/phase1-pulse-overlay';
 import { BREATHING_LIFECYCLE_PLAN, useLifecycleAutoDriver } from '../phase1/use-lifecycle-driver';
 import { Phase2GenieModal } from '../phase2/phase2-genie-modal';
 import { MirrorAuditRiver } from './mirror-audit-river';
+import { MirrorInvestigatePalette } from './mirror-investigate-palette';
 import { SAMPLE_MIRROR_AUDIT } from './mirror-sample-data';
 
 export function Phase3MirrorShell(): React.ReactElement {
@@ -92,6 +93,8 @@ function Phase3MirrorInner(): React.ReactElement {
       <Phase1ContinuumReceiverToast />
       {/* AE422 — audit-log river overlay on the right edge. */}
       <MirrorAuditRiver rows={SAMPLE_MIRROR_AUDIT} />
+      {/* AE424 — Cmd+K "Investigate user" forensic palette. */}
+      <MirrorInvestigatePalette />
       <div style={pipStyle} aria-hidden>
         {current?.id ?? '—'} · mirror · {SAMPLE_MIRROR_AUDIT.length} audit rows · audio{' '}
         {audioBridge.status}
