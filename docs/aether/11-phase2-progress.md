@@ -30,6 +30,7 @@
 7. **Texture-aware aspect** (AE404) — pure `aspectFromTexture(texture, fallback)`; PhotoPlane swaps to the real `height / width` once the texture loads
 8. **Presigned URL TTL refetch** (AE405) — `msUntilExpiry`, `refetchDelayMs`, `isExpiryNear`; `useUrlTtlRefetch(expiresAt, refetch)` schedules a setTimeout ~30s before expiry; LumenPhotoSlot wires it
 9. **Museum arc + pinch-to-focus** (AE409) — pure `lumen-museum.ts` (`museumArcPositions`, `resolveMuseumTarget`, `DEFAULT_MUSEUM_ARC` w/ radius/span/depth/verticalCompression) re-lays the unfocused planes onto a half-circle around the focused photo; pure `lumen-pinch.ts` (`wheelToPinchIntent`, `nearestPlaneToCenter`, `nextFocusForPinch`) drives focus transitions from Ctrl+wheel / trackpad pinch; `<LumenAnimatedSlot>` wraps `<LumenPhotoSlot>` w/ a per-frame outer-group lerp (speed 4 ≈ 250ms-to-closure)
+10. **Layout strategies + arrange menu** (AE410) — pure `lumen-strategies.ts` (`LumenLayoutStrategy` union: `time` / `grid` / `spiral` / `wall` / `mood`; `layoutByGrid` uniform 2D grid; `layoutBySpiral` golden-angle phyllotaxis; `layoutByWall` tighter z-jittered salon arrangement; `layoutByMoodStub` falls back to time-cloud pending CLIP; `applyLayoutStrategy` dispatcher; `isStrategyImplemented` gate for the (AI) label); `<LumenStrategyProvider>` + `useLumenStrategy()`; `<LumenArrangeMenu>` bottom-left palette-tinted pill bar w/ aria-pressed buttons. AE409's animated slot lerps each plane to the new strategy's target on swap — no remounts.
 
 ## Genie — capability stack (AE406)
 
@@ -72,12 +73,12 @@ Shell + route:
 
 ## Test totals (post AE407)
 
-| Package              | Specs | Net change since Phase 1 closeout (AE397)             |
-| -------------------- | ----- | ----------------------------------------------------- |
-| `@app/aether-core`   | 122   | 0                                                     |
-| `@app/aether-canvas` | 77    | +8 (AE404 `aspectFromTexture`)                        |
-| `@app/aether-audio`  | 71    | 0                                                     |
-| `apps/web`           | 1857  | +175 across +11 files (Lumen + Genie + Vault + AE409) |
+| Package              | Specs | Net change since Phase 1 closeout (AE397)                     |
+| -------------------- | ----- | ------------------------------------------------------------- |
+| `@app/aether-core`   | 122   | 0                                                             |
+| `@app/aether-canvas` | 77    | +8 (AE404 `aspectFromTexture`)                                |
+| `@app/aether-audio`  | 71    | 0                                                             |
+| `apps/web`           | 1885  | +203 across +12 files (Lumen + Genie + Vault + AE409 + AE410) |
 
 Typecheck clean across packages + apps/web. 0 new lint errors.
 
@@ -90,7 +91,7 @@ Typecheck clean across packages + apps/web. 0 new lint errors.
 ## Pending — Phase 2 finish line
 
 1. **AE409 — museum arc + wheel-pinch — SHIPPED** (2026-06-01)
-2. **AE410+ Lumen CLIP arrange-by-mood** — voice command via Pulse → ai-service `/v1/embeddings` to re-cluster
+2. **AE410 — layout strategies + arrange menu — SHIPPED** (2026-06-01). CLIP backend still pending — the mood strategy stubs to the time-cloud until ai-service `/v1/embeddings` lands.
 3. **AE411+ Real Whisper STT** behind Genie — ai-service `/v1/transcribe` (currently stub; real with `pip install .[stt]`) + WebRTC mic stream
 4. **AE412+ Genie GPU particle dissolution** + typeset-in-3D transcript
 5. **AE413+ Genie camera mode** — ML Kit detection over the live camera feed

@@ -45,9 +45,11 @@ import {
   type MemoryBookWithAssetsResponseDto,
 } from '@app/sdk';
 import { useAetherAuth } from '../use-aether-auth';
+import { LumenArrangeMenu } from './lumen-arrange-menu';
 import { LumenDataProvider } from './lumen-data-context';
 import { LumenFocusAnnouncer } from './lumen-focus-announcer';
 import { LumenSelectionProvider } from './lumen-selection-context';
+import { LumenStrategyProvider } from './lumen-strategy-context';
 import type { LumenPhotoLike } from './lumen-cloud';
 
 export interface Phase2LumenShellProps {
@@ -136,28 +138,32 @@ function Phase2LumenInner({ bookId }: { bookId: string }): React.ReactElement {
 
   return (
     <LumenSelectionProvider>
-      <LumenDataProvider bookId={bookId} photos={photos} isPending={isPending} isError={isError}>
-        <div style={{ width: '100%', height: '100vh', position: 'relative' }}>
-          <SurfacePaletteVars />
-          <SurfaceCanvas ariaLabel={`Lumen — memory book ${bookId}`}>
-            <Suspense fallback={null}>
-              <ActiveSurfaceMount />
-            </Suspense>
-          </SurfaceCanvas>
-          <SurfaceAudioLayer onChannelWrite={audioBridge.onChannelWrite} />
-          <Phase1DevNav />
-          <Phase1PulseOverlay onActivate={() => openPulse('')} />
-          <Phase1ContinuumBar extras={{ book: bookId }} />
-          <Phase1ContinuumReceiverToast />
-          {/* AE403 — sr-only announcer for keyboard focus changes. */}
-          <LumenFocusAnnouncer />
-          <div style={pipStyle} aria-hidden>
-            {current?.id ?? '—'} · book {bookId} · {photos.length} photo
-            {photos.length === 1 ? '' : 's'} · audio {audioBridge.status} · drone{' '}
-            {audio.drone.toFixed(0)} · events {audio.events.toFixed(0)}
+      <LumenStrategyProvider>
+        <LumenDataProvider bookId={bookId} photos={photos} isPending={isPending} isError={isError}>
+          <div style={{ width: '100%', height: '100vh', position: 'relative' }}>
+            <SurfacePaletteVars />
+            <SurfaceCanvas ariaLabel={`Lumen — memory book ${bookId}`}>
+              <Suspense fallback={null}>
+                <ActiveSurfaceMount />
+              </Suspense>
+            </SurfaceCanvas>
+            <SurfaceAudioLayer onChannelWrite={audioBridge.onChannelWrite} />
+            <Phase1DevNav />
+            <Phase1PulseOverlay onActivate={() => openPulse('')} />
+            <Phase1ContinuumBar extras={{ book: bookId }} />
+            <Phase1ContinuumReceiverToast />
+            {/* AE403 — sr-only announcer for keyboard focus changes. */}
+            <LumenFocusAnnouncer />
+            {/* AE410 — strategy picker floating in the bottom-left. */}
+            <LumenArrangeMenu />
+            <div style={pipStyle} aria-hidden>
+              {current?.id ?? '—'} · book {bookId} · {photos.length} photo
+              {photos.length === 1 ? '' : 's'} · audio {audioBridge.status} · drone{' '}
+              {audio.drone.toFixed(0)} · events {audio.events.toFixed(0)}
+            </div>
           </div>
-        </div>
-      </LumenDataProvider>
+        </LumenDataProvider>
+      </LumenStrategyProvider>
     </LumenSelectionProvider>
   );
 }

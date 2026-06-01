@@ -28,10 +28,12 @@ import {
   type SurfaceMountProps,
 } from '@app/aether-core';
 import { lerp, lerpVec3 } from '@app/aether-canvas';
-import { DEFAULT_LUMEN_LAYOUT, layoutPhotoCloud, type LumenPlaneLayout } from './lumen-cloud';
+import { DEFAULT_LUMEN_LAYOUT, type LumenPlaneLayout } from './lumen-cloud';
 import { useLumenData } from './lumen-data-context';
 import { LumenPhotoSlot } from './lumen-photo-slot';
 import { useLumenSelection } from './lumen-selection-context';
+import { applyLayoutStrategy } from './lumen-strategies';
+import { useLumenStrategy } from './lumen-strategy-context';
 import {
   planeOpacityForFocus,
   planeScaleForFocus,
@@ -48,9 +50,13 @@ export default function LumenPhase2Scene(
   const phase = useSurfaceLifecycle();
   const { photos, isPending } = useLumenData();
   const { focusedId, setFocusedId } = useLumenSelection();
+  const { strategy } = useLumenStrategy();
 
-  // Pre-compute the photo positions once per photo set.
-  const planes = useMemo(() => layoutPhotoCloud(photos), [photos]);
+  // Pre-compute the photo positions once per (photo set, strategy).
+  // AE410 lets the user pick the layout strategy via the arrange menu;
+  // the per-frame group lerp from AE409 animates each plane to the new
+  // target position so strategy swaps feel like "the wall rearranges".
+  const planes = useMemo(() => applyLayoutStrategy(strategy, photos), [photos, strategy]);
 
   // AE409 — museum-mode arc layout when a photo is focused. The map
   // is keyed by plane id; per-frame lerping happens inside the slot.
