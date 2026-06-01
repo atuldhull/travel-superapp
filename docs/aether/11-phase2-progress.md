@@ -5,14 +5,19 @@
 > Genie (voice/camera modal), and Vault (bookings + commerce). All three
 > ride behind `NEXT_PUBLIC_FEATURE_AETHER_PHASE1=1` until Phase 2 earns
 > its own env flag.
+>
+> **AE409 (2026-06-01)** — Lumen gains museum-mode arrangement +
+> wheel-pinch focus transitions. Focus a photo and the rest of the
+> cloud rearranges onto a half-circle arc behind the focused plane;
+> Ctrl+wheel (trackpad pinch) drives entry / exit of focus.
 
 ## What's live
 
-| Surface | Route                 | Scene state                                                                          | Slice IDs   |
-| ------- | --------------------- | ------------------------------------------------------------------------------------ | ----------- |
-| Lumen   | `/aether/memory/[id]` | R3F photo cloud with real textures, click-to-zoom, keyboard nav, presigned URL cache | AE398-AE405 |
-| Genie   | overlay modal         | State-machine modal (idle → listening → processing → transcribed); no STT yet        | AE406       |
-| Vault   | `/aether/vault`       | 2D placeholder glyph grid sized by AE407 math; no Stripe yet                         | AE407       |
+| Surface | Route                 | Scene state                                                                                                 | Slice IDs        |
+| ------- | --------------------- | ----------------------------------------------------------------------------------------------------------- | ---------------- |
+| Lumen   | `/aether/memory/[id]` | R3F photo cloud with real textures, click-to-zoom, keyboard nav, presigned URL cache, museum arc + pinch-in | AE398-AE405, 409 |
+| Genie   | overlay modal         | State-machine modal (idle → listening → processing → transcribed); no STT yet                               | AE406            |
+| Vault   | `/aether/vault`       | 2D placeholder glyph grid sized by AE407 math; no Stripe yet                                                | AE407            |
 
 ## Lumen — capability stack
 
@@ -24,6 +29,7 @@
 6. **Keyboard nav + aria-live** (AE403) — `arrowDirectionFromKey`, `nextPhotoInDirection` (sort by x for horizontal / by -y for vertical, walk the index), `lumenFocusAnnouncement` (Photo N of M); `<LumenFocusAnnouncer>` sr-only role=status announces focus changes
 7. **Texture-aware aspect** (AE404) — pure `aspectFromTexture(texture, fallback)`; PhotoPlane swaps to the real `height / width` once the texture loads
 8. **Presigned URL TTL refetch** (AE405) — `msUntilExpiry`, `refetchDelayMs`, `isExpiryNear`; `useUrlTtlRefetch(expiresAt, refetch)` schedules a setTimeout ~30s before expiry; LumenPhotoSlot wires it
+9. **Museum arc + pinch-to-focus** (AE409) — pure `lumen-museum.ts` (`museumArcPositions`, `resolveMuseumTarget`, `DEFAULT_MUSEUM_ARC` w/ radius/span/depth/verticalCompression) re-lays the unfocused planes onto a half-circle around the focused photo; pure `lumen-pinch.ts` (`wheelToPinchIntent`, `nearestPlaneToCenter`, `nextFocusForPinch`) drives focus transitions from Ctrl+wheel / trackpad pinch; `<LumenAnimatedSlot>` wraps `<LumenPhotoSlot>` w/ a per-frame outer-group lerp (speed 4 ≈ 250ms-to-closure)
 
 ## Genie — capability stack (AE406)
 
@@ -66,12 +72,12 @@ Shell + route:
 
 ## Test totals (post AE407)
 
-| Package              | Specs | Net change since Phase 1 closeout (AE397)    |
-| -------------------- | ----- | -------------------------------------------- |
-| `@app/aether-core`   | 122   | 0                                            |
-| `@app/aether-canvas` | 77    | +8 (AE404 `aspectFromTexture`)               |
-| `@app/aether-audio`  | 71    | 0                                            |
-| `apps/web`           | 1813  | +131 across +9 files (Lumen + Genie + Vault) |
+| Package              | Specs | Net change since Phase 1 closeout (AE397)             |
+| -------------------- | ----- | ----------------------------------------------------- |
+| `@app/aether-core`   | 122   | 0                                                     |
+| `@app/aether-canvas` | 77    | +8 (AE404 `aspectFromTexture`)                        |
+| `@app/aether-audio`  | 71    | 0                                                     |
+| `apps/web`           | 1857  | +175 across +11 files (Lumen + Genie + Vault + AE409) |
 
 Typecheck clean across packages + apps/web. 0 new lint errors.
 
@@ -83,7 +89,7 @@ Typecheck clean across packages + apps/web. 0 new lint errors.
 
 ## Pending — Phase 2 finish line
 
-1. **AE409+ Lumen pinch-zoom** for mobile, plus a "museum mode" arrangement when a photo is focused (per 02-surfaces.md §4 — "the rest of the trip's photos arrange themselves in 3D around it like a museum")
+1. **AE409 — museum arc + wheel-pinch — SHIPPED** (2026-06-01)
 2. **AE410+ Lumen CLIP arrange-by-mood** — voice command via Pulse → ai-service `/v1/embeddings` to re-cluster
 3. **AE411+ Real Whisper STT** behind Genie — ai-service `/v1/transcribe` (currently stub; real with `pip install .[stt]`) + WebRTC mic stream
 4. **AE412+ Genie GPU particle dissolution** + typeset-in-3D transcript
