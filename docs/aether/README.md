@@ -1,6 +1,6 @@
 # Aether — TravelSuperApp 2.0 frontend
 
-> **Status: Phase 1 shipped (2026-05-31); Phase 2 scaffolds shipped (2026-06-01).** Drift / Atlas / Compass Bird / Pulse / Continuum bar + Lumen photo studio + Genie voice/camera modal + Vault commerce all live behind `NEXT_PUBLIC_FEATURE_AETHER_PHASE1=1`. See [`12-phase2-closeout.md`](12-phase2-closeout.md) for the AE398 → AE416 inventory + the b-slice list of backend integrations that still have to land (Whisper STT, CLIP, ML-Kit, Stripe). Phase 2 rides the same flag for now. Brand language locked to **Warm Italian tactile**.
+> **Status: Phase 1 shipped (2026-05-31); Phase 2 scaffolds shipped (2026-06-01); Phase 3 in progress (2026-06-01).** All Phase 1 + 2 surfaces live behind `NEXT_PUBLIC_FEATURE_AETHER_PHASE1=1`. Phase 3 adds **Echo** (`/aether/feed`, vertical-scroll social feed with live palette re-derivation) and **Mirror** (`/aether/mirror`, admin forensics — SOS globe + audit-log river); see [`13-phase3-progress.md`](13-phase3-progress.md). Compass Eye AR stays deferred to Phase 5 per decision #8. Brand language locked to **Warm Italian tactile**.
 >
 > Codename for the complete frontend rebuild. Discards every current `apps/web/src/` and `apps/mobile/app/` pixel; keeps the API + `@app/sdk` + workers + ai-service untouched.
 >
@@ -22,6 +22,7 @@
 12. [`10-phase1-closeout.md`](10-phase1-closeout.md) — Phase 1 surface inventory, capability stack, deferred work, full commit chain AE374 → AE397.
 13. [`11-phase2-progress.md`](11-phase2-progress.md) — Phase 2 scaffolds + stack — Lumen interactions, Genie modal + camera + dissolution + recorder, Vault R3F ring + checkout panel.
 14. [`12-phase2-closeout.md`](12-phase2-closeout.md) — Phase 2 closeout inventory (AE398 → AE416), live routes, b-slice list (Whisper / CLIP / ML-Kit / Stripe), operator-owed for promotion.
+15. [`13-phase3-progress.md`](13-phase3-progress.md) — Phase 3 scaffolds — Echo social feed (AE418-AE420) + Mirror admin forensics (AE421-AE422); per-surface capability stack + b-slice list.
 
 ## What we reuse from 1.0
 
