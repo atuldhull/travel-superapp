@@ -136,3 +136,104 @@ describe('investigationAnnouncement (pure)', () => {
     expect(line).toContain('1 audit mentions');
   });
 });
+
+// AE466 — boundary conditions for the Mirror Investigate helpers. The
+// severity tiers + count formatter + filter share a single low-level
+// shape with the rest of Phase 3, so we pin the exact threshold values
+// + the millions-separator path + the separator-character substring
+// match + the whitespace-only query degeneracy so future refactors don't
+// drift either direction without flipping a spec.
+describe('investigationSeverity (AE466 boundary thresholds)', () => {
+  it('exactly 2 → medium (lower bound, inclusive)', () => {
+    expect(investigationSeverity(2)).toBe('medium');
+  });
+  it('just below the medium threshold (1.999) → low', () => {
+    expect(investigationSeverity(1.999)).toBe('low');
+  });
+  it('just above the medium threshold (2.001) → medium', () => {
+    expect(investigationSeverity(2.001)).toBe('medium');
+  });
+  it('exactly 6 → high (lower bound, inclusive)', () => {
+    expect(investigationSeverity(6)).toBe('high');
+  });
+  it('just below the high threshold (5.999) → medium', () => {
+    expect(investigationSeverity(5.999)).toBe('medium');
+  });
+  it('just above the high threshold (6.001) → high', () => {
+    expect(investigationSeverity(6.001)).toBe('high');
+  });
+  it('Infinity → low (non-finite collapses to safe default)', () => {
+    expect(investigationSeverity(Number.POSITIVE_INFINITY)).toBe('low');
+    expect(investigationSeverity(Number.NEGATIVE_INFINITY)).toBe('low');
+  });
+  it('negative counts → low (clamps below the medium floor)', () => {
+    expect(investigationSeverity(-1)).toBe('low');
+    expect(investigationSeverity(-9999)).toBe('low');
+  });
+});
+
+describe('formatInvestigationCount (AE466 millions-scale + locale)', () => {
+  // Locale-agnostic checks: the helper delegates to toLocaleString() with
+  // no explicit locale, so the exact grouping depends on the test host's
+  // default locale (en-US groups by 3, en-IN groups by 2 after the first
+  // 3). The contract we lock here is: large positive values render as a
+  // non-empty digit-with-separators string (not the em-dash), and the
+  // digit count is preserved.
+  it('large counts render as a non-empty digits+separators string', () => {
+    const out = formatInvestigationCount(1_000_000);
+    expect(out).not.toBe('—');
+    expect(out).toMatch(/^[\d.,]+$/);
+    expect(out.replace(/[^0-9]/g, '')).toBe('1000000');
+  });
+  it('tens-of-millions preserve the digit sequence', () => {
+    const out = formatInvestigationCount(12_345_678);
+    expect(out.replace(/[^0-9]/g, '')).toBe('12345678');
+  });
+  it('counts just below 1M preserve the digit sequence', () => {
+    const out = formatInvestigationCount(999_999);
+    expect(out.replace(/[^0-9]/g, '')).toBe('999999');
+  });
+  it('very large values use grouping separators (never an em-dash)', () => {
+    const out = formatInvestigationCount(1_234_567_890);
+    expect(out).not.toBe('—');
+    expect(out).toMatch(/^[\d.,]+$/);
+    // At least one separator must be present for a 10-digit value.
+    expect(out.length).toBeGreaterThan(10);
+  });
+  it('negative counts collapse to em-dash (treated as "not loaded")', () => {
+    expect(formatInvestigationCount(-1)).toBe('—');
+    expect(formatInvestigationCount(-1_000_000)).toBe('—');
+  });
+});
+
+describe('filterUserSuggestions (AE466 separator + whitespace edges)', () => {
+  it('matches the middle-dot separator in contextTag (returns every row that uses "·")', () => {
+    // All three SAMPLE rows use "·" as the trips/region separator.
+    const ids = filterUserSuggestions(SAMPLE, '·').map((s) => s.id);
+    expect(ids).toEqual(['u_a7c41e9b', 'u_b1c92d34', 'u_d6f31a87']);
+  });
+  it('separator query is not stripped — substring-matches " · G" (one row)', () => {
+    const ids = filterUserSuggestions(SAMPLE, ' · G').map((s) => s.id);
+    expect(ids).toEqual(['u_b1c92d34']);
+  });
+  it('whitespace-only query returns the whole list (trim collapses to empty)', () => {
+    expect(filterUserSuggestions(SAMPLE, '   ').length).toBe(SAMPLE.length);
+    expect(filterUserSuggestions(SAMPLE, '\t\n').length).toBe(SAMPLE.length);
+  });
+  it('whitespace-only query never throws', () => {
+    expect(() => filterUserSuggestions(SAMPLE, '   ')).not.toThrow();
+    expect(() => filterUserSuggestions(SAMPLE, '\t\n\r   ')).not.toThrow();
+  });
+  it('separator-only context-tag query against an empty list is a no-op (returns [])', () => {
+    expect(filterUserSuggestions([], '·').length).toBe(0);
+  });
+});
+
+describe('highlightRange (AE466 whitespace-only + separator edges)', () => {
+  it('whitespace-only query → null (no highlight)', () => {
+    expect(highlightRange('Asha Verma', '   ')).toBeNull();
+  });
+  it('separator character query matches when present in name', () => {
+    expect(highlightRange('Asha · Verma', '·')).toEqual({ start: 5, end: 6 });
+  });
+});
