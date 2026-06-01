@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@app/aether-canvas-shared':
+        specifier: link:../../packages/aether-canvas-shared
+        version: link:../../packages/aether-canvas-shared
       '@app/sdk':
         specifier: link:../../packages/sdk
         version: link:../../packages/sdk
