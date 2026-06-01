@@ -215,3 +215,32 @@ export {
   readContinuumLanding,
   type ContinuumLanding,
 } from './continuum-landing';
+
+// AE471 — Mirror admin globe + audit-river + Cmd+K investigation helpers.
+export {
+  MIRROR_AUDIT_RIVER_TTL_MS,
+  MIRROR_GLOBE_RADIUS,
+  auditGlyphColor,
+  auditGlyphSymbol,
+  auditRowYProgress,
+  isMirrorViewer,
+  latLngToVec3,
+  liveAuditRows,
+  scamClusterRadius,
+  sosDotRadius,
+  type MirrorAuditRow,
+  type MirrorSOSEvent,
+  type MirrorScamCluster,
+} from './mirror-globe';
+
+export {
+  filterUserSuggestions,
+  formatInvestigationCount,
+  highlightRange,
+  investigationAnnouncement,
+  investigationSeverity,
+  isInvestigationHotkey,
+  type MirrorInvestigation,
+  type MirrorInvestigationSeverity,
+  type MirrorUserSuggestion,
+} from './mirror-investigate';
