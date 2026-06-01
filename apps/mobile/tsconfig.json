@@ -8,6 +8,8 @@
     "moduleResolution": "bundler",
     "paths": {
       "@app/sdk": ["../../packages/sdk/src/index.ts"],
+      "@app/aether-canvas-shared": ["../../packages/aether-canvas-shared/src/index.ts"],
+      "@app/aether-core": ["../../packages/aether-core/src/index.ts"],
       "@/*": ["./*"]
     }
   },
