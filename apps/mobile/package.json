@@ -13,6 +13,7 @@
     "lint": "eslint app lib"
   },
   "dependencies": {
+    "@app/aether-canvas-shared": "link:../../packages/aether-canvas-shared",
     "@app/sdk": "link:../../packages/sdk",
     "@react-native-async-storage/async-storage": "1.23.1",
     "@react-native-community/netinfo": "11.3.1",
