@@ -47,10 +47,12 @@ export function readContinuumLanding(
     const p = params as URLSearchParams;
     if (p.get(CONTINUUM_QUERY_KEY) !== '1') return NO_CONTINUUM_LANDING;
     const extras: Record<string, string> = {};
-    for (const [k, v] of p.entries()) {
-      if (k === CONTINUUM_QUERY_KEY) continue;
+    // `URLSearchParams.entries()` is missing from RN's TS lib in some
+    // setups; `forEach` is universally available across web + RN.
+    p.forEach((v, k) => {
+      if (k === CONTINUUM_QUERY_KEY) return;
       extras[k] = v;
-    }
+    });
     return { isHandoff: true, extras };
   }
   // Plain object — treat string[] as "take the first value" so URL.parse-style

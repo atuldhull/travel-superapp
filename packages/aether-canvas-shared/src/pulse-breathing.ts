@@ -21,7 +21,7 @@
  * the lifecycle scene can drive it from `useFrame`'s delta clock + tests
  * can pin `tMs` and assert exact scale/opacity values.
  */
-import type { SurfaceLifecyclePhase } from '@app/aether-core';
+import type { SurfaceLifecyclePhase } from './surface-lifecycle-phase';
 
 /** Pulse's own state machine. Distinct from the surface lifecycle —
  *  surface phase drives which mood Pulse takes by default but callers

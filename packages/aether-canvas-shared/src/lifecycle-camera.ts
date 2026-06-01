@@ -20,7 +20,7 @@
  * Drift's hero pose is (0, 0, 6) looking at the origin — chosen to match
  * the existing `<AetherScene>` default `cameraPosition`.
  */
-import type { SurfaceLifecyclePhase } from '@app/aether-core';
+import type { SurfaceLifecyclePhase } from './surface-lifecycle-phase';
 import { easedPhaseProgress, type LifecyclePhaseDurations } from './lifecycle-progress';
 
 /** XYZ tuple — caller-friendly, copy-on-read. */
