@@ -16,7 +16,7 @@
  * pure helper here builds the inline style; the React layer in
  * `<DriftNowCard>` reads `useSurfaceLifecycle()` and applies the style.
  */
-import type { SurfaceLifecyclePhase } from '@app/aether-core';
+import type { SurfaceLifecyclePhase } from './surface-lifecycle-phase';
 
 /** Tuned to match AE375 DEFAULT_PHASE_DURATIONS + AE382 dissolvingMs. */
 export interface LifecycleDurationsMs {

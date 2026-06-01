@@ -81,10 +81,12 @@ export function parseContinuumUrl(input: string): ContinuumState | null {
     return null;
   }
   const extras: Record<string, string> = {};
-  for (const [k, v] of search.entries()) {
-    if (k === CONTINUUM_QUERY_KEY) continue;
+  // `URLSearchParams.entries()` is missing from RN's TS lib in some
+  // setups; `forEach` is universally available across web + RN.
+  search.forEach((v, k) => {
+    if (k === CONTINUUM_QUERY_KEY) return;
     extras[k] = v;
-  }
+  });
   const hasExtras = Object.keys(extras).length > 0;
   return {
     pathname: normalisePathname(pathname),
