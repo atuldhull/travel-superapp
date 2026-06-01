@@ -19,6 +19,7 @@
   "dependencies": {
     "@app/aether-audio": "workspace:*",
     "@app/aether-canvas": "workspace:*",
+    "@app/aether-canvas-shared": "workspace:*",
     "@app/aether-core": "workspace:*",
     "@app/aether-motion": "workspace:*",
     "@app/sdk": "workspace:*",

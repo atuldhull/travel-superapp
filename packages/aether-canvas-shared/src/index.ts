@@ -32,3 +32,14 @@ export {
   type CameraScript,
   type Vec3Tuple,
 } from './lifecycle-camera';
+
+// AE455 — Pulse breathing envelopes.
+export {
+  moodFromPhase,
+  pulseBreathAt,
+  pulseBreathParams,
+  pulseBreathStatic,
+  type PulseBreathParams,
+  type PulseBreathState,
+  type PulseMood,
+} from './pulse-breathing';
