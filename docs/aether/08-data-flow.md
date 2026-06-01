@@ -378,3 +378,66 @@ substitute:
 | inline `String(idx + 1).padStart(2, '0')`                                             | `ordinalLabel(idx)` (AE361)                                 |
 | inline asIso / fmtDate / fmtTime / daysBetween                                        | `@/lib/aether-dates` (AE171)                                |
 | inline `try/JSON.parse + window.localStorage.getItem`                                 | `readJSON(key, fallback)` (AE238) + `safeJsonParse` (AE228) |
+
+---
+
+## 8. `@app/aether-canvas-shared` (Round AK + AL — 35 pure modules)
+
+Phase 4 mobile-parity prep moved every framework-free pure helper
+out of `apps/web/src/components/aether/phase{1,2,3}/` into a single
+workspace package. Both the web canvas (`@app/aether-canvas`) and
+the eventual native canvas (`@app/aether-canvas/native`) import from
+here so the geometry / lifecycle / palette math is bit-for-bit
+identical across platforms.
+
+```
+              ┌──────────────────────────────────────────────────────────┐
+              │             @app/aether-canvas-shared                    │
+              │             (35 pure modules, 0 peer deps)               │
+              ├──────────────────────────────────────────────────────────┤
+              │ • lifecycle-progress     • genie-state    • mirror-globe │
+              │ • lifecycle-camera       • genie-particles • mirror-investigate
+              │ • pulse-breathing        • genie-camera   • echo-feed    │
+              │ • atlas-orbs             • genie-recorder • echo-layout  │
+              │ • compass-rose           • continuum-state • live-trip-watch
+              │ • lumen-cloud            • continuum-sigil • lumen-museum│
+              │ • lumen-keyboard         • continuum-landing • lumen-pinch
+              │ • lumen-selection        • vault-glyphs   • lumen-strategies
+              │ • vault-glyph-positions  • vault-checkout │              │
+              │ • vault-sample-prices    • pulse-hold-to-talk            │
+              │ • url-ttl                • weather-simulation            │
+              │ • now-card-content       • now-card-lifecycle            │
+              │ • destination-coords     • upcoming-trip                 │
+              └──────────────────────────────────────────────────────────┘
+                       ▲                              ▲
+                       │ re-export shim               │ direct import (future)
+                       │ (apps/web/.../*.ts)          │
+                       │                              │
+              ┌────────────────────┐         ┌────────────────────────┐
+              │  apps/web phase{1, │         │  apps/mobile (Phase 4) │
+              │  2, 3}/*.ts files  │         │  @app/aether-canvas/   │
+              │  — 30+ shims, each │         │  native (when wired)   │
+              │  1-line re-export  │         │                        │
+              └────────────────────┘         └────────────────────────┘
+```
+
+Round-by-round migration history:
+
+| Round | Slices      | Modules added                                                                                                                                                                                                 |
+| ----- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| AK    | AE453-AE457 | lifecycle-progress + lifecycle-camera (AE454); pulse-breathing (AE455); 5 spatial layouts (AE456); 3 weather + time + coords (AE457). 11 modules.                                                             |
+| AL    | AE469-AE481 | 4 Genie (AE469); 3 Continuum (AE470); 2 Mirror (AE471); 2 Echo + LiveTrip (AE477); 5 Lumen interactions (AE478); 5 Vault + Pulse + url-ttl (AE479); 2 Now Card lifecycle + upcoming-trip (AE480). 23 modules. |
+
+Every dependency is type-only (`SurfaceLifecyclePhase` from
+`@app/aether-core`). No React, no DOM, no Three.js, no R3F. Hermes-safe.
+
+Cross-package integration (AE472) pins the three-way handoff
+contract: `useSurfaceLifecycle()` (aether-core) → `easedPhaseProgress`
+
+- `cameraPoseAt` (canvas-shared) → `channelGainsAt` (aether-audio).
+  All three modules must co-evolve for the surface lifecycle to read
+  as one seamless animation.
+
+Shape gates: AE481 (canvas-shared own barrel) + AE483 (web phase1
+barrel) + AE484 (web phase2 barrel). Renaming any export now fails
+a paired spec loudly.
