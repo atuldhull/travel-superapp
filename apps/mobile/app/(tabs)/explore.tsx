@@ -1,5 +1,8 @@
 /**
- * Explore tab — near-me discovery.
+ * Phase 4 / Round AS (AE519) â€” Tamagui stripped; uses plain RN primitives.
+ * Will be retired entirely when the Aether mobile surface ships.
+ *
+ * Explore tab â€” near-me discovery.
  *
  * [S-D2] replaces the V.UX.27 web-link stub (three buttons that opened
  * https://travelsuperapp.local/...) with a real near-me surface. Calls
@@ -16,9 +19,16 @@
  *
  * Installed by [S-D2] of the S-series real-functionality closeout.
  */
-import { ScrollView, RefreshControl } from 'react-native';
+import {
+  ScrollView,
+  RefreshControl,
+  View,
+  Text,
+  TouchableOpacity,
+  ActivityIndicator,
+  StyleSheet,
+} from 'react-native';
 import { useEffect, useMemo, useState } from 'react';
-import { Button, Card, H4, Paragraph, Spinner, Text, XStack, YStack } from 'tamagui';
 import {
   useNearMeControllerNearMe,
   type NearMeNowResponseDto,
@@ -47,7 +57,7 @@ export default function ExploreScreen() {
       onError: (err: unknown) => {
         const e = err as ApiError;
         setErrorMsg(
-          `${e.code ?? `HTTP_${e.status ?? '???'}`} — ${e.message ?? 'Could not load near-me.'}`,
+          `${e.code ?? `HTTP_${e.status ?? '???'}`} - ${e.message ?? 'Could not load near-me.'}`,
         );
       },
     },
@@ -79,61 +89,59 @@ export default function ExploreScreen() {
         />
       }
     >
-      <YStack padding="$4" gap="$3">
-        <H4>Explore</H4>
-        <Paragraph color="$color10">
+      <View style={styles.container}>
+        <Text style={styles.h4}>Explore</Text>
+        <Text style={styles.muted}>
           Up to 5 nearest places + walking routes + today's weather + a safety chip.
-        </Paragraph>
+        </Text>
 
-        <XStack gap="$2" alignItems="center" flexWrap="wrap">
-          <Button size="$2" onPress={() => void geo.relocate()}>
-            {geo.status === 'pending' ? '📍 Locating…' : '📍 Re-locate'}
-          </Button>
-          <Text color="$color10" fontSize="$2">
+        <View style={styles.row}>
+          <TouchableOpacity style={styles.button} onPress={() => void geo.relocate()}>
+            <Text style={styles.buttonText}>
+              {geo.status === 'pending' ? '[loc] Locating...' : '[loc] Re-locate'}
+            </Text>
+          </TouchableOpacity>
+          <Text style={styles.mutedSmall}>
             {geo.center.lat.toFixed(3)}, {geo.center.lng.toFixed(3)}
           </Text>
-          {usingFallback ? (
-            <Text color="$orange10" fontSize="$1">
-              using NYC fallback
-            </Text>
-          ) : null}
-        </XStack>
+          {usingFallback ? <Text style={styles.warningSmall}>using NYC fallback</Text> : null}
+        </View>
 
         {!online ? (
-          <Card padding="$3" bordered>
-            <Text color="$color10">
-              Offline — showing the last loaded results. Reconnect to refresh.
+          <View style={styles.card}>
+            <Text style={styles.muted}>
+              Offline - showing the last loaded results. Reconnect to refresh.
             </Text>
-          </Card>
+          </View>
         ) : null}
 
         {errorMsg ? (
-          <Card padding="$3" bordered borderColor="$red8">
-            <Text color="$red10">{errorMsg}</Text>
-          </Card>
+          <View style={[styles.card, styles.cardError]}>
+            <Text style={styles.errorText}>{errorMsg}</Text>
+          </View>
         ) : null}
 
         {body ? <NearMeMeta body={body} /> : null}
 
         {near.isPending && places.length === 0 ? (
-          <YStack alignItems="center" padding="$4">
-            <Spinner />
-          </YStack>
+          <View style={styles.spinnerWrap}>
+            <ActivityIndicator />
+          </View>
         ) : places.length === 0 ? (
-          <Card padding="$3" bordered>
-            <Text color="$color10">
+          <View style={styles.card}>
+            <Text style={styles.muted}>
               No places within 3 km. Move the radius (coming in the next slice) or try a different
               location.
             </Text>
-          </Card>
+          </View>
         ) : (
-          <YStack gap="$2">
+          <View style={styles.placeList}>
             {places.map((p) => (
               <PlaceRow key={p.id} place={p} />
             ))}
-          </YStack>
+          </View>
         )}
-      </YStack>
+      </View>
     </ScrollView>
   );
 }
@@ -146,20 +154,20 @@ function NearMeMeta({ body }: { body: NearMeNowResponseDto }) {
   };
   const safety = body.safety as unknown as { tier?: string; summary?: string };
   return (
-    <XStack gap="$2" flexWrap="wrap">
-      <Card padding="$2" bordered>
-        <Text fontSize="$2" color="$color10">
-          ☂︎{' '}
+    <View style={styles.metaRow}>
+      <View style={styles.metaCard}>
+        <Text style={styles.mutedSmall}>
+          [wx]{' '}
           {weather.summary ??
-            `${Math.round(weather.maxTempC ?? 0)}° / ${Math.round(weather.minTempC ?? 0)}°`}
+            `${Math.round(weather.maxTempC ?? 0)}deg / ${Math.round(weather.minTempC ?? 0)}deg`}
         </Text>
-      </Card>
-      <Card padding="$2" bordered>
-        <Text fontSize="$2" color="$color10">
-          ⊕ {safety.tier ?? 'unknown'} — {safety.summary ?? 'no safety data'}
+      </View>
+      <View style={styles.metaCard}>
+        <Text style={styles.mutedSmall}>
+          [sf] {safety.tier ?? 'unknown'} - {safety.summary ?? 'no safety data'}
         </Text>
-      </Card>
-    </XStack>
+      </View>
+    </View>
   );
 }
 
@@ -170,17 +178,15 @@ function PlaceRow({ place: p }: { place: NearMePlaceDto }) {
       : `${(p.distanceMeters / 1000).toFixed(1)} km`;
   const walking = p.routes.find((r) => r.mode === 'walk');
   return (
-    <Card padding="$3" bordered>
-      <YStack gap="$1">
-        <Text fontSize="$5" fontWeight="600">
-          {p.name}
+    <View style={styles.card}>
+      <View style={styles.placeStack}>
+        <Text style={styles.placeName}>{p.name}</Text>
+        <Text style={styles.mutedSmall}>
+          {p.category} - {distanceLabel} away
+          {walking ? ` - [walk] ${formatDuration(walking.durationSeconds)}` : ''}
         </Text>
-        <Text fontSize="$2" color="$color10">
-          {p.category} · {distanceLabel} away
-          {walking ? ` · 🚶 ${formatDuration(walking.durationSeconds)}` : ''}
-        </Text>
-      </YStack>
-    </Card>
+      </View>
+    </View>
   );
 }
 
@@ -190,3 +196,89 @@ function formatDuration(seconds: number): string {
   if (mins < 60) return `${mins} min`;
   return `${Math.floor(mins / 60)}h ${mins % 60}m`;
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: 'column',
+    gap: 12,
+    padding: 16,
+  },
+  h4: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  muted: {
+    color: '#666',
+    fontSize: 14,
+  },
+  mutedSmall: {
+    color: '#666',
+    fontSize: 12,
+  },
+  warningSmall: {
+    color: '#cc6600',
+    fontSize: 11,
+  },
+  row: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  button: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: '#eee',
+    borderRadius: 6,
+  },
+  buttonText: {
+    fontSize: 13,
+    color: '#111',
+  },
+  card: {
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+  },
+  cardError: {
+    borderColor: '#cc3333',
+  },
+  errorText: {
+    color: '#cc3333',
+    fontSize: 14,
+  },
+  spinnerWrap: {
+    alignItems: 'center',
+    padding: 16,
+  },
+  placeList: {
+    flexDirection: 'column',
+    gap: 8,
+  },
+  placeStack: {
+    flexDirection: 'column',
+    gap: 4,
+  },
+  placeName: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  metaRow: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  metaCard: {
+    padding: 8,
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+});
