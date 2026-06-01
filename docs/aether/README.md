@@ -1,6 +1,6 @@
 # Aether — TravelSuperApp 2.0 frontend
 
-> **Status: Phase 1 shipped (2026-05-31).** Drift / Atlas / Compass Bird / Pulse / Continuum bar all live behind `NEXT_PUBLIC_FEATURE_AETHER_PHASE1=1`. See [`10-phase1-closeout.md`](10-phase1-closeout.md) for the surface inventory + capability stack. Phase 0 editorial preview (`NEXT_PUBLIC_FEATURE_AETHER_PREVIEW=1`) remains the default when the Phase 1 flag is off. Brand language locked to **Warm Italian tactile**.
+> **Status: Phase 1 shipped (2026-05-31); Phase 2 in progress (2026-06-01).** Drift / Atlas / Compass Bird / Pulse / Continuum bar all live behind `NEXT_PUBLIC_FEATURE_AETHER_PHASE1=1` (see [`10-phase1-closeout.md`](10-phase1-closeout.md)). Phase 2 adds Lumen memory studio with real photo textures + click-to-zoom + keyboard nav + presigned URL TTL refetch, plus state-machine scaffolds for Genie (voice modal) and Vault (bookings + commerce) — details in [`11-phase2-progress.md`](11-phase2-progress.md). Phase 2 rides the same flag for now. Brand language locked to **Warm Italian tactile**.
 >
 > Codename for the complete frontend rebuild. Discards every current `apps/web/src/` and `apps/mobile/app/` pixel; keeps the API + `@app/sdk` + workers + ai-service untouched.
 >
@@ -20,6 +20,7 @@
 10. [`09-component-catalog.md`](09-component-catalog.md) — every component + which route mounts it.
 11. [`AETHER_E2E_KIT.md`](AETHER_E2E_KIT.md) — operator playbook (boot locally, walk surfaces, promote-admin, gate tests, launch flag).
 12. [`10-phase1-closeout.md`](10-phase1-closeout.md) — Phase 1 surface inventory, capability stack, deferred work, full commit chain AE374 → AE397.
+13. [`11-phase2-progress.md`](11-phase2-progress.md) — Phase 2 scaffolds + stack — Lumen interactions (AE398-AE405), Genie modal state machine (AE406), Vault price glyphs (AE407).
 
 ## What we reuse from 1.0
 
