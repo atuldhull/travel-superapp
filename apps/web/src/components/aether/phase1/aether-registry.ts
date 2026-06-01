@@ -117,9 +117,10 @@ export function createAetherPhase1Registry(): SurfaceRegistry {
       // material — terracotta over a creamier paper.
       palette: ['#1A0F09', '#F2E8D5', '#B0644A', '#D6A05F', '#6E7B5C'],
       route: { kind: 'literal', pathname: '/aether/vault' },
-      // No R3F scene yet — the Vault shell renders its glyph grid as
-      // a 2D overlay above the (placeholder) canvas. Future slice
-      // wires a real R3F glyph-physics scene + sets `mount`.
+      // AE414 — first cut R3F scene (sphere ring + per-glyph bob).
+      // The 2D HTML labels still render on top so prices stay legible;
+      // a future slice can use drei `<Html>` to attach labels in 3D.
+      mount: () => import('../phase2/vault-phase2-scene'),
     },
   ]);
 }

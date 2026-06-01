@@ -19,6 +19,15 @@ describe('AE396 — Phase 1 registry shape', () => {
     }
   });
 
+  it('AE398 lumen + AE414 vault Phase 2 surfaces also have mount loaders', () => {
+    for (const id of ['lumen', 'vault']) {
+      const s = byId(id);
+      expect(s, `${id} surface registered`).toBeDefined();
+      expect(s?.route.kind).not.toBe('overlay');
+      expect(typeof s?.mount).toBe('function');
+    }
+  });
+
   it('pulse overlay surface has a symmetric mount loader (AE396)', () => {
     const pulse = byId('pulse');
     expect(pulse).toBeDefined();
