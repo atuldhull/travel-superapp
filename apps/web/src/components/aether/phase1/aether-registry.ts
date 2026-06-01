@@ -138,5 +138,20 @@ export function createAetherPhase1Registry(): SurfaceRegistry {
       route: { kind: 'literal', pathname: '/aether/feed' },
       mount: () => import('../phase3/echo-phase3-scene'),
     },
+    {
+      // AE421 — Mirror, the admin forensics surface (Phase 3, Surface #9).
+      // Per 02-surfaces.md §9 the current /admin/* gets rebuilt as one
+      // surface: SOS globe + scam clusters + audit-log river + Cmd+K
+      // "Investigate user" forensic assembly. First cut mounts at
+      // /aether/mirror; the eventual integration with the existing
+      // `useAdmin*Controller*` hooks (S-E5 family) lands per-feature.
+      id: 'mirror',
+      phase: 3,
+      // Mirror leans into the operator-blue palette — deeper ink +
+      // cooler glow so the surface reads as "ops, not editorial".
+      palette: ['#0C1118', '#E3E6EC', '#5384B0', '#A9C5DE', '#9A4836'],
+      route: { kind: 'literal', pathname: '/aether/mirror' },
+      mount: () => import('../phase3/mirror-phase3-scene'),
+    },
   ]);
 }
