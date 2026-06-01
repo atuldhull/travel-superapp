@@ -190,6 +190,36 @@ groups them by area of concern.
 The list above is not exhaustive (the count exceeds 100); see
 `apps/web/src/lib/` + the per-area folders for the full picture.
 
+### `@app/aether-canvas-shared` (Round AK + AL — 35 pure modules)
+
+Phase 4 mobile-parity prep extracted every framework-free pure helper
+from the Phase 1/2/3 web tree into a single workspace package. Web
+phase{1,2,3}/.ts files that used to contain the implementations now
+re-export from `@app/aether-canvas-shared` — call sites are unchanged,
+but the implementation moved under one roof so both `@app/aether-canvas`
+(web R3F) and `@app/aether-canvas/native` (Phase 4) consume the same
+math without pulling R3F or DOM peer deps.
+
+| Category                 | Modules in canvas-shared                                                                                                                                                                                                                              |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Lifecycle**            | `lifecycle-progress` (easeOutCubic / phaseProgress / easedPhaseProgress) · `lifecycle-camera` (cameraPoseAt / lerpVec3 / DEFAULT_CAMERA_SCRIPT) · `pulse-breathing` (moodFromPhase / pulseBreathAt) · `now-card-lifecycle` (Now Card phase-aware CSS) |
+| **Spatial layouts**      | `atlas-orbs` · `compass-rose` · `lumen-cloud` · `vault-glyph-positions` · `echo-layout`                                                                                                                                                               |
+| **Lumen interactions**   | `lumen-museum` (museum arc) · `lumen-pinch` (wheelToPinchIntent) · `lumen-strategies` (5 layout strategies) · `lumen-selection` (cameraTargetForPhoto) · `lumen-keyboard` (arrowDirectionFromKey + lumenFocusAnnouncement)                            |
+| **Genie modal**          | `genie-state` (FSM) · `genie-particles` (seedFor / particleAt / easeInOutCubic) · `genie-camera` (capture mode + status) · `genie-recorder` (mic + MIME picker + genieMimeExtension)                                                                  |
+| **Vault checkout**       | `vault-glyphs` (glyphSize / Opacity / sparkline) · `vault-checkout` (FSM + validators) · `vault-sample-prices` (fixture catalogue)                                                                                                                    |
+| **Pulse**                | `pulse-hold-to-talk` (gesture FSM with PULSE_HOLD_THRESHOLD_MS)                                                                                                                                                                                       |
+| **Continuum**            | `continuum-state` (build / parse / isContinuumUrl) · `continuum-sigil` (hashSeed + buildSigilGrid) · `continuum-landing` (readContinuumLanding + formatContinuumLandingMessage)                                                                       |
+| **Mirror admin**         | `mirror-globe` (latLngToVec3 + sosDotRadius + scamClusterRadius + auditRowYProgress) · `mirror-investigate` (Cmd+K hotkey + filter + severity)                                                                                                        |
+| **Echo feed**            | `echo-feed` (swipe direction + action + palette derivation) · `echo-layout` (card stack Y/scale/opacity) · `live-trip-watch` (presence freshness + dot color + announcement)                                                                          |
+| **Weather + time + geo** | `weather-simulation` (India seasonality) · `now-card-content` (time-band → Plan/Refine/Reflect/Dream) · `destination-coords` (curated lat/lng) · `upcoming-trip` (daysUntil + nowCardPersonalised)                                                    |
+| **URL TTL**              | `url-ttl` (msUntilExpiry + refetchDelayMs for presigned media URLs)                                                                                                                                                                                   |
+
+Every module is type-only-coupled to `@app/aether-core` for
+`SurfaceLifecyclePhase`. No React, no DOM, no Three.js, no R3F.
+Shape gates: `@app/aether-canvas-shared/test/index-shape.spec.ts`
+(AE481) + `apps/web/test/lib/aether-phase{1,2}-api-surface.spec.ts`
+(AE483 + AE484).
+
 ## Data sources
 
 - **Trip data** — `@app/sdk` hooks (orval-generated React Query)
