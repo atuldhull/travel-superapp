@@ -10,14 +10,14 @@
 
 ## Summary
 
-| Counter             | Value                                                   |
-| ------------------- | ------------------------------------------------------- |
-| Prompts completed   | 540 (Round AM: AE483-AE487 shape gates + doc refresh)   |
-| Prompts in progress | 0                                                       |
-| Prompts blocked     | 0                                                       |
-| Last prompt         | `AE487` — Round AM progress doc                         |
-| Last commit date    | 2026-06-01                                              |
-| Phase               | **Round AM SHIPPED** — barrel shape gates + doc refresh |
+| Counter             | Value                                                  |
+| ------------------- | ------------------------------------------------------ |
+| Prompts completed   | 543 (Round AN: AE488-AE490 phase3 + invariants)        |
+| Prompts in progress | 0                                                      |
+| Prompts blocked     | 0                                                      |
+| Last prompt         | `AE490` — Round AN progress doc                        |
+| Last commit date    | 2026-06-01                                             |
+| Phase               | **Round AN SHIPPED** — 3-layer shape gate + invariants |
 
 ---
 
