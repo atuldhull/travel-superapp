@@ -1,5 +1,8 @@
 /**
- * V.UX.27 (sub-prompt 2) — magic-link consume. Triggered by
+ * Phase 4 / Round AS (AE520) - Tamagui stripped; uses plain RN primitives.
+ * Will be retired entirely when the Aether mobile surface ships.
+ *
+ * V.UX.27 (sub-prompt 2) - magic-link consume. Triggered by
  * `travelapp://auth/magic-link/<token>` (or the universal-link
  * https variant). Posts the token to `/auth/magic-link/consume`,
  * stashes the returned access token, redirects to Trips on success.
@@ -10,9 +13,8 @@
  * Installed by prompt [V.UX.27].
  */
 import { useEffect } from 'react';
-import { Alert } from 'react-native';
+import { Alert, View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Spinner, Text, YStack } from 'tamagui';
 import { useAuthControllerMagicLinkConsume, type AuthSuccessResponseDto } from '@app/sdk';
 import { setAccessToken } from '../../../lib/sdk';
 
@@ -38,7 +40,7 @@ export default function MagicLinkConsumeScreen() {
       } catch (err) {
         if (cancelled) return;
         const e = err as ApiError;
-        Alert.alert('Magic link failed', `${e.code ?? `HTTP_${e.status ?? '???'}`} — ${e.message}`);
+        Alert.alert('Magic link failed', `${e.code ?? `HTTP_${e.status ?? '???'}`} - ${e.message}`);
         router.replace('/login');
       }
     })();
@@ -49,15 +51,24 @@ export default function MagicLinkConsumeScreen() {
   }, [token]);
 
   return (
-    <YStack
-      flex={1}
-      backgroundColor="$background"
-      alignItems="center"
-      justifyContent="center"
-      gap="$3"
-    >
-      <Spinner />
-      <Text color="$color10">Signing you in…</Text>
-    </YStack>
+    <View style={styles.container}>
+      <ActivityIndicator />
+      <Text style={styles.label}>Signing you in...</Text>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    backgroundColor: '#fff',
+  },
+  label: {
+    fontSize: 14,
+    color: '#666',
+  },
+});
