@@ -214,6 +214,10 @@ export {
   type SigilGrid,
 } from './continuum-sigil';
 
+// AE530 - sigil render layout: positions a SigilGrid into square cells
+// (shared by the web SVG renderer + the Phase 4 native Skia renderer).
+export { sigilCellRects, sigilPixelSize, type SigilCellRect } from './sigil-render';
+
 export {
   NO_CONTINUUM_LANDING,
   formatContinuumLandingMessage,
