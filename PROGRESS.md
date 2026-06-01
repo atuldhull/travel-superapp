@@ -12,12 +12,12 @@
 
 | Counter             | Value                                                   |
 | ------------------- | ------------------------------------------------------- |
-| Prompts completed   | 548 (Round AO: AE491-AE495 canvas-shared behavioural)   |
+| Prompts completed   | 556 (Round AP: AE497-AE503 canvas-shared beh specs +7)  |
 | Prompts in progress | 0                                                       |
 | Prompts blocked     | 0                                                       |
-| Last prompt         | `AE495` — canvas-shared vault-checkout spec             |
+| Last prompt         | `AE503` — canvas-shared echo-feed spec                  |
 | Last commit date    | 2026-06-01                                              |
-| Phase               | **Round AO SHIPPED** — canvas-shared own beh specs +109 |
+| Phase               | **Round AP SHIPPED** — canvas-shared own beh specs +252 |
 
 ---
 
