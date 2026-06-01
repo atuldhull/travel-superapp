@@ -1,0 +1,24 @@
+/** @type {import('jest').Config} */
+module.exports = {
+  testEnvironment: 'node',
+  rootDir: '.',
+  testMatch: ['<rootDir>/test/**/*.spec.ts', '<rootDir>/test/**/*.spec.tsx'],
+  transform: {
+    '^.+\\.tsx?$': [
+      'ts-jest',
+      {
+        tsconfig: {
+          module: 'commonjs',
+          target: 'ES2022',
+          moduleResolution: 'node',
+          esModuleInterop: true,
+          strict: true,
+          isolatedModules: true,
+          skipLibCheck: true,
+          jsx: 'react-jsx',
+          lib: ['ES2022'],
+        },
+      },
+    ],
+  },
+};
