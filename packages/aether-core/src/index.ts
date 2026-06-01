@@ -86,14 +86,19 @@ export {
 export { SurfaceMountFrame, type SurfaceMountFrameProps } from './surface/mount';
 
 // Phase 1 (AE381) — per-surface palette derivation + CSS-vars bridge.
+// AE441 adds slot-name lookups for the Phase 4 native palette context.
 export {
   DEFAULT_SURFACE_PALETTE,
+  PALETTE_SLOT_NAMES,
   blendHex,
   blendPalettes,
   isValidPalette,
   paletteForSurface,
+  paletteSlotIndex,
+  paletteSlotName,
   slotsFor,
   type SurfacePalette,
+  type SurfacePaletteSlotName,
   type SurfacePaletteSlots,
 } from './surface/palette';
 export {
