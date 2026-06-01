@@ -32,6 +32,7 @@ import { Phase1ContinuumBar } from './phase1-continuum-bar';
 import { Phase1ContinuumReceiverToast } from './phase1-continuum-receiver-toast';
 import { Phase1DevNav } from './phase1-dev-nav';
 import { Phase1PulseOverlay } from './phase1-pulse-overlay';
+import { Phase2GenieModal } from '../phase2/phase2-genie-modal';
 import { pickUpcomingTrip, type UpcomingTripLike } from './upcoming-trip';
 import { UpcomingTripProvider } from './upcoming-trip-context';
 import { BREATHING_LIFECYCLE_PLAN, useLifecycleAutoDriver } from './use-lifecycle-driver';
@@ -102,6 +103,8 @@ function Phase1Inner(): React.ReactElement {
   // The bridge handles user-gesture activation (one-shot pointerdown
   // listener) and edge-detection from the dB stream to engine actions.
   const audioBridge = useSceneAudioBridge(setAudio);
+  // AE416 — Pulse hold-to-talk opens the Genie modal.
+  const [genieOpen, setGenieOpen] = useState<boolean>(false);
 
   const isDev = process.env.NODE_ENV !== 'production';
   const pipStyle: CSSProperties = {
@@ -136,7 +139,12 @@ function Phase1Inner(): React.ReactElement {
           the AE96 `aether-pulse-open` CustomEvent bridge. The drawer
           itself ships from the outer DriftShell so it can persist
           across Phase 0 / Phase 1 flag flips. */}
-        <Phase1PulseOverlay onActivate={() => openPulse('')} />
+        <Phase1PulseOverlay
+          onActivate={() => openPulse('')}
+          onHoldOpen={() => setGenieOpen(true)}
+        />
+        {/* AE416 — Genie modal opens on Pulse hold. */}
+        <Phase2GenieModal open={genieOpen} onClose={() => setGenieOpen(false)} />
         {/* AE390 — Continuum cross-device handoff bar. */}
         <Phase1ContinuumBar />
         {/* AE391 — receiver side: surface a small "Continued from

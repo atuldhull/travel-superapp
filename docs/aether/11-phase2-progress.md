@@ -85,7 +85,15 @@ Camera mode (AE413):
 - `<Phase2GenieModal>` adds a Voice / Camera pill toggle below the main capture surface; camera mode replaces the mic with a `<video>` feed + a circular capture button; after capture the still freezes and a `Recognising — ML Kit lands later` placeholder appears, click `↺` to retake; sr-only `role=status` mirrors the camera lane
 - Mode-aware footer: `Phase 2 preview · STT lands later` (voice) / `Phase 2 preview · ML Kit lands later` (camera)
 
-**Not yet wired** — the captured audio blob does not yet POST to ai-service `/v1/transcribe`; the captured still does not yet POST to a `/v1/detect-objects` endpoint; typeset-in-3D transcript still later. The full 5000-particle GPU dissolution waits for the genie modal to lift into the R3F canvas (SVG-based 120-particle swarm ships today as the honest first cut). Genie trigger from Pulse hold-to-talk lands in AE416.
+Genie trigger — Pulse hold-to-talk (AE416):
+
+- Pure `pulse-hold-to-talk.ts` — `PULSE_HOLD_THRESHOLD_MS = 500`; `PulseHoldStatus` union (`idle`/`pressing`/`holding`/`released`); `isHoldGesture(durationMs, threshold?)` cap helper; `nextHoldStatus(current, elapsed, threshold?)` FSM advance; `PulseReleaseOutcome` union (`tap`/`hold`/`cancel`); `pulseReleaseOutcome(status, durationMs, threshold?)` decides what fires on release; `holdStatusLabel` sr-only announcer copy
+- React `use-pulse-hold-to-talk.tsx` — `usePulseHoldToTalk({onTap?, onHold?, thresholdMs?})` returns pointer handlers + the live status; sub-threshold tap → `onTap`, > threshold → `onHold`, leave/cancel → no-op; unmount safety clears the pending timeout
+- `<Phase1PulseOverlay onHoldOpen?>` — pointer-down/up routed through the hook when `onHoldOpen` is set; soft scale-up + glow ring during the holding state; sr-only `role=status aria-live=polite` line tracks the hold
+- All 5 shells (Drift / Atlas / Compass / Lumen / Vault) mount `<Phase2GenieModal>` and pass `onHoldOpen={() => setGenieOpen(true)}` to the Pulse overlay so the Genie modal is one-gesture-away from anywhere
+- Modal close path refactored — `requestClose()` fires `onClose?.()` synchronously so the parent flag flips immediately; the AE412 `closing` flag keeps the modal mounted through the dissolve scatter even after the parent unmounts it
+
+**Not yet wired** — the captured audio blob does not yet POST to ai-service `/v1/transcribe`; the captured still does not yet POST to a `/v1/detect-objects` endpoint; typeset-in-3D transcript still later. The full 5000-particle GPU dissolution waits for the genie modal to lift into the R3F canvas (SVG-based 120-particle swarm ships today as the honest first cut).
 
 ## Vault — capability stack (AE407 + AE414)
 
@@ -127,7 +135,7 @@ Checkout flow (AE415):
 | `@app/aether-core`   | 122   | 0                                                           |
 | `@app/aether-canvas` | 77    | +8 (AE404 `aspectFromTexture`)                              |
 | `@app/aether-audio`  | 71    | 0                                                           |
-| `apps/web`           | 2014  | +332 across +17 files (Lumen + Genie + Vault + AE409-AE415) |
+| `apps/web`           | 2035  | +353 across +18 files (Lumen + Genie + Vault + AE409-AE416) |
 
 Typecheck clean across packages + apps/web. 0 new lint errors.
 
@@ -146,8 +154,8 @@ Typecheck clean across packages + apps/web. 0 new lint errors.
 5. **AE413 — camera-mode scaffold — SHIPPED** (2026-06-01). Live `<video>` feed + still capture via `useGenieCamera()`; ML-Kit detection over the still lands in AE413b once the endpoint ships.
 6. **AE414 — Vault R3F floating-glyph ring — SHIPPED** (2026-06-01). Sphere ring + per-glyph bob + drop halo. Custom shader physics + drei `<Html>` labels still later.
 7. **AE415 — Aether-styled checkout panel — SHIPPED** (2026-06-01). Right-edge slide-in panel + form + simulated submission. Real Stripe Checkout iframe + redirect URL contract land in AE415b.
-8. **AE416+ Pulse → Genie wiring** — hold the Pulse glow to open the Genie modal
-9. **Phase 2 closeout doc** when all of the above land
+8. **AE416 — Pulse hold-to-talk opens Genie — SHIPPED** (2026-06-01). All 5 shells wire it; sub-threshold taps still fall through to the existing AE96 Pulse-open path.
+9. **Phase 2 closeout doc** — see [`12-phase2-closeout.md`](12-phase2-closeout.md) when all of the above are stable
 
 ## Operator-owed for Phase 2 promotion
 
