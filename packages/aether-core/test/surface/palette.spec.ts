@@ -1,11 +1,14 @@
 /** AE381 — palette derivation specs. */
 import {
   DEFAULT_SURFACE_PALETTE,
+  PALETTE_SLOT_NAMES,
   __testing,
   blendHex,
   blendPalettes,
   isValidPalette,
   paletteForSurface,
+  paletteSlotIndex,
+  paletteSlotName,
   slotsFor,
   type SurfacePalette,
 } from '../../src/surface/palette';
@@ -187,5 +190,44 @@ describe('parseHex (internal)', () => {
     expect(toHex(255)).toBe('ff');
     expect(toHex(300)).toBe('ff');
     expect(toHex(-1)).toBe('00');
+  });
+});
+
+describe('PALETTE_SLOT_NAMES + paletteSlotName + paletteSlotIndex (AE441)', () => {
+  it('PALETTE_SLOT_NAMES lists 5 slots in tuple order', () => {
+    expect(PALETTE_SLOT_NAMES).toEqual(['ink', 'surface', 'accent', 'glow', 'support']);
+    expect(PALETTE_SLOT_NAMES.length).toBe(DEFAULT_SURFACE_PALETTE.length);
+  });
+  it("PALETTE_SLOT_NAMES is frozen so consumers can't mutate it", () => {
+    expect(Object.isFrozen(PALETTE_SLOT_NAMES)).toBe(true);
+  });
+  it('paletteSlotName maps each tuple index to its slot', () => {
+    expect(paletteSlotName(0)).toBe('ink');
+    expect(paletteSlotName(1)).toBe('surface');
+    expect(paletteSlotName(2)).toBe('accent');
+    expect(paletteSlotName(3)).toBe('glow');
+    expect(paletteSlotName(4)).toBe('support');
+  });
+  it('paletteSlotName returns null for out-of-range / NaN', () => {
+    expect(paletteSlotName(-1)).toBeNull();
+    expect(paletteSlotName(5)).toBeNull();
+    expect(paletteSlotName(Number.NaN)).toBeNull();
+    expect(paletteSlotName(1.5)).toBeNull();
+    expect(paletteSlotName(Number.POSITIVE_INFINITY)).toBeNull();
+  });
+  it('paletteSlotIndex maps slot names back to indices', () => {
+    expect(paletteSlotIndex('ink')).toBe(0);
+    expect(paletteSlotIndex('surface')).toBe(1);
+    expect(paletteSlotIndex('support')).toBe(4);
+  });
+  it('paletteSlotIndex returns -1 for unknown names', () => {
+    expect(paletteSlotIndex('unknown')).toBe(-1);
+    expect(paletteSlotIndex('')).toBe(-1);
+  });
+  it('slot-name + slotsFor agree at every index', () => {
+    const slots = slotsFor(DEFAULT_SURFACE_PALETTE);
+    PALETTE_SLOT_NAMES.forEach((name, i) => {
+      expect(slots[name]).toBe(DEFAULT_SURFACE_PALETTE[i]);
+    });
   });
 });
