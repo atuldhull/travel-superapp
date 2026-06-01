@@ -318,3 +318,55 @@ export {
   nextPhotoInDirection,
   type LumenArrowDirection,
 } from './lumen-keyboard';
+
+// AE479 — Vault price model + checkout state + sample fixtures +
+// Pulse hold-to-talk gesture FSM + presigned URL TTL helpers.
+export {
+  DEFAULT_VAULT_LAYOUT,
+  formatMinorAmount,
+  glyphOpacity,
+  glyphSize,
+  priceDroppedRecently,
+  priceSparkline,
+  type SparklinePoint,
+  type VaultLayoutConfig,
+  type VaultPriceLike,
+} from './vault-glyphs';
+
+export {
+  CHECKOUT_NAME_MIN_LENGTH,
+  VAULT_CHECKOUT_SIMULATED_DELAY_MS,
+  canSubmitCheckout,
+  checkoutDisabledReason,
+  checkoutFooterCopy,
+  checkoutStatusLabel,
+  checkoutSubmitLabel,
+  checkoutTitle,
+  checkoutTotal,
+  validateCheckoutEmail,
+  validateCheckoutName,
+  type VaultCheckoutStatus,
+} from './vault-checkout';
+
+export {
+  SAMPLE_VAULT_MAX_AMOUNT,
+  SAMPLE_VAULT_MIN_AMOUNT,
+  SAMPLE_VAULT_PRICES,
+} from './vault-sample-prices';
+
+export {
+  PULSE_HOLD_THRESHOLD_MS,
+  holdStatusLabel,
+  isHoldGesture,
+  nextHoldStatus,
+  pulseReleaseOutcome,
+  type PulseHoldStatus,
+  type PulseReleaseOutcome,
+} from './pulse-hold-to-talk';
+
+export {
+  DEFAULT_TTL_REFETCH_MARGIN_MS,
+  isExpiryNear,
+  msUntilExpiry,
+  refetchDelayMs,
+} from './url-ttl';
