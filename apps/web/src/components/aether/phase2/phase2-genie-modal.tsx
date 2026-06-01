@@ -25,6 +25,7 @@ import {
   type GenieState,
 } from './genie-state';
 import { canStartRecording, formatRecordingDuration, recorderStatusLabel } from './genie-recorder';
+import { GenieDissolveOverlay } from './genie-dissolve-overlay';
 import { useGenieRecorder } from './use-genie-recorder';
 
 export interface Phase2GenieModalProps {
@@ -50,6 +51,9 @@ export function Phase2GenieModal({
   onStateChange,
 }: Phase2GenieModalProps): React.ReactElement | null {
   const [state, setState] = useState<GenieState>(initialState);
+  // AE412 — when `open` flips false we keep the modal mounted for the
+  // duration of the dissolve animation, then unmount via `onClosed`.
+  const [closing, setClosing] = useState<boolean>(false);
   // AE411 — real MediaRecorder capture. Mic press starts the capture;
   // release stops it. The resulting blob is held in the hook for the
   // AE411b STT round trip; the modal surfaces the duration counter.
@@ -57,22 +61,32 @@ export function Phase2GenieModal({
 
   // Sync initialState on (re)open — tests can flip props.
   useEffect(() => {
-    if (open) setState(initialState);
+    if (open) {
+      setState(initialState);
+      setClosing(false);
+    }
   }, [open, initialState]);
+
+  // AE412 — request close: kick the dissolve-out, the overlay's
+  // `onClosed` fires after the swarm scatters; THAT's when we tell the
+  // parent to unmount.
+  const requestClose = useCallback((): void => {
+    recorder.reset();
+    setState(genieReset());
+    setClosing(true);
+  }, [recorder]);
 
   // Esc closes.
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (e: globalThis.KeyboardEvent): void => {
       if (e.key === 'Escape') {
-        recorder.reset();
-        setState(genieReset());
-        onClose?.();
+        requestClose();
       }
     };
     window.addEventListener('keydown', onKey);
     return (): void => window.removeEventListener('keydown', onKey);
-  }, [open, onClose, recorder]);
+  }, [open, requestClose]);
 
   const transition = useCallback(
     (fn: (s: GenieState) => GenieState) => {
@@ -85,7 +99,9 @@ export function Phase2GenieModal({
     [onStateChange],
   );
 
-  if (!open) return null;
+  // AE412 — render through the dissolve-out: keep mounted until the
+  // overlay tells us the particle scatter is done.
+  if (!open && !closing) return null;
 
   const ringColor = genieMicRingColor(state);
   const headline = genieStateLabel(state);
@@ -144,13 +160,17 @@ export function Phase2GenieModal({
       data-aether-genie-state={state}
       style={backdropStyle}
     >
+      <GenieDissolveOverlay
+        open={open && !closing}
+        onClosed={() => {
+          setClosing(false);
+          onClose?.();
+        }}
+      />
       <button
         type="button"
         aria-label="Close"
-        onClick={() => {
-          transition(genieReset);
-          onClose?.();
-        }}
+        onClick={requestClose}
         style={{
           position: 'absolute',
           top: 24,
@@ -160,6 +180,7 @@ export function Phase2GenieModal({
           color: 'var(--aether-palette-surface, #F2E8D5)',
           fontSize: 24,
           cursor: 'pointer',
+          zIndex: 101,
         }}
       >
         ×
