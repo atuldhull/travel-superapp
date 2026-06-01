@@ -456,6 +456,9 @@ importers:
       '@app/aether-canvas':
         specifier: workspace:*
         version: link:../../packages/aether-canvas
+      '@app/aether-canvas-shared':
+        specifier: workspace:*
+        version: link:../../packages/aether-canvas-shared
       '@app/aether-core':
         specifier: workspace:*
         version: link:../../packages/aether-core
