@@ -10,14 +10,14 @@
 
 ## Summary
 
-| Counter             | Value                                                                |
-| ------------------- | -------------------------------------------------------------------- |
-| Prompts completed   | 575 (Round AS: AE518-AE523 Tamagui-out from apps/mobile +6)          |
-| Prompts in progress | 0                                                                    |
-| Prompts blocked     | 0                                                                    |
-| Last prompt         | `AE523` — Round AS closeout                                          |
-| Last commit date    | 2026-06-01                                                           |
-| Phase               | **Phase 4 IN-PROGRESS** — Tamagui out + 3 native packages scaffolded |
+| Counter             | Value                                                            |
+| ------------------- | ---------------------------------------------------------------- |
+| Prompts completed   | 581 (Round AT: AE524-AE529 first Aether mobile surface live +6)  |
+| Prompts in progress | 0                                                                |
+| Prompts blocked     | 0                                                                |
+| Last prompt         | `AE529` — Round AT closeout                                      |
+| Last commit date    | 2026-06-01                                                       |
+| Phase               | **Phase 4 IN-PROGRESS** — surface 1/10 (Pulse) shipped on mobile |
 
 ---
 
