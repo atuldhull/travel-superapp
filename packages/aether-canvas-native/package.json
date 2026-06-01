@@ -1,0 +1,40 @@
+{
+  "name": "@app/aether-canvas-native",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Aether 2.0 canvas package for React Native. Mirrors @app/aether-canvas (web R3F) for native R3F (via expo-three + @react-three/fiber/native) on surfaces with depth, and pure-Skia for the flat surfaces. Phase 4 native foundation, AE515. All pure math is re-exported from @app/aether-canvas-shared so the math is identical across web + native.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src test",
+    "test": "jest --passWithNoTests",
+    "test:watch": "jest --watch"
+  },
+  "dependencies": {
+    "@app/aether-canvas-shared": "workspace:*",
+    "@app/aether-core": "workspace:*",
+    "@app/aether-core-native": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": ">=18.2.0"
+  },
+  "devDependencies": {
+    "@app/eslint-config": "workspace:*",
+    "@app/tsconfig": "workspace:*",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.10.5",
+    "@types/react": "^19.0.0",
+    "jest": "^29.7.0",
+    "react": "^19.0.0",
+    "ts-jest": "^29.2.5",
+    "typescript": "^5.7.2"
+  }
+}
