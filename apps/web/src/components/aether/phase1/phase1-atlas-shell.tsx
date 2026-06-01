@@ -49,6 +49,7 @@ import { Phase1ContinuumReceiverToast } from './phase1-continuum-receiver-toast'
 import { Phase1DevNav } from './phase1-dev-nav';
 import { Phase1PulseOverlay } from './phase1-pulse-overlay';
 import { Phase2GenieModal } from '../phase2/phase2-genie-modal';
+import { LiveTripWatchOverlay } from '../phase3/live-trip-watch-overlay';
 import { TripDataProvider, type TripDataLike } from './trip-data-context';
 import type { AtlasDayLike } from './atlas-orbs';
 import { coordsForDestination } from './destination-coords';
@@ -221,6 +222,9 @@ function Phase1AtlasInner({ tripId }: { tripId: string }): React.ReactElement {
                   : null
               }
             />
+            {/* AE425 — Live trip-watch (Tier 4 T4-Ag.2). Scaffold; real
+                WebTransport presence stream lands in AE425b. */}
+            <LiveTripWatchOverlay tripId={tripId} />
             <div style={pipStyle} aria-hidden>
               {current?.id ?? '—'} · {trip?.title ?? '…'} · {days.length} day
               {days.length === 1 ? '' : 's'} · weather {weather}
