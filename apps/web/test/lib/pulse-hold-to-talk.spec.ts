@@ -94,3 +94,56 @@ describe('holdStatusLabel (pure)', () => {
     expect(holdStatusLabel('holding').toLowerCase()).toContain('genie');
   });
 });
+
+describe('pulseReleaseOutcome + isHoldGesture (AE446 edge cases)', () => {
+  it('isHoldGesture: NaN duration returns false', () => {
+    expect(isHoldGesture(Number.NaN)).toBe(false);
+  });
+  it('isHoldGesture: Infinity duration returns false (not finite)', () => {
+    expect(isHoldGesture(Number.POSITIVE_INFINITY)).toBe(false);
+  });
+  it('isHoldGesture: 0 ms always tap', () => {
+    expect(isHoldGesture(0)).toBe(false);
+  });
+  it('isHoldGesture: exactly at threshold counts as hold (inclusive)', () => {
+    expect(isHoldGesture(PULSE_HOLD_THRESHOLD_MS)).toBe(true);
+  });
+  it('isHoldGesture: 1ms below threshold counts as tap', () => {
+    expect(isHoldGesture(PULSE_HOLD_THRESHOLD_MS - 1)).toBe(false);
+  });
+  it('isHoldGesture: custom threshold honoured', () => {
+    expect(isHoldGesture(150, 200)).toBe(false);
+    expect(isHoldGesture(250, 200)).toBe(true);
+  });
+  it('pulseReleaseOutcome: idle → cancel regardless of duration', () => {
+    expect(pulseReleaseOutcome('idle', 1_000)).toBe('cancel');
+    expect(pulseReleaseOutcome('idle', 0)).toBe('cancel');
+  });
+  it('pulseReleaseOutcome: holding → hold (status wins over short duration)', () => {
+    expect(pulseReleaseOutcome('holding', 10)).toBe('hold');
+  });
+  it('pulseReleaseOutcome: pressing + long duration → hold', () => {
+    expect(pulseReleaseOutcome('pressing', PULSE_HOLD_THRESHOLD_MS + 50)).toBe('hold');
+  });
+  it('pulseReleaseOutcome: pressing + short duration → tap', () => {
+    expect(pulseReleaseOutcome('pressing', 100)).toBe('tap');
+  });
+  it('pulseReleaseOutcome: released + short → tap (fallback)', () => {
+    expect(pulseReleaseOutcome('released', 100)).toBe('tap');
+  });
+  it('pulseReleaseOutcome: NaN duration with pressing → tap', () => {
+    expect(pulseReleaseOutcome('pressing', Number.NaN)).toBe('tap');
+  });
+  it('nextHoldStatus: idle stays idle even with elapsed time', () => {
+    expect(nextHoldStatus('idle', 9_000)).toBe('idle');
+  });
+  it('nextHoldStatus: pressing past threshold → holding', () => {
+    expect(nextHoldStatus('pressing', PULSE_HOLD_THRESHOLD_MS + 1)).toBe('holding');
+  });
+  it('nextHoldStatus: holding stays holding (terminal until released)', () => {
+    expect(nextHoldStatus('holding', PULSE_HOLD_THRESHOLD_MS + 5_000)).toBe('holding');
+  });
+  it('nextHoldStatus: released resets to idle next tick', () => {
+    expect(nextHoldStatus('released', 0)).toBe('idle');
+  });
+});
