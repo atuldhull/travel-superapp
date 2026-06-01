@@ -112,7 +112,13 @@ R3F scene (AE414):
 - `vault-phase2-scene.tsx` R3F default export — soft ambient + directional light, a thin torus ring backdrop tinted by `palette.support`, then one `<VaultGlyph>` per fixture (sphere geo, `meshStandardMaterial` accent + emissive when dropped, `useFrame` lerps Y via `glyphFloatY` + adds 0.005 rad / frame spin)
 - Aether registry adds `mount: () => import('../phase2/vault-phase2-scene')` so SurfaceMountFrame lazy-loads the chunk only when `/aether/vault` is visited
 
-**Not yet wired** — drei `<Html>` to attach the labels to each sphere in 3D (current cut keeps the AE407 2D HTML grid layered above the canvas), Stripe Checkout iframe in the booking flow, real prices from `useStaysControllerSearch` / `useTransportControllerRoutes`.
+Checkout flow (AE415):
+
+- Pure `vault-checkout.ts` — `VaultCheckoutStatus` lifecycle (`idle`/`open`/`submitting`/`success`/`error`); `checkoutTitle(price)` delegates to `price.label`; `checkoutTotal(price)` reuses AE407 `formatMinorAmount`; `checkoutSubmitLabel(status)` (`Pay with Aether` / `Processing…` / `Booked` / `Try again`); `checkoutFooterCopy(status)` honest about Stripe gap; `checkoutStatusLabel` aria-live announcer; `validateCheckoutName` (≥ 2 chars trimmed), `validateCheckoutEmail` (loose RFC-5322 regex w/ trim), `canSubmitCheckout(status, name, email)` gate; `checkoutDisabledReason` returns sr-only reason copy; `VAULT_CHECKOUT_SIMULATED_DELAY_MS = 1500`; `CHECKOUT_NAME_MIN_LENGTH = 2`
+- `<VaultCheckoutPanel>` right-edge slide-in panel: backdrop dim + blur, outside-click closes, Esc closes, palette-tinted form (name + email), Aether-styled Pay button driven by `canSubmitCheckout` + `checkoutDisabledReason`, simulated `setTimeout` round trip writes status `submitting` → `success`, honest footer copy
+- Glyph cards in `<Phase2VaultShell>` become `<button>` elements; clicking any glyph sets `selectedPrice` and opens the panel; closing the panel clears the selection
+
+**Not yet wired** — drei `<Html>` to attach labels to each sphere in 3D (current cut keeps the AE407 2D HTML grid layered above the canvas); real Stripe Checkout iframe + `STRIPE_PUBLISHABLE_KEY` + the redirect URL contract (lands in AE415b once the booking target is plugged in); real prices from `useStaysControllerSearch` / `useTransportControllerRoutes`.
 
 ## Test totals (post AE407)
 
@@ -121,7 +127,7 @@ R3F scene (AE414):
 | `@app/aether-core`   | 122   | 0                                                           |
 | `@app/aether-canvas` | 77    | +8 (AE404 `aspectFromTexture`)                              |
 | `@app/aether-audio`  | 71    | 0                                                           |
-| `apps/web`           | 1987  | +305 across +16 files (Lumen + Genie + Vault + AE409-AE414) |
+| `apps/web`           | 2014  | +332 across +17 files (Lumen + Genie + Vault + AE409-AE415) |
 
 Typecheck clean across packages + apps/web. 0 new lint errors.
 
@@ -139,7 +145,7 @@ Typecheck clean across packages + apps/web. 0 new lint errors.
 4. **AE412 — SVG particle dissolution — SHIPPED** (2026-06-01). 120-particle SVG swirl on open + dissolve on close. Full GPU 5000-particle version + typeset-in-3D transcript still pending.
 5. **AE413 — camera-mode scaffold — SHIPPED** (2026-06-01). Live `<video>` feed + still capture via `useGenieCamera()`; ML-Kit detection over the still lands in AE413b once the endpoint ships.
 6. **AE414 — Vault R3F floating-glyph ring — SHIPPED** (2026-06-01). Sphere ring + per-glyph bob + drop halo. Custom shader physics + drei `<Html>` labels still later.
-7. **AE415+ Vault Stripe Checkout** wrapped in Aether material
+7. **AE415 — Aether-styled checkout panel — SHIPPED** (2026-06-01). Right-edge slide-in panel + form + simulated submission. Real Stripe Checkout iframe + redirect URL contract land in AE415b.
 8. **AE416+ Pulse → Genie wiring** — hold the Pulse glow to open the Genie modal
 9. **Phase 2 closeout doc** when all of the above land
 

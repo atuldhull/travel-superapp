@@ -47,6 +47,8 @@ import {
   SAMPLE_VAULT_MIN_AMOUNT,
   SAMPLE_VAULT_PRICES,
 } from './vault-sample-prices';
+import { VaultCheckoutPanel } from './vault-checkout-panel';
+import type { VaultPriceLike } from './vault-glyphs';
 
 export function Phase2VaultShell(): React.ReactElement {
   const registry = useMemo(() => createAetherPhase1Registry(), []);
@@ -97,6 +99,9 @@ function Phase2VaultInner(): React.ReactElement {
   const minAmount = SAMPLE_VAULT_MIN_AMOUNT;
   const maxAmount = SAMPLE_VAULT_MAX_AMOUNT;
 
+  // AE415 — checkout state: which price the user tapped (null = panel closed).
+  const [selectedPrice, setSelectedPrice] = useState<VaultPriceLike | null>(null);
+
   return (
     <div style={{ width: '100%', height: '100vh', position: 'relative' }}>
       <SurfacePaletteVars />
@@ -132,10 +137,13 @@ function Phase2VaultInner(): React.ReactElement {
           const dropped = p.history !== undefined && priceDroppedRecently(p.history);
           const spark = priceSparkline(p.history ?? []);
           return (
-            <div
+            <button
               key={p.id}
+              type="button"
               data-aether-vault-glyph
               data-aether-vault-id={p.id}
+              aria-label={`Book ${p.label}`}
+              onClick={() => setSelectedPrice(p)}
               style={{
                 width: size,
                 height: size,
@@ -153,6 +161,8 @@ function Phase2VaultInner(): React.ReactElement {
                 textAlign: 'center',
                 padding: 8,
                 pointerEvents: 'auto',
+                border: 'none',
+                cursor: 'pointer',
               }}
             >
               <span data-aether-vault-label style={{ fontWeight: 600 }}>
@@ -176,10 +186,12 @@ function Phase2VaultInner(): React.ReactElement {
                   />
                 </svg>
               )}
-            </div>
+            </button>
           );
         })}
       </div>
+      {/* AE415 — checkout panel slides in when a glyph is tapped. */}
+      <VaultCheckoutPanel price={selectedPrice} onClose={() => setSelectedPrice(null)} />
       <div style={pipStyle} aria-hidden>
         {current?.id ?? '—'} · vault · {SAMPLE_VAULT_PRICES.length} glyphs · audio{' '}
         {audioBridge.status}
