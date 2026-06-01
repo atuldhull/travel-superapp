@@ -21,14 +21,14 @@
  */
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import type { PerspectiveCamera } from 'three';
+import type { Group, PerspectiveCamera } from 'three';
 import {
   useSurfacePaletteSlots,
   useSurfaceLifecycle,
   type SurfaceMountProps,
 } from '@app/aether-core';
-import { lerpVec3 } from '@app/aether-canvas';
-import { DEFAULT_LUMEN_LAYOUT, layoutPhotoCloud } from './lumen-cloud';
+import { lerp, lerpVec3 } from '@app/aether-canvas';
+import { DEFAULT_LUMEN_LAYOUT, layoutPhotoCloud, type LumenPlaneLayout } from './lumen-cloud';
 import { useLumenData } from './lumen-data-context';
 import { LumenPhotoSlot } from './lumen-photo-slot';
 import { useLumenSelection } from './lumen-selection-context';
@@ -38,6 +38,8 @@ import {
   resolveLumenCameraTarget,
 } from './lumen-selection';
 import { arrowDirectionFromKey, nextPhotoInDirection } from './lumen-keyboard';
+import { museumArcPositions } from './lumen-museum';
+import { nextFocusForPinch, wheelToPinchIntent } from './lumen-pinch';
 
 export default function LumenPhase2Scene(
   _props: Partial<SurfaceMountProps> = {},
@@ -49,6 +51,10 @@ export default function LumenPhase2Scene(
 
   // Pre-compute the photo positions once per photo set.
   const planes = useMemo(() => layoutPhotoCloud(photos), [photos]);
+
+  // AE409 — museum-mode arc layout when a photo is focused. The map
+  // is keyed by plane id; per-frame lerping happens inside the slot.
+  const museumTargets = useMemo(() => museumArcPositions(planes, focusedId), [planes, focusedId]);
 
   // AE402 — Esc clears the photo focus.
   // AE403 — Arrow keys step through the cloud (Left/Right walk the
@@ -71,6 +77,23 @@ export default function LumenPhase2Scene(
     };
     window.addEventListener('keydown', onKey);
     return (): void => window.removeEventListener('keydown', onKey);
+  }, [focusedId, setFocusedId, planes]);
+
+  // AE409 — wheel-pinch focus transitions. Trackpad pinch (or
+  // Ctrl+wheel) drives entry/exit of focused mode. We attach with
+  // `{passive: false}` so we can preventDefault and stop browser
+  // page-zoom from competing with our gesture.
+  useEffect(() => {
+    const onWheel = (e: globalThis.WheelEvent): void => {
+      const intent = wheelToPinchIntent({ deltaY: e.deltaY, ctrlKey: e.ctrlKey });
+      if (intent === null) return;
+      const next = nextFocusForPinch(intent, focusedId, planes);
+      if (next === undefined) return;
+      e.preventDefault();
+      setFocusedId(next);
+    };
+    window.addEventListener('wheel', onWheel, { passive: false });
+    return (): void => window.removeEventListener('wheel', onWheel);
   }, [focusedId, setFocusedId, planes]);
 
   // While the SDK call is pending the rails alone render, so the
@@ -105,19 +128,71 @@ export default function LumenPhase2Scene(
       {/* AE402 — camera driver tweens between overview + focused poses. */}
       <LumenCameraDriver focusedId={focusedId} planes={planes} />
 
-      {/* AE401 — per-asset photo slots; AE402 click-to-focus + scale/opacity. */}
+      {/* AE401 — per-asset photo slots; AE402 click-to-focus + scale/opacity;
+          AE409 wraps each slot in `<LumenAnimatedSlot>` so the plane
+          lerps to its museum-arc target when something is focused. */}
       {photosVisible &&
-        planes.map((p) => (
-          <LumenPhotoSlot
-            key={p.id}
-            assetId={p.id}
-            size={p.size * planeScaleForFocus(p.id, focusedId)}
-            position={p.position}
-            opacity={lifecycleOpacity * planeOpacityForFocus(p.id, focusedId)}
-            onClick={() => setFocusedId(p.id === focusedId ? null : p.id)}
-          />
-        ))}
+        planes.map((p) => {
+          const target = museumTargets.get(p.id) ?? p.position;
+          return (
+            <LumenAnimatedSlot
+              key={p.id}
+              plane={p}
+              targetPosition={target}
+              size={p.size * planeScaleForFocus(p.id, focusedId)}
+              opacity={lifecycleOpacity * planeOpacityForFocus(p.id, focusedId)}
+              onClick={() => setFocusedId(p.id === focusedId ? null : p.id)}
+            />
+          );
+        })}
     </>
+  );
+}
+
+/** AE409 — wraps `<LumenPhotoSlot>` with an outer group that smoothly
+ *  lerps toward the supplied `targetPosition`. The slot's own group
+ *  sits at the origin so it inherits the animated transform. */
+function LumenAnimatedSlot({
+  plane,
+  targetPosition,
+  size,
+  opacity,
+  onClick,
+}: {
+  readonly plane: LumenPlaneLayout;
+  readonly targetPosition: readonly [number, number, number];
+  readonly size: number;
+  readonly opacity: number;
+  readonly onClick: () => void;
+}): React.ReactElement {
+  const groupRef = useRef<Group>(null);
+  // Capture the initial cloud position so the very first frame doesn't
+  // jump — three's mesh transform stays anchored to where the plane was.
+  const initialRef = useRef<[number, number, number]>([
+    plane.position[0],
+    plane.position[1],
+    plane.position[2],
+  ]);
+  useFrame((_state, delta) => {
+    const g = groupRef.current;
+    if (g === null) return;
+    const dt = Math.min(delta, 0.1);
+    // Speed 4 ≈ ~250ms-to-closure; reads as "the wall arranges itself".
+    const t = 1 - Math.exp(-dt * 4);
+    g.position.x = lerp(g.position.x, targetPosition[0], t);
+    g.position.y = lerp(g.position.y, targetPosition[1], t);
+    g.position.z = lerp(g.position.z, targetPosition[2], t);
+  });
+  return (
+    <group ref={groupRef} position={initialRef.current}>
+      <LumenPhotoSlot
+        assetId={plane.id}
+        size={size}
+        position={[0, 0, 0]}
+        opacity={opacity}
+        onClick={onClick}
+      />
+    </group>
   );
 }
 
