@@ -218,6 +218,19 @@ export {
 // (shared by the web SVG renderer + the Phase 4 native Skia renderer).
 export { sigilCellRects, sigilPixelSize, type SigilCellRect } from './sigil-render';
 
+// AE535 - Drift ambient-field + sun-disk math (shared by web R3F
+// <AmbientField>/<SunDisk> + the Phase 4 native R3F Drift scene).
+export {
+  DEFAULT_DRIFT_BOUNDS,
+  DEFAULT_DRIFT_MOTE_COUNT,
+  DEFAULT_DRIFT_SEED,
+  DEFAULT_SUN_RADIANS_PER_SECOND,
+  ambientFieldPositionArray,
+  ambientFieldPositions,
+  sunDiskRotation,
+  type DriftBounds,
+} from './drift-field';
+
 export {
   NO_CONTINUUM_LANDING,
   formatContinuumLandingMessage,
