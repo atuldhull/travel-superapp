@@ -188,3 +188,30 @@ export {
   shouldAutoStop,
   type GenieRecorderStatus,
 } from './genie-recorder';
+
+// AE470 — Continuum URL state + sigil grid + receiver landing.
+export {
+  CONTINUUM_QUERY_KEY,
+  buildContinuumUrl,
+  continuumSigilSeed,
+  isContinuumUrl,
+  parseContinuumUrl,
+  type ContinuumExtras,
+  type ContinuumState,
+} from './continuum-state';
+
+export {
+  DEFAULT_SIGIL_SIZE,
+  buildSigilGrid,
+  hashSeed,
+  sigilEquals,
+  sigilFilledCount,
+  type SigilGrid,
+} from './continuum-sigil';
+
+export {
+  NO_CONTINUUM_LANDING,
+  formatContinuumLandingMessage,
+  readContinuumLanding,
+  type ContinuumLanding,
+} from './continuum-landing';
