@@ -11,8 +11,9 @@ import { createAetherPhase1Registry } from '../../src/components/aether/phase1/a
 describe('createAetherPhase1Registry', () => {
   it('registers all Phase 1 + Phase 2 + Phase 3 scaffolded surfaces', () => {
     const r = createAetherPhase1Registry();
-    // 5 Phase 1 + 2 Phase 2 (Lumen AE398 + Vault AE407) + 1 Phase 3 (Echo AE418).
-    expect(r.size).toBe(8);
+    // 5 Phase 1 + 2 Phase 2 (Lumen AE398 + Vault AE407)
+    // + 2 Phase 3 (Echo AE418 + Mirror AE421).
+    expect(r.size).toBe(9);
     const ids = r.list().map((s) => s.id);
     expect(ids).toEqual([
       'drift',
@@ -23,13 +24,14 @@ describe('createAetherPhase1Registry', () => {
       'lumen',
       'vault',
       'echo',
+      'mirror',
     ]);
   });
 
   it('phase numbers match the surface origin (1 vs 2 vs 3)', () => {
     const r = createAetherPhase1Registry();
     for (const s of r.list()) {
-      if (s.id === 'echo') {
+      if (s.id === 'echo' || s.id === 'mirror') {
         expect(s.phase).toBe(3);
         continue;
       }
