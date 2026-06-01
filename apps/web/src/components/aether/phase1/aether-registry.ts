@@ -122,5 +122,21 @@ export function createAetherPhase1Registry(): SurfaceRegistry {
       // a future slice can use drei `<Html>` to attach labels in 3D.
       mount: () => import('../phase2/vault-phase2-scene'),
     },
+    {
+      // AE418 — Echo, the social feed surface (Phase 3, Surface #6).
+      // Per 02-surfaces.md §6 Echo, the page palette re-derives from
+      // each echo's photos as the user scrolls. First cut mounts at
+      // /aether/feed with the AE418 sample fixtures; AE419 wires the
+      // R3F vertical-scroll scene; the eventual `useFeedController*`
+      // adapter lands in a b-slice.
+      id: 'echo',
+      phase: 3,
+      // Echo's per-echo palette is derived live by AE420 from the
+      // current echo's photo; the registry entry carries a baseline
+      // for the first paint (and for echoes whose photo is null).
+      palette: ['#1A0F09', '#F2E8D5', '#C2614A', '#E8B777', '#6E7B5C'],
+      route: { kind: 'literal', pathname: '/aether/feed' },
+      mount: () => import('../phase3/echo-phase3-scene'),
+    },
   ]);
 }
