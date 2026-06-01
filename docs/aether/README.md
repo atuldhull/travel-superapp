@@ -29,6 +29,7 @@
 19. [`17-round-ak-progress.md`](17-round-ak-progress.md) — Round AK inventory (AE453-AE466): `@app/aether-canvas-shared` workspace package + Phase 1 polish — 10 pure modules moved to shared, Phase 1 shell integration specs, Lumen integration specs, 4 Storybook stories, 2 loading skeletons, 36 Phase 3 edge specs.
 20. [`18-round-al-progress.md`](18-round-al-progress.md) — Round AL inventory (AE469-AE481): canvas-shared completion (Genie + Continuum + Mirror + Echo + Lumen interactions + Vault + url-ttl + now-card-lifecycle + upcoming-trip → 35 total modules) + cross-package lifecycle integration spec + a11y sweep + url-ttl + palette edge specs + shape-gate spec.
 21. [`19-round-am-progress.md`](19-round-am-progress.md) — Round AM inventory (AE483-AE487): Phase 1 + Phase 2 API surface shape-gates (catches any silent barrel rename) + data-flow doc §8 refresh + component catalog refresh (35-module canvas-shared inventory grouped into 11 buckets).
+22. [`20-round-an-progress.md`](20-round-an-progress.md) — Round AN inventory (AE488-AE490): Phase 3 barrel + shape-gate (closes the three-layer barrel coverage) + canvas-shared invariants spec (21 mathematical laws: sphere-surface, unit-vector, monotonicity, bounds, etc.).
 
 ## What we reuse from 1.0
 
