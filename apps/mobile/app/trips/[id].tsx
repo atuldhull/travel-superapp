@@ -1,5 +1,8 @@
 /**
- * V.UX.27 — trip detail. Mirrors the web's `/trips/[id]` core
+ * Phase 4 / Round AS (AE521) -- Tamagui stripped; uses plain RN primitives.
+ * Will be retired entirely when the Aether mobile surface ships.
+ *
+ * V.UX.27 -- trip detail. Mirrors the web's `/trips/[id]` core
  * content: title, dates, status, and the day-by-day itinerary.
  *
  * Offline behaviour: the persisted query cache renders the
@@ -9,10 +12,16 @@
  *
  * Installed by prompt [V.UX.27].
  */
-import { ScrollView, Share } from 'react-native';
+import {
+  ActivityIndicator,
+  ScrollView,
+  Share,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { Button, Spinner, Text, XStack, YStack } from 'tamagui';
-import { Share2 } from '@tamagui/lucide-icons';
 import {
   useTripControllerGetItinerary,
   useTripControllerGetOne,
@@ -43,25 +52,20 @@ export default function TripDetailScreen() {
     <>
       <Stack.Screen options={{ title: tripBody?.trip.title ?? 'Trip' }} />
       <ScrollView contentInsetAdjustmentBehavior="automatic">
-        <YStack padding="$4" gap="$3">
+        <View style={styles.container}>
           {!online ? (
-            <YStack padding="$2" backgroundColor="#b45309" borderRadius="$2">
-              <Text color="white" fontSize={12}>
-                ✈️ Offline — showing the last cached itinerary.
-              </Text>
-            </YStack>
+            <View style={styles.offlineBanner}>
+              <Text style={styles.offlineText}>Offline -- showing the last cached itinerary.</Text>
+            </View>
           ) : null}
           {trip.isLoading && !tripBody ? (
-            <Spinner />
+            <ActivityIndicator />
           ) : tripBody ? (
-            <YStack gap="$2">
-              <XStack justifyContent="space-between" alignItems="center">
-                <Text fontSize={20} fontWeight="700" flex={1}>
-                  {tripBody.trip.title}
-                </Text>
-                <Button
-                  size="$2"
-                  icon={Share2}
+            <View style={styles.tripHeader}>
+              <View style={styles.titleRow}>
+                <Text style={styles.title}>{tripBody.trip.title}</Text>
+                <TouchableOpacity
+                  style={styles.shareButton}
                   onPress={() => {
                     void Share.share({
                       message: tripDeepLink(tripBody.trip.id),
@@ -69,55 +73,128 @@ export default function TripDetailScreen() {
                     });
                   }}
                 >
-                  Share
-                </Button>
-              </XStack>
-              <Text fontSize={12} color="$color10">
-                {tripBody.role} · {tripBody.trip.status} · radius {tripBody.trip.radiusKm} km
+                  <Text style={styles.shareButtonText}>Share</Text>
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.meta}>
+                {tripBody.role} - {tripBody.trip.status} - radius {tripBody.trip.radiusKm} km
               </Text>
-              <Text fontSize={12} color="$color10">
-                {(tripBody.trip.startsOn as unknown as string | null) ?? '—'} →{' '}
-                {(tripBody.trip.endsOn as unknown as string | null) ?? '—'}
+              <Text style={styles.meta}>
+                {(tripBody.trip.startsOn as unknown as string | null) ?? '-'} -&gt;{' '}
+                {(tripBody.trip.endsOn as unknown as string | null) ?? '-'}
               </Text>
-            </YStack>
+            </View>
           ) : trip.isError ? (
-            <Text color="$red10">Couldn&apos;t load this trip.</Text>
+            <Text style={styles.errorText}>Couldn&apos;t load this trip.</Text>
           ) : null}
-          <Text fontSize={16} fontWeight="600" marginTop="$3">
-            Itinerary
-          </Text>
+          <Text style={styles.sectionHeading}>Itinerary</Text>
           {itinerary.isLoading && days.length === 0 ? (
-            <Spinner />
+            <ActivityIndicator />
           ) : days.length === 0 ? (
-            <Text color="$color10">No days yet.</Text>
+            <Text style={styles.muted}>No days yet.</Text>
           ) : (
             days.map((day, di) => (
-              <YStack key={day.id} gap="$1" marginBottom="$3">
-                <Text fontWeight="600">
-                  Day {di + 1} · {day.date}
+              <View key={day.id} style={styles.dayBlock}>
+                <Text style={styles.dayHeading}>
+                  Day {di + 1} - {day.date}
                 </Text>
                 {day.items.length === 0 ? (
-                  <Text fontSize={12} color="$color10">
-                    Empty
-                  </Text>
+                  <Text style={styles.mutedSmall}>Empty</Text>
                 ) : (
                   day.items.map((it) => {
                     const start = it.startTime as unknown as string | null;
                     const notes = it.notes as unknown as string | null;
                     const placeId = it.placeId as unknown as string | null;
                     return (
-                      <Text key={it.id} fontSize={13}>
-                        • {placeId ?? notes ?? `Item ${it.position + 1}`}
-                        {start ? ` · ${start}` : ''}
+                      <Text key={it.id} style={styles.itemText}>
+                        - {placeId ?? notes ?? `Item ${it.position + 1}`}
+                        {start ? ` - ${start}` : ''}
                       </Text>
                     );
                   })
                 )}
-              </YStack>
+              </View>
             ))
           )}
-        </YStack>
+        </View>
       </ScrollView>
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: 'column',
+    padding: 16,
+    gap: 12,
+  },
+  offlineBanner: {
+    padding: 8,
+    backgroundColor: '#b45309',
+    borderRadius: 6,
+  },
+  offlineText: {
+    color: '#ffffff',
+    fontSize: 12,
+  },
+  tripHeader: {
+    flexDirection: 'column',
+    gap: 6,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 8,
+  },
+  title: {
+    flex: 1,
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  shareButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#e5e7eb',
+    borderRadius: 6,
+  },
+  shareButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  meta: {
+    fontSize: 12,
+    color: '#6b7280',
+  },
+  errorText: {
+    color: '#b91c1c',
+    fontSize: 14,
+  },
+  sectionHeading: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 12,
+  },
+  muted: {
+    color: '#6b7280',
+    fontSize: 14,
+  },
+  mutedSmall: {
+    color: '#6b7280',
+    fontSize: 12,
+  },
+  dayBlock: {
+    flexDirection: 'column',
+    gap: 4,
+    marginBottom: 12,
+  },
+  dayHeading: {
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  itemText: {
+    fontSize: 13,
+    color: '#111827',
+  },
+});
