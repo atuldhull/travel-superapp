@@ -16,10 +16,16 @@
  *
  * Used in the Phase 1 dev nav to demonstrate the dissolve animation
  * before route change.
+ *
+ * AE461: the in-app-click classifier moved to `./is-in-app-click` as a
+ * pure helper with paired specs; this file only owns the React glue.
  */
 import Link from 'next/link';
 import { type AnchorHTMLAttributes, type MouseEvent, type ReactNode } from 'react';
 import { DEFAULT_DISSOLVE_MS, useDissolvingNavigate } from './dissolving-navigate';
+import { isInAppClick } from './is-in-app-click';
+
+export { isInAppClick };
 
 export interface DissolvingLinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
   /** Target route. */
@@ -29,17 +35,6 @@ export interface DissolvingLinkProps extends AnchorHTMLAttributes<HTMLAnchorElem
   /** When true, use `router.replace` instead of `push`. */
   readonly replace?: boolean;
   readonly children?: ReactNode;
-}
-
-/** True iff this click event would default to in-app navigation (no
- *  modifier keys, primary button, no shift/ctrl/meta/alt). */
-export function isInAppClick(event: MouseEvent<HTMLAnchorElement>): boolean {
-  if (event.defaultPrevented) return false;
-  if (event.button !== 0) return false;
-  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return false;
-  const target = (event.currentTarget.getAttribute('target') ?? '').toLowerCase();
-  if (target !== '' && target !== '_self') return false;
-  return true;
 }
 
 export function DissolvingLink({
