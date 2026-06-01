@@ -32,7 +32,7 @@
 9. **Museum arc + pinch-to-focus** (AE409) — pure `lumen-museum.ts` (`museumArcPositions`, `resolveMuseumTarget`, `DEFAULT_MUSEUM_ARC` w/ radius/span/depth/verticalCompression) re-lays the unfocused planes onto a half-circle around the focused photo; pure `lumen-pinch.ts` (`wheelToPinchIntent`, `nearestPlaneToCenter`, `nextFocusForPinch`) drives focus transitions from Ctrl+wheel / trackpad pinch; `<LumenAnimatedSlot>` wraps `<LumenPhotoSlot>` w/ a per-frame outer-group lerp (speed 4 ≈ 250ms-to-closure)
 10. **Layout strategies + arrange menu** (AE410) — pure `lumen-strategies.ts` (`LumenLayoutStrategy` union: `time` / `grid` / `spiral` / `wall` / `mood`; `layoutByGrid` uniform 2D grid; `layoutBySpiral` golden-angle phyllotaxis; `layoutByWall` tighter z-jittered salon arrangement; `layoutByMoodStub` falls back to time-cloud pending CLIP; `applyLayoutStrategy` dispatcher; `isStrategyImplemented` gate for the (AI) label); `<LumenStrategyProvider>` + `useLumenStrategy()`; `<LumenArrangeMenu>` bottom-left palette-tinted pill bar w/ aria-pressed buttons. AE409's animated slot lerps each plane to the new strategy's target on swap — no remounts.
 
-## Genie — capability stack (AE406)
+## Genie — capability stack (AE406 + AE411)
 
 Pure state machine `genie-state.ts`:
 
@@ -40,16 +40,39 @@ Pure state machine `genie-state.ts`:
 - Per-state helpers — `genieStateLabel`, `genieMicAriaLabel`, `genieMicRingColor`, `genieIsActive`
 - Transitions — `genieOnMicPress`, `genieOnMicRelease`, `genieOnStt`, `genieOnError`, `genieReset`
 
+Pure recorder helpers `genie-recorder.ts` (AE411):
+
+- `GenieRecorderStatus` lifecycle union (`idle`/`requesting`/`recording`/`stopping`/`stopped`/`error`)
+- `RECORDER_MIME_PREFERENCES` opus-first ordered list (opus webm → webm → mp4 → ogg)
+- `pickAudioMimeType(isSupported, prefs?)` returns the first accepted MIME or null
+- `formatRecordingDuration(ms)` → `M:SS` (NaN/Infinity/negative all → `0:00`)
+- `MAX_RECORDING_MS = 60_000` + `shouldAutoStop(elapsed, max?)` cap helper
+- `RECORDER_TICK_MS = 100` (duration counter resolution)
+- `recorderStatusLabel(status, durationMs?)` sr-friendly aria-live copy
+- `isRecorderBusy(status)` for mic-pulse animation
+- `canStartRecording(status)` to gate the mic press
+
+React layer `use-genie-recorder.tsx` (AE411):
+
+- `useGenieRecorder()` wraps `navigator.mediaDevices.getUserMedia({audio: true})` + `MediaRecorder`
+- Tracks duration via `window.setInterval` at `RECORDER_TICK_MS`
+- Auto-stops at `MAX_RECORDING_MS`
+- Releases mic stream on stop / unmount (no leaks)
+- Returns `{status, durationMs, mimeType, blob, error, start, stop, reset}`
+
 Component `<Phase2GenieModal>`:
 
 - role=dialog + aria-modal backdrop with palette-tinted close × button
 - Animated 108px mic button (ring colour + glow vary by state)
-- pointerDown / pointerUp / pointerCancel / pointerLeave drive the state machine
-- Transcript card appears when state === transcribed
-- "Phase 2 preview · STT lands later" footer keeps the honesty visible
-- Esc closes; `onStateChange` callback for future Pulse-breath-rate wiring
+- pointerDown starts capture via `useGenieRecorder()`; pointerUp / Cancel / Leave stop it
+- Live `M:SS` duration counter while recording
+- Capture summary (`Captured 0:08 · 14 kB · audio/webm;codecs=opus — STT lands later`) on stop
+- sr-only `role=status aria-live=polite` announcer pipes `recorderStatusLabel`
+- Esc closes (resets recorder + state machine)
+- Transcript card appears when state === transcribed (still stub copy)
+- "Phase 2 preview · STT lands later" footer
 
-**Not yet wired** — actual Whisper STT (ai-service `/v1/transcribe`), the particle dissolution, the typeset-in-3D transcript, the camera mode. The Genie trigger from Pulse hold-to-talk also lands later.
+**Not yet wired** — the captured blob does not yet POST to ai-service `/v1/transcribe`; particle dissolution + typeset-in-3D transcript + camera mode also still later. Genie trigger from Pulse hold-to-talk lands in AE416.
 
 ## Vault — capability stack (AE407)
 
@@ -73,12 +96,12 @@ Shell + route:
 
 ## Test totals (post AE407)
 
-| Package              | Specs | Net change since Phase 1 closeout (AE397)                     |
-| -------------------- | ----- | ------------------------------------------------------------- |
-| `@app/aether-core`   | 122   | 0                                                             |
-| `@app/aether-canvas` | 77    | +8 (AE404 `aspectFromTexture`)                                |
-| `@app/aether-audio`  | 71    | 0                                                             |
-| `apps/web`           | 1885  | +203 across +12 files (Lumen + Genie + Vault + AE409 + AE410) |
+| Package              | Specs | Net change since Phase 1 closeout (AE397)                   |
+| -------------------- | ----- | ----------------------------------------------------------- |
+| `@app/aether-core`   | 122   | 0                                                           |
+| `@app/aether-canvas` | 77    | +8 (AE404 `aspectFromTexture`)                              |
+| `@app/aether-audio`  | 71    | 0                                                           |
+| `apps/web`           | 1914  | +232 across +13 files (Lumen + Genie + Vault + AE409-AE411) |
 
 Typecheck clean across packages + apps/web. 0 new lint errors.
 
@@ -92,7 +115,7 @@ Typecheck clean across packages + apps/web. 0 new lint errors.
 
 1. **AE409 — museum arc + wheel-pinch — SHIPPED** (2026-06-01)
 2. **AE410 — layout strategies + arrange menu — SHIPPED** (2026-06-01). CLIP backend still pending — the mood strategy stubs to the time-cloud until ai-service `/v1/embeddings` lands.
-3. **AE411+ Real Whisper STT** behind Genie — ai-service `/v1/transcribe` (currently stub; real with `pip install .[stt]`) + WebRTC mic stream
+3. **AE411 — MediaRecorder capture + duration — SHIPPED** (2026-06-01). Pure helpers + `useGenieRecorder()` hook + modal wiring all live; the captured blob still has to round-trip through ai-service `/v1/transcribe` in AE411b once `pip install .[stt]` ships.
 4. **AE412+ Genie GPU particle dissolution** + typeset-in-3D transcript
 5. **AE413+ Genie camera mode** — ML Kit detection over the live camera feed
 6. **AE414+ Vault R3F shader** for floating weighted glyphs + glyph-physics

@@ -24,6 +24,8 @@ import {
   genieStateLabel,
   type GenieState,
 } from './genie-state';
+import { canStartRecording, formatRecordingDuration, recorderStatusLabel } from './genie-recorder';
+import { useGenieRecorder } from './use-genie-recorder';
 
 export interface Phase2GenieModalProps {
   /** Whether the modal is mounted. The trigger toggles this externally. */
@@ -48,6 +50,10 @@ export function Phase2GenieModal({
   onStateChange,
 }: Phase2GenieModalProps): React.ReactElement | null {
   const [state, setState] = useState<GenieState>(initialState);
+  // AE411 — real MediaRecorder capture. Mic press starts the capture;
+  // release stops it. The resulting blob is held in the hook for the
+  // AE411b STT round trip; the modal surfaces the duration counter.
+  const recorder = useGenieRecorder();
 
   // Sync initialState on (re)open — tests can flip props.
   useEffect(() => {
@@ -59,13 +65,14 @@ export function Phase2GenieModal({
     if (!open) return undefined;
     const onKey = (e: globalThis.KeyboardEvent): void => {
       if (e.key === 'Escape') {
+        recorder.reset();
         setState(genieReset());
         onClose?.();
       }
     };
     window.addEventListener('keydown', onKey);
     return (): void => window.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
+  }, [open, onClose, recorder]);
 
   const transition = useCallback(
     (fn: (s: GenieState) => GenieState) => {
@@ -166,13 +173,62 @@ export function Phase2GenieModal({
         aria-label={genieMicAriaLabel(state)}
         aria-pressed={state === 'listening'}
         style={micButtonStyle}
-        onPointerDown={() => transition(genieOnMicPress)}
-        onPointerUp={() => transition(genieOnMicRelease)}
-        onPointerCancel={() => transition(genieOnMicRelease)}
-        onPointerLeave={() => state === 'listening' && transition(genieOnMicRelease)}
+        onPointerDown={() => {
+          transition(genieOnMicPress);
+          if (canStartRecording(recorder.status)) void recorder.start();
+        }}
+        onPointerUp={() => {
+          transition(genieOnMicRelease);
+          recorder.stop();
+        }}
+        onPointerCancel={() => {
+          transition(genieOnMicRelease);
+          recorder.stop();
+        }}
+        onPointerLeave={() => {
+          if (state === 'listening') {
+            transition(genieOnMicRelease);
+            recorder.stop();
+          }
+        }}
       >
         {state === 'listening' ? '◉' : '●'}
       </button>
+      {/* AE411 — live duration counter while recording. */}
+      {recorder.status === 'recording' && (
+        <p
+          data-aether-genie-duration
+          aria-live="off"
+          style={{
+            fontFamily: 'JetBrains Mono, monospace',
+            fontSize: 14,
+            letterSpacing: '0.08em',
+            margin: 0,
+            opacity: 0.8,
+          }}
+        >
+          {formatRecordingDuration(recorder.durationMs)}
+        </p>
+      )}
+      {/* AE411 — sr-only status line so screen readers track the capture. */}
+      <span
+        role="status"
+        aria-live="polite"
+        data-aether-genie-recorder-status
+        style={{
+          position: 'absolute',
+          width: 1,
+          height: 1,
+          padding: 0,
+          margin: -1,
+          overflow: 'hidden',
+          clip: 'rect(0,0,0,0)',
+          whiteSpace: 'nowrap',
+          border: 0,
+        }}
+      >
+        {recorderStatusLabel(recorder.status, recorder.durationMs)}
+      </span>
       {state === 'transcribed' && transcript !== undefined && transcript !== '' && (
         <p
           data-aether-genie-transcript
@@ -187,6 +243,39 @@ export function Phase2GenieModal({
           }}
         >
           “{transcript}”
+        </p>
+      )}
+      {/* AE411 — show capture stats once the user lifts the mic. The
+          full Whisper round trip lands in AE411b; until then this is
+          the honest acknowledgement that the audio was captured. */}
+      {recorder.status === 'stopped' && recorder.blob !== null && (
+        <p
+          data-aether-genie-capture-summary
+          style={{
+            fontSize: 12,
+            opacity: 0.8,
+            margin: 0,
+            fontFamily: 'JetBrains Mono, monospace',
+            letterSpacing: '0.04em',
+          }}
+        >
+          Captured {formatRecordingDuration(recorder.durationMs)} ·{' '}
+          {Math.round(recorder.blob.size / 1024)} kB{' '}
+          {recorder.mimeType !== null ? `· ${recorder.mimeType}` : ''} — STT lands later
+        </p>
+      )}
+      {recorder.status === 'error' && recorder.error !== null && (
+        <p
+          data-aether-genie-recorder-error
+          style={{
+            fontSize: 12,
+            color: '#E47A6B',
+            margin: 0,
+            maxWidth: 480,
+            textAlign: 'center',
+          }}
+        >
+          {recorder.error}
         </p>
       )}
       <p
