@@ -10,14 +10,14 @@
 
 ## Summary
 
-| Counter             | Value                                                      |
-| ------------------- | ---------------------------------------------------------- |
-| Prompts completed   | 523 (Round AK: AE453-AE466 canvas-shared + Phase 1 polish) |
-| Prompts in progress | 0                                                          |
-| Prompts blocked     | AE458, AE460, AE465, AE467 — see Round AK closeout         |
-| Last prompt         | `AE468` — Round AK progress doc                            |
-| Last commit date    | 2026-06-01                                                 |
-| Phase               | **Round AK SHIPPED** — `@app/aether-canvas-shared` live    |
+| Counter             | Value                                                   |
+| ------------------- | ------------------------------------------------------- |
+| Prompts completed   | 540 (Round AM: AE483-AE487 shape gates + doc refresh)   |
+| Prompts in progress | 0                                                       |
+| Prompts blocked     | 0                                                       |
+| Last prompt         | `AE487` — Round AM progress doc                         |
+| Last commit date    | 2026-06-01                                              |
+| Phase               | **Round AM SHIPPED** — barrel shape gates + doc refresh |
 
 ---
 
