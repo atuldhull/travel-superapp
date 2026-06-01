@@ -244,3 +244,31 @@ export {
   type MirrorInvestigationSeverity,
   type MirrorUserSuggestion,
 } from './mirror-investigate';
+
+// AE477 — Echo feed + Live trip-watch (Phase 3 remainders).
+export {
+  ECHO_SWIPE_NOISE_PX,
+  boostHexColor,
+  echoActionForSwipe,
+  echoPaletteFromDominantColor,
+  echoSwipeDirectionFromDelta,
+  formatEchoPostedAt,
+  nextEchoIndex,
+  type EchoAction,
+  type EchoItem,
+  type EchoSwipeDirection,
+} from './echo-feed';
+
+export {
+  LIVE_FRESHNESS_MS,
+  STALE_THRESHOLD_MS,
+  presenceAgoLabel,
+  presenceAnnouncement,
+  presenceDotColor,
+  presenceFreshness,
+  presenceFreshnessLabel,
+  presenceModeGlyph,
+  presenceSpeedLabel,
+  type LiveTripFreshness,
+  type LiveTripPresence,
+} from './live-trip-watch';
