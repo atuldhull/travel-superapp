@@ -6,11 +6,29 @@
  * Everything exported here MUST be framework-free: no React, no DOM,
  * no Three.js, no R3F. Only depends on type-only imports from
  * `@app/aether-core` (e.g. `SurfaceLifecyclePhase`).
- *
- * Phase 4 helpers will land here in subsequent slices. AE453 ships the
- * scaffold; AE454+ extract the actual modules from `apps/web/src/...`
- * and `packages/aether-canvas/src/...`.
  */
 
-// Scaffold marker — replaced as helper modules land in AE454+.
-export const AETHER_CANVAS_SHARED_VERSION = '0.0.0';
+export const AETHER_CANVAS_SHARED_VERSION = '0.0.1';
+
+// AE454 — lifecycle progress + camera-pose math.
+export {
+  DEFAULT_PHASE_DURATIONS,
+  easeInCubic,
+  easeOutCubic,
+  easedPhaseProgress,
+  isPhaseComplete,
+  phaseProgress,
+  __testing,
+  type LifecyclePhaseDurations,
+} from './lifecycle-progress';
+
+export {
+  DEFAULT_CAMERA_SCRIPT,
+  cameraPoseAt,
+  lerp,
+  lerpVec3,
+  previousPoseFor,
+  type CameraPose,
+  type CameraScript,
+  type Vec3Tuple,
+} from './lifecycle-camera';
