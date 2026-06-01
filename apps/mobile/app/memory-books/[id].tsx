@@ -1,5 +1,8 @@
 /**
- * Memory-book detail + editing — `/memory-books/[id]`.
+ * Phase 4 / Round AS (AE521) â€” Tamagui stripped; uses plain RN primitives.
+ * Will be retired entirely when the Aether mobile surface ships.
+ *
+ * Memory-book detail + editing â€” `/memory-books/[id]`.
  *
  * [S-D3] replaces the V.UX.27 read-only stub with owner editing:
  *   - Title (inline edit)
@@ -8,23 +11,25 @@
  *   - Per-asset reorder (up / down arrows; uses
  *     `useMemoryBookControllerReorderAssets`)
  *
- * Thumbnail rendering is intentionally NOT in this slice — the owner-
+ * Thumbnail rendering is intentionally NOT in this slice â€” the owner-
  * facing `GET .../assets/:id/download-url` endpoint doesn't exist yet
  * (only the public one). Adding it is a backend slice; mobile + web
- * memory-book detail both wait on it. Z1 audit's "renders position+id
- * not image" gap is acknowledged + deferred to a follow-up.
- *
- * Asset upload via camera / library is also deferred — the existing
- * web flow is upload-confirmation-driven and needs a mobile-port that
- * exceeds this slice's scope.
- *
- * Installed by [S-D3] of the S-series real-functionality closeout.
+ * memory-book detail both wait on it.
  */
-import { Alert, RefreshControl, ScrollView } from 'react-native';
+import {
+  Alert,
+  RefreshControl,
+  ScrollView,
+  View,
+  Text,
+  TouchableOpacity,
+  TextInput,
+  ActivityIndicator,
+  StyleSheet,
+} from 'react-native';
 import { useMemo, useState } from 'react';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { Button, Card, H4, Input, Spinner, Text, XStack, YStack } from 'tamagui';
 import {
   getMemoryBookControllerGetOneQueryKey,
   useMemoryBookControllerGetOne,
@@ -113,13 +118,13 @@ export default function MemoryBookDetailScreen() {
         contentInsetAdjustmentBehavior="automatic"
         refreshControl={<RefreshControl refreshing={book.isFetching} onRefresh={invalidate} />}
       >
-        <YStack padding="$4" gap="$3">
+        <View style={styles.container}>
           {book.isLoading && !body ? (
-            <Spinner />
+            <ActivityIndicator />
           ) : !body ? (
-            <Text color="$red10">Couldn&apos;t load this book.</Text>
+            <Text style={styles.errorText}>Couldn't load this book.</Text>
           ) : (
-            <YStack gap="$3">
+            <View style={styles.stackGap12}>
               <TitleEditor
                 initial={body.book.title}
                 isPending={update.isPending}
@@ -136,20 +141,21 @@ export default function MemoryBookDetailScreen() {
                 }
               />
 
-              <Text fontSize="$2" color="$color10">
+              <Text style={styles.metaText}>
                 {(body.book.publishedAt as unknown as string | null) !== null ? 'Public' : 'Draft'}{' '}
-                · {sortedAssets.length} asset{sortedAssets.length === 1 ? '' : 's'}
+                {String.fromCharCode(183)} {sortedAssets.length} asset
+                {sortedAssets.length === 1 ? '' : 's'}
               </Text>
 
-              <H4 marginTop="$2">Assets</H4>
+              <Text style={[styles.h4, styles.h4Spacing]}>Assets</Text>
               {sortedAssets.length === 0 ? (
-                <Card padding="$3" bordered>
-                  <Text color="$color10">
-                    No assets yet. Upload from the web for now — mobile upload lands in a follow-up.
+                <View style={styles.card}>
+                  <Text style={styles.metaText}>
+                    No assets yet. Upload from the web for now - mobile upload lands in a follow-up.
                   </Text>
-                </Card>
+                </View>
               ) : (
-                <YStack gap="$2">
+                <View style={styles.stackGap8}>
                   {sortedAssets.map((asset, idx) => (
                     <AssetRow
                       key={asset.id}
@@ -161,16 +167,16 @@ export default function MemoryBookDetailScreen() {
                       onEditCaption={() => editCaption(asset)}
                     />
                   ))}
-                </YStack>
+                </View>
               )}
 
-              <Text fontSize="$1" color="$color10" marginTop="$2">
+              <Text style={[styles.footnote, styles.footnoteSpacing]}>
                 Thumbnails coming once the owner-facing asset-download-URL endpoint ships (backend
                 slice tracked in PROGRESS).
               </Text>
-            </YStack>
+            </View>
           )}
-        </YStack>
+        </View>
       </ScrollView>
     </>
   );
@@ -188,19 +194,21 @@ function TitleEditor({
   const [value, setValue] = useState(initial);
   const dirty = value.trim() !== initial.trim() && value.trim().length > 0;
   return (
-    <YStack gap="$1">
-      <Text fontSize="$2" color="$color10">
-        Title
-      </Text>
-      <XStack gap="$2" alignItems="center">
-        <Input flex={1} value={value} onChangeText={setValue} maxLength={120} />
+    <View style={styles.stackGap4}>
+      <Text style={styles.metaText}>Title</Text>
+      <View style={styles.rowGap8}>
+        <TextInput style={styles.input} value={value} onChangeText={setValue} maxLength={120} />
         {dirty ? (
-          <Button size="$2" disabled={isPending} onPress={() => onSave(value.trim())}>
-            {isPending ? 'Saving…' : 'Save'}
-          </Button>
+          <TouchableOpacity
+            style={[styles.button, isPending ? styles.buttonDisabled : null]}
+            disabled={isPending}
+            onPress={() => onSave(value.trim())}
+          >
+            <Text style={styles.buttonText}>{isPending ? 'Saving...' : 'Save'}</Text>
+          </TouchableOpacity>
         ) : null}
-      </XStack>
-    </YStack>
+      </View>
+    </View>
   );
 }
 
@@ -214,27 +222,29 @@ function ThemePicker({
   readonly onPick: (theme: ThemeOption) => void;
 }) {
   return (
-    <YStack gap="$1">
-      <Text fontSize="$2" color="$color10">
-        Theme
-      </Text>
-      <XStack gap="$1" flexWrap="wrap">
+    <View style={styles.stackGap4}>
+      <Text style={styles.metaText}>Theme</Text>
+      <View style={styles.rowWrap}>
         {THEME_OPTIONS.map((t) => {
           const active = t === current;
+          const isDisabled = isPending || active;
           return (
-            <Button
+            <TouchableOpacity
               key={t}
-              size="$2"
-              disabled={isPending || active}
+              style={[
+                styles.buttonSmall,
+                active ? styles.buttonActive : null,
+                isDisabled && !active ? styles.buttonDisabled : null,
+              ]}
+              disabled={isDisabled}
               onPress={() => onPick(t)}
-              theme={active ? 'active' : null}
             >
-              {t}
-            </Button>
+              <Text style={[styles.buttonText, active ? styles.buttonTextActive : null]}>{t}</Text>
+            </TouchableOpacity>
           );
         })}
-      </XStack>
-    </YStack>
+      </View>
+    </View>
   );
 }
 
@@ -254,27 +264,164 @@ function AssetRow({
   readonly onEditCaption: () => void;
 }) {
   const caption = asset.caption as unknown as string | null;
+  const upDisabled = !canMoveUp || isPendingReorder;
+  const downDisabled = !canMoveDown || isPendingReorder;
   return (
-    <Card padding="$3" bordered>
-      <XStack gap="$2" alignItems="center">
-        <YStack flex={1} gap="$1">
-          <Text fontSize="$2" color="$color10">
-            Position {asset.position + 1} · {asset.kind}
+    <View style={styles.card}>
+      <View style={styles.rowGap8}>
+        <View style={[styles.stackGap4, styles.flex1]}>
+          <Text style={styles.metaText}>
+            Position {asset.position + 1} {String.fromCharCode(183)} {asset.kind}
           </Text>
-          {caption ? <Text>{caption}</Text> : <Text color="$color10">No caption</Text>}
-          <Button size="$1" alignSelf="flex-start" onPress={onEditCaption}>
-            Edit caption
-          </Button>
-        </YStack>
-        <YStack gap="$1">
-          <Button size="$1" disabled={!canMoveUp || isPendingReorder} onPress={() => onMove(-1)}>
-            ▲
-          </Button>
-          <Button size="$1" disabled={!canMoveDown || isPendingReorder} onPress={() => onMove(1)}>
-            ▼
-          </Button>
-        </YStack>
-      </XStack>
-    </Card>
+          {caption ? (
+            <Text style={styles.bodyText}>{caption}</Text>
+          ) : (
+            <Text style={styles.metaText}>No caption</Text>
+          )}
+          <TouchableOpacity style={[styles.buttonTiny, styles.alignStart]} onPress={onEditCaption}>
+            <Text style={styles.buttonText}>Edit caption</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.stackGap4}>
+          <TouchableOpacity
+            style={[styles.buttonTiny, upDisabled ? styles.buttonDisabled : null]}
+            disabled={upDisabled}
+            onPress={() => onMove(-1)}
+          >
+            <Text style={styles.buttonText}>up</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.buttonTiny, downDisabled ? styles.buttonDisabled : null]}
+            disabled={downDisabled}
+            onPress={() => onMove(1)}
+          >
+            <Text style={styles.buttonText}>down</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    padding: 16,
+    flexDirection: 'column',
+    gap: 12,
+  },
+  stackGap4: {
+    flexDirection: 'column',
+    gap: 4,
+  },
+  stackGap8: {
+    flexDirection: 'column',
+    gap: 8,
+  },
+  stackGap12: {
+    flexDirection: 'column',
+    gap: 12,
+  },
+  rowGap8: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
+  rowWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+  },
+  flex1: {
+    flex: 1,
+  },
+  alignStart: {
+    alignSelf: 'flex-start',
+  },
+  errorText: {
+    color: '#c0392b',
+    fontSize: 14,
+  },
+  metaText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  bodyText: {
+    fontSize: 14,
+    color: '#111',
+  },
+  footnote: {
+    fontSize: 11,
+    color: '#666',
+  },
+  footnoteSpacing: {
+    marginTop: 8,
+  },
+  h4: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111',
+  },
+  h4Spacing: {
+    marginTop: 8,
+  },
+  card: {
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e5e5e5',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+  },
+  input: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontSize: 14,
+    color: '#111',
+    backgroundColor: '#fff',
+  },
+  button: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#eee',
+    borderWidth: 1,
+    borderColor: '#ccc',
+  },
+  buttonSmall: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: '#eee',
+    borderWidth: 1,
+    borderColor: '#ccc',
+  },
+  buttonTiny: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: '#eee',
+    borderWidth: 1,
+    borderColor: '#ccc',
+  },
+  buttonActive: {
+    backgroundColor: '#111',
+    borderColor: '#111',
+  },
+  buttonDisabled: {
+    opacity: 0.5,
+  },
+  buttonText: {
+    fontSize: 12,
+    color: '#111',
+  },
+  buttonTextActive: {
+    color: '#fff',
+  },
+});
