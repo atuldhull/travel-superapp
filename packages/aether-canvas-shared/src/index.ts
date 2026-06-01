@@ -105,3 +105,28 @@ export {
   echoCardY,
   visibleEchoSlots,
 } from './echo-layout';
+
+// AE457 — weather + Now Card + destination coords.
+export {
+  simulatedWeatherFor,
+  weatherForSlugMonth,
+  weatherHasParticles,
+  weatherStreakCount,
+  weatherStreakIntensity,
+  type MonthZeroIndexed,
+  type WeatherState,
+} from './weather-simulation';
+
+export {
+  nowCardContent,
+  nowCardContentNow,
+  timeBandFor,
+  type NowCardContent,
+  type TimeBand,
+} from './now-card-content';
+
+export {
+  coordsForDestination,
+  curatedCoordSlugs,
+  type DestinationCoords,
+} from './destination-coords';
