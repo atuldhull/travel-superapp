@@ -87,7 +87,7 @@ export const PALETTE_SLOT_NAMES: ReadonlyArray<SurfacePaletteSlotName> = Object.
 export function paletteSlotName(index: number): SurfacePaletteSlotName | null {
   if (!Number.isInteger(index)) return null;
   if (index < 0 || index >= PALETTE_SLOT_NAMES.length) return null;
-  return PALETTE_SLOT_NAMES[index];
+  return PALETTE_SLOT_NAMES[index] ?? null;
 }
 
 /** Inverse of `paletteSlotName`: look up the tuple index for a slot.

@@ -19,8 +19,9 @@
     "test:watch": "jest --watch"
   },
   "dependencies": {
-    "@app/aether-motion": "workspace:*",
-    "@app/aether-core": "workspace:*"
+    "@app/aether-canvas-shared": "workspace:*",
+    "@app/aether-core": "workspace:*",
+    "@app/aether-motion": "workspace:*"
   },
   "peerDependencies": {
     "@react-three/fiber": "^9.0.0 || ^8.17.0",

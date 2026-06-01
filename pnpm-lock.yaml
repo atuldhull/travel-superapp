@@ -665,6 +665,9 @@ importers:
 
   packages/aether-canvas:
     dependencies:
+      '@app/aether-canvas-shared':
+        specifier: workspace:*
+        version: link:../aether-canvas-shared
       '@app/aether-core':
         specifier: workspace:*
         version: link:../aether-core
