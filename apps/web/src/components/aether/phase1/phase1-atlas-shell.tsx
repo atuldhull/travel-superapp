@@ -48,6 +48,7 @@ import { Phase1ContinuumBar } from './phase1-continuum-bar';
 import { Phase1ContinuumReceiverToast } from './phase1-continuum-receiver-toast';
 import { Phase1DevNav } from './phase1-dev-nav';
 import { Phase1PulseOverlay } from './phase1-pulse-overlay';
+import { Phase2GenieModal } from '../phase2/phase2-genie-modal';
 import { TripDataProvider, type TripDataLike } from './trip-data-context';
 import type { AtlasDayLike } from './atlas-orbs';
 import { coordsForDestination } from './destination-coords';
@@ -161,6 +162,8 @@ function Phase1AtlasInner({ tripId }: { tripId: string }): React.ReactElement {
     events: -60,
   });
   const audioBridge = useSceneAudioBridge(setAudio);
+  // AE416 — Pulse hold-to-talk opens the Genie modal.
+  const [genieOpen, setGenieOpen] = useState<boolean>(false);
   const isDev = process.env.NODE_ENV !== 'production';
   const pipStyle: CSSProperties = {
     position: 'fixed',
@@ -198,7 +201,10 @@ function Phase1AtlasInner({ tripId }: { tripId: string }): React.ReactElement {
               onActivate={() =>
                 openPulse(trip?.title !== undefined ? `About my ${trip.title}: ` : '')
               }
+              onHoldOpen={() => setGenieOpen(true)}
             />
+            {/* AE416 — Genie modal opens on Pulse hold. */}
+            <Phase2GenieModal open={genieOpen} onClose={() => setGenieOpen(false)} />
             {/* AE390 — Continuum cross-device handoff bar. The active
                 trip id rides as a handoff extra so the receiver can
                 deep-link directly back into the same journey. */}

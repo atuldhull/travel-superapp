@@ -24,6 +24,8 @@
 import { Suspense, lazy, useMemo, type CSSProperties, type ReactNode } from 'react';
 import { useSurfaceManager } from '@app/aether-core';
 import type { PulseMood } from './pulse-breathing';
+import { usePulseHoldToTalk } from '../phase2/use-pulse-hold-to-talk';
+import { holdStatusLabel } from '../phase2/pulse-hold-to-talk';
 
 /** R3F Canvas lazy-loaded so tests can mount the outer overlay without
  *  the WebGL bootstrap. The Canvas chunk only downloads in the browser
@@ -52,6 +54,11 @@ export interface Phase1PulseOverlayProps {
    *  first cut just exposes the slot so the existing AE96 Pulse FAB can
    *  be reached. */
   readonly onActivate?: () => void;
+  /** AE416 — hold-to-talk handler. When set, a press longer than the
+   *  AE416 threshold (`PULSE_HOLD_THRESHOLD_MS`) fires this; a
+   *  sub-threshold tap still fires `onActivate`. Phase 2 shells wire
+   *  this to open the Genie modal. */
+  readonly onHoldOpen?: () => void;
 }
 
 const CORNER_STYLES: Record<NonNullable<Phase1PulseOverlayProps['corner']>, CSSProperties> = {
@@ -73,6 +80,7 @@ function Phase1PulseOverlayInner({
   hidden = false,
   label = 'Aether Pulse — always-on AI',
   onActivate,
+  onHoldOpen,
 }: Phase1PulseOverlayProps): React.ReactElement | null {
   const manager = useSurfaceManager();
   const hasPulse = useMemo(
@@ -87,6 +95,7 @@ function Phase1PulseOverlayInner({
       disableCanvas={disableCanvas}
       label={label}
       onActivate={onActivate}
+      onHoldOpen={onHoldOpen}
     >
       {disableCanvas ? null : (
         <Suspense fallback={null}>
@@ -115,6 +124,7 @@ function Phase1PulseOverlayShell({
   corner = 'bottom-right',
   label,
   onActivate,
+  onHoldOpen,
   children,
 }: {
   corner: NonNullable<Phase1PulseOverlayProps['corner']>;
@@ -122,8 +132,19 @@ function Phase1PulseOverlayShell({
   disableCanvas: boolean;
   label?: string;
   onActivate?: () => void;
+  onHoldOpen?: () => void;
   children: ReactNode;
 }): React.ReactElement {
+  // AE416 — hold-to-talk gesture. When `onHoldOpen` is set the hook
+  // captures the press/release pair; sub-threshold taps still fall
+  // through to `onActivate`. When `onHoldOpen` is undefined the
+  // overlay behaves as before (plain click handler).
+  const hold = usePulseHoldToTalk({
+    onTap: onActivate,
+    onHold: onHoldOpen,
+  });
+  const isHolding = hold.status === 'holding';
+  const interactive = onActivate !== undefined || onHoldOpen !== undefined;
   const containerStyle: CSSProperties = {
     position: 'fixed',
     width: SIZE_PX,
@@ -136,27 +157,62 @@ function Phase1PulseOverlayShell({
     pointerEvents: 'auto',
     background: 'transparent',
     overflow: 'hidden',
-    cursor: onActivate !== undefined ? 'pointer' : 'default',
+    cursor: interactive ? 'pointer' : 'default',
+    // AE416 — soft scale-up while the user is past the hold threshold
+    // so the gesture has a visible "almost there" beat.
+    transform: isHolding ? 'scale(1.18)' : 'scale(1)',
+    transition: 'transform 220ms ease, box-shadow 220ms ease',
+    boxShadow: isHolding ? '0 0 32px var(--aether-palette-glow, #E8B777)' : 'none',
     ...CORNER_STYLES[corner],
   };
+  // Pick the click handler: when `onHoldOpen` is set we let the
+  // pointer-down/up pair drive the tap/hold split via the hook so the
+  // bare onClick stays a no-op (would double-fire).
+  const clickHandler = onHoldOpen !== undefined ? undefined : onActivate;
   return (
     <div
-      role={onActivate !== undefined ? 'button' : 'presentation'}
-      tabIndex={onActivate !== undefined ? 0 : -1}
+      role={interactive ? 'button' : 'presentation'}
+      tabIndex={interactive ? 0 : -1}
       aria-label={label}
       data-aether-pulse-overlay
       data-aether-pulse-corner={corner}
+      data-aether-pulse-hold-status={hold.status}
       style={containerStyle}
-      onClick={onActivate}
+      onClick={clickHandler}
+      onPointerDown={onHoldOpen !== undefined ? hold.onPointerDown : undefined}
+      onPointerUp={onHoldOpen !== undefined ? hold.onPointerUp : undefined}
+      onPointerLeave={onHoldOpen !== undefined ? hold.onPointerLeave : undefined}
+      onPointerCancel={onHoldOpen !== undefined ? hold.onPointerCancel : undefined}
       onKeyDown={(e) => {
-        if (onActivate === undefined) return;
+        if (!interactive) return;
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          onActivate();
+          onActivate?.();
         }
       }}
     >
       {children}
+      {/* AE416 — sr-only hold-status announcer. */}
+      {onHoldOpen !== undefined && (
+        <span
+          role="status"
+          aria-live="polite"
+          data-aether-pulse-hold-aria
+          style={{
+            position: 'absolute',
+            width: 1,
+            height: 1,
+            padding: 0,
+            margin: -1,
+            overflow: 'hidden',
+            clip: 'rect(0,0,0,0)',
+            whiteSpace: 'nowrap',
+            border: 0,
+          }}
+        >
+          {holdStatusLabel(hold.status)}
+        </span>
+      )}
     </div>
   );
 }
@@ -167,7 +223,14 @@ function Phase1PulseOverlayShell({
 export function Phase1PulseOverlayStandalone(
   props: Phase1PulseOverlayProps & { mood: PulseMood },
 ): React.ReactElement {
-  const { corner = 'bottom-right', mood, disableCanvas = false, label, onActivate } = props;
+  const {
+    corner = 'bottom-right',
+    mood,
+    disableCanvas = false,
+    label,
+    onActivate,
+    onHoldOpen,
+  } = props;
   return (
     <Phase1PulseOverlayShell
       corner={corner}
@@ -175,6 +238,7 @@ export function Phase1PulseOverlayStandalone(
       disableCanvas={disableCanvas}
       label={label}
       onActivate={onActivate}
+      onHoldOpen={onHoldOpen}
     >
       {disableCanvas ? null : (
         <Suspense fallback={null}>

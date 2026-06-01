@@ -32,6 +32,7 @@ import { Phase1ContinuumBar } from './phase1-continuum-bar';
 import { Phase1ContinuumReceiverToast } from './phase1-continuum-receiver-toast';
 import { Phase1DevNav } from './phase1-dev-nav';
 import { Phase1PulseOverlay } from './phase1-pulse-overlay';
+import { Phase2GenieModal } from '../phase2/phase2-genie-modal';
 import { BREATHING_LIFECYCLE_PLAN, useLifecycleAutoDriver } from './use-lifecycle-driver';
 
 export interface Phase1CompassShellProps {
@@ -69,6 +70,8 @@ function Phase1CompassInner(): React.ReactElement {
     events: -60,
   });
   const audioBridge = useSceneAudioBridge(setAudio);
+  // AE416 — Pulse hold-to-talk opens the Genie modal.
+  const [genieOpen, setGenieOpen] = useState<boolean>(false);
   const isDev = process.env.NODE_ENV !== 'production';
   const pipStyle: CSSProperties = {
     position: 'fixed',
@@ -97,7 +100,9 @@ function Phase1CompassInner(): React.ReactElement {
       <Phase1DevNav active="compass" />
       {/* AE389 — always-present Pulse 60px corner glow.
           AE392 — tap → Pulse drawer opens via AE96 CustomEvent bridge. */}
-      <Phase1PulseOverlay onActivate={() => openPulse('')} />
+      <Phase1PulseOverlay onActivate={() => openPulse('')} onHoldOpen={() => setGenieOpen(true)} />
+      {/* AE416 — Genie modal opens on Pulse hold. */}
+      <Phase2GenieModal open={genieOpen} onClose={() => setGenieOpen(false)} />
       {/* AE390 — Continuum cross-device handoff bar. */}
       <Phase1ContinuumBar />
       {/* AE391 — receiver toast for inbound handoffs. */}

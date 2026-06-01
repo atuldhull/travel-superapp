@@ -103,15 +103,18 @@ export function Phase2GenieModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, open, closing]);
 
-  // AE412 — request close: kick the dissolve-out, the overlay's
-  // `onClosed` fires after the swarm scatters; THAT's when we tell the
-  // parent to unmount.
+  // AE412 — request close: tell the parent immediately so it can flip
+  // its mount flag, and kick the dissolve-out so the swarm scatters
+  // before the modal actually disappears. The `closing` flag keeps the
+  // modal mounted through the scatter even if the parent flips
+  // `open` to false right away.
   const requestClose = useCallback((): void => {
     recorder.reset();
     camera.reset();
     setState(genieReset());
     setClosing(true);
-  }, [camera, recorder]);
+    onClose?.();
+  }, [camera, recorder, onClose]);
 
   // Esc closes.
   useEffect(() => {
@@ -200,8 +203,10 @@ export function Phase2GenieModal({
       <GenieDissolveOverlay
         open={open && !closing}
         onClosed={() => {
+          // The parent's onClose has already fired from requestClose.
+          // This callback just clears the internal closing flag so
+          // the modal unmounts itself once the dissolve is done.
           setClosing(false);
-          onClose?.();
         }}
       />
       <button
