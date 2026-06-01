@@ -1,7 +1,8 @@
 {
-  "//": "EAS build + submit profiles. Installed by [S-D5] of the S-series real-functionality closeout.",
+  "//": "EAS build + submit profiles. Installed by [S-D5] of the S-series real-functionality closeout; extended by Phase 4 Round AT (AE528).",
   "//1": "Three profiles: development = Expo Go-compatible dev client; preview = internal TestFlight + Play Internal; production = App Store + Play Production.",
   "//2": "Operator-owed before first build: `eas login` + `eas project:init` (writes the projectId into app.json). APNs key + FCM service account uploaded via `eas credentials`. Apple Developer team id + Google Play service account in apps/mobile/credentials.json (gitignored).",
+  "//3": "Phase 4 feature flag: EXPO_PUBLIC_FEATURE_AETHER_PHASE1 mirrors the web NEXT_PUBLIC_FEATURE_AETHER_PHASE1 gate. Set to '1' in preview to demo Aether mobile surfaces internally; leave unset in production until the surface ports are launch-ready.",
   "cli": {
     "version": ">= 12.0.0",
     "appVersionSource": "remote"
@@ -11,6 +12,9 @@
       "developmentClient": true,
       "distribution": "internal",
       "channel": "development",
+      "env": {
+        "EXPO_PUBLIC_FEATURE_AETHER_PHASE1": "1"
+      },
       "ios": {
         "simulator": true
       }
@@ -20,7 +24,8 @@
       "channel": "preview",
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://travel-api-staging.fly.dev"
+        "EXPO_PUBLIC_API_BASE_URL": "https://travel-api-staging.fly.dev",
+        "EXPO_PUBLIC_FEATURE_AETHER_PHASE1": "1"
       },
       "ios": {
         "simulator": false
