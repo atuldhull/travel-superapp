@@ -1,6 +1,6 @@
 # Aether — TravelSuperApp 2.0 frontend
 
-> **Status: Phase 1 + 2 + 3 scaffolds shipped (2026-06-01).** All ten surfaces from `02-surfaces.md` are scaffolded behind `NEXT_PUBLIC_FEATURE_AETHER_PHASE1=1` except **Compass Eye AR** (deferred to Phase 5 per decision #8). Phase 3 closeout at [`14-phase3-closeout.md`](14-phase3-closeout.md); the Phase 4 mobile-parity plan is at [`15-phase4-plan.md`](15-phase4-plan.md). Backend b-slices (Whisper STT, CLIP, ML-Kit, Stripe, WebTransport feed, live admin SDK, presence stream) remain owed. Brand language locked to **Warm Italian tactile**.
+> **Status: Phase 1 + 2 + 3 scaffolds shipped + Round AJ polish (2026-06-01).** All ten surfaces from `02-surfaces.md` are scaffolded behind `NEXT_PUBLIC_FEATURE_AETHER_PHASE1=1` except **Compass Eye AR** (deferred to Phase 5 per decision #8). Phase 3 closeout at [`14-phase3-closeout.md`](14-phase3-closeout.md); the Phase 4 mobile-parity plan is at [`15-phase4-plan.md`](15-phase4-plan.md); Round AJ (AE431-AE451) at [`16-round-aj-progress.md`](16-round-aj-progress.md). Backend b-slices (Whisper STT, CLIP, ML-Kit, Stripe, WebTransport feed, live admin SDK, presence stream) remain owed. Brand language locked to **Warm Italian tactile**.
 >
 > Codename for the complete frontend rebuild. Discards every current `apps/web/src/` and `apps/mobile/app/` pixel; keeps the API + `@app/sdk` + workers + ai-service untouched.
 >
@@ -25,6 +25,7 @@
 15. [`13-phase3-progress.md`](13-phase3-progress.md) — Phase 3 scaffolds — Echo social feed (AE418-AE420) + Mirror admin forensics (AE421-AE422); per-surface capability stack + b-slice list.
 16. [`14-phase3-closeout.md`](14-phase3-closeout.md) — Phase 3 closeout inventory (AE418 → AE428), live routes, b-slice list, operator-owed for promotion.
 17. [`15-phase4-plan.md`](15-phase4-plan.md) — Phase 4 mobile-parity plan: per-surface port order, decision locks (Tamagui-out / R3F-native vs Skia / single-binary), operator-owed for EAS + stores bootstrap.
+18. [`16-round-aj-progress.md`](16-round-aj-progress.md) — Round AJ inventory (AE431-AE451): Phase 4 prep + Phase 2/3 polish — 9 Storybook variant sets, 4 jsdom integration spec files, 6 helper extractions / edge-case spec sweeps, 2 loading.tsx skeletons.
 
 ## What we reuse from 1.0
 
