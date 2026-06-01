@@ -10,14 +10,14 @@
 
 ## Summary
 
-| Counter             | Value                                                            |
-| ------------------- | ---------------------------------------------------------------- |
-| Prompts completed   | 581 (Round AT: AE524-AE529 first Aether mobile surface live +6)  |
-| Prompts in progress | 0                                                                |
-| Prompts blocked     | 0                                                                |
-| Last prompt         | `AE529` — Round AT closeout                                      |
-| Last commit date    | 2026-06-01                                                       |
-| Phase               | **Phase 4 IN-PROGRESS** — surface 1/10 (Pulse) shipped on mobile |
+| Counter             | Value                                                                 |
+| ------------------- | --------------------------------------------------------------------- |
+| Prompts completed   | 585 (Round AU: AE530-AE533 Continuum sigil + reduced-motion +4)       |
+| Prompts in progress | 0                                                                     |
+| Prompts blocked     | 0                                                                     |
+| Last prompt         | `AE533` — Round AU closeout                                           |
+| Last commit date    | 2026-06-01                                                            |
+| Phase               | **Phase 4 IN-PROGRESS** — surfaces 2/10 (Pulse + Continuum) on mobile |
 
 ---
 
