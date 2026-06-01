@@ -170,3 +170,60 @@ describe('isMirrorViewer (pure)', () => {
     expect(isMirrorViewer('')).toBe(false);
   });
 });
+
+describe('liveAuditRows + auditRowYProgress (AE445 edge cases)', () => {
+  function row(id: string, kind: string, when: number) {
+    return { id, kind, emittedAt: new Date(when).toISOString(), summary: `${kind} ${id}` };
+  }
+  it('empty array → empty result', () => {
+    expect(liveAuditRows([])).toHaveLength(0);
+  });
+  it('every row past TTL → empty result', () => {
+    const now = 1_000_000;
+    const rows = [
+      row('a', 'mutation', now - MIRROR_AUDIT_RIVER_TTL_MS - 1),
+      row('b', 'sos', now - MIRROR_AUDIT_RIVER_TTL_MS - 100_000),
+    ];
+    expect(liveAuditRows(rows, now)).toHaveLength(0);
+  });
+  it('future-dated row (clock skew) is kept (now - t < 0 < ttl)', () => {
+    const now = 1_000_000;
+    const rows = [row('future', 'mutation', now + 5_000)];
+    expect(liveAuditRows(rows, now)).toHaveLength(1);
+  });
+  it('preserves input ordering', () => {
+    const now = 1_000_000;
+    const rows = [
+      row('first', 'mutation', now - 100),
+      row('second', 'sos', now - 50),
+      row('third', 'scam', now - 25),
+    ];
+    expect(liveAuditRows(rows, now).map((r) => r.id)).toEqual(['first', 'second', 'third']);
+  });
+  it('1000-row array runs in linear time (sanity check)', () => {
+    const now = 2_000_000;
+    const rows = Array.from({ length: 1000 }, (_, i) =>
+      row(`r-${i}`, 'mutation', now - (i % 200) * 100),
+    );
+    const start = performance.now();
+    const live = liveAuditRows(rows, now);
+    const took = performance.now() - start;
+    expect(live.length).toBeGreaterThan(0);
+    // < 50ms is more than enough for a 1000-row filter on any modern host.
+    expect(took).toBeLessThan(50);
+  });
+  it('auditRowYProgress: invalid timestamp returns 1 (fallen off)', () => {
+    const bad = { id: 'bad', kind: 'mutation', emittedAt: 'no', summary: '' };
+    expect(auditRowYProgress(bad)).toBe(1);
+  });
+  it('auditRowYProgress: future-dated row returns 0', () => {
+    const now = 1_000_000;
+    const r = row('future', 'mutation', now + 10_000);
+    expect(auditRowYProgress(r, now)).toBe(0);
+  });
+  it('auditRowYProgress: row past TTL returns 1', () => {
+    const now = 1_000_000;
+    const r = row('past', 'mutation', now - MIRROR_AUDIT_RIVER_TTL_MS - 1_000);
+    expect(auditRowYProgress(r, now)).toBe(1);
+  });
+});
