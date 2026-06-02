@@ -72,10 +72,12 @@ export default function RootLayout() {
             />
             <Stack.Screen name="trips/[id]" options={{ title: 'Trip' }} />
             <Stack.Screen name="memory-books/[id]" options={{ title: 'Memory book' }} />
-            {/* AE537 / AE540 / AE541 - Aether mobile surface routes. */}
+            {/* AE537 / AE540 / AE541 / AE544 / AE546 - Aether mobile surface routes. */}
             <Stack.Screen name="aether/drift" options={{ title: 'Drift' }} />
             <Stack.Screen name="aether/atlas" options={{ title: 'Atlas' }} />
             <Stack.Screen name="aether/continuum" options={{ title: 'Continuum' }} />
+            <Stack.Screen name="aether/compass" options={{ title: 'Compass' }} />
+            <Stack.Screen name="aether/vault" options={{ title: 'Vault' }} />
           </Stack>
           {/* AE527 — Aether Pulse glow rendered above the Stack so it
               persists across navigation. pointerEvents='none' inside the

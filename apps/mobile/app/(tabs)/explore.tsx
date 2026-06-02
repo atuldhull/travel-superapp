@@ -115,6 +115,18 @@ export default function ExploreScreen() {
                 <Text style={styles.aetherBannerArrow}>{'->'}</Text>
               </TouchableOpacity>
             </Link>
+            <Link href="/aether/compass" asChild>
+              <TouchableOpacity style={styles.aetherBanner}>
+                <Text style={styles.aetherBannerText}>Compass — the rose</Text>
+                <Text style={styles.aetherBannerArrow}>{'->'}</Text>
+              </TouchableOpacity>
+            </Link>
+            <Link href="/aether/vault" asChild>
+              <TouchableOpacity style={styles.aetherBanner}>
+                <Text style={styles.aetherBannerText}>Vault — price glyphs</Text>
+                <Text style={styles.aetherBannerArrow}>{'->'}</Text>
+              </TouchableOpacity>
+            </Link>
             <Link href="/aether/continuum" asChild>
               <TouchableOpacity style={styles.aetherBanner}>
                 <Text style={styles.aetherBannerText}>Continuum — handoff sigil</Text>
