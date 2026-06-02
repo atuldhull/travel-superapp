@@ -7,9 +7,17 @@
 > authorable-now from the gated, and locks the per-slice order.
 >
 > **Phase 4 (mobile parity) is code-complete** — see
-> [`38-phase4-closeout.md`](38-phase4-closeout.md). Phase 5 begins now,
-> but most of it is gated (telemetry, users, devices) — so this round
-> ships the one keystone that _is_ authorable: the Predictor foundation.
+> [`38-phase4-closeout.md`](38-phase4-closeout.md).
+>
+> **✅ Phase 5 AUTHORABLE SHELL COMPLETE @ 2026-06-02 (4/4 slices,
+> AE583-AE601).** All the Phase-5 logic buildable without production
+> telemetry or real devices is done + adversarially reviewed: the
+> predictor, the perception contract + mock, the predictor→manager wiring
+> hook, and the Continuum live-sync protocol. The remaining tiers — the
+> **MLP**, **real mediapipe** gaze/gesture, the **mood mirror**, and
+> **Compass Eye AR** — are GATED on a live app accumulating telemetry +
+> real devices, and on the operator EAS build (Phase 4's tail). They are
+> not authorable here and are tracked as gated/operator work, not rounds.
 
 ## Goal
 
@@ -109,8 +117,27 @@ bulk of Phase 5 only unlocks once the app is live and gathering data.
    (AE598) closing the clock-flow-through (morning→atlas vs afternoon→null),
    the tripPhase-live-dep, and the history-cap gaps. Remaining: mount it in
    the live surface host (one line, when Phase 5 ships).
-4. **Continuum sync protocol contract** — the cross-device state-sync
-   message shape (the live WebTransport channel stays a backend b-slice).
+4. **Continuum sync protocol contract** ✅ (this round, AE599-AE601) — the
+   pure wire contract + reconciliation for the LIVE cross-device handoff
+   (Phase 1 shipped the one-shot QR/deep-link; this is the continuous
+   sync). `continuum-sync-protocol` — a versioned message union (hello /
+   bye / ping / state), constructors, and a validating codec; the `state`
+   message carries the same `ContinuumState` the deep-link uses, with a
+   per-device monotonic `seq` for last-writer-wins ordering.
+   `continuum-sync-state` — `reduceContinuumSync(state, message, now)`
+   folds frames into a peer view (echo-drop, stale/out-of-order drop,
+   receive-time presence) + selectors (`continuumPeerFreshness`,
+   `liveContinuumPeers`, `activeContinuumState` = "your other device is on
+   X"). Pure, in `@app/aether-canvas-shared`. The live WebTransport
+   channel (`WT_FEED_URL`/`WT_PRESENCE_URL`) stays a backend b-slice — both
+   ends speak this contract. **A 21-agent adversarial review confirmed 11
+   findings; fixed 4 real ones (AE601)**: a `seq:-1` first-state was
+   swallowed by the sentinel (now gated on `state !== null`); the codec
+   accepted fractional / `>MAX_SAFE_INTEGER` seqs (now a non-negative safe
+   integer); `pathname` wasn't validated to start with a single `/` (a
+   `javascript:`/`//host` could reach navigation — now rejected);
+   prototype-pollution-shaped `extras` keys are rejected. Plus a
+   documented bye-clears-seq limitation. canvas-shared jest 844 → 877.
 
 The MLP, real mediapipe, mood mirror, and Compass Eye AR are **gated**
 and tracked as operator/backend/ML work, not authorable rounds.
