@@ -454,3 +454,44 @@ export {
   hasActionablePrediction,
   type ActionablePredictionOptions,
 } from './prediction-confidence';
+
+// AE591 — Phase 5 (Perception). Framework-free mirror of the aether-core
+// perception contract + pure gaze-zone / gesture-intent / anti-jitter
+// recognizer helpers + a deterministic mock source (consumers build
+// against this before mediapipe lands).
+export {
+  DEFAULT_GAZE_TTL_MS,
+  IDLE_PERCEPTION_STATE,
+  MIN_GAZE_CONFIDENCE,
+  MIN_GESTURE_CONFIDENCE,
+  PERCEPTION_GESTURES,
+  isConfidentGaze,
+  isConfidentGesture,
+  isGazeStale,
+  type GazePoint,
+  type Gesture,
+  type GestureEvent,
+  type PerceptionState,
+} from './perception-frame';
+
+export { gazeZone, gazeZoneOf, type GazeZone } from './gaze-zone';
+
+export { gestureIntent, intentForEvent, type GestureIntent } from './gesture-intent';
+
+export {
+  DEFAULT_GESTURE_HOLD_FRAMES,
+  DEFAULT_GESTURE_RECOGNIZER_OPTIONS,
+  INITIAL_GESTURE_RECOGNIZER_STATE,
+  advanceGestureRecognizer,
+  type GestureRecognizerOptions,
+  type GestureRecognizerState,
+} from './gesture-recognizer';
+
+export {
+  MOCK_GAZE_PERIOD_MS,
+  MOCK_GESTURE_ACTIVE_MS,
+  MOCK_GESTURE_WINDOW_MS,
+  mockGazeAt,
+  mockGestureAt,
+  mockPerceptionStateAt,
+} from './mock-perception';
