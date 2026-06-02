@@ -40,8 +40,9 @@ import {
   type EchoAction,
   type EchoItem,
 } from '@app/aether-canvas-shared';
+import { AETHER_INK } from './palette';
 
-const BACKGROUND = '#1A1714'; // ink
+const BACKGROUND = AETHER_INK; // ink
 
 export interface AetherEchoSceneProps {
   /** The feed to render. Same shape the web Echo scene reads from the

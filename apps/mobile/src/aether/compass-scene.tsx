@@ -28,11 +28,12 @@ import { StyleSheet, View } from 'react-native';
 import { Canvas, useFrame } from '@react-three/fiber/native';
 import { CARDINALS, bearingPositionOnRing } from '@app/aether-canvas-shared';
 import type { Group } from 'three';
+import { AETHER_ACCENT, AETHER_CREAM, AETHER_INK, AETHER_SUPPORT } from './palette';
 
-const NORTH_COLOR = '#C2614A'; // terracotta accent
-const CARDINAL_COLOR = '#F2E8D5'; // cream
-const RING_COLOR = '#6E7B5C'; // olive support
-const BACKGROUND = '#1A1714'; // ink
+const NORTH_COLOR = AETHER_ACCENT; // terracotta accent
+const CARDINAL_COLOR = AETHER_CREAM; // cream
+const RING_COLOR = AETHER_SUPPORT; // olive support
+const BACKGROUND = AETHER_INK; // ink
 
 /** Ring radius (world units). */
 const RING_RADIUS = 2.4;

@@ -35,14 +35,12 @@ import {
   type OrbLayout,
 } from '@app/aether-canvas-shared';
 import type { Group } from 'three';
+import { AETHER_ACCENT, AETHER_GLOW, AETHER_INK, AETHER_SUPPORT } from './palette';
 
-const FOCUS_COLOR = '#C2614A'; // terracotta — the focused orb
-
-/** Warm Italian accents — locked AE palette. Once aether-core-native is
- *  consumed we'll read these from the palette context instead. */
-const ORB_COLOR = '#E8B777'; // ochre glow
-const MARKER_COLOR = '#6E7B5C'; // olive support
-const BACKGROUND = '#1A1714'; // ink
+const FOCUS_COLOR = AETHER_ACCENT; // terracotta — the focused orb
+const ORB_COLOR = AETHER_GLOW; // ochre glow
+const MARKER_COLOR = AETHER_SUPPORT; // olive support
+const BACKGROUND = AETHER_INK; // ink
 
 /** Idle camera pose from the shared lifecycle-camera script. Atlas
  *  shares Drift's hero distance so the surfaces cut to one another

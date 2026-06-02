@@ -30,10 +30,11 @@ import {
   type LumenPhotoLike,
 } from '@app/aether-canvas-shared';
 import type { Group } from 'three';
+import { AETHER_GLOW, AETHER_INK, AETHER_SUPPORT } from './palette';
 
-const PLANE_WARM = '#E8B777'; // ochre glow (recent photos)
-const PLANE_COOL = '#6E7B5C'; // olive support (older photos)
-const BACKGROUND = '#1A1714'; // ink
+const PLANE_WARM = AETHER_GLOW; // ochre glow (recent photos)
+const PLANE_COOL = AETHER_SUPPORT; // olive support (older photos)
+const BACKGROUND = AETHER_INK; // ink
 
 /** Idle camera pose — Lumen pulls back a touch from the hero distance
  *  so the wider time axis (18 units) fits the frame. */
