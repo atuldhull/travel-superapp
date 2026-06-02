@@ -24,7 +24,7 @@
  *
  * A future slice adds tap-to-open-checkout + the real price feed.
  */
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber/native';
 import {
@@ -40,6 +40,7 @@ import {
 } from '@app/aether-canvas-shared';
 import type { Group, Mesh } from 'three';
 import { VaultCheckoutPanel } from './vault-checkout-panel';
+import { useR3FSelection } from '../../lib/use-r3f-selection';
 import { AETHER_ACCENT, AETHER_GLOW, AETHER_INK } from './palette';
 
 const GLYPH_COLOR = AETHER_GLOW; // ochre glow
@@ -166,9 +167,10 @@ function GlyphRing({
 export function AetherVaultScene({
   reducedMotion = false,
 }: AetherVaultSceneProps): React.ReactElement {
-  const [selected, setSelected] = useState<VaultPriceLike | null>(null);
-  const onSelect = useCallback((price: VaultPriceLike) => setSelected(price), []);
-  const onClose = useCallback(() => setSelected(null), []);
+  // Shared R3F tap-to-select state (AE579). Vault drives the checkout
+  // panel off `selected`; it has no rotating-field highlight, so
+  // `selectedId` goes unused here.
+  const { selected, select, close } = useR3FSelection<VaultPriceLike>((p) => p.id);
 
   return (
     <View style={styles.container} testID="aether-vault-scene">
@@ -176,9 +178,9 @@ export function AetherVaultScene({
         <color attach="background" args={[BACKGROUND]} />
         <ambientLight intensity={0.6} />
         <directionalLight position={[5, 8, 6]} intensity={0.8} />
-        <GlyphRing reducedMotion={reducedMotion} onSelect={onSelect} />
+        <GlyphRing reducedMotion={reducedMotion} onSelect={select} />
       </Canvas>
-      <VaultCheckoutPanel price={selected} onClose={onClose} />
+      <VaultCheckoutPanel price={selected} onClose={close} />
     </View>
   );
 }
