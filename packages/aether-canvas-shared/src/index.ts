@@ -495,3 +495,39 @@ export {
   mockGestureAt,
   mockPerceptionStateAt,
 } from './mock-perception';
+
+// AE599 — Phase 5 Continuum LIVE cross-device sync: the pure wire
+// contract (message union + codec) + the reconciliation (peer presence +
+// active-surface selector). The WebTransport channel is a backend
+// b-slice; both ends speak this.
+export {
+  CONTINUUM_SYNC_PROTOCOL_VERSION,
+  byeMessage,
+  decodeContinuumSyncMessage,
+  encodeContinuumSyncMessage,
+  helloMessage,
+  parseContinuumSyncMessage,
+  pingMessage,
+  stateMessage,
+  type ContinuumByeMessage,
+  type ContinuumDeviceId,
+  type ContinuumHelloMessage,
+  type ContinuumPingMessage,
+  type ContinuumStateMessage,
+  type ContinuumSyncMessage,
+} from './continuum-sync-protocol';
+
+export {
+  CONTINUUM_PEER_LIVE_MS,
+  CONTINUUM_PEER_STALE_MS,
+  activeContinuumState,
+  continuumPeerFreshness,
+  continuumPeers,
+  initialContinuumSyncState,
+  liveContinuumPeerCount,
+  liveContinuumPeers,
+  reduceContinuumSync,
+  type ContinuumPeer,
+  type ContinuumPeerFreshness,
+  type ContinuumSyncState,
+} from './continuum-sync-state';
