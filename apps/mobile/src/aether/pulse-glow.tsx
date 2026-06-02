@@ -47,6 +47,11 @@ const GLOW_BASE_RADIUS_PX = 32;
  *  clear of the OS safe-area inset on iOS/Android. */
 const GLOW_EDGE_MARGIN_PX = 24;
 
+/** Minimum ms between React commits of the breathing state. ~20fps —
+ *  smooth for an 8s cycle, far cheaper than a per-frame setState on a
+ *  permanently-mounted overlay (AE572). */
+const PULSE_COMMIT_INTERVAL_MS = 50;
+
 /** Warm Italian terracotta + ochre — the locked AE accent + glow. */
 const GLOW_FILL = AETHER_ACCENT;
 const GLOW_GLOW = AETHER_GLOW;
@@ -81,6 +86,7 @@ export function AetherPulseGlow({
   positionStyle,
 }: AetherPulseGlowProps): React.ReactElement {
   const startRef = useRef<number | null>(null);
+  const lastCommitRef = useRef<number>(0);
   const [now, setNow] = useState<number>(0);
 
   useEffect(() => {
@@ -88,13 +94,21 @@ export function AetherPulseGlow({
     let frameHandle = 0;
     const tick = (t: number): void => {
       if (startRef.current === null) startRef.current = t;
-      setNow(t - startRef.current);
+      const elapsed = t - startRef.current;
+      // Throttle the React commit to ~20fps (AE572). The breathing cycle
+      // is 8s, so 50ms steps read as smooth while cutting the
+      // full-component re-render rate ~3x for this always-mounted overlay.
+      if (elapsed - lastCommitRef.current >= PULSE_COMMIT_INTERVAL_MS) {
+        lastCommitRef.current = elapsed;
+        setNow(elapsed);
+      }
       frameHandle = requestAnimationFrame(tick);
     };
     frameHandle = requestAnimationFrame(tick);
     return () => {
       if (frameHandle) cancelAnimationFrame(frameHandle);
       startRef.current = null;
+      lastCommitRef.current = 0;
     };
   }, [reducedMotion]);
 
