@@ -118,35 +118,42 @@ export function AetherGenieScene({
   reducedMotion = false,
 }: AetherGenieSceneProps): React.ReactElement {
   const [state, setState] = useState<GenieState>('idle');
+  // Mirror the state into a ref so the timer callbacks + the tap guard
+  // read the live value without re-creating onMic or nesting setState
+  // side effects (the source of the AE571 double-tap stall).
+  const stateRef = useRef<GenieState>('idle');
+  stateRef.current = state;
+  const releaseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sttTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     return () => {
+      if (releaseTimer.current) clearTimeout(releaseTimer.current);
       if (sttTimer.current) clearTimeout(sttTimer.current);
     };
   }, []);
 
   // Tap = press + release for the demo: idle/transcribed/error -> listening,
-  // then immediately -> processing, then a simulated STT -> transcribed.
+  // then -> processing after 600ms, then a simulated STT -> transcribed.
   const onMic = useCallback(() => {
-    setState((prev) => {
-      const pressed = genieOnMicPress(prev);
-      if (pressed !== 'listening') return pressed;
-      // schedule the release -> processing -> stt chain
+    // Ignore taps while a listening/processing cycle is already in flight
+    // so an impatient double-tap can't cancel-and-reschedule the release
+    // timer and pin the FSM in 'listening' (AE571).
+    if (genieIsActive(stateRef.current)) return;
+    const pressed = genieOnMicPress(stateRef.current);
+    if (pressed !== 'listening') {
+      setState(pressed);
+      return;
+    }
+    setState('listening');
+    if (releaseTimer.current) clearTimeout(releaseTimer.current);
+    releaseTimer.current = setTimeout(() => {
+      const processing = genieOnMicRelease(stateRef.current);
+      setState(processing);
+      if (processing !== 'processing') return;
       if (sttTimer.current) clearTimeout(sttTimer.current);
-      sttTimer.current = setTimeout(() => {
-        setState((s) => {
-          const processing = genieOnMicRelease(s);
-          if (processing !== 'processing') return processing;
-          if (sttTimer.current) clearTimeout(sttTimer.current);
-          sttTimer.current = setTimeout(() => {
-            setState((p) => genieOnStt(p));
-          }, SIMULATED_STT_MS);
-          return processing;
-        });
-      }, 600);
-      return pressed;
-    });
+      sttTimer.current = setTimeout(() => setState(genieOnStt(stateRef.current)), SIMULATED_STT_MS);
+    }, 600);
   }, []);
 
   const active = genieIsActive(state);
