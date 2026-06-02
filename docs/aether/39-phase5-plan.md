@@ -90,9 +90,25 @@ bulk of Phase 5 only unlocks once the app is live and gathering data.
    drifts from aether-core (the most likely future edit — adding a
    `Gesture` — is now caught), and closed 6 boundary coverage gaps.
    canvas-shared jest 801 → 844.
-3. **Predictor → surface-manager wiring** — a React hook in
-   `@app/aether-core` that builds the feature vector from session state,
-   runs the predictor, and feeds `anticipate()`; phase-5 flag-gated.
+3. **Predictor → surface-manager wiring** ✅ (this round, AE597) — the
+   `useSurfaceAnticipation` hook records a bounded recency history, builds
+   the feature vector from the surface-manager state + the clock
+   (time-of-day) + the caller's trip context, runs the predictor +
+   confidence gate, and feeds the actionable top pick into `anticipate()`.
+   Flag-gated by `NEXT_PUBLIC_FEATURE_AETHER_PHASE5` (disabled → clears).
+   **Lives in `apps/web`, NOT `@app/aether-core`** — aether-core can't
+   depend on canvas-shared (canvas-shared already type-deps aether-core; a
+   reverse dep is a turbo cycle), and apps/web is the consumer that
+   depends on both acyclically + reads `NEXT_PUBLIC_*` (the same place
+   `use-lifecycle-driver` wires the FSM timing). aether-core stays
+   predictor-agnostic — its `anticipate()` socket is the seam. Pure
+   helpers (`pushRecentSurface` / `anticipationTarget`) + the hook are
+   vitest-tested (15 specs incl. a `SurfaceManagerProvider` integration).
+   **A 14-agent adversarial review found 6 test-coverage gaps and NO code
+   bugs** — the wiring was mutation-test-verified correct; added 3 tests
+   (AE598) closing the clock-flow-through (morning→atlas vs afternoon→null),
+   the tripPhase-live-dep, and the history-cap gaps. Remaining: mount it in
+   the live surface host (one line, when Phase 5 ships).
 4. **Continuum sync protocol contract** — the cross-device state-sync
    message shape (the live WebTransport channel stays a backend b-slice).
 
