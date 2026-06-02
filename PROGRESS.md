@@ -10,14 +10,14 @@
 
 ## Summary
 
-| Counter             | Value                                                                                                                                                 |
-| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Prompts completed   | 635 (Round BF: AE582 Phase 4 closeout + operator handoff +1)                                                                                          |
-| Prompts in progress | 0                                                                                                                                                     |
-| Prompts blocked     | 0                                                                                                                                                     |
-| Last prompt         | `AE582` — Phase 4 closeout                                                                                                                            |
-| Last commit date    | 2026-06-02                                                                                                                                            |
-| Phase               | **Phase 4 CODE-COMPLETE** — 10/10 surfaces, 7/7 interactive; pending operator EAS device build + backend b-slices (docs/aether/38-phase4-closeout.md) |
+| Counter             | Value                                                                                                                                                                                                         |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Prompts completed   | 643 (Phase 5 first cut: AE583-AE590 predictor foundation + adversarial hardening +8)                                                                                                                          |
+| Prompts in progress | 0                                                                                                                                                                                                             |
+| Prompts blocked     | 0                                                                                                                                                                                                             |
+| Last prompt         | `AE590` — Phase 5 predictor hardening (27-agent adversarial review, 6 bugs fixed)                                                                                                                             |
+| Last commit date    | 2026-06-02                                                                                                                                                                                                    |
+| Phase               | **Phase 5 STARTED** — Predictor foundation (heuristic + `SurfacePredictor` seam + confidence gate) in canvas-shared; predictive/perception tiers gated on telemetry + devices (docs/aether/39-phase5-plan.md) |
 
 ---
 
