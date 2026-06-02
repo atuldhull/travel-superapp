@@ -101,12 +101,27 @@ export default function ExploreScreen() {
         </Text>
 
         {AETHER_ENABLED ? (
-          <Link href="/aether/drift" asChild>
-            <TouchableOpacity style={styles.aetherBanner}>
-              <Text style={styles.aetherBannerText}>Aether preview: open Drift</Text>
-              <Text style={styles.aetherBannerArrow}>{'->'}</Text>
-            </TouchableOpacity>
-          </Link>
+          <View style={styles.aetherSection}>
+            <Text style={styles.aetherSectionLabel}>Aether preview</Text>
+            <Link href="/aether/drift" asChild>
+              <TouchableOpacity style={styles.aetherBanner}>
+                <Text style={styles.aetherBannerText}>Drift — the home field</Text>
+                <Text style={styles.aetherBannerArrow}>{'->'}</Text>
+              </TouchableOpacity>
+            </Link>
+            <Link href="/aether/atlas" asChild>
+              <TouchableOpacity style={styles.aetherBanner}>
+                <Text style={styles.aetherBannerText}>Atlas — the trip studio</Text>
+                <Text style={styles.aetherBannerArrow}>{'->'}</Text>
+              </TouchableOpacity>
+            </Link>
+            <Link href="/aether/continuum" asChild>
+              <TouchableOpacity style={styles.aetherBanner}>
+                <Text style={styles.aetherBannerText}>Continuum — handoff sigil</Text>
+                <Text style={styles.aetherBannerArrow}>{'->'}</Text>
+              </TouchableOpacity>
+            </Link>
+          </View>
         ) : null}
 
         <View style={styles.row}>
@@ -294,6 +309,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#ddd',
+  },
+  aetherSection: {
+    flexDirection: 'column',
+    gap: 6,
+  },
+  aetherSectionLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: '#6E7B5C',
   },
   aetherBanner: {
     flexDirection: 'row',
