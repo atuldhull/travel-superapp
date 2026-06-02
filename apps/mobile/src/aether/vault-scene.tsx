@@ -40,10 +40,11 @@ import {
 } from '@app/aether-canvas-shared';
 import type { Group, Mesh } from 'three';
 import { VaultCheckoutPanel } from './vault-checkout-panel';
+import { AETHER_ACCENT, AETHER_GLOW, AETHER_INK } from './palette';
 
-const GLYPH_COLOR = '#E8B777'; // ochre glow
-const GLYPH_DROP_COLOR = '#C2614A'; // terracotta — a price that dropped
-const BACKGROUND = '#1A1714'; // ink
+const GLYPH_COLOR = AETHER_GLOW; // ochre glow
+const GLYPH_DROP_COLOR = AETHER_ACCENT; // terracotta — a price that dropped
+const BACKGROUND = AETHER_INK; // ink
 
 /** Slow ring rotation (radians / second). */
 const RING_RADIANS_PER_SECOND = (2 * Math.PI) / 60;

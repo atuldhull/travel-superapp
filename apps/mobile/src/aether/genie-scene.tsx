@@ -42,10 +42,11 @@ import {
   type GenieState,
 } from '@app/aether-canvas-shared';
 import type { Points } from 'three';
+import { AETHER_GLOW, AETHER_INK, AETHER_SUPPORT } from './palette';
 
-const PARTICLE_IDLE = '#6E7B5C'; // olive support
-const PARTICLE_ACTIVE = '#E8B777'; // ochre glow
-const BACKGROUND = '#1A1714'; // ink
+const PARTICLE_IDLE = AETHER_SUPPORT; // olive support
+const PARTICLE_ACTIVE = AETHER_GLOW; // ochre glow
+const BACKGROUND = AETHER_INK; // ink
 
 /** Simulated STT round-trip (ms) — replace with the real ai-service
  *  /v1/transcribe call when AE411b lands. */

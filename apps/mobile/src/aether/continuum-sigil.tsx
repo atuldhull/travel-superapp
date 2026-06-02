@@ -42,6 +42,7 @@ import {
   sigilPixelSize,
   type SigilCellRect,
 } from '@app/aether-canvas-shared';
+import { AETHER_INK } from './palette';
 
 /** Default edge length (px) of a single sigil cell. 6 px keeps the
  *  default 21x21 grid at a comfortable ~146 px square (21 cells x 6 px
@@ -52,12 +53,10 @@ const DEFAULT_CELL_PX = 6;
  *  separation without the grid looking sparse. */
 const DEFAULT_GAP_PX = 1;
 
-/** Warm Italian ink — the locked AE foreground. Once we wire the
- *  palette context from `@app/aether-core-native` we'll read this from
- *  `useSurfacePaletteSlotsFromContext().ink` instead. Empty cells stay
+/** Warm Italian ink — the locked AE foreground. Empty cells stay
  *  transparent (we only paint filled cells), so the parent's surface
  *  shows through the gaps. */
-const DEFAULT_FILL = '#1A1714';
+const DEFAULT_FILL = AETHER_INK;
 
 export interface AetherContinuumSigilProps {
   /** The handoff seed — typically the Continuum deep-link URL (or
