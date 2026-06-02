@@ -22,7 +22,7 @@
  * timeline, tap-to-focus, the per-orb place card. AE539 proves the
  * Atlas scene renders from real itinerary data.
  */
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber/native';
 import {
@@ -35,6 +35,7 @@ import {
   type OrbLayout,
 } from '@app/aether-canvas-shared';
 import type { Group } from 'three';
+import { useR3FSelection } from '../../lib/use-r3f-selection';
 import { AETHER_ACCENT, AETHER_GLOW, AETHER_INK, AETHER_SUPPORT } from './palette';
 
 const FOCUS_COLOR = AETHER_ACCENT; // terracotta — the focused orb
@@ -157,9 +158,15 @@ export function AetherAtlasScene({
   days,
   reducedMotion = false,
 }: AetherAtlasSceneProps): React.ReactElement {
-  const [focused, setFocused] = useState<OrbLayout | null>(null);
-  const onSelect = useCallback((orb: OrbLayout) => setFocused(orb), []);
-  const onClose = useCallback(() => setFocused(null), []);
+  // Shared R3F tap-to-select state (AE579). `selectedId` pauses the
+  // idle field rotation + highlights the focused orb; `selected` mounts
+  // the place card.
+  const {
+    selected: focused,
+    selectedId,
+    select,
+    close,
+  } = useR3FSelection<OrbLayout>((orb) => orb.id);
 
   return (
     <View style={styles.container} testID="aether-atlas-scene">
@@ -170,11 +177,11 @@ export function AetherAtlasScene({
         <AtlasField
           days={days}
           reducedMotion={reducedMotion}
-          focusedId={focused?.id ?? null}
-          onSelect={onSelect}
+          focusedId={selectedId}
+          onSelect={select}
         />
       </Canvas>
-      {focused ? <PlaceCard orb={focused} onClose={onClose} /> : null}
+      {focused ? <PlaceCard orb={focused} onClose={close} /> : null}
     </View>
   );
 }

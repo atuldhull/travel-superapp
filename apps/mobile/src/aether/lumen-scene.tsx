@@ -20,7 +20,7 @@
  * A gentle whole-cloud idle rotation gives the suspension life (frozen
  * under reducedMotion).
  */
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber/native';
 import {
@@ -31,6 +31,7 @@ import {
   type LumenPhotoLike,
 } from '@app/aether-canvas-shared';
 import { DoubleSide, type Group } from 'three';
+import { useR3FSelection } from '../../lib/use-r3f-selection';
 import { AETHER_ACCENT, AETHER_CREAM, AETHER_GLOW, AETHER_INK, AETHER_SUPPORT } from './palette';
 
 const PLANE_WARM = AETHER_GLOW; // ochre glow (recent photos)
@@ -180,9 +181,15 @@ export function AetherLumenScene({
   photos,
   reducedMotion = false,
 }: AetherLumenSceneProps): React.ReactElement {
-  const [focused, setFocused] = useState<LumenPhotoLike | null>(null);
-  const onSelect = useCallback((photo: LumenPhotoLike) => setFocused(photo), []);
-  const onClose = useCallback(() => setFocused(null), []);
+  // Shared R3F tap-to-select state (AE579). `selectedId` pauses the
+  // cloud drift + highlights the focused plane; `selected` mounts the
+  // photo card.
+  const {
+    selected: focused,
+    selectedId,
+    select,
+    close,
+  } = useR3FSelection<LumenPhotoLike>((photo) => photo.id);
 
   return (
     <View style={styles.container} testID="aether-lumen-scene">
@@ -196,11 +203,11 @@ export function AetherLumenScene({
         <PhotoCloud
           photos={photos}
           reducedMotion={reducedMotion}
-          focusedId={focused?.id ?? null}
-          onSelect={onSelect}
+          focusedId={selectedId}
+          onSelect={select}
         />
       </Canvas>
-      {focused ? <PhotoCard photo={focused} onClose={onClose} /> : null}
+      {focused ? <PhotoCard photo={focused} onClose={close} /> : null}
     </View>
   );
 }
