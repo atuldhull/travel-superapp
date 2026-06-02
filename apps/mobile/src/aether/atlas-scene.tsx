@@ -22,9 +22,9 @@
  * timeline, tap-to-focus, the per-orb place card. AE539 proves the
  * Atlas scene renders from real itinerary data.
  */
-import { useMemo, useRef } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { Canvas, useFrame } from '@react-three/fiber/native';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber/native';
 import {
   cameraPoseAt,
   layoutDayMarkers,
@@ -32,8 +32,11 @@ import {
   orbColorForItem,
   orbSizeForItem,
   type AtlasDayLike,
+  type OrbLayout,
 } from '@app/aether-canvas-shared';
 import type { Group } from 'three';
+
+const FOCUS_COLOR = '#C2614A'; // terracotta — the focused orb
 
 /** Warm Italian accents — locked AE palette. Once aether-core-native is
  *  consumed we'll read these from the palette context instead. */
@@ -62,9 +65,13 @@ export interface AetherAtlasSceneProps {
 function AtlasField({
   days,
   reducedMotion,
+  focusedId,
+  onSelect,
 }: {
   days: ReadonlyArray<AtlasDayLike>;
   reducedMotion: boolean;
+  focusedId: string | null;
+  onSelect: (orb: OrbLayout) => void;
 }): React.ReactElement {
   const groupRef = useRef<Group>(null);
   const elapsedRef = useRef<number>(0);
@@ -83,7 +90,9 @@ function AtlasField({
   }, [days]);
 
   useFrame((_state, delta) => {
-    if (reducedMotion) return;
+    // Pause the idle rotation while an orb is focused so the place card
+    // stays readable; resume when focus clears.
+    if (reducedMotion || focusedId !== null) return;
     elapsedRef.current += delta;
     const group = groupRef.current;
     if (group) group.rotation.y = elapsedRef.current * FIELD_RADIANS_PER_SECOND;
@@ -93,12 +102,24 @@ function AtlasField({
     <group ref={groupRef}>
       {orbs.map((orb) => {
         const item = itemsById.get(orb.id);
-        const size = item ? orbSizeForItem(item) : 0.18;
-        const color = item ? orbColorForItem(item, ORB_COLOR) : ORB_COLOR;
+        const focused = orb.id === focusedId;
+        const size = (item ? orbSizeForItem(item) : 0.18) * (focused ? 1.5 : 1);
+        const color = focused ? FOCUS_COLOR : item ? orbColorForItem(item, ORB_COLOR) : ORB_COLOR;
         return (
-          <mesh key={orb.id} position={[orb.x, orb.y, orb.z]}>
+          <mesh
+            key={orb.id}
+            position={[orb.x, orb.y, orb.z]}
+            onClick={(e: ThreeEvent<unknown>) => {
+              e.stopPropagation();
+              onSelect(orb);
+            }}
+          >
             <sphereGeometry args={[size, 24, 24]} />
-            <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.35} />
+            <meshStandardMaterial
+              color={color}
+              emissive={color}
+              emissiveIntensity={focused ? 0.7 : 0.35}
+            />
           </mesh>
         );
       })}
@@ -112,22 +133,50 @@ function AtlasField({
   );
 }
 
+/** The place card shown when an orb is focused. Synthetic place data
+ *  for now (the sample trip uses `place-<slug>` ids); a future slice
+ *  reads the real place row via the SDK. */
+function PlaceCard({ orb, onClose }: { orb: OrbLayout; onClose: () => void }): React.ReactElement {
+  const placeName = (orb.placeId ?? 'unknown-place').replace(/^place-/, '').replace(/-/g, ' ');
+  return (
+    <View style={styles.card}>
+      <Text style={styles.cardDay}>
+        Day {orb.dayIndex + 1} · stop {orb.itemPosition + 1}
+      </Text>
+      <Text style={styles.cardPlace}>{placeName}</Text>
+      <Pressable onPress={onClose} style={styles.cardClose} accessibilityRole="button">
+        <Text style={styles.cardCloseText}>Close</Text>
+      </Pressable>
+    </View>
+  );
+}
+
 /**
  * The Atlas surface scene. Mounts an R3F-native <Canvas> rendering the
- * trip's orb field. Sizes to its parent via flex: 1.
+ * trip's orb field. Tap an orb to focus it + show its place card.
  */
 export function AetherAtlasScene({
   days,
   reducedMotion = false,
 }: AetherAtlasSceneProps): React.ReactElement {
+  const [focused, setFocused] = useState<OrbLayout | null>(null);
+  const onSelect = useCallback((orb: OrbLayout) => setFocused(orb), []);
+  const onClose = useCallback(() => setFocused(null), []);
+
   return (
     <View style={styles.container} testID="aether-atlas-scene">
       <Canvas camera={{ position: IDLE_POSE.position, fov: 60 }} style={styles.canvas}>
         <color attach="background" args={[BACKGROUND]} />
         <ambientLight intensity={0.6} />
         <directionalLight position={[4, 6, 8]} intensity={0.8} />
-        <AtlasField days={days} reducedMotion={reducedMotion} />
+        <AtlasField
+          days={days}
+          reducedMotion={reducedMotion}
+          focusedId={focused?.id ?? null}
+          onSelect={onSelect}
+        />
       </Canvas>
+      {focused ? <PlaceCard orb={focused} onClose={onClose} /> : null}
     </View>
   );
 }
@@ -138,5 +187,41 @@ const styles = StyleSheet.create({
   },
   canvas: {
     flex: 1,
+  },
+  card: {
+    position: 'absolute',
+    left: 20,
+    right: 20,
+    bottom: 32,
+    backgroundColor: '#24201C',
+    borderRadius: 16,
+    padding: 20,
+    gap: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 12,
+  },
+  cardDay: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: '#6E7B5C',
+  },
+  cardPlace: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#F2E8D5',
+    textTransform: 'capitalize',
+  },
+  cardClose: {
+    alignSelf: 'flex-start',
+    paddingTop: 8,
+  },
+  cardCloseText: {
+    fontSize: 14,
+    color: '#E8B777',
+    fontWeight: '600',
   },
 });
