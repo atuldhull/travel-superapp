@@ -24,8 +24,7 @@
  *
  * A future slice adds tap-to-open-checkout + the real price feed.
  */
-import { useMemo, useRef } from 'react';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber/native';
 import {
