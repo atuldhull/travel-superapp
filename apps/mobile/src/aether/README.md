@@ -39,23 +39,26 @@
 Per `docs/aether/15-phase4-plan.md` table, ordered by
 user-impact / dependency-depth:
 
-| Order | Surface   | Renderer | Status             |
-| ----- | --------- | -------- | ------------------ |
-| 1     | Pulse     | Skia     | ✅ AE526 (overlay) |
-| 2     | Drift     | R3F      | ✅ AE534-537       |
-| 3     | Atlas     | R3F      | ✅ AE539-540       |
-| 4     | Compass   | R3F      | ✅ AE543-544       |
-| 5     | Continuum | Skia     | ✅ AE531 + AE541   |
-| 6     | Lumen     | R3F      | ✅ AE549-550       |
-| 7     | Genie     | R3F      | ✅ AE554-555       |
-| 8     | Vault     | R3F      | ✅ AE545-546       |
-| 9     | Echo      | R3F      | ✅ AE551-552       |
-| 10    | Mirror    | Skia     | ✅ AE556-557       |
+| Order | Surface   | Renderer | Status             | Interaction                                |
+| ----- | --------- | -------- | ------------------ | ------------------------------------------ |
+| 1     | Pulse     | Skia     | ✅ AE526 (overlay) | ambient (breathing glow)                   |
+| 2     | Drift     | R3F      | ✅ AE534-537       | ambient (sun + field)                      |
+| 3     | Atlas     | R3F      | ✅ AE539-540       | tap orb → place card (`useR3FSelection`)   |
+| 4     | Compass   | R3F      | ✅ AE543-544       | real device heading (expo-location)        |
+| 5     | Continuum | Skia     | ✅ AE531 + AE541   | ambient (sigil)                            |
+| 6     | Lumen     | R3F      | ✅ AE549-550       | tap plane → photo card (`useR3FSelection`) |
+| 7     | Genie     | R3F      | ✅ AE554-555       | tap → listening FSM                        |
+| 8     | Vault     | R3F      | ✅ AE545-546       | tap glyph → checkout (`useR3FSelection`)   |
+| 9     | Echo      | R3F      | ✅ AE551-552       | swipe → next memory (PanGesture)           |
+| 10    | Mirror    | Skia     | ✅ AE556-557       | tap row → expand detail (AE578)            |
 
-**All ten surfaces scaffolded (Round AZ).** Remaining work is depth:
-real gestures + data, backend b-slices (STT / camera / WebTransport /
-admin stream), and the EAS device build that turns "typechecks" into
-"runs".
+**All ten surfaces scaffolded (Round AZ); 7/7 non-trivial surfaces now
+interact (Round BE — Mirror's tap-to-expand closed the last gap).** The
+three ambient surfaces (Pulse / Drift / Continuum) are decorative by
+design on web too. The R3F tap-scenes (Atlas / Lumen / Vault) share one
+`useR3FSelection<T>` hook (`apps/mobile/lib/use-r3f-selection.ts`, AE579).
+Remaining work is backend b-slices (STT / camera / WebTransport / admin
+stream) + the EAS device build that turns "typechecks" into "runs".
 
 ## Wiring conventions
 

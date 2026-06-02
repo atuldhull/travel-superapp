@@ -10,14 +10,14 @@
 
 ## Summary
 
-| Counter             | Value                                                                          |
-| ------------------- | ------------------------------------------------------------------------------ |
-| Prompts completed   | 630 (Round BD: AE570-AE577 pre-device audit + 7 runtime-bug fixes +8)          |
-| Prompts in progress | 0                                                                              |
-| Prompts blocked     | 0                                                                              |
-| Last prompt         | `AE577` — Round BD closeout                                                    |
-| Last commit date    | 2026-06-02                                                                     |
-| Phase               | **Phase 4 DEPTH** — adversarial audit caught + fixed 7 runtime bugs pre-device |
+| Counter             | Value                                                                                          |
+| ------------------- | ---------------------------------------------------------------------------------------------- |
+| Prompts completed   | 634 (Round BE: AE578-AE581 Mirror tap + `useR3FSelection` + palette seam +4)                   |
+| Prompts in progress | 0                                                                                              |
+| Prompts blocked     | 0                                                                                              |
+| Last prompt         | `AE581` — Round BE closeout                                                                    |
+| Last commit date    | 2026-06-02                                                                                     |
+| Phase               | **Phase 4 DEPTH** — 7/7 surfaces interactive (Mirror tap closed the gap); finish round BF next |
 
 ---
 
