@@ -127,6 +127,18 @@ export default function ExploreScreen() {
                 <Text style={styles.aetherBannerArrow}>{'->'}</Text>
               </TouchableOpacity>
             </Link>
+            <Link href="/aether/lumen" asChild>
+              <TouchableOpacity style={styles.aetherBanner}>
+                <Text style={styles.aetherBannerText}>Lumen — the photo cloud</Text>
+                <Text style={styles.aetherBannerArrow}>{'->'}</Text>
+              </TouchableOpacity>
+            </Link>
+            <Link href="/aether/echo" asChild>
+              <TouchableOpacity style={styles.aetherBanner}>
+                <Text style={styles.aetherBannerText}>Echo — the feed</Text>
+                <Text style={styles.aetherBannerArrow}>{'->'}</Text>
+              </TouchableOpacity>
+            </Link>
             <Link href="/aether/continuum" asChild>
               <TouchableOpacity style={styles.aetherBanner}>
                 <Text style={styles.aetherBannerText}>Continuum — handoff sigil</Text>
