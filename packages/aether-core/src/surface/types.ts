@@ -21,7 +21,13 @@ import type { ComponentType } from 'react';
 /** Stable identifier for one of the ten Surfaces (02-surfaces.md §Map).
  *
  *  Why string-union, not enum: keeps the runtime side-effect-free and lets
- *  consumers narrow with `if (s.id === 'drift')` without importing a value. */
+ *  consumers narrow with `if (s.id === 'drift')` without importing a value.
+ *
+ *  LOCK-STEP: `PredictableSurfaceId` in
+ *  `@app/aether-canvas-shared/src/predictable-surface.ts` mirrors this
+ *  union (the predictor can't import from here without dragging React
+ *  types into native consumers — see surface-lifecycle-phase.ts). Adding
+ *  / removing an id here MUST be mirrored there. */
 export type SurfaceId =
   | 'drift'
   | 'genie'

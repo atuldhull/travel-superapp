@@ -409,3 +409,48 @@ export {
   pickUpcomingTrip,
   type UpcomingTripLike,
 } from './upcoming-trip';
+
+// AE583 — Phase 5 (Predictive). Pure surface predictor: ranks the user's
+// likely next surface to feed the surface manager's `anticipate(id)`
+// pre-warm socket. Heuristic baseline now; MLP swaps in behind the
+// `SurfacePredictor` interface later.
+export {
+  NAVIGABLE_SURFACES,
+  isNavigableSurface,
+  type PredictableSurfaceId,
+} from './predictable-surface';
+
+export {
+  recencyRank,
+  safeDwellMs,
+  timeOfDayBucketFromHour,
+  tripPhaseFromDayIndex,
+  type PredictionFeatureVector,
+  type TimeOfDayBucket,
+  type TripPhase,
+} from './prediction-feature-vector';
+
+export {
+  rankPredictions,
+  type SurfacePrediction,
+  type SurfacePredictor,
+} from './surface-predictor';
+
+export {
+  DEFAULT_HEURISTIC_CONFIG,
+  SURFACE_TRANSITION_PRIORS,
+  TIME_OF_DAY_SURFACE_BIAS,
+  TRIP_PHASE_SURFACE_BIAS,
+  createHeuristicSurfacePredictor,
+  recencyPenalty,
+  type HeuristicPredictorConfig,
+} from './heuristic-surface-predictor';
+
+export {
+  DEFAULT_ACTIONABLE_OPTIONS,
+  DEFAULT_PREDICTION_MIN_MARGIN,
+  DEFAULT_PREDICTION_MIN_SCORE,
+  actionablePrediction,
+  hasActionablePrediction,
+  type ActionablePredictionOptions,
+} from './prediction-confidence';
