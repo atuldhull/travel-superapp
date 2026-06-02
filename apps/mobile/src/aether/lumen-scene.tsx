@@ -30,7 +30,7 @@ import {
   layoutPhotoCloud,
   type LumenPhotoLike,
 } from '@app/aether-canvas-shared';
-import type { Group } from 'three';
+import { DoubleSide, type Group } from 'three';
 import { AETHER_ACCENT, AETHER_CREAM, AETHER_GLOW, AETHER_INK, AETHER_SUPPORT } from './palette';
 
 const PLANE_WARM = AETHER_GLOW; // ochre glow (recent photos)
@@ -130,10 +130,14 @@ function PhotoCloud({
             }}
           >
             <planeGeometry args={[size, size]} />
+            {/* DoubleSide so each plane stays visible + tappable through
+                the whole-cloud Y rotation — a FrontSide plane culls (and
+                stops raycasting) once it turns >90deg from the camera. */}
             <meshStandardMaterial
               color={color}
               emissive={color}
               emissiveIntensity={focused ? 0.5 : 0.2}
+              side={DoubleSide}
             />
           </mesh>
         );
