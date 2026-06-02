@@ -13,6 +13,16 @@
  */
 import { createContext, useContext, type ReactNode } from 'react';
 
+/**
+ * LOCK-STEP: the pure types below (`GazePoint` / `Gesture` /
+ * `GestureEvent` / `PerceptionState`) are mirrored framework-free in
+ * `@app/aether-canvas-shared/src/perception-frame.ts` (the perception
+ * helpers + the deterministic mock can't import from here without
+ * dragging React types into native consumers). Edits here MUST be
+ * mirrored there. A canvas-shared `mockPerceptionStateAt(t)` is
+ * assignment-compatible with the `state` prop below.
+ */
+
 /** Normalised gaze position in viewport space: x ∈ [0, 1], y ∈ [0, 1]. */
 export interface GazePoint {
   readonly x: number;
