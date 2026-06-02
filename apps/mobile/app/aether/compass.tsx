@@ -20,7 +20,9 @@ const AETHER_ENABLED = process.env.EXPO_PUBLIC_FEATURE_AETHER_PHASE1 === '1';
 export default function CompassRoute(): React.ReactElement {
   const reducedMotion = useReducedMotionNative();
   // Real device heading (null when unavailable → scene self-sweeps).
-  const heading = useDeviceHeading();
+  // Gated on the flag so the OS permission prompt never fires when the
+  // route is showing the "not enabled" notice (AE576).
+  const heading = useDeviceHeading(AETHER_ENABLED);
 
   if (!AETHER_ENABLED) {
     return (

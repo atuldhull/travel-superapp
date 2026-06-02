@@ -18,10 +18,17 @@ import { useEffect, useState } from 'react';
 /** A heading reading in degrees, or null when unavailable. */
 export type DeviceHeading = number | null;
 
-export function useDeviceHeading(): DeviceHeading {
+/**
+ * @param enabled When false the hook does NOT request location
+ *   permission or subscribe — so a flag-disabled Compass (which renders
+ *   a "not enabled" notice instead of the scene) never triggers an OS
+ *   permission prompt (AE576). Defaults to true.
+ */
+export function useDeviceHeading(enabled: boolean = true): DeviceHeading {
   const [heading, setHeading] = useState<DeviceHeading>(null);
 
   useEffect(() => {
+    if (!enabled) return undefined;
     let cancelled = false;
     let subscription: Location.LocationSubscription | null = null;
 
@@ -45,7 +52,7 @@ export function useDeviceHeading(): DeviceHeading {
       cancelled = true;
       if (subscription) subscription.remove();
     };
-  }, []);
+  }, [enabled]);
 
   return heading;
 }
