@@ -30,6 +30,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View, type ViewStyle } from 'react-native';
 import { Canvas, Circle, Group } from '@shopify/react-native-skia';
 import { pulseBreathAt, type PulseMood } from '@app/aether-canvas-shared';
+import { AETHER_ACCENT, AETHER_GLOW } from './palette';
 
 /** Glow box edge length (px) including breathing headroom. The Skia
  *  canvas is sized to this; the painted circle's radius is half of
@@ -46,11 +47,9 @@ const GLOW_BASE_RADIUS_PX = 32;
  *  clear of the OS safe-area inset on iOS/Android. */
 const GLOW_EDGE_MARGIN_PX = 24;
 
-/** Warm Italian terracotta — the locked AE accent. Once we wire the
- *  palette context from `@app/aether-core-native` we'll read this
- *  from `useSurfacePaletteSlotsFromContext().accent` instead. */
-const GLOW_FILL = '#C2614A';
-const GLOW_GLOW = '#E8B777';
+/** Warm Italian terracotta + ochre — the locked AE accent + glow. */
+const GLOW_FILL = AETHER_ACCENT;
+const GLOW_GLOW = AETHER_GLOW;
 
 export interface AetherPulseGlowProps {
   /** Override the breathing mood. Defaults to 'idle' (gentle 8s cycle).

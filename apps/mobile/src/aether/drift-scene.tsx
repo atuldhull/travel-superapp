@@ -41,12 +41,11 @@ import {
   cameraPoseAt,
 } from '@app/aether-canvas-shared';
 import type { BufferGeometry, Mesh, Points } from 'three';
+import { AETHER_ACCENT, AETHER_GLOW, AETHER_INK } from './palette';
 
-/** Warm Italian accents — locked AE palette. Once aether-core-native
- *  is consumed we'll read these from the palette context instead. */
-const SUN_COLOR = '#C2614A'; // terracotta accent
-const MOTE_COLOR = '#E8B777'; // ochre glow
-const BACKGROUND = '#1A1714'; // ink
+const SUN_COLOR = AETHER_ACCENT; // terracotta accent
+const MOTE_COLOR = AETHER_GLOW; // ochre glow
+const BACKGROUND = AETHER_INK; // ink
 
 /** Idle camera pose from the shared lifecycle-camera script (AE454).
  *  Drift sits at the hero distance looking at the origin. */
