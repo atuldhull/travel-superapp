@@ -26,6 +26,11 @@ import { usePushNotifications } from '../lib/use-push-notifications';
 import { AetherPulseGlow } from '../src/aether/pulse-glow';
 import { useReducedMotionNative } from '../lib/use-reduced-motion-native';
 
+/** Phase 4 feature flag (mirror of web NEXT_PUBLIC_FEATURE_AETHER_PHASE1).
+ *  Gates the always-present Pulse overlay so it never renders on the 1.0
+ *  routes in production (flag unset) — AE573. */
+const AETHER_ENABLED = process.env.EXPO_PUBLIC_FEATURE_AETHER_PHASE1 === '1';
+
 export default function RootLayout() {
   const [ready, setReady] = useState(false);
   // AE532 - OS Reduce Motion feed for every Aether mobile surface.
@@ -85,8 +90,9 @@ export default function RootLayout() {
           </Stack>
           {/* AE527 — Aether Pulse glow rendered above the Stack so it
               persists across navigation. pointerEvents='none' inside the
-              component keeps it from blocking taps. */}
-          <AetherPulseGlow reducedMotion={reducedMotion} />
+              component keeps it from blocking taps. Flag-gated (AE573) so
+              it never renders on the 1.0 routes in production. */}
+          {AETHER_ENABLED ? <AetherPulseGlow reducedMotion={reducedMotion} /> : null}
         </PersistQueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
