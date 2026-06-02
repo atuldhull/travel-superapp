@@ -10,14 +10,14 @@
 
 ## Summary
 
-| Counter             | Value                                                                                   |
-| ------------------- | --------------------------------------------------------------------------------------- |
-| Prompts completed   | 594 (Round AW: AE539-AE542 Atlas + all surfaces routed +4)                              |
-| Prompts in progress | 0                                                                                       |
-| Prompts blocked     | 0                                                                                       |
-| Last prompt         | `AE542` — Round AW closeout                                                             |
-| Last commit date    | 2026-06-02                                                                              |
-| Phase               | **Phase 4 IN-PROGRESS** — surfaces 4/10 (Pulse + Continuum + Drift + Atlas); all routed |
+| Counter             | Value                                                                               |
+| ------------------- | ----------------------------------------------------------------------------------- |
+| Prompts completed   | 599 (Round AX: AE543-AE547 Compass + Vault, two surfaces +5)                        |
+| Prompts in progress | 0                                                                                   |
+| Prompts blocked     | 0                                                                                   |
+| Last prompt         | `AE547` — Round AX closeout                                                         |
+| Last commit date    | 2026-06-02                                                                          |
+| Phase               | **Phase 4 IN-PROGRESS** — surfaces 6/10 (Pulse/Continuum/Drift/Atlas/Compass/Vault) |
 
 ---
 
