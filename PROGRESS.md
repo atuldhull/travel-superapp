@@ -10,14 +10,14 @@
 
 ## Summary
 
-| Counter             | Value                                                                                                                                                                                                                           |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Prompts completed   | 651 (Phase 5 slice 3: AE597-AE598 predictor→surface-manager hook + adversarial test-hardening +2)                                                                                                                               |
-| Prompts in progress | 0                                                                                                                                                                                                                               |
-| Prompts blocked     | 0                                                                                                                                                                                                                               |
-| Last prompt         | `AE598` — Phase 5 anticipation hook test-hardening (14-agent review, 6 coverage gaps, 0 bugs)                                                                                                                                   |
-| Last commit date    | 2026-06-02                                                                                                                                                                                                                      |
-| Phase               | **Phase 5 (3/4 authorable slices)** — predictor + perception + the `useSurfaceAnticipation` wiring (apps/web); only Continuum sync protocol left; MLP/mediapipe/mood gated on telemetry+devices (docs/aether/39-phase5-plan.md) |
+| Counter             | Value                                                                                                                                                                                                            |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Prompts completed   | 654 (Phase 5 slice 4: AE599-AE601 Continuum live-sync protocol + adversarial hardening +3)                                                                                                                       |
+| Prompts in progress | 0                                                                                                                                                                                                                |
+| Prompts blocked     | 0                                                                                                                                                                                                                |
+| Last prompt         | `AE601` — Phase 5 Continuum sync hardening (21-agent review, 4 bugs fixed + 7 coverage)                                                                                                                          |
+| Last commit date    | 2026-06-02                                                                                                                                                                                                       |
+| Phase               | **Phase 5 AUTHORABLE SHELL COMPLETE (4/4 slices, AE583-AE601)** — predictor + perception + wiring + Continuum sync; MLP/mediapipe/mood/Compass-Eye-AR gated on telemetry+devices (docs/aether/39-phase5-plan.md) |
 
 ---
 
