@@ -22,7 +22,7 @@
  * swipe drives it. `.runOnJS(true)` runs the gesture callback on the JS
  * thread so it can call the React state setter directly.
  */
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { Canvas } from '@react-three/fiber/native';
@@ -129,6 +129,16 @@ function hintForAction(action: EchoAction): string {
 export function AetherEchoScene({ feed }: AetherEchoSceneProps): React.ReactElement {
   const [activeIndex, setActiveIndex] = useState<number>(0);
   const [hint, setHint] = useState<string | null>(null);
+  // Track the hint timer so a rapid second swipe cancels the first
+  // (instead of the first's timer clearing the second's hint), and so it
+  // doesn't fire setHint after unmount (AE574).
+  const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (hintTimer.current) clearTimeout(hintTimer.current);
+    };
+  }, []);
 
   const applySwipe = useCallback(
     (dx: number, dy: number) => {
@@ -137,7 +147,8 @@ export function AetherEchoScene({ feed }: AetherEchoSceneProps): React.ReactElem
       if (action === null) return;
       setActiveIndex((current) => nextEchoIndex(current, feed.length, action));
       setHint(hintForAction(action));
-      setTimeout(() => setHint(null), HINT_MS);
+      if (hintTimer.current) clearTimeout(hintTimer.current);
+      hintTimer.current = setTimeout(() => setHint(null), HINT_MS);
     },
     [feed.length],
   );
