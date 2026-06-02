@@ -10,14 +10,14 @@
 
 ## Summary
 
-| Counter             | Value                                                                                                                                                                                                         |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Prompts completed   | 643 (Phase 5 first cut: AE583-AE590 predictor foundation + adversarial hardening +8)                                                                                                                          |
-| Prompts in progress | 0                                                                                                                                                                                                             |
-| Prompts blocked     | 0                                                                                                                                                                                                             |
-| Last prompt         | `AE590` — Phase 5 predictor hardening (27-agent adversarial review, 6 bugs fixed)                                                                                                                             |
-| Last commit date    | 2026-06-02                                                                                                                                                                                                    |
-| Phase               | **Phase 5 STARTED** — Predictor foundation (heuristic + `SurfacePredictor` seam + confidence gate) in canvas-shared; predictive/perception tiers gated on telemetry + devices (docs/aether/39-phase5-plan.md) |
+| Counter             | Value                                                                                                                                                                                                                  |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Prompts completed   | 649 (Phase 5 slice 2: AE591-AE596 perception contract + mock + adversarial hardening +6)                                                                                                                               |
+| Prompts in progress | 0                                                                                                                                                                                                                      |
+| Prompts blocked     | 0                                                                                                                                                                                                                      |
+| Last prompt         | `AE596` — Phase 5 perception hardening (20-agent adversarial review, 2 bugs + lock-step guard)                                                                                                                         |
+| Last commit date    | 2026-06-02                                                                                                                                                                                                             |
+| Phase               | **Phase 5 (2/4 authorable slices)** — predictor + perception foundations in canvas-shared; predictor→manager hook + Continuum sync next; MLP/mediapipe/mood gated on telemetry+devices (docs/aether/39-phase5-plan.md) |
 
 ---
 
