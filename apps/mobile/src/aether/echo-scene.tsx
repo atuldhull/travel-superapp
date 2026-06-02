@@ -1,6 +1,6 @@
 /**
  * `<AetherEchoScene/>` — the eighth Aether mobile surface, sixth
- * R3F-native one (Phase 4 AE551).
+ * R3F-native one (Phase 4 AE551; real swipe gesture AE559).
  *
  * Echo is the social feed (docs/aether/02-surfaces.md section 6): a
  * vertical stack of traveller "echoes" you swipe through. Native R3F
@@ -14,36 +14,41 @@
  * `echoPaletteFromDominantColor(dominantColor)` so the AE420 palette
  * re-derivation drives the surface identically to web.
  *
- * AE551 first cut renders the active card + its neighbours as
- * palette-tinted planes (no textures yet). The swipe-to-advance gesture
- * (react-native-gesture-handler PanGesture -> echoActionForSwipe ->
- * nextEchoIndex) lands in a later interaction slice; for now the stack
- * slowly auto-advances so the depth reads in the preview.
+ * AE559 wires the REAL swipe gesture: a react-native-gesture-handler
+ * PanGesture feeds its translation into `echoSwipeDirectionFromDelta`
+ * → `echoActionForSwipe` → `nextEchoIndex`, the exact pipeline the web
+ * pointer handler uses. Swipe down walks the feed forward, up saves the
+ * place, left/right rewind / follow. The auto-advance is gone now that
+ * swipe drives it. `.runOnJS(true)` runs the gesture callback on the JS
+ * thread so it can call the React state setter directly.
  */
-import { useMemo, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { Canvas, useFrame } from '@react-three/fiber/native';
+import { useCallback, useMemo, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Canvas } from '@react-three/fiber/native';
 import {
   ECHO_CARD_HEIGHT,
   ECHO_CARD_WIDTH,
+  echoActionForSwipe,
   echoCardOpacity,
   echoCardScale,
   echoCardY,
   echoPaletteFromDominantColor,
+  echoSwipeDirectionFromDelta,
+  nextEchoIndex,
   visibleEchoSlots,
+  type EchoAction,
   type EchoItem,
 } from '@app/aether-canvas-shared';
 
 const BACKGROUND = '#1A1714'; // ink
 
-/** Seconds each card stays active before the demo auto-advances. */
-const AUTO_ADVANCE_SECONDS = 3.5;
-
 export interface AetherEchoSceneProps {
   /** The feed to render. Same shape the web Echo scene reads from the
    *  social feed channel. */
   feed: ReadonlyArray<EchoItem>;
-  /** Freeze the demo auto-advance when OS Reduce Motion is on. */
+  /** Reserved for parity with the other surfaces; Echo's motion is
+   *  swipe-driven so there's no idle animation to freeze. */
   reducedMotion?: boolean;
 }
 
@@ -80,28 +85,15 @@ function EchoCard({
   );
 }
 
-/** The depth stack of visible cards. */
+/** The depth stack of visible cards for a given active index. */
 function EchoStack({
   feed,
-  reducedMotion,
+  activeIndex,
 }: {
   feed: ReadonlyArray<EchoItem>;
-  reducedMotion: boolean;
+  activeIndex: number;
 }): React.ReactElement {
-  const [activeIndex, setActiveIndex] = useState<number>(0);
-  const elapsedRef = useRef<number>(0);
-
-  useFrame((_state, delta) => {
-    if (reducedMotion || feed.length === 0) return;
-    elapsedRef.current += delta;
-    if (elapsedRef.current >= AUTO_ADVANCE_SECONDS) {
-      elapsedRef.current = 0;
-      setActiveIndex((i) => (i + 1) % feed.length);
-    }
-  });
-
   const slots = useMemo(() => visibleEchoSlots(feed, activeIndex), [feed, activeIndex]);
-
   return (
     <group>
       {slots.map(({ item, index }) => (
@@ -111,31 +103,110 @@ function EchoStack({
   );
 }
 
+/** How long (ms) the swipe-action hint stays visible. */
+const HINT_MS = 1400;
+
+function hintForAction(action: EchoAction): string {
+  switch (action) {
+    case 'next':
+      return 'Next echo';
+    case 'prev':
+      return 'Previous echo';
+    case 'save-place':
+      return 'Saved this place';
+    case 'follow-traveller':
+      return 'Following traveller';
+    case 'plan-like-this':
+      return 'Planning a trip like this';
+  }
+}
+
 /**
- * The Echo surface scene. Mounts an R3F-native <Canvas> with the card
- * depth stack. Sizes to its parent via flex: 1.
+ * The Echo surface scene. An R3F card depth stack wrapped in a
+ * PanGesture that walks the feed via the canvas-shared swipe pipeline.
  */
-export function AetherEchoScene({
-  feed,
-  reducedMotion = false,
-}: AetherEchoSceneProps): React.ReactElement {
+export function AetherEchoScene({ feed }: AetherEchoSceneProps): React.ReactElement {
+  const [activeIndex, setActiveIndex] = useState<number>(0);
+  const [hint, setHint] = useState<string | null>(null);
+
+  const applySwipe = useCallback(
+    (dx: number, dy: number) => {
+      const direction = echoSwipeDirectionFromDelta(dx, dy);
+      const action = echoActionForSwipe(direction);
+      if (action === null) return;
+      setActiveIndex((current) => nextEchoIndex(current, feed.length, action));
+      setHint(hintForAction(action));
+      setTimeout(() => setHint(null), HINT_MS);
+    },
+    [feed.length],
+  );
+
+  const pan = useMemo(
+    () =>
+      Gesture.Pan()
+        .runOnJS(true)
+        .onEnd((e) => {
+          applySwipe(e.translationX, e.translationY);
+        }),
+    [applySwipe],
+  );
+
+  const active = feed[activeIndex];
+
   return (
-    <View style={styles.container} testID="aether-echo-scene">
-      <Canvas camera={{ position: [0, 0, 9], fov: 55 }} style={styles.canvas}>
-        <color attach="background" args={[BACKGROUND]} />
-        <ambientLight intensity={0.9} />
-        <directionalLight position={[2, 4, 6]} intensity={0.4} />
-        <EchoStack feed={feed} reducedMotion={reducedMotion} />
-      </Canvas>
-    </View>
+    <GestureDetector gesture={pan}>
+      <View style={styles.container} testID="aether-echo-scene">
+        <Canvas camera={{ position: [0, 0, 9], fov: 55 }} style={styles.canvas}>
+          <color attach="background" args={[BACKGROUND]} />
+          <ambientLight intensity={0.9} />
+          <directionalLight position={[2, 4, 6]} intensity={0.4} />
+          <EchoStack feed={feed} activeIndex={activeIndex} />
+        </Canvas>
+
+        <View style={styles.overlay} pointerEvents="none">
+          {active ? (
+            <View style={styles.activeMeta}>
+              <Text style={styles.place}>{active.placeName}</Text>
+              <Text style={styles.traveller}>@{active.travellerHandle}</Text>
+            </View>
+          ) : null}
+          <Text style={styles.hint}>{hint ?? 'Swipe down for the next echo'}</Text>
+        </View>
+      </View>
+    </GestureDetector>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: BACKGROUND,
   },
   canvas: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  overlay: {
     flex: 1,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingBottom: 56,
+    gap: 8,
+  },
+  activeMeta: {
+    alignItems: 'center',
+    gap: 2,
+  },
+  place: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#F2E8D5',
+  },
+  traveller: {
+    fontSize: 13,
+    color: '#E8B777',
+  },
+  hint: {
+    fontSize: 13,
+    color: '#9B8E7E',
   },
 });
