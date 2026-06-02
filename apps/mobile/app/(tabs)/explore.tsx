@@ -139,6 +139,18 @@ export default function ExploreScreen() {
                 <Text style={styles.aetherBannerArrow}>{'->'}</Text>
               </TouchableOpacity>
             </Link>
+            <Link href="/aether/genie" asChild>
+              <TouchableOpacity style={styles.aetherBanner}>
+                <Text style={styles.aetherBannerText}>Genie — voice modal</Text>
+                <Text style={styles.aetherBannerArrow}>{'->'}</Text>
+              </TouchableOpacity>
+            </Link>
+            <Link href="/aether/mirror" asChild>
+              <TouchableOpacity style={styles.aetherBanner}>
+                <Text style={styles.aetherBannerText}>Mirror — audit river</Text>
+                <Text style={styles.aetherBannerArrow}>{'->'}</Text>
+              </TouchableOpacity>
+            </Link>
             <Link href="/aether/continuum" asChild>
               <TouchableOpacity style={styles.aetherBanner}>
                 <Text style={styles.aetherBannerText}>Continuum — handoff sigil</Text>
