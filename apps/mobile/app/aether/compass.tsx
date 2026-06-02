@@ -13,11 +13,14 @@ import { Stack } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 import { AetherCompassScene } from '../../src/aether/compass-scene';
 import { useReducedMotionNative } from '../../lib/use-reduced-motion-native';
+import { useDeviceHeading } from '../../lib/use-device-heading';
 
 const AETHER_ENABLED = process.env.EXPO_PUBLIC_FEATURE_AETHER_PHASE1 === '1';
 
 export default function CompassRoute(): React.ReactElement {
   const reducedMotion = useReducedMotionNative();
+  // Real device heading (null when unavailable → scene self-sweeps).
+  const heading = useDeviceHeading();
 
   if (!AETHER_ENABLED) {
     return (
@@ -37,7 +40,7 @@ export default function CompassRoute(): React.ReactElement {
       <Stack.Screen
         options={{ title: 'Compass', headerTransparent: true, headerTintColor: '#F2E8D5' }}
       />
-      <AetherCompassScene reducedMotion={reducedMotion} />
+      <AetherCompassScene headingDegrees={heading ?? undefined} reducedMotion={reducedMotion} />
     </View>
   );
 }
