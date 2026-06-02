@@ -39,18 +39,23 @@
 Per `docs/aether/15-phase4-plan.md` table, ordered by
 user-impact / dependency-depth:
 
-| Order | Surface   | Status   |
-| ----- | --------- | -------- |
-| 1     | Pulse     | ✅ AE526 |
-| 2     | Drift     | ⏳ next  |
-| 3     | Atlas     | ⏳       |
-| 4     | Compass   | ⏳       |
-| 5     | Continuum | ⏳       |
-| 6     | Lumen     | ⏳       |
-| 7     | Genie     | ⏳       |
-| 8     | Vault     | ⏳       |
-| 9     | Echo      | ⏳       |
-| 10    | Mirror    | ⏳       |
+| Order | Surface   | Renderer | Status             |
+| ----- | --------- | -------- | ------------------ |
+| 1     | Pulse     | Skia     | ✅ AE526 (overlay) |
+| 2     | Drift     | R3F      | ✅ AE534-537       |
+| 3     | Atlas     | R3F      | ✅ AE539-540       |
+| 4     | Compass   | R3F      | ✅ AE543-544       |
+| 5     | Continuum | Skia     | ✅ AE531 + AE541   |
+| 6     | Lumen     | R3F      | ✅ AE549-550       |
+| 7     | Genie     | R3F      | ✅ AE554-555       |
+| 8     | Vault     | R3F      | ✅ AE545-546       |
+| 9     | Echo      | R3F      | ✅ AE551-552       |
+| 10    | Mirror    | Skia     | ✅ AE556-557       |
+
+**All ten surfaces scaffolded (Round AZ).** Remaining work is depth:
+real gestures + data, backend b-slices (STT / camera / WebTransport /
+admin stream), and the EAS device build that turns "typechecks" into
+"runs".
 
 ## Wiring conventions
 
