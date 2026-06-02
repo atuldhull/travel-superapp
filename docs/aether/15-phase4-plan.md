@@ -9,6 +9,12 @@
 > **Decisions locked 2026-06-01 — Phase 4 code in progress.** See the
 > "Decisions — locked" section below. Round AR (AE513 → AE517) kicks
 > off the three foundation packages.
+>
+> **✅ CODE-COMPLETE @ 2026-06-02 (rounds AR → BF, AE513 → AE582).** All
+> 10 surfaces ported (7 R3F + 3 Skia), 7/7 non-trivial surfaces interact,
+> mobile typecheck clean. The remaining work is the operator-owned EAS
+> device build plus the backend b-slices. Full inventory + handoff:
+> [`38-phase4-closeout.md`](38-phase4-closeout.md).
 
 ## Goal
 
@@ -70,6 +76,12 @@ independently. Each surface lands its native version behind the same
 | 8     | Vault     | medium          | Sphere ring scene + Stripe Checkout via `@stripe/stripe-react-native`. Material wrapping reuses the AE415 panel shape.          |
 | 9     | Echo      | medium          | TikTok-style vertical FlatList of textured planes; `react-native-gesture-handler` PanGesture for swipe.                         |
 | 10    | Mirror    | low (mobile)    | Mobile admin is the same data but minus the audit-river overlay (no room on phone). Cmd+K palette → bottom-sheet picker.        |
+
+**✅ All 10 ported + routed (rounds AT → BF).** Per-surface scene files,
+routes, interactions, and shared-math dependencies are inventoried in
+[`38-phase4-closeout.md`](38-phase4-closeout.md) §2. The interaction
+depth (tap/swipe/sensor) on the 7 non-trivial surfaces landed in rounds
+BA → BE.
 
 ## Shared cross-cutting work
 
