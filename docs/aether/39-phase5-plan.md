@@ -72,9 +72,24 @@ bulk of Phase 5 only unlocks once the app is live and gathering data.
    compile-time lock-step assertion between `PredictableSurfaceId` and
    aether-core's `SurfaceId` — for now a pointer comment in each + the
    reachability guard catch internal drift.
-2. **Perception input contract + mock provider** — the typed gaze/gesture
-   event stream + a deterministic mock, so consumers can build against it
-   before mediapipe lands.
+2. **Perception input contract + mock provider** ✅ (this round, AE591-AE596)
+   — the framework-free mirror of aether-core's perception contract
+   (`GazePoint` / `Gesture` / `GestureEvent` / `PerceptionState`) plus the
+   pure helpers a surface reacts with: `gaze-zone` (gaze → coarse 3×3
+   zone), `gesture-intent` (gesture → `select`/`dismiss`/`focus`/`summon`),
+   `gesture-recognizer` (anti-jitter FSM — a gesture fires once after
+   `holdFrames` consecutive confident frames), and `mock-perception` (a
+   deterministic `mockPerceptionStateAt(t)` so a dev can drive
+   `<PerceptionProvider state={…}>` before mediapipe exists). Pure, in
+   `@app/aether-canvas-shared`, fully spec'd. **A 20-agent adversarial
+   review confirmed 11 findings; fixed the 2 real bugs (AE596)**:
+   fire-once broke if `holdFrames` changed mid-hold → a `hasFired` latch;
+   confidence accepted super-unit garbage (`5` read as confident) → a
+   `[0,1]` gate matching the coordinate check. Also added a **type-only
+   lock-step test** that fails the build if the canvas-shared mirror
+   drifts from aether-core (the most likely future edit — adding a
+   `Gesture` — is now caught), and closed 6 boundary coverage gaps.
+   canvas-shared jest 801 → 844.
 3. **Predictor → surface-manager wiring** — a React hook in
    `@app/aether-core` that builds the feature vector from session state,
    runs the predictor, and feeds `anticipate()`; phase-5 flag-gated.
