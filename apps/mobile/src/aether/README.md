@@ -52,13 +52,16 @@ user-impact / dependency-depth:
 | 9     | Echo      | R3F      | ✅ AE551-552       | swipe → next memory (PanGesture)           |
 | 10    | Mirror    | Skia     | ✅ AE556-557       | tap row → expand detail (AE578)            |
 
-**All ten surfaces scaffolded (Round AZ); 7/7 non-trivial surfaces now
-interact (Round BE — Mirror's tap-to-expand closed the last gap).** The
-three ambient surfaces (Pulse / Drift / Continuum) are decorative by
-design on web too. The R3F tap-scenes (Atlas / Lumen / Vault) share one
-`useR3FSelection<T>` hook (`apps/mobile/lib/use-r3f-selection.ts`, AE579).
-Remaining work is backend b-slices (STT / camera / WebTransport / admin
-stream) + the EAS device build that turns "typechecks" into "runs".
+**✅ Phase 4 CODE-COMPLETE (Round BF, AE582).** All ten surfaces
+scaffolded (Round AZ); 7/7 non-trivial surfaces interact (Round BE —
+Mirror's tap-to-expand closed the last gap). The three ambient surfaces
+(Pulse / Drift / Continuum) are decorative by design on web too. The R3F
+tap-scenes (Atlas / Lumen / Vault) share one `useR3FSelection<T>` hook
+(`apps/mobile/lib/use-r3f-selection.ts`, AE579). Remaining work is
+backend b-slices (STT / camera / WebTransport / admin stream) + the EAS
+device build that turns "typechecks" into "runs" — the full inventory +
+operator handoff is in
+[`docs/aether/38-phase4-closeout.md`](../../../../docs/aether/38-phase4-closeout.md).
 
 ## Wiring conventions
 

@@ -10,14 +10,14 @@
 
 ## Summary
 
-| Counter             | Value                                                                                          |
-| ------------------- | ---------------------------------------------------------------------------------------------- |
-| Prompts completed   | 634 (Round BE: AE578-AE581 Mirror tap + `useR3FSelection` + palette seam +4)                   |
-| Prompts in progress | 0                                                                                              |
-| Prompts blocked     | 0                                                                                              |
-| Last prompt         | `AE581` — Round BE closeout                                                                    |
-| Last commit date    | 2026-06-02                                                                                     |
-| Phase               | **Phase 4 DEPTH** — 7/7 surfaces interactive (Mirror tap closed the gap); finish round BF next |
+| Counter             | Value                                                                                                                                                 |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Prompts completed   | 635 (Round BF: AE582 Phase 4 closeout + operator handoff +1)                                                                                          |
+| Prompts in progress | 0                                                                                                                                                     |
+| Prompts blocked     | 0                                                                                                                                                     |
+| Last prompt         | `AE582` — Phase 4 closeout                                                                                                                            |
+| Last commit date    | 2026-06-02                                                                                                                                            |
+| Phase               | **Phase 4 CODE-COMPLETE** — 10/10 surfaces, 7/7 interactive; pending operator EAS device build + backend b-slices (docs/aether/38-phase4-closeout.md) |
 
 ---
 

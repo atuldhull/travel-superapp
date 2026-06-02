@@ -65,6 +65,13 @@ Live trip-watch (Tier 4 T4-Ag.2) wired. Real public launch.
 
 **Deliverable:** mobile launches to app stores.
 
+> **Status @ 2026-06-02 — CODE-COMPLETE (rounds AR → BF, AE513 → AE582).**
+> All 10 surfaces ported (7 R3F + 3 Skia), 7/7 non-trivial surfaces
+> interact, mobile typecheck clean. The remaining work to actually
+> "launch to app stores" is operator-owned (EAS build + store accounts +
+> on-device validation) + backend b-slices. See
+> [`38-phase4-closeout.md`](38-phase4-closeout.md).
+
 ## Phase 5 — Predictive + Perception (weeks 57-72)
 
 **Goal:** the "feels like magic" tier.
