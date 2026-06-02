@@ -20,17 +20,18 @@
  * A gentle whole-cloud idle rotation gives the suspension life (frozen
  * under reducedMotion).
  */
-import { useMemo, useRef } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { Canvas, useFrame } from '@react-three/fiber/native';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber/native';
 import {
   DEFAULT_LUMEN_LAYOUT,
   cameraPoseAt,
+  clampRating,
   layoutPhotoCloud,
   type LumenPhotoLike,
 } from '@app/aether-canvas-shared';
 import type { Group } from 'three';
-import { AETHER_GLOW, AETHER_INK, AETHER_SUPPORT } from './palette';
+import { AETHER_ACCENT, AETHER_CREAM, AETHER_GLOW, AETHER_INK, AETHER_SUPPORT } from './palette';
 
 const PLANE_WARM = AETHER_GLOW; // ochre glow (recent photos)
 const PLANE_COOL = AETHER_SUPPORT; // olive support (older photos)
@@ -81,21 +82,31 @@ function blendHex(a: string, b: string, t: number): string {
 function PhotoCloud({
   photos,
   reducedMotion,
+  focusedId,
+  onSelect,
 }: {
   photos: ReadonlyArray<LumenPhotoLike>;
   reducedMotion: boolean;
+  focusedId: string | null;
+  onSelect: (photo: LumenPhotoLike) => void;
 }): React.ReactElement {
   const groupRef = useRef<Group>(null);
   const elapsedRef = useRef<number>(0);
 
   const planes = useMemo(() => layoutPhotoCloud(photos), [photos]);
+  const photosById = useMemo(() => {
+    const map = new Map<string, LumenPhotoLike>();
+    for (const p of photos) map.set(p.id, p);
+    return map;
+  }, [photos]);
 
   // Map each plane's X (time axis) to a warm->cool tint so the cloud
   // reads as a gradient across the trip even without real textures.
   const halfX = DEFAULT_LUMEN_LAYOUT.axisLengthX / 2;
 
   useFrame((_state, delta) => {
-    if (reducedMotion) return;
+    // Pause the drift while a photo is focused so the card stays put.
+    if (reducedMotion || focusedId !== null) return;
     elapsedRef.current += delta;
     const group = groupRef.current;
     if (group) group.rotation.y = elapsedRef.current * CLOUD_RADIANS_PER_SECOND;
@@ -105,11 +116,25 @@ function PhotoCloud({
     <group ref={groupRef}>
       {planes.map((plane) => {
         const t = (plane.position[0] + halfX) / DEFAULT_LUMEN_LAYOUT.axisLengthX;
-        const color = blendHex(PLANE_COOL, PLANE_WARM, t);
+        const focused = plane.id === focusedId;
+        const color = focused ? AETHER_ACCENT : blendHex(PLANE_COOL, PLANE_WARM, t);
+        const size = plane.size * (focused ? 1.4 : 1);
         return (
-          <mesh key={plane.id} position={[plane.position[0], plane.position[1], plane.position[2]]}>
-            <planeGeometry args={[plane.size, plane.size]} />
-            <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.2} />
+          <mesh
+            key={plane.id}
+            position={[plane.position[0], plane.position[1], plane.position[2]]}
+            onClick={(e: ThreeEvent<unknown>) => {
+              e.stopPropagation();
+              const photo = photosById.get(plane.id);
+              if (photo) onSelect(photo);
+            }}
+          >
+            <planeGeometry args={[size, size]} />
+            <meshStandardMaterial
+              color={color}
+              emissive={color}
+              emissiveIntensity={focused ? 0.5 : 0.2}
+            />
           </mesh>
         );
       })}
@@ -117,14 +142,44 @@ function PhotoCloud({
   );
 }
 
+/** The detail card for a tapped photo. Shows the rating + capture time;
+ *  a future slice swaps in the real thumbnail once textures land. */
+function PhotoCard({
+  photo,
+  onClose,
+}: {
+  photo: LumenPhotoLike;
+  onClose: () => void;
+}): React.ReactElement {
+  const rating = clampRating(photo.rating);
+  const stars = rating > 0 ? '★'.repeat(Math.round(rating)) : 'Unrated';
+  const captured =
+    photo.capturedAt !== null && photo.capturedAt !== ''
+      ? new Date(photo.capturedAt).toLocaleString()
+      : 'No capture time';
+  return (
+    <View style={styles.card}>
+      <Text style={styles.cardRating}>{stars}</Text>
+      <Text style={styles.cardCaptured}>{captured}</Text>
+      <Pressable onPress={onClose} style={styles.cardClose} accessibilityRole="button">
+        <Text style={styles.cardCloseText}>Close</Text>
+      </Pressable>
+    </View>
+  );
+}
+
 /**
  * The Lumen surface scene. Mounts an R3F-native <Canvas> with the photo
- * cloud. Sizes to its parent via flex: 1.
+ * cloud. Tap a plane to inspect that photo's rating + capture time.
  */
 export function AetherLumenScene({
   photos,
   reducedMotion = false,
 }: AetherLumenSceneProps): React.ReactElement {
+  const [focused, setFocused] = useState<LumenPhotoLike | null>(null);
+  const onSelect = useCallback((photo: LumenPhotoLike) => setFocused(photo), []);
+  const onClose = useCallback(() => setFocused(null), []);
+
   return (
     <View style={styles.container} testID="aether-lumen-scene">
       <Canvas
@@ -134,8 +189,14 @@ export function AetherLumenScene({
         <color attach="background" args={[BACKGROUND]} />
         <ambientLight intensity={0.8} />
         <directionalLight position={[4, 6, 8]} intensity={0.5} />
-        <PhotoCloud photos={photos} reducedMotion={reducedMotion} />
+        <PhotoCloud
+          photos={photos}
+          reducedMotion={reducedMotion}
+          focusedId={focused?.id ?? null}
+          onSelect={onSelect}
+        />
       </Canvas>
+      {focused ? <PhotoCard photo={focused} onClose={onClose} /> : null}
     </View>
   );
 }
@@ -146,5 +207,36 @@ const styles = StyleSheet.create({
   },
   canvas: {
     flex: 1,
+  },
+  card: {
+    position: 'absolute',
+    left: 20,
+    right: 20,
+    bottom: 32,
+    backgroundColor: '#24201C',
+    borderRadius: 16,
+    padding: 20,
+    gap: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 12,
+  },
+  cardRating: {
+    fontSize: 22,
+    color: AETHER_GLOW,
+  },
+  cardCaptured: {
+    fontSize: 13,
+    color: AETHER_CREAM,
+  },
+  cardClose: {
+    alignSelf: 'flex-start',
+    paddingTop: 8,
+  },
+  cardCloseText: {
+    fontSize: 14,
+    color: AETHER_GLOW,
+    fontWeight: '600',
   },
 });
