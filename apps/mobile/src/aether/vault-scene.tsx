@@ -25,8 +25,9 @@
  * A future slice adds tap-to-open-checkout + the real price feed.
  */
 import { useMemo, useRef } from 'react';
+import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Canvas, useFrame } from '@react-three/fiber/native';
+import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber/native';
 import {
   SAMPLE_VAULT_MAX_AMOUNT,
   SAMPLE_VAULT_MIN_AMOUNT,
@@ -36,8 +37,10 @@ import {
   glyphRingPosition,
   glyphSphereScale,
   priceDroppedRecently,
+  type VaultPriceLike,
 } from '@app/aether-canvas-shared';
 import type { Group, Mesh } from 'three';
+import { VaultCheckoutPanel } from './vault-checkout-panel';
 
 const GLYPH_COLOR = '#E8B777'; // ochre glow
 const GLYPH_DROP_COLOR = '#C2614A'; // terracotta — a price that dropped
@@ -56,21 +59,27 @@ export interface AetherVaultSceneProps {
 function PriceGlyph({
   index,
   total,
-  amountMinor,
+  price,
   dropped,
   reducedMotion,
+  onSelect,
 }: {
   index: number;
   total: number;
-  amountMinor: number;
+  price: VaultPriceLike;
   dropped: boolean;
   reducedMotion: boolean;
+  onSelect: (price: VaultPriceLike) => void;
 }): React.ReactElement {
   const meshRef = useRef<Mesh>(null);
   const elapsedRef = useRef<number>(0);
 
   const [x, , z] = glyphRingPosition(index, total);
-  const scale = glyphSphereScale(amountMinor, SAMPLE_VAULT_MIN_AMOUNT, SAMPLE_VAULT_MAX_AMOUNT);
+  const scale = glyphSphereScale(
+    price.amountMinor,
+    SAMPLE_VAULT_MIN_AMOUNT,
+    SAMPLE_VAULT_MAX_AMOUNT,
+  );
   const halo = glyphHaloIntensity(dropped);
 
   useFrame((_state, delta) => {
@@ -84,8 +93,16 @@ function PriceGlyph({
     mesh.position.set(x, glyphFloatY(index, elapsedRef.current), z);
   });
 
+  const onClick = useCallback(
+    (e: ThreeEvent<unknown>) => {
+      e.stopPropagation();
+      onSelect(price);
+    },
+    [onSelect, price],
+  );
+
   return (
-    <mesh ref={meshRef} position={[x, 0, z]} scale={scale}>
+    <mesh ref={meshRef} position={[x, 0, z]} scale={scale} onClick={onClick}>
       <sphereGeometry args={[1, 28, 28]} />
       <meshStandardMaterial
         color={dropped ? GLYPH_DROP_COLOR : GLYPH_COLOR}
@@ -97,7 +114,13 @@ function PriceGlyph({
 }
 
 /** The rotating ring of price glyphs. */
-function GlyphRing({ reducedMotion }: { reducedMotion: boolean }): React.ReactElement {
+function GlyphRing({
+  reducedMotion,
+  onSelect,
+}: {
+  reducedMotion: boolean;
+  onSelect: (price: VaultPriceLike) => void;
+}): React.ReactElement {
   const groupRef = useRef<Group>(null);
   const elapsedRef = useRef<number>(0);
 
@@ -106,7 +129,7 @@ function GlyphRing({ reducedMotion }: { reducedMotion: boolean }): React.ReactEl
       SAMPLE_VAULT_PRICES.map((p, i) => ({
         key: p.id,
         index: i,
-        amountMinor: p.amountMinor,
+        price: p,
         dropped: priceDroppedRecently(p.history ?? []),
       })),
     [],
@@ -126,9 +149,10 @@ function GlyphRing({ reducedMotion }: { reducedMotion: boolean }): React.ReactEl
           key={g.key}
           index={g.index}
           total={glyphs.length}
-          amountMinor={g.amountMinor}
+          price={g.price}
           dropped={g.dropped}
           reducedMotion={reducedMotion}
+          onSelect={onSelect}
         />
       ))}
     </group>
@@ -142,14 +166,19 @@ function GlyphRing({ reducedMotion }: { reducedMotion: boolean }): React.ReactEl
 export function AetherVaultScene({
   reducedMotion = false,
 }: AetherVaultSceneProps): React.ReactElement {
+  const [selected, setSelected] = useState<VaultPriceLike | null>(null);
+  const onSelect = useCallback((price: VaultPriceLike) => setSelected(price), []);
+  const onClose = useCallback(() => setSelected(null), []);
+
   return (
     <View style={styles.container} testID="aether-vault-scene">
       <Canvas camera={{ position: [0, 3.5, 9], fov: 55 }} style={styles.canvas}>
         <color attach="background" args={[BACKGROUND]} />
         <ambientLight intensity={0.6} />
         <directionalLight position={[5, 8, 6]} intensity={0.8} />
-        <GlyphRing reducedMotion={reducedMotion} />
+        <GlyphRing reducedMotion={reducedMotion} onSelect={onSelect} />
       </Canvas>
+      <VaultCheckoutPanel price={selected} onClose={onClose} />
     </View>
   );
 }
