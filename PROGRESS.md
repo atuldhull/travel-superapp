@@ -10,14 +10,14 @@
 
 ## Summary
 
-| Counter             | Value                                                                 |
-| ------------------- | --------------------------------------------------------------------- |
-| Prompts completed   | 615 (Round BA: AE559-AE562 Echo swipe + Vault checkout depth +4)      |
-| Prompts in progress | 0                                                                     |
-| Prompts blocked     | 0                                                                     |
-| Last prompt         | `AE562` — Round BA closeout                                           |
-| Last commit date    | 2026-06-02                                                            |
-| Phase               | **Phase 4 DEPTH** — 10/10 surfaces + real Echo swipe + Vault checkout |
+| Counter             | Value                                                                       |
+| ------------------- | --------------------------------------------------------------------------- |
+| Prompts completed   | 619 (Round BB: AE563-AE566 Compass heading + Atlas tap-focus +4)            |
+| Prompts in progress | 0                                                                           |
+| Prompts blocked     | 0                                                                           |
+| Last prompt         | `AE566` — Round BB closeout                                                 |
+| Last commit date    | 2026-06-02                                                                  |
+| Phase               | **Phase 4 DEPTH** — 5/7 surfaces have real interaction; Lumen + Mirror left |
 
 ---
 
