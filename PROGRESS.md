@@ -10,14 +10,14 @@
 
 ## Summary
 
-| Counter             | Value                                                               |
-| ------------------- | ------------------------------------------------------------------- |
-| Prompts completed   | 605 (Round AY: AE548-AE553 Lumen + Echo, two surfaces +6)           |
-| Prompts in progress | 0                                                                   |
-| Prompts blocked     | 0                                                                   |
-| Last prompt         | `AE553` — Round AY closeout                                         |
-| Last commit date    | 2026-06-02                                                          |
-| Phase               | **Phase 4 IN-PROGRESS** — surfaces 8/10; only Genie + Mirror remain |
+| Counter             | Value                                                            |
+| ------------------- | ---------------------------------------------------------------- |
+| Prompts completed   | 611 (Round AZ: AE554-AE558 Genie + Mirror = 10/10 surfaces +6)   |
+| Prompts in progress | 0                                                                |
+| Prompts blocked     | 0                                                                |
+| Last prompt         | `AE558` — Round AZ closeout                                      |
+| Last commit date    | 2026-06-02                                                       |
+| Phase               | **Phase 4 — surface breadth COMPLETE (10/10)**; depth + EAS next |
 
 ---
 
