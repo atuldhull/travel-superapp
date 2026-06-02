@@ -9,7 +9,7 @@
  * The audit rows are built relative to Date.now() so they stay inside
  * the 60s river window + always read as live.
  */
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 import { AetherMirrorScene } from '../../src/aether/mirror-scene';
@@ -18,10 +18,16 @@ import { buildSampleAuditRows } from '../../src/aether/sample-mirror';
 const AETHER_ENABLED = process.env.EXPO_PUBLIC_FEATURE_AETHER_PHASE1 === '1';
 
 export default function MirrorRoute(): React.ReactElement {
-  // Build the rows + the clock once at mount so the fade reads stable.
-  const { rows, now } = useMemo(() => {
-    const t = Date.now();
-    return { rows: buildSampleAuditRows(t), now: t };
+  // Build the rows once at mount (relative to "now") but TICK the clock
+  // every second so the recency fade + age labels actually advance and
+  // rows age out of the 60s river - the frozen-clock version (AE575) left
+  // the fade static + the "fades after 60s" copy permanently false.
+  const rows = useMemo(() => buildSampleAuditRows(Date.now()), []);
+  const [now, setNow] = useState<number>(() => Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
   }, []);
 
   if (!AETHER_ENABLED) {
