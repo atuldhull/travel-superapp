@@ -22,8 +22,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     <input
       ref={ref}
       className={cn(
-        'block w-full rounded-md border border-muted/30 bg-surface px-3 py-2 text-sm text-surface-foreground transition',
-        'focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand',
+        'block w-full rounded-lg border border-gold-600/25 bg-surface px-3 py-2 text-sm text-surface-foreground transition',
+        'focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/25',
         'disabled:opacity-50 disabled:bg-muted/5',
         className,
       )}
@@ -80,8 +80,8 @@ export const FloatingField = forwardRef<HTMLInputElement, FieldProps>(function F
           id={inputId}
           placeholder=" "
           className={cn(
-            'peer block w-full rounded-md border border-muted/30 bg-surface px-3 pt-5 pb-2 text-sm text-surface-foreground transition',
-            'focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand',
+            'peer block w-full rounded-lg border border-gold-600/25 bg-surface px-3 pt-5 pb-2 text-sm text-surface-foreground transition',
+            'focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/25',
             'disabled:opacity-50 disabled:bg-muted/5',
             error && 'border-danger focus:border-danger focus:ring-danger',
             className,
@@ -93,7 +93,7 @@ export const FloatingField = forwardRef<HTMLInputElement, FieldProps>(function F
           className={cn(
             'pointer-events-none absolute left-3 top-3.5 z-10 origin-left -translate-y-3 scale-75 transform bg-surface px-1 text-xs font-medium text-muted transition-all',
             'peer-placeholder-shown:top-3.5 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:text-sm',
-            'peer-focus:top-0 peer-focus:-translate-y-1/2 peer-focus:scale-75 peer-focus:px-1 peer-focus:text-brand',
+            'peer-focus:top-0 peer-focus:-translate-y-1/2 peer-focus:scale-75 peer-focus:px-1 peer-focus:text-gold-600',
             'top-0 -translate-y-1/2',
           )}
         >

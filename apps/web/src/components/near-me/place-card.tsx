@@ -29,31 +29,35 @@ export function PlaceCard({ place, safety }: PlaceCardProps) {
     return r.durationSeconds < best.durationSeconds ? r : best;
   }, undefined);
   return (
-    <li className="rounded-md border border-muted/20 bg-surface p-3 text-sm shadow-sm">
+    <li className="rounded-2xl border border-gold-600/12 bg-surface p-4 text-sm shadow-(--shadow-depth-1) transition hover:border-gold-600/25 hover:shadow-(--shadow-depth-2)">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <p className="truncate font-medium">{place.name}</p>
-          <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-muted">
+          <p className="truncate font-display text-base font-semibold tracking-tight text-surface-foreground">
+            {place.name}
+          </p>
+          <p className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted">
             <Badge variant="neutral">{place.category}</Badge>
-            <span>·</span>
+            <span aria-hidden>·</span>
             <span>{formatDistance(place.distanceMeters)}</span>
             {safety ? (
               <>
-                <span>·</span>
+                <span aria-hidden>·</span>
                 <SafetyBadge score={safety.score} grade={safety.grade} compact />
               </>
             ) : null}
           </p>
         </div>
       </div>
-      <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-        <div className="rounded border border-muted/10 bg-background px-2 py-1.5">
+      <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+        <div className="rounded-xl border border-gold-600/12 bg-surface/60 px-2.5 py-1.5">
           <p className="text-muted/70">Walk</p>
-          <p className="font-mono">{walking ? formatDuration(walking.durationSeconds) : '—'}</p>
+          <p className="font-mono text-surface-foreground">
+            {walking ? formatDuration(walking.durationSeconds) : '—'}
+          </p>
         </div>
-        <div className="rounded border border-muted/10 bg-background px-2 py-1.5">
+        <div className="rounded-xl border border-gold-600/12 bg-surface/60 px-2.5 py-1.5">
           <p className="text-muted/70">Fastest</p>
-          <p className="font-mono">
+          <p className="font-mono text-surface-foreground">
             {fastest
               ? `${fastest.mode.replace('_', ' ')} · ${formatDuration(fastest.durationSeconds)}`
               : '—'}
