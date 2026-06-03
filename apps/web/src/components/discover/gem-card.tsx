@@ -4,10 +4,12 @@
  * plus the review count + average so the user can sanity-check
  * the recommendation at a glance.
  *
- * Installed by prompt [V.UX.19].
+ * Installed by prompt [V.UX.19]; restyled into the v2 ("Fusion")
+ * design language (gold tokens, font-display) alongside /discover.
  */
 'use client';
 
+import { Sparkles, Star } from 'lucide-react';
 import type { HiddenGemDto } from '@app/sdk';
 import { Badge } from '../ui/badge';
 
@@ -17,29 +19,32 @@ interface GemCardProps {
 
 export function GemCard({ gem }: GemCardProps) {
   return (
-    <li className="rounded-md border border-muted/20 bg-surface p-3 text-sm shadow-sm">
-      <div className="flex items-start justify-between gap-2">
+    <li className="rounded-2xl border border-gold-600/12 bg-surface p-4 text-sm shadow-(--shadow-depth-1) transition hover:border-gold-600/25 hover:shadow-(--shadow-depth-2)">
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="truncate font-medium">{gem.name}</p>
-          <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-muted">
+          <p className="truncate font-display text-base font-semibold tracking-tight text-surface-foreground">
+            {gem.name}
+          </p>
+          <p className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted">
             <Badge variant="neutral">{gem.category}</Badge>
-            <span>·</span>
+            <span aria-hidden>·</span>
             <span>{formatDistance(gem.distanceMeters)}</span>
           </p>
         </div>
         <span
-          className="shrink-0 rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-300"
+          className="inline-flex shrink-0 items-center gap-1 rounded-full bg-gold-500/12 px-2.5 py-0.5 text-[10px] font-semibold text-gold-700 ring-1 ring-inset ring-gold-500/35 dark:text-gold-300"
           aria-label="Hidden gem"
         >
-          ✨ Hidden gem
+          <Sparkles aria-hidden className="h-3 w-3" /> Hidden gem
         </span>
       </div>
-      <div className="mt-2 flex items-center justify-between gap-2 text-xs">
-        <span className="rounded border border-muted/10 bg-background px-2 py-1 text-muted">
+      <div className="mt-3 flex items-center justify-between gap-2 text-xs">
+        <span className="rounded-full border border-gold-600/15 bg-surface/60 px-2.5 py-1 text-muted">
           {gem.reviewCount} reviews
         </span>
-        <span className="rounded border border-muted/10 bg-background px-2 py-1 font-mono">
-          ★ {gem.reviewAverage.toFixed(1)}
+        <span className="inline-flex items-center gap-1 rounded-full border border-gold-600/15 bg-gold-500/5 px-2.5 py-1 font-semibold text-surface-foreground">
+          <Star aria-hidden className="h-3 w-3 text-gold-500" />
+          {gem.reviewAverage.toFixed(1)}
         </span>
       </div>
     </li>
