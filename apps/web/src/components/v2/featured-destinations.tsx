@@ -3,11 +3,15 @@
  * (components/aether/destinations/data.ts): real photos, real names,
  * real taglines. No invented prices or ratings. Server component.
  */
-import { DESTINATIONS } from '../aether/destinations/data';
+import { DESTINATIONS, FEATURED_SLUGS } from '../aether/destinations/data';
 import { Section, SectionHeading } from './kit';
 import { V2Photo } from './photo';
 
-const ITEMS = Object.values(DESTINATIONS);
+// A curated, balanced mix (India + world, alternating) rather than the
+// full ~29-strong map — see FEATURED_SLUGS in the destination data.
+const ITEMS = FEATURED_SLUGS.map((slug) => DESTINATIONS[slug]).filter(
+  (d): d is (typeof DESTINATIONS)[string] => d !== undefined,
+);
 
 export function V2FeaturedDestinations(): React.ReactElement {
   return (
@@ -15,7 +19,7 @@ export function V2FeaturedDestinations(): React.ReactElement {
       <SectionHeading
         eyebrow="Featured Destinations"
         title="Where will you wander next?"
-        dek="Real, hand-curated places — tap one and the AI plans it in seconds."
+        dek="Real, hand-curated places across India and the world — tap one and the AI plans it in seconds."
         action={{ href: '#plan', label: 'Plan a trip' }}
       />
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">

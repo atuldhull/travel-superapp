@@ -4,17 +4,16 @@
  * marketing copy. Server component.
  */
 import { ArrowUpRight } from 'lucide-react';
-import { DESTINATIONS } from '../aether/destinations/data';
+import { DESTINATIONS, EXPERIENCE_SLUGS } from '../aether/destinations/data';
 import { Section, SectionHeading } from './kit';
 import { V2Photo } from './photo';
 
-// One signature moment from each of the first three destinations.
-const MOMENTS = Object.values(DESTINATIONS)
-  .slice(0, 3)
-  .flatMap((d) => {
-    const m = d.moments[0];
-    return m ? [{ dest: d.name, moment: m }] : [];
-  });
+// One signature moment from each curated experience destination.
+const MOMENTS = EXPERIENCE_SLUGS.flatMap((slug) => {
+  const d = DESTINATIONS[slug];
+  const m = d?.moments[0];
+  return d && m ? [{ dest: d.name, moment: m }] : [];
+});
 
 export function V2Experiences(): React.ReactElement {
   return (

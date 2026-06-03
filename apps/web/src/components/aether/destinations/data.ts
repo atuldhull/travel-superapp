@@ -1187,6 +1187,904 @@ export const DESTINATIONS: Record<string, Destination> = {
       },
     ],
   },
+
+  // ─── International ─────────────────────────────────────────────────
+  // Curated world destinations so the app isn't all-India. Same shape
+  // as the domestic set. Photos are verified Unsplash ids (subject
+  // checked) credited to Unsplash; <V2Photo> degrades to a royal
+  // gradient if any ever fails to load. Budgets are honest local-
+  // currency ballparks, not invented prices.
+  santorini: {
+    slug: 'santorini',
+    name: 'Santorini',
+    state: 'Greece',
+    tagline: 'Whitewashed caldera villages perched above a drowned volcano.',
+    hero: {
+      id: '1570077188670-e3a8d69ac5ff',
+      by: 'Unsplash',
+      alt: 'Whitewashed Santorini houses cascading down the caldera cliffs at dusk.',
+    },
+    facts: [
+      { label: 'Best season', value: 'May – Oct' },
+      { label: 'Pace', value: 'Slow · cliffside' },
+      { label: 'Budget', value: 'From €160 / day' },
+    ],
+    lede: 'Santorini is the rim of a volcano that blew its heart out 3,600 years ago — the caldera you sail into is the flooded crater, and the white villages of Oia and Fira cling to its 300-metre cliffs. The Aegean light bounces off whitewash and black-sand beaches until the whole island glows. Come for the sunset; stay for the volcanic wine.',
+    moments: [
+      {
+        title: 'Sunset from Oia',
+        body: 'The whole island turns to face the sea at 7pm. Arrive an hour early — or watch from a quieter terrace up in Imerovigli.',
+        photo: {
+          id: '1570077188670-e3a8d69ac5ff',
+          by: 'Unsplash',
+          alt: 'Santorini sunset over the caldera.',
+        },
+      },
+      {
+        title: 'Blue domes of Fira',
+        body: 'The most photographed churches in Greece. Walk the caldera path at 8am, before the cruise crowds climb up from the old port.',
+        photo: {
+          id: '1613395877344-13d4a8e0d49e',
+          by: 'Unsplash',
+          alt: 'Blue-domed white church above the Aegean.',
+        },
+      },
+      {
+        title: 'Volcanic wine tasting',
+        body: 'Assyrtiko grown in ash, vines coiled into baskets against the wind. Santo Wines for the view, Venetsanos for the cellar.',
+        photo: {
+          id: '1601581875309-fafbf2d3ed3a',
+          by: 'Unsplash',
+          alt: 'A Santorini waterfront village.',
+        },
+      },
+      {
+        title: 'Akrotiri & the Red Beach',
+        body: "The Minoan town buried under ash in 1600 BC — Greece's own Pompeii — then a swim off the red volcanic cliffs.",
+        photo: {
+          id: '1601581875309-fafbf2d3ed3a',
+          by: 'Unsplash',
+          alt: 'Santorini volcanic coastline.',
+        },
+      },
+    ],
+    itineraries: [
+      {
+        name: 'Caldera long weekend',
+        days: 3,
+        lede: 'Oia sunset, a Fira-to-Imerovigli cliff walk, one wine afternoon, one black-sand beach day.',
+      },
+      {
+        name: 'Cyclades hop',
+        days: 7,
+        lede: 'Add Naxos + Paros by ferry. Beaches, mountain villages, and far fewer crowds than the rim.',
+      },
+      {
+        name: 'Greece classic',
+        days: 12,
+        lede: 'Athens → Santorini → Milos → Crete. Antiquities, islands, and Mediterranean food at its best.',
+      },
+    ],
+  },
+  kyoto: {
+    slug: 'kyoto',
+    name: 'Kyoto',
+    state: 'Japan',
+    tagline: 'A thousand temples, ten thousand torii, and the slow art of the season.',
+    hero: {
+      id: '1545569341-9eb8b30979d9',
+      by: 'Unsplash',
+      alt: 'The Yasaka Pagoda glowing at dusk in the Higashiyama district of Kyoto.',
+    },
+    facts: [
+      { label: 'Best season', value: 'Apr (sakura), Nov (koyo)' },
+      { label: 'Pace', value: 'Contemplative · refined' },
+      { label: 'Budget', value: 'From ¥18k / day' },
+    ],
+    lede: "Kyoto was Japan's capital for a thousand years, and it kept everything the rest of the country modernised away — 1,600 Buddhist temples, 400 Shinto shrines, geisha districts, imperial gardens, and a cuisine raised to ceremony. It rewards slowness: a single temple at dawn beats five at noon. Move with the season — cherry blossom in April, blazing maples in November.",
+    moments: [
+      {
+        title: 'Fushimi Inari at dawn',
+        body: 'Ten thousand vermilion torii up a sacred mountain. Start at 6:30am and you can walk the whole 4km loop nearly alone.',
+        photo: {
+          id: '1478436127897-769e1b3f0f36',
+          by: 'Unsplash',
+          alt: 'A tunnel of red torii gates at Fushimi Inari.',
+        },
+      },
+      {
+        title: 'A night in Gion',
+        body: 'Wooden machiya teahouses, paper lanterns, the click of geta on stone. Be respectful — these are working streets, not a set.',
+        photo: {
+          id: '1493976040374-85c8e12f0c0e',
+          by: 'Unsplash',
+          alt: 'A lantern-lit old street in Kyoto at night.',
+        },
+      },
+      {
+        title: 'Arashiyama bamboo & maples',
+        body: 'The towering bamboo grove at 8am, then Tenryu-ji temple garden — unchanged in its design since 1339.',
+        photo: {
+          id: '1624253321171-1be53e12f5f4',
+          by: 'Unsplash',
+          alt: 'A Japanese pagoda framed by autumn maples.',
+        },
+      },
+      {
+        title: 'Kaiseki dinner',
+        body: 'A dozen tiny seasonal courses, each plated like a haiku. Book a counter seat and let the chef lead.',
+        photo: {
+          id: '1545569341-9eb8b30979d9',
+          by: 'Unsplash',
+          alt: 'The Yasaka pagoda at dusk.',
+        },
+      },
+    ],
+    itineraries: [
+      {
+        name: 'Kyoto essential',
+        days: 4,
+        lede: 'Fushimi Inari, Arashiyama, the Higashiyama temple walk, one Gion evening, one kaiseki dinner.',
+      },
+      {
+        name: 'Kansai loop',
+        days: 8,
+        lede: 'Add Nara (the deer + Todai-ji), Osaka street food, and a Koyasan temple-stay overnight.',
+      },
+      {
+        name: 'Golden Route',
+        days: 14,
+        lede: 'Tokyo → Hakone → Kyoto → Osaka by Shinkansen. Neon, hot springs, temples, and Mt Fuji.',
+      },
+    ],
+  },
+  bali: {
+    slug: 'bali',
+    name: 'Bali',
+    state: 'Indonesia',
+    tagline: 'Rice terraces, cliff temples, and an island that runs on ceremony.',
+    hero: {
+      id: '1604999565976-8913ad2ddb7c',
+      by: 'Unsplash',
+      alt: 'A turquoise cove framed by green cliffs on the Bali coast.',
+    },
+    facts: [
+      { label: 'Best season', value: 'Apr – Oct (dry)' },
+      { label: 'Pace', value: 'Spiritual · tropical' },
+      { label: 'Budget', value: 'From $60 / day' },
+    ],
+    lede: 'Bali is one small Hindu island in the largest Muslim nation on earth, and it has kept its own gods, its own calendar, and a daily rhythm of offerings woven from palm leaves. Ubud is the green, arty heart; the Bukit peninsula has the surf and the cliff temples; the north and east stay slow. Whatever you came for, the island asks you to slow to its pace.',
+    moments: [
+      {
+        title: 'Tegallalang rice terraces',
+        body: 'The subak irrigation here is a UNESCO-listed, 1,000-year-old cooperative system. Go at sunrise, before the swings and the buses.',
+        photo: {
+          id: '1604999565976-8913ad2ddb7c',
+          by: 'Unsplash',
+          alt: 'Green Bali landscape.',
+        },
+      },
+      {
+        title: 'Lempuyang — the Gates of Heaven',
+        body: 'A split temple gate framing Mount Agung. Arrive before 7am or face a three-hour queue for the photo.',
+        photo: {
+          id: '1537953773345-d172ccf13cf1',
+          by: 'Unsplash',
+          alt: 'Two figures in a dramatic Balinese temple gateway.',
+        },
+      },
+      {
+        title: 'Uluwatu sunset & kecak',
+        body: 'A 1,000-year-old temple on a 70-metre sea cliff, then the fire-and-chant kecak dance as the sun drops into the Indian Ocean.',
+        photo: {
+          id: '1518548419970-58e3b4079ab2',
+          by: 'Unsplash',
+          alt: 'A Balinese temple silhouette at sunset.',
+        },
+      },
+      {
+        title: 'A Nusa Penida day',
+        body: 'Boat across to the cliffs of Kelingking and the natural infinity pool at Angel’s Billabong. Rough roads, unreal coastline.',
+        photo: {
+          id: '1604999565976-8913ad2ddb7c',
+          by: 'Unsplash',
+          alt: 'A turquoise Bali cove.',
+        },
+      },
+    ],
+    itineraries: [
+      {
+        name: 'Ubud & the cliffs',
+        days: 5,
+        lede: 'Three Ubud days for rice fields + temples, two on the Bukit for surf, cliffs, and sunsets.',
+      },
+      {
+        name: 'Bali & the islands',
+        days: 8,
+        lede: 'Add Nusa Penida + the Gili islands for snorkelling, turtles, and no motorbikes at all.',
+      },
+      {
+        name: 'Indonesia arc',
+        days: 14,
+        lede: 'Bali → Komodo (the dragons + pink beach) → Flores. Volcanoes, reefs, and far-east villages.',
+      },
+    ],
+  },
+  maldives: {
+    slug: 'maldives',
+    name: 'Maldives',
+    state: 'Maldives',
+    tagline: 'Twelve hundred coral islands strung across the equator.',
+    hero: {
+      id: '1514282401047-d79a71a590e8',
+      by: 'Unsplash',
+      alt: 'Overwater villas above a turquoise Maldivian lagoon, seen from the air.',
+    },
+    facts: [
+      { label: 'Best season', value: 'Nov – Apr (dry)' },
+      { label: 'Pace', value: 'Barefoot · still' },
+      { label: 'Budget', value: 'From $450 / day' },
+    ],
+    lede: 'The Maldives is the lowest-lying nation on earth — 1,192 coral islands averaging 1.5 metres above a sea that is the whole point of coming. The model is one-island-one-resort, but a quiet guesthouse revolution on the local islands has put the lagoons within reach of mortals. Either way the water does the work: it is the clearest, warmest, most reef-rich you will ever float in.',
+    moments: [
+      {
+        title: 'Snorkel the house reef',
+        body: 'Step off the deck into a wall of parrotfish, reef sharks, and the occasional manta. Most reefs are a swim, not a boat ride, away.',
+        photo: {
+          id: '1573843981267-be1999ff37cd',
+          by: 'Unsplash',
+          alt: 'Overwater villas on stilts above clear water.',
+        },
+      },
+      {
+        title: 'A night on the sandbank',
+        body: 'Get dropped on a bare crescent of sand in the middle of the ocean with a picnic. Bioluminescent plankton glow in the surf after dark.',
+        photo: {
+          id: '1540202404-a2f29016b523',
+          by: 'Unsplash',
+          alt: 'A turquoise Maldivian lagoon.',
+        },
+      },
+      {
+        title: 'Manta & whale-shark drift',
+        body: 'Baa Atoll (a UNESCO biosphere) in season is the best manta aggregation on the planet — dozens barrel-rolling through plankton.',
+        photo: {
+          id: '1514282401047-d79a71a590e8',
+          by: 'Unsplash',
+          alt: 'Aerial of a Maldives atoll.',
+        },
+      },
+      {
+        title: 'Local-island guesthouse',
+        body: 'Maafushi or Dhigurah: the reef and sandbanks for a tenth of the resort price, plus a real island and its people.',
+        photo: {
+          id: '1573843981267-be1999ff37cd',
+          by: 'Unsplash',
+          alt: 'Maldivian water villas.',
+        },
+      },
+    ],
+    itineraries: [
+      {
+        name: 'Barefoot week',
+        days: 5,
+        lede: 'One resort, the house reef every morning, a sandbank picnic, and absolutely nothing else.',
+      },
+      {
+        name: 'Reef & local life',
+        days: 7,
+        lede: 'Split a local island for snorkelling + a resort for the finale. The honest, cheaper Maldives.',
+      },
+      {
+        name: 'Liveaboard safari',
+        days: 10,
+        lede: 'A dive boat through the central atolls — channels, mantas, and a different reef every dawn.',
+      },
+    ],
+  },
+  paris: {
+    slug: 'paris',
+    name: 'Paris',
+    state: 'France',
+    tagline: 'The set-piece city — boulevards, ateliers, and an unending appetite.',
+    hero: {
+      id: '1502602898657-3e91760cbb34',
+      by: 'Unsplash',
+      alt: 'The Eiffel Tower rising above Parisian rooftops.',
+    },
+    facts: [
+      { label: 'Best season', value: 'Apr – Jun, Sep – Oct' },
+      { label: 'Pace', value: 'Walkable · indulgent' },
+      { label: 'Budget', value: 'From €180 / day' },
+    ],
+    lede: "Haussmann rebuilt Paris in the 1850s into the city of wide boulevards and zinc rooftops we still walk today, and the city has been arguing with and adoring itself ever since. It is best taken on foot and by arrondissement — the Marais one day, the Left Bank the next — with long café sits in between. Don't try to see it all; choose a quarter and let it open up.",
+    moments: [
+      {
+        title: 'The Louvre, then a garden',
+        body: 'Go at opening, make for three things you actually want to see, and leave before noon for a sit in the Tuileries.',
+        photo: {
+          id: '1499856871958-5b9627545d1a',
+          by: 'Unsplash',
+          alt: 'The Pont Alexandre III bridge in Paris.',
+        },
+      },
+      {
+        title: 'Eiffel from Trocadéro',
+        body: 'Cross the river at golden hour for the postcard, then picnic on the Champ de Mars when it sparkles on the hour after dark.',
+        photo: {
+          id: '1431274172761-fca41d930114',
+          by: 'Unsplash',
+          alt: 'The Eiffel Tower from the Trocadéro.',
+        },
+      },
+      {
+        title: 'A morning in the Marais',
+        body: 'Falafel on Rue des Rosiers, the Picasso museum in a 17th-century hôtel particulier, and the Place des Vosges for lunch.',
+        photo: {
+          id: '1502602898657-3e91760cbb34',
+          by: 'Unsplash',
+          alt: 'Parisian rooftops and the Eiffel Tower.',
+        },
+      },
+      {
+        title: 'Latin Quarter bouquinistes',
+        body: 'The green book-boxes along the Seine, Shakespeare & Company, and a Sorbonne-side café for the cheapest good coffee in town.',
+        photo: {
+          id: '1499856871958-5b9627545d1a',
+          by: 'Unsplash',
+          alt: 'A Parisian bridge over the Seine.',
+        },
+      },
+    ],
+    itineraries: [
+      {
+        name: 'Paris in a weekend',
+        days: 3,
+        lede: 'One museum a day, one quarter a day, and two unhurried dinners. The city, not a checklist.',
+      },
+      {
+        name: 'Paris & Versailles',
+        days: 5,
+        lede: 'Add a Versailles day + a Loire château or a Champagne tasting in Reims by fast train.',
+      },
+      {
+        name: 'France in two weeks',
+        days: 14,
+        lede: 'Paris → Loire → Provence → the Côte d’Azur. Cities, vineyards, lavender, and the sea.',
+      },
+    ],
+  },
+  dubai: {
+    slug: 'dubai',
+    name: 'Dubai',
+    state: 'UAE',
+    tagline: 'A desert port that built the future, then put a beach under it.',
+    hero: {
+      id: '1512453979798-5ea266f8880c',
+      by: 'Unsplash',
+      alt: 'The Dubai skyline of glass towers at dusk.',
+    },
+    facts: [
+      { label: 'Best season', value: 'Nov – Mar' },
+      { label: 'Pace', value: 'Fast · sun · gloss' },
+      { label: 'Budget', value: 'From $200 / day' },
+    ],
+    lede: 'Fifty years ago Dubai was a pearling town on a creek. Today it has the tallest building on earth, indoor ski slopes, and man-made islands shaped like palms — but the old city of gold souks and abra boats still runs along Dubai Creek, and an hour out, the empty red dunes begin. It is brash and it knows it, and it does a sunset over the desert better than almost anywhere.',
+    moments: [
+      {
+        title: 'Top of the Burj Khalifa',
+        body: '828 metres, the highest occupied floors on earth. Book the last slot before sunset and watch the city light up from above.',
+        photo: {
+          id: '1518684079-3c830dcef090',
+          by: 'Unsplash',
+          alt: 'The Burj Al Arab sail-shaped hotel.',
+        },
+      },
+      {
+        title: 'Desert dunes at dusk',
+        body: 'A 4×4 over the red dunes, then a camp under the stars — falcons, a fire, and silence forty minutes from the towers.',
+        photo: {
+          id: '1546412414-e1885259563a',
+          by: 'Unsplash',
+          alt: 'Dubai waterfront at dusk.',
+        },
+      },
+      {
+        title: 'Old Dubai by abra',
+        body: 'Cross the Creek for a single dirham on a wooden water taxi, then haggle through the gold and spice souks of Deira.',
+        photo: {
+          id: '1512453979798-5ea266f8880c',
+          by: 'Unsplash',
+          alt: 'The Dubai skyline.',
+        },
+      },
+      {
+        title: 'A Friday brunch',
+        body: 'The local institution — a long, lavish weekend feast. Pick one with a terrace and a view of the marina.',
+        photo: {
+          id: '1518684079-3c830dcef090',
+          by: 'Unsplash',
+          alt: 'The Burj Al Arab.',
+        },
+      },
+    ],
+    itineraries: [
+      {
+        name: 'Dubai stopover',
+        days: 3,
+        lede: 'Burj Khalifa + fountains, an old-town souk morning, one desert-camp night, one beach day.',
+      },
+      {
+        name: 'Emirates two-city',
+        days: 6,
+        lede: 'Add Abu Dhabi for the Sheikh Zayed Grand Mosque + Louvre Abu Dhabi, and a slower beach finale.',
+      },
+      {
+        name: 'Gulf & mountains',
+        days: 9,
+        lede: 'Dubai → Hatta wadis → Ras Al Khaimah’s Jebel Jais. Dunes, mountain ziplines, and quiet coast.',
+      },
+    ],
+  },
+  interlaken: {
+    slug: 'interlaken',
+    name: 'Interlaken',
+    state: 'Switzerland',
+    tagline: 'Two lakes, three giants, and the cleanest air in Europe.',
+    hero: {
+      id: '1530122037265-a5f1f91d3b99',
+      by: 'Unsplash',
+      alt: 'A green Swiss alpine valley below snow-capped peaks.',
+    },
+    facts: [
+      { label: 'Best season', value: 'Jun – Sep, Dec – Mar' },
+      { label: 'Pace', value: 'Active · alpine' },
+      { label: 'Budget', value: 'From CHF 220 / day' },
+    ],
+    lede: 'Interlaken sits in the saddle between two turquoise lakes, with the Eiger, Mönch and Jungfrau filling the southern sky. It is the gateway to the Bernese Oberland — a region of cogwheel trains, cliff-side villages, and the kind of valleys that turned the Alps into a verb. You come here to go up: by train to the Jungfraujoch, by cable car to Schilthorn, by your own feet anywhere at all.',
+    moments: [
+      {
+        title: 'Up to the Jungfraujoch',
+        body: 'The highest railway station in Europe at 3,454m — through the heart of the Eiger to a glacier, an ice palace, and the Aletsch.',
+        photo: {
+          id: '1527668752968-14dc70a27c95',
+          by: 'Unsplash',
+          alt: 'Snow-capped Swiss alpine peaks.',
+        },
+      },
+      {
+        title: 'Lauterbrunnen valley',
+        body: 'Seventy-two waterfalls down sheer cliffs — the valley that inspired Tolkien’s Rivendell. Take the trail to Staubbach falls.',
+        photo: {
+          id: '1530122037265-a5f1f91d3b99',
+          by: 'Unsplash',
+          alt: 'A green Swiss valley below peaks.',
+        },
+      },
+      {
+        title: 'Grindelwald First',
+        body: 'A cliff walk on a steel walkway, a mountain coaster, and paragliders launching off the meadow with the Eiger behind.',
+        photo: {
+          id: '1605540436563-5bca919ae766',
+          by: 'Unsplash',
+          alt: 'People in the snow in the Swiss Alps.',
+        },
+      },
+      {
+        title: 'Lake Brienz by boat',
+        body: 'Impossibly turquoise glacial water — sail to Iseltwald and the Giessbach falls, reachable by Europe’s oldest funicular.',
+        photo: {
+          id: '1530122037265-a5f1f91d3b99',
+          by: 'Unsplash',
+          alt: 'A turquoise Swiss lake and valley.',
+        },
+      },
+    ],
+    itineraries: [
+      {
+        name: 'Oberland in 4',
+        days: 4,
+        lede: 'Lauterbrunnen + Grindelwald, one big peak (Jungfraujoch or Schilthorn), one lake-boat afternoon.',
+      },
+      {
+        name: 'Swiss rails',
+        days: 7,
+        lede: 'Add Lucerne + a leg of the Glacier Express to Zermatt and the Matterhorn. Trains are the trip.',
+      },
+      {
+        name: 'Alpine grand tour',
+        days: 12,
+        lede: 'Zurich → Lucerne → Interlaken → Zermatt → Montreux. Peaks, lakes, chocolate, and lakeside vineyards.',
+      },
+    ],
+  },
+  iceland: {
+    slug: 'iceland',
+    name: 'Iceland',
+    state: 'Iceland',
+    tagline: 'Fire, ice, and a ring road around the edge of the habitable world.',
+    hero: {
+      id: '1504829857797-ddff29c27927',
+      by: 'Unsplash',
+      alt: 'A dark dramatic Icelandic peak rising beside cold coastal water.',
+    },
+    facts: [
+      { label: 'Best season', value: 'Jun – Aug (sun), Sep – Mar (aurora)' },
+      { label: 'Pace', value: 'Epic · elemental' },
+      { label: 'Budget', value: 'From $250 / day' },
+    ],
+    lede: "Iceland sits on the seam where two continents pull apart, and it shows: geysers, lava fields, black beaches, and more waterfalls than anyone has counted. A single ring road, Route 1, circles the whole island in about 1,300km, and almost everything worth seeing is a short detour off it. In summer the sun barely sets; in winter the aurora takes the sky. Either way it doesn't feel quite like Earth.",
+    moments: [
+      {
+        title: 'The Golden Circle',
+        body: 'Thingvellir (where the continents split and the Vikings made law), the original Geysir, and the thundering Gullfoss — all in a day from Reykjavík.',
+        photo: {
+          id: '1476610182048-b716b8518aae',
+          by: 'Unsplash',
+          alt: 'A powerful Icelandic waterfall.',
+        },
+      },
+      {
+        title: 'South-coast waterfalls & black sand',
+        body: 'Walk behind Seljalandsfoss, stand under Skógafoss, then the basalt columns and roaring surf at Reynisfjara beach.',
+        photo: {
+          id: '1531168556467-80aace0d0144',
+          by: 'Unsplash',
+          alt: 'A stark Icelandic landscape.',
+        },
+      },
+      {
+        title: 'A glacier lagoon',
+        body: 'Jökulsárlón: icebergs calving off a glacier and drifting to the sea, then washing up on the Diamond Beach next door.',
+        photo: {
+          id: '1504829857797-ddff29c27927',
+          by: 'Unsplash',
+          alt: 'A dark Icelandic mountain by water.',
+        },
+      },
+      {
+        title: 'Chase the northern lights',
+        body: 'Sep–Mar, away from town lights, on a clear dark night. Check the aurora forecast, then wait with a thermos and patience.',
+        photo: {
+          id: '1531168556467-80aace0d0144',
+          by: 'Unsplash',
+          alt: 'An Icelandic night landscape.',
+        },
+      },
+    ],
+    itineraries: [
+      {
+        name: 'Reykjavík & the South',
+        days: 5,
+        lede: 'Golden Circle, the south-coast waterfalls, a glacier lagoon, and a Blue Lagoon soak to finish.',
+      },
+      {
+        name: 'The Ring Road',
+        days: 9,
+        lede: 'The full Route 1 loop — east fjords, Mývatn’s geothermal north, and the Snæfellsnes peninsula.',
+      },
+      {
+        name: 'Highlands & ice',
+        days: 12,
+        lede: 'Add a Landmannalaugar trek + a glacier hike or ice-cave tour. The interior the buses skip.',
+      },
+    ],
+  },
+  marrakech: {
+    slug: 'marrakech',
+    name: 'Marrakech',
+    state: 'Morocco',
+    tagline: 'A red walled city where the souk never quite sleeps.',
+    hero: {
+      id: '1597212618440-806262de4f6b',
+      by: 'Unsplash',
+      alt: 'The Koutoubia Mosque minaret above Marrakech at dusk.',
+    },
+    facts: [
+      { label: 'Best season', value: 'Mar – May, Sep – Nov' },
+      { label: 'Pace', value: 'Sensory · intense' },
+      { label: 'Budget', value: 'From $70 / day' },
+    ],
+    lede: 'Marrakech has been a caravan city for a thousand years — the last big stop before the Atlas and the Sahara — and the medina still works like one. Inside the red walls it is all narrow lanes, hidden riads, and a souk that sells everything from lanterns to live chickens; outside, palm groves, the snow-topped Atlas, and the desert beyond. The Jemaa el-Fnaa square is the beating, chaotic heart of it all.',
+    moments: [
+      {
+        title: 'Jemaa el-Fnaa after dark',
+        body: 'By night the great square fills with food stalls, gnawa drummers, and storytellers. Eat where the locals queue; watch from a rooftop café.',
+        photo: {
+          id: '1597212618440-806262de4f6b',
+          by: 'Unsplash',
+          alt: 'The Koutoubia minaret over Marrakech.',
+        },
+      },
+      {
+        title: 'Lose yourself in the souks',
+        body: 'Spice pyramids, dyers’ alleys, lantern-makers’ hammering. Haggle gently, accept the mint tea, and expect to get lost — that’s the point.',
+        photo: {
+          id: '1539020140153-e479b8c22e70',
+          by: 'Unsplash',
+          alt: 'An ornate Moroccan tiled archway and fountain.',
+        },
+      },
+      {
+        title: 'A riad & the Jardin Majorelle',
+        body: 'Retreat from the noise into a courtyard riad, then the cobalt-blue garden Yves Saint Laurent saved, with its Berber museum.',
+        photo: {
+          id: '1539020140153-e479b8c22e70',
+          by: 'Unsplash',
+          alt: 'Moroccan tilework and arches.',
+        },
+      },
+      {
+        title: 'Atlas day trip',
+        body: 'An hour out: Berber villages, a Toubkal-valley hike, and a tagine slow-cooked over coals with a mountain view.',
+        photo: {
+          id: '1597212618440-806262de4f6b',
+          by: 'Unsplash',
+          alt: 'Marrakech at golden hour.',
+        },
+      },
+    ],
+    itineraries: [
+      {
+        name: 'Medina long weekend',
+        days: 3,
+        lede: 'Two nights in a riad, the souks + Jemaa el-Fnaa, the Majorelle garden, one Atlas-foothills day.',
+      },
+      {
+        name: 'Cities & desert',
+        days: 7,
+        lede: 'Add a 2-night Sahara trip to Merzouga — camel trek into the dunes and a night in a desert camp.',
+      },
+      {
+        name: 'Imperial Morocco',
+        days: 12,
+        lede: 'Marrakech → Fes → Chefchaouen → the coast at Essaouira. Medinas, mountains, and the blue city.',
+      },
+    ],
+  },
+  rome: {
+    slug: 'rome',
+    name: 'Rome',
+    state: 'Italy',
+    tagline: 'Three thousand years stacked on top of each other, all still in use.',
+    hero: {
+      id: '1552832230-c0197dd311b5',
+      by: 'Unsplash',
+      alt: 'The Colosseum in Rome lit warm at dusk.',
+    },
+    facts: [
+      { label: 'Best season', value: 'Apr – Jun, Sep – Oct' },
+      { label: 'Pace', value: 'Layered · delicious' },
+      { label: 'Budget', value: 'From €150 / day' },
+    ],
+    lede: 'Rome is a city you read in cross-section: an ancient temple holding up a baroque church holding up a trattoria. The Forum and Colosseum are only the start — there are 280 fountains, two thousand years of art, and a whole sovereign country (the Vatican) inside it. Walk it slowly, eat carbonara where the Romans do, and accept that you will come back, because nobody sees Rome in one trip.',
+    moments: [
+      {
+        title: 'Colosseum & the Forum',
+        body: 'Book the first slot, add the arena-floor ticket, then walk down through the Roman Forum and up the Palatine where the emperors lived.',
+        photo: {
+          id: '1515542622106-78bda8ba0e5b',
+          by: 'Unsplash',
+          alt: 'The Colosseum of Rome.',
+        },
+      },
+      {
+        title: 'The Vatican at opening',
+        body: 'St Peter’s, the Sistine Chapel, and the Raphael Rooms. Go early or book a late key-holder tour to beat the crush.',
+        photo: {
+          id: '1531572753322-ad063cecc140',
+          by: 'Unsplash',
+          alt: 'St Peter’s Square and the Vatican.',
+        },
+      },
+      {
+        title: 'Trastevere at night',
+        body: 'Cobbled lanes, ivy, and the best casual dinners in the city. Cacio e pepe, a carafe of house red, and a passeggiata after.',
+        photo: {
+          id: '1552832230-c0197dd311b5',
+          by: 'Unsplash',
+          alt: 'The Colosseum lit at dusk.',
+        },
+      },
+      {
+        title: 'Pantheon & a gelato',
+        body: 'The best-preserved building of antiquity, free to enter, its oculus open to the sky — then the city’s finest gelato two streets over.',
+        photo: {
+          id: '1515542622106-78bda8ba0e5b',
+          by: 'Unsplash',
+          alt: 'Ancient Roman architecture.',
+        },
+      },
+    ],
+    itineraries: [
+      {
+        name: 'Rome in three',
+        days: 3,
+        lede: 'Ancient Rome day one, the Vatican day two, Trastevere + the centro on foot day three. Eat well throughout.',
+      },
+      {
+        name: 'Rome, Florence & Venice',
+        days: 8,
+        lede: 'The classic triangle by fast train — Renaissance Florence and canal-bound Venice added to the capital.',
+      },
+      {
+        name: 'Italy grand tour',
+        days: 14,
+        lede: 'Rome → Tuscany → Cinque Terre → the Amalfi Coast. Cities, hill towns, vineyards, and the sea.',
+      },
+    ],
+  },
+  bangkok: {
+    slug: 'bangkok',
+    name: 'Bangkok',
+    state: 'Thailand',
+    tagline: 'Golden temples, canal markets, and the best street food on earth.',
+    hero: {
+      id: '1528181304800-259b08848526',
+      by: 'Unsplash',
+      alt: 'The ornate golden spires of the Grand Palace in Bangkok.',
+    },
+    facts: [
+      { label: 'Best season', value: 'Nov – Feb (cool, dry)' },
+      { label: 'Pace', value: 'Frenetic · flavourful' },
+      { label: 'Budget', value: 'From $55 / day' },
+    ],
+    lede: 'Bangkok runs on contrast: gilded temples beside neon malls, riverside slums beside sky bars, and a street-food scene so good UNESCO and Michelin both took notice. The Chao Phraya river and its canals are the old city’s spine — take a longtail boat down them at least once. Move by ferry and Skytrain, eat constantly, and let the heat set the pace.',
+    moments: [
+      {
+        title: 'The Grand Palace & Wat Pho',
+        body: 'The royal compound and the emerald Buddha, then the 46-metre reclining Buddha next door. Cover shoulders and knees; go at opening.',
+        photo: {
+          id: '1563492065599-3520f775eeed',
+          by: 'Unsplash',
+          alt: 'A golden Bangkok temple.',
+        },
+      },
+      {
+        title: 'Wat Arun at sunset',
+        body: 'Cross the river by ferry to the Temple of Dawn, its porcelain-studded spire catching the last light. Best seen from a riverside bar opposite.',
+        photo: {
+          id: '1528181304800-259b08848526',
+          by: 'Unsplash',
+          alt: 'Bangkok temple spires.',
+        },
+      },
+      {
+        title: 'Street food on Yaowarat',
+        body: 'Chinatown after dark — charcoal-grilled satay, boat noodles, mango sticky rice. Follow the longest local queues.',
+        photo: {
+          id: '1508009603885-50cf7c579365',
+          by: 'Unsplash',
+          alt: 'A neon-lit Bangkok night street.',
+        },
+      },
+      {
+        title: 'A floating-market morning',
+        body: 'Damnoen Saduak or the quieter Amphawa: canals of paddle-boats selling fruit, noodles, and coconut ice cream. Get there early.',
+        photo: {
+          id: '1563492065599-3520f775eeed',
+          by: 'Unsplash',
+          alt: 'A Thai temple.',
+        },
+      },
+    ],
+    itineraries: [
+      {
+        name: 'Bangkok in three',
+        days: 3,
+        lede: 'Palace + temples, a canal longtail, Chinatown street food, one rooftop bar, one market morning.',
+      },
+      {
+        name: 'City, sea & ruins',
+        days: 7,
+        lede: 'Add the ancient capital of Ayutthaya by day trip, then fly south for two beach days on the islands.',
+      },
+      {
+        name: 'Thailand classic',
+        days: 12,
+        lede: 'Bangkok → Chiang Mai (temples + elephants) → the southern islands. North, centre, and coast.',
+      },
+    ],
+  },
+  cappadocia: {
+    slug: 'cappadocia',
+    name: 'Cappadocia',
+    state: 'Türkiye',
+    tagline: 'A moonscape of fairy chimneys, cave churches, and a sky full of balloons.',
+    hero: {
+      id: '1641128324972-af3212f0f6bd',
+      by: 'Unsplash',
+      alt: 'Hot-air balloons rising over the rock formations of Cappadocia at dawn.',
+    },
+    facts: [
+      { label: 'Best season', value: 'Apr – Jun, Sep – Oct' },
+      { label: 'Pace', value: 'Surreal · slow' },
+      { label: 'Budget', value: 'From $90 / day' },
+    ],
+    lede: 'Ten million years of ash and erosion carved central Anatolia into a landscape that looks invented — soft tufa rock shaped into spires, cones, and waves. People have lived inside it for millennia: cave homes, rock-cut churches frescoed in the Byzantine era, and whole underground cities that sheltered thousands. At dawn, a hundred balloons drift over the valleys, and it becomes the most photographed sunrise in the world for good reason.',
+    moments: [
+      {
+        title: 'Balloons at sunrise',
+        body: 'Up at 4am, into the basket as the sun comes over Göreme, a hundred other balloons floating with you above the fairy chimneys.',
+        photo: {
+          id: '1641128324972-af3212f0f6bd',
+          by: 'Unsplash',
+          alt: 'Balloons over Cappadocia at dawn.',
+        },
+      },
+      {
+        title: 'Göreme Open-Air Museum',
+        body: 'A monastic valley of rock-cut churches, their interiors still bright with 1,000-year-old Byzantine frescoes.',
+        photo: {
+          id: '1641128324972-af3212f0f6bd',
+          by: 'Unsplash',
+          alt: 'Cappadocia rock formations.',
+        },
+      },
+      {
+        title: 'Down into Derinkuyu',
+        body: 'An eight-level underground city that once hid 20,000 people, their livestock, and a church — carved straight down into the rock.',
+        photo: {
+          id: '1641128324972-af3212f0f6bd',
+          by: 'Unsplash',
+          alt: 'The Cappadocia valleys.',
+        },
+      },
+      {
+        title: 'A cave-hotel night',
+        body: 'Sleep inside the rock in Ürgüp or Uçhisar, then watch the dawn balloons rise from your own carved-stone terrace.',
+        photo: {
+          id: '1641128324972-af3212f0f6bd',
+          by: 'Unsplash',
+          alt: 'Balloons over the Cappadocia landscape.',
+        },
+      },
+    ],
+    itineraries: [
+      {
+        name: 'Cappadocia in three',
+        days: 3,
+        lede: 'One balloon dawn, the Göreme churches, an underground city, a valley hike, a cave-hotel night.',
+      },
+      {
+        name: 'Istanbul & Cappadocia',
+        days: 7,
+        lede: 'Pair the capital of empires — Hagia Sophia, the Blue Mosque, the Grand Bazaar — with the rock valleys.',
+      },
+      {
+        name: 'Türkiye highlights',
+        days: 12,
+        lede: 'Istanbul → Cappadocia → Pamukkale’s travertines → the Aegean coast at Ephesus and Bodrum.',
+      },
+    ],
+  },
 };
 
 export const ALL_SLUGS: readonly string[] = Object.keys(DESTINATIONS);
+
+/**
+ * Curated landing order for the /v2 marketing surface. The full
+ * DESTINATIONS map has everything (and powers the detail pages); these
+ * lists keep the landing balanced (India + world, alternating) and a
+ * sensible length instead of dumping all ~29 cards at once.
+ */
+export const FEATURED_SLUGS: readonly string[] = [
+  'santorini',
+  'jaipur',
+  'kyoto',
+  'udaipur',
+  'bali',
+  'varanasi',
+  'maldives',
+  'leh',
+  'paris',
+  'alleppey',
+  'dubai',
+  'hampi',
+];
+
+/** Three signature "moments" highlighted in the Experiences strip. */
+export const EXPERIENCE_SLUGS: readonly string[] = ['kyoto', 'santorini', 'leh'];
+
+/** Two hero itineraries highlighted in the Journeys section. */
+export const JOURNEY_SLUGS: readonly string[] = ['bali', 'udaipur'];
