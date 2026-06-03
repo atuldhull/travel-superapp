@@ -918,15 +918,17 @@ function DayRow({
   const [editing, setEditing] = useState(false);
   const dateStr = new Date(day.date as unknown as string).toLocaleDateString();
   return (
-    <li className="rounded border border-muted/15 p-3">
+    <li className="rounded-xl border border-gold-600/12 p-3">
       <div className="mb-1 flex items-baseline justify-between gap-2">
-        <strong className="text-sm">Day {day.dayIndex + 1}</strong>
+        <strong className="font-display text-sm font-semibold tracking-tight text-surface-foreground">
+          Day {day.dayIndex + 1}
+        </strong>
         <div className="flex items-baseline gap-2">
           <span className="text-xs text-muted">{dateStr}</span>
           <button
             type="button"
             onClick={() => setEditing((v) => !v)}
-            className="text-xs text-brand hover:underline"
+            className="text-xs font-medium text-gold-600 hover:underline"
           >
             {editing ? 'Done' : 'Edit'}
           </button>
@@ -1063,14 +1065,14 @@ function DayItemsEditor({ day, onClose }: DayItemsEditorProps) {
           {items.map((it, idx) => (
             <li
               key={it.key}
-              className="grid grid-cols-[auto_1fr_1fr_auto] items-center gap-2 rounded border border-muted/15 p-2 text-xs"
+              className="grid grid-cols-[auto_1fr_1fr_auto] items-center gap-2 rounded-xl border border-gold-600/12 p-2 text-xs"
             >
               <div className="flex flex-col">
                 <button
                   type="button"
                   onClick={() => move(idx, -1)}
                   disabled={idx === 0}
-                  className="text-muted hover:text-brand disabled:opacity-30"
+                  className="text-muted hover:text-gold-600 disabled:opacity-30"
                   aria-label="Move up"
                 >
                   ▲
@@ -1079,7 +1081,7 @@ function DayItemsEditor({ day, onClose }: DayItemsEditorProps) {
                   type="button"
                   onClick={() => move(idx, 1)}
                   disabled={idx === items.length - 1}
-                  className="text-muted hover:text-brand disabled:opacity-30"
+                  className="text-muted hover:text-gold-600 disabled:opacity-30"
                   aria-label="Move down"
                 >
                   ▼
@@ -1091,14 +1093,14 @@ function DayItemsEditor({ day, onClose }: DayItemsEditorProps) {
                 onChange={(e) => patchItem(idx, { notes: e.target.value })}
                 placeholder="Notes (optional)"
                 maxLength={500}
-                className="rounded border border-muted/30 bg-surface px-2 py-1 text-xs"
+                className="rounded-lg border border-gold-600/25 bg-surface px-2 py-1 text-xs text-surface-foreground outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/25"
               />
               <input
                 type="text"
                 value={it.placeId}
                 onChange={(e) => patchItem(idx, { placeId: e.target.value })}
                 placeholder="Place id (optional)"
-                className="rounded border border-muted/30 bg-surface px-2 py-1 font-mono text-xs"
+                className="rounded-lg border border-gold-600/25 bg-surface px-2 py-1 font-mono text-xs text-surface-foreground outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/25"
               />
               <button
                 type="button"
@@ -1182,7 +1184,7 @@ function MediaTile({ asset }: { asset: MediaAssetDto }) {
   const dateStr = new Date(asset.createdAt).toLocaleDateString();
   const isVideo = asset.kind === 'video';
   return (
-    <li className="flex flex-col rounded border border-muted/15 bg-muted/5 p-2 text-xs">
+    <li className="flex flex-col rounded-xl border border-gold-600/12 bg-surface/60 p-2 text-xs">
       <div className="flex aspect-square items-center justify-center rounded bg-muted/20 text-2xl">
         {isVideo ? '🎬' : '🖼️'}
       </div>
@@ -1277,7 +1279,7 @@ function PlanWithAiSection({ tripId, enabled }: PlanWithAiSectionProps) {
               </span>
             ) : null}
           </div>
-          <pre className="whitespace-pre-wrap rounded border border-muted/15 bg-muted/5 px-3 py-2 font-sans text-sm leading-relaxed">
+          <pre className="whitespace-pre-wrap rounded-xl border border-gold-600/12 bg-surface/60 px-3 py-2 font-sans text-sm leading-relaxed">
             {plan.plan}
           </pre>
         </div>
