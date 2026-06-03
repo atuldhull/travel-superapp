@@ -28,7 +28,9 @@ export interface AppChromeProps {
 }
 
 /** Pathname prefixes that render bare (no app chrome). */
-const BARE_PREFIXES = ['/aether/'] as const;
+// `/v2` is the premium "Fusion" landing — it ships its own full-bleed
+// nav + footer end-to-end, so it opts out of the max-w-3xl chrome too.
+const BARE_PREFIXES = ['/aether/', '/v2'] as const;
 
 function isBare(pathname: string | null | undefined): boolean {
   if (pathname === null || pathname === undefined) return false;
@@ -46,9 +48,13 @@ export function AppChrome({ nav, footer, nudge, children }: AppChromeProps): Rea
     );
   }
   return (
-    <div className="mx-auto max-w-3xl px-6 py-10 space-y-6">
+    <div className="flex min-h-dvh flex-col">
       {nav}
-      <main id="main" tabIndex={-1} className="outline-none">
+      <main
+        id="main"
+        tabIndex={-1}
+        className="mx-auto w-full max-w-3xl flex-1 px-6 py-10 outline-none"
+      >
         {nudge}
         {children}
       </main>

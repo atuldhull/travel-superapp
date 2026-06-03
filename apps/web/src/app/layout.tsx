@@ -13,26 +13,22 @@ import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { Inter, Playfair_Display } from 'next/font/google';
 import Script from 'next/script';
-import Link from 'next/link';
 import './globals.css';
 import { ActiveSosBanner } from '../components/safety/active-sos-banner';
 import { SosFab } from '../components/safety/sos-fab';
 import { TranslateWidget } from '../components/translation/translate-widget';
-import { ThemeToggle } from '../components/ui/theme-toggle';
-import { UserMenu } from '../components/user-menu';
-import { InboxBadge } from '../components/inbox/inbox-badge';
 import { AxeDevBoot } from '../components/a11y/axe-dev-boot';
 import { LiveRegion } from '../components/a11y/live-region';
 import { SkipToMain } from '../components/a11y/skip-to-main';
 import { CommandPalette } from '../components/cmdk/command-palette';
 import { ShortcutSheet } from '../components/cmdk/shortcut-sheet';
-import { Logo } from '../components/branding/logo';
 import { Footer } from '../components/landing/footer';
 import { AuraNudge } from '../components/auth/aura-nudge';
 import { GlobalAssistant } from '../components/assistant/global-assistant';
 import { PwaRegister } from '../components/pwa/pwa-register';
 import { Providers } from './providers';
 import { AppChrome, HideOnAether } from '../components/layout/app-chrome';
+import { AppNav } from '../components/v2/app-nav';
 
 // POST.2 — Inter as the brand typeface. `next/font/google` self-hosts
 // the file at build time, so no FCP regression and no CLS risk. We
@@ -119,48 +115,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           {/* AppChrome conditionally renders nav + container + footer for
               regular routes, OR bare children for /aether/* surfaces that
               own their own editorial layout end-to-end. */}
-          <AppChrome
-            nudge={<AuraNudge />}
-            footer={<Footer />}
-            nav={
-              <header
-                className="sticky top-3 z-40 -mx-3 flex items-center justify-between gap-3 rounded-2xl border border-gold-600/15 bg-surface/70 px-4 py-2.5 shadow-(--shadow-depth-2) backdrop-blur-xl supports-backdrop-filter:bg-surface/60"
-                role="banner"
-              >
-                {/* Premium glass top-bar — gold hairline, sticky, blurred. */}
-                <Logo />
-                <nav aria-label="Primary" className="flex items-center gap-1.5 sm:gap-2">
-                  <Link
-                    href="/home"
-                    className="rounded-full px-3 py-1.5 text-sm font-medium text-muted transition hover:bg-gold-500/10 hover:text-surface-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                  >
-                    Home
-                  </Link>
-                  <Link
-                    href="/feed"
-                    className="rounded-full px-3 py-1.5 text-sm font-medium text-muted transition hover:bg-gold-500/10 hover:text-surface-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                  >
-                    Feed
-                  </Link>
-                  <Link
-                    href="/navigate"
-                    className="hidden rounded-full px-3 py-1.5 text-sm font-medium text-muted transition hover:bg-gold-500/10 hover:text-surface-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:inline-block"
-                  >
-                    Navigate
-                  </Link>
-                  <Link
-                    href="/diary"
-                    className="hidden rounded-full px-3 py-1.5 text-sm font-medium text-muted transition hover:bg-gold-500/10 hover:text-surface-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:inline-block"
-                  >
-                    Diary
-                  </Link>
-                  <InboxBadge />
-                  <ThemeToggle />
-                  <UserMenu />
-                </nav>
-              </header>
-            }
-          >
+          <AppChrome nudge={<AuraNudge />} footer={<Footer />} nav={<AppNav />}>
             {children}
           </AppChrome>
           {/* V.UX.13 — persistent SOS FAB. Renders disabled for

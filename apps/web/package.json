@@ -4,9 +4,9 @@
   "private": true,
   "description": "Next.js 15 (App Router, RSC) user-facing web. Scaffold installed by [IV.18.19.14].",
   "scripts": {
-    "dev": "next dev --port 3001",
+    "dev": "next dev --port 3002",
     "build": "next build",
-    "start": "next start --port 3001",
+    "start": "next start --port 3002",
     "lint": "eslint src e2e test",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
