@@ -8,13 +8,15 @@
  *
  * Auth-gated: silent-refresh boot → /login if no token.
  *
- * Installed by [S-Ce] of the S-series real-functionality closeout.
+ * Installed by [S-Ce] of the S-series real-functionality closeout;
+ * restyled into the v2 ("Fusion") design language (royal/gold tokens).
  */
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { CalendarDays, MapPin, Search, Ticket } from 'lucide-react';
 import {
   useEventsControllerSearch,
   type EventListingDto,
@@ -35,6 +37,10 @@ interface ApiError extends Error {
 // Picked because it always has events in the search window, so the
 // page demos meaningfully even without permissions.
 const DEFAULT_CENTER = { lat: 40.758, lng: -73.9855 };
+
+// Shared field styling so every filter input reads as one set.
+const FIELD =
+  'rounded-lg border border-gold-600/25 bg-surface px-2 py-1 text-xs text-surface-foreground outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/25';
 
 const CATEGORIES: readonly string[] = [
   '',
@@ -146,18 +152,31 @@ export default function EventsPage() {
     );
 
   return (
-    <main className="space-y-6">
-      <header className="space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight">Events near you</h1>
-        <p className="text-sm text-muted">
-          Concerts, festivals, food fairs, talks. Pulls from open-source providers; freeOnly filters
+    <main className="space-y-8">
+      {/* Cinematic royal header band — matches /home + /trips. */}
+      <header
+        className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-8 shadow-(--shadow-depth-2) sm:px-10"
+        style={{ backgroundImage: 'var(--gradient-royal)' }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/20 blur-[110px]"
+        />
+        <p className="relative inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+          <Ticket aria-hidden className="h-3.5 w-3.5" /> What’s on
+        </p>
+        <h1 className="relative mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+          Events near you
+        </h1>
+        <p className="relative mt-2 max-w-lg text-sm text-white/65">
+          Concerts, festivals, food fairs, talks — pulled from open providers. “Free only” filters
           to $0 events for the budget-backpacker view.
         </p>
       </header>
 
-      <Card>
+      <Card depth="raised">
         <CardHeader>
-          <CardTitle>Filters</CardTitle>
+          <CardTitle className="font-display text-xl">Filters</CardTitle>
           <CardSubtitle>
             Centered at {center.lat.toFixed(3)}, {center.lng.toFixed(3)} · {radiusKm} km · next{' '}
             {dayWindow} days
@@ -168,7 +187,8 @@ export default function EventsPage() {
         <div className="space-y-3">
           <div className="flex flex-wrap items-end gap-3">
             <Button type="button" variant="outline" size="sm" onClick={requestGeolocation}>
-              {geoStatus === 'granted' ? '📍 Re-locate' : '📍 Use my location'}
+              <MapPin aria-hidden className="mr-1.5 h-3.5 w-3.5" />
+              {geoStatus === 'granted' ? 'Re-locate' : 'Use my location'}
             </Button>
             <label className="text-xs text-muted">
               Radius (km)
@@ -178,7 +198,7 @@ export default function EventsPage() {
                 max={500}
                 value={radiusKm}
                 onChange={(e) => setRadiusKm(Number(e.target.value))}
-                className="ml-2 w-20 rounded-md border border-muted/30 bg-surface px-2 py-1 text-xs"
+                className={`ml-2 w-20 ${FIELD}`}
               />
             </label>
             <label className="text-xs text-muted">
@@ -189,7 +209,7 @@ export default function EventsPage() {
                 max={90}
                 value={dayWindow}
                 onChange={(e) => setDayWindow(Number(e.target.value))}
-                className="ml-2 w-20 rounded-md border border-muted/30 bg-surface px-2 py-1 text-xs"
+                className={`ml-2 w-20 ${FIELD}`}
               />
             </label>
             <label className="text-xs text-muted">
@@ -197,7 +217,7 @@ export default function EventsPage() {
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="ml-2 rounded-md border border-muted/30 bg-surface px-2 py-1 text-xs"
+                className={`ml-2 ${FIELD}`}
               >
                 {CATEGORIES.map((c) => (
                   <option key={c || 'any'} value={c}>
@@ -206,7 +226,7 @@ export default function EventsPage() {
                 ))}
               </select>
             </label>
-            <label className="flex items-center gap-1 text-xs text-muted">
+            <label className="flex items-center gap-1.5 text-xs text-muted">
               <input
                 type="checkbox"
                 checked={freeOnly}
@@ -215,25 +235,32 @@ export default function EventsPage() {
               />
               free only
             </label>
-            <Button type="button" size="sm" onClick={runSearch} disabled={search.isPending}>
-              {search.isPending ? 'Searching…' : 'Search'}
+            <Button
+              type="button"
+              variant="royal"
+              size="sm"
+              onClick={runSearch}
+              disabled={search.isPending}
+            >
+              <Search aria-hidden className="mr-1.5 h-4 w-4" />
+              {search.isPending ? 'Searching…' : 'Search events'}
             </Button>
           </div>
         </div>
       </Card>
 
       {errorMsg ? (
-        <p className="rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-sm text-red-600 dark:text-red-400">
+        <p className="rounded-2xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
           {errorMsg}
         </p>
       ) : null}
 
       {search.isPending && sorted === null ? (
         <div className="space-y-3">
-          <Skeleton className="h-20" count={4} />
+          <Skeleton className="h-24 rounded-2xl" count={4} />
         </div>
       ) : sorted === null ? null : sorted.length === 0 ? (
-        <Card>
+        <Card depth="flat" className="p-5">
           <p className="text-sm text-muted">
             No events found in the window. Widen the radius, try a longer window, or clear the
             category.
@@ -249,9 +276,10 @@ export default function EventsPage() {
         </ul>
       )}
 
-      <footer className="text-xs text-muted">
-        Want events on your trip page? They overlay automatically per day on{' '}
-        <Link href="/trips" className="underline-offset-2 hover:underline">
+      <footer className="flex items-center gap-1.5 text-xs text-muted">
+        <CalendarDays aria-hidden className="h-3.5 w-3.5" /> Want events on your trip page? They
+        overlay automatically per day on{' '}
+        <Link href="/trips" className="text-gold-600 underline-offset-2 hover:underline">
           your trips
         </Link>
         .
@@ -274,20 +302,22 @@ function EventRow({ event: ev }: { event: EventListingDto }) {
   const venueName = ev.venueName as unknown as string | null;
   const sourceUrl = ev.sourceUrl as unknown as string | null;
   return (
-    <article className="rounded-md border border-muted/15 bg-surface p-3">
+    <article className="rounded-2xl border border-gold-600/12 bg-surface p-4 shadow-(--shadow-depth-1) transition hover:border-gold-600/25 hover:shadow-(--shadow-depth-2)">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1">
-          <h3 className="text-sm font-semibold">{ev.title}</h3>
+          <h3 className="font-display text-base font-semibold tracking-tight text-surface-foreground">
+            {ev.title}
+          </h3>
           <p className="mt-0.5 text-xs text-muted">
             {dateStr} · {timeStr}
             {venueName ? ` · ${venueName}` : ''} · {distanceKm} km away
           </p>
           {description ? (
-            <p className="mt-1 text-xs text-muted line-clamp-2">{description}</p>
+            <p className="mt-1 line-clamp-2 text-xs text-muted">{description}</p>
           ) : null}
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1">
-          <Badge variant={isFree ? 'brand' : 'neutral'}>
+          <Badge variant={isFree ? 'gold' : 'neutral'}>
             {isFree ? 'Free' : `${ev.currency ?? ''} ${ev.priceMin ?? '?'}`}
           </Badge>
           <Badge variant="neutral">{ev.category}</Badge>
@@ -298,7 +328,7 @@ function EventRow({ event: ev }: { event: EventListingDto }) {
           href={sourceUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-2 inline-block text-xs text-brand hover:underline"
+          className="mt-2 inline-block text-xs text-gold-600 underline-offset-2 hover:underline"
         >
           Source ↗
         </a>
