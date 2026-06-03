@@ -20,6 +20,7 @@ import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, CloudRain, Compass, MapPin, Sparkles } from 'lucide-react';
 import {
   apiFetch,
   countryPrimerControllerGet,
@@ -45,7 +46,7 @@ import { reverseGeocodeCountryCode } from '../../../lib/geocode';
 const MapPicker = dynamic(() => import('../../../components/map-picker').then((m) => m.MapPicker), {
   ssr: false,
   loading: () => (
-    <div className="h-72 w-full animate-pulse rounded-md border border-muted/30 bg-muted/10" />
+    <div className="h-72 w-full animate-pulse rounded-2xl border border-gold-600/15 bg-gold-500/5" />
   ),
 });
 
@@ -581,21 +582,38 @@ export default function NewTripPage() {
   }
 
   const chip = (active: boolean) =>
-    'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition ' +
+    'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ' +
     (active
-      ? 'border-brand bg-brand/10 text-surface-foreground shadow-(--shadow-depth-1)'
-      : 'border-gold-600/20 text-muted hover:border-brand/40 hover:text-surface-foreground');
+      ? 'border-gold-500 bg-gold-500/12 text-gold-700 shadow-(--shadow-depth-1) dark:text-gold-300'
+      : 'border-gold-600/20 text-muted hover:border-gold-500/40 hover:text-surface-foreground');
 
   return (
-    <main className="space-y-6">
+    <main className="space-y-8">
       <p>
-        <Link href="/trips" className="text-sm text-muted hover:underline">
-          ← Back to trips
+        <Link
+          href="/trips"
+          className="inline-flex items-center gap-1.5 text-sm text-muted underline-offset-4 transition hover:text-gold-600 hover:underline"
+        >
+          <ArrowLeft aria-hidden className="h-3.5 w-3.5" /> Back to trips
         </Link>
       </p>
-      <header className="space-y-1">
-        <h1 className="font-display text-3xl font-semibold tracking-tight">Plan a new trip</h1>
-        <p className="text-sm text-muted">
+
+      {/* Cinematic royal header band — matches /home + /trips + /stays. */}
+      <header
+        className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-8 shadow-(--shadow-depth-2) sm:px-10"
+        style={{ backgroundImage: 'var(--gradient-royal)' }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/20 blur-[110px]"
+        />
+        <p className="relative inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+          <Sparkles aria-hidden className="h-3.5 w-3.5" /> Compose a journey
+        </p>
+        <h1 className="relative mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+          Plan a new trip
+        </h1>
+        <p className="relative mt-2 max-w-lg text-sm text-white/65">
           Pick a vibe and a place — the AI builds the itinerary around it and your saved
           preferences.
         </p>
@@ -679,10 +697,10 @@ export default function NewTripPage() {
                         onClick={() => pickDestination(d)}
                         aria-pressed={active}
                         className={
-                          'w-full rounded-xl border px-3 py-2.5 text-left text-sm transition ' +
+                          'w-full rounded-2xl border px-3 py-2.5 text-left text-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ' +
                           (active
-                            ? 'border-brand bg-brand/10 shadow-(--shadow-depth-1)'
-                            : 'border-gold-600/15 hover:border-brand/40 hover:shadow-(--shadow-depth-1)')
+                            ? 'border-gold-500 bg-gold-500/10 shadow-(--shadow-depth-1)'
+                            : 'border-gold-600/15 hover:border-gold-500/40 hover:shadow-(--shadow-depth-1)')
                         }
                       >
                         <span className="block font-medium text-surface-foreground">{d.dest}</span>
@@ -713,7 +731,7 @@ export default function NewTripPage() {
             <ul
               role="listbox"
               aria-label="Recent destinations"
-              className="absolute left-0 right-0 z-10 mt-1 max-h-60 overflow-auto rounded-md border border-muted/30 bg-surface shadow-lg"
+              className="absolute left-0 right-0 z-10 mt-1 max-h-60 overflow-auto rounded-2xl border border-gold-600/20 bg-surface shadow-(--shadow-depth-2)"
             >
               {titleSuggestions.map((loc) => (
                 <li key={loc.title}>
@@ -723,7 +741,7 @@ export default function NewTripPage() {
                       e.preventDefault();
                       applyFrequentLocation(loc);
                     }}
-                    className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-muted/10"
+                    className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition hover:bg-gold-500/10"
                   >
                     <span className="truncate font-medium">{loc.title}</span>
                     <span className="font-mono text-[10px] text-muted">
@@ -864,8 +882,9 @@ export default function NewTripPage() {
           destContext.topScams.length > 0 ||
           destContext.forecast ||
           destContext.forecastDeferred) ? (
-          <section className="space-y-3 rounded-xl border border-brand/15 bg-brand/[0.03] p-4">
-            <span className="block text-sm font-medium text-surface-foreground">
+          <section className="space-y-3 rounded-2xl border border-gold-600/15 bg-gold-500/[0.04] p-4 shadow-(--shadow-depth-1)">
+            <span className="flex items-center gap-2 text-sm font-medium text-surface-foreground">
+              <MapPin aria-hidden className="h-4 w-4 text-gold-600" />
               About this destination <span className="text-muted">({destContext.countryCode})</span>
             </span>
             {destContext.forecast ? (
@@ -878,8 +897,8 @@ export default function NewTripPage() {
                   ? ` · ${destContext.forecast.precipPct}% rain chance`
                   : ''}
                 {destContext.forecast.precipPct !== null && destContext.forecast.precipPct >= 60 ? (
-                  <span className="ml-1 text-amber-600 dark:text-amber-400">
-                    — pack a rain jacket.
+                  <span className="ml-1 inline-flex items-center gap-1 font-medium text-gold-700 dark:text-gold-300">
+                    <CloudRain aria-hidden className="h-3 w-3" /> pack a rain jacket.
                   </span>
                 ) : null}
               </p>
@@ -916,8 +935,9 @@ export default function NewTripPage() {
 
         {/* F12 — How you like to travel. All optional; each selection
             folds into buildInstruction() so the AI plan reflects them. */}
-        <section className="space-y-3 rounded-xl border border-gold-600/15 bg-gold-500/[0.03] p-4">
-          <span className="block text-sm font-medium text-surface-foreground">
+        <section className="space-y-3 rounded-2xl border border-gold-600/15 bg-gold-500/[0.04] p-4 shadow-(--shadow-depth-1)">
+          <span className="flex items-center gap-2 text-sm font-medium text-surface-foreground">
+            <Compass aria-hidden className="h-4 w-4 text-gold-600" />
             How you like to travel <span className="text-muted">(optional)</span>
           </span>
 
@@ -1022,7 +1042,7 @@ export default function NewTripPage() {
         ) : null}
 
         {errorMsg ? (
-          <p className="rounded-md border border-danger/30 bg-danger/5 px-4 py-2 text-sm text-danger">
+          <p className="rounded-2xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
             {errorMsg}
           </p>
         ) : null}

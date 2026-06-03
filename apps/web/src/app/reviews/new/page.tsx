@@ -22,12 +22,18 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useMemo, useState } from 'react';
+import { ArrowLeft, PenLine, Star } from 'lucide-react';
 import { useReviewsControllerCreate, type CreateReviewRequestDto } from '@app/sdk';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
 import { Card, CardHeader, CardSubtitle, CardTitle } from '../../../components/ui/card';
 import { Field } from '../../../components/ui/input';
 import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
+
+// Shared gold-tokened field styling so the textarea reads as part of
+// the v2 ("Fusion") set (mirrors /stays' FIELD const, scaled up).
+const TEXTAREA =
+  'mt-1 w-full rounded-xl border border-gold-600/25 bg-surface px-3.5 py-2.5 text-sm text-surface-foreground outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/25';
 
 // Mirror of the SDK's `CreateReviewRequestDtoTargetType` const. The SDK
 // barrel doesn't re-export the schema const (orval emits it but the
@@ -139,23 +145,49 @@ function NewReviewPageInner() {
   }
 
   return (
-    <main className="space-y-6">
+    <main className="space-y-8">
+      {/* Cinematic royal header band — matches /home + /trips + /stays. */}
+      <header
+        className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-8 shadow-(--shadow-depth-2) sm:px-10"
+        style={{ backgroundImage: 'var(--gradient-royal)' }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/20 blur-[110px]"
+        />
+        <p className="relative inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+          <PenLine aria-hidden className="h-3.5 w-3.5" /> Share your take
+        </p>
+        <h1 className="relative mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+          Write a review
+        </h1>
+        <p className="relative mt-2 max-w-lg text-sm text-white/65">
+          Honest. Specific. Reviews shorter than 10 characters or in ALL CAPS get auto-flagged —
+          write the way you’d describe it to a friend.
+        </p>
+      </header>
+
       <p>
-        <Link href="/me/reviews" className="text-sm text-muted hover:underline">
-          ← Back to your reviews
+        <Link
+          href="/me/reviews"
+          className="inline-flex items-center gap-1.5 text-sm text-muted underline-offset-4 transition hover:text-gold-600 hover:underline"
+        >
+          <ArrowLeft aria-hidden className="h-3.5 w-3.5" /> Back to your reviews
         </Link>
       </p>
-      <Card>
+
+      <Card depth="raised">
         <CardHeader>
-          <CardTitle>Write a review</CardTitle>
+          <CardTitle className="font-display text-xl">Your review</CardTitle>
           <CardSubtitle>
-            Honest. Specific. Reviews shorter than 10 characters or in ALL CAPS get auto-flagged by
-            the moderation heuristic — write the way you'd describe it to a friend.
+            Pick what you’re reviewing, drop a rating, and tell the story.
           </CardSubtitle>
         </CardHeader>
         <form onSubmit={submit} className="space-y-4">
           <div>
-            <p className="mb-1 text-sm font-medium">What are you reviewing?</p>
+            <p className="mb-2 text-sm font-medium text-surface-foreground">
+              What are you reviewing?
+            </p>
             <div className="flex flex-wrap gap-2">
               {TARGET_TYPES.map((t) => {
                 const active = targetType === t;
@@ -163,12 +195,13 @@ function NewReviewPageInner() {
                   <button
                     key={t}
                     type="button"
+                    aria-pressed={active}
                     onClick={() => setTargetType(t)}
                     className={
-                      'rounded-md border px-3 py-1.5 text-sm font-medium transition ' +
+                      'rounded-full border px-4 py-1.5 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ' +
                       (active
-                        ? 'border-gold-600/40 bg-gold-500/15 text-gold-700 dark:text-gold-300'
-                        : 'border-muted/30 text-muted hover:bg-muted/5')
+                        ? 'border-gold-600/40 bg-gold-500/15 text-gold-700 shadow-(--shadow-depth-1) dark:text-gold-300'
+                        : 'border-gold-600/20 text-muted hover:border-gold-600/35 hover:bg-gold-500/8 hover:text-surface-foreground')
                     }
                   >
                     {TARGET_LABELS[t]}
@@ -200,7 +233,7 @@ function NewReviewPageInner() {
           />
 
           <div>
-            <p className="mb-1 text-sm font-medium">Rating</p>
+            <p className="mb-2 text-sm font-medium text-surface-foreground">Rating</p>
             <div role="radiogroup" aria-label="Rating" className="flex items-center gap-1">
               {[1, 2, 3, 4, 5].map((star) => {
                 const filled = star <= rating;
@@ -213,22 +246,30 @@ function NewReviewPageInner() {
                     aria-label={`${star} star${star === 1 ? '' : 's'}`}
                     onClick={() => setRating(star)}
                     className={
-                      'text-2xl transition ' +
-                      (filled ? 'text-amber-500' : 'text-muted/40 hover:text-amber-400')
+                      'rounded-md p-0.5 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ' +
+                      (filled ? 'text-gold-500' : 'text-muted/40 hover:text-gold-400')
                     }
                   >
-                    {filled ? '★' : '☆'}
+                    <Star
+                      aria-hidden
+                      className="h-7 w-7"
+                      fill={filled ? 'currentColor' : 'none'}
+                      strokeWidth={1.75}
+                    />
                   </button>
                 );
               })}
-              <Badge variant="neutral" className="ml-2">
+              <Badge variant="gold" className="ml-2">
                 {rating} / 5
               </Badge>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium" htmlFor="review-body">
+            <label
+              className="block text-sm font-medium text-surface-foreground"
+              htmlFor="review-body"
+            >
               Review
             </label>
             <textarea
@@ -239,7 +280,7 @@ function NewReviewPageInner() {
               minLength={10}
               maxLength={8000}
               required
-              className="mt-1 w-full rounded-md border border-muted/30 bg-surface px-3 py-2 text-sm focus:border-gold-600/40 focus:outline-none focus:ring-1 focus:ring-gold-500/40"
+              className={TEXTAREA}
               placeholder={
                 targetType === 'agent'
                   ? 'How was your experience working with this agent?'
@@ -252,13 +293,13 @@ function NewReviewPageInner() {
           </div>
 
           {errorMsg ? (
-            <p className="rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-sm text-red-600 dark:text-red-400">
+            <p className="rounded-2xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
               {errorMsg}
             </p>
           ) : null}
 
           <div className="flex gap-3">
-            <Button type="submit" disabled={!canSubmit || createMutation.isPending}>
+            <Button type="submit" variant="royal" disabled={!canSubmit || createMutation.isPending}>
               {createMutation.isPending ? 'Submitting…' : 'Submit review'}
             </Button>
             <Button

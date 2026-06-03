@@ -4,7 +4,8 @@
  * (name, priceUsd, photoUrl, caption). Anonymous visitors see a
  * sign-in nudge instead of the form.
  *
- * Installed by prompt [V.UX.20].
+ * Installed by prompt [V.UX.20]; restyled into the v2 ("Fusion")
+ * design language (royal/gold tokens, font-display, cinematic header).
  */
 'use client';
 
@@ -12,6 +13,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, NotebookPen, UtensilsCrossed } from 'lucide-react';
 import {
   getFoodControllerDishesQueryKey,
   useFoodControllerCreateDish,
@@ -31,6 +33,10 @@ interface ApiError extends Error {
   readonly code?: string;
   readonly status?: number;
 }
+
+// Gold-tokened field className shared by the report-a-dish inputs.
+const FIELD =
+  'rounded-lg border border-gold-600/25 bg-surface px-3.5 py-2.5 text-sm text-surface-foreground outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/25';
 
 export default function EateryDetailPage() {
   const params = useParams<{ id: string }>();
@@ -94,32 +100,55 @@ export default function EateryDetailPage() {
   const missing = apiErr?.status === 404;
 
   return (
-    <main className="space-y-6">
-      <p>
-        <Link href="/discover" className="text-sm text-muted hover:underline">
-          ← Back to discover
+    <main className="space-y-8">
+      {/* Cinematic royal header band — matches /home + /trips. */}
+      <header
+        className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-8 shadow-(--shadow-depth-2) sm:px-10"
+        style={{ backgroundImage: 'var(--gradient-royal)' }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/20 blur-[110px]"
+        />
+        <Link
+          href="/discover"
+          className="relative inline-flex items-center gap-1.5 text-xs font-medium text-white/65 underline-offset-4 transition hover:text-gold-300 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-300"
+        >
+          <ArrowLeft aria-hidden className="h-3.5 w-3.5" /> Back to discover
         </Link>
-      </p>
-      <Card>
+        <p className="relative mt-4 inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+          <UtensilsCrossed aria-hidden className="h-3.5 w-3.5" /> Foodie field notes
+        </p>
+        <h1 className="relative mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+          Dishes reported here
+        </h1>
+        <p className="relative mt-2 max-w-lg text-sm text-white/65">
+          Real plates from real diners — name, price, photo, caption. Newest first.
+        </p>
+      </header>
+
+      <Card depth="raised">
         <CardHeader>
-          <CardTitle>🍽️ Dishes reported here</CardTitle>
+          <CardTitle>On the menu</CardTitle>
           <CardSubtitle>
-            Foodie reports — name, price, photo, caption. Newest first. Tap a dish to see details.
+            Foodie reports — name, price, photo, caption. Tap a dish to see details.
           </CardSubtitle>
         </CardHeader>
         {dishesQuery.isLoading ? (
-          <ul className="space-y-2">
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-24 w-full" />
+          <ul className="grid gap-3 sm:grid-cols-2">
+            <Skeleton className="h-24 w-full rounded-2xl" />
+            <Skeleton className="h-24 w-full rounded-2xl" />
           </ul>
         ) : missing ? (
-          <p className="text-sm text-danger">Eatery not found.</p>
+          <p className="rounded-2xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
+            Eatery not found.
+          </p>
         ) : dishesQuery.isError ? (
-          <p className="text-sm text-danger">
+          <p className="rounded-2xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
             Couldn&apos;t load dishes ({apiErr?.code ?? `HTTP_${apiErr?.status ?? '???'}`}).
           </p>
         ) : !dishes || dishes.length === 0 ? (
-          <p className="text-sm text-muted">
+          <p className="rounded-2xl border border-gold-600/15 bg-gold-500/5 px-4 py-3 text-sm text-muted">
             No dishes reported yet. Be the first foodie to log one.
           </p>
         ) : (
@@ -131,20 +160,25 @@ export default function EateryDetailPage() {
         )}
       </Card>
 
-      <Card>
+      <Card depth="raised">
         <CardHeader>
-          <CardTitle>📝 Report a dish</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <NotebookPen aria-hidden className="h-5 w-5 text-gold-600" /> Report a dish
+          </CardTitle>
           <CardSubtitle>What did you eat? Drop a photo + price for the next foodie.</CardSubtitle>
         </CardHeader>
         {token === null ? (
-          <p className="text-sm text-muted">
-            <Link href="/login" className="text-brand hover:underline">
+          <p className="rounded-2xl border border-gold-600/15 bg-gold-500/5 px-4 py-3 text-sm text-muted">
+            <Link
+              href="/login"
+              className="font-medium text-gold-700 underline-offset-4 transition hover:underline dark:text-gold-300"
+            >
               Sign in
             </Link>{' '}
             to report a dish.
           </p>
         ) : (
-          <form onSubmit={submit} className="space-y-3">
+          <form onSubmit={submit} className="space-y-4">
             <Field
               label="Dish name"
               value={name}
@@ -152,14 +186,16 @@ export default function EateryDetailPage() {
               maxLength={120}
               placeholder="Cacio e Pepe"
               required
+              className={FIELD}
             />
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2">
               <Field
                 label="Price USD (optional)"
                 value={priceUsd}
                 onChange={(e) => setPriceUsd(e.target.value)}
                 inputMode="decimal"
                 placeholder="18.50"
+                className={FIELD}
               />
               <Field
                 label="Photo URL (optional)"
@@ -167,6 +203,7 @@ export default function EateryDetailPage() {
                 onChange={(e) => setPhotoUrl(e.target.value)}
                 maxLength={1024}
                 placeholder="https://…"
+                className={FIELD}
               />
             </div>
             <label className="block space-y-1">
@@ -177,13 +214,17 @@ export default function EateryDetailPage() {
                 maxLength={280}
                 rows={2}
                 placeholder="Best pasta in town."
-                className="block w-full rounded-md border border-muted/30 bg-surface px-3 py-2 text-sm"
+                className={`block w-full ${FIELD}`}
               />
               <span className="block text-xs text-muted">{caption.length}/280</span>
             </label>
-            {errMsg ? <p className="text-sm text-danger">{errMsg}</p> : null}
-            <Button type="submit" disabled={createMutation.isPending}>
-              {createMutation.isPending ? 'Saving…' : '🍴 Report this dish'}
+            {errMsg ? (
+              <p className="rounded-2xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
+                {errMsg}
+              </p>
+            ) : null}
+            <Button type="submit" variant="royal" loading={createMutation.isPending}>
+              {createMutation.isPending ? 'Saving…' : 'Report this dish'}
             </Button>
           </form>
         )}

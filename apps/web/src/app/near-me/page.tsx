@@ -13,12 +13,14 @@
  *
  * Public — no auth needed; the api endpoint is `@Public()`.
  *
- * Installed by prompt [V.UX.7].
+ * Installed by prompt [V.UX.7]; restyled into the v2 ("Fusion") design
+ * language (royal/gold tokens, font-display, cinematic header band).
  */
 'use client';
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { CloudSun, MapPin, Mic, Navigation, ShieldCheck } from 'lucide-react';
 import {
   useNearMeControllerNearMe,
   type NearMeNowRequestDto,
@@ -45,6 +47,10 @@ interface SpeechRecognitionLike {
   start(): void;
   stop(): void;
 }
+
+// Shared field styling so the voice query input reads as one set.
+const FIELD =
+  'rounded-xl border border-gold-600/25 bg-surface px-3.5 py-2.5 text-sm text-surface-foreground outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/25';
 
 export default function NearMePage() {
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -147,37 +153,56 @@ export default function NearMePage() {
   }
 
   return (
-    <main className="space-y-5">
-      <header className="space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight">Near me — right now</h1>
-        <p className="text-sm text-muted">
+    <main className="space-y-8">
+      {/* Cinematic royal header band — matches /home + /trips + /stays. */}
+      <header
+        className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-8 shadow-(--shadow-depth-2) sm:px-10"
+        style={{ backgroundImage: 'var(--gradient-royal)' }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/20 blur-[110px]"
+        />
+        <p className="relative inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+          <Navigation aria-hidden className="h-3.5 w-3.5" /> Right now
+        </p>
+        <h1 className="relative mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+          Near me — right now
+        </h1>
+        <p className="relative mt-2 max-w-lg text-sm text-white/65">
           One tap. Five places, one weather glance, a safety read. No sign-in.
         </p>
       </header>
 
-      <div className="rounded-2xl border border-brand/30 bg-linear-to-br from-brand/10 via-transparent to-brand/5 p-5 text-center">
+      <Card depth="raised" className="text-center">
         <Button
           type="button"
+          variant="royal"
+          size="lg"
           onClick={fetchNearMe}
           disabled={busy || nearMeMutation.isPending}
-          className="px-6 py-3 text-base"
         >
-          {busy ? 'Locating…' : nearMeMutation.isPending ? 'Searching…' : '📍 Near me'}
+          <MapPin aria-hidden className="mr-1.5 h-4 w-4" />
+          {busy ? 'Locating…' : nearMeMutation.isPending ? 'Searching…' : 'Near me'}
         </Button>
         {coords ? (
-          <p className="mt-2 font-mono text-[11px] text-muted">
+          <p className="mt-3 font-mono text-[11px] text-muted">
             {coords.lat.toFixed(4)}, {coords.lng.toFixed(4)}
           </p>
         ) : null}
-      </div>
+      </Card>
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <label htmlFor="near-me-voice" className="sr-only">
+          What are you looking for
+        </label>
         <input
+          id="near-me-voice"
           type="text"
           value={voiceQuery}
           onChange={(e) => setVoiceQuery(e.target.value)}
           placeholder='Try saying "I want sushi"'
-          className="flex-1 rounded-md border border-muted/30 bg-surface px-3 py-2 text-sm"
+          className={`flex-1 ${FIELD}`}
         />
         <Button
           type="button"
@@ -186,18 +211,19 @@ export default function NearMePage() {
           onClick={startVoice}
           disabled={voiceListening}
         >
-          {voiceListening ? '🎤 Listening…' : '🎤 Speak'}
+          <Mic aria-hidden className="mr-1.5 h-3.5 w-3.5" />
+          {voiceListening ? 'Listening…' : 'Speak'}
         </Button>
       </div>
 
       {errMsg ? (
-        <p className="rounded-md border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">
+        <p className="rounded-2xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
           {errMsg}
         </p>
       ) : null}
 
       {stale ? (
-        <p className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+        <p className="rounded-2xl border border-gold-600/25 bg-gold-500/5 px-4 py-3 text-xs text-gold-700 dark:text-gold-300">
           Showing cached results from {new Date(stale.fetchedAt).toLocaleTimeString()}. Tap{' '}
           <strong>Near me</strong> to refresh.
         </p>
@@ -205,7 +231,7 @@ export default function NearMePage() {
 
       {response ? (
         <>
-          <Card>
+          <Card depth="raised">
             <CardHeader>
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <CardTitle>Right now</CardTitle>
@@ -218,7 +244,7 @@ export default function NearMePage() {
                 {response.radiusKm}km
               </CardSubtitle>
             </CardHeader>
-            <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
               <WeatherTile weather={response.weather} />
               <SafetyTile safety={response.safety} />
               <CountTile count={response.places.length} />
@@ -226,9 +252,11 @@ export default function NearMePage() {
           </Card>
 
           {response.places.length === 0 ? (
-            <p className="text-sm text-muted">
-              No places nearby in our catalog yet — try widening the search later.
-            </p>
+            <Card depth="flat" className="p-5">
+              <p className="text-sm text-muted">
+                No places nearby in our catalog yet — try widening the search later.
+              </p>
+            </Card>
           ) : (
             <ul className="space-y-2">
               {response.places.map((p) => (
@@ -244,7 +272,10 @@ export default function NearMePage() {
       ) : null}
 
       <div className="text-center">
-        <Link href="/" className="text-xs text-muted hover:underline">
+        <Link
+          href="/"
+          className="text-xs text-muted underline-offset-4 transition hover:text-gold-600 hover:underline"
+        >
           ← Back home
         </Link>
       </div>
@@ -255,10 +286,12 @@ export default function NearMePage() {
 function WeatherTile({ weather }: { weather: NearMeNowResponseDto['weather'] }) {
   const today = weather.days[0];
   return (
-    <div className="rounded-md border border-muted/15 bg-surface p-3">
-      <p className="text-[10px] uppercase tracking-wider text-muted">Weather</p>
+    <div className="rounded-2xl border border-gold-600/12 bg-surface p-3 shadow-(--shadow-depth-1)">
+      <p className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted">
+        <CloudSun aria-hidden className="h-3 w-3 text-gold-600" /> Weather
+      </p>
       {today ? (
-        <p className="mt-1 font-mono text-sm">
+        <p className="mt-1 font-mono text-sm text-surface-foreground">
           {Math.round(today.minTempC)}°–{Math.round(today.maxTempC)}°C
         </p>
       ) : (
@@ -275,8 +308,10 @@ function WeatherTile({ weather }: { weather: NearMeNowResponseDto['weather'] }) 
 
 function SafetyTile({ safety }: { safety: NearMeNowResponseDto['safety'] }) {
   return (
-    <div className="rounded-md border border-muted/15 bg-surface p-3">
-      <p className="text-[10px] uppercase tracking-wider text-muted">Safety</p>
+    <div className="rounded-2xl border border-gold-600/12 bg-surface p-3 shadow-(--shadow-depth-1)">
+      <p className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted">
+        <ShieldCheck aria-hidden className="h-3 w-3 text-gold-600" /> Safety
+      </p>
       <div className="mt-1">
         <SafetyBadge score={safety.score} grade={safety.grade} />
       </div>
@@ -287,9 +322,11 @@ function SafetyTile({ safety }: { safety: NearMeNowResponseDto['safety'] }) {
 
 function CountTile({ count }: { count: number }) {
   return (
-    <div className="rounded-md border border-muted/15 bg-surface p-3">
-      <p className="text-[10px] uppercase tracking-wider text-muted">Places</p>
-      <p className="mt-1 font-mono text-sm">{count}</p>
+    <div className="rounded-2xl border border-gold-600/12 bg-surface p-3 shadow-(--shadow-depth-1)">
+      <p className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted">
+        <MapPin aria-hidden className="h-3 w-3 text-gold-600" /> Places
+      </p>
+      <p className="mt-1 font-mono text-sm text-surface-foreground">{count}</p>
       <p className="text-[10px] text-muted">nearest first</p>
     </div>
   );
