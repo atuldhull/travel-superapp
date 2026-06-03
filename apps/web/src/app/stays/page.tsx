@@ -8,12 +8,14 @@
  * guest count, required amenities, stayType, maxPrice, minWifiSpeedMbps
  * (V.UX.23 nomad-mode). Geolocation prompt with NYC fallback.
  *
- * Installed by [S-Cs] of the S-series real-functionality closeout.
+ * Installed by [S-Cs] of the S-series real-functionality closeout;
+ * restyled into the v2 ("Fusion") design language (royal/gold tokens).
  */
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { MapPin, Search, Wifi } from 'lucide-react';
 import {
   useStaysControllerSearch,
   type SearchStaysRequestDto,
@@ -31,6 +33,10 @@ interface ApiError extends Error {
 }
 
 const DEFAULT_CENTER = { lat: 40.758, lng: -73.9855 };
+
+// Shared field styling so every filter input reads as one set.
+const FIELD =
+  'rounded-lg border border-gold-600/25 bg-surface px-2 py-1 text-xs text-surface-foreground outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/25';
 
 // Today is iso "YYYY-MM-DD"; default check-in = +30d, check-out = +33d (3 nights).
 function defaultDates(): { checkIn: string; checkOut: string } {
@@ -147,18 +153,31 @@ export default function StaysPage() {
     );
 
   return (
-    <main className="space-y-6">
-      <header className="space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight">Stays</h1>
-        <p className="text-sm text-muted">
-          Find a place to stay near your trip's center. Filters cover guest count, stay type, price
-          cap, and the V.UX.23 nomad-mode wifi floor.
+    <main className="space-y-8">
+      {/* Cinematic royal header band — matches /home + /trips. */}
+      <header
+        className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-8 shadow-(--shadow-depth-2) sm:px-10"
+        style={{ backgroundImage: 'var(--gradient-royal)' }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/20 blur-[110px]"
+        />
+        <p className="relative inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+          <MapPin aria-hidden className="h-3.5 w-3.5" /> Where you’ll stay
+        </p>
+        <h1 className="relative mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+          Stays
+        </h1>
+        <p className="relative mt-2 max-w-lg text-sm text-white/65">
+          Find a place to stay near your trip’s centre — filters cover guest count, stay type, a
+          price cap, and the nomad-mode wifi floor.
         </p>
       </header>
 
-      <Card>
+      <Card depth="raised">
         <CardHeader>
-          <CardTitle>Search</CardTitle>
+          <CardTitle className="font-display text-xl">Search</CardTitle>
           <CardSubtitle>
             Centered at {center.lat.toFixed(3)}, {center.lng.toFixed(3)} · {radiusKm} km · {checkIn}{' '}
             → {checkOut}
@@ -168,7 +187,8 @@ export default function StaysPage() {
         </CardHeader>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <Button type="button" variant="outline" size="sm" onClick={requestGeolocation}>
-            {geoStatus === 'granted' ? '📍 Re-locate' : '📍 Use my location'}
+            <MapPin aria-hidden className="mr-1.5 h-3.5 w-3.5" />
+            {geoStatus === 'granted' ? 'Re-locate' : 'Use my location'}
           </Button>
           <label className="text-xs text-muted">
             Radius (km)
@@ -178,7 +198,7 @@ export default function StaysPage() {
               max={100}
               value={radiusKm}
               onChange={(e) => setRadiusKm(Number(e.target.value))}
-              className="ml-2 w-20 rounded-md border border-muted/30 bg-surface px-2 py-1 text-xs"
+              className={`ml-2 w-20 ${FIELD}`}
             />
           </label>
           <label className="text-xs text-muted">
@@ -189,7 +209,7 @@ export default function StaysPage() {
               max={20}
               value={guests}
               onChange={(e) => setGuests(Number(e.target.value))}
-              className="ml-2 w-16 rounded-md border border-muted/30 bg-surface px-2 py-1 text-xs"
+              className={`ml-2 w-16 ${FIELD}`}
             />
           </label>
           <label className="text-xs text-muted">
@@ -198,7 +218,7 @@ export default function StaysPage() {
               type="date"
               value={checkIn}
               onChange={(e) => setCheckIn(e.target.value)}
-              className="ml-2 rounded-md border border-muted/30 bg-surface px-2 py-1 text-xs"
+              className={`ml-2 ${FIELD}`}
             />
           </label>
           <label className="text-xs text-muted">
@@ -207,7 +227,7 @@ export default function StaysPage() {
               type="date"
               value={checkOut}
               onChange={(e) => setCheckOut(e.target.value)}
-              className="ml-2 rounded-md border border-muted/30 bg-surface px-2 py-1 text-xs"
+              className={`ml-2 ${FIELD}`}
             />
           </label>
           <label className="text-xs text-muted">
@@ -215,7 +235,7 @@ export default function StaysPage() {
             <select
               value={stayType}
               onChange={(e) => setStayType(e.target.value)}
-              className="ml-2 rounded-md border border-muted/30 bg-surface px-2 py-1 text-xs"
+              className={`ml-2 ${FIELD}`}
             >
               {STAY_TYPES.map((t) => (
                 <option key={t || 'any'} value={t}>
@@ -232,7 +252,7 @@ export default function StaysPage() {
               value={maxPrice}
               onChange={(e) => setMaxPrice(e.target.value)}
               placeholder="any"
-              className="ml-2 w-20 rounded-md border border-muted/30 bg-surface px-2 py-1 text-xs"
+              className={`ml-2 w-20 ${FIELD}`}
             />
           </label>
           <label className="text-xs text-muted">
@@ -243,27 +263,34 @@ export default function StaysPage() {
               value={minWifi}
               onChange={(e) => setMinWifi(e.target.value)}
               placeholder="any"
-              className="ml-2 w-20 rounded-md border border-muted/30 bg-surface px-2 py-1 text-xs"
+              className={`ml-2 w-20 ${FIELD}`}
             />
           </label>
         </div>
-        <div className="mt-3">
-          <Button type="button" size="sm" onClick={runSearch} disabled={search.isPending}>
-            {search.isPending ? 'Searching…' : 'Search'}
+        <div className="mt-4">
+          <Button
+            type="button"
+            variant="royal"
+            size="sm"
+            onClick={runSearch}
+            disabled={search.isPending}
+          >
+            <Search aria-hidden className="mr-1.5 h-4 w-4" />
+            {search.isPending ? 'Searching…' : 'Search stays'}
           </Button>
         </div>
       </Card>
 
       {errorMsg ? (
-        <p className="rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-sm text-red-600 dark:text-red-400">
+        <p className="rounded-2xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
           {errorMsg}
         </p>
       ) : null}
 
       {search.isPending && sorted === null ? (
-        <Skeleton className="h-20" count={4} />
+        <Skeleton className="h-24 rounded-2xl" count={4} />
       ) : sorted === null ? null : sorted.length === 0 ? (
-        <Card>
+        <Card depth="flat" className="p-5">
           <p className="text-sm text-muted">
             No stays match. Widen the radius, push the dates, lift the price cap, or drop the wifi
             floor.
@@ -288,19 +315,25 @@ function StayRow({ stay: s }: { stay: StayListingDto }) {
   const star = s.starRating as unknown as number | null;
   const distanceKm = (s.distanceMeters / 1000).toFixed(1);
   return (
-    <article className="rounded-md border border-muted/15 bg-surface p-3">
+    <article className="rounded-2xl border border-gold-600/12 bg-surface p-4 shadow-(--shadow-depth-1) transition hover:border-gold-600/25 hover:shadow-(--shadow-depth-2)">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1">
-          <h3 className="text-sm font-semibold">
+          <h3 className="font-display text-base font-semibold tracking-tight text-surface-foreground">
             {s.name}
-            {star ? <span className="ml-2 text-xs text-muted">{'★'.repeat(star)}</span> : null}
+            {star ? <span className="ml-2 text-xs text-gold-500">{'★'.repeat(star)}</span> : null}
           </h3>
           <p className="mt-0.5 text-xs text-muted">
             {s.stayType} · {distanceKm} km away
-            {wifi !== null ? ` · wifi ${wifi} Mbps` : ''}
+            {wifi !== null ? (
+              <span className="ml-1 inline-flex items-center gap-1">
+                · <Wifi aria-hidden className="h-3 w-3" /> {wifi} Mbps
+              </span>
+            ) : (
+              ''
+            )}
           </p>
           {s.amenities.length > 0 ? (
-            <p className="mt-1 flex flex-wrap gap-1">
+            <p className="mt-2 flex flex-wrap gap-1">
               {s.amenities.slice(0, 6).map((a) => (
                 <Badge key={a} variant="neutral">
                   {a}
@@ -313,7 +346,7 @@ function StayRow({ stay: s }: { stay: StayListingDto }) {
           ) : null}
         </div>
         <div className="flex shrink-0 flex-col items-end">
-          <Badge variant={price !== null ? 'brand' : 'neutral'}>
+          <Badge variant={price !== null ? 'gold' : 'neutral'}>
             {price !== null ? `$${price}/nt` : 'No quote'}
           </Badge>
         </div>
