@@ -25,7 +25,7 @@ export function DishCard({ dish }: DishCardProps) {
   const priceUsd = dish.priceUsd as unknown as string | null;
   const caption = dish.caption as unknown as string | null;
   return (
-    <li className="overflow-hidden rounded-md border border-muted/20 bg-surface text-sm shadow-sm">
+    <li className="overflow-hidden rounded-2xl border border-gold-600/12 bg-surface text-sm shadow-(--shadow-depth-1) transition hover:border-gold-600/25 hover:shadow-(--shadow-depth-2)">
       {photoUrl ? (
         <div className="aspect-4/3 w-full overflow-hidden bg-muted/10">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -37,16 +37,18 @@ export function DishCard({ dish }: DishCardProps) {
           />
         </div>
       ) : null}
-      <div className="space-y-1 p-3">
+      <div className="space-y-1.5 p-4">
         <div className="flex items-baseline justify-between gap-2">
-          <p className="truncate font-medium">🍴 {dish.name}</p>
+          <p className="truncate font-display text-base font-semibold tracking-tight text-surface-foreground">
+            {dish.name}
+          </p>
           {priceUsd ? (
-            <span className="shrink-0 rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[11px] font-mono font-semibold text-amber-700 dark:text-amber-300">
+            <span className="shrink-0 rounded-full bg-gold-500/12 px-2.5 py-0.5 font-mono text-[11px] font-semibold text-gold-700 ring-1 ring-inset ring-gold-500/35 dark:text-gold-300">
               ${priceUsd}
             </span>
           ) : null}
         </div>
-        {caption ? <p className="text-xs leading-relaxed text-muted">👅 {caption}</p> : null}
+        {caption ? <p className="text-xs leading-relaxed text-muted">{caption}</p> : null}
         <p className="text-[10px] text-muted/70">{new Date(dish.createdAt).toLocaleDateString()}</p>
       </div>
     </li>
