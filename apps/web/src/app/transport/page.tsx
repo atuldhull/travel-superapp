@@ -10,12 +10,15 @@
  * tight). Renders one card per mode with distance / duration / cost /
  * confidence + accessibility badge.
  *
- * Installed by [S-Ct] of the S-series real-functionality closeout.
+ * Installed by [S-Ct] of the S-series real-functionality closeout;
+ * restyled into the v2 ("Fusion") design language (royal/gold tokens,
+ * font-display, cinematic header band).
  */
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Accessibility, MapPin, Navigation, Route } from 'lucide-react';
 import { useTransportControllerRoutes, type GetRoutesRequestDto, type RouteLegDto } from '@app/sdk';
 
 // Mirror of the SDK schema enum const (orval emits the value as a
@@ -42,6 +45,10 @@ interface ApiError extends Error {
 
 const DEFAULT_ORIGIN = { lat: 40.758, lng: -73.9855 }; // Times Square
 const DEFAULT_DEST = { lat: 40.7484, lng: -73.9857 }; // Empire State (default short hop)
+
+// Shared field styling so the two endpoint inputs read as one set.
+const FIELD =
+  'mt-1.5 w-full rounded-xl border border-gold-600/25 bg-surface px-3.5 py-2.5 font-mono text-sm text-surface-foreground outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/25';
 
 const MODE_LABELS: Record<TransportMode, string> = {
   walk: '🚶 Walk',
@@ -187,53 +194,66 @@ export default function TransportPage() {
     );
 
   return (
-    <main className="space-y-6">
-      <header className="space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight">How to get there</h1>
-        <p className="text-sm text-muted">
-          Compare walk / transit / bike / car / taxi side-by-side between two coordinates. V.UX.15
+    <main className="space-y-8">
+      {/* Cinematic royal header band — matches /home + /trips. */}
+      <header
+        className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-8 shadow-(--shadow-depth-2) sm:px-10"
+        style={{ backgroundImage: 'var(--gradient-royal)' }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/20 blur-[110px]"
+        />
+        <p className="relative inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+          <Route aria-hidden className="h-3.5 w-3.5" /> Getting around
+        </p>
+        <h1 className="relative mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+          How to get there
+        </h1>
+        <p className="relative mt-2 max-w-lg text-sm text-white/65">
+          Compare walk, transit, bike, car &amp; taxi side-by-side between two coordinates — with a
           step-free filter for accessibility.
         </p>
       </header>
 
-      <Card>
+      <Card depth="raised">
         <CardHeader>
           <CardTitle>Endpoints</CardTitle>
           <CardSubtitle>Free-form `lat, lng` pairs. Geocoder is a follow-up.</CardSubtitle>
         </CardHeader>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="text-xs text-muted">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="block text-xs font-medium text-muted">
             Origin
             <input
               type="text"
               value={originText}
               onChange={(e) => setOriginText(e.target.value)}
               placeholder="40.758, -73.9855"
-              className="mt-1 w-full rounded-md border border-muted/30 bg-surface px-2 py-1 text-sm font-mono"
+              className={FIELD}
             />
             <button
               type="button"
               onClick={useMyLocationAsOrigin}
-              className="mt-1 text-xs text-brand hover:underline"
+              className="mt-1.5 inline-flex items-center gap-1 rounded-full text-xs font-medium text-gold-600 underline-offset-4 transition hover:text-gold-700 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-accent dark:text-gold-300"
             >
-              📍 Use my location
+              <MapPin aria-hidden className="h-3.5 w-3.5" /> Use my location
             </button>
           </label>
-          <label className="text-xs text-muted">
+          <label className="block text-xs font-medium text-muted">
             Destination
             <input
               type="text"
               value={destText}
               onChange={(e) => setDestText(e.target.value)}
               placeholder="40.7484, -73.9857"
-              className="mt-1 w-full rounded-md border border-muted/30 bg-surface px-2 py-1 text-sm font-mono"
+              className={FIELD}
             />
           </label>
         </div>
 
-        <div className="mt-3">
-          <p className="mb-1 text-xs font-medium text-muted">Modes</p>
-          <div className="flex flex-wrap gap-1">
+        <div className="mt-4">
+          <p className="mb-1.5 text-xs font-medium text-muted">Modes</p>
+          <div className="flex flex-wrap gap-1.5">
             {ALL_MODES.map((m) => {
               const active = selectedModes.has(m);
               return (
@@ -243,10 +263,10 @@ export default function TransportPage() {
                   onClick={() => toggleMode(m)}
                   aria-pressed={active}
                   className={
-                    'rounded-md border px-2.5 py-1 text-xs font-medium transition ' +
+                    'rounded-full border px-3 py-1.5 text-xs font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ' +
                     (active
                       ? 'border-gold-600/40 bg-gold-500/15 text-gold-700 dark:text-gold-300'
-                      : 'border-muted/30 text-muted hover:bg-muted/5')
+                      : 'border-gold-600/20 text-muted hover:border-gold-600/35 hover:bg-gold-500/5')
                   }
                 >
                   {MODE_LABELS[m]}
@@ -256,39 +276,47 @@ export default function TransportPage() {
           </div>
         </div>
 
-        <div className="mt-3 flex items-center gap-3">
-          <label className="flex items-center gap-1 text-xs text-muted">
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <label className="inline-flex items-center gap-2 text-xs text-muted">
             <input
               type="checkbox"
               checked={stepFreeOnly}
               onChange={(e) => setStepFreeOnly(e.target.checked)}
               className="accent-gold-600"
             />
+            <Accessibility aria-hidden className="h-3.5 w-3.5 text-gold-600 dark:text-gold-300" />
             Step-free only (accessibility)
           </label>
-          <Button type="button" size="sm" onClick={runSearch} disabled={search.isPending}>
+          <Button
+            type="button"
+            variant="royal"
+            size="sm"
+            onClick={runSearch}
+            disabled={search.isPending}
+          >
+            <Navigation aria-hidden className="h-3.5 w-3.5" />
             {search.isPending ? 'Routing…' : 'Compare routes'}
           </Button>
         </div>
       </Card>
 
       {errorMsg ? (
-        <p className="rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-sm text-red-600 dark:text-red-400">
+        <p className="rounded-2xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
           {errorMsg}
         </p>
       ) : null}
 
       {search.isPending && sorted === null ? (
-        <Skeleton className="h-16" count={4} />
+        <Skeleton className="h-24 rounded-2xl" count={4} />
       ) : sorted === null ? null : sorted.length === 0 ? (
-        <Card>
+        <Card depth="flat">
           <p className="text-sm text-muted">
             No routes available between those points with the selected modes. Try widening the mode
             set or clear the step-free filter.
           </p>
         </Card>
       ) : (
-        <ul className="grid gap-3 sm:grid-cols-2">
+        <ul className="grid gap-4 sm:grid-cols-2">
           {sorted.map((r) => (
             <li key={r.mode}>
               <RouteCard route={r} />
@@ -304,18 +332,26 @@ function RouteCard({ route: r }: { route: RouteLegDto }) {
   const cost = r.estimatedCostUsd as unknown as number | null;
   const confidence = r.confidence as unknown as number;
   return (
-    <article className="rounded-md border border-muted/15 bg-surface p-3">
+    <article className="rounded-2xl border border-gold-600/12 bg-surface p-4 shadow-(--shadow-depth-1) transition hover:border-gold-600/25 hover:shadow-(--shadow-depth-2)">
       <header className="flex items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold">{MODE_LABELS[r.mode as TransportMode] ?? r.mode}</h3>
-        {r.stepFree ? <Badge variant="brand">♿ step-free</Badge> : null}
+        <h3 className="font-display text-base font-semibold tracking-tight text-surface-foreground">
+          {MODE_LABELS[r.mode as TransportMode] ?? r.mode}
+        </h3>
+        {r.stepFree ? <Badge variant="gold">♿ step-free</Badge> : null}
       </header>
-      <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+      <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
         <dt className="text-muted">Distance</dt>
-        <dd className="text-right font-medium">{formatDistance(r.distanceMeters)}</dd>
+        <dd className="text-right font-medium text-surface-foreground">
+          {formatDistance(r.distanceMeters)}
+        </dd>
         <dt className="text-muted">Duration</dt>
-        <dd className="text-right font-medium">{formatDuration(r.durationSeconds)}</dd>
+        <dd className="text-right font-medium text-surface-foreground">
+          {formatDuration(r.durationSeconds)}
+        </dd>
         <dt className="text-muted">Est. cost</dt>
-        <dd className="text-right font-medium">{cost === null ? '—' : `$${cost.toFixed(2)}`}</dd>
+        <dd className="text-right font-medium text-surface-foreground">
+          {cost === null ? '—' : `$${cost.toFixed(2)}`}
+        </dd>
         <dt className="text-muted">Confidence</dt>
         <dd className="text-right text-muted">{(confidence * 100).toFixed(0)}%</dd>
       </dl>
