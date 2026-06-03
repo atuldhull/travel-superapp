@@ -1575,9 +1575,9 @@ export const DESTINATIONS: Record<string, Destination> = {
         title: 'Top of the Burj Khalifa',
         body: '828 metres, the highest occupied floors on earth. Book the last slot before sunset and watch the city light up from above.',
         photo: {
-          id: '1518684079-3c830dcef090',
+          id: '1512453979798-5ea266f8880c',
           by: 'Unsplash',
-          alt: 'The Burj Al Arab sail-shaped hotel.',
+          alt: "Dubai's skyline of glass towers.",
         },
       },
       {
@@ -1586,16 +1586,16 @@ export const DESTINATIONS: Record<string, Destination> = {
         photo: {
           id: '1546412414-e1885259563a',
           by: 'Unsplash',
-          alt: 'Dubai waterfront at dusk.',
+          alt: 'The Dubai coast at dusk.',
         },
       },
       {
         title: 'Old Dubai by abra',
         body: 'Cross the Creek for a single dirham on a wooden water taxi, then haggle through the gold and spice souks of Deira.',
         photo: {
-          id: '1512453979798-5ea266f8880c',
+          id: '1546412414-e1885259563a',
           by: 'Unsplash',
-          alt: 'The Dubai skyline.',
+          alt: 'Dubai by the water.',
         },
       },
       {
@@ -1604,7 +1604,7 @@ export const DESTINATIONS: Record<string, Destination> = {
         photo: {
           id: '1518684079-3c830dcef090',
           by: 'Unsplash',
-          alt: 'The Burj Al Arab.',
+          alt: 'The Burj Al Arab over the Gulf.',
         },
       },
     ],
