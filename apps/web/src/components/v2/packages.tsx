@@ -4,16 +4,15 @@
  * component.
  */
 import { ArrowRight, CalendarDays } from 'lucide-react';
-import { DESTINATIONS } from '../aether/destinations/data';
+import { DESTINATIONS, JOURNEY_SLUGS } from '../aether/destinations/data';
 import { Section, SectionHeading } from './kit';
 import { V2Photo } from './photo';
 
-const JOURNEYS = Object.values(DESTINATIONS)
-  .slice(0, 2)
-  .flatMap((d) => {
-    const it = d.itineraries[0];
-    return it ? [{ dest: d, it }] : [];
-  });
+const JOURNEYS = JOURNEY_SLUGS.flatMap((slug) => {
+  const dest = DESTINATIONS[slug];
+  const it = dest?.itineraries[0];
+  return dest && it ? [{ dest, it }] : [];
+});
 
 export function V2Packages(): React.ReactElement {
   return (
