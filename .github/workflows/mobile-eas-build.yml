@@ -56,16 +56,16 @@ jobs:
         # routes pnpm to it instead of the monorepo root.
         working-directory: apps/mobile
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: 'pnpm'
           cache-dependency-path: apps/mobile/pnpm-lock.yaml
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 10
 
@@ -73,7 +73,7 @@ jobs:
         run: pnpm install --ignore-workspace --frozen-lockfile
 
       - name: Setup EAS CLI
-        uses: expo/expo-github-action@v8
+        uses: expo/expo-github-action@v9
         with:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}

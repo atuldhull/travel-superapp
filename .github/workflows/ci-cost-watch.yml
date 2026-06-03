@@ -36,11 +36,11 @@ jobs:
     env:
       BUDGET_MINUTES: ${{ inputs.budget_minutes || '2000' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Probe GitHub Actions billing
         id: probe
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.GH_BILLING_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
@@ -89,7 +89,7 @@ jobs:
 
       - name: Open / update budget-warning issue (≥ 80%)
         if: steps.probe.outputs.skipped == 'false' && steps.probe.outputs.used_pct >= 80
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const usedPct = '${{ steps.probe.outputs.used_pct }}';
