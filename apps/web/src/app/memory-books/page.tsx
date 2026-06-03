@@ -157,7 +157,7 @@ function BookCard({ book }: { book: MemoryBookDto }) {
   const titleNode = (
     <Link
       href={`/memory-books/${book.id}/edit` as never}
-      className="rounded outline-none transition hover:text-gold-700 focus:ring-2 focus:ring-accent dark:hover:text-gold-300"
+      className="rounded outline-none transition hover:text-gold-700 focus-visible:ring-2 focus-visible:ring-gold-300 dark:hover:text-gold-300"
     >
       {book.title}
     </Link>
