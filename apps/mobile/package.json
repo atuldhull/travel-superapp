@@ -24,7 +24,7 @@
     "@tanstack/react-query-persist-client": "^5.100.7",
     "expo": "~51.0.39",
     "expo-constants": "~16.0.2",
-    "expo-gl": "~14.0.2",
+    "expo-gl": "~56.0.5",
     "expo-image-picker": "~15.0.7",
     "expo-linking": "~6.3.1",
     "expo-location": "~17.0.1",
