@@ -2088,3 +2088,20 @@ export const EXPERIENCE_SLUGS: readonly string[] = ['kyoto', 'santorini', 'leh']
 
 /** Two hero itineraries highlighted in the Journeys section. */
 export const JOURNEY_SLUGS: readonly string[] = ['bali', 'udaipur'];
+
+/** The curated international destinations (everything else is India) —
+ *  powers the India / World filter on the /destinations catalog. */
+export const INTERNATIONAL_SLUGS: readonly string[] = [
+  'santorini',
+  'kyoto',
+  'bali',
+  'maldives',
+  'paris',
+  'dubai',
+  'interlaken',
+  'iceland',
+  'marrakech',
+  'rome',
+  'bangkok',
+  'cappadocia',
+];

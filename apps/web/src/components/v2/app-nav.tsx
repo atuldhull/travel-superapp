@@ -25,11 +25,11 @@ import { cn } from '../../lib/cn';
 const LINKS = [
   { href: '/home', label: 'Home' },
   { href: '/trips', label: 'Trips' },
+  { href: '/destinations', label: 'Destinations' },
   { href: '/discover', label: 'Discover' },
   { href: '/stays', label: 'Stays' },
   { href: '/events', label: 'Events' },
   { href: '/feed', label: 'Feed' },
-  { href: '/diary', label: 'Diary' },
 ] as const;
 
 // Secondary tool surfaces — reachable from every page via the "More"
@@ -37,6 +37,7 @@ const LINKS = [
 // Safety's entry point is the scam-report form, so we link those
 // concrete destinations.)
 const MORE_LINKS = [
+  { href: '/diary', label: 'Diary' },
   { href: '/near-me', label: 'Near me' },
   { href: '/navigate', label: 'Navigate' },
   { href: '/transport', label: 'Transport fit' },
