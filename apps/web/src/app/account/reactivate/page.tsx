@@ -20,14 +20,17 @@
  * being routed from /login). Cancellation handled via a guard on
  * the in-flight ref.
  *
- * Installed by prompt [V.UX.33].
+ * Installed by prompt [V.UX.33]; restyled into the v2 ("Fusion")
+ * design language (royal/gold tokens).
  */
 'use client';
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useRef, useState } from 'react';
+import { ArrowLeft, ArrowRight, CheckCircle2, RotateCcw } from 'lucide-react';
 import { useAccountControllerReactivate } from '@app/sdk';
+import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
 import { Card, CardHeader, CardSubtitle, CardTitle } from '../../../components/ui/card';
 import { announce } from '../../../lib/announce';
@@ -88,16 +91,36 @@ function ReactivateInner() {
   }, [token]);
 
   return (
-    <main className="space-y-6">
-      <p>
-        <Link href="/login" className="text-sm text-muted hover:underline">
-          ← Back to sign-in
-        </Link>
-      </p>
-      <h1 className="text-3xl font-bold tracking-tight">Restore your account</h1>
+    <main className="space-y-8">
+      <Link
+        href="/login"
+        className="inline-flex items-center gap-1.5 text-sm text-muted transition hover:text-gold-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      >
+        <ArrowLeft aria-hidden className="h-4 w-4" /> Back to sign-in
+      </Link>
+
+      {/* Cinematic royal header band — matches /trips + /stays. */}
+      <header
+        className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-8 shadow-(--shadow-depth-2) sm:px-10"
+        style={{ backgroundImage: 'var(--gradient-royal)' }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/20 blur-[110px]"
+        />
+        <p className="relative inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+          <RotateCcw aria-hidden className="h-3.5 w-3.5" /> Account recovery
+        </p>
+        <h1 className="relative mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+          Restore your account
+        </h1>
+        <p className="relative mt-2 max-w-lg text-sm text-white/65">
+          We’re verifying your reactivation link and bringing your travels back to life.
+        </p>
+      </header>
 
       {outcome.kind === 'pending' ? (
-        <Card>
+        <Card depth="raised">
           <CardHeader>
             <CardTitle>Restoring…</CardTitle>
             <CardSubtitle>Verifying the reactivation link.</CardSubtitle>
@@ -106,25 +129,29 @@ function ReactivateInner() {
       ) : null}
 
       {outcome.kind === 'restored' ? (
-        <Card className="border-emerald-500/40 bg-emerald-500/5">
+        <Card depth="raised" className="border-emerald-500/40 bg-emerald-500/5">
           <CardHeader>
-            <CardTitle>✅ Welcome back</CardTitle>
+            <div className="flex items-center gap-2">
+              <CheckCircle2 aria-hidden className="h-5 w-5 text-emerald-500" />
+              <CardTitle>Welcome back</CardTitle>
+              <Badge variant="success">Restored</Badge>
+            </div>
             <CardSubtitle>
               Your account is active again. All sessions were revoked at delete time, so sign in
               fresh below.
             </CardSubtitle>
           </CardHeader>
-          <Link
-            href="/login"
-            className="inline-flex items-center gap-1 rounded-md bg-brand px-3 py-1.5 text-sm font-medium text-brand-foreground transition hover:opacity-90"
-          >
-            Sign in →
+          <Link href="/login" className="mt-3 inline-block">
+            <Button variant="royal" size="sm">
+              Sign in
+              <ArrowRight aria-hidden className="h-4 w-4" />
+            </Button>
           </Link>
         </Card>
       ) : null}
 
       {outcome.kind === 'not-recoverable' ? (
-        <Card>
+        <Card depth="raised">
           <CardHeader>
             <CardTitle>Already restored — or window closed</CardTitle>
             <CardSubtitle>
@@ -132,35 +159,36 @@ function ReactivateInner() {
               wiped.
             </CardSubtitle>
           </CardHeader>
-          <div className="flex flex-wrap gap-3">
-            <Link
-              href="/login"
-              className="inline-flex items-center gap-1 rounded-md border border-muted/30 px-3 py-1.5 text-sm transition hover:bg-muted/10"
-            >
-              Try sign-in →
+          <div className="mt-3 flex flex-wrap gap-3">
+            <Link href="/login">
+              <Button variant="outline" size="sm">
+                Try sign-in
+                <ArrowRight aria-hidden className="h-4 w-4" />
+              </Button>
             </Link>
-            <Link
-              href="/register"
-              className="inline-flex items-center gap-1 rounded-md bg-brand px-3 py-1.5 text-sm font-medium text-brand-foreground transition hover:opacity-90"
-            >
-              Create a fresh account
+            <Link href="/register">
+              <Button variant="royal" size="sm">
+                Create a fresh account
+              </Button>
             </Link>
           </div>
         </Card>
       ) : null}
 
       {outcome.kind === 'invalid' ? (
-        <Card className="border-danger/30">
+        <Card depth="raised" className="border-danger/30 bg-danger/5">
           <CardHeader>
             <CardTitle>Reactivation link expired or tampered</CardTitle>
-            <CardSubtitle>{outcome.message}</CardSubtitle>
+            <CardSubtitle className="text-danger">{outcome.message}</CardSubtitle>
           </CardHeader>
           <p className="text-sm text-muted">
             Sign in with your email + password — if the account is still recoverable, we&apos;ll
             issue a fresh reactivation link inside the response.
           </p>
           <div className="mt-3">
-            <Button onClick={() => (window.location.href = '/login')}>Back to sign-in</Button>
+            <Button variant="royal" size="sm" onClick={() => (window.location.href = '/login')}>
+              Back to sign-in
+            </Button>
           </div>
         </Card>
       ) : null}

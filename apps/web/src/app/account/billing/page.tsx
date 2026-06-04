@@ -5,13 +5,19 @@
  *
  * Auth-gated client component. Fetches once on mount; refreshes on
  * focus so a successful Stripe redirect lands with fresh state.
+ *
+ * Restyled into the v2 ("Fusion") design language (royal/gold tokens).
  */
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { ArrowLeft, CreditCard, ExternalLink, Sparkles } from 'lucide-react';
 import { paymentsControllerMySubscription, paymentsControllerPortalUrl } from '@app/sdk';
+import { Badge } from '../../../components/ui/badge';
+import { Button } from '../../../components/ui/button';
+import { Card, CardHeader, CardSubtitle, CardTitle } from '../../../components/ui/card';
 import { useAuthBootComplete, useAuthToken } from '../../../lib/use-auth-token';
 
 interface CurrentSubscription {
@@ -33,14 +39,14 @@ function formatPrice(cents: number, currency: string): string {
   return `${currency} ${dollars}`;
 }
 
-function statusBadgeClasses(status: string): string {
-  if (status === 'active' || status === 'trialing') {
-    return 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30';
-  }
+// Subscription status is a semantic state — keep the traffic-light intent:
+// healthy → success (green), terminated → danger (rose), pending → gold.
+function statusVariant(status: string): 'success' | 'danger' | 'gold' {
+  if (status === 'active' || status === 'trialing') return 'success';
   if (status === 'canceled' || status === 'unpaid' || status === 'incomplete_expired') {
-    return 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/30';
+    return 'danger';
   }
-  return 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30';
+  return 'gold';
 }
 
 export default function BillingPage() {
@@ -109,24 +115,39 @@ export default function BillingPage() {
   }
 
   return (
-    <section className="space-y-4" aria-labelledby="billing-h1">
-      <header className="space-y-2">
-        <Link
-          href={'/account' as never}
-          className="text-xs text-muted underline-offset-2 hover:underline"
+    <main className="space-y-8" aria-labelledby="billing-h1">
+      <Link
+        href={'/account' as never}
+        className="inline-flex items-center gap-1.5 text-sm text-muted transition hover:text-gold-600"
+      >
+        <ArrowLeft aria-hidden className="h-4 w-4" /> Account
+      </Link>
+
+      {/* Cinematic royal header band — matches /trips + /stays. */}
+      <header
+        className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-8 shadow-(--shadow-depth-2) sm:px-10"
+        style={{ backgroundImage: 'var(--gradient-royal)' }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/20 blur-[110px]"
+        />
+        <p className="relative inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+          <CreditCard aria-hidden className="h-3.5 w-3.5" /> Membership
+        </p>
+        <h1
+          id="billing-h1"
+          className="relative mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl"
         >
-          ← Account
-        </Link>
-        <h1 id="billing-h1" className="text-3xl font-bold tracking-tight">
           Billing
         </h1>
-        <p className="text-sm text-muted">
+        <p className="relative mt-2 max-w-lg text-sm text-white/65">
           Manage your subscription, payment method, and invoices.
         </p>
       </header>
 
       {error ? (
-        <p className="rounded-md border border-rose-500/30 bg-rose-500/5 px-3 py-2 text-sm text-rose-600 dark:text-rose-300">
+        <p className="rounded-2xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
           {error === 'PAYMENTS_DISABLED'
             ? 'Stripe is not configured in this environment yet. Billing actions are disabled.'
             : `Could not load billing info: ${error}.`}
@@ -136,32 +157,30 @@ export default function BillingPage() {
       {data === null ? (
         <p className="text-sm text-muted">Loading subscription…</p>
       ) : data.subscription === null ? (
-        <article className="rounded-md border border-muted/15 bg-surface p-4">
-          <h2 className="text-base font-semibold">You're on the Free plan</h2>
-          <p className="mt-1 text-sm text-muted">
-            Unlimited trips, drafts, and AI plan generation with our built-in planner.
-          </p>
-          <Link
-            href={'/pricing' as never}
-            className="mt-3 inline-flex items-center gap-1 rounded-md bg-linear-to-br from-amber-500 to-amber-600 px-4 py-1.5 text-sm font-semibold text-white shadow-sm hover:opacity-90"
-          >
-            Upgrade to Premium →
+        <Card depth="raised">
+          <CardHeader>
+            <CardTitle className="text-xl">You&apos;re on the Free plan</CardTitle>
+            <CardSubtitle>
+              Unlimited trips, drafts, and AI plan generation with our built-in planner.
+            </CardSubtitle>
+          </CardHeader>
+          <Link href={'/pricing' as never} className="mt-3 inline-block">
+            <Button variant="royal" size="md">
+              <Sparkles aria-hidden className="h-4 w-4" /> Upgrade to Premium
+            </Button>
           </Link>
-        </article>
+        </Card>
       ) : (
-        <article className="space-y-3 rounded-md border border-muted/15 bg-surface p-4">
-          <div className="flex items-center justify-between gap-2">
-            <h2 className="text-base font-semibold">Premium</h2>
-            <span
-              className={
-                'rounded-full border px-2 py-0.5 text-[10px] font-medium ' +
-                statusBadgeClasses(data.subscription.status)
-              }
-            >
-              {data.subscription.status}
-            </span>
-          </div>
-          <dl className="grid grid-cols-2 gap-2 text-sm">
+        <Card depth="raised">
+          <CardHeader>
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle className="text-xl">Premium</CardTitle>
+              <Badge variant={statusVariant(data.subscription.status)}>
+                {data.subscription.status}
+              </Badge>
+            </div>
+          </CardHeader>
+          <dl className="grid grid-cols-2 gap-2 text-sm text-surface-foreground">
             <dt className="text-muted">Price</dt>
             <dd>{formatPrice(data.subscription.priceCents, data.subscription.currency)} / month</dd>
             <dt className="text-muted">Renews</dt>
@@ -169,20 +188,24 @@ export default function BillingPage() {
             <dt className="text-muted">Cancels at period end</dt>
             <dd>{data.subscription.cancelAtPeriodEnd ? 'Yes' : 'No'}</dd>
           </dl>
-          <button
-            type="button"
-            disabled={portalBusy}
-            onClick={handleManage}
-            className="rounded-md border border-muted/20 bg-surface px-4 py-1.5 text-sm font-semibold hover:bg-muted/5 disabled:opacity-60"
-          >
-            {portalBusy ? 'Opening Stripe…' : 'Manage subscription in Stripe →'}
-          </button>
-          <p className="text-[11px] text-muted">
+          <div className="mt-4">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={portalBusy}
+              onClick={handleManage}
+            >
+              <ExternalLink aria-hidden className="h-4 w-4" />
+              {portalBusy ? 'Opening Stripe…' : 'Manage subscription in Stripe'}
+            </Button>
+          </div>
+          <p className="mt-3 text-xs text-muted">
             Cancel anytime. You keep Premium until{' '}
             {new Date(data.subscription.currentPeriodEnd).toLocaleDateString()}.
           </p>
-        </article>
+        </Card>
       )}
-    </section>
+    </main>
   );
 }

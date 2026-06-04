@@ -16,13 +16,15 @@
  *
  * Auth-only client redirect; the api routes are owner-scoped.
  *
- * Installed by prompt [V.UX.32].
+ * Installed by prompt [V.UX.32]; restyled into the v2 ("Fusion")
+ * design language (royal/gold tokens).
  */
 'use client';
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { ArrowLeft, Download, ShieldCheck, Trash2 } from 'lucide-react';
 import {
   useAccountControllerDeleteMyAccount,
   useAccountControllerStorageStats,
@@ -85,8 +87,18 @@ export default function PrivacyHubPage() {
   const [emailConfirm, setEmailConfirm] = useState('');
   const [deleteErr, setDeleteErr] = useState<string | null>(null);
 
-  if (!bootComplete) return <p className="text-sm text-muted">Restoring your session…</p>;
-  if (token === null) return <p className="text-sm text-muted">Redirecting to sign in…</p>;
+  if (!bootComplete)
+    return (
+      <main className="space-y-8">
+        <p className="text-sm text-muted">Restoring your session…</p>
+      </main>
+    );
+  if (token === null)
+    return (
+      <main className="space-y-8">
+        <p className="text-sm text-muted">Redirecting to sign in…</p>
+      </main>
+    );
 
   const body = stats.data?.data as StorageStatsResponseDto | undefined;
 
@@ -168,18 +180,35 @@ export default function PrivacyHubPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <header>
-        <p>
-          <Link href={'/account' as never} className="text-sm text-muted hover:underline">
-            ← Account
-          </Link>
+    <main className="space-y-8">
+      <Link
+        href={'/account' as never}
+        className="inline-flex items-center gap-1.5 text-sm text-muted transition hover:text-gold-600"
+      >
+        <ArrowLeft aria-hidden className="h-4 w-4" /> Account
+      </Link>
+
+      {/* Cinematic royal header band — matches /trips + /stays. */}
+      <header
+        className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-8 shadow-(--shadow-depth-2) sm:px-10"
+        style={{ backgroundImage: 'var(--gradient-royal)' }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/20 blur-[110px]"
+        />
+        <p className="relative inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+          <ShieldCheck aria-hidden className="h-3.5 w-3.5" /> Your data, your call
         </p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight">Privacy & data</h1>
-        <p className="mt-1 text-sm text-muted">See what we store, take a copy, or delete it all.</p>
+        <h1 className="relative mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+          Privacy &amp; data
+        </h1>
+        <p className="relative mt-2 max-w-lg text-sm text-white/65">
+          See what we store, take a copy, or delete it all.
+        </p>
       </header>
 
-      <Card>
+      <Card depth="raised">
         <CardHeader>
           <CardTitle>What we store</CardTitle>
           <CardSubtitle>
@@ -187,23 +216,25 @@ export default function PrivacyHubPage() {
           </CardSubtitle>
         </CardHeader>
         {stats.isLoading || !body ? (
-          <Skeleton className="h-32 w-full" />
+          <Skeleton className="h-32 w-full rounded-2xl" />
         ) : (
           <ul className="grid gap-2 sm:grid-cols-2">
             {CATEGORIES.map((c) => (
               <li
                 key={c.key}
-                className="flex items-baseline justify-between gap-3 rounded border border-muted/15 px-3 py-2 text-sm"
+                className="flex items-baseline justify-between gap-3 rounded-2xl border border-gold-600/12 bg-surface px-4 py-2.5 text-sm shadow-(--shadow-depth-1) transition hover:border-gold-600/25"
               >
                 <span className="text-muted">{c.label}</span>
-                <span className="font-semibold tabular-nums">{body[c.key] as number}</span>
+                <span className="font-display font-semibold tabular-nums text-gold-600">
+                  {body[c.key] as number}
+                </span>
               </li>
             ))}
           </ul>
         )}
       </Card>
 
-      <Card>
+      <Card depth="raised">
         <CardHeader>
           <CardTitle>Export your data</CardTitle>
           <CardSubtitle>
@@ -214,9 +245,11 @@ export default function PrivacyHubPage() {
         <div className="flex flex-wrap gap-2">
           <Button
             type="button"
+            variant="royal"
             onClick={() => void downloadExport('json')}
             disabled={exporting !== null}
           >
+            <Download aria-hidden className="mr-1.5 h-4 w-4" />
             {exporting === 'json' ? 'Preparing…' : 'Download JSON'}
           </Button>
           <Button
@@ -225,13 +258,18 @@ export default function PrivacyHubPage() {
             onClick={() => void downloadExport('ndjson')}
             disabled={exporting !== null}
           >
+            <Download aria-hidden className="mr-1.5 h-4 w-4" />
             {exporting === 'ndjson' ? 'Preparing…' : 'Download NDJSON'}
           </Button>
         </div>
-        {exportErr ? <p className="mt-2 text-xs text-danger">{exportErr}</p> : null}
+        {exportErr ? (
+          <p className="mt-3 rounded-2xl border border-danger/30 bg-danger/5 px-4 py-3 text-xs text-danger">
+            {exportErr}
+          </p>
+        ) : null}
       </Card>
 
-      <Card className="border-danger/30">
+      <Card depth="raised" className="border-danger/30">
         <CardHeader>
           <CardTitle>Delete my account</CardTitle>
           <CardSubtitle>
@@ -240,8 +278,9 @@ export default function PrivacyHubPage() {
           </CardSubtitle>
         </CardHeader>
         {step === 'idle' ? (
-          <Button type="button" variant="outline" onClick={startDelete}>
-            🗑 Delete my account
+          <Button type="button" variant="danger" onClick={startDelete}>
+            <Trash2 aria-hidden className="mr-1.5 h-4 w-4" />
+            Delete my account
           </Button>
         ) : null}
 
@@ -256,12 +295,17 @@ export default function PrivacyHubPage() {
                 type="checkbox"
                 checked={exportedAck}
                 onChange={(e) => setExportedAck(e.target.checked)}
+                className="h-4 w-4 accent-gold-600"
               />
               <span>Yes, I&apos;ve exported (or I don&apos;t need a copy).</span>
             </label>
-            {deleteErr ? <p className="text-xs text-danger">{deleteErr}</p> : null}
+            {deleteErr ? (
+              <p className="rounded-2xl border border-danger/30 bg-danger/5 px-4 py-3 text-xs text-danger">
+                {deleteErr}
+              </p>
+            ) : null}
             <div className="flex gap-2">
-              <Button type="button" onClick={nextFromExport}>
+              <Button type="button" variant="royal" onClick={nextFromExport}>
                 Next
               </Button>
               <Button type="button" variant="ghost" onClick={cancelDelete}>
@@ -283,9 +327,13 @@ export default function PrivacyHubPage() {
               value={emailConfirm}
               onChange={(e) => setEmailConfirm(e.target.value)}
             />
-            {deleteErr ? <p className="text-xs text-danger">{deleteErr}</p> : null}
+            {deleteErr ? (
+              <p className="rounded-2xl border border-danger/30 bg-danger/5 px-4 py-3 text-xs text-danger">
+                {deleteErr}
+              </p>
+            ) : null}
             <div className="flex gap-2">
-              <Button type="button" onClick={nextFromEmail}>
+              <Button type="button" variant="royal" onClick={nextFromEmail}>
                 Next
               </Button>
               <Button type="button" variant="ghost" onClick={cancelDelete}>
@@ -301,13 +349,17 @@ export default function PrivacyHubPage() {
               <strong>Step 3 of 3.</strong> Last chance. This soft-deletes your account immediately.
               The hard-delete sweep finalises in 7 days; sign in before then to undo.
             </p>
-            {deleteErr ? <p className="text-xs text-danger">{deleteErr}</p> : null}
+            {deleteErr ? (
+              <p className="rounded-2xl border border-danger/30 bg-danger/5 px-4 py-3 text-xs text-danger">
+                {deleteErr}
+              </p>
+            ) : null}
             <div className="flex gap-2">
               <Button
                 type="button"
+                variant="danger"
                 onClick={() => void performDelete()}
                 disabled={deleteAccount.isPending}
-                className="bg-danger text-white hover:opacity-90"
               >
                 {deleteAccount.isPending ? 'Deleting…' : 'Delete forever'}
               </Button>
@@ -318,6 +370,6 @@ export default function PrivacyHubPage() {
           </div>
         ) : null}
       </Card>
-    </div>
+    </main>
   );
 }

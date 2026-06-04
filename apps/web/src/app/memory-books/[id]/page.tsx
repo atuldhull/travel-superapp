@@ -29,6 +29,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import {
   useMediaControllerDownloadUrl,
   useMemoryBookControllerGetOne,
@@ -171,8 +172,8 @@ export default function PublicMemoryBookPage() {
 
   if (preview && bootComplete && token === null) {
     return (
-      <main className="space-y-4 p-4">
-        <p className="rounded-md border border-warning/30 bg-warning/5 px-4 py-3 text-sm">
+      <main className="space-y-4">
+        <p className="rounded-2xl border border-gold-600/30 bg-gold-500/5 px-4 py-3 text-sm text-surface-foreground">
           Preview requires you to be signed in as the owner.
         </p>
       </main>
@@ -181,10 +182,11 @@ export default function PublicMemoryBookPage() {
 
   if (isLoading) {
     return (
-      <main className="space-y-4 p-4">
+      <main className="space-y-4">
+        <Skeleton className="h-40 w-full rounded-3xl" />
         <Skeleton className="h-8 w-2/3" />
         <Skeleton className="h-4 w-1/2" />
-        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-32 w-full rounded-2xl" />
       </main>
     );
   }
@@ -193,8 +195,8 @@ export default function PublicMemoryBookPage() {
     const e = error as ApiError;
     const missing = e?.status === 404;
     return (
-      <main className="space-y-4 p-4">
-        <p className="rounded-md border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
+      <main className="space-y-4">
+        <p className="rounded-2xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
           {missing
             ? preview
               ? "We couldn't find this draft to preview."
@@ -203,8 +205,11 @@ export default function PublicMemoryBookPage() {
         </p>
         {!preview ? (
           <p>
-            <Link href="/featured" className="text-sm text-muted hover:underline">
-              ← Featured
+            <Link
+              href="/featured"
+              className="inline-flex items-center gap-1.5 text-sm text-muted underline-offset-4 transition hover:text-gold-600 hover:underline"
+            >
+              <ArrowLeft aria-hidden className="h-3.5 w-3.5" /> Featured
             </Link>
           </p>
         ) : null}
