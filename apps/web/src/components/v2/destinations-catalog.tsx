@@ -12,7 +12,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Search } from 'lucide-react';
+import { GitCompareArrows, Search } from 'lucide-react';
 import { DESTINATIONS, INTERNATIONAL_SLUGS } from '../aether/destinations/data';
 import { V2Photo } from './photo';
 import { cn } from '../../lib/cn';
@@ -63,16 +63,24 @@ export function DestinationsCatalog(): React.ReactElement {
             </button>
           ))}
         </div>
-        <label className="flex items-center gap-2 rounded-full border border-gold-600/25 bg-surface px-3.5 py-2 transition focus-within:border-gold-500 focus-within:ring-2 focus-within:ring-gold-500/25 sm:w-64">
-          <Search aria-hidden className="h-4 w-4 shrink-0 text-gold-600" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search destinations…"
-            aria-label="Search destinations"
-            className="w-full bg-transparent text-sm text-surface-foreground outline-none placeholder:text-muted/70"
-          />
-        </label>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/destinations/compare"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-gold-600/25 px-3.5 py-2 text-sm font-medium text-muted transition hover:bg-gold-500/10 hover:text-surface-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            <GitCompareArrows aria-hidden className="h-4 w-4 text-gold-600" /> Compare
+          </Link>
+          <label className="flex flex-1 items-center gap-2 rounded-full border border-gold-600/25 bg-surface px-3.5 py-2 transition focus-within:border-gold-500 focus-within:ring-2 focus-within:ring-gold-500/25 sm:w-64 sm:flex-none">
+            <Search aria-hidden className="h-4 w-4 shrink-0 text-gold-600" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search destinations…"
+              aria-label="Search destinations"
+              className="w-full bg-transparent text-sm text-surface-foreground outline-none placeholder:text-muted/70"
+            />
+          </label>
+        </div>
       </div>
 
       {items.length === 0 ? (
