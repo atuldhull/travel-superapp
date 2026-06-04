@@ -15,6 +15,7 @@ import type { Route } from 'next';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, MapPin, Star, ThumbsUp, UserCircle } from 'lucide-react';
 import {
   getPublicUserProfileControllerProfileQueryKey,
   usePublicUserProfileControllerProfile,
@@ -55,15 +56,44 @@ export default function PublicReviewerProfilePage() {
   const body = data?.data as unknown as PublicReviewerProfileDto | undefined;
 
   return (
-    <main className="space-y-6">
+    <main className="space-y-8">
+      <Link
+        href="/feed"
+        className="inline-flex items-center gap-1.5 text-sm text-muted underline-offset-4 transition hover:text-gold-600 hover:underline"
+      >
+        <ArrowLeft aria-hidden className="h-3.5 w-3.5" /> Back to feed
+      </Link>
+
+      {/* Cinematic royal header band — matches /trips + /account. */}
+      <header
+        className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-8 shadow-(--shadow-depth-2) sm:px-10"
+        style={{ backgroundImage: 'var(--gradient-royal)' }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/20 blur-[110px]"
+        />
+        <p className="relative inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+          <UserCircle aria-hidden className="h-3.5 w-3.5" /> Reviewer profile
+        </p>
+        <h1 className="relative mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+          {body ? body.displayName : 'Reviewer'}
+        </h1>
+        <p className="relative mt-2 max-w-lg text-sm text-white/65">
+          {body
+            ? `${body.karma.reviewCount} review${body.karma.reviewCount === 1 ? '' : 's'} · ${body.karma.helpfulVotesReceived} helpful vote${body.karma.helpfulVotesReceived === 1 ? '' : 's'} received`
+            : 'A traveller in the community.'}
+        </p>
+      </header>
+
       {isLoading ? (
-        <Card>
+        <Card depth="raised">
           <Skeleton className="h-6 w-1/2" />
           <Skeleton className="mt-2 h-4 w-3/4" />
         </Card>
       ) : isError ? (
-        <Card>
-          <p className="text-sm text-red-600 dark:text-red-400">
+        <Card depth="raised">
+          <p className="text-sm text-danger">
             {apiErr?.code === 'USER_NOT_FOUND'
               ? "We couldn't find that reviewer."
               : `Couldn't load profile (${apiErr?.code ?? `HTTP_${apiErr?.status ?? '???'}`}).`}
@@ -71,7 +101,7 @@ export default function PublicReviewerProfilePage() {
         </Card>
       ) : body ? (
         <>
-          <Card>
+          <Card depth="raised">
             <CardHeader>
               <CardTitle>
                 <KarmaPill displayName={body.displayName} score={body.karma.score} withIcon />
@@ -85,7 +115,7 @@ export default function PublicReviewerProfilePage() {
             <BadgeShelf badges={body.karma.badges} />
           </Card>
           {token !== null ? <CreatorPanel userId={body.userId} /> : null}
-          <Card>
+          <Card depth="raised">
             <CardHeader>
               <CardTitle>Recent reviews</CardTitle>
               <CardSubtitle>Newest first.</CardSubtitle>
@@ -144,23 +174,26 @@ function ReviewRow({
     },
   });
   return (
-    <li className="rounded-xl border border-gold-600/12 bg-surface p-3.5 text-sm shadow-(--shadow-depth-1) transition hover:border-gold-600/25">
-      <p className="text-xs text-muted">
-        <span className="text-gold-600">★</span> {review.rating}/5 ·{' '}
+    <li className="rounded-2xl border border-gold-600/12 bg-surface p-4 text-sm shadow-(--shadow-depth-1) transition hover:border-gold-600/25">
+      <p className="inline-flex items-center gap-1.5 text-xs text-muted">
+        <Star aria-hidden className="h-3.5 w-3.5 text-gold-600" /> {review.rating}/5 ·{' '}
         {new Date(review.createdAt).toLocaleDateString()} · {review.targetType}
       </p>
-      <p className="mt-1 leading-relaxed text-surface-foreground/90">{review.body}</p>
+      <p className="mt-1.5 font-display leading-relaxed text-surface-foreground/90">
+        {review.body}
+      </p>
       {canHelpful ? (
-        <div className="mt-2 flex items-center gap-3 text-xs">
+        <div className="mt-3 flex items-center gap-3 text-xs">
           <button
             type="button"
             onClick={() => helpful.mutate({ id: review.id })}
             disabled={helpful.isPending}
-            className="rounded-full border border-gold-600/25 px-2.5 py-1 transition hover:bg-gold-500/10 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="inline-flex items-center gap-1.5 rounded-full border border-gold-600/25 px-2.5 py-1 transition hover:bg-gold-500/10 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
-            👍 Helpful{helpfulCount !== null ? ` (${helpfulCount})` : ''}
+            <ThumbsUp aria-hidden className="h-3.5 w-3.5" /> Helpful
+            {helpfulCount !== null ? ` (${helpfulCount})` : ''}
           </button>
-          {errMsg ? <span className="text-red-600 dark:text-red-400">{errMsg}</span> : null}
+          {errMsg ? <span className="text-danger">{errMsg}</span> : null}
         </div>
       ) : null}
     </li>
@@ -215,7 +248,7 @@ function CreatorPanel({ userId }: { readonly userId: string }) {
 
   if (loading) {
     return (
-      <Card>
+      <Card depth="raised">
         <Skeleton className="h-5 w-1/3" />
         <Skeleton className="mt-2 h-4 w-2/3" />
       </Card>
@@ -224,7 +257,7 @@ function CreatorPanel({ userId }: { readonly userId: string }) {
   if (!profile) return null;
 
   return (
-    <Card>
+    <Card depth="raised">
       <CardHeader>
         <CardTitle>Creator</CardTitle>
         <CardSubtitle>
@@ -249,7 +282,7 @@ function CreatorPanel({ userId }: { readonly userId: string }) {
       <div className="mb-3 flex gap-2">
         <Button
           size="sm"
-          variant={following ? 'secondary' : 'primary'}
+          variant={following ? 'outline' : 'royal'}
           disabled={busy || blocked}
           onClick={() =>
             following
@@ -299,10 +332,11 @@ function CreatorPanel({ userId }: { readonly userId: string }) {
             <li key={t.tripId}>
               <Link
                 href={`/trips/${t.tripId}` as Route}
-                className="block rounded-xl border border-gold-600/15 bg-surface px-3.5 py-2.5 text-sm shadow-(--shadow-depth-1) transition hover:-translate-y-0.5 hover:border-gold-600/30 hover:shadow-(--shadow-depth-2) focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                className="flex items-center gap-2 rounded-2xl border border-gold-600/15 bg-surface px-4 py-3 text-sm shadow-(--shadow-depth-1) transition hover:-translate-y-0.5 hover:border-gold-600/30 hover:shadow-(--shadow-depth-2) focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >
-                Trip {t.tripId.slice(0, 8)}
-                <span className="ml-2 text-xs text-muted">{t.visibility.toLowerCase()}</span>
+                <MapPin aria-hidden className="h-4 w-4 shrink-0 text-gold-600" />
+                <span className="font-display tracking-tight">Trip {t.tripId.slice(0, 8)}</span>
+                <span className="ml-auto text-xs text-muted">{t.visibility.toLowerCase()}</span>
               </Link>
             </li>
           ))}

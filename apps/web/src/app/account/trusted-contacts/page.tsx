@@ -18,6 +18,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, ShieldCheck, Trash2, UserPlus } from 'lucide-react';
 import {
   getTrustedContactsControllerListQueryKey,
   useTrustedContactsControllerAdd,
@@ -27,6 +28,7 @@ import {
   type ListTrustedContactsResponseDto,
   type TrustedContactDto,
 } from '@app/sdk';
+import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
 import { Card, CardHeader, CardSubtitle, CardTitle } from '../../../components/ui/card';
 import { Field } from '../../../components/ui/input';
@@ -110,6 +112,7 @@ export default function TrustedContactsPage() {
   if (isLoading) {
     return (
       <main className="space-y-4">
+        <Skeleton className="h-40 w-full rounded-3xl" />
         <Skeleton className="h-8 w-2/3" />
         <Skeleton className="h-4 w-1/2" />
       </main>
@@ -119,8 +122,8 @@ export default function TrustedContactsPage() {
     const e = error as ApiError;
     return (
       <main className="space-y-4">
-        <p className="rounded-md border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
-          Couldn't load contacts ({e.code ?? `HTTP_${e.status ?? '???'}`}). {e.message ?? ''}
+        <p className="rounded-2xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
+          Couldn&apos;t load contacts ({e.code ?? `HTTP_${e.status ?? '???'}`}). {e.message ?? ''}
         </p>
       </main>
     );
@@ -157,31 +160,59 @@ export default function TrustedContactsPage() {
   }
 
   return (
-    <main className="space-y-6">
+    <main className="space-y-8">
       <p>
-        <Link href="/" className="text-sm text-muted hover:underline">
-          ← Home
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-sm text-muted underline-offset-4 transition hover:text-gold-600 hover:underline"
+        >
+          <ArrowLeft aria-hidden className="h-3.5 w-3.5" /> Home
         </Link>
       </p>
-      <Card>
+
+      {/* Cinematic royal header band — matches /account + /trips. */}
+      <header
+        className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-8 shadow-(--shadow-depth-2) sm:px-10"
+        style={{ backgroundImage: 'var(--gradient-royal)' }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/20 blur-[110px]"
+        />
+        <p className="relative inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+          <ShieldCheck aria-hidden className="h-3.5 w-3.5" /> Safety circle
+        </p>
+        <h1 className="relative mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+          Trusted contacts
+        </h1>
+        <p className="relative mt-2 max-w-lg text-sm text-white/65">
+          Up to {MAX_CONTACTS} people who&apos;ll get a message with your live location when you tap
+          the SOS button. Phone or email — at least one.
+        </p>
+      </header>
+
+      <Card depth="raised">
         <CardHeader>
-          <CardTitle>🛡️ Trusted contacts</CardTitle>
-          <CardSubtitle>
-            Up to {MAX_CONTACTS} people who'll get a message with your live location when you tap
-            the SOS button. Phone or email — at least one.
-          </CardSubtitle>
+          <CardTitle className="flex items-center justify-between gap-2">
+            Your circle
+            <Badge variant="gold">
+              {contacts.length}/{MAX_CONTACTS} used
+            </Badge>
+          </CardTitle>
         </CardHeader>
         {contacts.length === 0 ? (
           <p className="text-sm text-muted">No contacts yet — add one below.</p>
         ) : (
-          <ul className="space-y-2">
+          <ul className="space-y-3">
             {contacts.map((c) => (
               <li
                 key={c.id}
-                className="flex items-start justify-between gap-3 rounded-md border border-muted/15 bg-muted/5 p-3 text-sm"
+                className="flex items-start justify-between gap-3 rounded-2xl border border-gold-600/12 bg-surface p-4 shadow-(--shadow-depth-1) transition hover:border-gold-600/25"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium">{c.name}</p>
+                  <p className="font-display font-semibold tracking-tight text-surface-foreground">
+                    {c.name}
+                  </p>
                   <p className="mt-0.5 text-xs text-muted">
                     {(c.phone as unknown as string | null) ?? '—'} ·{' '}
                     {(c.email as unknown as string | null) ?? '—'}
@@ -191,68 +222,61 @@ export default function TrustedContactsPage() {
                   type="button"
                   onClick={() => removeMutation.mutate({ id: c.id })}
                   disabled={removeMutation.isPending}
-                  className="text-xs text-danger hover:underline disabled:opacity-50"
+                  className="inline-flex items-center gap-1 rounded-full border border-danger/25 px-3 py-1 text-xs text-danger transition hover:bg-danger/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-danger/40 disabled:opacity-50"
                   aria-label={`Remove ${c.name}`}
                 >
-                  Remove
+                  <Trash2 aria-hidden className="h-3.5 w-3.5" /> Remove
                 </button>
               </li>
             ))}
           </ul>
         )}
-        <p className="mt-3 text-xs text-muted">
-          {contacts.length}/{MAX_CONTACTS} contacts used.
-        </p>
       </Card>
-      <Card>
+
+      <Card depth="raised">
         <CardHeader>
           <CardTitle>Add a contact</CardTitle>
           {atCap ? (
             <CardSubtitle>
-              You've added the maximum of {MAX_CONTACTS}. Remove one to add another.
+              You&apos;ve added the maximum of {MAX_CONTACTS}. Remove one to add another.
             </CardSubtitle>
           ) : null}
         </CardHeader>
         <form onSubmit={submit} className="space-y-3">
-          <Field label="Name">
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              maxLength={80}
-              disabled={atCap}
-              className="w-full rounded-md border border-muted/30 bg-transparent px-3 py-2 text-sm disabled:opacity-50"
-            />
-          </Field>
-          <Field label="Phone (optional if email set)">
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              maxLength={40}
-              disabled={atCap}
-              placeholder="+15551234567"
-              className="w-full rounded-md border border-muted/30 bg-transparent px-3 py-2 text-sm disabled:opacity-50"
-            />
-          </Field>
-          <Field label="Email (optional if phone set)">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              maxLength={254}
-              disabled={atCap}
-              placeholder="someone@example.com"
-              className="w-full rounded-md border border-muted/30 bg-transparent px-3 py-2 text-sm disabled:opacity-50"
-            />
-          </Field>
+          <Field
+            label="Name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            maxLength={80}
+            disabled={atCap}
+          />
+          <Field
+            label="Phone (optional if email set)"
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            maxLength={40}
+            disabled={atCap}
+            placeholder="+15551234567"
+          />
+          <Field
+            label="Email (optional if phone set)"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            maxLength={254}
+            disabled={atCap}
+            placeholder="someone@example.com"
+          />
           {errorMsg ? (
-            <p className="rounded-md border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">
+            <p className="rounded-2xl border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">
               {errorMsg}
             </p>
           ) : null}
-          <Button type="submit" variant="primary" disabled={atCap || addMutation.isPending}>
+          <Button type="submit" variant="royal" disabled={atCap || addMutation.isPending}>
+            <UserPlus aria-hidden className="h-4 w-4" />
             {addMutation.isPending ? 'Adding…' : 'Add contact'}
           </Button>
         </form>
