@@ -6,12 +6,16 @@
 'use client';
 
 import { useState } from 'react';
+import { ShieldAlert, Trash2 } from 'lucide-react';
 import {
   getAdminMediaControllerListQueryKey,
   useAdminMediaControllerList,
   useAdminMediaControllerRemove,
 } from '@app/sdk';
 import { useQueryClient } from '@tanstack/react-query';
+import { Badge } from '../../../components/ui/badge';
+import { Button } from '../../../components/ui/button';
+import { Card, CardHeader, CardSubtitle, CardTitle } from '../../../components/ui/card';
 import { Thumbnail } from '../../../components/media/thumbnail';
 
 interface AdminMediaVariant {
@@ -58,30 +62,55 @@ export default function AdminMediaPage() {
   });
 
   return (
-    <div className="space-y-4">
-      <header>
-        <h1 className="text-2xl font-bold">Media takedown</h1>
-        <p className="text-sm text-muted">{total} matching assets.</p>
+    <main className="space-y-8">
+      {/* Cinematic royal header band — matches /trips + /stays. */}
+      <header
+        className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-8 shadow-(--shadow-depth-2) sm:px-10"
+        style={{ backgroundImage: 'var(--gradient-royal)' }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/20 blur-[110px]"
+        />
+        <p className="relative inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+          <ShieldAlert aria-hidden className="h-3.5 w-3.5" /> Moderation
+        </p>
+        <h1 className="relative mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+          Media takedown
+        </h1>
+        <p className="relative mt-2 max-w-lg text-sm text-white/65">
+          {total} matching assets. Hard-delete abusive content across users — each removal writes
+          one audit-log row and is irreversible.
+        </p>
       </header>
 
-      <input
-        type="text"
-        value={ownerId}
-        onChange={(e) => setOwnerId(e.target.value)}
-        placeholder="Filter by owner user-id (cuid)"
-        className="w-full rounded border border-muted/15 bg-surface px-3 py-2 text-sm"
-      />
+      <Card depth="raised">
+        <CardHeader>
+          <CardTitle className="font-display text-xl">Filter</CardTitle>
+          <CardSubtitle>Scope the queue to a single owner by user-id.</CardSubtitle>
+        </CardHeader>
+        <input
+          type="text"
+          value={ownerId}
+          onChange={(e) => setOwnerId(e.target.value)}
+          placeholder="Filter by owner user-id (cuid)"
+          className="w-full rounded-lg border border-gold-600/25 bg-surface px-3 py-2 text-sm text-surface-foreground outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/25"
+        />
+      </Card>
 
       {list.isLoading ? (
         <p className="text-sm text-muted">Loading…</p>
       ) : items.length === 0 ? (
-        <p className="rounded-md border border-muted/15 p-3 text-sm text-muted">
-          No media in scope.
-        </p>
+        <Card depth="flat" className="p-5">
+          <p className="text-sm text-muted">No media in scope.</p>
+        </Card>
       ) : (
-        <ul className="space-y-2">
+        <ul className="space-y-3">
           {items.map((m) => (
-            <li key={m.id} className="rounded-md border border-muted/15 bg-surface p-3 text-sm">
+            <li
+              key={m.id}
+              className="rounded-2xl border border-gold-600/12 bg-surface p-4 text-sm shadow-(--shadow-depth-1) transition hover:border-gold-600/25"
+            >
               <div className="flex gap-3">
                 <Thumbnail
                   src={m.thumbDownloadUrl ?? null}
@@ -91,16 +120,18 @@ export default function AdminMediaPage() {
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-semibold">
+                    <span className="flex items-center gap-2 font-display text-base font-semibold tracking-tight text-surface-foreground">
                       {m.kind} · {m.status}
                       {m.variants && m.variants.length > 0 ? (
-                        <span className="ml-2 text-[10px] font-normal text-muted">
-                          ({m.variants.length} variant{m.variants.length === 1 ? '' : 's'})
-                        </span>
+                        <Badge variant="gold">
+                          {m.variants.length} variant{m.variants.length === 1 ? '' : 's'}
+                        </Badge>
                       ) : null}
                     </span>
-                    <button
+                    <Button
                       type="button"
+                      variant="danger"
+                      size="sm"
                       disabled={removeMut.isPending}
                       onClick={() => {
                         if (
@@ -111,10 +142,9 @@ export default function AdminMediaPage() {
                           removeMut.mutate({ id: m.id });
                         }
                       }}
-                      className="rounded-md border border-rose-500 bg-rose-500 px-3 py-1 text-xs font-semibold text-white disabled:opacity-50"
                     >
-                      Takedown
-                    </button>
+                      <Trash2 aria-hidden className="mr-1.5 h-3.5 w-3.5" /> Takedown
+                    </Button>
                   </div>
                   <p className="mt-1 text-[11px] text-muted">
                     Owner <code>{m.ownerId.slice(0, 12)}…</code>
@@ -128,6 +158,6 @@ export default function AdminMediaPage() {
           ))}
         </ul>
       )}
-    </div>
+    </main>
   );
 }

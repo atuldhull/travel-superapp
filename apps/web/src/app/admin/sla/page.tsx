@@ -20,6 +20,7 @@
 
 import { useMemo } from 'react';
 import Link from 'next/link';
+import { ArrowLeft, Gauge } from 'lucide-react';
 import {
   useAdminAuditLogsControllerList,
   useAdminScamModerationControllerList,
@@ -147,13 +148,30 @@ export default function SlaDashboardPage() {
     scamQuery.isLoading || sosQuery.isLoading || appealsQuery.isLoading || auditQuery.isLoading;
 
   return (
-    <div className="space-y-6">
-      <header className="space-y-1">
-        <Link href="/admin" className="text-xs text-muted underline-offset-2 hover:underline">
-          ← Admin dashboard
-        </Link>
-        <h1 className="text-3xl font-bold tracking-tight">SLA dashboard</h1>
-        <p className="text-sm text-muted">
+    <main className="space-y-8">
+      <Link
+        href="/admin"
+        className="inline-flex items-center gap-1.5 text-sm text-muted underline-offset-4 transition hover:text-gold-600 hover:underline"
+      >
+        <ArrowLeft aria-hidden className="h-3.5 w-3.5" /> Admin dashboard
+      </Link>
+
+      {/* Cinematic royal header band — matches /trips + /stays. */}
+      <header
+        className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-8 shadow-(--shadow-depth-2) sm:px-10"
+        style={{ backgroundImage: 'var(--gradient-royal)' }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/20 blur-[110px]"
+        />
+        <p className="relative inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+          <Gauge aria-hidden className="h-3.5 w-3.5" /> Oncall metrics
+        </p>
+        <h1 className="relative mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+          SLA dashboard
+        </h1>
+        <p className="relative mt-2 max-w-lg text-sm text-white/65">
           Backlog + oldest-pending age + resolved-in-last-24h per moderation queue. Counts accurate;
           ages bounded by the first 50 rows per queue. Resolutions are derived from the audit log
           (last 200 rows).
@@ -174,7 +192,7 @@ export default function SlaDashboardPage() {
             ))}
       </ul>
 
-      <Card>
+      <Card depth="raised">
         <CardHeader>
           <CardTitle>Tone thresholds</CardTitle>
           <CardSubtitle>
@@ -184,7 +202,7 @@ export default function SlaDashboardPage() {
         </CardHeader>
         <dl className="grid gap-1 text-xs">
           <div className="flex items-center gap-2">
-            <Badge variant="brand">ok</Badge>
+            <Badge variant="success">ok</Badge>
             <span className="text-muted">oldest pending &lt; 24h</span>
           </div>
           <div className="flex items-center gap-2">
@@ -211,7 +229,7 @@ export default function SlaDashboardPage() {
           </div>
         </dl>
       </Card>
-    </div>
+    </main>
   );
 }
 
@@ -221,13 +239,13 @@ function SlaTile({ row }: { row: SlaRow }) {
     <Link
       href={row.href as never}
       className={
-        'block rounded-lg border p-4 shadow-sm transition hover:shadow-md focus:outline-none focus:ring-2 focus:ring-rose-400 ' +
+        'block rounded-2xl border p-4 shadow-(--shadow-depth-1) transition hover:-translate-y-0.5 hover:shadow-(--shadow-depth-2) focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500/40 ' +
         TONE[tone]
       }
     >
       <p className="text-xs uppercase tracking-wide opacity-80">{row.title}</p>
       <p className="mt-2 flex items-baseline gap-2">
-        <span className="text-3xl font-bold tabular-nums">
+        <span className="font-display text-3xl font-semibold tabular-nums">
           {row.backlog === undefined ? '—' : row.backlog}
         </span>
         <span className="text-xs opacity-80">backlog</span>
