@@ -8,7 +8,7 @@
  */
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { BookOpenText, Rss } from 'lucide-react';
+import { BookOpenText } from 'lucide-react';
 import { JOURNAL_ARTICLES } from '../../components/aether/journal/data';
 import { V2Photo } from '../../components/v2/photo';
 
@@ -45,25 +45,17 @@ export default function JournalIndexPage(): React.ReactElement {
           aria-hidden
           className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/20 blur-[110px]"
         />
-        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
-              <BookOpenText aria-hidden className="h-3.5 w-3.5" /> Stories from the road
-            </p>
-            <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-              The Journal
-            </h1>
-            <p className="mt-2 max-w-lg text-sm text-white/65">
-              Field notes, craft stories, and pilgrim trails — long-form travel writing worth the
-              read.
-            </p>
-          </div>
-          <a
-            href="/journal/feed.xml"
-            className="inline-flex w-fit items-center gap-1.5 rounded-full border border-white/20 px-4 py-2 text-sm font-medium text-white/85 transition hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-300"
-          >
-            <Rss aria-hidden className="h-4 w-4" /> Subscribe (RSS)
-          </a>
+        <div className="relative">
+          <p className="inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+            <BookOpenText aria-hidden className="h-3.5 w-3.5" /> Stories from the road
+          </p>
+          <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+            The Journal
+          </h1>
+          <p className="mt-2 max-w-lg text-sm text-white/65">
+            Field notes, craft stories, and pilgrim trails — long-form travel writing worth the
+            read.
+          </p>
         </div>
       </header>
 

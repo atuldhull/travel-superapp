@@ -51,44 +51,46 @@ const COLUMNS: ReadonlyArray<{ readonly heading: string; readonly links: readonl
 
 export function Footer() {
   return (
-    <footer role="contentinfo" className="mt-12 border-t border-muted/15 pt-6 text-xs text-muted">
-      <div className="grid gap-6 sm:grid-cols-3">
-        {COLUMNS.map((col) => (
-          <nav key={col.heading} aria-label={col.heading}>
-            <h2 className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted/80">
-              {col.heading}
-            </h2>
-            <ul className="space-y-1.5">
-              {col.links.map((l) =>
-                l.external ? (
-                  <li key={l.label}>
-                    <a
-                      href={l.href}
-                      target={l.href.startsWith('http') ? '_blank' : undefined}
-                      rel={l.href.startsWith('http') ? 'noopener noreferrer' : undefined}
-                      className="rounded underline-offset-2 hover:underline focus:outline-none focus:ring-2 focus:ring-brand"
-                    >
-                      {l.label}
-                    </a>
-                  </li>
-                ) : (
-                  <li key={l.label}>
-                    <Link
-                      href={l.href as never}
-                      className="rounded underline-offset-2 hover:underline focus:outline-none focus:ring-2 focus:ring-brand"
-                    >
-                      {l.label}
-                    </Link>
-                  </li>
-                ),
-              )}
-            </ul>
-          </nav>
-        ))}
+    <footer role="contentinfo" className="mt-12 border-t border-gold-600/12 text-xs text-muted">
+      <div className="mx-auto w-full max-w-3xl px-6 py-8">
+        <div className="grid gap-6 sm:grid-cols-3">
+          {COLUMNS.map((col) => (
+            <nav key={col.heading} aria-label={col.heading}>
+              <h2 className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted/80">
+                {col.heading}
+              </h2>
+              <ul className="space-y-1.5">
+                {col.links.map((l) =>
+                  l.external ? (
+                    <li key={l.label}>
+                      <a
+                        href={l.href}
+                        target={l.href.startsWith('http') ? '_blank' : undefined}
+                        rel={l.href.startsWith('http') ? 'noopener noreferrer' : undefined}
+                        className="rounded underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                      >
+                        {l.label}
+                      </a>
+                    </li>
+                  ) : (
+                    <li key={l.label}>
+                      <Link
+                        href={l.href as never}
+                        className="rounded underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                      >
+                        {l.label}
+                      </Link>
+                    </li>
+                  ),
+                )}
+              </ul>
+            </nav>
+          ))}
+        </div>
+        <p className="mt-8 border-t border-gold-600/12 pt-4 text-[11px]">
+          © {new Date().getFullYear()} TravelSuperApp. Built with care for travellers.
+        </p>
       </div>
-      <p className="mt-6 border-t border-muted/15 pt-4 text-[11px]">
-        © {new Date().getFullYear()} TravelSuperApp. Built with care for travellers.
-      </p>
     </footer>
   );
 }
