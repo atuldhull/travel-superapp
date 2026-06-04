@@ -142,7 +142,16 @@ export default function RegisterPage() {
             Faster — no password to remember. We&apos;ll create your account on first sign-in.
           </p>
           <GoogleSignInButton
-            onSignedIn={() => router.push('/onboarding' as never)}
+            onSignedIn={async () => {
+              // The button already populated auth-store; route via the
+              // shared decision (same path login uses) so a returning
+              // Google user lands on /home, a new one on /onboarding.
+              const { getAccessToken } = await import('../../lib/auth-store');
+              const token = getAccessToken();
+              if (!token) return;
+              const { destination } = await decidePostAuthDestination(token);
+              router.push(destination as never);
+            }}
             onError={(msg) => setErrorMsg(msg)}
           />
         </section>

@@ -288,15 +288,20 @@ export default function LoginPage() {
               }}
               onError={(msg) => setErrorMsg(msg)}
             />
-            <Button
-              type="button"
-              variant="outline"
-              disabled={oauthMutation.isPending}
-              onClick={signInWithMockProvider}
-              className="w-full justify-center"
-            >
-              {oauthMutation.isPending ? 'Signing in…' : 'Sign in with mock provider (dev only)'}
-            </Button>
+            {/* Dev-only fake provider — OFF by default so the login is
+                real. Opt in with NEXT_PUBLIC_ENABLE_MOCK_AUTH=1 when you
+                need a no-Google local shortcut. */}
+            {process.env.NEXT_PUBLIC_ENABLE_MOCK_AUTH === '1' ? (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={oauthMutation.isPending}
+                onClick={signInWithMockProvider}
+                className="w-full justify-center"
+              >
+                {oauthMutation.isPending ? 'Signing in…' : 'Sign in with mock provider (dev only)'}
+              </Button>
+            ) : null}
             <button
               type="button"
               onClick={() => {
