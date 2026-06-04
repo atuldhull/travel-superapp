@@ -6,11 +6,18 @@
  * "Export CSV" pulls up to 500 rows in a single fetch and triggers
  * a client-side download via Blob + URL.createObjectURL — same
  * pattern as the V.UX.32 export flow on /account/privacy.
+ *
+ * Restyled into the v2 ("Fusion") design language (royal/gold tokens,
+ * font-display, royal header band) — presentation only.
  */
 'use client';
 
 import { useState } from 'react';
+import { ChevronLeft, ChevronRight, Download, ShieldCheck } from 'lucide-react';
 import { useComplianceControllerTakedowns, type TakedownListResponseDto } from '@app/sdk';
+import { Badge } from '../../../components/ui/badge';
+import { Button } from '../../../components/ui/button';
+import { Card, CardHeader, CardSubtitle, CardTitle } from '../../../components/ui/card';
 
 interface TakedownRow {
   readonly id: string;
@@ -93,69 +100,93 @@ export default function ComplianceTakedownsPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <header className="flex items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">Takedown report</h1>
-          <p className="text-sm text-muted">
-            {total} entries · delete_media / delete_trip / archive_trip / dismiss_scam.
-          </p>
+    <main className="space-y-8">
+      {/* Cinematic royal header band — matches /trips + /stays. */}
+      <header
+        className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-8 shadow-(--shadow-depth-2) sm:px-10"
+        style={{ backgroundImage: 'var(--gradient-royal)' }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/20 blur-[110px]"
+        />
+        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+              <ShieldCheck aria-hidden className="h-3.5 w-3.5" /> Compliance
+            </p>
+            <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+              Takedown report
+            </h1>
+            <p className="mt-2 max-w-lg text-sm text-white/65">
+              {total} entries · delete_media / delete_trip / archive_trip / dismiss_scam.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="royal"
+            size="sm"
+            disabled={exporting || total === 0}
+            onClick={() => {
+              void exportCsv();
+            }}
+          >
+            <Download aria-hidden className="mr-1.5 h-4 w-4" />
+            {exporting ? 'Exporting…' : 'Export CSV (up to 500 rows)'}
+          </Button>
         </div>
-        <button
-          type="button"
-          disabled={exporting || total === 0}
-          onClick={() => {
-            void exportCsv();
-          }}
-          className="rounded-md border border-sky-600 bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm disabled:opacity-50"
-        >
-          {exporting ? 'Exporting…' : 'Export CSV (up to 500 rows)'}
-        </button>
       </header>
 
       {q.isLoading ? (
         <p className="text-sm text-muted">Loading…</p>
       ) : rows.length === 0 ? (
-        <p className="rounded-md border border-muted/15 p-3 text-sm text-muted">
-          No takedown actions on record.
-        </p>
+        <Card depth="flat" className="p-5">
+          <p className="text-sm text-muted">No takedown actions on record.</p>
+        </Card>
       ) : (
-        <div className="overflow-x-auto rounded-md border border-muted/15">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-muted/5 text-muted">
-              <tr>
-                <th className="px-2 py-2">When</th>
-                <th className="px-2 py-2">Actor</th>
-                <th className="px-2 py-2">Action</th>
-                <th className="px-2 py-2">Target</th>
-                <th className="px-2 py-2">Context</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.id} className="border-t border-muted/10">
-                  <td className="px-2 py-2 font-mono text-[10px]">
-                    {new Date(r.createdAt).toLocaleString()}
-                  </td>
-                  <td className="px-2 py-2 font-mono text-[10px]">
-                    {r.actorId ? `${r.actorId.slice(0, 12)}…` : <em>(deleted)</em>}
-                  </td>
-                  <td className="px-2 py-2">
-                    <span className="rounded bg-sky-500/10 px-2 py-0.5 font-semibold text-sky-700">
-                      {r.action}
-                    </span>
-                  </td>
-                  <td className="px-2 py-2 font-mono text-[10px]">
-                    {r.targetType}/{r.targetId.slice(0, 12)}…
-                  </td>
-                  <td className="px-2 py-2 font-mono text-[10px]">
-                    {r.context ? JSON.stringify(r.context) : '—'}
-                  </td>
+        <Card depth="raised">
+          <CardHeader>
+            <CardTitle className="font-display text-xl">Audit log</CardTitle>
+            <CardSubtitle>Read-only record of moderation actions on user content.</CardSubtitle>
+          </CardHeader>
+          <div className="overflow-x-auto rounded-2xl border border-gold-600/12">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-gold-500/8 text-muted">
+                <tr>
+                  <th className="px-3 py-2 font-medium">When</th>
+                  <th className="px-3 py-2 font-medium">Actor</th>
+                  <th className="px-3 py-2 font-medium">Action</th>
+                  <th className="px-3 py-2 font-medium">Target</th>
+                  <th className="px-3 py-2 font-medium">Context</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr
+                    key={r.id}
+                    className="border-t border-gold-600/12 transition hover:bg-gold-500/5"
+                  >
+                    <td className="px-3 py-2 font-mono text-[10px] text-surface-foreground">
+                      {new Date(r.createdAt).toLocaleString()}
+                    </td>
+                    <td className="px-3 py-2 font-mono text-[10px] text-muted">
+                      {r.actorId ? `${r.actorId.slice(0, 12)}…` : <em>(deleted)</em>}
+                    </td>
+                    <td className="px-3 py-2">
+                      <Badge variant="gold">{r.action}</Badge>
+                    </td>
+                    <td className="px-3 py-2 font-mono text-[10px] text-muted">
+                      {r.targetType}/{r.targetId.slice(0, 12)}…
+                    </td>
+                    <td className="px-3 py-2 font-mono text-[10px] text-muted">
+                      {r.context ? JSON.stringify(r.context) : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
       )}
 
       <div className="flex items-center justify-between text-xs">
@@ -163,24 +194,26 @@ export default function ComplianceTakedownsPage() {
           Page {page + 1} of {Math.max(1, Math.ceil(total / PAGE_SIZE))}
         </span>
         <div className="flex gap-2">
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             disabled={page === 0}
             onClick={() => setPage((p) => Math.max(0, p - 1))}
-            className="rounded-md border border-muted/15 px-3 py-1 disabled:opacity-50"
           >
-            ← Prev
-          </button>
-          <button
+            <ChevronLeft aria-hidden className="mr-1 h-3.5 w-3.5" /> Prev
+          </Button>
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             disabled={!hasNext}
             onClick={() => setPage((p) => p + 1)}
-            className="rounded-md border border-muted/15 px-3 py-1 disabled:opacity-50"
           >
-            Next →
-          </button>
+            Next <ChevronRight aria-hidden className="ml-1 h-3.5 w-3.5" />
+          </Button>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

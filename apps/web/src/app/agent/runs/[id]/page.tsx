@@ -125,12 +125,12 @@ export default function AgentRunPage() {
       </Link>
 
       <header
-        className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-10 shadow-(--shadow-depth-2) sm:px-10"
+        className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-8 shadow-(--shadow-depth-2) sm:px-10"
         style={{ backgroundImage: 'var(--gradient-royal)' }}
       >
         <div
           aria-hidden
-          className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-gold-500/20 blur-[110px]"
+          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/20 blur-[110px]"
         />
         <p className="relative inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
           <Compass aria-hidden className="h-3.5 w-3.5" /> Your companion
@@ -231,6 +231,7 @@ export default function AgentRunPage() {
                       <div className="mt-3 flex gap-2">
                         <Button
                           size="sm"
+                          variant="royal"
                           onClick={() => void decide(s.id, 'accept')}
                           disabled={busyId !== null}
                         >
@@ -238,7 +239,7 @@ export default function AgentRunPage() {
                         </Button>
                         <Button
                           size="sm"
-                          variant="secondary"
+                          variant="outline"
                           onClick={() => void decide(s.id, 'decline')}
                           disabled={busyId !== null}
                         >
