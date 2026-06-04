@@ -130,33 +130,42 @@ export default function TripPhrasesPage() {
   };
 
   return (
-    <main className="space-y-6">
-      <p>
-        <Link
-          href={`/trips/${tripId}` as never}
-          className="inline-flex items-center gap-1 text-sm text-muted hover:underline"
-        >
-          <ArrowLeft aria-hidden className="h-3.5 w-3.5" /> Back to trip
-        </Link>
-      </p>
+    <main className="space-y-8">
+      <Link
+        href={`/trips/${tripId}` as never}
+        className="inline-flex items-center gap-1.5 text-sm text-muted transition hover:text-gold-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      >
+        <ArrowLeft aria-hidden className="h-4 w-4" /> Back to trip
+      </Link>
 
-      <header className="space-y-1">
-        <h1 className="inline-flex items-center gap-2 font-display text-3xl text-surface-foreground">
-          <Languages aria-hidden className="h-6 w-6 text-gold-600" /> Survival phrases
+      {/* Cinematic royal header band — matches /trips + /stays. */}
+      <header
+        className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-8 shadow-(--shadow-depth-2) sm:px-10"
+        style={{ backgroundImage: 'var(--gradient-royal)' }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/20 blur-[110px]"
+        />
+        <p className="relative inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+          <Languages aria-hidden className="h-3.5 w-3.5" /> Works offline
+        </p>
+        <h1 className="relative mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+          Survival phrases
         </h1>
-        <p className="text-sm text-muted">
+        <p className="relative mt-2 max-w-lg text-sm text-white/65">
           Big, tappable phrases and emergency numbers — saved on this device, so they work with no
           signal.
         </p>
       </header>
 
       {primers === null ? (
-        <Card className="p-5">
+        <Card depth="raised">
           <Skeleton className="h-6 w-1/2" />
           <Skeleton className="mt-3 h-20 w-full" />
         </Card>
       ) : primers.length === 0 ? (
-        <Card className="p-5">
+        <Card depth="raised">
           <CardHeader>
             <CardTitle>No phrases saved yet</CardTitle>
             <CardSubtitle>
@@ -175,12 +184,12 @@ export default function TripPhrasesPage() {
       ) : (
         <>
           {primers.length > 1 ? (
-            <Card className="p-4">
+            <Card depth="raised">
               <Field label="Country">
                 <select
                   value={selectedCc}
                   onChange={(e) => setSelectedCc(e.target.value)}
-                  className="w-full rounded-md border border-muted/30 bg-transparent px-3 py-2 text-sm"
+                  className="w-full rounded-xl border border-gold-600/25 bg-surface px-3.5 py-2.5 text-sm text-surface-foreground outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/25"
                 >
                   {primers.map((p) => (
                     <option key={p.cc} value={p.cc}>

@@ -52,6 +52,7 @@ import {
   type TripDto,
 } from '@app/sdk';
 import { Card, CardHeader, CardSubtitle, CardTitle } from '../../../../components/ui/card';
+import { Badge } from '../../../../components/ui/badge';
 import { Button } from '../../../../components/ui/button';
 import { Skeleton } from '../../../../components/ui/skeleton';
 import { DestinationImage } from '../../../../components/ui/destination-image';
@@ -311,9 +312,14 @@ export default function TripRecapPage() {
   if (tripQuery.isError && !renderingFromCache && !loading) {
     return (
       <main className="space-y-3">
-        <p className="text-sm text-red-600 dark:text-red-400">Couldn&apos;t load this trip.</p>
-        <Link href="/trips" className="text-sm text-gold-600 underline-offset-4 hover:underline">
-          ← Back to all trips
+        <p className="rounded-2xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
+          Couldn&apos;t load this trip.
+        </p>
+        <Link
+          href="/trips"
+          className="inline-flex items-center gap-1.5 text-sm text-muted underline-offset-4 transition hover:text-gold-600 hover:underline"
+        >
+          <ArrowLeft aria-hidden className="h-3.5 w-3.5" /> Back to all trips
         </Link>
       </main>
     );
@@ -332,7 +338,7 @@ export default function TripRecapPage() {
       <p>
         <Link
           href={`/trips/${tripId}` as never}
-          className="inline-flex items-center gap-1 text-sm text-muted hover:underline"
+          className="inline-flex items-center gap-1.5 text-sm text-muted underline-offset-4 transition hover:text-gold-600 hover:underline"
         >
           <ArrowLeft aria-hidden className="h-3.5 w-3.5" /> Back to trip
         </Link>
@@ -528,14 +534,14 @@ export default function TripRecapPage() {
                       <CardSubtitle>
                         {fmtLongDate(e.entryDate.slice(0, 10))}
                         {e.mood ? (
-                          <span className="ml-2 inline-flex items-center gap-1 rounded-full border border-gold-600/20 bg-gold-500/8 px-2 py-0.5 text-xs">
+                          <Badge variant="gold" className="ml-2 gap-1">
                             <Smile aria-hidden className="h-3 w-3" /> {e.mood}
-                          </span>
+                          </Badge>
                         ) : null}
                         {e.aiAssisted ? (
-                          <span className="ml-1 inline-flex items-center gap-1 rounded-full border border-brand/30 bg-brand/10 px-2 py-0.5 text-xs">
+                          <Badge variant="gold" className="ml-1 gap-1">
                             <Sparkles aria-hidden className="h-3 w-3" /> AI-assisted
-                          </span>
+                          </Badge>
                         ) : null}
                       </CardSubtitle>
                     </CardHeader>

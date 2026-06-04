@@ -23,6 +23,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft } from 'lucide-react';
 import {
   DndContext,
   type DragEndEvent,
@@ -200,9 +201,8 @@ export default function MemoryBookEditPage() {
   if (isLoading) {
     return (
       <main className="space-y-4">
-        <Skeleton className="h-8 w-2/3" />
-        <Skeleton className="h-4 w-1/3" />
-        <Skeleton className="h-4 w-1/2" />
+        <Skeleton className="h-40 w-full rounded-3xl" />
+        <Skeleton className="h-64 rounded-2xl" count={2} />
       </main>
     );
   }
@@ -210,12 +210,15 @@ export default function MemoryBookEditPage() {
     const e = error as ApiError;
     return (
       <main className="space-y-4">
-        <p className="rounded-md border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
+        <p className="rounded-2xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
           Couldn't load memory book ({e.code ?? `HTTP_${e.status ?? '???'}`}). {e.message ?? ''}
         </p>
         <p>
-          <Link href="/memory-books" className="text-sm text-muted hover:underline">
-            ← Back to your books
+          <Link
+            href="/memory-books"
+            className="inline-flex items-center gap-1.5 text-sm text-muted transition hover:text-gold-600"
+          >
+            <ArrowLeft aria-hidden className="h-3.5 w-3.5" /> Back to your books
           </Link>
         </p>
       </main>

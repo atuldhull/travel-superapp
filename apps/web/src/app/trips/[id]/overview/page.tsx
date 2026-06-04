@@ -20,6 +20,7 @@
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import {
   useTripControllerOverview,
   type OverviewSectionFailureDto,
@@ -117,11 +118,11 @@ export default function TripOverviewPage() {
   }
   if (isLoading) {
     return (
-      <main className="space-y-4">
-        <Skeleton className="h-8 w-2/3" />
+      <main className="space-y-8">
+        <Skeleton className="h-44 w-full rounded-3xl" />
         <div className="grid gap-4 sm:grid-cols-2">
           {Array.from({ length: 7 }).map((_, i) => (
-            <Card key={i}>
+            <Card key={i} depth="raised">
               <Skeleton className="h-5 w-1/2" />
               <Skeleton className="mt-2 h-4 w-2/3" />
             </Card>
@@ -137,12 +138,15 @@ export default function TripOverviewPage() {
     const e = error as ApiError;
     return (
       <main className="space-y-4">
-        <p className="rounded-md border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
+        <p className="rounded-2xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
           Couldn't load overview ({e.code ?? `HTTP_${e.status ?? '???'}`}). {e.message ?? ''}
         </p>
         <p>
-          <Link href={`/trips/${id}` as never} className="text-sm text-muted hover:underline">
-            ← Back to trip
+          <Link
+            href={`/trips/${id}` as never}
+            className="inline-flex items-center gap-1.5 text-sm text-muted underline-offset-4 transition hover:text-gold-600 hover:underline"
+          >
+            <ArrowLeft aria-hidden className="h-3.5 w-3.5" /> Back to trip
           </Link>
         </p>
       </main>
