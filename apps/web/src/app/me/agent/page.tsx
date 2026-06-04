@@ -26,6 +26,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, BadgeCheck, LayoutDashboard, Star, UserCircle } from 'lucide-react';
 import {
   getAgentSelfControllerMeQueryKey,
   useAgentSelfControllerDashboard,
@@ -51,10 +52,10 @@ interface ApiError extends Error {
 
 type KycStatus = 'pending' | 'verified' | 'rejected';
 
-const KYC_TONE: Record<KycStatus, string> = {
-  pending: 'border-amber-500/40 bg-amber-500/5 text-amber-700 dark:text-amber-300',
-  verified: 'border-emerald-500/40 bg-emerald-500/5 text-emerald-700 dark:text-emerald-300',
-  rejected: 'border-red-500/40 bg-red-500/5 text-red-600 dark:text-red-400',
+const KYC_VARIANT: Record<KycStatus, 'gold' | 'success' | 'danger'> = {
+  pending: 'gold',
+  verified: 'success',
+  rejected: 'danger',
 };
 
 export default function AgentSelfPage() {
@@ -76,21 +77,21 @@ export default function AgentSelfPage() {
   if (!bootComplete)
     return (
       <main>
-        <p className="text-muted">Restoring session…</p>
+        <p className="text-sm text-muted">Restoring session…</p>
       </main>
     );
   if (token === null)
     return (
       <main>
-        <p className="text-muted">Redirecting to sign in…</p>
+        <p className="text-sm text-muted">Redirecting to sign in…</p>
       </main>
     );
 
   if (meQuery.isLoading) {
     return (
-      <main className="space-y-4">
-        <Skeleton className="h-8 w-2/3" />
-        <Skeleton className="h-32" />
+      <main className="space-y-8">
+        <Skeleton className="h-40 rounded-3xl" />
+        <Skeleton className="h-32 rounded-2xl" />
       </main>
     );
   }
@@ -102,7 +103,7 @@ export default function AgentSelfPage() {
   if (meQuery.isError && (meQuery.error as ApiError)?.status !== 404) {
     return (
       <main className="space-y-4">
-        <p className="rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-sm text-red-600 dark:text-red-400">
+        <p className="rounded-2xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
           Couldn't load your agent profile —{' '}
           {(meQuery.error as ApiError)?.code ??
             `HTTP_${(meQuery.error as ApiError)?.status ?? '???'}`}
@@ -114,18 +115,39 @@ export default function AgentSelfPage() {
 
   if (profile === null) {
     return (
-      <main className="space-y-6">
-        <header className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">Agent profile</h1>
-          <p className="text-sm text-muted">
-            You don't have an agent profile yet. Agents help travellers plan complex trips and earn
-            commission on bookings.
+      <main className="space-y-8">
+        <Link
+          href="/account"
+          className="inline-flex items-center gap-1.5 text-sm text-muted underline-offset-4 transition hover:text-gold-600 hover:underline"
+        >
+          <ArrowLeft aria-hidden className="h-3.5 w-3.5" /> Account
+        </Link>
+        <header
+          className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-8 shadow-(--shadow-depth-2) sm:px-10"
+          style={{ backgroundImage: 'var(--gradient-royal)' }}
+        >
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/20 blur-[110px]"
+          />
+          <p className="relative inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+            <UserCircle aria-hidden className="h-3.5 w-3.5" /> Become an agent
+          </p>
+          <h1 className="relative mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+            Agent profile
+          </h1>
+          <p className="relative mt-2 max-w-lg text-sm text-white/65">
+            You don&apos;t have an agent profile yet. Agents help travellers plan complex trips and
+            earn commission on bookings.
           </p>
         </header>
-        <Card>
+        <Card depth="raised">
           <p className="text-sm text-muted">
             Agent onboarding is currently operator-owned. Email{' '}
-            <a href="mailto:agents@travel.local" className="text-brand hover:underline">
+            <a
+              href="mailto:agents@travel.local"
+              className="font-medium text-gold-700 underline-offset-4 transition hover:text-gold-600 hover:underline dark:text-gold-300"
+            >
               agents@travel.local
             </a>{' '}
             to start the KYC process. Approval lands in the admin queue (E5).
@@ -136,24 +158,41 @@ export default function AgentSelfPage() {
   }
 
   return (
-    <main className="space-y-6">
-      <header className="space-y-1">
-        <Link href="/account" className="text-xs text-muted underline-offset-2 hover:underline">
-          ← Account
-        </Link>
-        <h1 className="text-3xl font-bold tracking-tight">Agent profile</h1>
-        <p className="text-sm text-muted">
-          Manage your public profile + see live booking and review activity.
+    <main className="space-y-8">
+      <Link
+        href="/account"
+        className="inline-flex items-center gap-1.5 text-sm text-muted underline-offset-4 transition hover:text-gold-600 hover:underline"
+      >
+        <ArrowLeft aria-hidden className="h-3.5 w-3.5" /> Account
+      </Link>
+      <header
+        className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-8 shadow-(--shadow-depth-2) sm:px-10"
+        style={{ backgroundImage: 'var(--gradient-royal)' }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/20 blur-[110px]"
+        />
+        <p className="relative inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+          <UserCircle aria-hidden className="h-3.5 w-3.5" /> Agent workspace
+        </p>
+        <h1 className="relative mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+          Agent profile
+        </h1>
+        <p className="relative mt-2 max-w-lg text-sm text-white/65">
+          Manage your public profile and see live booking and review activity.
         </p>
       </header>
 
       <ProfileSection profile={profile} />
 
-      <Card>
+      <Card depth="raised">
         <CardHeader>
           <div className="flex items-start justify-between gap-2">
             <div>
-              <CardTitle>Dashboard</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <LayoutDashboard aria-hidden className="h-5 w-5 text-gold-600" /> Dashboard
+              </CardTitle>
               <CardSubtitle>Last {windowDays} days.</CardSubtitle>
             </div>
             <label className="text-xs text-muted">
@@ -161,7 +200,7 @@ export default function AgentSelfPage() {
               <select
                 value={windowDays}
                 onChange={(e) => setWindowDays(Number(e.target.value))}
-                className="ml-2 rounded-md border border-muted/30 bg-surface px-2 py-1 text-xs"
+                className="ml-2 rounded-lg border border-gold-600/25 bg-surface px-3 py-2 text-sm text-surface-foreground outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/25"
               >
                 <option value={7}>7 days</option>
                 <option value={30}>30 days</option>
@@ -228,22 +267,22 @@ function ProfileSection({ profile }: { profile: AgentProfileDto }) {
   const verifiedAt = profile.verifiedAt as unknown as string | null;
 
   return (
-    <Card>
+    <Card depth="raised">
       <CardHeader>
         <div className="flex items-start justify-between gap-2">
           <div>
             <CardTitle>{profile.displayName}</CardTitle>
-            <CardSubtitle>
-              <span
-                className={
-                  'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ' +
-                  KYC_TONE[kycStatus]
-                }
-              >
-                KYC {kycStatus}
+            <CardSubtitle className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+              <Badge variant={KYC_VARIANT[kycStatus]}>
+                <BadgeCheck aria-hidden className="mr-1 h-3 w-3" /> KYC {kycStatus}
+              </Badge>
+              {verifiedAt ? (
+                <span>· verified {new Date(verifiedAt).toLocaleDateString()}</span>
+              ) : null}
+              <span className="inline-flex items-center gap-0.5">
+                · <Star aria-hidden className="h-3.5 w-3.5 fill-gold-500 text-gold-500" />
+                {profile.ratingAverage.toFixed(1)} ({profile.ratingCount})
               </span>
-              {verifiedAt ? ` · verified ${new Date(verifiedAt).toLocaleDateString()}` : ''} · ★{' '}
-              {profile.ratingAverage.toFixed(1)} ({profile.ratingCount})
             </CardSubtitle>
           </div>
           {!editing ? (
@@ -255,7 +294,7 @@ function ProfileSection({ profile }: { profile: AgentProfileDto }) {
       </CardHeader>
       {editing ? (
         <form onSubmit={submit} className="space-y-3">
-          <label className="block text-xs text-muted">
+          <label className="block space-y-1 text-sm font-medium">
             Display name
             <input
               type="text"
@@ -263,44 +302,44 @@ function ProfileSection({ profile }: { profile: AgentProfileDto }) {
               onChange={(e) => setDisplayName(e.target.value)}
               required
               maxLength={120}
-              className="mt-1 w-full rounded-md border border-muted/30 bg-surface px-2 py-1 text-sm"
+              className="rounded-lg border border-gold-600/25 bg-surface px-3 py-2 text-sm text-surface-foreground outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/25 mt-1 block w-full"
             />
           </label>
-          <label className="block text-xs text-muted">
+          <label className="block space-y-1 text-sm font-medium">
             Bio (≤2000 chars; blank to clear)
             <textarea
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               maxLength={2000}
               rows={4}
-              className="mt-1 w-full rounded-md border border-muted/30 bg-surface px-2 py-1 text-sm"
+              className="rounded-lg border border-gold-600/25 bg-surface px-3 py-2 text-sm text-surface-foreground outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/25 mt-1 block w-full"
             />
           </label>
-          <label className="block text-xs text-muted">
+          <label className="block space-y-1 text-sm font-medium">
             Languages (CSV — e.g. en, fr, ja)
             <input
               type="text"
               value={languages}
               onChange={(e) => setLanguages(e.target.value)}
-              className="mt-1 w-full rounded-md border border-muted/30 bg-surface px-2 py-1 text-sm"
+              className="rounded-lg border border-gold-600/25 bg-surface px-3 py-2 text-sm text-surface-foreground outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/25 mt-1 block w-full"
             />
           </label>
-          <label className="block text-xs text-muted">
+          <label className="block space-y-1 text-sm font-medium">
             Regions (CSV — e.g. southeast-asia, alps, west-africa)
             <input
               type="text"
               value={regions}
               onChange={(e) => setRegions(e.target.value)}
-              className="mt-1 w-full rounded-md border border-muted/30 bg-surface px-2 py-1 text-sm"
+              className="rounded-lg border border-gold-600/25 bg-surface px-3 py-2 text-sm text-surface-foreground outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/25 mt-1 block w-full"
             />
           </label>
           {errorMsg ? (
-            <p className="rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-sm text-red-600 dark:text-red-400">
+            <p className="rounded-2xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
               {errorMsg}
             </p>
           ) : null}
           <div className="flex gap-2">
-            <Button type="submit" size="sm" disabled={update.isPending}>
+            <Button type="submit" variant="royal" size="sm" disabled={update.isPending}>
               {update.isPending ? 'Saving…' : 'Save'}
             </Button>
             <Button
@@ -349,7 +388,7 @@ function DashboardBody({ query }: { query: ReturnType<typeof useAgentSelfControl
   if (query.isLoading) return <Skeleton className="h-20" count={3} />;
   if (query.isError) {
     return (
-      <p className="text-sm text-red-600 dark:text-red-400">
+      <p className="rounded-2xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
         Couldn't load dashboard — {(query.error as ApiError)?.code ?? 'HTTP_???'}.
       </p>
     );
@@ -368,13 +407,13 @@ function DashboardBody({ query }: { query: ReturnType<typeof useAgentSelfControl
 function EarningsRow({ grossUsd, bookingsCount }: { grossUsd: string; bookingsCount: number }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      <article className="rounded-md border border-muted/15 bg-surface p-3">
+      <article className="rounded-2xl border border-gold-600/12 bg-surface p-4 shadow-(--shadow-depth-1) transition hover:border-gold-600/25">
         <p className="text-xs text-muted">Gross earnings (USD)</p>
-        <p className="mt-1 text-2xl font-bold">${grossUsd}</p>
+        <p className="mt-1 font-display text-2xl font-semibold tracking-tight">${grossUsd}</p>
       </article>
-      <article className="rounded-md border border-muted/15 bg-surface p-3">
+      <article className="rounded-2xl border border-gold-600/12 bg-surface p-4 shadow-(--shadow-depth-1) transition hover:border-gold-600/25">
         <p className="text-xs text-muted">Bookings</p>
-        <p className="mt-1 text-2xl font-bold">{bookingsCount}</p>
+        <p className="mt-1 font-display text-2xl font-semibold tracking-tight">{bookingsCount}</p>
       </article>
     </div>
   );
@@ -386,17 +425,17 @@ function BookingsList({ bookings }: { bookings: readonly AgentBookingSummaryDto[
   }
   return (
     <div>
-      <h3 className="mb-1 text-sm font-semibold">Bookings</h3>
-      <ul className="space-y-1">
+      <h3 className="mb-2 font-display text-sm font-semibold tracking-tight">Bookings</h3>
+      <ul className="space-y-2">
         {bookings.slice(0, 10).map((b) => (
           <li
             key={b.id}
-            className="grid grid-cols-[auto_auto_1fr_auto] items-center gap-2 rounded-md border border-muted/10 bg-surface px-3 py-1.5 text-xs"
+            className="grid grid-cols-[auto_auto_1fr_auto] items-center gap-2 rounded-2xl border border-gold-600/12 bg-surface px-4 py-3 text-xs shadow-(--shadow-depth-1) transition hover:border-gold-600/25"
           >
             <span className="font-mono text-[10px] text-muted">{b.id.slice(0, 8)}…</span>
-            <Badge variant="neutral">{b.state}</Badge>
+            <Badge variant="gold">{b.state}</Badge>
             <span className="text-muted">held {new Date(b.heldAt).toLocaleDateString()}</span>
-            <span className="font-medium">${b.amountUsd}</span>
+            <span className="font-display font-semibold">${b.amountUsd}</span>
           </li>
         ))}
       </ul>
@@ -410,8 +449,8 @@ function ReviewsList({ reviews }: { reviews: readonly AgentReviewWithResponseDto
   }
   return (
     <div>
-      <h3 className="mb-1 text-sm font-semibold">Recent reviews</h3>
-      <ul className="space-y-1">
+      <h3 className="mb-2 font-display text-sm font-semibold tracking-tight">Recent reviews</h3>
+      <ul className="space-y-2">
         {reviews.slice(0, 5).map((r) => {
           const rev = (
             r as unknown as {
@@ -421,10 +460,10 @@ function ReviewsList({ reviews }: { reviews: readonly AgentReviewWithResponseDto
           return (
             <li
               key={rev.id}
-              className="rounded-md border border-muted/10 bg-surface px-3 py-1.5 text-xs"
+              className="rounded-2xl border border-gold-600/12 bg-surface px-4 py-3 text-xs shadow-(--shadow-depth-1) transition hover:border-gold-600/25"
             >
               <p>
-                <span className="text-amber-500">{'★'.repeat(rev.rating)}</span>{' '}
+                <span className="text-gold-500">{'★'.repeat(rev.rating)}</span>{' '}
                 <span className="text-muted">{new Date(rev.createdAt).toLocaleDateString()}</span>
               </p>
               <p className="mt-1 line-clamp-2">{rev.body}</p>

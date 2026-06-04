@@ -17,6 +17,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { ArrowLeft, MapPin, ShieldAlert } from 'lucide-react';
 import { useSafetyControllerReport, type ReportScamRequestDto } from '@app/sdk';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
@@ -34,8 +35,10 @@ const SEVERITY_LABELS: Record<Severity, string> = {
   critical: 'Critical (life-threatening)',
 };
 
+// Traffic-light severity ramp stays semantic (medium→amber, high→orange,
+// critical→red); only the neutral `low` bucket adopts gold tokens.
 const SEVERITY_TONE: Record<Severity, string> = {
-  low: 'border-muted/30 text-muted',
+  low: 'border-gold-600/25 bg-gold-500/5 text-surface-foreground',
   medium: 'border-amber-500/40 bg-amber-500/5 text-amber-700 dark:text-amber-300',
   high: 'border-orange-500/40 bg-orange-500/10 text-orange-700 dark:text-orange-300',
   critical: 'border-red-500/40 bg-red-500/10 text-red-600 dark:text-red-400',
@@ -163,18 +166,19 @@ export default function ScamReportPage() {
 
   if (submitted) {
     return (
-      <main className="space-y-6">
-        <Card>
+      <main className="space-y-8">
+        <Card depth="raised">
           <CardHeader>
-            <CardTitle>Report submitted 🙏</CardTitle>
+            <CardTitle className="font-display">Report submitted 🙏</CardTitle>
             <CardSubtitle>
               Your report is queued for admin moderation. Verified reports surface on the public
               scam map; dismissed reports are deleted.
             </CardSubtitle>
           </CardHeader>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <Button
               type="button"
+              variant="royal"
               onClick={() => {
                 setSubmitted(false);
                 setDescription('');
@@ -185,7 +189,7 @@ export default function ScamReportPage() {
             </Button>
             <Link
               href="/trips"
-              className="inline-flex items-center rounded-md border border-muted/20 bg-surface px-4 py-1.5 text-sm font-semibold hover:bg-muted/5"
+              className="inline-flex items-center gap-1.5 rounded-full border border-gold-600/30 px-5 py-2.5 text-sm font-semibold text-surface-foreground transition hover:bg-gold-500/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             >
               Back to trips
             </Link>
@@ -196,19 +200,39 @@ export default function ScamReportPage() {
   }
 
   return (
-    <main className="space-y-6">
-      <header className="space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight">Report a scam</h1>
-        <p className="text-sm text-muted">
+    <main className="space-y-8">
+      <Link
+        href="/trips"
+        className="inline-flex items-center gap-1.5 text-sm text-muted underline-offset-4 transition hover:text-gold-600 hover:underline"
+      >
+        <ArrowLeft aria-hidden className="h-4 w-4" /> Back to trips
+      </Link>
+
+      {/* Cinematic royal header band — matches /trips + /stays + /account. */}
+      <header
+        className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-8 shadow-(--shadow-depth-2) sm:px-10"
+        style={{ backgroundImage: 'var(--gradient-royal)' }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/20 blur-[110px]"
+        />
+        <p className="relative inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+          <ShieldAlert aria-hidden className="h-3.5 w-3.5" /> Keep travellers safe
+        </p>
+        <h1 className="relative mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+          Report a scam
+        </h1>
+        <p className="relative mt-2 max-w-lg text-sm text-white/65">
           Help fellow travellers. Reports go to admin moderation; verified ones surface on the
           public scam map. Honest reports build the network — empty or hostile reports get
           dismissed.
         </p>
       </header>
 
-      <Card>
+      <Card depth="raised">
         <CardHeader>
-          <CardTitle>What happened?</CardTitle>
+          <CardTitle className="font-display">What happened?</CardTitle>
           <CardSubtitle>
             Pick the category that best fits, set the severity honestly, describe the scam.
           </CardSubtitle>
@@ -218,7 +242,7 @@ export default function ScamReportPage() {
             <p className="mb-1 text-sm font-medium">Location</p>
             <div className="flex flex-wrap items-center gap-2">
               <Button type="button" variant="outline" size="sm" onClick={useMyLocation}>
-                📍 Use my location
+                <MapPin aria-hidden className="mr-1.5 h-3.5 w-3.5" /> Use my location
               </Button>
               <input
                 type="text"
@@ -228,7 +252,7 @@ export default function ScamReportPage() {
                   setCenter(null);
                 }}
                 placeholder="lat, lng"
-                className="rounded-md border border-muted/30 bg-surface px-2 py-1 font-mono text-xs"
+                className="rounded-lg border border-gold-600/25 bg-surface px-3 py-2 font-mono text-xs text-surface-foreground outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/25"
               />
             </div>
           </div>
@@ -245,10 +269,10 @@ export default function ScamReportPage() {
                     onClick={() => setCategory(c)}
                     aria-pressed={active}
                     className={
-                      'rounded-md border px-2 py-1 text-xs font-medium transition ' +
+                      'rounded-full border px-3 py-1 text-xs font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ' +
                       (active
                         ? 'border-gold-600/40 bg-gold-500/15 text-gold-700 dark:text-gold-300'
-                        : 'border-muted/30 text-muted hover:bg-muted/5')
+                        : 'border-gold-600/25 text-muted hover:border-gold-600/40 hover:bg-gold-500/10')
                     }
                   >
                     {c}
@@ -262,7 +286,7 @@ export default function ScamReportPage() {
               onChange={(e) => setCategory(e.target.value)}
               placeholder="…or type a custom category"
               maxLength={64}
-              className="mt-2 w-full max-w-sm rounded-md border border-muted/30 bg-surface px-2 py-1 text-xs"
+              className="mt-2 w-full max-w-sm rounded-lg border border-gold-600/25 bg-surface px-3 py-2 text-xs text-surface-foreground outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/25"
             />
           </div>
 
@@ -278,15 +302,15 @@ export default function ScamReportPage() {
                     onClick={() => setSeverity(s)}
                     aria-pressed={active}
                     className={
-                      'rounded-md border px-3 py-2 text-left text-sm font-medium transition ' +
+                      'rounded-2xl border px-3 py-2 text-left text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ' +
                       (active
-                        ? SEVERITY_TONE[s] + ' shadow-sm'
-                        : 'border-muted/30 text-muted hover:bg-muted/5')
+                        ? SEVERITY_TONE[s] + ' shadow-(--shadow-depth-1)'
+                        : 'border-gold-600/25 text-muted hover:border-gold-600/40 hover:bg-gold-500/10')
                     }
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="capitalize">{s}</span>
-                      {active ? <Badge variant="brand">selected</Badge> : null}
+                      {active ? <Badge variant="gold">selected</Badge> : null}
                     </div>
                     <p className="mt-0.5 text-[11px] font-normal text-muted">
                       {SEVERITY_LABELS[s]}
@@ -310,7 +334,7 @@ export default function ScamReportPage() {
               maxLength={4000}
               required
               placeholder="Be specific: which street, time of day, what they did, how you got out, costs incurred."
-              className="mt-1 w-full rounded-md border border-muted/30 bg-surface px-3 py-2 text-sm focus:border-gold-600/40 focus:outline-none focus:ring-1 focus:ring-gold-500/40"
+              className="mt-1 w-full rounded-lg border border-gold-600/25 bg-surface px-3 py-2 text-sm text-surface-foreground outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/25"
             />
             <p className="mt-1 text-xs text-muted">
               {description.trim().length} / 4000 · minimum 20
@@ -326,7 +350,7 @@ export default function ScamReportPage() {
               value={evidenceUrlsText}
               onChange={(e) => setEvidenceUrlsText(e.target.value)}
               rows={3}
-              className="mt-1 w-full rounded-md border border-muted/30 bg-surface px-3 py-2 font-mono text-xs"
+              className="mt-1 w-full rounded-lg border border-gold-600/25 bg-surface px-3 py-2 font-mono text-xs text-surface-foreground outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/25"
               placeholder="https://…"
             />
             <p className="mt-1 text-xs text-muted">
@@ -336,18 +360,18 @@ export default function ScamReportPage() {
           </div>
 
           {errorMsg ? (
-            <p className="rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-sm text-red-600 dark:text-red-400">
+            <p className="rounded-2xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
               {errorMsg}
             </p>
           ) : null}
 
-          <div className="flex gap-3">
-            <Button type="submit" disabled={submit.isPending}>
+          <div className="flex flex-wrap gap-3">
+            <Button type="submit" variant="royal" disabled={submit.isPending}>
               {submit.isPending ? 'Submitting…' : 'Submit report'}
             </Button>
             <Link
               href="/trips"
-              className="inline-flex items-center rounded-md border border-muted/20 bg-surface px-4 py-1.5 text-sm font-semibold hover:bg-muted/5"
+              className="inline-flex items-center gap-1.5 rounded-full border border-gold-600/30 px-5 py-2.5 text-sm font-semibold text-surface-foreground transition hover:bg-gold-500/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             >
               Cancel
             </Link>

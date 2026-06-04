@@ -13,8 +13,10 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { ArrowLeft, KeyRound } from 'lucide-react';
 import { useAuthControllerPasswordResetRequest } from '@app/sdk';
 import { Button } from '../../../components/ui/button';
+import { Card, CardHeader, CardSubtitle, CardTitle } from '../../../components/ui/card';
 import { Field } from '../../../components/ui/input';
 import { announce } from '../../../lib/announce';
 
@@ -43,15 +45,37 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main className="space-y-6">
-      <p>
-        <Link href="/login" className="text-sm text-muted hover:underline">
-          ← Back to sign-in
-        </Link>
-      </p>
-      <h1 className="text-3xl font-bold tracking-tight">Trouble signing in?</h1>
+    <main className="space-y-8">
+      <Link
+        href="/login"
+        className="inline-flex items-center gap-1.5 text-sm text-muted transition hover:text-gold-600"
+      >
+        <ArrowLeft aria-hidden className="h-4 w-4" />
+        Back to sign-in
+      </Link>
+
+      {/* Cinematic royal header band — matches /home + /trips. */}
+      <header
+        className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-8 shadow-(--shadow-depth-2) sm:px-10"
+        style={{ backgroundImage: 'var(--gradient-royal)' }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/20 blur-[110px]"
+        />
+        <p className="relative inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+          <KeyRound aria-hidden className="h-3.5 w-3.5" /> Account recovery
+        </p>
+        <h1 className="relative mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+          Trouble signing in?
+        </h1>
+        <p className="relative mt-2 max-w-lg text-sm text-white/65">
+          Reset your password in a couple of taps — we&apos;ll email you a one-time link.
+        </p>
+      </header>
+
       {sent ? (
-        <div className="space-y-3 rounded-md border border-emerald-500/30 bg-emerald-500/5 p-4 text-sm">
+        <div className="space-y-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4 text-sm shadow-(--shadow-depth-1)">
           <p>
             If the address is registered, a password-reset link is on its way. The link expires in
             15 minutes and can only be used once.
@@ -61,7 +85,7 @@ export default function ForgotPasswordPage() {
             <button
               type="button"
               onClick={() => setSent(false)}
-              className="text-brand underline-offset-2 hover:underline"
+              className="text-gold-600 underline-offset-2 hover:underline"
             >
               try again
             </button>
@@ -69,34 +93,40 @@ export default function ForgotPasswordPage() {
           </p>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <p className="text-sm text-muted">
-            Enter the email you signed up with. We&apos;ll send a link to set a new password.
-          </p>
-          <Field
-            label="Email"
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          {errorMsg ? (
-            <p className="rounded-md border border-danger/30 bg-danger/5 px-4 py-2 text-sm text-danger">
-              {errorMsg}
-            </p>
-          ) : null}
-          <Button type="submit" disabled={request.isPending}>
-            {request.isPending ? 'Sending…' : 'Send reset link'}
-          </Button>
-        </form>
+        <Card depth="raised">
+          <CardHeader>
+            <CardTitle className="font-display text-xl">Send a reset link</CardTitle>
+            <CardSubtitle>
+              Enter the email you signed up with. We&apos;ll send a link to set a new password.
+            </CardSubtitle>
+          </CardHeader>
+          <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+            <Field
+              label="Email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            {errorMsg ? (
+              <p className="rounded-2xl border border-danger/30 bg-danger/5 px-4 py-2 text-sm text-danger">
+                {errorMsg}
+              </p>
+            ) : null}
+            <Button type="submit" variant="royal" disabled={request.isPending}>
+              {request.isPending ? 'Sending…' : 'Send reset link'}
+            </Button>
+          </form>
+        </Card>
       )}
+
       <div className="space-y-2 text-sm text-muted">
         <p>
           Lost your authenticator?{' '}
           <Link
             href={'/login/mfa-recover' as never}
-            className="text-brand underline-offset-2 hover:underline"
+            className="text-gold-600 underline-offset-2 hover:underline"
           >
             Use an MFA backup code →
           </Link>
@@ -105,7 +135,7 @@ export default function ForgotPasswordPage() {
           Still locked out? Email{' '}
           <a
             href="mailto:support@travelsuperapp.local"
-            className="text-brand underline-offset-2 hover:underline"
+            className="text-gold-600 underline-offset-2 hover:underline"
           >
             support@travelsuperapp.local
           </a>{' '}
