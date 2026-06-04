@@ -37,6 +37,7 @@ const LINKS = [
 // Safety's entry point is the scam-report form, so we link those
 // concrete destinations.)
 const MORE_LINKS = [
+  { href: '/journal', label: 'Stories' },
   { href: '/diary', label: 'Diary' },
   { href: '/near-me', label: 'Near me' },
   { href: '/navigate', label: 'Navigate' },
