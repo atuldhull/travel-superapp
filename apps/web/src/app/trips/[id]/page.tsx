@@ -98,6 +98,7 @@ import { openAssistantWith } from '../../../components/assistant/global-assistan
 import { PublishPanel } from '../../../components/trip/publish-panel';
 import { TripComments } from '../../../components/trip/trip-comments';
 import { TripBuddies } from '../../../components/trip/trip-buddies';
+import { TripChecklist } from '../../../components/v2/trip-checklist';
 
 interface ApiError extends Error {
   readonly code?: string;
@@ -364,6 +365,7 @@ export default function TripDetailPage() {
       <PacingWarning tripId={id} enabled={token !== null && !editing} />
       <AdventureWindow />
       <ItinerarySection tripId={id} enabled={token !== null && !editing} />
+      {token !== null && !editing ? <TripChecklist tripId={id} title={trip.title} /> : null}
       <PowerPlannerSection tripId={id} enabled={token !== null && !editing} />
       <PlaceSuggestionPicker tripId={id} enabled={token !== null && !editing} />
       <ShareList tripId={id} enabled={token !== null && !editing} />
