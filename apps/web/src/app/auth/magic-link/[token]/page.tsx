@@ -18,11 +18,13 @@
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { ArrowRight, CheckCircle2, KeyRound, Loader2, Sparkles } from 'lucide-react';
 import {
   useAuthControllerMagicLinkConsume,
   type AuthSuccessResponseDto,
   type MagicLinkConsumeRequestDto,
 } from '@app/sdk';
+import { Card, CardHeader, CardSubtitle, CardTitle } from '../../../../components/ui/card';
 import { setAccessToken } from '../../../../lib/auth-store';
 import { decidePostAuthDestination } from '../../../../lib/post-auth-redirect';
 
@@ -77,47 +79,110 @@ export default function MagicLinkConsumePage() {
 
   if (errorMsg) {
     return (
-      <main className="space-y-4">
-        <h1 className="text-2xl font-bold tracking-tight">Sign-in link didn't work</h1>
-        <p className="rounded-md border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
-          {errorMsg}
-        </p>
-        <p className="text-sm text-muted">
-          <Link href="/register" className="text-brand hover:underline">
-            Request a fresh sign-in link →
-          </Link>
-        </p>
-        <p className="text-sm text-muted">
-          Or{' '}
-          <Link href="/login" className="text-brand hover:underline">
-            sign in with email + password
-          </Link>
-          .
-        </p>
+      <main className="space-y-8">
+        {/* Cinematic royal header band — matches the rest of the app. */}
+        <header
+          className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-8 shadow-(--shadow-depth-2) sm:px-10"
+          style={{ backgroundImage: 'var(--gradient-royal)' }}
+        >
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/20 blur-[110px]"
+          />
+          <p className="relative inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+            <KeyRound aria-hidden className="h-3.5 w-3.5" /> Magic link
+          </p>
+          <h1 className="relative mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+            Sign-in link didn&apos;t work
+          </h1>
+          <p className="relative mt-2 max-w-lg text-sm text-white/65">
+            No worries — request a fresh one and you&apos;ll be in within seconds.
+          </p>
+        </header>
+
+        <Card depth="raised">
+          <p className="rounded-2xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
+            {errorMsg}
+          </p>
+          <div className="mt-4 space-y-2">
+            <Link
+              href="/register"
+              className="inline-flex items-center gap-1.5 font-display text-sm font-semibold text-gold-700 underline-offset-4 transition hover:text-gold-600 hover:underline dark:text-gold-300"
+            >
+              Request a fresh sign-in link <ArrowRight aria-hidden className="h-3.5 w-3.5" />
+            </Link>
+            <p className="text-sm text-muted">
+              Or{' '}
+              <Link
+                href="/login"
+                className="text-gold-700 underline-offset-4 transition hover:text-gold-600 hover:underline dark:text-gold-300"
+              >
+                sign in with email + password
+              </Link>
+              .
+            </p>
+          </div>
+        </Card>
       </main>
     );
   }
 
   if (mutation.isSuccess) {
     return (
-      <main className="space-y-4">
-        <h1 className="text-2xl font-bold tracking-tight">
-          <span aria-hidden className="mr-1.5">
-            ✅
-          </span>
-          You're signed in!
-        </h1>
-        <p className="text-sm text-muted">Taking you to your trips…</p>
+      <main className="space-y-8">
+        {/* Cinematic royal header band — matches the rest of the app. */}
+        <header
+          className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-8 shadow-(--shadow-depth-2) sm:px-10"
+          style={{ backgroundImage: 'var(--gradient-royal)' }}
+        >
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/20 blur-[110px]"
+          />
+          <p className="relative inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+            <Sparkles aria-hidden className="h-3.5 w-3.5" /> Magic link
+          </p>
+          <h1 className="relative mt-3 inline-flex items-center gap-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+            <CheckCircle2 aria-hidden className="h-8 w-8 text-gold-300 sm:h-10 sm:w-10" />
+            You&apos;re signed in!
+          </h1>
+          <p className="relative mt-2 max-w-lg text-sm text-white/65">Taking you to your trips…</p>
+        </header>
       </main>
     );
   }
 
   return (
-    <main className="space-y-4">
-      <h1 className="text-2xl font-bold tracking-tight">Signing you in…</h1>
-      <p className="text-sm text-muted">
-        Verifying your magic link. This usually takes less than a second.
-      </p>
+    <main className="space-y-8">
+      {/* Cinematic royal header band — matches the rest of the app. */}
+      <header
+        className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-8 shadow-(--shadow-depth-2) sm:px-10"
+        style={{ backgroundImage: 'var(--gradient-royal)' }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/20 blur-[110px]"
+        />
+        <p className="relative inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+          <KeyRound aria-hidden className="h-3.5 w-3.5" /> Magic link
+        </p>
+        <h1 className="relative mt-3 inline-flex items-center gap-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+          <Loader2 aria-hidden className="h-7 w-7 animate-spin text-gold-300 sm:h-9 sm:w-9" />
+          Signing you in…
+        </h1>
+        <p className="relative mt-2 max-w-lg text-sm text-white/65">
+          Verifying your magic link. This usually takes less than a second.
+        </p>
+      </header>
+
+      <Card depth="raised">
+        <CardHeader>
+          <CardTitle>Hold tight</CardTitle>
+          <CardSubtitle>
+            We&apos;re turning your link into a secure session — no password needed.
+          </CardSubtitle>
+        </CardHeader>
+      </Card>
     </main>
   );
 }

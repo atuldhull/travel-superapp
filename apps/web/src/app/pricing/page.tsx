@@ -12,7 +12,11 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { Check, Sparkles } from 'lucide-react';
 import { paymentsControllerCheckout } from '@app/sdk';
+import { Badge } from '../../components/ui/badge';
+import { Button } from '../../components/ui/button';
+import { Card, CardHeader, CardSubtitle, CardTitle } from '../../components/ui/card';
 import { useAuthToken } from '../../lib/use-auth-token';
 import { useRouter } from 'next/navigation';
 
@@ -136,45 +140,57 @@ function useUpgradeToPremium() {
 export default function PricingPage() {
   const { handleUpgrade, busy } = useUpgradeToPremium();
   return (
-    <section className="space-y-6" aria-labelledby="pricing-h1">
-      <header className="space-y-2 text-center">
-        <h1 id="pricing-h1" className="text-3xl font-bold tracking-tight">
+    <main className="space-y-8" aria-labelledby="pricing-h1">
+      {/* Cinematic royal header band — matches /trips + /stays. */}
+      <header
+        className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-8 shadow-(--shadow-depth-2) sm:px-10"
+        style={{ backgroundImage: 'var(--gradient-royal)' }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/20 blur-[110px]"
+        />
+        <p className="relative inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+          <Sparkles aria-hidden className="h-3.5 w-3.5" /> Plans &amp; pricing
+        </p>
+        <h1
+          id="pricing-h1"
+          className="relative mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl"
+        >
           Simple pricing
         </h1>
-        <p className="text-sm text-muted">
+        <p className="relative mt-2 max-w-lg text-sm text-white/65">
           Free for ever. Upgrade when you need the premium-grade AI + concierge.
         </p>
       </header>
+
       <div className="grid gap-4 md:grid-cols-3">
         {TIERS.map((t) => (
-          <article
+          <Card
+            as="article"
             key={t.id}
-            className={
-              'flex flex-col rounded-lg border p-5 ' +
-              (t.highlight
-                ? 'border-amber-500/40 bg-amber-500/5 shadow-(--shadow-depth-2)'
-                : 'border-muted/15 bg-surface')
-            }
+            depth={t.highlight ? 'floating' : 'raised'}
+            className={'flex flex-col ' + (t.highlight ? 'border-gold-500/40 bg-gold-500/5' : '')}
           >
-            <header className="space-y-1">
-              <h2 className="text-lg font-semibold">
+            <CardHeader>
+              <CardTitle>
                 {t.name}
                 {t.highlight ? (
-                  <span className="ml-2 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-300">
+                  <Badge variant="gold" className="ml-2 align-middle">
                     Most popular
-                  </span>
+                  </Badge>
                 ) : null}
-              </h2>
-              <p className="text-sm text-muted">{t.tagline}</p>
-            </header>
-            <p className="mt-4 text-3xl font-bold">{t.price}</p>
+              </CardTitle>
+              <CardSubtitle>{t.tagline}</CardSubtitle>
+            </CardHeader>
+            <p className="font-display text-4xl font-semibold tracking-tight text-surface-foreground">
+              {t.price}
+            </p>
             <p className="text-xs text-muted">{t.priceNote}</p>
             <ul className="mt-4 flex-1 space-y-2 text-sm">
               {t.features.map((f) => (
                 <li key={f} className="flex items-start gap-2">
-                  <span aria-hidden className="mt-0.5 text-brand">
-                    ✓
-                  </span>
+                  <Check aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-gold-600" />
                   <span>{f}</span>
                 </li>
               ))}
@@ -184,46 +200,49 @@ export default function PricingPage() {
                 <Link
                   href={t.cta.href as never}
                   className={
-                    'inline-flex w-full items-center justify-center rounded-md px-4 py-2 text-sm font-semibold ' +
+                    'inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface ' +
                     (t.highlight
-                      ? 'bg-linear-to-br from-amber-500 to-amber-600 text-white shadow-sm hover:opacity-90'
-                      : 'border border-muted/20 bg-surface hover:bg-muted/5')
+                      ? 'text-brand-900 shadow-(--shadow-glow) bg-[image:var(--gradient-gold)] hover:-translate-y-0.5'
+                      : 'border border-brand/35 text-brand hover:-translate-y-0.5 hover:bg-brand/8 hover:border-brand/60')
                   }
                 >
                   {t.cta.label}
                 </Link>
               ) : (
-                <button
+                <Button
                   type="button"
                   onClick={t.id === 'premium' ? handleUpgrade : t.cta.onClick}
                   disabled={t.id === 'premium' && busy}
-                  className={
-                    'inline-flex w-full items-center justify-center rounded-md px-4 py-2 text-sm font-semibold disabled:opacity-60 ' +
-                    (t.highlight
-                      ? 'bg-linear-to-br from-amber-500 to-amber-600 text-white shadow-sm hover:opacity-90'
-                      : 'border border-muted/20 bg-surface hover:bg-muted/5')
-                  }
+                  variant={t.highlight ? 'royal' : 'outline'}
+                  className="w-full"
                 >
                   {t.id === 'premium' && busy ? 'Starting checkout…' : t.cta.label}
-                </button>
+                </Button>
               )}
             </div>
-          </article>
+          </Card>
         ))}
       </div>
-      <footer className="rounded-md border border-muted/15 bg-muted/5 p-4 text-xs text-muted">
+
+      <footer className="rounded-2xl border border-gold-600/12 bg-surface p-4 text-xs text-muted shadow-(--shadow-depth-1)">
         <p>
           <strong>Questions?</strong> Check the{' '}
-          <Link href={'/help' as never} className="underline-offset-2 hover:underline">
+          <Link
+            href={'/help' as never}
+            className="text-gold-600 underline-offset-2 transition hover:underline"
+          >
             help centre
           </Link>{' '}
           or email{' '}
-          <a href="mailto:hello@travel.local" className="underline-offset-2 hover:underline">
+          <a
+            href="mailto:hello@travel.local"
+            className="text-gold-600 underline-offset-2 transition hover:underline"
+          >
             hello@travel.local
           </a>
           . Subscriptions are billed via Stripe; cancel anytime from your account page.
         </p>
       </footer>
-    </section>
+    </main>
   );
 }

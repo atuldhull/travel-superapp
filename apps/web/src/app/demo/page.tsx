@@ -13,6 +13,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { AnimatePresence, motion } from 'framer-motion';
+import { ArrowRight, Pause, Play, PlayCircle, Sparkles } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface Scene {
@@ -88,40 +89,66 @@ export default function DemoPage() {
   const isLast = idx === SCENES.length - 1;
 
   return (
-    <div className="min-h-[70vh] space-y-6">
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">TravelSuperApp · 60-second tour</h1>
-          <p className="text-xs text-muted">
-            Scene {idx + 1} of {SCENES.length} · auto-advance every 8s
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => setPaused((p) => !p)}
-            className="rounded-md border border-muted/15 px-3 py-1 text-xs"
-          >
-            {paused ? '▶ Resume' : '⏸ Pause'}
-          </button>
-          <button
-            type="button"
-            onClick={() => setIdx((p) => (p - 1 + SCENES.length) % SCENES.length)}
-            className="rounded-md border border-muted/15 px-3 py-1 text-xs"
-          >
-            ← Prev
-          </button>
-          <button
-            type="button"
-            onClick={() => setIdx((p) => (p + 1) % SCENES.length)}
-            className="rounded-md border border-muted/15 px-3 py-1 text-xs"
-          >
-            Next →
-          </button>
+    <main className="space-y-8">
+      {/* Cinematic royal header band — matches /home + /trips. */}
+      <header
+        className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-8 shadow-(--shadow-depth-2) sm:px-10"
+        style={{ backgroundImage: 'var(--gradient-royal)' }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/20 blur-[110px]"
+        />
+        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+              <PlayCircle aria-hidden className="h-3.5 w-3.5" /> 60-second tour
+            </p>
+            <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+              TravelSuperApp
+            </h1>
+            <p className="mt-2 max-w-lg text-sm text-white/65">
+              Scene {idx + 1} of {SCENES.length} · auto-advance every 8s.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setPaused((p) => !p)}
+              aria-label={paused ? 'Resume tour' : 'Pause tour'}
+              className="inline-flex items-center gap-1.5 rounded-full border border-gold-500/40 bg-white/5 px-3.5 py-1.5 text-xs font-medium text-gold-300 backdrop-blur-sm transition hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-300"
+            >
+              {paused ? (
+                <>
+                  <Play aria-hidden className="h-3.5 w-3.5" /> Resume
+                </>
+              ) : (
+                <>
+                  <Pause aria-hidden className="h-3.5 w-3.5" /> Pause
+                </>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => setIdx((p) => (p - 1 + SCENES.length) % SCENES.length)}
+              aria-label="Previous scene"
+              className="inline-flex items-center gap-1.5 rounded-full border border-white/20 px-3.5 py-1.5 text-xs font-medium text-white/80 transition hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-300"
+            >
+              ← Prev
+            </button>
+            <button
+              type="button"
+              onClick={() => setIdx((p) => (p + 1) % SCENES.length)}
+              aria-label="Next scene"
+              className="inline-flex items-center gap-1.5 rounded-full border border-white/20 px-3.5 py-1.5 text-xs font-medium text-white/80 transition hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-300"
+            >
+              Next →
+            </button>
+          </div>
         </div>
       </header>
 
-      <div className="relative min-h-[60vh] overflow-hidden rounded-2xl border border-muted/15 bg-linear-to-br from-brand-50 via-surface to-amber-50 p-8 shadow-(--shadow-depth-2) dark:from-brand-900/20 dark:via-surface dark:to-amber-900/10">
+      <div className="relative min-h-[60vh] overflow-hidden rounded-2xl border border-gold-600/25 bg-linear-to-br from-gold-500/8 via-surface to-brand/5 p-8 shadow-(--shadow-depth-2)">
         <AnimatePresence mode="wait">
           <motion.div
             key={idx}
@@ -133,24 +160,27 @@ export default function DemoPage() {
           >
             {/* Left: copy */}
             <div className="space-y-3 text-center sm:text-left">
-              <p className="text-xs font-semibold uppercase tracking-widest text-brand">
+              <p className="font-display text-xs font-semibold uppercase tracking-widest text-gold-700 dark:text-gold-300">
                 {scene.title}
               </p>
-              <h2 className="text-3xl font-bold leading-tight sm:text-4xl">{scene.headline}</h2>
+              <h2 className="font-display text-3xl font-semibold leading-tight tracking-tight text-surface-foreground sm:text-4xl">
+                {scene.headline}
+              </h2>
               <p className="max-w-md text-sm text-muted sm:text-base">{scene.body}</p>
               {isLast ? (
                 <div className="flex flex-wrap items-center justify-center gap-3 pt-3 sm:justify-start">
                   <Link
                     href="/register"
-                    className="inline-flex items-center gap-1.5 rounded-md bg-brand px-5 py-2.5 text-sm font-semibold text-brand-foreground shadow-(--shadow-depth-2) transition hover:-translate-y-0.5 hover:bg-brand-700 hover:shadow-(--shadow-depth-3)"
+                    className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-brand-900 shadow-(--shadow-glow) transition hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-300"
+                    style={{ backgroundImage: 'var(--gradient-gold)' }}
                   >
-                    Get started — it&apos;s free
+                    <Sparkles aria-hidden className="h-4 w-4" /> Get started — it&apos;s free
                   </Link>
                   <Link
                     href="/featured"
-                    className="inline-flex items-center gap-1.5 rounded-md border border-brand/40 px-5 py-2.5 text-sm font-semibold text-brand transition hover:-translate-y-0.5 hover:bg-brand/5"
+                    className="inline-flex items-center gap-2 rounded-full border border-gold-600/30 px-6 py-3 text-sm font-semibold text-surface-foreground transition hover:-translate-y-0.5 hover:bg-gold-500/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                   >
-                    See featured trips
+                    See featured trips <ArrowRight aria-hidden className="h-4 w-4" />
                   </Link>
                 </div>
               ) : null}
@@ -159,7 +189,7 @@ export default function DemoPage() {
             {/* Right: screenshot or emoji fallback */}
             <div className="flex items-center justify-center">
               {scene.screenshot ? (
-                <div className="relative w-full max-w-md overflow-hidden rounded-lg border border-muted/20 shadow-(--shadow-depth-3)">
+                <div className="relative w-full max-w-md overflow-hidden rounded-2xl border border-gold-600/25 shadow-(--shadow-depth-3)">
                   <Image
                     src={scene.screenshot}
                     alt={scene.headline}
@@ -183,13 +213,13 @@ export default function DemoPage() {
               type="button"
               aria-label={`Go to scene ${i + 1}`}
               onClick={() => setIdx(i)}
-              className={`h-1.5 w-8 rounded-full transition ${
-                i === idx ? 'bg-brand' : 'bg-muted/30 hover:bg-muted/50'
+              className={`h-1.5 w-8 rounded-full transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                i === idx ? 'bg-gold-500' : 'bg-muted/30 hover:bg-muted/50'
               }`}
             />
           ))}
         </div>
       </div>
-    </div>
+    </main>
   );
 }

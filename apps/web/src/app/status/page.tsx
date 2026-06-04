@@ -11,6 +11,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Activity } from 'lucide-react';
+import { Card, CardHeader, CardSubtitle, CardTitle } from '../../components/ui/card';
 
 const API_BASE = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://127.0.0.1:3000';
 const POLL_INTERVAL_MS = 30_000;
@@ -45,7 +47,7 @@ function colourFor(s: DepStatus): string {
     case 'down':
       return 'bg-rose-500';
     case 'unknown':
-      return 'bg-muted/40';
+      return 'bg-gold-600/30';
   }
 }
 
@@ -120,18 +122,32 @@ export default function StatusPage() {
   }, []);
 
   return (
-    <section className="space-y-6" aria-labelledby="status-h1">
-      <header className="space-y-2">
-        <h1 id="status-h1" className="text-3xl font-bold tracking-tight">
+    <main className="space-y-8" aria-labelledby="status-h1">
+      {/* Cinematic royal header band — matches /trips + /stays. */}
+      <header
+        className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-8 shadow-(--shadow-depth-2) sm:px-10"
+        style={{ backgroundImage: 'var(--gradient-royal)' }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/20 blur-[110px]"
+        />
+        <p className="relative inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+          <Activity aria-hidden className="h-3.5 w-3.5" /> Live readiness probe
+        </p>
+        <h1
+          id="status-h1"
+          className="relative mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl"
+        >
           System status
         </h1>
-        <p className="text-sm text-muted">
+        <p className="relative mt-2 max-w-lg text-sm text-white/65">
           Live readiness probe — refreshes every 30 seconds. For incident history, watch our{' '}
           <a
             href="https://github.com/atuldhull/travel-app"
             target="_blank"
             rel="noopener noreferrer"
-            className="underline-offset-2 hover:underline"
+            className="font-medium text-gold-300 underline-offset-2 hover:underline"
           >
             GitHub
           </a>{' '}
@@ -141,9 +157,9 @@ export default function StatusPage() {
 
       <article
         className={
-          'rounded-md border p-4 ' +
+          'rounded-2xl border p-5 shadow-(--shadow-depth-1) ' +
           (snap === null
-            ? 'border-muted/15 bg-muted/5'
+            ? 'border-gold-600/12 bg-surface'
             : snap.overall === 'up'
               ? 'border-emerald-500/40 bg-emerald-500/5'
               : snap.overall === 'degraded'
@@ -156,7 +172,7 @@ export default function StatusPage() {
             className={'inline-block h-3 w-3 rounded-full ' + colourFor(snap?.overall ?? 'unknown')}
             aria-hidden
           />
-          <h2 className="text-base font-semibold">
+          <h2 className="font-display text-lg font-semibold tracking-tight text-surface-foreground">
             {snap === null
               ? 'Checking…'
               : snap.overall === 'up'
@@ -166,9 +182,7 @@ export default function StatusPage() {
                   : 'Major outage'}
           </h2>
         </div>
-        {snap?.error ? (
-          <p className="mt-1 text-xs text-rose-500">Probe error: {snap.error}</p>
-        ) : null}
+        {snap?.error ? <p className="mt-1 text-xs text-danger">Probe error: {snap.error}</p> : null}
         {snap !== null ? (
           <p className="mt-1 text-[11px] text-muted">
             Last checked {new Date(snap.fetchedAt).toLocaleTimeString()}
@@ -176,7 +190,7 @@ export default function StatusPage() {
         ) : null}
       </article>
 
-      <section className="space-y-2">
+      <section className="space-y-3">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">Dependencies</h2>
         <ul className="space-y-2" role="list">
           {(
@@ -184,14 +198,16 @@ export default function StatusPage() {
           ).map((d) => (
             <li
               key={d.key}
-              className="flex items-center justify-between rounded-md border border-muted/15 bg-surface px-3 py-2 text-sm"
+              className="flex items-center justify-between rounded-2xl border border-gold-600/12 bg-surface p-4 text-sm shadow-(--shadow-depth-1) transition hover:border-gold-600/25"
             >
               <div className="flex items-center gap-2">
                 <span
                   className={'inline-block h-2.5 w-2.5 rounded-full ' + colourFor(d.status)}
                   aria-hidden
                 />
-                <span>{d.name}</span>
+                <span className="font-display font-semibold tracking-tight text-surface-foreground">
+                  {d.name}
+                </span>
               </div>
               <span className="text-xs text-muted">{labelFor(d.status)}</span>
             </li>
@@ -199,20 +215,22 @@ export default function StatusPage() {
         </ul>
       </section>
 
-      <section className="space-y-2">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">90-day uptime</h2>
-        <div className="rounded-md border border-muted/15 bg-muted/5 p-4 text-xs text-muted">
-          Real uptime metrics arrive with our observability rollout. For now we surface live probes
-          only. If you need a guaranteed SLA for an enterprise deployment, see{' '}
-          <a
-            href="mailto:sales@travel.local?subject=Enterprise%20SLA"
-            className="underline-offset-2 hover:underline"
-          >
-            sales@travel.local
-          </a>
-          .
-        </div>
-      </section>
-    </section>
+      <Card depth="raised">
+        <CardHeader>
+          <CardTitle className="text-base uppercase tracking-wide">90-day uptime</CardTitle>
+          <CardSubtitle>
+            Real uptime metrics arrive with our observability rollout. For now we surface live
+            probes only. If you need a guaranteed SLA for an enterprise deployment, see{' '}
+            <a
+              href="mailto:sales@travel.local?subject=Enterprise%20SLA"
+              className="font-medium text-gold-700 underline-offset-2 transition hover:text-gold-600 hover:underline dark:text-gold-300"
+            >
+              sales@travel.local
+            </a>
+            .
+          </CardSubtitle>
+        </CardHeader>
+      </Card>
+    </main>
   );
 }

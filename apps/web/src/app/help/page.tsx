@@ -12,6 +12,9 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { LifeBuoy, Mail, Minus, Plus, Search } from 'lucide-react';
+import { Badge } from '../../components/ui/badge';
+import { Card, CardHeader, CardSubtitle, CardTitle } from '../../components/ui/card';
 
 interface FaqEntry {
   readonly category: 'Account' | 'Trips' | 'Safety' | 'Privacy' | 'Billing';
@@ -151,58 +154,95 @@ export default function HelpPage() {
   }, [query]);
 
   return (
-    <section className="space-y-6" aria-labelledby="help-h1">
-      <header className="space-y-2">
-        <h1 id="help-h1" className="text-3xl font-bold tracking-tight">
-          Help centre
+    <main className="space-y-8" aria-labelledby="help-h1">
+      {/* Cinematic royal header band — matches /trips + /account. */}
+      <header
+        className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-8 shadow-(--shadow-depth-2) sm:px-10"
+        style={{ backgroundImage: 'var(--gradient-royal)' }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/20 blur-[110px]"
+        />
+        <p className="relative inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+          <LifeBuoy aria-hidden className="h-3.5 w-3.5" /> Help centre
+        </p>
+        <h1
+          id="help-h1"
+          className="relative mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl"
+        >
+          How can we help?
         </h1>
-        <p className="text-sm text-muted">
+        <p className="relative mt-2 max-w-lg text-sm text-white/65">
           20 quick answers across 5 categories. Search below or jump to a category. Still stuck?
           Email{' '}
-          <a href="mailto:hello@travel.local" className="underline-offset-2 hover:underline">
+          <a
+            href="mailto:hello@travel.local"
+            className="font-medium text-gold-300 underline-offset-2 hover:underline"
+          >
             hello@travel.local
           </a>
           .
         </p>
       </header>
-      <input
-        type="search"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search e.g. delete account, SOS, refund…"
-        className="w-full rounded-md border border-muted/15 bg-surface px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
-        aria-label="Search the FAQ"
-      />
+
+      <div className="relative">
+        <Search
+          aria-hidden
+          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
+        />
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search e.g. delete account, SOS, refund…"
+          className="w-full rounded-lg border border-gold-600/25 bg-surface py-2 pl-9 pr-3 text-sm text-surface-foreground outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/25"
+          aria-label="Search the FAQ"
+        />
+      </div>
+
       {filtered.length === 0 ? (
-        <p className="rounded-md border border-muted/15 bg-muted/5 p-4 text-sm text-muted">
-          No matches. Try a different keyword, or email us directly.
-        </p>
+        <Card depth="raised">
+          <p className="text-sm text-muted">
+            No matches. Try a different keyword, or email us directly.
+          </p>
+        </Card>
       ) : (
         CATEGORIES.map((cat) => {
           const entries = filtered.filter((e) => e.category === cat);
           if (entries.length === 0) return null;
           return (
-            <section key={cat} className="space-y-2">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">{cat}</h2>
+            <section key={cat} className="space-y-3">
+              <Badge variant="gold">{cat}</Badge>
               <ul className="space-y-2">
                 {entries.map((e, idx) => {
                   const id = `${cat}-${idx}`;
                   const open = openId === id;
                   return (
-                    <li key={id} className="rounded-md border border-muted/15 bg-surface">
+                    <li
+                      key={id}
+                      className="rounded-2xl border border-gold-600/12 bg-surface shadow-(--shadow-depth-1) transition hover:border-gold-600/25"
+                    >
                       <button
                         type="button"
                         aria-expanded={open}
                         onClick={() => setOpenId(open ? null : id)}
-                        className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand"
+                        className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left font-display text-sm font-semibold tracking-tight text-surface-foreground transition focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500/40"
                       >
                         <span>{e.q}</span>
-                        <span aria-hidden className="text-muted">
-                          {open ? '−' : '+'}
+                        <span
+                          aria-hidden
+                          className="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-gold-600/25 text-gold-700 dark:text-gold-300"
+                        >
+                          {open ? (
+                            <Minus className="h-3.5 w-3.5" />
+                          ) : (
+                            <Plus className="h-3.5 w-3.5" />
+                          )}
                         </span>
                       </button>
                       {open ? (
-                        <p className="border-t border-muted/15 px-3 py-2 text-sm leading-relaxed text-muted">
+                        <p className="border-t border-gold-600/12 px-4 py-3 text-sm leading-relaxed text-muted">
                           {e.a}
                         </p>
                       ) : null}
@@ -214,17 +254,31 @@ export default function HelpPage() {
           );
         })
       )}
-      <footer className="rounded-md border border-muted/15 bg-muted/5 p-4 text-xs text-muted">
-        Still need help? Check our{' '}
-        <Link href={'/status' as never} className="underline-offset-2 hover:underline">
-          status page
-        </Link>{' '}
-        for outages, or email{' '}
-        <a href="mailto:hello@travel.local" className="underline-offset-2 hover:underline">
-          hello@travel.local
-        </a>{' '}
-        and we'll reply within 1 business day.
-      </footer>
-    </section>
+
+      <Card as="footer" depth="raised" className="bg-gold-500/5">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Mail aria-hidden className="h-4 w-4 text-gold-600" /> Still need help?
+          </CardTitle>
+          <CardSubtitle>
+            Check our{' '}
+            <Link
+              href={'/status' as never}
+              className="font-medium text-gold-700 underline-offset-2 transition hover:text-gold-600 hover:underline dark:text-gold-300"
+            >
+              status page
+            </Link>{' '}
+            for outages, or email{' '}
+            <a
+              href="mailto:hello@travel.local"
+              className="font-medium text-gold-700 underline-offset-2 transition hover:text-gold-600 hover:underline dark:text-gold-300"
+            >
+              hello@travel.local
+            </a>{' '}
+            and we&apos;ll reply within 1 business day.
+          </CardSubtitle>
+        </CardHeader>
+      </Card>
+    </main>
   );
 }
