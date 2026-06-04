@@ -17,6 +17,8 @@
  */
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import { BookOpen, FileText } from 'lucide-react';
+import { Card, CardHeader, CardSubtitle, CardTitle } from '../../../components/ui/card';
 
 const RUNBOOKS_DIR = path.resolve(process.cwd(), '..', '..', 'docs', 'runbooks');
 
@@ -71,7 +73,7 @@ function applyInline(s: string): string {
   // [text](url) — link target restricted to http/https/relative.
   out = out.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, text: string, url: string) => {
     const safe = /^(https?:\/\/|\/|#)/.test(url) ? url : '#';
-    return `<a href="${escapeHtml(safe)}" class="underline text-purple-700" target="_blank" rel="noopener noreferrer">${text}</a>`;
+    return `<a href="${escapeHtml(safe)}" class="underline text-gold-700 transition hover:text-gold-600 dark:text-gold-300" target="_blank" rel="noopener noreferrer">${text}</a>`;
   });
   return out;
 }
@@ -105,7 +107,9 @@ function renderMarkdown(md: string): string {
         out.push('</code></pre>');
         inCode = false;
       } else {
-        out.push('<pre class="overflow-x-auto rounded bg-muted/5 p-2 text-xs"><code>');
+        out.push(
+          '<pre class="overflow-x-auto rounded-2xl border border-gold-600/15 bg-gold-500/5 p-3 text-xs"><code>',
+        );
         inCode = true;
       }
       continue;
@@ -157,51 +161,68 @@ export default async function OpsRunbooksPage() {
   const { runbooks, error } = await loadRunbooks();
 
   return (
-    <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-bold">Runbooks</h1>
-        <p className="mt-1 text-sm text-muted">
-          Operational playbooks bundled from <code>docs/runbooks/</code>. {runbooks.length}{' '}
-          documents.
+    <main className="space-y-8">
+      {/* Cinematic royal header band — matches /trips + /stays. */}
+      <header
+        className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-8 shadow-(--shadow-depth-2) sm:px-10"
+        style={{ backgroundImage: 'var(--gradient-royal)' }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/20 blur-[110px]"
+        />
+        <p className="relative inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+          <BookOpen aria-hidden className="h-3.5 w-3.5" /> Oncall library
+        </p>
+        <h1 className="relative mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+          Runbooks
+        </h1>
+        <p className="relative mt-2 max-w-lg text-sm text-white/65">
+          Operational playbooks bundled from <code>docs/runbooks/</code> — {runbooks.length}{' '}
+          documents, ready when oncall is.
         </p>
       </header>
 
       {error ? (
-        <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-700">
+        <p className="rounded-2xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
           Could not read runbooks directory: <code>{error}</code>. On Fly.io deploys the{' '}
           <code>docs/runbooks/</code> tree must be copied into the web container.
-        </div>
+        </p>
       ) : null}
 
       {runbooks.length > 0 ? (
-        <nav aria-label="Runbook index" className="rounded-md border border-muted/15 p-3">
+        <Card depth="raised" as="nav" aria-label="Runbook index">
+          <CardHeader>
+            <CardTitle className="text-xl">Index</CardTitle>
+            <CardSubtitle>Jump to any playbook below.</CardSubtitle>
+          </CardHeader>
           <ul className="grid gap-2 sm:grid-cols-2">
             {runbooks.map((r) => (
               <li key={r.slug}>
                 <a
                   href={`#${r.slug}`}
-                  className="text-sm text-purple-700 underline-offset-2 hover:underline"
+                  className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm text-gold-700 underline-offset-4 transition hover:bg-gold-500/10 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500/40 dark:text-gold-300"
                 >
-                  {r.title}
+                  <FileText aria-hidden className="h-3.5 w-3.5" /> {r.title}
                 </a>
               </li>
             ))}
           </ul>
-        </nav>
+        </Card>
       ) : null}
 
       {runbooks.map((r) => (
         <article
           key={r.slug}
           id={r.slug}
-          className="rounded-md border border-muted/15 bg-surface p-4 prose prose-sm max-w-none dark:prose-invert"
+          className="rounded-2xl border border-gold-600/12 bg-surface p-4 shadow-(--shadow-depth-1) transition hover:border-gold-600/25 prose prose-sm max-w-none dark:prose-invert"
         >
-          <p className="text-[11px] uppercase tracking-wide text-muted">
+          <p className="font-display text-[11px] uppercase tracking-wide text-gold-700 dark:text-gold-300">
             docs/runbooks/{r.slug}.md
           </p>
           <div dangerouslySetInnerHTML={{ __html: r.bodyHtml }} />
         </article>
       ))}
-    </div>
+    </main>
   );
 }

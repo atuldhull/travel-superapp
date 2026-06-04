@@ -15,6 +15,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, CheckCircle2, IdCard } from 'lucide-react';
 import {
   getAgentSelfControllerMeQueryKey,
   useAgentSelfControllerMe,
@@ -121,16 +122,40 @@ export default function AgentProfilePage() {
   const noProfile = apiErr?.code === 'AGENT_PROFILE_NOT_FOUND';
 
   return (
-    <main className="space-y-6">
-      <p>
-        <Link href="/agent/dashboard" className="text-sm text-muted hover:underline">
-          ← Back to dashboard
-        </Link>
-      </p>
-      <Card>
+    <main className="space-y-8">
+      <Link
+        href="/agent/dashboard"
+        className="inline-flex items-center gap-1.5 text-sm text-muted underline-offset-4 transition hover:text-gold-600 hover:underline"
+      >
+        <ArrowLeft aria-hidden className="h-4 w-4" /> Back to dashboard
+      </Link>
+
+      {/* Cinematic royal header band — matches /trips + /account. */}
+      <header
+        className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-8 shadow-(--shadow-depth-2) sm:px-10"
+        style={{ backgroundImage: 'var(--gradient-royal)' }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/20 blur-[110px]"
+        />
+        <p className="relative inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+          <IdCard aria-hidden className="h-3.5 w-3.5" /> Agent profile
+        </p>
+        <h1 className="relative mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+          Your public profile
+        </h1>
+        <p className="relative mt-2 max-w-lg text-sm text-white/65">
+          Edit your display name, bio, languages, and regions — travelers see this first.
+        </p>
+      </header>
+
+      <Card depth="raised">
         <CardHeader>
-          <CardTitle>✏️ Agent profile</CardTitle>
-          <CardSubtitle>Edit displayName, bio, languages, and regions.</CardSubtitle>
+          <CardTitle>Edit details</CardTitle>
+          <CardSubtitle>
+            KYC status, rating, and verification are admin-managed and read-only here.
+          </CardSubtitle>
         </CardHeader>
         {isLoading ? (
           <Skeleton className="h-6 w-2/3" />
@@ -146,9 +171,9 @@ export default function AgentProfilePage() {
             Couldn&apos;t load profile ({apiErr?.code ?? `HTTP_${apiErr?.status ?? '???'}`}).
           </p>
         ) : profile ? (
-          <form onSubmit={submit} className="space-y-3">
+          <form onSubmit={submit} className="space-y-4">
             {profile.kycStatus === 'verified' ? (
-              <Badge variant="brand">✓ Verified</Badge>
+              <Badge variant="success">✓ Verified</Badge>
             ) : (
               <Badge variant="neutral">{profile.kycStatus}</Badge>
             )}
@@ -158,7 +183,7 @@ export default function AgentProfilePage() {
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 maxLength={120}
-                className="w-full rounded-md border border-muted/30 bg-transparent px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-gold-600/25 bg-surface px-3 py-2 text-sm text-surface-foreground outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/25"
               />
             </Field>
             <Field label="Bio">
@@ -168,7 +193,7 @@ export default function AgentProfilePage() {
                 rows={4}
                 maxLength={2000}
                 placeholder="Tell travelers what makes you special…"
-                className="w-full rounded-md border border-muted/30 bg-transparent px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-gold-600/25 bg-surface px-3 py-2 text-sm text-surface-foreground outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/25"
               />
             </Field>
             <Field label="Languages (comma-separated)">
@@ -177,7 +202,7 @@ export default function AgentProfilePage() {
                 value={languagesText}
                 onChange={(e) => setLanguagesText(e.target.value)}
                 placeholder="en, pt, es"
-                className="w-full rounded-md border border-muted/30 bg-transparent px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-gold-600/25 bg-surface px-3 py-2 text-sm text-surface-foreground outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/25"
               />
             </Field>
             <Field label="Regions you cover (comma-separated)">
@@ -186,20 +211,21 @@ export default function AgentProfilePage() {
                 value={regionsText}
                 onChange={(e) => setRegionsText(e.target.value)}
                 placeholder="Lisbon, Porto, Sintra"
-                className="w-full rounded-md border border-muted/30 bg-transparent px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-gold-600/25 bg-surface px-3 py-2 text-sm text-surface-foreground outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/25"
               />
             </Field>
             {errMsg ? (
-              <p className="rounded-md border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">
+              <p className="rounded-2xl border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">
                 {errMsg}
               </p>
             ) : null}
             {savedAt !== null ? (
-              <p className="text-xs text-emerald-600 dark:text-emerald-400">
-                ✓ Saved {new Date(savedAt).toLocaleTimeString()}
+              <p className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                <CheckCircle2 aria-hidden className="h-3.5 w-3.5" /> Saved{' '}
+                {new Date(savedAt).toLocaleTimeString()}
               </p>
             ) : null}
-            <Button type="submit" variant="primary" disabled={update.isPending}>
+            <Button type="submit" variant="royal" disabled={update.isPending}>
               {update.isPending ? 'Saving…' : 'Save profile'}
             </Button>
           </form>
