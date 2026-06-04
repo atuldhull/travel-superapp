@@ -8,15 +8,22 @@
  * but only ENABLED for `role==='admin'` callers — the api gates
  * /admin/account-purge at @Roles('admin'). sre/compliance see a
  * tooltip explaining why the button is disabled.
+ *
+ * Restyled into the v2 ("Fusion") design language (royal/gold tokens,
+ * font-display, cinematic header band). Semantic traffic-light status
+ * colours (emerald up / rose down) are deliberately preserved.
  */
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { Activity, RefreshCw, Zap } from 'lucide-react';
 import {
   useAdminPurgeControllerForcePurge,
   useAuthControllerMe,
   type WhoAmIResponseDto,
 } from '@app/sdk';
+import { Button } from '../../components/ui/button';
+import { Card, CardHeader, CardSubtitle, CardTitle } from '../../components/ui/card';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:3000';
 
@@ -74,17 +81,19 @@ function StatusPill({
   state: 'up' | 'down' | 'pending';
   detail?: string;
 }) {
+  // Traffic-light semantics are load-bearing here — keep emerald (up)
+  // and rose (down); only the neutral/pending tone moves to gold.
   const cls =
     state === 'up'
-      ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-700'
+      ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-700 dark:text-emerald-300'
       : state === 'down'
-        ? 'bg-rose-500/10 border-rose-500/40 text-rose-700'
-        : 'bg-muted/10 border-muted/30 text-muted';
+        ? 'bg-rose-500/10 border-rose-500/40 text-rose-700 dark:text-rose-300'
+        : 'bg-surface border-gold-600/25 text-muted';
   const icon = state === 'up' ? '●' : state === 'down' ? '✕' : '…';
   return (
-    <div className={`rounded-lg border ${cls} p-3`}>
-      <p className="text-xs uppercase tracking-wide">{label}</p>
-      <p className="mt-1 text-2xl font-bold">
+    <div className={`rounded-2xl border ${cls} p-4 shadow-(--shadow-depth-1)`}>
+      <p className="text-xs font-medium uppercase tracking-wide">{label}</p>
+      <p className="mt-1 font-display text-2xl font-semibold">
         {icon} {state}
       </p>
       {detail ? <p className="mt-1 text-[11px] opacity-80">{detail}</p> : null}
@@ -188,28 +197,43 @@ export default function OpsDashboardPage() {
   const startupOk = state.startupHttpStatus === 200;
 
   return (
-    <div className="space-y-6">
-      <header className="flex items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">Ops dashboard</h1>
-          <p className="mt-1 text-sm text-muted">
-            Auto-refresh every 15s.
-            {state.fetchedAt ? ` Last: ${new Date(state.fetchedAt).toLocaleTimeString()}.` : null}
-          </p>
+    <main className="space-y-8">
+      {/* Cinematic royal header band — matches /home + /trips. */}
+      <header
+        className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-8 shadow-(--shadow-depth-2) sm:px-10"
+        style={{ backgroundImage: 'var(--gradient-royal)' }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/20 blur-[110px]"
+        />
+        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+              <Activity aria-hidden className="h-3.5 w-3.5" /> System health
+            </p>
+            <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+              Ops dashboard
+            </h1>
+            <p className="mt-2 max-w-lg text-sm text-white/65">
+              Auto-refresh every 15s.
+              {state.fetchedAt ? ` Last: ${new Date(state.fetchedAt).toLocaleTimeString()}.` : null}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              void fetchAll();
+            }}
+            className="inline-flex items-center gap-1.5 rounded-full border border-white/20 px-4 py-2.5 text-sm font-medium text-white/80 transition hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-300"
+          >
+            <RefreshCw aria-hidden className="h-4 w-4" /> Refresh now
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            void fetchAll();
-          }}
-          className="rounded-md border border-purple-500 px-3 py-1.5 text-xs font-semibold text-purple-700 hover:bg-purple-500/10"
-        >
-          Refresh now
-        </button>
       </header>
 
-      <section>
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">Probes</h2>
+      <section className="space-y-3">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted">Probes</h2>
         <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
           <StatusPill
             label="Liveness"
@@ -245,10 +269,8 @@ export default function OpsDashboardPage() {
         </div>
       </section>
 
-      <section>
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">
-          Dependencies
-        </h2>
+      <section className="space-y-3">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted">Dependencies</h2>
         <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-4">
           <StatusPill
             label="Postgres"
@@ -273,14 +295,18 @@ export default function OpsDashboardPage() {
         </div>
       </section>
 
-      <section className="rounded-lg border border-muted/15 p-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">Force actions</h2>
-        <p className="mt-1 text-xs text-muted">
-          Force-purge wraps the AccountPurgeScheduler tick — idempotent + re-entrant guard.
-        </p>
+      <Card depth="raised">
+        <CardHeader>
+          <CardTitle className="font-display text-xl">Force actions</CardTitle>
+          <CardSubtitle>
+            Force-purge wraps the AccountPurgeScheduler tick — idempotent + re-entrant guard.
+          </CardSubtitle>
+        </CardHeader>
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <button
+          <Button
             type="button"
+            variant="danger"
+            size="sm"
             disabled={!isAdmin || purgeMut.isPending}
             onClick={() => purgeMut.mutate()}
             title={
@@ -288,10 +314,10 @@ export default function OpsDashboardPage() {
                 ? 'Fires the AccountPurgeScheduler immediately.'
                 : 'Force-purge is admin-only. compliance + sre can read but not run.'
             }
-            className="rounded-md border border-rose-500 bg-rose-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
           >
+            <Zap aria-hidden className="mr-1.5 h-3.5 w-3.5" />
             {purgeMut.isPending ? 'Firing…' : 'Force account-purge'}
-          </button>
+          </Button>
           {!isAdmin ? (
             <span className="text-[11px] text-muted">
               ({me?.role ?? 'unknown'}) — admin role required.
@@ -300,23 +326,25 @@ export default function OpsDashboardPage() {
         </div>
         {purgeMsg ? (
           <p
-            className="mt-2 rounded-md border border-muted/15 bg-muted/5 p-2 text-xs"
+            className="mt-3 rounded-2xl border border-gold-600/25 bg-surface p-3 text-xs text-surface-foreground"
             role="status"
             aria-live="polite"
           >
             {purgeMsg}
           </p>
         ) : null}
-      </section>
+      </Card>
 
       {state.ready ? (
-        <details className="rounded-md border border-muted/15 p-3 text-xs">
-          <summary className="cursor-pointer text-muted">Raw /health/ready payload</summary>
-          <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-all">
+        <details className="rounded-2xl border border-gold-600/25 bg-surface p-4 text-xs shadow-(--shadow-depth-1)">
+          <summary className="cursor-pointer font-medium text-muted transition hover:text-gold-600">
+            Raw /health/ready payload
+          </summary>
+          <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-all text-surface-foreground">
             {JSON.stringify(state.ready, null, 2)}
           </pre>
         </details>
       ) : null}
-    </div>
+    </main>
   );
 }

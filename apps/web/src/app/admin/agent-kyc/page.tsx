@@ -12,13 +12,16 @@
  * Reject opens an inline reason textarea; rejection without a reason
  * 400s server-side.
  *
- * Installed by [S-E5/ui] of the S-series real-functionality closeout.
+ * Installed by [S-E5/ui] of the S-series real-functionality closeout;
+ * restyled into the v2 ("Fusion") design language (royal/gold tokens,
+ * font-display, cinematic header band).
  */
 'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
 import { useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Check, ShieldCheck, X } from 'lucide-react';
 import {
   useAdminAgentsControllerList,
   useAdminAgentsControllerReject,
@@ -39,10 +42,10 @@ const STATUS_LABELS: Record<Status, string> = {
   rejected: 'Rejected',
 };
 
-const KYC_TONE: Record<Status, string> = {
-  pending: 'border-amber-500/40 bg-amber-500/5 text-amber-700 dark:text-amber-300',
-  verified: 'border-emerald-500/40 bg-emerald-500/5 text-emerald-700 dark:text-emerald-300',
-  rejected: 'border-red-500/40 bg-red-500/5 text-red-600 dark:text-red-400',
+const KYC_BADGE: Record<Status, 'gold' | 'success' | 'danger'> = {
+  pending: 'gold',
+  verified: 'success',
+  rejected: 'danger',
 };
 
 interface ApiError extends Error {
@@ -82,19 +85,36 @@ export default function AgentKycPage() {
   const total = body?.total ?? 0;
 
   return (
-    <div className="space-y-6">
-      <header className="space-y-1">
-        <Link href="/admin" className="text-xs text-muted underline-offset-2 hover:underline">
-          ← Admin dashboard
-        </Link>
-        <h1 className="text-3xl font-bold tracking-tight">Agent KYC</h1>
-        <p className="text-sm text-muted">
+    <main className="space-y-8">
+      <Link
+        href="/admin"
+        className="inline-flex items-center gap-1.5 text-sm text-muted underline-offset-4 transition hover:text-gold-600 hover:underline"
+      >
+        <ArrowLeft aria-hidden className="h-3.5 w-3.5" /> Admin dashboard
+      </Link>
+
+      {/* Cinematic royal header band — matches /home + /trips. */}
+      <header
+        className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-8 shadow-(--shadow-depth-2) sm:px-10"
+        style={{ backgroundImage: 'var(--gradient-royal)' }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/20 blur-[110px]"
+        />
+        <p className="relative inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+          <ShieldCheck aria-hidden className="h-3.5 w-3.5" /> Moderation queue
+        </p>
+        <h1 className="relative mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+          Agent KYC
+        </h1>
+        <p className="relative mt-2 max-w-lg text-sm text-white/65">
           Verify or reject agent KYC. Verifications stamp `verifiedAt = now`; rejections require a
-          reason that's preserved in the audit log. Slack pings on both via the E6 webhook.
+          reason that&apos;s preserved in the audit log. Slack pings on both via the E6 webhook.
         </p>
       </header>
 
-      <div role="tablist" aria-label="KYC status" className="flex flex-wrap gap-1">
+      <div role="tablist" aria-label="KYC status" className="flex flex-wrap gap-2">
         {(Object.keys(STATUS_LABELS) as Status[]).map((s) => {
           const active = s === status;
           return (
@@ -105,10 +125,10 @@ export default function AgentKycPage() {
               aria-selected={active}
               onClick={() => setStatus(s)}
               className={
-                'rounded-md border px-3 py-1.5 text-sm font-medium transition ' +
+                'rounded-2xl border px-3.5 py-1.5 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ' +
                 (active
                   ? 'border-gold-600/40 bg-gold-500/15 text-gold-700 dark:text-gold-300'
-                  : 'border-muted/30 text-muted hover:bg-muted/5')
+                  : 'border-gold-600/25 text-muted hover:border-gold-600/40 hover:bg-gold-500/5')
               }
             >
               {STATUS_LABELS[s]}
@@ -123,20 +143,20 @@ export default function AgentKycPage() {
       {listQuery.isLoading ? (
         <Skeleton className="h-32" count={3} />
       ) : listQuery.isError ? (
-        <p className="rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-sm text-red-600 dark:text-red-400">
-          Couldn't load agents —{' '}
+        <p className="rounded-2xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
+          Couldn&apos;t load agents —{' '}
           {(listQuery.error as ApiError)?.code ??
             `HTTP_${(listQuery.error as ApiError)?.status ?? '???'}`}
           .
         </p>
       ) : agents.length === 0 ? (
-        <Card>
+        <Card depth="raised">
           <p className="text-sm text-muted">
             No agents in the {STATUS_LABELS[status].toLowerCase()} pile.
           </p>
         </Card>
       ) : (
-        <ul className="space-y-3">
+        <ul className="space-y-4">
           {agents.map((a) => (
             <li key={a.id}>
               <AgentRow
@@ -153,7 +173,7 @@ export default function AgentKycPage() {
           ))}
         </ul>
       )}
-    </div>
+    </main>
   );
 }
 
@@ -173,20 +193,13 @@ function AgentRow({ agent, onVerify, onReject, pendingId }: AgentRowProps) {
   const bio = agent.bio as unknown as string | null;
 
   return (
-    <Card>
+    <Card depth="raised">
       <CardHeader>
         <div className="flex items-start justify-between gap-3">
           <div>
             <CardTitle>{agent.displayName}</CardTitle>
             <CardSubtitle>
-              <span
-                className={
-                  'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ' +
-                  KYC_TONE[kyc]
-                }
-              >
-                KYC {kyc}
-              </span>
+              <Badge variant={KYC_BADGE[kyc]}>KYC {kyc}</Badge>
               {verifiedAt ? ` · verified ${new Date(verifiedAt).toLocaleDateString()}` : ''} · ★{' '}
               {agent.ratingAverage.toFixed(1)} ({agent.ratingCount}) · created{' '}
               {new Date(agent.createdAt).toLocaleDateString()}
@@ -194,16 +207,13 @@ function AgentRow({ agent, onVerify, onReject, pendingId }: AgentRowProps) {
           </div>
           {kyc === 'pending' ? (
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" disabled={isMine} onClick={onVerify}>
-                {isMine ? 'Verifying…' : '✓ Verify'}
+              <Button variant="royal" size="sm" disabled={isMine} onClick={onVerify}>
+                <Check aria-hidden className="h-3.5 w-3.5" />
+                {isMine ? 'Verifying…' : 'Verify'}
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowReject((v) => !v)}
-                className="text-red-600 dark:text-red-400"
-              >
-                ✗ Reject…
+              <Button variant="ghost" size="sm" onClick={() => setShowReject((v) => !v)}>
+                <X aria-hidden className="h-3.5 w-3.5" />
+                Reject…
               </Button>
             </div>
           ) : null}
@@ -222,7 +232,7 @@ function AgentRow({ agent, onVerify, onReject, pendingId }: AgentRowProps) {
           </Badge>
         ))}
         {agent.regions.map((r) => (
-          <Badge key={`reg:${r}`} variant="brand">
+          <Badge key={`reg:${r}`} variant="gold">
             {r}
           </Badge>
         ))}
@@ -241,12 +251,12 @@ function AgentRow({ agent, onVerify, onReject, pendingId }: AgentRowProps) {
             minLength={1}
             maxLength={280}
             placeholder="What's wrong with the KYC submission?"
-            className="w-full rounded-md border border-muted/30 bg-surface px-3 py-2 text-sm focus:border-red-500/40 focus:outline-none focus:ring-1 focus:ring-red-500/40"
+            className="w-full rounded-lg border border-gold-600/25 bg-surface px-3 py-2 text-sm text-surface-foreground outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/25"
           />
           <p className="text-[11px] text-muted">{reason.trim().length} / 280</p>
           <div className="flex gap-2">
             <Button
-              variant="primary"
+              variant="danger"
               size="sm"
               disabled={isMine || reason.trim().length === 0}
               onClick={() => {
@@ -254,7 +264,6 @@ function AgentRow({ agent, onVerify, onReject, pendingId }: AgentRowProps) {
                 setShowReject(false);
                 setReason('');
               }}
-              className="bg-red-600 text-white hover:opacity-90"
             >
               {isMine ? 'Rejecting…' : 'Confirm reject'}
             </Button>
