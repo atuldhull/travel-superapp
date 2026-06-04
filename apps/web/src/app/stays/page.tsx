@@ -1,143 +1,60 @@
 /**
- * /stays — browse stays.
+ * /stays — real hotel meta-search.
  *
- * Closes C0's `stays` 0% gap. The `/api/v1/stays/search` endpoint has
- * existed since [V.UX.14]; this page is the standalone surface.
+ * No fake/seed listings: the traveller enters destination + dates +
+ * guests + rooms, and we deep-link them straight to trusted booking
+ * sites (Booking.com, Agoda, Airbnb, Expedia, Hotels.com, MakeMyTrip,
+ * Goibibo, KAYAK, Trivago, Hostelworld, Google Hotels) with the search
+ * pre-filled — live prices + real inventory, booked on that site.
  *
- * Filters mirror the API's accepted params: center+radius, check-in/out,
- * guest count, required amenities, stayType, maxPrice, minWifiSpeedMbps
- * (V.UX.23 nomad-mode). Geolocation prompt with NYC fallback.
- *
- * Installed by [S-Cs] of the S-series real-functionality closeout;
- * restyled into the v2 ("Fusion") design language (royal/gold tokens).
+ * Auth-gated like the rest of the app; redirects to /login when signed
+ * out. Restyled into the v2 design.
  */
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { MapPin, Search, Wifi } from 'lucide-react';
-import {
-  useStaysControllerSearch,
-  type SearchStaysRequestDto,
-  type StayListingDto,
-} from '@app/sdk';
-import { Badge } from '../../components/ui/badge';
-import { Button } from '../../components/ui/button';
+import { CalendarDays, DoorOpen, ExternalLink, MapPin, Search, Users } from 'lucide-react';
 import { Card, CardHeader, CardSubtitle, CardTitle } from '../../components/ui/card';
-import { Skeleton } from '../../components/ui/skeleton';
 import { useAuthBootComplete, useAuthToken } from '../../lib/use-auth-token';
+import { BOOKING_PARTNERS, type StaySearch } from '../../components/v2/booking-partners';
+import { cn } from '../../lib/cn';
 
-interface ApiError extends Error {
-  readonly code?: string;
-  readonly status?: number;
-}
-
-const DEFAULT_CENTER = { lat: 40.758, lng: -73.9855 };
-
-// Shared field styling so every filter input reads as one set.
 const FIELD =
-  'rounded-lg border border-gold-600/25 bg-surface px-2 py-1 text-xs text-surface-foreground outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/25';
+  'w-full rounded-lg border border-gold-600/25 bg-surface px-3 py-2 text-sm text-surface-foreground outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/25';
 
-// Today is iso "YYYY-MM-DD"; default check-in = +30d, check-out = +33d (3 nights).
-function defaultDates(): { checkIn: string; checkOut: string } {
-  const now = new Date();
-  const start = new Date(now.getTime() + 30 * 86_400_000);
-  const end = new Date(start.getTime() + 3 * 86_400_000);
-  const fmt = (d: Date) => d.toISOString().slice(0, 10);
-  return { checkIn: fmt(start), checkOut: fmt(end) };
+function plusDays(n: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0, 10);
 }
-
-const STAY_TYPES: readonly string[] = [
-  '',
-  'hostel',
-  'inn',
-  'boutique',
-  'hotel',
-  'apartment',
-  'monthly',
-];
 
 export default function StaysPage() {
   const router = useRouter();
   const token = useAuthToken();
   const bootComplete = useAuthBootComplete();
-  const initialDates = useMemo(defaultDates, []);
-  const [center, setCenter] = useState(DEFAULT_CENTER);
-  const [geoStatus, setGeoStatus] = useState<'idle' | 'pending' | 'granted' | 'denied'>('idle');
-  const [radiusKm, setRadiusKm] = useState(10);
-  const [checkIn, setCheckIn] = useState(initialDates.checkIn);
-  const [checkOut, setCheckOut] = useState(initialDates.checkOut);
+
+  const [destination, setDestination] = useState('');
+  // Dates default on the client (avoids any SSR/clock hydration mismatch).
+  const [checkIn, setCheckIn] = useState('');
+  const [checkOut, setCheckOut] = useState('');
   const [guests, setGuests] = useState(2);
-  const [stayType, setStayType] = useState('');
-  const [maxPrice, setMaxPrice] = useState('');
-  const [minWifi, setMinWifi] = useState('');
-  const [results, setResults] = useState<readonly StayListingDto[] | null>(null);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [rooms, setRooms] = useState(1);
+
+  useEffect(() => {
+    setCheckIn(plusDays(14));
+    setCheckOut(plusDays(16));
+  }, []);
 
   useEffect(() => {
     if (bootComplete && token === null) router.replace('/login?next=/stays');
   }, [bootComplete, token, router]);
 
-  const search = useStaysControllerSearch({
-    mutation: {
-      onSuccess: (response: { data?: unknown }) => {
-        const body = response.data as { stays?: readonly StayListingDto[] };
-        setResults(body?.stays ?? []);
-        setErrorMsg(null);
-      },
-      onError: (err: unknown) => {
-        const e = err as ApiError;
-        setErrorMsg(
-          `${e.code ?? `HTTP_${e.status ?? '???'}`} — ${e.message ?? 'Could not search stays.'}`,
-        );
-      },
-    },
-  });
-
-  function requestGeolocation() {
-    if (typeof navigator === 'undefined' || !navigator.geolocation) return;
-    setGeoStatus('pending');
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        setGeoStatus('granted');
-      },
-      () => setGeoStatus('denied'),
-      { enableHighAccuracy: false, timeout: 8000, maximumAge: 60_000 },
-    );
-  }
-
-  function runSearch() {
-    setErrorMsg(null);
-    const data: SearchStaysRequestDto = {
-      center: { lat: center.lat, lng: center.lng },
-      radiusKm,
-      checkIn,
-      checkOut,
-      guests,
-      ...(stayType ? { stayType } : {}),
-      ...(maxPrice.trim() && Number(maxPrice) > 0 ? { maxPriceUsdPerNight: Number(maxPrice) } : {}),
-      ...(minWifi.trim() && Number(minWifi) > 0 ? { minWifiSpeedMbps: Number(minWifi) } : {}),
-    };
-    search.mutate({ data });
-  }
-
-  // Auto-run once after boot.
-  useEffect(() => {
-    if (bootComplete && token !== null && results === null && !search.isPending) {
-      runSearch();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bootComplete, token]);
-
-  const sorted = useMemo(() => {
-    if (!results) return null;
-    return [...results].sort((a, b) => {
-      const ap = (a.priceUsdPerNight as unknown as number | null) ?? Number.POSITIVE_INFINITY;
-      const bp = (b.priceUsdPerNight as unknown as number | null) ?? Number.POSITIVE_INFINITY;
-      return ap - bp;
-    });
-  }, [results]);
+  const query: StaySearch = useMemo(
+    () => ({ destination, checkIn, checkOut, guests, rooms }),
+    [destination, checkIn, checkOut, guests, rooms],
+  );
+  const ready = destination.trim().length > 0 && checkIn !== '' && checkOut !== '';
 
   if (!bootComplete)
     return (
@@ -154,7 +71,7 @@ export default function StaysPage() {
 
   return (
     <main className="space-y-8">
-      {/* Cinematic royal header band — matches /home + /trips. */}
+      {/* Cinematic royal header band. */}
       <header
         className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-8 shadow-(--shadow-depth-2) sm:px-10"
         style={{ backgroundImage: 'var(--gradient-royal)' }}
@@ -167,190 +84,181 @@ export default function StaysPage() {
           <MapPin aria-hidden className="h-3.5 w-3.5" /> Where you’ll stay
         </p>
         <h1 className="relative mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-          Stays
+          Find your stay
         </h1>
         <p className="relative mt-2 max-w-lg text-sm text-white/65">
-          Find a place to stay near your trip’s centre — filters cover guest count, stay type, a
-          price cap, and the nomad-mode wifi floor.
+          Tell us where and when — we send you straight to the web’s most trusted booking sites with
+          your search ready. Live prices, real rooms, booked on their side.
         </p>
       </header>
 
+      {/* Search form */}
       <Card depth="raised">
         <CardHeader>
-          <CardTitle className="font-display text-xl">Search</CardTitle>
-          <CardSubtitle>
-            Centered at {center.lat.toFixed(3)}, {center.lng.toFixed(3)} · {radiusKm} km · {checkIn}{' '}
-            → {checkOut}
-            {geoStatus === 'pending' ? ' · locating…' : ''}
-            {geoStatus === 'denied' ? ' · using default (NYC)' : ''}
-          </CardSubtitle>
+          <CardTitle className="font-display text-xl">Your search</CardTitle>
+          <CardSubtitle>Fill this in, then tap any site below to open it pre-filled.</CardSubtitle>
         </CardHeader>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <Button type="button" variant="outline" size="sm" onClick={requestGeolocation}>
-            <MapPin aria-hidden className="mr-1.5 h-3.5 w-3.5" />
-            {geoStatus === 'granted' ? 'Re-locate' : 'Use my location'}
-          </Button>
-          <label className="text-xs text-muted">
-            Radius (km)
-            <input
-              type="number"
-              min={1}
-              max={100}
-              value={radiusKm}
-              onChange={(e) => setRadiusKm(Number(e.target.value))}
-              className={`ml-2 w-20 ${FIELD}`}
-            />
+
+        <div className="space-y-4">
+          <label className="block">
+            <span className="mb-1 block text-sm font-medium text-surface-foreground">
+              Where to?
+            </span>
+            <span className="flex items-center gap-2 rounded-xl border border-gold-600/25 bg-surface px-3.5 py-2.5 transition focus-within:border-gold-500 focus-within:ring-2 focus-within:ring-gold-500/25">
+              <MapPin aria-hidden className="h-4 w-4 shrink-0 text-gold-600" />
+              <input
+                value={destination}
+                onChange={(e) => setDestination(e.target.value)}
+                placeholder="City, area or hotel — e.g. Goa, Paris, Tokyo"
+                aria-label="Destination"
+                autoFocus
+                className="w-full bg-transparent text-sm text-surface-foreground outline-none placeholder:text-muted/70"
+              />
+            </span>
           </label>
-          <label className="text-xs text-muted">
-            Guests
-            <input
-              type="number"
-              min={1}
-              max={20}
-              value={guests}
-              onChange={(e) => setGuests(Number(e.target.value))}
-              className={`ml-2 w-16 ${FIELD}`}
-            />
-          </label>
-          <label className="text-xs text-muted">
-            Check-in
-            <input
-              type="date"
-              value={checkIn}
-              onChange={(e) => setCheckIn(e.target.value)}
-              className={`ml-2 ${FIELD}`}
-            />
-          </label>
-          <label className="text-xs text-muted">
-            Check-out
-            <input
-              type="date"
-              value={checkOut}
-              onChange={(e) => setCheckOut(e.target.value)}
-              className={`ml-2 ${FIELD}`}
-            />
-          </label>
-          <label className="text-xs text-muted">
-            Type
-            <select
-              value={stayType}
-              onChange={(e) => setStayType(e.target.value)}
-              className={`ml-2 ${FIELD}`}
-            >
-              {STAY_TYPES.map((t) => (
-                <option key={t || 'any'} value={t}>
-                  {t || 'any'}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-xs text-muted">
-            Max $/night
-            <input
-              type="number"
-              min={0}
-              value={maxPrice}
-              onChange={(e) => setMaxPrice(e.target.value)}
-              placeholder="any"
-              className={`ml-2 w-20 ${FIELD}`}
-            />
-          </label>
-          <label className="text-xs text-muted">
-            Min wifi (Mbps)
-            <input
-              type="number"
-              min={0}
-              value={minWifi}
-              onChange={(e) => setMinWifi(e.target.value)}
-              placeholder="any"
-              className={`ml-2 w-20 ${FIELD}`}
-            />
-          </label>
-        </div>
-        <div className="mt-4">
-          <Button
-            type="button"
-            variant="royal"
-            size="sm"
-            onClick={runSearch}
-            disabled={search.isPending}
-          >
-            <Search aria-hidden className="mr-1.5 h-4 w-4" />
-            {search.isPending ? 'Searching…' : 'Search stays'}
-          </Button>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block text-sm">
+              <span className="mb-1 flex items-center gap-1.5 font-medium text-surface-foreground">
+                <CalendarDays aria-hidden className="h-3.5 w-3.5 text-gold-600" /> Check-in
+              </span>
+              <input
+                type="date"
+                value={checkIn}
+                min={plusDays(0)}
+                onChange={(e) => setCheckIn(e.target.value)}
+                className={FIELD}
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="mb-1 flex items-center gap-1.5 font-medium text-surface-foreground">
+                <CalendarDays aria-hidden className="h-3.5 w-3.5 text-gold-600" /> Check-out
+              </span>
+              <input
+                type="date"
+                value={checkOut}
+                min={checkIn || plusDays(1)}
+                onChange={(e) => setCheckOut(e.target.value)}
+                className={FIELD}
+              />
+            </label>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block text-sm">
+              <span className="mb-1 flex items-center gap-1.5 font-medium text-surface-foreground">
+                <Users aria-hidden className="h-3.5 w-3.5 text-gold-600" /> Guests
+              </span>
+              <input
+                type="number"
+                min={1}
+                max={20}
+                value={guests}
+                onChange={(e) => setGuests(Math.max(1, Number(e.target.value) || 1))}
+                className={FIELD}
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="mb-1 flex items-center gap-1.5 font-medium text-surface-foreground">
+                <DoorOpen aria-hidden className="h-3.5 w-3.5 text-gold-600" /> Rooms
+              </span>
+              <input
+                type="number"
+                min={1}
+                max={10}
+                value={rooms}
+                onChange={(e) => setRooms(Math.max(1, Number(e.target.value) || 1))}
+                className={FIELD}
+              />
+            </label>
+          </div>
         </div>
       </Card>
 
-      {errorMsg ? (
-        <p className="rounded-2xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
-          {errorMsg}
-        </p>
-      ) : null}
-
-      {search.isPending && sorted === null ? (
-        <Skeleton className="h-24 rounded-2xl" count={4} />
-      ) : sorted === null ? null : sorted.length === 0 ? (
-        <Card depth="flat" className="p-5">
-          <p className="text-sm text-muted">
-            No stays match. Widen the radius, push the dates, lift the price cap, or drop the wifi
-            floor.
-          </p>
-        </Card>
-      ) : (
-        <ul className="space-y-3">
-          {sorted.map((s) => (
-            <li key={`${s.provider}:${s.externalId}`}>
-              <StayRow stay={s} />
-            </li>
-          ))}
-        </ul>
-      )}
-    </main>
-  );
-}
-
-function StayRow({ stay: s }: { stay: StayListingDto }) {
-  const price = s.priceUsdPerNight as unknown as number | null;
-  const wifi = s.wifiSpeedMbps as unknown as number | null;
-  const star = s.starRating as unknown as number | null;
-  const distanceKm = (s.distanceMeters / 1000).toFixed(1);
-  return (
-    <article className="rounded-2xl border border-gold-600/12 bg-surface p-4 shadow-(--shadow-depth-1) transition hover:border-gold-600/25 hover:shadow-(--shadow-depth-2)">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1">
-          <h3 className="font-display text-base font-semibold tracking-tight text-surface-foreground">
-            {s.name}
-            {star ? <span className="ml-2 text-xs text-gold-500">{'★'.repeat(star)}</span> : null}
-          </h3>
-          <p className="mt-0.5 text-xs text-muted">
-            {s.stayType} · {distanceKm} km away
-            {wifi !== null ? (
-              <span className="ml-1 inline-flex items-center gap-1">
-                · <Wifi aria-hidden className="h-3 w-3" /> {wifi} Mbps
-              </span>
-            ) : (
-              ''
-            )}
-          </p>
-          {s.amenities.length > 0 ? (
-            <p className="mt-2 flex flex-wrap gap-1">
-              {s.amenities.slice(0, 6).map((a) => (
-                <Badge key={a} variant="neutral">
-                  {a}
-                </Badge>
-              ))}
-              {s.amenities.length > 6 ? (
-                <Badge variant="neutral">+{s.amenities.length - 6}</Badge>
-              ) : null}
+      {/* Trusted booking sites */}
+      <section className="space-y-4">
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gold-600 dark:text-gold-400">
+              Compare &amp; book on
             </p>
-          ) : null}
+            <h2 className="mt-1 font-display text-2xl font-semibold tracking-tight text-surface-foreground">
+              {BOOKING_PARTNERS.length} trusted sites
+            </h2>
+          </div>
+          <p className="inline-flex items-center gap-1.5 text-xs text-muted">
+            <Search aria-hidden className="h-3.5 w-3.5" /> Opens in a new tab with your search
+          </p>
         </div>
-        <div className="flex shrink-0 flex-col items-end">
-          <Badge variant={price !== null ? 'gold' : 'neutral'}>
-            {price !== null ? `$${price}/nt` : 'No quote'}
-          </Badge>
-        </div>
-      </div>
-    </article>
+
+        {!ready ? (
+          <p className="rounded-2xl border border-gold-600/20 bg-gold-500/5 px-4 py-3 text-sm text-muted">
+            Enter a destination above to light up the booking sites.
+          </p>
+        ) : null}
+
+        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {BOOKING_PARTNERS.map((p) => {
+            const cardInner = (
+              <>
+                <span
+                  aria-hidden
+                  className="absolute inset-y-0 left-0 w-1 rounded-l-2xl"
+                  style={{ backgroundColor: p.accent }}
+                />
+                <div className="flex items-start justify-between gap-3 pl-3">
+                  <div className="min-w-0">
+                    <p className="font-display text-lg font-semibold tracking-tight text-surface-foreground">
+                      {p.name}
+                    </p>
+                    <p className="mt-0.5 text-sm text-muted">{p.blurb}</p>
+                  </div>
+                  <span
+                    className={cn(
+                      'mt-0.5 inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold transition',
+                      ready
+                        ? 'bg-gold-500/12 text-gold-700 group-hover:bg-gold-500/20 dark:text-gold-300'
+                        : 'bg-muted/10 text-muted',
+                    )}
+                  >
+                    Search <ExternalLink aria-hidden className="h-3.5 w-3.5" />
+                  </span>
+                </div>
+              </>
+            );
+            const cls =
+              'group relative flex flex-col overflow-hidden rounded-2xl border border-gold-600/12 bg-surface p-5 shadow-(--shadow-depth-1) transition';
+            return (
+              <li key={p.key}>
+                {ready ? (
+                  <a
+                    href={p.build(query)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Search ${p.name} for stays in ${destination}`}
+                    className={cn(
+                      cls,
+                      'hover:-translate-y-1 hover:border-gold-600/30 hover:shadow-(--shadow-depth-2) focus:outline-none focus-visible:ring-2 focus-visible:ring-accent',
+                    )}
+                  >
+                    {cardInner}
+                  </a>
+                ) : (
+                  <div className={cn(cls, 'opacity-60')} aria-disabled>
+                    {cardInner}
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+
+        <p className="text-xs leading-relaxed text-muted/80">
+          We don’t store, mark up, or fake prices — each site shows its own live availability for
+          your dates and you book there. Most sites pre-fill your dates &amp; guests; a few (the
+          India OTAs, Trivago, Google) open to your destination.
+        </p>
+      </section>
+    </main>
   );
 }
