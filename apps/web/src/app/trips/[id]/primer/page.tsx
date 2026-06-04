@@ -14,14 +14,15 @@
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
+import { ArrowLeft, BookOpen, MessageSquare, Phone, ShieldAlert, Stamp } from 'lucide-react';
 import {
   useCountryPrimerControllerGet,
   type CountryPrimerDto,
   type EmergencyNumberDto,
   type LanguagePhraseDto,
 } from '@app/sdk';
+import { Badge } from '../../../../components/ui/badge';
 import { Card, CardHeader, CardSubtitle, CardTitle } from '../../../../components/ui/card';
-import { Field } from '../../../../components/ui/input';
 import { Skeleton } from '../../../../components/ui/skeleton';
 import { useAuthBootComplete, useAuthToken } from '../../../../lib/use-auth-token';
 import {
@@ -119,25 +120,49 @@ export default function TripPrimerPage() {
   const renderingFromCache = !livePrimer && Boolean(cachedPrimer);
 
   return (
-    <main className="space-y-6">
+    <main className="space-y-8">
       <p>
-        <Link href={`/trips/${tripId}`} className="text-sm text-muted hover:underline">
-          ← Back to trip
+        <Link
+          href={`/trips/${tripId}`}
+          className="inline-flex items-center gap-1.5 text-sm text-muted underline-offset-4 transition hover:text-gold-600 hover:underline"
+        >
+          <ArrowLeft aria-hidden className="h-3.5 w-3.5" /> Back to trip
         </Link>
       </p>
-      <Card>
+
+      {/* Cinematic royal header band — matches /trips + /stays. */}
+      <header
+        className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-8 shadow-(--shadow-depth-2) sm:px-10"
+        style={{ backgroundImage: 'var(--gradient-royal)' }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/20 blur-[110px]"
+        />
+        <p className="relative inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+          <BookOpen aria-hidden className="h-3.5 w-3.5" /> Before you go
+        </p>
+        <h1 className="relative mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+          Pre-trip primer
+        </h1>
+        <p className="relative mt-2 max-w-lg text-sm text-white/65">
+          Visa, scams, emergency numbers, and survival phrases for your destination. Editorial seed
+          — six countries today, more landing later.
+        </p>
+      </header>
+
+      <Card depth="raised">
         <CardHeader>
-          <CardTitle>🌐 Pre-trip primer</CardTitle>
-          <CardSubtitle>
-            Visa, scams, emergency numbers, and survival phrases for your destination. Editorial
-            seed — six countries today, more landing later.
-          </CardSubtitle>
+          <CardTitle>Destination</CardTitle>
+          <CardSubtitle>Pick where you’re headed to load its primer.</CardSubtitle>
         </CardHeader>
-        <Field label="Destination">
+        <label htmlFor="primer-country" className="block space-y-1">
+          <span className="block text-sm font-medium">Country</span>
           <select
+            id="primer-country"
             value={country}
             onChange={(e) => setCountry(e.target.value)}
-            className="w-full rounded-md border border-muted/30 bg-transparent px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-gold-600/25 bg-surface px-3 py-2 text-sm text-surface-foreground outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/25"
           >
             {SEEDED_COUNTRIES.map((c) => (
               <option key={c.code} value={c.code}>
@@ -145,16 +170,16 @@ export default function TripPrimerPage() {
               </option>
             ))}
           </select>
-        </Field>
+        </label>
       </Card>
       {isLoading && !primer ? (
-        <Card>
+        <Card depth="raised">
           <Skeleton className="h-6 w-1/2" />
           <Skeleton className="mt-2 h-4 w-3/4" />
           <Skeleton className="mt-2 h-4 w-1/3" />
         </Card>
       ) : isError && !primer ? (
-        <Card>
+        <Card depth="raised" className="border-danger/30 bg-danger/5">
           <p className="text-sm text-danger">
             {missing
               ? `No primer for "${country}" yet — we expand the editorial seed as we go.`
@@ -172,54 +197,67 @@ export default function TripPrimerPage() {
               {snapshot ? ` · fetched ${formatSavedAt(snapshot.fetchedAt) ?? 'a while ago'}` : null}
             </p>
           ) : null}
-          <Card>
+          <Card depth="raised">
             <CardHeader>
-              <CardTitle>🛂 Visa</CardTitle>
+              <CardTitle className="inline-flex items-center gap-2">
+                <Stamp aria-hidden className="h-5 w-5 text-gold-600" /> Visa
+              </CardTitle>
               <CardSubtitle>Going to {primer.countryName}</CardSubtitle>
             </CardHeader>
-            <p className="text-sm leading-relaxed">{primer.visaInfo}</p>
+            <p className="text-sm leading-relaxed text-surface-foreground">{primer.visaInfo}</p>
           </Card>
-          <Card>
+          <Card depth="raised">
             <CardHeader>
-              <CardTitle>⚠️ Common scams</CardTitle>
+              <CardTitle className="inline-flex items-center gap-2">
+                <ShieldAlert aria-hidden className="h-5 w-5 text-gold-600" /> Common scams
+              </CardTitle>
               <CardSubtitle>What other travelers have flagged.</CardSubtitle>
             </CardHeader>
             <ul className="flex flex-wrap gap-2">
               {primer.topScamCategories.map((cat) => (
-                <li
-                  key={cat}
-                  className="rounded-full border border-amber-500/40 bg-amber-500/10 px-3 py-1 text-xs text-amber-700 dark:text-amber-300"
-                >
-                  {cat.replace(/-/g, ' ')}
+                <li key={cat}>
+                  <Badge variant="gold">{cat.replace(/-/g, ' ')}</Badge>
                 </li>
               ))}
             </ul>
           </Card>
-          <Card>
+          <Card depth="raised">
             <CardHeader>
-              <CardTitle>🚨 Emergency numbers</CardTitle>
+              <CardTitle className="inline-flex items-center gap-2">
+                <Phone aria-hidden className="h-5 w-5 text-gold-600" /> Emergency numbers
+              </CardTitle>
               <CardSubtitle>Save these to your phone before you land.</CardSubtitle>
             </CardHeader>
-            <ul className="space-y-1 text-sm">
+            <ul className="space-y-2 text-sm">
               {primer.emergencyNumbers.map((e: EmergencyNumberDto) => (
-                <li key={`${e.label}:${e.number}`} className="flex justify-between gap-3">
-                  <span>{e.label}</span>
-                  <a href={`tel:${e.number}`} className="font-mono text-brand hover:underline">
+                <li
+                  key={`${e.label}:${e.number}`}
+                  className="flex items-center justify-between gap-3 rounded-2xl border border-gold-600/12 bg-surface p-4 shadow-(--shadow-depth-1) transition hover:border-gold-600/25"
+                >
+                  <span className="font-display text-sm font-semibold tracking-tight text-surface-foreground">
+                    {e.label}
+                  </span>
+                  <a
+                    href={`tel:${e.number}`}
+                    className="font-mono text-gold-700 underline-offset-4 transition hover:underline dark:text-gold-300"
+                  >
                     {e.number}
                   </a>
                 </li>
               ))}
             </ul>
           </Card>
-          <Card>
+          <Card depth="raised">
             <CardHeader>
               <div className="flex items-start justify-between gap-3">
-                <CardTitle>🗣️ Survival phrases</CardTitle>
+                <CardTitle className="inline-flex items-center gap-2">
+                  <MessageSquare aria-hidden className="h-5 w-5 text-gold-600" /> Survival phrases
+                </CardTitle>
                 {/* I5 — the phrases page reads the offline cache this
                     primer fetch just populated; works with no signal. */}
                 <Link
                   href={`/trips/${tripId}/phrases` as never}
-                  className="shrink-0 text-xs text-gold-600 underline-offset-4 hover:underline"
+                  className="shrink-0 text-xs text-gold-600 underline-offset-4 transition hover:text-gold-700 hover:underline dark:hover:text-gold-300"
                 >
                   Open offline →
                 </Link>
@@ -230,7 +268,7 @@ export default function TripPrimerPage() {
               {primer.languagePhrases.map((p: LanguagePhraseDto) => (
                 <li
                   key={`${p.english}:${p.translation}`}
-                  className="rounded-md border border-muted/15 bg-muted/5 p-2"
+                  className="rounded-2xl border border-gold-600/12 bg-surface p-4 shadow-(--shadow-depth-1) transition hover:border-gold-600/25"
                 >
                   <button
                     type="button"
@@ -241,9 +279,11 @@ export default function TripPrimerPage() {
                         });
                       }
                     }}
-                    className="block w-full text-left"
+                    className="block w-full rounded-lg text-left outline-none focus-visible:ring-2 focus-visible:ring-gold-500/25"
                   >
-                    <p className="font-medium">{p.translation}</p>
+                    <p className="font-display font-semibold tracking-tight text-surface-foreground">
+                      {p.translation}
+                    </p>
                     <p className="text-xs text-muted">{p.english}</p>
                   </button>
                 </li>

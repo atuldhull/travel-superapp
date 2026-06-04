@@ -14,6 +14,7 @@
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, type FormEvent } from 'react';
+import { ArrowLeft, Footprints, MapPin, UtensilsCrossed } from 'lucide-react';
 import {
   useFoodCrawlControllerBuild,
   type BuildFoodCrawlRequestDto,
@@ -89,23 +90,47 @@ export default function FoodCrawlPage() {
   }
 
   return (
-    <main className="space-y-6">
-      <p>
-        <Link href={`/trips/${tripId}`} className="text-sm text-muted hover:underline">
-          ← Back to trip
-        </Link>
-      </p>
-      <Card>
+    <main className="space-y-8">
+      <Link
+        href={`/trips/${tripId}`}
+        className="inline-flex items-center gap-1.5 text-sm text-muted underline-offset-4 transition hover:text-gold-600 hover:underline"
+      >
+        <ArrowLeft aria-hidden className="h-3.5 w-3.5" /> Back to trip
+      </Link>
+
+      {/* Cinematic royal header band — matches /trips + /stays. */}
+      <header
+        className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-8 shadow-(--shadow-depth-2) sm:px-10"
+        style={{ backgroundImage: 'var(--gradient-royal)' }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/20 blur-[110px]"
+        />
+        <p className="relative inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+          <UtensilsCrossed aria-hidden className="h-3.5 w-3.5" /> Foodie route
+        </p>
+        <h1 className="relative mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+          Food crawl planner
+        </h1>
+        <p className="relative mt-2 max-w-lg text-sm text-white/65">
+          Pick 2–5 eateries; we&apos;ll order them for the shortest walk between bites. The first id
+          in your list anchors the crawl.
+        </p>
+      </header>
+
+      <Card depth="raised">
         <CardHeader>
-          <CardTitle>🍜 Food crawl planner</CardTitle>
+          <CardTitle className="font-display text-xl">Build your crawl</CardTitle>
           <CardSubtitle>
-            Pick 2–5 eateries; we&apos;ll order them for the shortest walk between bites. The first
-            id in your list anchors the crawl.
+            One id per line, or comma-separated. You can copy ids from the eatery detail page URL.
           </CardSubtitle>
         </CardHeader>
         <form onSubmit={submit} className="space-y-3">
           <label className="block space-y-1">
-            <span className="block text-sm font-medium">Eatery ids (one per line)</span>
+            <span className="block text-sm font-medium text-surface-foreground">
+              Eatery ids (one per line)
+            </span>
             <textarea
               value={eateryIds}
               onChange={(e) => setEateryIds(e.target.value)}
@@ -113,7 +138,7 @@ export default function FoodCrawlPage() {
               placeholder="cl0first…
 cl0second…
 cl0third…"
-              className="block w-full rounded-md border border-muted/30 bg-surface px-3 py-2 font-mono text-xs"
+              className="block w-full rounded-lg border border-gold-600/25 bg-surface px-3 py-2 font-mono text-xs text-surface-foreground outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/25"
               required
             />
             <span className="block text-xs text-muted">
@@ -121,41 +146,48 @@ cl0third…"
             </span>
           </label>
           {errMsg ? <p className="text-sm text-danger">{errMsg}</p> : null}
-          <Button type="submit" disabled={mutation.isPending}>
-            {mutation.isPending ? 'Optimising…' : '🍽️ Build crawl'}
+          <Button type="submit" variant="royal" disabled={mutation.isPending}>
+            <UtensilsCrossed aria-hidden className="mr-1.5 h-4 w-4" />
+            {mutation.isPending ? 'Optimising…' : 'Build crawl'}
           </Button>
         </form>
       </Card>
 
       {plan ? (
-        <Card>
+        <Card depth="raised">
           <CardHeader>
-            <CardTitle>Walking-optimised order</CardTitle>
+            <CardTitle className="font-display text-xl">Walking-optimised order</CardTitle>
             <CardSubtitle>
               {plan.stops.length} stops · {Math.round(plan.totalDistanceMeters)} m total ·{' '}
               {formatDuration(plan.totalWalkingSeconds)} walking time.
             </CardSubtitle>
           </CardHeader>
-          <ol className="space-y-2">
+          <ol className="space-y-3">
             {plan.stops.map((s: FoodCrawlStopDto) => (
               <li
                 key={s.eateryId}
-                className="rounded-md border border-muted/20 bg-surface p-3 text-sm"
+                className="rounded-2xl border border-gold-600/12 bg-surface p-4 shadow-(--shadow-depth-1) transition hover:border-gold-600/25"
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium">
+                  <span className="font-display text-base font-semibold tracking-tight text-surface-foreground">
                     {s.position}.{' '}
-                    <Link href={`/eateries/${s.eateryId}`} className="text-brand hover:underline">
+                    <Link
+                      href={`/eateries/${s.eateryId}`}
+                      className="rounded outline-none transition hover:text-gold-700 focus-visible:ring-2 focus-visible:ring-accent dark:hover:text-gold-300"
+                    >
                       {s.eateryId}
                     </Link>
                   </span>
                   {s.position > 1 ? (
-                    <span className="text-xs text-muted">
-                      🚶 {Math.round(s.distanceMetersFromPrev)} m ·{' '}
+                    <span className="inline-flex items-center gap-1 text-xs text-muted">
+                      <Footprints aria-hidden className="h-3.5 w-3.5" />{' '}
+                      {Math.round(s.distanceMetersFromPrev)} m ·{' '}
                       {formatDuration(s.walkingSecondsFromPrev)}
                     </span>
                   ) : (
-                    <span className="text-xs text-muted">📍 anchor</span>
+                    <span className="inline-flex items-center gap-1 text-xs text-gold-600 dark:text-gold-300">
+                      <MapPin aria-hidden className="h-3.5 w-3.5" /> anchor
+                    </span>
                   )}
                 </div>
               </li>

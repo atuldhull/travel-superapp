@@ -17,12 +17,14 @@
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
+import { ArrowLeft, Sparkles, Star } from 'lucide-react';
 import {
   useAgentsControllerMatchForTrip,
   type AgentMatchDto,
   type MatchAgentForTripRequestDto,
   type MatchAgentForTripResponseDto,
 } from '@app/sdk';
+import { Badge } from '../../../../components/ui/badge';
 import { Button } from '../../../../components/ui/button';
 import { Card, CardHeader, CardSubtitle, CardTitle } from '../../../../components/ui/card';
 import { Field } from '../../../../components/ui/input';
@@ -91,19 +93,42 @@ export default function ConciergePage() {
   }
 
   return (
-    <main className="space-y-6">
-      <p>
-        <Link href={`/trips/${tripId}`} className="text-sm text-muted hover:underline">
-          ← Back to trip
-        </Link>
-      </p>
+    <main className="space-y-8">
+      <Link
+        href={`/trips/${tripId}`}
+        className="inline-flex items-center gap-1.5 text-sm text-muted underline-offset-4 transition hover:text-gold-600 hover:underline"
+      >
+        <ArrowLeft aria-hidden className="h-3.5 w-3.5" /> Back to trip
+      </Link>
+
+      {/* Cinematic royal header band — matches /trips + /stays. */}
+      <header
+        className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-8 shadow-(--shadow-depth-2) sm:px-10"
+        style={{ backgroundImage: 'var(--gradient-royal)' }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/20 blur-[110px]"
+        />
+        <p className="relative inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+          <Sparkles aria-hidden className="h-3.5 w-3.5" /> Premium concierge
+        </p>
+        <h1 className="relative mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+          Match a verified agent
+        </h1>
+        <p className="relative mt-2 max-w-lg text-sm text-white/65">
+          We hand-pick top-rated, verified local agents for your destination — booked, briefed, and
+          ready before you land.
+        </p>
+      </header>
+
       <PremiumGate>
-        <Card>
+        <Card depth="raised">
           <CardHeader>
-            <CardTitle>✨ Concierge — match a verified agent</CardTitle>
+            <CardTitle className="font-display text-xl">Find your concierge</CardTitle>
             <CardSubtitle>
-              We hand-pick top-rated, verified agents for your destination. Tell us the region for a
-              tighter match (or leave it blank for global top-rated agents).
+              Tell us the region for a tighter match (or leave it blank for global top-rated
+              agents).
             </CardSubtitle>
           </CardHeader>
           <form onSubmit={submit} className="space-y-3">
@@ -114,23 +139,24 @@ export default function ConciergePage() {
                 onChange={(e) => setRegion(e.target.value)}
                 placeholder="e.g. France, Bali, Tuscany"
                 maxLength={80}
-                className="w-full rounded-md border border-muted/30 bg-transparent px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-gold-600/25 bg-surface px-3 py-2 text-sm text-surface-foreground outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/25"
               />
             </Field>
             {errorMsg ? (
-              <p className="rounded-md border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">
+              <p className="rounded-2xl border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">
                 {errorMsg}
               </p>
             ) : null}
-            <Button type="submit" variant="primary" disabled={matchMutation.isPending}>
+            <Button type="submit" variant="royal" disabled={matchMutation.isPending}>
+              <Sparkles aria-hidden className="mr-1.5 h-4 w-4" />
               {matchMutation.isPending ? 'Matching…' : 'Find concierge'}
             </Button>
           </form>
         </Card>
         {matches !== null ? (
-          <Card>
+          <Card depth="raised">
             <CardHeader>
-              <CardTitle>Top matches</CardTitle>
+              <CardTitle className="font-display text-xl">Top matches</CardTitle>
               <CardSubtitle>
                 {matches.length === 0
                   ? 'No verified agents matched yet — we expand the network as we go.'
@@ -142,15 +168,18 @@ export default function ConciergePage() {
                 {matches.map((m) => (
                   <li
                     key={m.id}
-                    className="rounded-md border border-amber-500/30 bg-amber-500/5 p-3 text-sm"
+                    className="rounded-2xl border border-gold-600/12 bg-surface p-4 shadow-(--shadow-depth-1) transition hover:border-gold-600/25 hover:shadow-(--shadow-depth-2)"
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="font-semibold">
-                          ✨ {m.displayName}
-                          <span className="ml-2 inline-flex items-center gap-0.5 text-xs font-normal text-amber-700 dark:text-amber-300">
-                            ⭐ {m.ratingAverage.toFixed(1)} ({m.ratingCount})
+                      <div className="flex-1">
+                        <p className="flex flex-wrap items-center gap-2">
+                          <span className="font-display text-base font-semibold tracking-tight text-surface-foreground">
+                            {m.displayName}
                           </span>
+                          <Badge variant="gold">
+                            <Star aria-hidden className="mr-1 h-3 w-3 fill-current" />
+                            {m.ratingAverage.toFixed(1)} ({m.ratingCount})
+                          </Badge>
                         </p>
                         {(() => {
                           const bio = (m.bio as unknown as string | null) ?? null;
@@ -163,8 +192,10 @@ export default function ConciergePage() {
                           Regions: {m.regions.length > 0 ? m.regions.join(', ') : '—'}
                         </p>
                       </div>
-                      <button
+                      <Button
                         type="button"
+                        variant="royal"
+                        size="sm"
                         onClick={() => {
                           // Placeholder — booking flow lands in a future
                           // slice. For now we surface a friendly message
@@ -174,10 +205,9 @@ export default function ConciergePage() {
                             `Booking with ${m.displayName} is coming soon. We will reach out when concierge bookings are live.`,
                           );
                         }}
-                        className="inline-flex items-center gap-1 rounded-md bg-linear-to-br from-amber-500 to-amber-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:opacity-90"
                       >
                         Book with concierge
-                      </button>
+                      </Button>
                     </div>
                   </li>
                 ))}

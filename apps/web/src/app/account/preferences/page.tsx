@@ -18,6 +18,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Check, SlidersHorizontal } from 'lucide-react';
 import {
   getPreferencesControllerGetMineQueryKey,
   usePreferencesControllerGetMine,
@@ -25,6 +26,7 @@ import {
   type PreferencesDto,
   type UpdatePreferencesRequestDto,
 } from '@app/sdk';
+import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
 import { Card, CardHeader, CardSubtitle, CardTitle } from '../../../components/ui/card';
 import { Field } from '../../../components/ui/input';
@@ -39,6 +41,13 @@ interface ApiError extends Error {
 }
 
 const MAX_KIDS = 8;
+
+// Shared row + input styling so every toggle / field reads as one gold set.
+const ROW =
+  'flex items-start gap-3 rounded-2xl border border-gold-600/12 bg-surface p-4 text-sm shadow-(--shadow-depth-1) transition hover:border-gold-600/25';
+const FIELD_INPUT =
+  'w-full rounded-lg border border-gold-600/25 bg-surface px-3 py-2 text-sm text-surface-foreground outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/25';
+const CHECKBOX = 'mt-0.5 h-4 w-4 accent-gold-600';
 
 export default function PreferencesPage() {
   const router = useRouter();
@@ -117,22 +126,22 @@ export default function PreferencesPage() {
   if (!bootComplete) {
     return (
       <main>
-        <p className="text-muted">Restoring your session…</p>
+        <p className="text-sm text-muted">Restoring your session…</p>
       </main>
     );
   }
   if (token === null) {
     return (
       <main>
-        <p className="text-muted">Redirecting to sign in…</p>
+        <p className="text-sm text-muted">Redirecting to sign in…</p>
       </main>
     );
   }
   if (isLoading) {
     return (
       <main className="space-y-4">
-        <Skeleton className="h-8 w-2/3" />
-        <Skeleton className="h-4 w-1/2" />
+        <Skeleton className="h-32 w-full rounded-3xl" />
+        <Skeleton className="h-48 w-full rounded-2xl" />
       </main>
     );
   }
@@ -140,8 +149,9 @@ export default function PreferencesPage() {
     const e = error as ApiError;
     return (
       <main className="space-y-4">
-        <p className="rounded-md border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
-          Couldn't load preferences ({e.code ?? `HTTP_${e.status ?? '???'}`}). {e.message ?? ''}
+        <p className="rounded-2xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
+          Couldn&apos;t load preferences ({e.code ?? `HTTP_${e.status ?? '???'}`}).{' '}
+          {e.message ?? ''}
         </p>
       </main>
     );
@@ -189,67 +199,91 @@ export default function PreferencesPage() {
   }
 
   return (
-    <main className="space-y-6">
-      <p>
-        <Link href="/" className="text-sm text-muted hover:underline">
-          ← Home
-        </Link>
-      </p>
-      <Card>
+    <main className="space-y-8">
+      <Link
+        href="/account"
+        className="inline-flex items-center gap-1.5 text-sm text-muted transition hover:text-gold-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-500/40"
+      >
+        <ArrowLeft aria-hidden className="h-4 w-4" /> Account
+      </Link>
+
+      {/* Cinematic royal header band — matches /account + /stays. */}
+      <header
+        className="relative isolate overflow-hidden rounded-3xl border border-gold-600/20 px-6 py-8 shadow-(--shadow-depth-2) sm:px-10"
+        style={{ backgroundImage: 'var(--gradient-royal)' }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/20 blur-[110px]"
+        />
+        <p className="relative inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-gold-300 backdrop-blur-sm">
+          <SlidersHorizontal aria-hidden className="h-3.5 w-3.5" /> Your account
+        </p>
+        <h1 className="relative mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+          Preferences
+        </h1>
+        <p className="relative mt-2 max-w-lg text-sm text-white/65">
+          Family mode flips search forms into kid-aware mode and warns when a day&apos;s pace gets
+          too heavy. Everything else (diet / accessibility / budget) is editable elsewhere.
+        </p>
+      </header>
+
+      <Card depth="raised">
         <CardHeader>
-          <CardTitle>👨‍👩‍👧 Preferences</CardTitle>
-          <CardSubtitle>
-            Family mode flips search forms into kid-aware mode and warns when a day's pace gets too
-            heavy. Everything else (diet / accessibility / budget) is editable elsewhere.
-          </CardSubtitle>
+          <CardTitle className="font-display text-xl">Trip preferences</CardTitle>
+          <CardSubtitle>Toggle the modes that reshape your searches and itineraries.</CardSubtitle>
         </CardHeader>
         <form onSubmit={submit} className="space-y-4">
-          <label className="flex items-start gap-3 rounded-md border border-muted/15 bg-muted/5 p-3 text-sm">
+          <label className={ROW}>
             <input
               type="checkbox"
               checked={familyMode}
               onChange={(e) => setFamilyMode(e.target.checked)}
-              className="mt-0.5 h-4 w-4"
+              className={CHECKBOX}
             />
             <span>
-              <span className="font-medium">Family mode</span>
+              <span className="font-display font-medium text-surface-foreground">Family mode</span>
               <span className="block text-xs text-muted">
                 Auto-adds kid-friendly / stroller / high-chair / crib chips to search; pacing
                 warning on heavy days.
               </span>
             </span>
           </label>
-          <label className="flex items-start gap-3 rounded-md border border-muted/15 bg-muted/5 p-3 text-sm">
+          <label className={ROW}>
             <input
               type="checkbox"
               checked={comfortLocal}
               onChange={(e) => toggleComfort(e.target.checked)}
-              className="mt-0.5 h-4 w-4"
+              className={CHECKBOX}
             />
             <span>
-              <span className="font-medium">Comfort mode</span>
+              <span className="font-display font-medium text-surface-foreground">Comfort mode</span>
               <span className="block text-xs text-muted">
                 Larger fonts, increased line-height, bigger tap targets. Step-free routes are
                 preferred in transport searches.
               </span>
               {comfortLocal ? (
-                <span className="mt-1 block rounded border border-brand/30 bg-brand/5 px-2 py-1 text-[11px] text-brand">
-                  ✓ Layout adjusted — more space, larger text.
-                </span>
+                <Badge variant="gold" className="mt-2 gap-1">
+                  <Check aria-hidden className="h-3 w-3" /> Layout adjusted — more space, larger
+                  text.
+                </Badge>
               ) : null}
             </span>
           </label>
-          <label className="flex items-start gap-3 rounded-md border border-muted/15 bg-muted/5 p-3 text-sm">
+          <label className={ROW}>
             <input
               type="checkbox"
               checked={budgetMode}
               onChange={(e) => setBudgetMode(e.target.checked)}
-              className="mt-0.5 h-4 w-4"
+              className={CHECKBOX}
             />
             <span>
-              <span className="font-medium">💰 Budget mode</span>
+              <span className="font-display font-medium text-surface-foreground">
+                💰 Budget mode
+              </span>
               <span className="block text-xs text-muted">
-                Hides above-tier listings; surfaces a "Today's spend" banner on every trip.
+                Hides above-tier listings; surfaces a &quot;Today&apos;s spend&quot; banner on every
+                trip.
               </span>
             </span>
           </label>
@@ -260,18 +294,20 @@ export default function PreferencesPage() {
               value={dailyBudgetText}
               onChange={(e) => setDailyBudgetText(e.target.value)}
               placeholder="e.g. 50.00"
-              className="w-full rounded-md border border-muted/30 bg-transparent px-3 py-2 text-sm"
+              className={FIELD_INPUT}
             />
           </Field>
-          <label className="flex items-start gap-3 rounded-md border border-muted/15 bg-muted/5 p-3 text-sm">
+          <label className={ROW}>
             <input
               type="checkbox"
               checked={nomadMode}
               onChange={(e) => setNomadMode(e.target.checked)}
-              className="mt-0.5 h-4 w-4"
+              className={CHECKBOX}
             />
             <span>
-              <span className="font-medium">👨‍💻 Nomad mode</span>
+              <span className="font-display font-medium text-surface-foreground">
+                👨‍💻 Nomad mode
+              </span>
               <span className="block text-xs text-muted">
                 Stays search defaults to monthly + the wifi-speed filter; surfaces the
                 connectivity-info pages.
@@ -284,28 +320,31 @@ export default function PreferencesPage() {
               value={kidAgesText}
               onChange={(e) => setKidAgesText(e.target.value)}
               placeholder="e.g. 5, 8, 11"
-              className="w-full rounded-md border border-muted/30 bg-transparent px-3 py-2 text-sm"
+              className={FIELD_INPUT}
             />
           </Field>
           {errorMsg ? (
-            <p className="rounded-md border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">
+            <p className="rounded-2xl border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">
               {errorMsg}
             </p>
           ) : null}
           {savedAt !== null ? (
-            <p className="text-xs text-emerald-600 dark:text-emerald-400">
-              ✓ Saved {new Date(savedAt).toLocaleTimeString()}
+            <p className="inline-flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
+              <Check aria-hidden className="h-3.5 w-3.5" /> Saved{' '}
+              {new Date(savedAt).toLocaleTimeString()}
             </p>
           ) : null}
-          <Button type="submit" variant="primary" disabled={updateMutation.isPending}>
+          <Button type="submit" variant="royal" disabled={updateMutation.isPending}>
             {updateMutation.isPending ? 'Saving…' : 'Save preferences'}
           </Button>
         </form>
       </Card>
       {prefs ? (
-        <Card>
+        <Card depth="raised">
           <CardHeader>
-            <CardTitle>Other preferences (read-only here)</CardTitle>
+            <CardTitle className="font-display text-xl">
+              Other preferences (read-only here)
+            </CardTitle>
           </CardHeader>
           <dl className="grid grid-cols-2 gap-y-1 text-xs">
             <dt className="text-muted">Diet</dt>
