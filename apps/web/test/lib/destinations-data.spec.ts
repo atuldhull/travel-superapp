@@ -1,7 +1,7 @@
 /**
  * Vitest data-shape gate (AE176) for the destination dataset.
  *
- * The AE7+AE26 destination data drives 15 SSG routes, Atlas pins, the
+ * The AE7+AE26 destination data drives 27 SSG routes, Atlas pins, the
  * compare surface, the journey checklist starter picker, etc. Bad
  * data here cascades; this spec asserts the contract:
  *   • Each slug in ALL_SLUGS is present in DESTINATIONS
@@ -14,8 +14,8 @@ import { describe, expect, it } from 'vitest';
 import { ALL_SLUGS, DESTINATIONS } from '../../src/components/aether/destinations/data';
 
 describe('DESTINATIONS dataset', () => {
-  it('ALL_SLUGS has 15 entries (Phase 0 curated set)', () => {
-    expect(ALL_SLUGS.length).toBe(15);
+  it('ALL_SLUGS has 27 entries (15 India + 12 international)', () => {
+    expect(ALL_SLUGS.length).toBe(27);
   });
 
   it('ALL_SLUGS has no duplicates', () => {

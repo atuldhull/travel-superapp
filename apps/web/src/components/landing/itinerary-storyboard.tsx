@@ -87,6 +87,7 @@ export function ItineraryStoryboard({ plan, city, center, className }: Itinerary
     return () => {
       alive = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on center.lat/lng primitives; the center object is intentionally excluded so the build effect doesn't re-run on identity change
   }, [plan, city, center.lat, center.lng]);
 
   return (

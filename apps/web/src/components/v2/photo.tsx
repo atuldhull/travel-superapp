@@ -42,7 +42,6 @@ export function V2Photo({
         className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gold-500/20 blur-3xl"
       />
       {!failed ? (
-        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={`https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=${width}&q=80`}
           alt={alt}

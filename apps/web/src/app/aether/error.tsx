@@ -35,7 +35,7 @@ export default function AetherError({ error, reset }: Props): React.ReactElement
     // Sentry / OTel auto-captures unhandled errors; log here too for
     // local visibility. console.error is the standard Next pattern for
     // error.tsx — `@app/logger` runs server-only.
-    // eslint-disable-next-line no-console
+
     console.error('aether error.tsx', error);
   }, [error]);
 

@@ -401,8 +401,8 @@ export function StatusPage(): React.ReactElement {
                       <Link
                         href={r
                           .replace('[slug]', 'jaipur')
-                          .replace('[id]', '')
-                          .replace('[code]', '')}
+                          .replace('[id]', 'demo')
+                          .replace('[code]', 'demo')}
                         style={{ color: ink.base, textDecoration: 'none' }}
                       >
                         {r}

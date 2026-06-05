@@ -19,6 +19,7 @@
  */
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Public } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { GetRoutesUseCase } from '../application/get-routes.use-case';
 import { GetNavigationUseCase } from '../application/get-navigation.use-case';
@@ -48,6 +49,7 @@ export class TransportController {
     status: 422,
     description: 'INVALID_COORDINATES | SAME_ORIGIN_DESTINATION | ROUTE_TOO_LONG.',
   })
+  @Public()
   @Post('routes')
   @HttpCode(HttpStatus.OK)
   async routes(

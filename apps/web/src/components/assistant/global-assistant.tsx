@@ -335,7 +335,6 @@ export function GlobalAssistant() {
     };
     // generate/say are stable closures; intentionally only run once
     // for the lifetime of this component instance.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // F13 — track the provider + token usage of the most recent

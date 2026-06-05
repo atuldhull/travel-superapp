@@ -125,7 +125,7 @@ export function Pulse(): React.ReactElement | null {
   const pathname = usePathname();
   const router = useRouter();
   // AE355 — composite auth hook.
-  const { token, bootComplete, isAuthed } = useAetherAuth();
+  const { isAuthed } = useAetherAuth();
   const [open, setOpen] = useState<boolean>(false);
   const [q, setQ] = useState<string>('');
   // AE364 — cursor position for the @-mention autocomplete (tracked
@@ -269,6 +269,7 @@ export function Pulse(): React.ReactElement | null {
     };
     window.addEventListener('aether-pulse-open', onOpen);
     return () => window.removeEventListener('aether-pulse-open', onOpen);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot listener; ask/setQ intentionally excluded so it doesn't re-subscribe every render
   }, [hidden]);
 
   // AE72 — persist on every change. Caps messages at PULSE_MAX_MESSAGES
@@ -363,8 +364,6 @@ export function Pulse(): React.ReactElement | null {
     return () => window.removeEventListener('keydown', onKey);
   }, [hidden]);
 
-  if (hidden) return null;
-
   const ink = theme.color.ink;
   const surface = theme.color.surface;
   const accent = theme.palette.terracotta;
@@ -388,6 +387,10 @@ export function Pulse(): React.ReactElement | null {
     }
     if (mentionIdx >= mentionMatches.length) setMentionIdx(0);
   }, [mentionMatches.length, mentionIdx]);
+
+  // Bail out AFTER every hook above has run so the hook order stays
+  // stable across renders (Rules of Hooks).
+  if (hidden) return null;
 
   /** AE369 — apply the slug at the current keyboard cursor + restore
    *  the input focus + selectionRange. Shared by Enter, click, and

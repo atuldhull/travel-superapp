@@ -89,6 +89,7 @@ const STOP = new Set(
 );
 
 const TITLE_SPAN =
+  // eslint-disable-next-line security/detect-unsafe-regex -- bounded {0,3} repetition over simple char classes; runs on plan text, no catastrophic backtracking
   /\b([A-Z][\p{L}'’.-]+(?:\s+(?:of|the|de|del|la|le|el|du|da|di|al|-)?\s*[A-Z][\p{L}'’.-]+){0,3})\b/gu;
 
 export interface ExtractedPlace {

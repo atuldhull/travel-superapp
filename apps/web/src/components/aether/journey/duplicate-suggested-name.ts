@@ -23,6 +23,7 @@ function truncate(s: string): string {
 export function suggestedDuplicateName(originalTitle: string): string {
   const trimmed = originalTitle.trim();
   if (trimmed === '') return '(copy)';
+  // eslint-disable-next-line security/detect-unsafe-regex -- input is a trimmed title (≤100 chars); lazy match between ^…$ anchors, no catastrophic backtracking
   const match = /^(.*?)\s*\(copy(?:\s+(\d+))?\)\s*$/i.exec(trimmed);
   if (match === null) return truncate(`${trimmed} (copy)`);
   const base = (match[1] ?? '').trimEnd();

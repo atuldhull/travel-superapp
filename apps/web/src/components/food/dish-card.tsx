@@ -28,7 +28,6 @@ export function DishCard({ dish }: DishCardProps) {
     <li className="overflow-hidden rounded-2xl border border-gold-600/12 bg-surface text-sm shadow-(--shadow-depth-1) transition hover:border-gold-600/25 hover:shadow-(--shadow-depth-2)">
       {photoUrl ? (
         <div className="aspect-4/3 w-full overflow-hidden bg-muted/10">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={photoUrl}
             alt={dish.name}

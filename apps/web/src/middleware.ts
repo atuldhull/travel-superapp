@@ -49,7 +49,6 @@ export function middleware(request: NextRequest): NextResponse {
   // the open-surface obvious in staging / preview deploys.
   if (!raw || raw.trim().length === 0) {
     if (!warnedAboutMissingEnv) {
-      // eslint-disable-next-line no-console -- middleware can't use @app/logger (Edge runtime)
       console.warn(
         '[admin-middleware] ADMIN_IP_ALLOWLIST is unset — /admin/* is open. Set it in production.',
       );
@@ -107,6 +106,7 @@ function extractClientIp(request: NextRequest): string | null {
 function stripPort(ip: string): string {
   // IPv4 + port → "1.2.3.4:5678". IPv6 won't match this naive pattern
   // (which is intentional — IPv6 is rejected below anyway).
+  // eslint-disable-next-line security/detect-unsafe-regex -- fixed-width \d{1,3} groups, fully anchored; no backtracking risk
   const m = ip.match(/^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})(?::\d+)?$/);
   return m ? m[1]! : ip;
 }

@@ -59,7 +59,6 @@ export function RouteMap({ stops, className }: RouteMapProps) {
       mapRef.current = null;
       layerRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Re-render markers + polyline whenever stops change.

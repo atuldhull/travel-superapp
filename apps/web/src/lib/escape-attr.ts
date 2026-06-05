@@ -26,6 +26,5 @@ export function escapeAttr(value: string): string {
 /** Stricter variant: also strips control chars (\x00-\x1f) which
  *  some viewers refuse to render. */
 export function escapeAttrStrict(value: string): string {
-  // eslint-disable-next-line no-control-regex
   return escapeAttr(value.replace(/[\x00-\x1f]/g, ''));
 }

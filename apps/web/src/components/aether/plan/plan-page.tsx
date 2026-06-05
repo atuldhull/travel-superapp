@@ -78,7 +78,7 @@ export function PlanPage(): React.ReactElement {
   const router = useRouter();
   const searchParams = useSearchParams();
   // AE355 — composite auth hook.
-  const { token, bootComplete, isAuthed } = useAetherAuth();
+  const { bootComplete, isAuthed } = useAetherAuth();
   const createTrip = useTripControllerCreate({
     mutation: {
       onSuccess: (created: TripDto) => {

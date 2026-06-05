@@ -83,6 +83,7 @@ export function useRealWeather(
     return (): void => {
       ctrl.abort();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on coords lat/lng + the resolved date string; full coords/date objects intentionally excluded
   }, [coords?.lat, coords?.lng, typeof date === 'string' ? date : date?.toISOString()]);
 
   return { weather, isPending, isError };

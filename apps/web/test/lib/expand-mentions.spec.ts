@@ -61,7 +61,7 @@ describe('expandMentions', () => {
   it('non-string input passes through verbatim', () => {
     // @ts-expect-error testing defensive non-string path
     expect(expandMentions(null, lookup)).toBeNull();
-    // @ts-expect-error
+    // @ts-expect-error -- testing defensive non-string path
     expect(expandMentions(undefined, lookup)).toBeUndefined();
   });
 

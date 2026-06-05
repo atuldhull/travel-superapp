@@ -17,7 +17,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Accessibility, MapPin, Navigation, Route } from 'lucide-react';
 import { useTransportControllerRoutes, type GetRoutesRequestDto, type RouteLegDto } from '@app/sdk';
 
@@ -36,7 +35,7 @@ import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card, CardHeader, CardSubtitle, CardTitle } from '../../components/ui/card';
 import { Skeleton } from '../../components/ui/skeleton';
-import { useAuthBootComplete, useAuthToken } from '../../lib/use-auth-token';
+import { useAuthBootComplete } from '../../lib/use-auth-token';
 
 interface ApiError extends Error {
   readonly code?: string;
@@ -85,8 +84,8 @@ function formatDistance(meters: number): string {
 }
 
 export default function TransportPage() {
-  const router = useRouter();
-  const token = useAuthToken();
+  // Public surface — route comparison is browsable without an account
+  // (the /transport/routes endpoint is @Public).
   const bootComplete = useAuthBootComplete();
   const [, setOrigin] = useState(DEFAULT_ORIGIN);
   const [, setDestination] = useState(DEFAULT_DEST);
@@ -96,10 +95,6 @@ export default function TransportPage() {
   const [stepFreeOnly, setStepFreeOnly] = useState(false);
   const [results, setResults] = useState<readonly RouteLegDto[] | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (bootComplete && token === null) router.replace('/login?next=/transport');
-  }, [bootComplete, token, router]);
 
   const search = useTransportControllerRoutes({
     mutation: {
@@ -169,11 +164,11 @@ export default function TransportPage() {
 
   // Auto-run on first boot with the defaults so the page demos meaningfully.
   useEffect(() => {
-    if (bootComplete && token !== null && results === null && !search.isPending) {
+    if (bootComplete && results === null && !search.isPending) {
       runSearch();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bootComplete, token]);
+  }, [bootComplete]);
 
   const sorted = useMemo(() => {
     if (!results) return null;
@@ -184,12 +179,6 @@ export default function TransportPage() {
     return (
       <main>
         <p className="text-muted">Restoring session…</p>
-      </main>
-    );
-  if (token === null)
-    return (
-      <main>
-        <p className="text-muted">Redirecting to sign in…</p>
       </main>
     );
 

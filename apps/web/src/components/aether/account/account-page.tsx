@@ -46,7 +46,7 @@ export function AccountPage(): React.ReactElement {
   const router = useRouter();
   const queryClient = useQueryClient();
   // AE355 — composite auth hook.
-  const { token, bootComplete, isAuthed } = useAetherAuth();
+  const { bootComplete, isAuthed } = useAetherAuth();
   const [signingOut, setSigningOut] = useState<boolean>(false);
   // AE347 — three transient ✓-chips collapse onto the shared hook.
   const [pulseCleared, flashPulseCleared] = useTransientFlag(2000);

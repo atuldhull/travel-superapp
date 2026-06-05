@@ -129,6 +129,82 @@ const ACCENTS: Record<string, DestinationAccent> = {
     whisper: 'rgba(77, 111, 139, 0.12)',
     note: 'cloud-slate',
   },
+  // ── International additions: a bespoke accent per worldwide guide so
+  //    each of the 12 feels like its own publication (matching the
+  //    Phase-0 Indian set) rather than collapsing to the terracotta
+  //    fallback. Same mid-tone saturation band as above for AA on cream.
+  santorini: {
+    base: '#3E78A8',
+    deep: '#2B597F',
+    whisper: 'rgba(62, 120, 168, 0.12)',
+    note: 'aegean-blue',
+  },
+  kyoto: {
+    base: '#C2543F',
+    deep: '#9A3F2E',
+    whisper: 'rgba(194, 84, 63, 0.12)',
+    note: 'torii-vermilion',
+  },
+  bali: {
+    base: '#4A8C5A',
+    deep: '#336340',
+    whisper: 'rgba(74, 140, 90, 0.12)',
+    note: 'rice-emerald',
+  },
+  maldives: {
+    base: '#2E8C8C',
+    deep: '#1F6363',
+    whisper: 'rgba(46, 140, 140, 0.12)',
+    note: 'lagoon-turquoise',
+  },
+  paris: {
+    base: '#B8924A',
+    deep: '#8E6F34',
+    whisper: 'rgba(184, 146, 74, 0.12)',
+    note: 'haussmann-gold',
+  },
+  dubai: {
+    base: '#C68A3C',
+    deep: '#9A6828',
+    whisper: 'rgba(198, 138, 60, 0.12)',
+    note: 'dune-amber',
+  },
+  interlaken: {
+    base: '#3C8A72',
+    deep: '#296151',
+    whisper: 'rgba(60, 138, 114, 0.12)',
+    note: 'alpine-jade',
+  },
+  iceland: {
+    base: '#5380A0',
+    deep: '#395E78',
+    whisper: 'rgba(83, 128, 160, 0.12)',
+    note: 'glacier-blue',
+  },
+  marrakech: {
+    base: '#C56A4C',
+    deep: '#9C4E35',
+    whisper: 'rgba(197, 106, 76, 0.12)',
+    note: 'medina-clay',
+  },
+  rome: {
+    base: '#B07C42',
+    deep: '#875E30',
+    whisper: 'rgba(176, 124, 66, 0.12)',
+    note: 'travertine-ochre',
+  },
+  bangkok: {
+    base: '#BE8A30',
+    deep: '#946722',
+    whisper: 'rgba(190, 138, 48, 0.12)',
+    note: 'saffron-gold',
+  },
+  cappadocia: {
+    base: '#C2705A',
+    deep: '#98513E',
+    whisper: 'rgba(194, 112, 90, 0.12)',
+    note: 'rose-valley',
+  },
 };
 
 /** Accent lookup; falls back to terracotta. */

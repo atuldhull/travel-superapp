@@ -173,6 +173,7 @@ export default function PreferencesPage() {
     let dailyBudgetUsd: string | null | undefined;
     if (trimmedBudget.length === 0) {
       dailyBudgetUsd = null;
+      // eslint-disable-next-line security/detect-unsafe-regex -- bounded \d{1,6}(\.\d{1,2})?, fully anchored; no backtracking
     } else if (/^\d{1,6}(\.\d{1,2})?$/.test(trimmedBudget)) {
       dailyBudgetUsd = trimmedBudget;
     } else {

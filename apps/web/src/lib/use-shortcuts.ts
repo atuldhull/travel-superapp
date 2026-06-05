@@ -88,7 +88,7 @@ export function useShortcuts(
   options: ShortcutOptions = {},
 ): void {
   // Iterate at hook-definition time so the dep array is stable.
-  // eslint-disable-next-line react-hooks/rules-of-hooks
+
   for (const spec of Object.keys(map)) {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     useShortcut(spec, map[spec]!, options);

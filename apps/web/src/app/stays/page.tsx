@@ -13,10 +13,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { CalendarDays, DoorOpen, ExternalLink, MapPin, Search, Users } from 'lucide-react';
 import { Card, CardHeader, CardSubtitle, CardTitle } from '../../components/ui/card';
-import { useAuthBootComplete, useAuthToken } from '../../lib/use-auth-token';
 import { BOOKING_PARTNERS, type StaySearch } from '../../components/v2/booking-partners';
 import { cn } from '../../lib/cn';
 
@@ -30,10 +28,9 @@ function plusDays(n: number): string {
 }
 
 export default function StaysPage() {
-  const router = useRouter();
-  const token = useAuthToken();
-  const bootComplete = useAuthBootComplete();
-
+  // Public surface — anyone can search. The page collects no private
+  // data and never calls the API; it only deep-links out to booking
+  // sites, so there is no auth gate here.
   const [destination, setDestination] = useState('');
   // Dates default on the client (avoids any SSR/clock hydration mismatch).
   const [checkIn, setCheckIn] = useState('');
@@ -46,28 +43,11 @@ export default function StaysPage() {
     setCheckOut(plusDays(16));
   }, []);
 
-  useEffect(() => {
-    if (bootComplete && token === null) router.replace('/login?next=/stays');
-  }, [bootComplete, token, router]);
-
   const query: StaySearch = useMemo(
     () => ({ destination, checkIn, checkOut, guests, rooms }),
     [destination, checkIn, checkOut, guests, rooms],
   );
   const ready = destination.trim().length > 0 && checkIn !== '' && checkOut !== '';
-
-  if (!bootComplete)
-    return (
-      <main>
-        <p className="text-muted">Restoring session…</p>
-      </main>
-    );
-  if (token === null)
-    return (
-      <main>
-        <p className="text-muted">Redirecting to sign in…</p>
-      </main>
-    );
 
   return (
     <main className="space-y-8">

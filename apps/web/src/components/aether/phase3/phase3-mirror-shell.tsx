@@ -54,7 +54,7 @@ function Phase3MirrorInner(): React.ReactElement {
 
   useLifecycleAutoDriver(BREATHING_LIFECYCLE_PLAN);
 
-  const [audio, setAudio] = useState<{ drone: number; events: number }>({
+  const [, setAudio] = useState<{ drone: number; events: number }>({
     drone: -60,
     events: -60,
   });

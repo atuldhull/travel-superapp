@@ -53,7 +53,7 @@ export function DestinationPage({ destination: d }: DestinationPageProps): React
   // reads ?addPlace= and shows the staging banner (Phase 0 stub — the
   // append endpoint lands in Phase 1).
   // AE355 — composite auth hook.
-  const { token, bootComplete, isAuthed } = useAetherAuth();
+  const { isAuthed } = useAetherAuth();
   // AE362 — composite hook. For "first draft trip" the .find stays
   // inline since the summariser is count-only.
   const { trips } = useAetherTripList({

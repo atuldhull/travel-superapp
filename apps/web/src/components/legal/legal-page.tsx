@@ -34,7 +34,7 @@ export function LegalPage({ title, lastUpdated, html }: LegalPageProps) {
       </header>
       <div
         // Server-rendered HTML, escaped at the source by renderLegalMarkdown.
-        // eslint-disable-next-line react/no-danger
+
         dangerouslySetInnerHTML={{ __html: html }}
       />
     </article>

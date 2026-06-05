@@ -131,7 +131,26 @@ export default function SharedTripPage() {
     );
   }
 
-  const trip = data?.data as unknown as SharedTripDto;
+  // Guard the disabled-query path (empty `code`): React Query reports
+  // neither isLoading nor isError for a disabled query with no cache, so
+  // execution can reach here with `data` undefined. Without this guard
+  // `trip.days` below would throw.
+  if (!data?.data) {
+    return (
+      <main className="space-y-4">
+        <p className="rounded-md border border-muted/20 px-4 py-3 text-sm text-muted">
+          This share link could not be opened.
+        </p>
+        <p>
+          <Link href="/" className="text-sm text-muted hover:underline">
+            ← Home
+          </Link>
+        </p>
+      </main>
+    );
+  }
+
+  const trip = data.data as unknown as SharedTripDto;
   const days: readonly ItineraryDayDto[] = trip.days ?? [];
   const startsOn = trip.startsOn as unknown as string | null;
   const endsOn = trip.endsOn as unknown as string | null;

@@ -196,17 +196,10 @@ export default function ConciergePage() {
                         type="button"
                         variant="royal"
                         size="sm"
-                        onClick={() => {
-                          // Placeholder — booking flow lands in a future
-                          // slice. For now we surface a friendly message
-                          // so the affordance works end-to-end.
-                          // eslint-disable-next-line no-alert
-                          window.alert(
-                            `Booking with ${m.displayName} is coming soon. We will reach out when concierge bookings are live.`,
-                          );
-                        }}
+                        disabled
+                        title="Concierge bookings open soon — this agent's profile is real; the booking flow lands in a later slice."
                       >
-                        Book with concierge
+                        Booking soon
                       </Button>
                     </div>
                   </li>

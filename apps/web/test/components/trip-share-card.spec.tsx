@@ -40,7 +40,7 @@ describe('<TripShareCard/>', () => {
     // The eyebrow text describes the artifact.
     expect(screen.getByText(/share card.*1200/i)).toBeInTheDocument();
     // The download button.
-    expect(screen.getByRole('button', { name: /download svg/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /download share card svg/i })).toBeInTheDocument();
   });
 
   it('embeds the trip title inside the inline SVG preview', () => {
@@ -78,7 +78,7 @@ describe('<TripShareCard/>', () => {
     URL.revokeObjectURL = revokeMock as unknown as typeof URL.revokeObjectURL;
 
     renderCard();
-    fireEvent.click(screen.getByRole('button', { name: /download svg/i }));
+    fireEvent.click(screen.getByRole('button', { name: /download share card svg/i }));
     expect(createObjectUrlMock).toHaveBeenCalledTimes(1);
     expect(createObjectUrlMock.mock.calls[0]?.[0]).toBeInstanceOf(Blob);
 
