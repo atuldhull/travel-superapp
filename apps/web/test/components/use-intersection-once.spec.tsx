@@ -5,7 +5,7 @@
  */
 import { act, render } from '@testing-library/react';
 import { useRef, type ReactElement } from 'react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { useIntersectionOnce } from '../../src/components/aether/use-intersection-once';
 
 interface FakeObserver {

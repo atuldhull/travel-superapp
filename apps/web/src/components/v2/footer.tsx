@@ -51,9 +51,9 @@ const COLUMNS = [
   {
     heading: 'Company',
     links: [
-      { label: 'About Us', href: '/help' },
       { label: 'Press', href: '/press' },
-      { label: 'Sustainability', href: '/help' },
+      { label: 'Pricing', href: '/pricing' },
+      { label: 'Status', href: '/status' },
     ],
   },
   {
@@ -61,7 +61,7 @@ const COLUMNS = [
     links: [
       { label: 'Help Center', href: '/help' },
       { label: 'Booking Terms', href: '/terms' },
-      { label: 'Contact Us', href: '/help' },
+      { label: 'Contact Us', href: 'mailto:hello@travel.local', external: true },
     ],
   },
   {
@@ -94,22 +94,13 @@ export function V2Footer(): React.ReactElement {
               Luxury travel, redefined for the modern explorer. Curated journeys, planned by AI,
               watched over end to end.
             </p>
-            <form className="mt-6 flex max-w-sm items-center gap-2 rounded-full border border-gold-600/20 bg-surface p-1.5 pl-4 shadow-(--shadow-depth-1)">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                aria-label="Email address"
-                className="w-full bg-transparent text-sm text-surface-foreground outline-none placeholder:text-muted"
-              />
-              <Link
-                href={'/register' as never}
-                aria-label="Subscribe"
-                className="inline-flex shrink-0 items-center justify-center rounded-full px-3.5 py-2 text-brand-900 transition hover:-translate-y-0.5"
-                style={{ backgroundImage: 'var(--gradient-gold)' }}
-              >
-                <ArrowRight className="h-4 w-4" aria-hidden />
-              </Link>
-            </form>
+            <Link
+              href={'/register' as never}
+              className="mt-6 inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-brand-900 shadow-(--shadow-depth-1) transition hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              style={{ backgroundImage: 'var(--gradient-gold)' }}
+            >
+              Start planning free <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
           </div>
 
           {/* Link columns */}
@@ -117,16 +108,24 @@ export function V2Footer(): React.ReactElement {
             <div key={col.heading}>
               <h3 className="text-sm font-semibold text-surface-foreground">{col.heading}</h3>
               <ul className="mt-4 space-y-2.5">
-                {col.links.map((l) => (
-                  <li key={l.label}>
-                    <Link
-                      href={l.href as never}
-                      className="text-sm text-muted transition hover:text-gold-600 dark:hover:text-gold-400"
-                    >
-                      {l.label}
-                    </Link>
-                  </li>
-                ))}
+                {col.links.map((l) => {
+                  const cls =
+                    'text-sm text-muted transition hover:text-gold-600 dark:hover:text-gold-400';
+                  const external = 'external' in l && l.external;
+                  return (
+                    <li key={l.label}>
+                      {external ? (
+                        <a href={l.href} className={cls}>
+                          {l.label}
+                        </a>
+                      ) : (
+                        <Link href={l.href as never} className={cls}>
+                          {l.label}
+                        </Link>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           ))}

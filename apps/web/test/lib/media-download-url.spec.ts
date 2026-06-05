@@ -28,7 +28,7 @@ describe('extractDownloadUrl (pure)', () => {
   it('non-string url → null', () => {
     // @ts-expect-error simulating a partial / malformed response
     expect(extractDownloadUrl({ url: 123, expiresAt: 'x' })).toBeNull();
-    // @ts-expect-error
+    // @ts-expect-error -- simulating a partial / malformed response
     expect(extractDownloadUrl({ url: null, expiresAt: 'x' })).toBeNull();
   });
 
@@ -50,9 +50,9 @@ describe('extractDownloadExpiresAt (pure)', () => {
   });
 
   it('missing / non-string / empty → null', () => {
-    // @ts-expect-error
+    // @ts-expect-error -- missing expiresAt field simulates a malformed response
     expect(extractDownloadExpiresAt({ url: 'x' })).toBeNull();
-    // @ts-expect-error
+    // @ts-expect-error -- non-string expiresAt simulates a malformed response
     expect(extractDownloadExpiresAt({ url: 'x', expiresAt: 42 })).toBeNull();
     expect(extractDownloadExpiresAt({ url: 'x', expiresAt: '' })).toBeNull();
   });

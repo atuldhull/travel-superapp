@@ -77,7 +77,7 @@ function Phase3EchoInner(): React.ReactElement {
 
   useLifecycleAutoDriver(BREATHING_LIFECYCLE_PLAN);
 
-  const [audio, setAudio] = useState<{ drone: number; events: number }>({
+  const [, setAudio] = useState<{ drone: number; events: number }>({
     drone: -60,
     events: -60,
   });
@@ -94,10 +94,12 @@ function Phase3EchoInner(): React.ReactElement {
     if (active === null) return;
     switch (action) {
       case 'save-place':
-        setToast(`Saved ${active.placeName} to your places`);
+        // Not yet persisted — don't claim a saved effect that never
+        // happens. Reworded until the feed/save endpoint is wired.
+        setToast(`Save coming soon — ${active.placeName}`);
         break;
       case 'follow-traveller':
-        setToast(`Now following @${active.travellerHandle}`);
+        setToast(`Follow coming soon — @${active.travellerHandle}`);
         break;
       case 'plan-like-this':
         setToast(`Asking Pulse to plan a trip like ${active.placeName}…`);
@@ -168,6 +170,28 @@ function Phase3EchoInner(): React.ReactElement {
       {/* AE418 — diary overlay. AE420 wires swipe gestures + palette
           re-derivation; AE419 wires R3F textured planes underneath. */}
       <EchoDiaryOverlay />
+      {/* Honesty label — Echo posts are sample content and Save/Follow
+          are previews (not yet persisted), so this reads as a preview. */}
+      <div
+        data-aether-echo-sample-banner
+        style={{
+          position: 'absolute',
+          top: 16,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 8,
+          padding: '6px 14px',
+          borderRadius: 999,
+          background: 'rgba(0,0,0,0.55)',
+          color: '#F2E8D5',
+          fontFamily: 'Inter, system-ui, sans-serif',
+          fontSize: 12,
+          letterSpacing: '0.02em',
+          pointerEvents: 'none',
+        }}
+      >
+        Sample feed · Phase 3 preview
+      </div>
       {/* AE420 — explicit action row so the gesture set has visible
           affordances. Each button fires the same handler the swipe
           + keyboard paths use. */}

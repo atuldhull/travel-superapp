@@ -17,7 +17,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { CloudSun, MapPin, RefreshCw } from 'lucide-react';
 import {
   apiFetch,
@@ -29,7 +28,7 @@ import {
 import { Button } from '../../components/ui/button';
 import { Card, CardHeader, CardSubtitle, CardTitle } from '../../components/ui/card';
 import { Skeleton } from '../../components/ui/skeleton';
-import { useAuthBootComplete, useAuthToken } from '../../lib/use-auth-token';
+import { useAuthBootComplete } from '../../lib/use-auth-token';
 
 interface ApiError extends Error {
   readonly code?: string;
@@ -68,8 +67,9 @@ function wmoEmoji(code: number): string {
 }
 
 export default function WeatherPage() {
-  const router = useRouter();
-  const token = useAuthToken();
+  // Public surface — weather is browsable without an account (the
+  // forecast/hourly endpoints are @Public). Boot-complete is still
+  // tracked so the first auto-fetch waits for silent-refresh to settle.
   const bootComplete = useAuthBootComplete();
   const [center, setCenter] = useState(DEFAULT_CENTER);
   const [geoStatus, setGeoStatus] = useState<'idle' | 'pending' | 'granted' | 'denied'>('idle');
@@ -78,10 +78,6 @@ export default function WeatherPage() {
   const [hourly, setHourly] = useState<HourlyResponse | null>(null);
   const [pending, setPending] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (bootComplete && token === null) router.replace('/login?next=/weather');
-  }, [bootComplete, token, router]);
 
   function requestGeolocation() {
     if (typeof navigator === 'undefined' || !navigator.geolocation) return;
@@ -97,7 +93,6 @@ export default function WeatherPage() {
   }
 
   async function fetchWeather() {
-    if (token === null) return;
     setErrorMsg(null);
     setPending(true);
     try {
@@ -122,22 +117,16 @@ export default function WeatherPage() {
 
   // Auto-fetch on mount + when center / mode change.
   useEffect(() => {
-    if (bootComplete && token !== null) {
+    if (bootComplete) {
       void fetchWeather();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bootComplete, token, mode, center.lat, center.lng]);
+  }, [bootComplete, mode, center.lat, center.lng]);
 
   if (!bootComplete)
     return (
       <main>
         <p className="text-muted">Restoring session…</p>
-      </main>
-    );
-  if (token === null)
-    return (
-      <main>
-        <p className="text-muted">Redirecting to sign in…</p>
       </main>
     );
 

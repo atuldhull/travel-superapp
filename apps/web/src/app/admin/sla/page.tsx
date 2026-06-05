@@ -99,11 +99,12 @@ export default function SlaDashboardPage() {
       (scamQuery.data?.data as { reports?: readonly Scam[] } | undefined)?.reports ?? []
     ).filter((r) => !r.verified);
     const sos =
-      (sosQuery.data?.data as { rows?: readonly Sos[]; total?: number } | undefined)?.rows ?? [];
+      (sosQuery.data?.data as { events?: readonly Sos[]; total?: number } | undefined)?.events ??
+      [];
     const sosTotal = (sosQuery.data?.data as { total?: number } | undefined)?.total ?? sos.length;
     const appeals =
-      (appealsQuery.data?.data as { rows?: readonly Appeal[]; total?: number } | undefined)?.rows ??
-      [];
+      (appealsQuery.data?.data as { appeals?: readonly Appeal[]; total?: number } | undefined)
+        ?.appeals ?? [];
     const appealsTotal =
       (appealsQuery.data?.data as { total?: number } | undefined)?.total ?? appeals.length;
 

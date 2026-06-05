@@ -528,6 +528,7 @@ export default function HomePage() {
       window.clearInterval(interval);
       document.removeEventListener('visibilitychange', onVisible);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on weatherTrip?.id; the full weatherTrip object is intentionally excluded so the poll doesn't restart every render
   }, [token, weatherTrip?.id]);
 
   // D5 — independent trip-center fetch (Phase 2 polish F2, lifted
@@ -625,6 +626,7 @@ export default function HomePage() {
     return () => {
       alive = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on safetyTrip?.id; the full safetyTrip object is intentionally excluded so the fetch doesn't restart every render
   }, [token, safetyTrip?.id, currentCenter]);
 
   // Day X of N for the active trip (honest: only when dated).

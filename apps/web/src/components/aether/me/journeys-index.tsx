@@ -34,7 +34,7 @@ export function JourneysIndex(): React.ReactElement {
   const theme = useTheme();
   const { isNarrow } = useViewport();
   // AE355 — composite auth hook.
-  const { token, bootComplete, isAuthed } = useAetherAuth();
+  const { bootComplete, isAuthed } = useAetherAuth();
   const [filter, setFilter] = useState<ListFilter>('all');
 
   // Active list (non-archived) + archived list — separate calls so the

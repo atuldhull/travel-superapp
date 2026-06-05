@@ -70,7 +70,7 @@ export function AtlasCanvas(): React.ReactElement {
       parseAtlasParams(
         typeof window === 'undefined' ? null : new URLSearchParams(window.location.search),
       ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
     [],
   );
   const mapDivRef = useRef<HTMLDivElement | null>(null);

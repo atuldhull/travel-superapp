@@ -14,7 +14,6 @@
  *
  * Auth-free; public-facing once the env gate flips.
  */
-import { useState } from 'react';
 import Link from 'next/link';
 import { useTheme } from '@app/aether-core';
 import { DriftNav } from '../drift-nav';

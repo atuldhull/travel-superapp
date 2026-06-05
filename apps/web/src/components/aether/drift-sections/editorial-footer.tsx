@@ -46,7 +46,8 @@ const COLUMNS: readonly FooterColumn[] = [
       { label: 'Our promise', href: '#trust' },
       { label: 'Sustainability', href: '#trust' },
       { label: 'Contact', href: '/me/agent' },
-      { label: 'Privacy & terms', href: '/legal/privacy' },
+      { label: 'Privacy', href: '/privacy' },
+      { label: 'Terms', href: '/terms' },
     ],
   },
 ];

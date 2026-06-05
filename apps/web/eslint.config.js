@@ -35,17 +35,33 @@ export default [
     rules: {
       ...reactHooks.configs.recommended.rules,
       ...nextPlugin.configs.recommended.rules,
-      // The codebase pre-dates the strict shared config; existing
-      // `==` / `!=` are warnings until a follow-up PR sweeps them.
-      eqeqeq: 'warn',
+      // `==`/`!=` warn — except comparing to null. `x == null` (matches
+      // null OR undefined together) is the one idiomatic loose-equality
+      // use, allowed via { null: 'ignore' }.
+      eqeqeq: ['warn', 'always', { null: 'ignore' }],
       // ReDoS detector fires on bounded regexes in the codebase
       // (same false-positive pattern as the api side from [I3]).
       // Keep at warn here — strictly enforced only in apps/api/src.
       'security/detect-unsafe-regex': 'warn',
-      // Rules-of-Hooks at warn for now — there's one pre-existing
-      // conditional-hook offender (festivals trip detail) that needs
-      // its own fix PR. Real, but not a K1 blocker.
-      'react-hooks/rules-of-hooks': 'warn',
+      // Rules-of-Hooks stays an error so conditional-hook bugs are caught.
+      'react-hooks/rules-of-hooks': 'error',
+      // ── eslint-plugin-security: advisory heuristics that are ~100%
+      // false-positive in this front-end and were never enforced (warn
+      // only). They fire on every `obj[key]` / `arr[i]` read, on plain
+      // `=== null` / `!boolean` comparisons (e.g. `if (!bootComplete)` is
+      // not a "timing attack"), and on legitimate server reads of
+      // app-bundled files. Turned off so they don't bury real signal; the
+      // high-confidence security rules (eval, child_process, new Buffer,
+      // pseudoRandomBytes, unsafe-regex) stay errors in @app/eslint-config,
+      // and Semgrep CI is the backstop.
+      'security/detect-object-injection': 'off',
+      'security/detect-possible-timing-attacks': 'off',
+      'security/detect-non-literal-fs-filename': 'off',
+      'security/detect-non-literal-regexp': 'off',
+      // Several surfaces intentionally use a raw <img> for external /
+      // dynamic URLs (Unsplash, S3 media) that next/image can't optimise
+      // without a domain allow-list; this is a perf advisory, not a bug.
+      '@next/next/no-img-element': 'off',
     },
   },
   {

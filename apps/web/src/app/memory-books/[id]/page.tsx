@@ -146,9 +146,10 @@ export default function PublicMemoryBookPage() {
     return null;
   }, [preview, previewBody, publicBody]);
 
-  const assets: readonly MemoryBookAssetSummaryDto[] = preview
-    ? (previewBody?.assets ?? [])
-    : (publicBody?.assets ?? []);
+  const assets: readonly MemoryBookAssetSummaryDto[] = useMemo(
+    () => (preview ? (previewBody?.assets ?? []) : (publicBody?.assets ?? [])),
+    [preview, previewBody, publicBody],
+  );
 
   const readingMinutes = useMemo(() => {
     const captionWords = assets.reduce(

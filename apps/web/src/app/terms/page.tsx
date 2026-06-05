@@ -63,7 +63,7 @@ export default function TermsPage() {
       <Card depth="raised" className="max-w-3xl">
         <div
           // Server-rendered HTML, escaped at the source by renderLegalMarkdown.
-          // eslint-disable-next-line react/no-danger
+
           dangerouslySetInnerHTML={{ __html: html }}
         />
       </Card>

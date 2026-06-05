@@ -42,12 +42,7 @@ import { useAetherAuth } from '../use-aether-auth';
 import { useViewport } from '../use-viewport';
 import { TripShareCard } from './trip-share-card';
 import { TripChecklist } from './trip-checklist';
-import {
-  TIMELINE_GROUP_THRESHOLD,
-  countTimelineEvents,
-  groupByWeek,
-  type TimelineEvent,
-} from './timeline-grouping';
+import { TIMELINE_GROUP_THRESHOLD, countTimelineEvents, groupByWeek } from './timeline-grouping';
 // AE149 — derive-slug helper extracted so it can be unit-tested.
 import { deriveChecklistSlug } from './derive-checklist-slug';
 // AE206 — timeline-dot colour routing extracted from the nested ternary.
@@ -83,7 +78,7 @@ import { readSummaryField } from './read-summary-field';
 
 // AE186/AE187/AE325 — every date helper now lives in aether-dates.
 // (asIso, fmtDate, daysBetween were duplicated inline before AE325.)
-import { asIso, daysBetween, fmtDate, fmtDayHead, fmtTime } from '@/lib/aether-dates';
+import { asIso, fmtDate, fmtDayHead, fmtTime } from '@/lib/aether-dates';
 
 export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.ReactElement {
   const theme = useTheme();
@@ -161,7 +156,7 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
     },
   });
   // AE355 — composite auth hook.
-  const { token, bootComplete, isAuthed } = useAetherAuth();
+  const { bootComplete, isAuthed } = useAetherAuth();
 
   // Only fetch once auth has settled (avoids a stampede of 401s on first
   // paint before the silent-refresh resolves).
@@ -184,8 +179,10 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
   const sharesQuery = useTripControllerListShares(tripId, {
     query: { enabled: isAuthed && trip !== undefined, retry: 1 },
   });
-  const tripShares: TripShareOwnerDto[] =
-    (sharesQuery.data?.data as ListTripSharesResponseDto | undefined)?.shares ?? [];
+  const tripShares: TripShareOwnerDto[] = useMemo(
+    () => (sharesQuery.data?.data as ListTripSharesResponseDto | undefined)?.shares ?? [],
+    [sharesQuery.data],
+  );
 
   // AE154 — total event count for the timeline kicker.
   // AE165 — count math extracted to ./timeline-grouping.ts.

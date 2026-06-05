@@ -300,7 +300,7 @@ export function SharesIndex(): React.ReactElement {
   const theme = useTheme();
   const { isNarrow } = useViewport();
   // AE355 — composite auth hook.
-  const { token, bootComplete, isAuthed } = useAetherAuth();
+  const { bootComplete, isAuthed } = useAetherAuth();
 
   // AE362 — composite hook pulls both active + archived so all shares
   // are findable (shares can exist on archived trips too).

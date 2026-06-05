@@ -2,7 +2,8 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   "_comment_role": [
     "Root solution tsconfig for TravelSuperApp.",
-    "- DOES NOT compile anything (files: [], include: []).",
+    "- Compiles ONLY tsconfig.anchor.d.ts (a no-op module) so it has one valid input",
+    "  without pulling in the monorepo — an empty files[]/include[] trips TS18002/18003.",
     "- Holds the @app/* path aliases so editors and tools resolve cross-package imports",
     "  directly to source without requiring `pnpm build` first.",
     "- Each app/package has its own tsconfig.json for actual compilation.",
@@ -10,6 +11,7 @@
   ],
   "compilerOptions": {
     "baseUrl": ".",
+    "types": [],
     "paths": {
       "@app/config": ["packages/config/src/index.ts"],
       "@app/config/*": ["packages/config/src/*"],
@@ -29,6 +31,5 @@
       "@app/mobile-ui/*": ["packages/mobile-ui/src/*"]
     }
   },
-  "files": [],
-  "include": []
+  "files": ["tsconfig.anchor.d.ts"]
 }

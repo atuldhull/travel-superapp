@@ -843,8 +843,6 @@ function ItinerarySection({ tripId, enabled }: ItinerarySectionProps) {
     },
   });
 
-  if (!enabled) return null;
-
   const body = data?.data as unknown as ItineraryListResponseDto | undefined;
   const days: readonly ItineraryDayDto[] = body?.days ?? [];
 
@@ -860,6 +858,10 @@ function ItinerarySection({ tripId, enabled }: ItinerarySectionProps) {
         ).toISOString()
       : null;
   const { festivalsByDate } = useFestivalsByDate({ fromIso, toIso });
+
+  // All hooks above run unconditionally; bail out after them so the
+  // hook order stays stable across renders (Rules of Hooks).
+  if (!enabled) return null;
 
   return (
     <Card>

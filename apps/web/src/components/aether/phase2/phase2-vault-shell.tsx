@@ -73,7 +73,7 @@ function Phase2VaultInner(): React.ReactElement {
 
   useLifecycleAutoDriver(BREATHING_LIFECYCLE_PLAN);
 
-  const [audio, setAudio] = useState<{ drone: number; events: number }>({
+  const [, setAudio] = useState<{ drone: number; events: number }>({
     drone: -60,
     events: -60,
   });
@@ -120,6 +120,30 @@ function Phase2VaultInner(): React.ReactElement {
       <Phase2GenieModal open={genieOpen} onClose={() => setGenieOpen(false)} />
       <Phase1ContinuumBar />
       <Phase1ContinuumReceiverToast />
+      {/* Honesty label — the glyphs below are Phase 2 sample prices, not
+          live bookable inventory (real pricing wires to the stays /
+          transport search in a later slice). Labelled so nothing here
+          reads as a real, priced booking. */}
+      <div
+        data-aether-vault-sample-banner
+        style={{
+          position: 'absolute',
+          top: 16,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 5,
+          padding: '6px 14px',
+          borderRadius: 999,
+          background: 'rgba(0,0,0,0.55)',
+          color: '#F2E8D5',
+          fontFamily: 'Inter, system-ui, sans-serif',
+          fontSize: 12,
+          letterSpacing: '0.02em',
+          pointerEvents: 'none',
+        }}
+      >
+        Phase 2 preview · sample prices — not yet bookable
+      </div>
       {/* AE407 — first-cut 2D glyph grid overlay. R3F custom shader
           lands in a future slice; this gets the visual story up. */}
       <div

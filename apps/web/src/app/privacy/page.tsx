@@ -67,7 +67,7 @@ export default function PrivacyPage() {
         </div>
         <div
           // Server-rendered HTML, escaped at the source by renderLegalMarkdown.
-          // eslint-disable-next-line react/no-danger
+
           dangerouslySetInnerHTML={{ __html: html }}
         />
       </Card>

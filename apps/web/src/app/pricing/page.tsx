@@ -116,18 +116,16 @@ function useUpgradeToPremium() {
         return;
       }
       // Defensive: 200 without a URL shouldn't happen, but don't hang.
-      // eslint-disable-next-line no-alert
+
       window.alert('Checkout could not start. Please try again.');
     } catch (err) {
       const e = err as { status?: number; code?: string };
       if (e.status === 503 || e.code === 'PAYMENTS_DISABLED') {
-        // eslint-disable-next-line no-alert
         window.alert(
           'Premium checkout is not configured in this environment yet. ' +
             'We will notify you via the in-app inbox when it goes live.',
         );
       } else {
-        // eslint-disable-next-line no-alert
         window.alert(`Could not start checkout: ${e.code ?? `HTTP_${e.status ?? '???'}`}.`);
       }
     } finally {

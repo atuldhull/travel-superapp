@@ -71,7 +71,6 @@ export function DestinationImage({
         className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gold-500/20 blur-3xl"
       />
       {showPhoto ? (
-        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={src}
           alt={alt ?? place}

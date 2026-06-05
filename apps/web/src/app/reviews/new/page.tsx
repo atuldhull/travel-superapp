@@ -93,11 +93,14 @@ function NewReviewPageInner() {
   const createMutation = useReviewsControllerCreate({
     mutation: {
       onSuccess: () => {
-        // Land on /me/reviews — that's the social-profile-ish "your
-        // reviews" surface from the C0-audited mature paths. Falls back
-        // gracefully if the route hasn't shipped yet (404 redirects to
-        // home via the global not-found).
-        router.push('/me/reviews');
+        // There is no standalone "your reviews" list route, so land the
+        // user back on what they reviewed when it has a detail page
+        // (only eateries do); otherwise return home.
+        if (targetType === 'eatery' && targetId.trim().length > 0) {
+          router.push(`/eateries/${targetId.trim()}` as never);
+        } else {
+          router.push('/home');
+        }
       },
       onError: (err: unknown) => {
         const e = err as ApiError;
@@ -107,6 +110,13 @@ function NewReviewPageInner() {
       },
     },
   });
+
+  // Hooks must run on every render — keep this above the early returns
+  // so the hook count stays stable when auth resolves (null → token).
+  const canSubmit = useMemo(
+    () => targetId.trim().length > 0 && body.trim().length >= 10 && rating >= 1 && rating <= 5,
+    [targetId, body, rating],
+  );
 
   if (!bootComplete) {
     return (
@@ -122,11 +132,6 @@ function NewReviewPageInner() {
       </main>
     );
   }
-
-  const canSubmit = useMemo(
-    () => targetId.trim().length > 0 && body.trim().length >= 10 && rating >= 1 && rating <= 5,
-    [targetId, body, rating],
-  );
 
   function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -169,10 +174,10 @@ function NewReviewPageInner() {
 
       <p>
         <Link
-          href="/me/reviews"
+          href="/home"
           className="inline-flex items-center gap-1.5 text-sm text-muted underline-offset-4 transition hover:text-gold-600 hover:underline"
         >
-          <ArrowLeft aria-hidden className="h-3.5 w-3.5" /> Back to your reviews
+          <ArrowLeft aria-hidden className="h-3.5 w-3.5" /> Back to home
         </Link>
       </p>
 

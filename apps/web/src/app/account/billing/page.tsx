@@ -154,9 +154,9 @@ export default function BillingPage() {
         </p>
       ) : null}
 
-      {data === null ? (
+      {error === null && data === null ? (
         <p className="text-sm text-muted">Loading subscription…</p>
-      ) : data.subscription === null ? (
+      ) : data === null ? null : data.subscription === null ? (
         <Card depth="raised">
           <CardHeader>
             <CardTitle className="text-xl">You&apos;re on the Free plan</CardTitle>

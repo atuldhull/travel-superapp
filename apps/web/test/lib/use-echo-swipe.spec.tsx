@@ -7,8 +7,6 @@ import {
   useEchoSwipe,
 } from '../../src/components/aether/phase3/use-echo-swipe';
 
-type PointerLike = { clientX: number; clientY: number };
-
 const ITEMS = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
 
 describe('useEchoSwipe — pointer swipe (jsdom)', () => {

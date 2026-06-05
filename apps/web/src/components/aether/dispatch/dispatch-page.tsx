@@ -15,7 +15,7 @@
  */
 import Link from 'next/link';
 import { useTheme } from '@app/aether-core';
-import { useAuthControllerMe, type TripDto, type WhoAmIResponseDto } from '@app/sdk';
+import { useAuthControllerMe, type WhoAmIResponseDto } from '@app/sdk';
 import { DriftNav } from '../drift-nav';
 import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';
@@ -36,7 +36,7 @@ export function DispatchPage(): React.ReactElement {
   const theme = useTheme();
   const { isNarrow } = useViewport();
   // AE355 — composite auth hook.
-  const { token, bootComplete, isAuthed } = useAetherAuth();
+  const { bootComplete, isAuthed } = useAetherAuth();
 
   const meQuery = useAuthControllerMe({ query: { enabled: isAuthed, retry: 1 } });
   const me = meQuery.data?.data as WhoAmIResponseDto | undefined;

@@ -38,7 +38,6 @@ import {
   type AgentReviewWithResponseDto,
   type UpdateAgentProfileRequestDto,
 } from '@app/sdk';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
 import { Card, CardHeader, CardSubtitle, CardTitle } from '../../../components/ui/card';
@@ -451,12 +450,9 @@ function ReviewsList({ reviews }: { reviews: readonly AgentReviewWithResponseDto
     <div>
       <h3 className="mb-2 font-display text-sm font-semibold tracking-tight">Recent reviews</h3>
       <ul className="space-y-2">
-        {reviews.slice(0, 5).map((r) => {
-          const rev = (
-            r as unknown as {
-              review: { id: string; rating: number; body: string; createdAt: string };
-            }
-          ).review;
+        {reviews.slice(0, 5).map((rev) => {
+          // AgentReviewWithResponseDto is flat (id/rating/body/createdAt
+          // live directly on the row) — there is no `.review` wrapper.
           return (
             <li
               key={rev.id}

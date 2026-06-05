@@ -52,7 +52,7 @@ export function SharedTripView({ code }: { readonly code: string }): React.React
   const { isNarrow } = useViewport();
   const router = useRouter();
   // AE355 — composite auth hook.
-  const { token, bootComplete, isAuthed } = useAetherAuth();
+  const { isAuthed } = useAetherAuth();
   const [cloneError, setCloneError] = useState<string | null>(null);
   // AE82 — share-card preview toggle (re-share what we received).
   const [showShareCard, setShowShareCard] = useState<boolean>(false);

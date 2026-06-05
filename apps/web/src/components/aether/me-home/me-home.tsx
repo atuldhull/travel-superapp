@@ -14,7 +14,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useTheme } from '@app/aether-core';
 import { clearRecentPrompts, readRecentPrompts } from '../pulse/recent-prompts';
-import { useAuthControllerMe, type TripDto, type WhoAmIResponseDto } from '@app/sdk';
+import { useAuthControllerMe, type WhoAmIResponseDto } from '@app/sdk';
 import { DriftNav } from '../drift-nav';
 import { Reveal } from '../drift-sections/reveal';
 import { EditorialFooter } from '../drift-sections/editorial-footer';

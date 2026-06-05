@@ -1,8 +1,10 @@
 /**
  * Weather HTTP surface — single route for the v1 slice.
  *
- * Authenticated so the global rate limiter can key on `user.sub`
- * and prevent one client from burning the Open-Meteo quota.
+ * Public (no auth): weather is a browsable, marketing-tier surface
+ * (same posture as the @Public near-me composite, which itself fans
+ * out to this provider). The global rate-limiter keys on the caller's
+ * IP for anonymous requests, which keeps the Open-Meteo quota safe.
  *
  *   GET /api/v1/weather/forecast?lat=&lng=&days=
  *     200 → { lat, lng, timezone, days: [{ date, maxTempC, minTempC,
@@ -13,7 +15,8 @@
  * Installed by prompt [IV.18.5.1].
  */
 import { Controller, Get, HttpCode, HttpStatus, Query } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Public } from '../../../common/auth';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { GetForecastUseCase } from '../application/get-forecast.use-case';
 import { GetHourlyForecastUseCase } from '../application/get-hourly-forecast.use-case';
@@ -57,7 +60,6 @@ function toHourlyDto(f: HourlyWeatherForecast): HourlyWeatherForecastDto {
 }
 
 @ApiTags('weather')
-@ApiBearerAuth()
 @Controller('weather')
 export class WeatherController {
   constructor(
@@ -74,6 +76,7 @@ export class WeatherController {
     status: 502,
     description: 'WEATHER_PROVIDER_UNAVAILABLE — upstream fetch failed.',
   })
+  @Public()
   @Get('forecast')
   @HttpCode(HttpStatus.OK)
   async forecast(
@@ -109,6 +112,7 @@ export class WeatherController {
     status: 502,
     description: 'WEATHER_PROVIDER_UNAVAILABLE — upstream fetch failed.',
   })
+  @Public()
   @Get('forecast/hourly')
   @HttpCode(HttpStatus.OK)
   async hourly(
