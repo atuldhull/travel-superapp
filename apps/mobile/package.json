@@ -22,7 +22,7 @@
     "@tanstack/query-async-storage-persister": "^5.100.7",
     "@tanstack/react-query": "^5.100.7",
     "@tanstack/react-query-persist-client": "^5.100.7",
-    "expo": "~51.0.39",
+    "expo": "~56.0.9",
     "expo-constants": "~16.0.2",
     "expo-gl": "~14.0.2",
     "expo-image-picker": "~15.0.7",
