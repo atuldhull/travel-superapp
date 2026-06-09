@@ -44,6 +44,26 @@ export default function AdminUsersPage() {
 
   const banMut = useAdminUsersControllerBan({
     mutation: {
+      // The generated ban hook omits the request body — orval skips bodies
+      // on 204 No-Content operations — so POST it ourselves with the reason
+      // (keyed by user id in `reasonByUser`). Without this the API 422s.
+      mutationFn: async ({ id }: { id: string }) => {
+        const base = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://127.0.0.1:3000';
+        const { getAccessToken } = await import('../../../lib/auth-store');
+        const token = getAccessToken();
+        const reason = (reasonByUser[id] ?? '').trim();
+        const res = await fetch(`${base}/api/v1/admin/users/${id}/ban`, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            ...(token !== null ? { authorization: `Bearer ${token}` } : {}),
+          },
+          credentials: 'include',
+          body: JSON.stringify({ reason }),
+        });
+        if (!res.ok) throw new Error(`HTTP_${res.status}`);
+        return { data: undefined, status: 204 as const, headers: res.headers };
+      },
       onSuccess: (_d: unknown, vars: { id: string }) => {
         setReasonByUser((prev) => {
           const { [vars.id]: _drop, ...rest } = prev;
@@ -144,12 +164,7 @@ export default function AdminUsersPage() {
                   variant="danger"
                   size="sm"
                   disabled={banMut.isPending || !(reasonByUser[u.id] ?? '').trim()}
-                  onClick={() =>
-                    banMut.mutate({
-                      id: u.id,
-                      data: { reason: (reasonByUser[u.id] ?? '').trim() },
-                    })
-                  }
+                  onClick={() => banMut.mutate({ id: u.id })}
                 >
                   <Ban aria-hidden className="h-3.5 w-3.5" /> Ban
                 </Button>

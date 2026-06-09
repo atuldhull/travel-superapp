@@ -193,7 +193,6 @@ export default function OpsDashboardPage() {
   const dbState = indicatorState('postgres');
   const redisState = indicatorState('redis');
   const meiliState = indicatorState('meilisearch');
-  const s3State = indicatorState('s3', true);
   const startupOk = state.startupHttpStatus === 200;
 
   return (
@@ -271,7 +270,7 @@ export default function OpsDashboardPage() {
 
       <section className="space-y-3">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-muted">Dependencies</h2>
-        <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
           <StatusPill
             label="Postgres"
             state={dbState.state}
@@ -286,11 +285,6 @@ export default function OpsDashboardPage() {
             label="Meilisearch"
             state={meiliState.state}
             {...(meiliState.detail ? { detail: meiliState.detail } : {})}
-          />
-          <StatusPill
-            label="S3 (soft)"
-            state={s3State.state}
-            {...(s3State.detail ? { detail: s3State.detail } : {})}
           />
         </div>
       </section>

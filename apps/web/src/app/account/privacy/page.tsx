@@ -107,7 +107,9 @@ export default function PrivacyHubPage() {
     setExporting(kind);
     try {
       const t = getAccessToken();
-      const url = kind === 'json' ? '/api/v1/account/export' : '/api/v1/account/export.ndjson';
+      const apiBase = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://127.0.0.1:3000';
+      const path = kind === 'json' ? '/api/v1/account/export' : '/api/v1/account/export.ndjson';
+      const url = `${apiBase}${path}`;
       const res = await fetch(url, {
         method: 'GET',
         headers: t ? { authorization: `Bearer ${t}` } : {},

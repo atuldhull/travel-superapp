@@ -152,6 +152,17 @@ export default function NearMePage() {
     recogniser.start();
   }
 
+  // V.UX.7 — the voice/text query filters the already-fetched places by
+  // name or category (the API has no text search; this makes the search
+  // bar actually do something within the current radius).
+  const query = voiceQuery.trim().toLowerCase();
+  const visiblePlaces =
+    response && query !== ''
+      ? response.places.filter(
+          (p) => p.name.toLowerCase().includes(query) || p.category.toLowerCase().includes(query),
+        )
+      : (response?.places ?? []);
+
   return (
     <main className="space-y-8">
       {/* Cinematic royal header band — matches /home + /trips + /stays. */}
@@ -257,9 +268,17 @@ export default function NearMePage() {
                 No places nearby in our catalog yet — try widening the search later.
               </p>
             </Card>
+          ) : visiblePlaces.length === 0 ? (
+            <Card depth="flat" className="p-5">
+              <p className="text-sm text-muted">
+                None of the {response.places.length} nearby place
+                {response.places.length === 1 ? '' : 's'} match &ldquo;{voiceQuery.trim()}&rdquo;.
+                Clear the search to see them all.
+              </p>
+            </Card>
           ) : (
             <ul className="space-y-2">
-              {response.places.map((p) => (
+              {visiblePlaces.map((p) => (
                 <PlaceCard
                   key={p.id}
                   place={p}

@@ -177,16 +177,15 @@ export default function AgentProfilePage() {
             ) : (
               <Badge variant="neutral">{profile.kycStatus}</Badge>
             )}
-            <Field label="Display name">
-              <input
-                type="text"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                maxLength={120}
-                className="w-full rounded-lg border border-gold-600/25 bg-surface px-3 py-2 text-sm text-surface-foreground outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/25"
-              />
-            </Field>
-            <Field label="Bio">
+            <Field
+              label="Display name"
+              type="text"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              maxLength={120}
+            />
+            <label className="block space-y-1">
+              <span className="block text-sm font-medium">Bio</span>
               <textarea
                 value={bioText}
                 onChange={(e) => setBioText(e.target.value)}
@@ -195,25 +194,21 @@ export default function AgentProfilePage() {
                 placeholder="Tell travelers what makes you special…"
                 className="w-full rounded-lg border border-gold-600/25 bg-surface px-3 py-2 text-sm text-surface-foreground outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/25"
               />
-            </Field>
-            <Field label="Languages (comma-separated)">
-              <input
-                type="text"
-                value={languagesText}
-                onChange={(e) => setLanguagesText(e.target.value)}
-                placeholder="en, pt, es"
-                className="w-full rounded-lg border border-gold-600/25 bg-surface px-3 py-2 text-sm text-surface-foreground outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/25"
-              />
-            </Field>
-            <Field label="Regions you cover (comma-separated)">
-              <input
-                type="text"
-                value={regionsText}
-                onChange={(e) => setRegionsText(e.target.value)}
-                placeholder="Lisbon, Porto, Sintra"
-                className="w-full rounded-lg border border-gold-600/25 bg-surface px-3 py-2 text-sm text-surface-foreground outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/25"
-              />
-            </Field>
+            </label>
+            <Field
+              label="Languages (comma-separated)"
+              type="text"
+              value={languagesText}
+              onChange={(e) => setLanguagesText(e.target.value)}
+              placeholder="en, pt, es"
+            />
+            <Field
+              label="Regions you cover (comma-separated)"
+              type="text"
+              value={regionsText}
+              onChange={(e) => setRegionsText(e.target.value)}
+              placeholder="Lisbon, Porto, Sintra"
+            />
             {errMsg ? (
               <p className="rounded-2xl border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">
                 {errMsg}

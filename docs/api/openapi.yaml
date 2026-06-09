@@ -7392,8 +7392,12 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ScamReportDto"
+        total:
+          type: number
+          description: True backlog size (the reports array is capped at 200).
       required:
         - reports
+        - total
     AdminListSosEventsResponseDto:
       type: object
       properties:

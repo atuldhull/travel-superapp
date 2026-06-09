@@ -16,7 +16,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useMemo, useRef, useState } from 'react';
 import { useTheme } from '@app/aether-core';
 import {
+  getTripControllerGetItineraryQueryKey,
   getTripControllerGetOneQueryKey,
+  getTripControllerListSharesQueryKey,
   useTripControllerArchive,
   useTripControllerDuplicate,
   useTripControllerUpdate,
@@ -119,8 +121,8 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
   });
   const duplicateMutation = useTripControllerDuplicate({
     mutation: {
-      onSuccess: (created: { data: TripDto }) => {
-        const dup = created.data;
+      onSuccess: (created: { data?: unknown }) => {
+        const dup = created.data as TripDto;
         setDuplicateError(null);
         // AE368 — if the suggested name differs from what the server
         // emitted (i.e. the source already had a copy suffix), chain
@@ -143,11 +145,12 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
   });
   const shareMutation = useTripControllerShare({
     mutation: {
-      onSuccess: (created: TripShareResponseDto) => {
+      onSuccess: (created: { data?: unknown }) => {
         // AE310 — buildShareUrl centralises the legacy /shared/<code> path
         // + the trailing-slash + URL-encoding contract.
         const origin = typeof window !== 'undefined' ? window.location.origin : '';
-        setShareUrl(buildShareUrl({ origin, code: created.shareCode }));
+        const share = created.data as TripShareResponseDto;
+        setShareUrl(buildShareUrl({ origin, code: share.shareCode }));
         setShareError(null);
       },
       onError: (err: unknown) => {
@@ -161,14 +164,17 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
   // Only fetch once auth has settled (avoids a stampede of 401s on first
   // paint before the silent-refresh resolves).
   const query = useTripControllerGetOne(tripId, {
-    query: { enabled: isAuthed, retry: 1 },
+    query: { enabled: isAuthed, queryKey: getTripControllerGetOneQueryKey(tripId) },
   });
   const trip = query.data?.data as TripDto | undefined;
 
   // Itinerary days — separate endpoint. Fetch only once the trip is
   // resolved so we don't burn calls on the auth-pending state.
   const itineraryQuery = useTripControllerGetItinerary(tripId, {
-    query: { enabled: isAuthed && trip !== undefined, retry: 1 },
+    query: {
+      enabled: isAuthed && trip !== undefined,
+      queryKey: getTripControllerGetItineraryQueryKey(tripId),
+    },
   });
   const itinerary = itineraryQuery.data?.data as ItineraryListResponseDto | undefined;
   const days: ItineraryDayDto[] = itinerary?.days ?? [];
@@ -177,7 +183,10 @@ export function JourneyDashboard({ tripId }: JourneyDashboardProps): React.React
   // AE128 — list existing shares to enrich the activity timeline with
   // 'Shared a link' events. Cheap call, idempotent, retry once.
   const sharesQuery = useTripControllerListShares(tripId, {
-    query: { enabled: isAuthed && trip !== undefined, retry: 1 },
+    query: {
+      enabled: isAuthed && trip !== undefined,
+      queryKey: getTripControllerListSharesQueryKey(tripId),
+    },
   });
   const tripShares: TripShareOwnerDto[] = useMemo(
     () => (sharesQuery.data?.data as ListTripSharesResponseDto | undefined)?.shares ?? [],

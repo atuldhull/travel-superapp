@@ -11,6 +11,9 @@ import { SosEventDto } from './safety-subs-response.dto';
 export class AdminListScamReportsResponseDto {
   @ApiProperty({ type: [ScamReportDto] })
   declare reports: ScamReportDto[];
+
+  @ApiProperty({ description: 'True backlog size (the reports array is capped at 200).' })
+  declare total: number;
 }
 
 export class AdminListSosEventsResponseDto {

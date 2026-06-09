@@ -54,6 +54,12 @@ const nextConfig: NextConfig = {
     '@app/aether-core',
     '@app/aether-canvas',
   ],
+  // Tree-shake heavy barrels (lucide-react icons, framer-motion) to per-module
+  // imports at compile time so icon-heavy routes don't ship the whole barrel.
+  // Officially-recommended, no call-site changes; honored by Turbopack too.
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'framer-motion'],
+  },
 };
 
 // `withSentryConfig` is safe to call unconditionally — it only
@@ -72,7 +78,10 @@ const sentryBuildOptions = {
   // fast. CI sets `SENTRY_AUTH_TOKEN` which flips these on.
   widenClientFileUpload: false,
   hideSourceMaps: true,
-  disableLogger: true,
+  // Replaces the deprecated `disableLogger` — strips Sentry debug logging
+  // from production webpack builds. Inert under Turbopack dev (webpack-only),
+  // so this is purely to silence the deprecation warning with no behavior delta.
+  webpack: { treeshake: { removeDebugLogging: true } },
 };
 
 export default withSentryConfig(nextConfig, sentryBuildOptions);

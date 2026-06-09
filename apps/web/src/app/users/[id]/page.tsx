@@ -218,7 +218,12 @@ function CreatorPanel({ userId }: { readonly userId: string }) {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setProfile(await getCreatorProfile(userId));
+      const p = await getCreatorProfile(userId);
+      setProfile(p);
+      // Seed the Follow/Block buttons from the real relationship so they
+      // no longer always read the default "Follow" / "Block".
+      setFollowing(p.isFollowing);
+      setBlocked(p.isBlocked);
     } catch {
       setProfile(null); // not a creator / not visible — hide the panel
     } finally {

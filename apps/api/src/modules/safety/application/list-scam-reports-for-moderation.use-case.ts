@@ -21,18 +21,30 @@ export interface ListScamReportsForModerationCommand {
   readonly limit?: number;
 }
 
+export interface ListScamReportsForModerationResult {
+  readonly reports: readonly ScamReport[];
+  /** True backlog size for the filter — the `reports` list is capped, this is not. */
+  readonly total: number;
+}
+
 @Injectable()
 export class ListScamReportsForModerationUseCase {
   constructor(@Inject(SCAM_REPORT_REPOSITORY) private readonly repo: ScamReportRepository) {}
 
-  async execute(cmd: ListScamReportsForModerationCommand = {}): Promise<readonly ScamReport[]> {
+  async execute(
+    cmd: ListScamReportsForModerationCommand = {},
+  ): Promise<ListScamReportsForModerationResult> {
     const clamped =
       cmd.limit === undefined
         ? DEFAULT_LIMIT
         : Math.max(1, Math.min(MAX_LIMIT, Math.floor(cmd.limit)));
-    return this.repo.listForModeration({
-      ...(cmd.verified !== undefined ? { verified: cmd.verified } : {}),
-      limit: clamped,
-    });
+    const [reports, total] = await Promise.all([
+      this.repo.listForModeration({
+        ...(cmd.verified !== undefined ? { verified: cmd.verified } : {}),
+        limit: clamped,
+      }),
+      this.repo.countForModeration(cmd.verified),
+    ]);
+    return { reports, total };
   }
 }

@@ -39,7 +39,7 @@ import { Field } from '../../components/ui/input';
 import { AuthError, AuthShell } from '../../components/auth/auth-shell';
 import { OtpSignIn } from '../../components/auth/otp-sign-in';
 import { setAccessToken } from '../../lib/auth-store';
-import { decidePostAuthDestination } from '../../lib/post-auth-redirect';
+import { decidePostAuthDestination, safeNextParam } from '../../lib/post-auth-redirect';
 
 interface ApiError extends Error {
   readonly code?: string;
@@ -80,6 +80,14 @@ export default function RegisterPage() {
       onSuccess: async (response: { data?: unknown }) => {
         const body = response.data as AuthSuccessResponseDto;
         setAccessToken(body.accessToken);
+        // A pending `?next=` (e.g. the /shared/<code> save-and-clone flow)
+        // wins over onboarding — the user registered to finish a specific
+        // action and should be returned to it.
+        const next = safeNextParam();
+        if (next !== null) {
+          router.push(next as never);
+          return;
+        }
         // Brand-new account → hasSeenOnboarding=false → /onboarding.
         const { destination } = await decidePostAuthDestination(body.accessToken);
         router.push(destination as never);
@@ -116,6 +124,11 @@ export default function RegisterPage() {
     const { getAccessToken } = await import('../../lib/auth-store');
     const token = getAccessToken();
     if (!token) return;
+    const next = safeNextParam();
+    if (next !== null) {
+      router.push(next as never);
+      return;
+    }
     const { destination } = await decidePostAuthDestination(token);
     router.push(destination as never);
   }
@@ -149,6 +162,11 @@ export default function RegisterPage() {
               const { getAccessToken } = await import('../../lib/auth-store');
               const token = getAccessToken();
               if (!token) return;
+              const next = safeNextParam();
+              if (next !== null) {
+                router.push(next as never);
+                return;
+              }
               const { destination } = await decidePostAuthDestination(token);
               router.push(destination as never);
             }}

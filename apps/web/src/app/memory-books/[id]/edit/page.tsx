@@ -483,26 +483,22 @@ function EditForm({ book, isPending, errorMsg, onCancel, onSubmit }: EditFormPro
         <CardSubtitle>Theme is set via the picker below — change it there.</CardSubtitle>
       </CardHeader>
       <form onSubmit={submit} className="space-y-4">
-        <Field label="Title">
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            required
-            maxLength={120}
-            className="w-full rounded-md border border-muted/30 bg-transparent px-3 py-2 text-sm"
-          />
-        </Field>
-        <Field label="Cover S3 key (optional)">
-          <input
-            type="text"
-            value={coverS3Key}
-            onChange={(e) => setCoverS3Key(e.target.value)}
-            maxLength={512}
-            placeholder="leave blank to clear"
-            className="w-full rounded-md border border-muted/30 bg-transparent px-3 py-2 text-sm"
-          />
-        </Field>
+        <Field
+          label="Title"
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          required
+          maxLength={120}
+        />
+        <Field
+          label="Cover S3 key (optional)"
+          type="text"
+          value={coverS3Key}
+          onChange={(e) => setCoverS3Key(e.target.value)}
+          maxLength={512}
+          placeholder="leave blank to clear"
+        />
         {errorMsg ? (
           <p className="rounded-md border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">
             {errorMsg}

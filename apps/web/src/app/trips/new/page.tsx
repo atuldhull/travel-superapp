@@ -227,6 +227,16 @@ export default function NewTripPage() {
   // refreshes the title only when the user hasn't typed their own.
   const [lastAutoTitle, setLastAutoTitle] = useState<string | null>(null);
 
+  // Seed the title from a `?title=` deep-link (the destination "Plan this"
+  // CTAs) once on mount — without clobbering a title the user has typed.
+  useEffect(() => {
+    const seed = new URLSearchParams(window.location.search).get('title');
+    if (seed !== null && seed.trim() !== '') {
+      setTitle((cur) => (cur.trim() === '' ? seed : cur));
+      setLastAutoTitle(seed);
+    }
+  }, []);
+
   // F24 + F25 — destination context. Reverse-geocodes the picked
   // coords once we have them, then fires two cheap fetches:
   //   - climate (if startsOn is within Open-Meteo's 16-day horizon)

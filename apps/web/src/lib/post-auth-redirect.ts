@@ -41,3 +41,19 @@ export async function decidePostAuthDestination(
     return { destination: fallback };
   }
 }
+
+/**
+ * Reads a same-origin `?next=` redirect target from the current URL.
+ * Rejects absolute and protocol-relative URLs so it can never be used as
+ * an open-redirect. Returns null when the param is absent or unsafe.
+ *
+ * Reads `window.location.search` directly (not the `useSearchParams`
+ * hook) so callers can use it inside post-sign-in event handlers without
+ * forcing a Suspense boundary on the whole page.
+ */
+export function safeNextParam(): string | null {
+  if (typeof window === 'undefined') return null;
+  const raw = new URLSearchParams(window.location.search).get('next');
+  if (raw !== null && raw.startsWith('/') && !raw.startsWith('//')) return raw;
+  return null;
+}

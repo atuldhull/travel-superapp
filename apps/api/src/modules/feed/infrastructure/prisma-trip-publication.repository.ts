@@ -185,6 +185,24 @@ export class PrismaTripPublicationRepository implements TripPublicationRepositor
     return Number(rows[0]?.n ?? 0);
   }
 
+  async isFollowing(viewerId: string, authorId: string): Promise<boolean> {
+    const rows = await this.prisma.$queryRaw<Array<{ exists: boolean }>>(Prisma.sql`
+      SELECT EXISTS(
+        SELECT 1 FROM "Follow" WHERE "followerId" = ${viewerId} AND "followeeId" = ${authorId}
+      ) AS "exists"`);
+    return rows[0]?.exists ?? false;
+  }
+
+  async isBlockedBetween(viewerId: string, authorId: string): Promise<boolean> {
+    const rows = await this.prisma.$queryRaw<Array<{ exists: boolean }>>(Prisma.sql`
+      SELECT EXISTS(
+        SELECT 1 FROM "UserBlock" b
+        WHERE (b."blockerId" = ${viewerId} AND b."blockedId" = ${authorId})
+           OR (b."blockerId" = ${authorId} AND b."blockedId" = ${viewerId})
+      ) AS "exists"`);
+    return rows[0]?.exists ?? false;
+  }
+
   // ── POST.2C.3 — pgvector "trips like this" / agent grounding.
   //    The visibility + block predicate is the SAME security model as
   //    listFeed (PRIVATE never; FOLLOWERS only if followed; either-

@@ -61,7 +61,9 @@ export default function EventsPage() {
   const [geoStatus, setGeoStatus] = useState<
     'idle' | 'pending' | 'granted' | 'denied' | 'unavailable'
   >('idle');
-  const [radiusKm, setRadiusKm] = useState(50);
+  // The events API hard-caps radius at 30km (INVALID_RADIUS above that),
+  // so the default + input ceiling must stay within it or the search 422s.
+  const [radiusKm, setRadiusKm] = useState(30);
   const [category, setCategory] = useState('');
   const [freeOnly, setFreeOnly] = useState(false);
   const [dayWindow, setDayWindow] = useState(14);
@@ -191,13 +193,13 @@ export default function EventsPage() {
               {geoStatus === 'granted' ? 'Re-locate' : 'Use my location'}
             </Button>
             <label className="text-xs text-muted">
-              Radius (km)
+              Radius (km, max 30)
               <input
                 type="number"
                 min={1}
-                max={500}
+                max={30}
                 value={radiusKm}
-                onChange={(e) => setRadiusKm(Number(e.target.value))}
+                onChange={(e) => setRadiusKm(Math.min(30, Math.max(1, Number(e.target.value))))}
                 className={`ml-2 w-20 ${FIELD}`}
               />
             </label>
