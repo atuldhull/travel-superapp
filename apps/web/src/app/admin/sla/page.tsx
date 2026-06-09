@@ -98,6 +98,10 @@ export default function SlaDashboardPage() {
     const scams = (
       (scamQuery.data?.data as { reports?: readonly Scam[] } | undefined)?.reports ?? []
     ).filter((r) => !r.verified);
+    // True backlog now comes from the endpoint's `total` (the reports
+    // array is capped at 200); fall back to the window length pre-deploy.
+    const scamTotal =
+      (scamQuery.data?.data as { total?: number } | undefined)?.total ?? scams.length;
     const sos =
       (sosQuery.data?.data as { events?: readonly Sos[]; total?: number } | undefined)?.events ??
       [];
@@ -112,7 +116,7 @@ export default function SlaDashboardPage() {
       {
         title: 'Pending scam reports',
         href: '/admin/scam-reports',
-        backlog: scams.length,
+        backlog: scamTotal,
         oldestPendingMs:
           scams.length === 0
             ? null

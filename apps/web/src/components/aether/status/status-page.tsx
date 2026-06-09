@@ -77,7 +77,10 @@ export function StatusPage(): React.ReactElement {
       setHealth((h) => ({ ...h, state: 'pinging' }));
       const t0 = performance.now();
       try {
-        const res = await fetch('/api/v1/health/ready', {
+        const apiBase = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://127.0.0.1:3000';
+        // health is mounted at the bare root path (excluded from the
+        // /api/v1 global prefix in the api's main.ts), so no /api/v1 here.
+        const res = await fetch(`${apiBase}/health/ready`, {
           method: 'GET',
           credentials: 'include',
           cache: 'no-store',

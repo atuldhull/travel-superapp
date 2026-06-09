@@ -76,16 +76,16 @@ export class AdminScamModerationController {
   async list(
     @Query('verified') verified?: string,
     @Query('limit') limit?: string,
-  ): Promise<{ reports: ScamReportDto[] }> {
+  ): Promise<{ reports: ScamReportDto[]; total: number }> {
     const parsedLimit = limit ? Math.max(1, Math.min(200, Number(limit) || 50)) : undefined;
     // Query string: `verified=true` / `verified=false` / absent.
     // Anything else is treated as absent (default = pending).
     const parsedVerified = verified === 'true' ? true : verified === 'false' ? false : undefined;
-    const rows = await this.listUc.execute({
+    const { reports, total } = await this.listUc.execute({
       ...(parsedVerified !== undefined ? { verified: parsedVerified } : {}),
       ...(parsedLimit !== undefined ? { limit: parsedLimit } : {}),
     });
-    return { reports: rows.map(toDto) };
+    return { reports: reports.map(toDto), total };
   }
 
   @ApiOperation({ summary: 'Mark a scam report verified.' })

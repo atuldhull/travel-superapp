@@ -20,6 +20,7 @@ import { ArrowLeft, UserRound, Users } from 'lucide-react';
 import { Card } from '../ui/card';
 import { Skeleton } from '../ui/skeleton';
 import { getFollowers, getFollowing, type ConnectionUser } from '../../lib/two-oh-api';
+import { useAuthBootComplete, useAuthToken } from '../../lib/use-auth-token';
 
 interface ConnectionListProps {
   readonly userId: string;
@@ -27,10 +28,17 @@ interface ConnectionListProps {
 }
 
 export function ConnectionList({ userId, kind }: ConnectionListProps) {
+  const token = useAuthToken();
+  const bootComplete = useAuthBootComplete();
   const [users, setUsers] = useState<readonly ConnectionUser[] | null>(null);
   const [errored, setErrored] = useState(false);
 
   useEffect(() => {
+    // Wait for silent-refresh to settle before calling the authed
+    // endpoint — a hard reload otherwise fires before the in-memory token
+    // is restored and 401s into a stuck error. `token` in the deps re-runs
+    // the fetch the moment the refreshed token lands.
+    if (!bootComplete || token === null) return;
     let alive = true;
     setUsers(null);
     setErrored(false);
@@ -45,7 +53,7 @@ export function ConnectionList({ userId, kind }: ConnectionListProps) {
     return () => {
       alive = false;
     };
-  }, [userId, kind]);
+  }, [userId, kind, bootComplete, token]);
 
   const heading = kind === 'followers' ? 'Followers' : 'Following';
   const emptyCopy = kind === 'followers' ? 'No followers yet.' : 'Not following anyone yet.';

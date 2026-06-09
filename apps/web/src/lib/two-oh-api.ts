@@ -86,6 +86,8 @@ export interface CreatorProfile {
   readonly authorId: string;
   readonly followerCount: number;
   readonly publishedCount: number;
+  readonly isFollowing: boolean;
+  readonly isBlocked: boolean;
   readonly trips: readonly TripPublicationDto[];
 }
 

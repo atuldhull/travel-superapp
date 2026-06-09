@@ -63,7 +63,7 @@ export default function AdminDashboardPage() {
     limit: '1',
   } as never);
 
-  const scamCount = (scams.data?.data as { reports?: unknown[] } | undefined)?.reports?.length;
+  const scamCount = (scams.data?.data as { total?: number } | undefined)?.total;
   const sosCount = (activeSos.data?.data as { total?: number } | undefined)?.total;
   const auditTotal = (recentAudit.data?.data as { total?: number } | undefined)?.total;
   const usersTotal = (allUsers.data?.data as { total?: number } | undefined)?.total;

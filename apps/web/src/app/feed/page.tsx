@@ -55,6 +55,9 @@ export default function FeedPage() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Pagination errors get their OWN slot so a failed "Load more" never
+  // gates the whole already-loaded feed (the top-level `error` does that).
+  const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const [similar, setSimilar] = useState<readonly SimilarTrip[]>([]);
 
   const loadFirst = useCallback(async () => {
@@ -94,13 +97,14 @@ export default function FeedPage() {
   const loadMore = async () => {
     if (!nextBefore || loadingMore) return;
     setLoadingMore(true);
+    setLoadMoreError(null);
     try {
       const res = await getSocialFeed({ limit: 20, before: nextBefore });
       setItems((prev) => [...prev, ...res.items]);
       setNextBefore(res.nextBefore);
     } catch (err) {
       const e = err as { code?: string; status?: number };
-      setError(e.code ?? `HTTP_${e.status ?? '???'}`);
+      setLoadMoreError(e.code ?? `HTTP_${e.status ?? '???'}`);
     } finally {
       setLoadingMore(false);
     }
@@ -218,10 +222,18 @@ export default function FeedPage() {
             ))}
           </motion.ul>
           {nextBefore ? (
-            <div className="flex justify-center">
+            <div className="flex flex-col items-center gap-2">
               <Button variant="secondary" onClick={loadMore} disabled={loadingMore}>
                 {loadingMore ? 'Loading…' : 'Load more journeys'}
               </Button>
+              {loadMoreError ? (
+                <p role="alert" className="text-sm text-danger">
+                  Couldn&apos;t load more ({loadMoreError}).{' '}
+                  <button type="button" onClick={loadMore} className="underline">
+                    Retry
+                  </button>
+                </p>
+              ) : null}
             </div>
           ) : null}
         </>

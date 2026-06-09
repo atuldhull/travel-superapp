@@ -5,4 +5,6 @@ import type { ScamReportDto } from './scamReportDto';
 
 export interface AdminListScamReportsResponseDto {
   reports: ScamReportDto[];
+  /** True backlog size (the reports array is capped at 200). */
+  total: number;
 }

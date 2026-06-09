@@ -157,6 +157,12 @@ describe('PublishTripUseCase embed-on-publish is BEST-EFFORT', () => {
     async countFollowers(): Promise<number> {
       return 0;
     }
+    async isFollowing(): Promise<boolean> {
+      return false;
+    }
+    async isBlockedBetween(): Promise<boolean> {
+      return false;
+    }
     // POST.2C.3 — port grew (similarity reads); not exercised here.
     async findSimilarByVector(): Promise<readonly never[]> {
       return [];

@@ -188,6 +188,8 @@ export class FeedController {
     authorId: string;
     followerCount: number;
     publishedCount: number;
+    isFollowing: boolean;
+    isBlocked: boolean;
     trips: readonly TripPublicationDto[];
   }> {
     const p = await this.getCreatorProfile.execute({ authorId: id, viewerId: user.sub });
@@ -195,6 +197,8 @@ export class FeedController {
       authorId: p.authorId,
       followerCount: p.followerCount,
       publishedCount: p.publishedCount,
+      isFollowing: p.isFollowing,
+      isBlocked: p.isBlocked,
       trips: p.trips.map(pubToDto),
     };
   }

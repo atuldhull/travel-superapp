@@ -288,16 +288,15 @@ export default function PreferencesPage() {
               </span>
             </span>
           </label>
-          <Field label="Daily budget USD (optional)">
-            <input
-              type="text"
-              inputMode="decimal"
-              value={dailyBudgetText}
-              onChange={(e) => setDailyBudgetText(e.target.value)}
-              placeholder="e.g. 50.00"
-              className={FIELD_INPUT}
-            />
-          </Field>
+          <Field
+            label="Daily budget USD (optional)"
+            type="text"
+            inputMode="decimal"
+            value={dailyBudgetText}
+            onChange={(e) => setDailyBudgetText(e.target.value)}
+            placeholder="e.g. 50.00"
+            className={FIELD_INPUT}
+          />
           <label className={ROW}>
             <input
               type="checkbox"
@@ -315,15 +314,14 @@ export default function PreferencesPage() {
               </span>
             </span>
           </label>
-          <Field label="Kid ages (comma-separated, 0–17)">
-            <input
-              type="text"
-              value={kidAgesText}
-              onChange={(e) => setKidAgesText(e.target.value)}
-              placeholder="e.g. 5, 8, 11"
-              className={FIELD_INPUT}
-            />
-          </Field>
+          <Field
+            label="Kid ages (comma-separated, 0–17)"
+            type="text"
+            value={kidAgesText}
+            onChange={(e) => setKidAgesText(e.target.value)}
+            placeholder="e.g. 5, 8, 11"
+            className={FIELD_INPUT}
+          />
           {errorMsg ? (
             <p className="rounded-2xl border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">
               {errorMsg}

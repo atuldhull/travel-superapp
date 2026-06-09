@@ -53,6 +53,12 @@ export interface TripPublicationRepository {
   ): Promise<readonly TripPublication[]>;
   countPublishedByAuthor(authorId: string): Promise<number>;
   countFollowers(authorId: string): Promise<number>;
+  /** POST.2B.3 — does `viewerId` follow `authorId`? (seeds the creator
+   *  profile Follow button). */
+  isFollowing(viewerId: string, authorId: string): Promise<boolean>;
+  /** Either-direction block between the two users (seeds the creator
+   *  profile Block button + disables Follow when blocked). */
+  isBlockedBetween(viewerId: string, authorId: string): Promise<boolean>;
   /** POST.2C.3 — pgvector nearest PUBLISHED trips to `embedding`
    *  (L2 `<->` via the `TripPublication_embedding_ivfflat` index,
    *  `vector_l2_ops` — consistent with VectorQueries). Visibility +

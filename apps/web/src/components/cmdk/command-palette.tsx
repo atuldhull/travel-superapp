@@ -81,7 +81,8 @@ export function CommandPalette() {
   async function signOut() {
     setOpen(false);
     try {
-      await fetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' });
+      const apiBase = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://127.0.0.1:3000';
+      await fetch(`${apiBase}/api/v1/auth/logout`, { method: 'POST', credentials: 'include' });
     } catch {
       /* best-effort */
     }

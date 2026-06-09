@@ -51,6 +51,12 @@ export interface ScamReportRepository {
    */
   listForModeration(input: ListForModerationInput): Promise<readonly ScamReport[]>;
   /**
+   * Total count of moderation rows matching the same filter as
+   * `listForModeration` — the list is capped (≤200) but the admin SLA
+   * backlog tile needs the true count.
+   */
+  countForModeration(verified?: boolean): Promise<number>;
+  /**
    * Flip `verified` to the target value. Returns the updated row,
    * or `null` if the id is unknown. Idempotent — re-setting to the
    * same value still returns the row (Postgres update-count = 1).

@@ -98,6 +98,14 @@ export class PrismaScamReportRepository implements ScamReportRepository {
     return rows.map((r) => toDomain(r as PrismaScamReport));
   }
 
+  async countForModeration(verified?: boolean): Promise<number> {
+    // `count` selects no columns, so it sidesteps the Unsupported
+    // `coordinates` column that breaks a raw `SELECT *` on this table.
+    return this.prisma.scamReport.count({
+      where: verified === undefined ? { verified: false } : { verified },
+    });
+  }
+
   async setVerified(id: string, verified: boolean): Promise<ScamReport | null> {
     // updateMany + count gate — same pattern every other admin /
     // owner-scoped mutation uses. Idempotent: re-setting to the

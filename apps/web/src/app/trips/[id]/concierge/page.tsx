@@ -132,16 +132,14 @@ export default function ConciergePage() {
             </CardSubtitle>
           </CardHeader>
           <form onSubmit={submit} className="space-y-3">
-            <Field label="Region (optional)">
-              <input
-                type="text"
-                value={region}
-                onChange={(e) => setRegion(e.target.value)}
-                placeholder="e.g. France, Bali, Tuscany"
-                maxLength={80}
-                className="w-full rounded-lg border border-gold-600/25 bg-surface px-3 py-2 text-sm text-surface-foreground outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/25"
-              />
-            </Field>
+            <Field
+              label="Region (optional)"
+              type="text"
+              value={region}
+              onChange={(e) => setRegion(e.target.value)}
+              placeholder="e.g. France, Bali, Tuscany"
+              maxLength={80}
+            />
             {errorMsg ? (
               <p className="rounded-2xl border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">
                 {errorMsg}

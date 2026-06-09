@@ -286,7 +286,7 @@ export function JournalArticleView({ article: a }: JournalArticleViewProps): Rea
                 Up next
               </div>
               <Link
-                href="/aether/drift"
+                href="/aether/journal"
                 style={{
                   fontFamily: theme.font.display,
                   fontSize: 22,

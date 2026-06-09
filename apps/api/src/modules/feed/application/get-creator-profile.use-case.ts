@@ -25,6 +25,10 @@ export interface CreatorProfile {
   readonly authorId: string;
   readonly followerCount: number;
   readonly publishedCount: number;
+  /** Whether the viewer follows this author (seeds the Follow button). */
+  readonly isFollowing: boolean;
+  /** Whether either user has blocked the other (seeds the Block button). */
+  readonly isBlocked: boolean;
   readonly trips: readonly TripPublication[];
 }
 
@@ -37,11 +41,13 @@ export class GetCreatorProfileUseCase {
 
   async execute(q: GetCreatorProfileQuery): Promise<CreatorProfile> {
     const limit = Math.min(Math.max(q.limit ?? DEFAULT_LIMIT, 1), MAX_LIMIT);
-    const [trips, followerCount, publishedCount] = await Promise.all([
+    const [trips, followerCount, publishedCount, isFollowing, isBlocked] = await Promise.all([
       this.pubs.listByAuthorVisibleTo(q.authorId, q.viewerId, limit),
       this.pubs.countFollowers(q.authorId),
       this.pubs.countPublishedByAuthor(q.authorId),
+      this.pubs.isFollowing(q.viewerId, q.authorId),
+      this.pubs.isBlockedBetween(q.viewerId, q.authorId),
     ]);
-    return { authorId: q.authorId, followerCount, publishedCount, trips };
+    return { authorId: q.authorId, followerCount, publishedCount, isFollowing, isBlocked, trips };
   }
 }

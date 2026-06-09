@@ -67,7 +67,7 @@ export default function AgentSelfPage() {
     if (bootComplete && token === null) router.replace('/login?next=/me/agent');
   }, [bootComplete, token, router]);
 
-  const meQuery = useAgentSelfControllerMe({ query: { enabled: token !== null } });
+  const meQuery = useAgentSelfControllerMe({ query: { enabled: token !== null, retry: false } });
   const dashboardQuery = useAgentSelfControllerDashboard(
     { windowDays: String(windowDays) as unknown as never },
     { query: { enabled: token !== null && (meQuery.data?.data as unknown) !== null } },
@@ -99,20 +99,24 @@ export default function AgentSelfPage() {
   // profile — orval types the data field as the DTO, so we widen.
   const profile = (meQuery.data?.data as unknown as AgentProfileDto | null) ?? null;
 
-  if (meQuery.isError && (meQuery.error as ApiError)?.status !== 404) {
+  // A non-agent user hits this page from the public footer; the API
+  // returns 403 ROLE_FORBIDDEN (not 404) for them. Treat both 403 and 404
+  // as "no agent profile yet" → the onboarding CTA, not a scary banner.
+  const apiErr = meQuery.error as ApiError | null;
+  const notFound = apiErr?.status === 404;
+  const roleForbidden = apiErr?.code === 'ROLE_FORBIDDEN' || apiErr?.status === 403;
+
+  if (meQuery.isError && !notFound && !roleForbidden) {
     return (
       <main className="space-y-4">
         <p className="rounded-2xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
-          Couldn't load your agent profile —{' '}
-          {(meQuery.error as ApiError)?.code ??
-            `HTTP_${(meQuery.error as ApiError)?.status ?? '???'}`}
-          .
+          Couldn't load your agent profile — {apiErr?.code ?? `HTTP_${apiErr?.status ?? '???'}`}.
         </p>
       </main>
     );
   }
 
-  if (profile === null) {
+  if (profile === null || roleForbidden) {
     return (
       <main className="space-y-8">
         <Link

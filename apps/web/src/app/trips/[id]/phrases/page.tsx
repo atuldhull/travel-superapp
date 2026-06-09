@@ -28,7 +28,6 @@ import { useParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, Check, Copy, Phone, Languages } from 'lucide-react';
 import { Card, CardHeader, CardSubtitle, CardTitle } from '../../../../components/ui/card';
-import { Field } from '../../../../components/ui/input';
 import { Skeleton } from '../../../../components/ui/skeleton';
 import {
   listCountryPrimers,
@@ -185,7 +184,8 @@ export default function TripPhrasesPage() {
         <>
           {primers.length > 1 ? (
             <Card depth="raised">
-              <Field label="Country">
+              <label className="block space-y-1">
+                <span className="block text-sm font-medium">Country</span>
                 <select
                   value={selectedCc}
                   onChange={(e) => setSelectedCc(e.target.value)}
@@ -197,7 +197,7 @@ export default function TripPhrasesPage() {
                     </option>
                   ))}
                 </select>
-              </Field>
+              </label>
             </Card>
           ) : null}
 

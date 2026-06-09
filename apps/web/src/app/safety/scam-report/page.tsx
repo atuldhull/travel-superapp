@@ -140,7 +140,8 @@ export default function ScamReportPage() {
     const evidenceUrls = evidenceUrlsText
       .split('\n')
       .map((u) => u.trim())
-      .filter((u) => u.length > 0 && /^https?:\/\//i.test(u));
+      .filter((u) => u.length > 0 && u.length <= 500 && /^https?:\/\//i.test(u))
+      .slice(0, 5);
     const data: ReportScamRequestDto = {
       category: category.trim(),
       severity: severity as ReportScamRequestDto['severity'],
@@ -331,13 +332,13 @@ export default function ScamReportPage() {
               onChange={(e) => setDescription(e.target.value)}
               rows={6}
               minLength={20}
-              maxLength={4000}
+              maxLength={2000}
               required
               placeholder="Be specific: which street, time of day, what they did, how you got out, costs incurred."
               className="mt-1 w-full rounded-lg border border-gold-600/25 bg-surface px-3 py-2 text-sm text-surface-foreground outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/25"
             />
             <p className="mt-1 text-xs text-muted">
-              {description.trim().length} / 4000 · minimum 20
+              {description.trim().length} / 2000 · minimum 20
             </p>
           </div>
 
@@ -354,8 +355,9 @@ export default function ScamReportPage() {
               placeholder="https://…"
             />
             <p className="mt-1 text-xs text-muted">
-              Upload photos elsewhere (e.g. memory book), then paste URLs here. Each line must start
-              http(s):// — others are dropped.
+              Upload photos elsewhere (e.g. memory book), then paste URLs here. Up to 5 links, one
+              per line; each must start http(s):// and be under 500 characters — extra or invalid
+              lines are dropped.
             </p>
           </div>
 

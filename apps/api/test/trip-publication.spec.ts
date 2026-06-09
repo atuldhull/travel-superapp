@@ -137,6 +137,12 @@ describe('PublishTripUseCase / UnpublishTripUseCase (POST.2B.2, fakes)', () => {
     async countFollowers(): Promise<number> {
       return 0;
     }
+    async isFollowing(): Promise<boolean> {
+      return false;
+    }
+    async isBlockedBetween(): Promise<boolean> {
+      return false;
+    }
     // Phase 5 (J3/J5) — discovery reads; not exercised by this spec.
     async listSuggestedTravellers(): Promise<readonly never[]> {
       return [];

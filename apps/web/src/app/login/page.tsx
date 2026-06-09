@@ -37,7 +37,7 @@ import { AuthError, AuthShell } from '../../components/auth/auth-shell';
 import { GoogleSignInButton } from '../../components/google-sign-in-button';
 import { OtpSignIn } from '../../components/auth/otp-sign-in';
 import { setAccessToken } from '../../lib/auth-store';
-import { decidePostAuthDestination } from '../../lib/post-auth-redirect';
+import { decidePostAuthDestination, safeNextParam } from '../../lib/post-auth-redirect';
 
 interface ApiError extends Error {
   readonly code?: string;
@@ -69,7 +69,10 @@ export default function LoginPage() {
       onSuccess: async (response: { data?: unknown }) => {
         const body = response.data as AuthSuccessResponseDto;
         setAccessToken(body.accessToken);
-        const { destination } = await decidePostAuthDestination(body.accessToken);
+        const next = safeNextParam();
+        const { destination } = await decidePostAuthDestination(body.accessToken, {
+          defaultDestination: next ?? '/home',
+        });
         router.push(destination as never);
       },
       onError: (err: unknown) => {
@@ -101,7 +104,10 @@ export default function LoginPage() {
       onSuccess: async (response: { data?: unknown }) => {
         const body = response.data as AuthSuccessResponseDto;
         setAccessToken(body.accessToken);
-        const { destination } = await decidePostAuthDestination(body.accessToken);
+        const next = safeNextParam();
+        const { destination } = await decidePostAuthDestination(body.accessToken, {
+          defaultDestination: next ?? '/home',
+        });
         router.push(destination as never);
       },
       onError: (err: unknown) => {
@@ -166,7 +172,10 @@ export default function LoginPage() {
     const { getAccessToken } = await import('../../lib/auth-store');
     const token = getAccessToken();
     if (!token) return;
-    const { destination } = await decidePostAuthDestination(token);
+    const next = safeNextParam();
+    const { destination } = await decidePostAuthDestination(token, {
+      defaultDestination: next ?? '/home',
+    });
     router.push(destination as never);
   }
 
@@ -283,7 +292,10 @@ export default function LoginPage() {
                 const { getAccessToken } = await import('../../lib/auth-store');
                 const token = getAccessToken();
                 if (!token) return;
-                const { destination } = await decidePostAuthDestination(token);
+                const next = safeNextParam();
+                const { destination } = await decidePostAuthDestination(token, {
+                  defaultDestination: next ?? '/home',
+                });
                 router.push(destination as never);
               }}
               onError={(msg) => setErrorMsg(msg)}

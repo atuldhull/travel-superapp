@@ -283,7 +283,7 @@ function NewReviewPageInner() {
               onChange={(e) => setBody(e.target.value)}
               rows={6}
               minLength={10}
-              maxLength={8000}
+              maxLength={5000}
               required
               className={TEXTAREA}
               placeholder={
@@ -293,7 +293,7 @@ function NewReviewPageInner() {
               }
             />
             <p className="mt-1 text-xs text-muted">
-              {body.trim().length} / 8000 characters · minimum 10
+              {body.trim().length} / 5000 characters · minimum 10
             </p>
           </div>
 
