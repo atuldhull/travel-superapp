@@ -1,8 +1,8 @@
 /**
  * dependency-cruiser — architecture enforcement for the NestJS API.
  *
- * Turns the clean/hexagonal dependency rule (CLAUDE.md #10:
- * `domain ← application ← infrastructure/interface`) from a
+ * Turns the clean/hexagonal dependency rule
+ * (`domain ← application ← infrastructure/interface`) from a
  * convention into a CHECK that fails. Run via `pnpm arch` (this
  * package) — wired into the `lint` turbo task so a layer violation
  * or an import cycle breaks the build, not a code review.
@@ -23,7 +23,7 @@ module.exports = {
       name: 'hex-domain-stays-pure',
       comment:
         'A domain layer must not import from application / infrastructure / interface. ' +
-        'The domain is the innermost layer — it depends on nothing outward (CLAUDE.md #10).',
+        'The domain is the innermost layer — it depends on nothing outward.',
       severity: 'error',
       from: { path: '^src/modules/[^/]+/domain/' },
       to: { path: '^src/modules/[^/]+/(application|infrastructure|interface)/' },

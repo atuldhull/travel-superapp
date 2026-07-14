@@ -341,7 +341,7 @@ export interface ExternalCallOptions {
 export async function callExternal<T>(fn: () => Promise<T>, opts: ExternalCallOptions): Promise<T> {
   try {
     return await opts.breaker.exec(() =>
-      opts.timeoutMs != null ? withTimeout(fn(), opts.timeoutMs, opts.label) : fn(),
+      opts.timeoutMs !== undefined ? withTimeout(fn(), opts.timeoutMs, opts.label) : fn(),
     );
   } catch (err) {
     if (err instanceof CircuitOpenError && opts.onCircuitOpen) {

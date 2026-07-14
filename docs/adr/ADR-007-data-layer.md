@@ -76,7 +76,7 @@ If both are comfortably under — stay on pgvector. If one crosses for two conse
 ## Consequences (binding)
 
 - **Every DB write goes through Prisma or `GeoQueries` / `VectorQueries`.** Ad-hoc `$queryRaw` outside those services fails review.
-- **PostGIS columns are typed `Unsupported("geography(Point, 4326)")`** in `schema.prisma`. Any Prisma `create` / `update` on those fields is a bug — always go through `GeoQueries.insertPlace()` etc. (CLAUDE rule 11). This ADR promotes that rule from CLAUDE-level to ADR-level.
+- **PostGIS columns are typed `Unsupported("geography(Point, 4326)")`** in `schema.prisma`. Any Prisma `create` / `update` on those fields is a bug — always go through `GeoQueries.insertPlace()` etc. This ADR is the authoritative statement of that rule; `.dependency-cruiser.cjs` and code review enforce it.
 - **Migrations are `prisma migrate deploy`** with shadow-DB drift check in CI (Playbook §18). Raw SQL migrations land via Prisma's `prisma/migrations/<timestamp>/migration.sql` hand-edit escape hatch — only for extension installs (PostGIS, vector, pg_trgm, pgcrypto) and index creations Prisma can't express.
 - **Redis keys are namespaced per-env + per-purpose via `@app/cache`.** Queue: `travel-<env>:queue:<name>`. Cache: `travel-<env>:cache:<module>:<key>`. Stream: `travel-<env>:stream:<event>`. Cross-env spill fails in review.
 - **Meilisearch indexes are owned by the module that writes them.** Places owns `places` index; Events owns `cultural-events`; Safety owns `scam-reports`. No cross-module writes to the same index.

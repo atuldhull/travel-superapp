@@ -9,11 +9,8 @@
  *   - GET  /api/v1/trips   — list my trips (paginated by `limit`).
  *   - GET  /api/v1/trips/:id — fetch a single trip (404 if not mine).
  *
- * Itinerary generation is a follow-up. This controller returns the
- * bare `Trip` row; the itinerary lands when `[IV.18.2.4]` wires
- * `GenerateItineraryUseCase` into POST /trips/:id/itinerary.
- *
- * Installed by prompt [IV.18.2.3].
+ * Itinerary generation hangs off POST /trips/:id/itinerary, which
+ * delegates to `GenerateItineraryUseCase`.
  */
 import {
   Body,
@@ -75,7 +72,7 @@ import type { EventListing } from '../../events';
 import type { EateryListing } from '../../food';
 import type { StayListing } from '../../stays';
 import type { WeatherForecast } from '../../weather';
-import { GenerateItineraryStubUseCase } from '../application/generate-itinerary-stub.use-case';
+import { GenerateItineraryUseCase } from '../application/generate-itinerary.use-case';
 import { GetTripUseCase } from '../application/get-trip.use-case';
 import { ListItineraryUseCase } from '../application/list-itinerary.use-case';
 import { ListTripsUseCase } from '../application/list-trips.use-case';
@@ -177,7 +174,7 @@ export class TripController {
     private readonly unlockTrip: UnlockTripUseCase,
     private readonly getTripWithRole: GetTripWithRoleUseCase,
     private readonly cloneSharedTrip: CloneSharedTripUseCase,
-    private readonly generateItinerary: GenerateItineraryStubUseCase,
+    private readonly generateItinerary: GenerateItineraryUseCase,
     private readonly generatePlanWithAi: GeneratePlanWithAiUseCase,
     private readonly generateSamplePlan: GenerateSamplePlanUseCase,
     private readonly listItinerary: ListItineraryUseCase,
@@ -423,13 +420,13 @@ export class TripController {
   }
 
   /**
-   * Generate (or re-generate) the itinerary skeleton for the trip.
-   * Today this is a deterministic day-per-date stub; the AI-backed
-   * version lands when the ai-service is real. Returns the fresh
-   * list of days — empty `items`, non-null `summary`.
+   * Generate (or re-generate) the itinerary for the trip: one day per
+   * date in the range, each summarised by the registered trip planner
+   * (Anthropic → Gemini → Ollama → stub). Returns the fresh list of
+   * days, replacing any prior ones.
    */
   @ApiOperation({
-    summary: 'Generate itinerary stub for the trip (one ItineraryDay per date in the range).',
+    summary: 'Generate the itinerary for the trip (one ItineraryDay per date in the range).',
   })
   @ApiResponse({
     status: 200,

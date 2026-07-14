@@ -130,7 +130,7 @@ bulk of Phase 5 only unlocks once the app is live and gathering data.
    `liveContinuumPeers`, `activeContinuumState` = "your other device is on
    X"). Pure, in `@app/aether-canvas-shared`. The live WebTransport
    channel (`WT_FEED_URL`/`WT_PRESENCE_URL`) stays a backend b-slice — both
-   ends speak this contract. **A 21-agent adversarial review confirmed 11
+   ends speak this contract. **An adversarial review confirmed 11
    findings; fixed 4 real ones (AE601)**: a `seq:-1` first-state was
    swallowed by the sentinel (now gated on `state !== null`); the codec
    accepted fractional / `>MAX_SAFE_INTEGER` seqs (now a non-negative safe

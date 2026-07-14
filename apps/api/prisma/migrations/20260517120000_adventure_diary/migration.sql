@@ -4,7 +4,7 @@
 -- spurious PostGIS `DROP INDEX "*_gist"` + pgvector ivfflat DROP +
 -- `ALTER ... DROP DEFAULT` Unsupported()-type drift (dropping them
 -- would destroy the geo + vector layer). Per project convention +
--- CLAUDE.md #8 only the new diary objects are kept; applied via
+-- the append-only schema rule only the new diary objects are kept; applied via
 -- `prisma migrate deploy`. See feedback prisma-migrate-drops-postgis.
 
 -- CreateTable

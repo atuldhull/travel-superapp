@@ -2,8 +2,7 @@
  * Shared fetch wrapper used by every generated SDK call. Centralises:
  *
  *   - Base URL resolution (env or runtime config)
- *   - Bearer-token injection (memory-only, never localStorage —
- *     CLAUDE.md rule 12)
+ *   - Bearer-token injection (memory-only, never localStorage)
  *   - JSON content-type defaults
  *   - Domain-error parsing (extracts `code` + `traceId` from the
  *     error envelope returned by `DomainExceptionFilter`)

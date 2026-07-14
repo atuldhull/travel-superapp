@@ -2,7 +2,7 @@
  * Agent↔trip real triggers — the watch-START trigger.
  *
  * Subscribes to `Trip.ItineraryGenerated` (emitted by
- * generate-itinerary-stub.use-case): once a trip has an itinerary
+ * generate-itinerary.use-case): once a trip has an itinerary
  * there is something concrete for the agent to watch, so it opens a
  * TripWatch. Mirrors AgentReplanProposedHandler exactly (boot-time
  * subscribe, unsubscribe on destroy).

@@ -1,7 +1,7 @@
 /**
- * Integration tests for [IV.18.2.10] — GenerateItineraryStubUseCase
- * now picks Places from the Places module and distributes them
- * round-robin across days as `ItineraryItem` rows.
+ * Integration tests for GenerateItineraryUseCase picking Places from
+ * the Places module and distributing them round-robin across days as
+ * `ItineraryItem` rows.
  *
  * Seeds N places near a trip's center, drives POST /trips/:id/itinerary,
  * asserts the day-with-items shape and the round-robin distribution.

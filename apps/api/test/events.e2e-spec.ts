@@ -7,7 +7,7 @@
  *   - CreateTripDraftUseCase   → Trip.TripDrafted
  *   - UpdateTripUseCase        → Trip.TripUpdated
  *   - DeleteTripUseCase        → Trip.TripDeleted
- *   - GenerateItineraryStubUC  → Trip.ItineraryGenerated
+ *   - GenerateItineraryUseCase → Trip.ItineraryGenerated
  *   - IssueSessionUseCase      → Identity.SessionIssued
  *
  * Every payload has a non-empty traceId when the request has

@@ -6,7 +6,7 @@
 -- (Prisma's Unsupported()-type drift — those PostGIS/pgvector indexes
 -- are raw-SQL in earlier migrations and invisible to Prisma; dropping
 -- them would destroy the geo + vector layer). Per the project
--- convention + CLAUDE.md #8, only the new social-graph objects are
+-- convention + the append-only schema rule, only the new social-graph objects are
 -- kept. Applied via `prisma migrate deploy` (verbatim, no drift
 -- re-evaluation). See feedback memory prisma-migrate-drops-postgis.
 

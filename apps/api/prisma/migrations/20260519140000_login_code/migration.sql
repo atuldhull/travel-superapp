@@ -3,7 +3,7 @@
 -- CURATED, additive-only. `prisma migrate dev` would re-emit the
 -- spurious PostGIS `DROP INDEX "*_gist"` + pgvector ivfflat DROP +
 -- Unsupported()-type `ALTER ... DROP DEFAULT` drift (dropping them
--- would destroy the geo + vector layer). Per CLAUDE.md #8 only the
+-- would destroy the geo + vector layer). Per the append-only schema rule only the
 -- new objects are kept; applied via `prisma migrate deploy`. See
 -- feedback prisma-migrate-drops-postgis.
 

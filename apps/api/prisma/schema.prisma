@@ -12,8 +12,8 @@
 //   - Soft-delete is User-only (GDPR erasure flow). Everything else is
 //     hard-deleted; see Playbook §12.6 "pick one" rule.
 //   - Geography columns use `Unsupported("geography(Point, 4326)")`
-//     (PostGIS) and MUST be inserted via the forthcoming `GeoQueries`
-//     service — CLAUDE.md rule 11.
+//     (PostGIS) and MUST be inserted via the `GeoQueries` service —
+//     never through a plain Prisma `create` / `update`.
 //   - Vector columns use `Unsupported("vector(1024)")` (pgvector) and go
 //     through `VectorQueries`.
 //   - PII fields (email, phone) are stored encrypted via pgcrypto and

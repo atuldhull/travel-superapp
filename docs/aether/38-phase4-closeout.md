@@ -92,7 +92,7 @@ Vault reads `SAMPLE_VAULT_PRICES` directly from `@app/aether-canvas-shared`
 
 ## 6. Pre-device audit (Round BD) — 7 runtime bugs fixed before the build
 
-A 21-agent review→verify Workflow read the scenes + the installed library
+An adversarial review→verify pass read the scenes + the installed library
 source to catch runtime bugs `tsc` cannot see, then adversarially
 verified each finding. All 7 confirmed bugs were fixed (AE570-576):
 

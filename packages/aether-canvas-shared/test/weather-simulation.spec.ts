@@ -217,6 +217,6 @@ describe('AE498 â€” weatherStreakCount', () => {
   it('returns a count strictly greater for storm than rain', () => {
     const states: WeatherState[] = ['rain', 'storm'];
     const counts = states.map(weatherStreakCount);
-    expect(counts[1]).toBeGreaterThan(counts[0]);
+    expect(counts[1]!).toBeGreaterThan(counts[0]!);
   });
 });

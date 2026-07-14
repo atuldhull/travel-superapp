@@ -52,28 +52,32 @@ for (const [key, value] of Object.entries(TEST_ENV)) {
   }
 }
 
-// ─── Per-worker schema isolation ([L1]) ─────────────────────────────
+// ─── Per-worker database isolation ──────────────────────────────────
 // JEST_WORKER_ID is `1` for the first worker; increments per parallel
-// worker. Append/override `?schema=test_w<id>` so every worker hits
-// its own Postgres schema. globalSetup migrated all 8 schemas
-// up-front; this just points the worker at the right one.
+// worker. Point DATABASE_URL at database `test_w<id>` so every worker
+// hits its own Postgres database. globalSetup created + migrated all
+// 8 up-front; this just points the worker at the right one.
+//
+// Databases, not schemas: PostGIS always installs into `public`, so a
+// per-worker schema can't see the `geography` type. Each worker
+// database has its own `public` and its own extensions.
 //
 // DIRECT_URL mirrors DATABASE_URL — Prisma uses the latter for the
 // runtime pool + the former for migrations.
 const workerId = process.env['JEST_WORKER_ID'] ?? '1';
-const schemaName = `test_w${workerId}`;
+const databaseName = `test_w${workerId}`;
 
-function withSchema(url: string, schema: string): string {
-  const [base, query = ''] = url.split('?');
-  const params = new URLSearchParams(query);
-  params.set('schema', schema);
-  return `${base}?${params.toString()}`;
+function withDatabase(url: string, database: string): string {
+  const parsed = new URL(url);
+  parsed.pathname = `/${database}`;
+  parsed.searchParams.set('schema', 'public');
+  return parsed.toString();
 }
 
-process.env['DATABASE_URL'] = withSchema(process.env['DATABASE_URL']!, schemaName);
-process.env['DIRECT_URL'] = withSchema(
+process.env['DATABASE_URL'] = withDatabase(process.env['DATABASE_URL']!, databaseName);
+process.env['DIRECT_URL'] = withDatabase(
   process.env['DIRECT_URL'] ?? process.env['DATABASE_URL']!,
-  schemaName,
+  databaseName,
 );
 
 // ─── Hermetic external integrations ─────────────────────────────────

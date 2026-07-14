@@ -8,7 +8,7 @@ Source of truth: `packages/config/src/schema.ts` (Zod). This doc is a reference 
 2. `.env.local` at repo root (gitignored — this is where developers put credentials).
 3. Schema defaults (where defined).
 
-In CI / staging / production, values come from **Doppler** (see `CLAUDE.md` §secrets). Local `.env.local` must never be synced to those environments.
+In CI / staging / production, values come from **Doppler**. Local `.env.local` must never be synced to those environments.
 
 ## Validation
 

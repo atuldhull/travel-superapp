@@ -4,7 +4,7 @@
 -- spurious PostGIS `DROP INDEX "*_gist"`, the pgvector
 -- `PlaceEmbedding_embedding_ivfflat` DROP, and 2 `ALTER ... DROP
 -- DEFAULT` (Unsupported()-type drift — applying them would destroy
--- the geo + vector layer). Per project convention + CLAUDE.md #8 only
+-- the geo + vector layer). Per project convention + the append-only schema rule only
 -- the new, additive objects are kept here; applied via `prisma
 -- migrate deploy`. See feedback prisma-migrate-drops-postgis-indexes.
 --

@@ -1,7 +1,6 @@
 <!--
-Prompt-driven PR. See travel-app-prompts.md for the archive,
-CONTRIBUTING.md for the full reviewer checklist, and CLAUDE.md for the
-hard constraints. Tightened by [P8].
+See CONTRIBUTING.md for the full reviewer checklist and the
+architecture rules this PR has to respect.
 -->
 
 ## Context
@@ -42,7 +41,7 @@ hard constraints. Tightened by [P8].
 
 ## Author checklist (tick before requesting review)
 
-- [ ] `CLAUDE.md` hard constraints respected (scope-lock, no silent deletes, no secrets, no `any`).
+- [ ] Architecture rules respected (no secrets, no `any`, hex layering, PostGIS via `GeoQueries`).
 - [ ] One commit per slice — heredoc commit messages, no backticks in subject, ≤ 100 chars.
 - [ ] Local gauntlet green: `pnpm typecheck && pnpm lint && pnpm arch && pnpm cycles && pnpm cover:unit`.
 - [ ] `pnpm sdk:check` green if a controller / DTO changed.

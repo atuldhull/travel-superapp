@@ -10,7 +10,6 @@
 import {
   DEFAULT_DRIFT_BOUNDS,
   DEFAULT_DRIFT_MOTE_COUNT,
-  DEFAULT_DRIFT_SEED,
   DEFAULT_SUN_RADIANS_PER_SECOND,
   ambientFieldPositionArray,
   ambientFieldPositions,

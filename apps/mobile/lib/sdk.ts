@@ -8,7 +8,7 @@
  *      backed bootstrap. The token is hydrated on app start; the
  *      `setAccessToken` setter writes both memory + disk.
  *
- * CLAUDE.md rule 12: access tokens live in memory at runtime; the
+ * Token-storage rule: access tokens live in memory at runtime; the
  * mobile-equivalent of "no httpOnly cookie" is encryption at rest.
  * [S-D1] swapped AsyncStorage (unencrypted) for `expo-secure-store`
  * (iOS Keychain + Android EncryptedSharedPreferences). Migration of

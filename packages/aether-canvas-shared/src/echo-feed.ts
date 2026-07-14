@@ -122,6 +122,17 @@ export function boostHexColor(hex: string | null, factor: number = 1.25): string
   return `#${hexN.toString(16).padStart(6, '0').toUpperCase()}`;
 }
 
+/** The five Aether palette slots, named. `echoPaletteFromDominantColor`
+ *  returns them positionally; this names the positions so consumers can
+ *  key by slot instead of by index. */
+export interface SurfacePaletteSlots {
+  readonly ink: string;
+  readonly surface: string;
+  readonly accent: string;
+  readonly glow: string;
+  readonly support: string;
+}
+
 /** Derive a 5-slot Aether palette `[ink, surface, accent, glow, support]`
  *  from a single dominant photo colour. Falls back to the Warm Italian
  *  baseline when the input is null. The shell pipes the resulting tuple

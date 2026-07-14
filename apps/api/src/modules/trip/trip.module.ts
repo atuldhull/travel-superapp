@@ -7,10 +7,8 @@
  *         ← Prisma adapter (infrastructure)
  *
  * The adapter depends on `PrismaService` (from the global DbModule)
- * and `GeoQueries` (raw-SQL seam for the PostGIS `center` column,
- * CLAUDE rule 11).
- *
- * Installed by prompt [IV.18.2.3].
+ * and `GeoQueries` (raw-SQL seam for the PostGIS `center` column —
+ * never write it through a plain Prisma `create` / `update`).
  */
 import { forwardRef, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -41,7 +39,7 @@ import { NearMeNowUseCase } from './application/near-me-now.use-case';
 import { LockTripUseCase, UnlockTripUseCase } from './application/lock-trip.use-case';
 import { GetTripWithRoleUseCase } from './application/get-trip-with-role.use-case';
 import { CloneSharedTripUseCase } from './application/clone-shared-trip.use-case';
-import { GenerateItineraryStubUseCase } from './application/generate-itinerary-stub.use-case';
+import { GenerateItineraryUseCase } from './application/generate-itinerary.use-case';
 import { SeedSampleTripUseCase } from './application/seed-sample-trip.use-case';
 import { GeneratePlanWithAiUseCase } from './application/generate-plan-with-ai.use-case';
 import { GenerateSamplePlanUseCase } from './application/generate-sample-plan.use-case';
@@ -115,7 +113,7 @@ import { TripController } from './interface/trip.controller';
     GetTripUseCase,
     UpdateTripUseCase,
     DeleteTripUseCase,
-    GenerateItineraryStubUseCase,
+    GenerateItineraryUseCase,
     GeneratePlanWithAiUseCase,
     GenerateSamplePlanUseCase,
     SeedSampleTripUseCase,

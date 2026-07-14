@@ -116,8 +116,8 @@ describe('AE508 - layoutByGrid', () => {
     const photos = [PHOTO({ id: 'solo' })];
     const out = layoutByGrid(photos);
     expect(out).toHaveLength(1);
-    expect(out[0].id).toBe('solo');
-    expect(out[0].position[2]).toBe(0);
+    expect(out[0]!.id).toBe('solo');
+    expect(out[0]!.position[2]).toBe(0);
   });
 
   it('lays a 4-photo batch on a 2x2 grid (sqrt-N cols)', () => {
@@ -145,12 +145,12 @@ describe('AE508 - layoutByGrid', () => {
 
   it('uses the default config plane size when no config is supplied', () => {
     const out = layoutByGrid([PHOTO()]);
-    expect(out[0].size).toBe(DEFAULT_LUMEN_LAYOUT.planeBaseSize);
+    expect(out[0]!.size).toBe(DEFAULT_LUMEN_LAYOUT.planeBaseSize);
   });
 
   it('forwards the photo url through to the layout', () => {
     const out = layoutByGrid([PHOTO({ url: 'https://cdn.test/x.jpg' })]);
-    expect(out[0].url).toBe('https://cdn.test/x.jpg');
+    expect(out[0]!.url).toBe('https://cdn.test/x.jpg');
   });
 });
 
@@ -162,7 +162,7 @@ describe('AE508 - layoutBySpiral', () => {
   it('returns a singleton plane for a single photo at z=0', () => {
     const out = layoutBySpiral([PHOTO({ id: 'solo' })]);
     expect(out).toHaveLength(1);
-    expect(out[0].position[2]).toBe(0);
+    expect(out[0]!.position[2]).toBe(0);
   });
 
   it('places every plane within the configured max radius (disc bound)', () => {
@@ -180,7 +180,7 @@ describe('AE508 - layoutBySpiral', () => {
   it('scales radius as sqrt(i) so later photos sit further out', () => {
     const out = layoutBySpiral(photoBatch(20));
     const r = (i: number) => {
-      const [x, y] = out[i].position;
+      const [x, y] = out[i]!.position;
       return Math.sqrt(x * x + y * y);
     };
     expect(r(19)).toBeGreaterThan(r(0));
@@ -209,8 +209,8 @@ describe('AE508 - layoutByWall', () => {
     const wallOut = layoutByWall(photos);
     // Both lay 9 photos as 3 columns; the x distance between col0 and col1
     // on the wall should be strictly less than on the grid.
-    const gridStep = Math.abs(gridOut[1].position[0] - gridOut[0].position[0]);
-    const wallStep = Math.abs(wallOut[1].position[0] - wallOut[0].position[0]);
+    const gridStep = Math.abs(gridOut[1]!.position[0] - gridOut[0]!.position[0]);
+    const wallStep = Math.abs(wallOut[1]!.position[0] - wallOut[0]!.position[0]);
     expect(wallStep).toBeLessThan(gridStep);
   });
 
@@ -232,7 +232,7 @@ describe('AE508 - layoutByWall', () => {
 
   it('preserves the photo url on each plane', () => {
     const out = layoutByWall([PHOTO({ url: 'https://cdn.test/wall.jpg' })]);
-    expect(out[0].url).toBe('https://cdn.test/wall.jpg');
+    expect(out[0]!.url).toBe('https://cdn.test/wall.jpg');
   });
 });
 

@@ -18,19 +18,36 @@
  * `pnpm dev:up` Docker OR from Testcontainers if Docker compose
  * isn't running. No silent skips.
  *
- * Per-worker schema isolation: `apps/api/test/setup.ts` reads
- * `JEST_WORKER_ID` and appends `?schema=test_w<ID>` to DATABASE_URL.
- * THIS file (globalSetup) creates each worker schema + runs `prisma
+ * Per-worker DATABASE isolation: `apps/api/test/setup.ts` reads
+ * `JEST_WORKER_ID` and points DATABASE_URL at database `test_w<ID>`.
+ * THIS file (globalSetup) creates each worker database + runs `prisma
  * migrate deploy` against it before any worker starts. Workers can
  * then run in PARALLEL without `--runInBand` because they're
- * insulated at the schema level.
+ * insulated at the database level.
  *
- * Installed by [L1].
+ * Why databases and not schemas: PostGIS is not relocatable — `CREATE
+ * EXTENSION postgis` always installs into `public`, whatever the
+ * session search_path is. Prisma's `?schema=test_wN` sets search_path
+ * to that schema alone, so the unqualified `geography(Point, 4326)`
+ * in the init migration cannot resolve and every migrate-deploy dies
+ * with `type "geography" does not exist`. Giving each worker its own
+ * database gives each its own `public`, so the extension and the
+ * tables land in the same place.
  */
 import { execSync } from 'node:child_process';
 import net from 'node:net';
 import path from 'node:path';
+import { PrismaClient } from '@prisma/client';
 import { GenericContainer, StartedTestContainer } from 'testcontainers';
+
+/** Swap the database name in a Postgres URL, forcing `schema=public`
+ *  (each worker database has its own `public`). */
+function withDatabase(url: string, database: string): string {
+  const parsed = new URL(url);
+  parsed.pathname = `/${database}`;
+  parsed.searchParams.set('schema', 'public');
+  return parsed.toString();
+}
 
 interface InfraEndpoints {
   readonly postgresUrl: string;
@@ -123,18 +140,37 @@ export default async function globalSetup(): Promise<void> {
   process.env['DIRECT_URL'] = infra.postgresUrl;
   process.env['REDIS_URL'] = infra.redisUrl;
 
-  // Per-worker schema setup. `JEST_WORKER_ID` isn't set in
-  // globalSetup itself, so we precreate every schema the workers
+  // Per-worker database setup. `JEST_WORKER_ID` isn't set in
+  // globalSetup itself, so we precreate every database the workers
   // might use. The default jest worker pool is min(CPU, testFiles);
-  // 8 covers all realistic cases. Idempotent — `IF NOT EXISTS` lets
-  // a re-run skip already-created schemas.
+  // 8 covers all realistic cases. Idempotent — an existing database
+  // is left alone and just rolled forward by `migrate deploy`.
   const apiRoot = path.resolve(__dirname, '..');
   const MAX_WORKERS = 8;
+
+  // `CREATE DATABASE` can't run inside a transaction, and there's no
+  // `IF NOT EXISTS` for it, so probe pg_database first. The admin
+  // connection targets whatever database the base URL names.
+  const admin = new PrismaClient({ datasources: { db: { url: infra.postgresUrl } } });
+  try {
+    for (let w = 1; w <= MAX_WORKERS; w++) {
+      const database = `test_w${w}`;
+      const exists = await admin.$queryRaw<
+        Array<{ count: bigint }>
+      >`SELECT count(*) AS count FROM pg_database WHERE datname = ${database}`;
+      if ((exists[0]?.count ?? 0n) === 0n) {
+        process.stdout.write(`[global-setup] creating database ${database}\n`);
+        await admin.$executeRawUnsafe(`CREATE DATABASE "${database}"`);
+      }
+    }
+  } finally {
+    await admin.$disconnect();
+  }
+
   for (let w = 1; w <= MAX_WORKERS; w++) {
-    const schema = `test_w${w}`;
-    const baseUrl = infra.postgresUrl.replace(/\?schema=[^&]*/, '');
-    const url = `${baseUrl}?schema=${schema}`;
-    process.stdout.write(`[global-setup] migrating schema ${schema}\n`);
+    const database = `test_w${w}`;
+    const url = withDatabase(infra.postgresUrl, database);
+    process.stdout.write(`[global-setup] migrating database ${database}\n`);
     execSync('pnpm prisma migrate deploy', {
       cwd: apiRoot,
       env: { ...process.env, DATABASE_URL: url, DIRECT_URL: url },

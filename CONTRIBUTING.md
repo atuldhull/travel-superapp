@@ -1,6 +1,6 @@
 # Contributing to TravelSuperApp
 
-> Installed by `[P8]` of the Documentation 8.5→10 series. Companion to [`CLAUDE.md`](./CLAUDE.md) (the AI-agent rules of engagement) and [`docs/onboarding.md`](./docs/onboarding.md) (day-1 setup). If something here disagrees with `CLAUDE.md`, `CLAUDE.md` wins.
+> Companion to [`docs/onboarding.md`](./docs/onboarding.md) (day-1 setup).
 
 Welcome — and thank you for considering a contribution. This repo is the engineering backbone of an AI-powered travel super-app: a NestJS modular monolith + Next.js 15 web + Expo 51 mobile + a Python ai-service, glued by Turborepo + pnpm. The bar is high but the rules are explicit; once you know them, contributing is fast.
 
@@ -34,18 +34,16 @@ Full setup steps: [`docs/onboarding.md`](./docs/onboarding.md).
 
 ### Branches
 
-Branch from `main`. Name your branch `<type>/<short-slug>` (e.g. `feat/trip-publish-ttl`, `fix/oauth-redirect-loop`). No spaces, no caps, no ticket numbers in the branch name — the prompt-id lives in the commit and the PR title.
+Branch from `main`. Name your branch `<type>/<short-slug>` (e.g. `feat/trip-publish-ttl`, `fix/oauth-redirect-loop`). No spaces, no caps, no ticket numbers in the branch name.
 
 ### Commits
 
-Every commit follows [Conventional Commits](https://www.conventionalcommits.org/) **with the prompt-id in the scope**:
+Every commit follows [Conventional Commits](https://www.conventionalcommits.org/):
 
 ```text
-<type>(<prompt-id>): <subject ≤ 100 chars>
+<type>(<scope>): <subject ≤ 100 chars>
 
 <body — wrap at 100, list bullet points freely, include "Why:" and "How to apply:" when relevant>
-
-Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>   ← only if AI-assisted
 ```
 
 Allowed types: `feat | fix | docs | chore | refactor | test | build | ci | perf | style | revert`. The commit hook ([`commitlint.config.js`](./commitlint.config.js)) enforces this; PRs with a non-conforming subject get blocked.
@@ -69,15 +67,12 @@ docs(P7): CHANGELOG.md + release-please automation
 The PR template (auto-loaded when you open a PR) covers this in detail. The short version, in order:
 
 1. **CI is green** locally before you push — typecheck, lint, arch, cycles, cover:unit, fitness specs.
-2. **Acceptance criteria** for the prompt are listed in the PR body and each is ticked.
-3. **`PROGRESS.md`** has a new row for the prompt (if this is a prompt-driven change).
-4. **CHANGELOG.md** does NOT need a manual entry — release-please reads Conventional Commits.
-5. **ADR** in `docs/adr/` if the change flips an architectural rule. Use [MADR](https://adr.github.io/madr/) format.
-6. **No secrets** in the diff. Search the diff for `sk_live`, `hcaik_`, `xkeysib_`, `xoxb-`, etc.
-7. **No `any` types** in TypeScript. No `console.log` — use `@app/logger`.
-8. **No silent deletes** of files you didn't create in this PR. Same for `--force` git operations against `main`.
-9. **Scope-locked** — the PR touches only the files the prompt named. If you discovered a real bug nearby, open a separate PR.
-10. **Drafted as a draft PR** until you've self-reviewed the diff (use GitHub's "View files changed" tab). Convert to "Ready for review" only when you'd merge it yourself.
+2. **CHANGELOG.md** does NOT need a manual entry — release-please reads Conventional Commits.
+3. **ADR** in `docs/adr/` if the change flips an architectural rule. Use [MADR](https://adr.github.io/madr/) format.
+4. **No secrets** in the diff. Search the diff for `sk_live`, `hcaik_`, `xkeysib_`, `xoxb-`, etc.
+5. **No `any` types** in TypeScript. No `console.log` — use `@app/logger`.
+6. **Tightly scoped** — if you discovered a real bug nearby, open a separate PR.
+7. **Drafted as a draft PR** until you've self-reviewed the diff (use GitHub's "View files changed" tab). Convert to "Ready for review" only when you'd merge it yourself.
 
 ## Code-review checklist (for reviewers)
 
@@ -88,7 +83,7 @@ When you're reviewing someone else's PR, walk this list before approving:
 - [ ] **Hex layering preserved.** `domain ← application ← {infrastructure, interface}`. Use-cases don't import Prisma; controllers don't import use-case internals. (`pnpm arch` should catch this.)
 - [ ] **Bounded contexts respected.** Sibling modules import each other's `interface/facade/`, never `application/` or `infrastructure/`. (`pnpm cycles` catches the worst cases; reviewer eye catches the subtle ones.)
 - [ ] **Three sanctioned forwardRef cycles only** (`trip↔{food,media,safety}`). New cycles fail CI; if you see a `forwardRef` in the diff, it had better already be in `ALLOWED_FORWARD_REF_CYCLES`.
-- [ ] **No new barrel re-export of `<M>Module`** in `<m>/index.ts`. Cross-module DI uses direct `'<m>/<m>.module'` import (see [memory: barrel-no-module-class-reexport](./CLAUDE.md)).
+- [ ] **No new barrel re-export of `<M>Module`** in `<m>/index.ts`. Cross-module DI uses direct `'<m>/<m>.module'` import.
 
 ### Data + integration
 
@@ -109,7 +104,7 @@ When you're reviewing someone else's PR, walk this list before approving:
 - [ ] **Conventional Commits subject ≤ 100 chars.** Body wraps at 100.
 - [ ] **No `any`** anywhere. `unknown` + type-narrow if you genuinely don't know.
 - [ ] **No secrets** — search the diff for `_KEY`, `_SECRET`, `_TOKEN` patterns. Use `REPLACE_ME_SEE_DOPPLER` in `.env.example`.
-- [ ] **Localhost = 127.0.0.1** in dev configs (memory: [localhost-ipv6-postgres](./CLAUDE.md)).
+- [ ] **Localhost = 127.0.0.1** in dev configs.
 - [ ] **Token storage** — never `localStorage`. Access in memory, refresh in httpOnly cookie.
 
 ### Docs
@@ -117,27 +112,20 @@ When you're reviewing someone else's PR, walk this list before approving:
 - [ ] **README + onboarding still accurate** for setup steps the PR changed.
 - [ ] **CHANGELOG** does NOT need a manual entry (release-please).
 - [ ] **ADR** added if an architectural rule flipped.
-- [ ] **Memory file** added to `~/.claude/projects/.../memory/` if the PR established a non-obvious "do X, not Y" rule for future contributors.
 
 Approve only when every box is ticked or has an explicit "doesn't apply because Y" comment.
 
 ## Architecture rules you must respect
 
-These come from [`CLAUDE.md`](./CLAUDE.md) §"Hard Constraints" — same rules, same enforcement:
+Non-negotiable, and enforced by `pnpm arch` / `pnpm lint` / review:
 
-1. **Scope-lock** — modify only files the prompt's "Files to touch" lists.
-2. **Dependency-lock** — add only dependencies the prompt lists.
-3. **No silent deletes** — never delete a file you did not create in this session.
-4. **No surprise commits** — don't commit unless the workflow / user said so.
-5. **No secrets** — never write real keys; use the `REPLACE_ME_SEE_DOPPLER` sentinel.
-6. **No AC skipping** — never skip the prompt's Acceptance Criteria check.
-7. **No auto-advance** — never move to the next prompt without explicit confirmation.
-8. **Prisma schema is append-only** unless the prompt explicitly permits edits.
-9. **No `any` types. No `console.log` — use `@app/logger`.**
-10. **Clean / hex dependency rule** — `domain ← application ← infrastructure/interface`. Never inverted.
-11. **PostGIS rule** — never call `prisma.place.create({ data: { coordinates: ... } })` — always `GeoQueries`.
-12. **Token storage** — never `localStorage`. Access in memory; refresh in httpOnly cookie.
-13. **Transaction rule** — never wrap network calls inside `prisma.$transaction`.
+1. **No secrets** — never write real keys; use the `REPLACE_ME_SEE_DOPPLER` sentinel.
+2. **Prisma schema is append-only.** Migrations that touch geo/vector models are hand-curated — `prisma migrate dev` re-proposes dropping the PostGIS/pgvector indexes it can't see.
+3. **No `any` types. No `console.log` — use `@app/logger`.**
+4. **Clean / hex dependency rule** — `domain ← application ← infrastructure/interface`. Never inverted.
+5. **PostGIS rule** — never call `prisma.place.create({ data: { coordinates: ... } })` — always `GeoQueries`.
+6. **Token storage** — never `localStorage`. Access in memory; refresh in httpOnly cookie.
+7. **Transaction rule** — never wrap network calls inside `prisma.$transaction`.
 
 ## How to file a bug / feature / security issue
 
@@ -151,7 +139,6 @@ For docs-only fixes (typo, broken link, stale runbook), feel free to open a PR d
 
 ## Where docs live
 
-- **`CLAUDE.md`** — non-negotiable rules for any agent (human or AI) editing this repo.
 - **`README.md`** — top-level entry point; quickstart + structure + canonical doc pointers.
 - **`docs/onboarding.md`** — day-1 setup.
 - **`docs/architecture/`** — visual architecture (C4), bounded-context map, generated ERD.
@@ -160,7 +147,6 @@ For docs-only fixes (typo, broken link, stale runbook), feel free to open a PR d
 - **`docs/api/`** — generated OpenAPI spec + Redoc viewer.
 - **`docs/security/threat-model.md`** — STRIDE per trust boundary.
 - **`docs/compliance/gdpr-audit.md`** — Art. 6 / 15-21 coverage.
-- **`PROGRESS.md`** — rolling internal log of completed prompts.
 - **`CHANGELOG.md`** — public release notes, maintained by release-please.
 
 If you find any of those out of date — fix it in the same PR as the feature that drifted it. New-engineer feedback IS the canonical signal that onboarding has drifted.

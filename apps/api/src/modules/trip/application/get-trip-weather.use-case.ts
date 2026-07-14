@@ -23,7 +23,7 @@ import { NotFoundError } from '@app/errors';
 import { GeoQueries } from '../../../common/db/geo-queries';
 import { GetForecastUseCase, type WeatherForecast } from '../../weather';
 import { TRIP_REPOSITORY, type TripRepository } from './ports/trip.repository';
-import { daysInclusive } from './generate-itinerary-stub.use-case';
+import { daysInclusive } from './generate-itinerary.use-case';
 
 const DEFAULT_DAYS = 7;
 const MAX_DAYS = 16;

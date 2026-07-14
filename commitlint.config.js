@@ -1,12 +1,11 @@
 /**
  * Extends @commitlint/config-conventional.
  *
- * Project convention: `<type>(<prompt-id>): <subject>`
- *   e.g. chore(II.10.0): scaffold monorepo
- *        feat(III.11.1): build @app/config package
+ * Project convention: `<type>(<scope>): <subject>`
+ *   e.g. chore(monorepo): scaffold workspace
+ *        feat(config): build @app/config package
  *
- * The prompt-id (like "II.10.0" or "IV.19.1") maps to travel-app-prompts.md.
- * `scope-case: [0]` is disabled so Roman-numeral + dotted scopes are allowed.
+ * `scope-case: [0]` is disabled so dotted + mixed-case scopes are allowed.
  */
 module.exports = {
   extends: ['@commitlint/config-conventional'],

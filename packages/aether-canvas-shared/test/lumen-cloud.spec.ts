@@ -187,7 +187,7 @@ describe('AE507 - layoutPhotoCloud', () => {
     ];
     const out = layoutPhotoCloud(photos);
     expect(out).toHaveLength(1);
-    expect(out[0].position[0]).toBe(0);
+    expect(out[0]!.position[0]).toBe(0);
   });
 
   it('collapses every photo to x=0 when all timestamps are null', () => {
@@ -196,8 +196,8 @@ describe('AE507 - layoutPhotoCloud', () => {
       { id: 'b', capturedAt: null, rating: 4, url: null },
     ];
     const out = layoutPhotoCloud(photos);
-    expect(out[0].position[0]).toBe(0);
-    expect(out[1].position[0]).toBe(0);
+    expect(out[0]!.position[0]).toBe(0);
+    expect(out[1]!.position[0]).toBe(0);
   });
 
   it('maps the earliest photo to -axisLengthX/2 and the latest to +axisLengthX/2', () => {
@@ -206,8 +206,8 @@ describe('AE507 - layoutPhotoCloud', () => {
       { id: 'late', capturedAt: '2026-01-05T00:00:00Z', rating: 3, url: null },
     ];
     const out = layoutPhotoCloud(photos);
-    expect(out[0].position[0]).toBe(-9);
-    expect(out[1].position[0]).toBe(9);
+    expect(out[0]!.position[0]).toBe(-9);
+    expect(out[1]!.position[0]).toBe(9);
   });
 
   it('passes the photo url through verbatim (including null pending state)', () => {
@@ -216,8 +216,8 @@ describe('AE507 - layoutPhotoCloud', () => {
       { id: 'p2', capturedAt: null, rating: null, url: null },
     ];
     const out = layoutPhotoCloud(photos);
-    expect(out[0].url).toBe('http://cdn/img-1.jpg');
-    expect(out[1].url).toBe(null);
+    expect(out[0]!.url).toBe('http://cdn/img-1.jpg');
+    expect(out[1]!.url).toBe(null);
   });
 
   it('uses planeBaseSize from the supplied config for the size field', () => {
@@ -230,7 +230,7 @@ describe('AE507 - layoutPhotoCloud', () => {
       jitterZ: 0,
       planeBaseSize: 3.25,
     });
-    expect(out[0].size).toBe(3.25);
+    expect(out[0]!.size).toBe(3.25);
   });
 
   it('uses config.jitterZ when computing the z coordinate', () => {
@@ -249,7 +249,7 @@ describe('AE507 - layoutPhotoCloud', () => {
       jitterZ: 1,
       planeBaseSize: 1,
     });
-    expect(big[0].position[2]).toBeCloseTo(small[0].position[2] * 4, 10);
+    expect(big[0]!.position[2]).toBeCloseTo(small[0]!.position[2] * 4, 10);
   });
 
   it('preserves input order in the output array', () => {
@@ -269,10 +269,10 @@ describe('AE507 - layoutPhotoCloud', () => {
     ];
     const out = layoutPhotoCloud(photos);
     // bad timestamp collapses to 0 regardless of axis
-    expect(out[0].position[0]).toBe(0);
+    expect(out[0]!.position[0]).toBe(0);
     // early/late still span the full axis using only valid times
-    expect(out[1].position[0]).toBe(-9);
-    expect(out[2].position[0]).toBe(9);
+    expect(out[1]!.position[0]).toBe(-9);
+    expect(out[2]!.position[0]).toBe(9);
   });
 });
 

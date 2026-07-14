@@ -8,9 +8,9 @@
  * sub-3-second wall clock and produce honest, enforceable
  * coverage numbers from a clean checkout (no docker compose).
  *
- * CLAUDE.md #self-check says "Coverage threshold met (domain ≥
- * 80%, application ≥ 80% on modules)." Until this config landed
- * that number was never actually computed. It is now.
+ * The project's coverage bar is "domain ≥ 80%, application ≥ 80% on
+ * modules". Until this config landed that number was never actually
+ * computed. It is now.
  *
  * `collectCoverageFrom` lists the EXACT files the unit specs
  * exercise — adding a new file here without a matching unit spec
@@ -21,8 +21,6 @@
  * just globally). Per-file is stricter and stops a 95% file from
  * masking a 60% file in the global average — the dishonest-number
  * failure mode the playbook explicitly calls out.
- *
- * Installed by [H1].
  */
 // Absolute path to the workspace packages dir — required so the
 // moduleNameMapper survives Stryker's sandbox copy ([H2]). Inside
@@ -43,6 +41,7 @@ module.exports = {
     '<rootDir>/test/**/*-entity.unit.spec.ts',
     '<rootDir>/test/**/*-entity.property.spec.ts',
     '<rootDir>/test/trip-transitions.unit.spec.ts',
+    '<rootDir>/test/itinerary-day-summaries.unit.spec.ts',
     '<rootDir>/test/factories.unit.spec.ts',
     '<rootDir>/test/contract.*.spec.ts',
     '<rootDir>/test/geo-math.property.spec.ts',
@@ -72,7 +71,7 @@ module.exports = {
   coverageDirectory: 'coverage/unit',
   // Per-file gate: every domain file must hit 80% on every metric.
   // The empty `**/` key applies to each file under collectCoverageFrom.
-  // CLAUDE.md self-check #3 ("domain ≥ 80%") is now mechanical.
+  // The "domain ≥ 80%" bar is now mechanical, not a promise.
   coverageThreshold: {
     './src/modules/**/domain/*.ts': {
       branches: 80,

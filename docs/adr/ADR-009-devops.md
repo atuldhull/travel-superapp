@@ -66,7 +66,7 @@ The choices here drive real monthly spend, the CI pipeline's shape, and how many
 
 - **`pnpm install --frozen-lockfile`** in CI — no lockfile drift. Local dev runs `pnpm install` which may bump patches; CI rejects the result if the lockfile changes under `--frozen-lockfile`.
 - **Dockerfile MUST be distroless + non-root.** Already the shape in `apps/api/Dockerfile` (from [IV.17.x]). Applies to every future app.
-- **`.env` files are `.gitignore`'d.** Real secrets live in Doppler; the only committed env file is `.env.example` with `REPLACE_ME_SEE_DOPPLER` sentinels (Playbook §13.10 + [IX.32.4]). CLAUDE.md rule 5 enforces at review.
+- **`.env` files are `.gitignore`'d.** Real secrets live in Doppler; the only committed env file is `.env.example` with `REPLACE_ME_SEE_DOPPLER` sentinels (Playbook §13.10). Enforced at review: no real credential ever lands in the tree.
 - **Every deploy produces an SBOM** (CycloneDX format via Trivy) and a container scan. Hard-block any deploy where Trivy reports a `CRITICAL` CVE in a direct dependency.
 - **Terraform scaffold lives in `infra/terraform/`** (ready but not wired). When the K8s triggers fire, we `terraform plan` against an AWS account and the infra + Helm charts already exist in `infra/k8s/`. Scaffolding today = no rewrite tomorrow.
 - **No auto-upgrades on paid plans.** Fly.io, Vercel, Supabase all offer auto-scale tiers — we disable them. Alarm at 80% of the current-tier budget; a human confirms the upgrade.

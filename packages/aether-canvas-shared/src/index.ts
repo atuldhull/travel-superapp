@@ -279,6 +279,7 @@ export {
   type EchoAction,
   type EchoItem,
   type EchoSwipeDirection,
+  type SurfacePaletteSlots,
 } from './echo-feed';
 
 export {

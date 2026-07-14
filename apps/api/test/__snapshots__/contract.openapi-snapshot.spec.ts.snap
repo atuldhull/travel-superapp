@@ -24,6 +24,7 @@ GET    /api/v1/account/export.ndjson                                → 200     
 GET    /api/v1/account/preferences                                  → 200                  :: PreferencesController_getMine
 GET    /api/v1/account/stats                                        → 200                  :: AccountController_storageStats
 GET    /api/v1/account/trusted-contacts                             → 200                  :: TrustedContactsController_list
+GET    /api/v1/admin/agents                                         → 200                  :: AdminAgentsController_list
 GET    /api/v1/admin/audit-logs                                     → 200                  :: AdminAuditLogsController_list
 GET    /api/v1/admin/identity/jwks/kids                             → 200                  :: JwksAdminController_kids
 GET    /api/v1/admin/media                                          → 200,400              :: AdminMediaController_list
@@ -36,6 +37,7 @@ GET    /api/v1/agent/me                                             → 200,404 
 GET    /api/v1/agent/me/dashboard                                   → 200,404              :: AgentSelfController_dashboard
 GET    /api/v1/agent/runs/{id}                                      → 404                  :: AgentController_getRun
 GET    /api/v1/agent/status                                         → 200                  :: AgentController_status
+GET    /api/v1/agent/trips/{tripId}/proposals                       → 200                  :: AgentController_listTripProposalsRoute
 GET    /api/v1/agents/{id}/review-summary                           → 200                  :: AgentReviewSummaryController_summary
 GET    /api/v1/auth/me                                              → 200,401              :: AuthController_me
 GET    /api/v1/compliance/retention                                 → 200                  :: ComplianceController_retention
@@ -117,6 +119,8 @@ POST   /api/v1/account/appeal                                       → 200,422 
 POST   /api/v1/account/reactivate                                   → 200,401,404          :: AccountController_reactivate
 POST   /api/v1/account/trusted-contacts                             → 201,422              :: TrustedContactsController_add
 POST   /api/v1/admin/account-purge                                  → 200                  :: AdminPurgeController_forcePurge
+POST   /api/v1/admin/agents/{id}/reject                             → 200,400,404          :: AdminAgentsController_reject
+POST   /api/v1/admin/agents/{id}/verify                             → 200,404              :: AdminAgentsController_verify
 POST   /api/v1/admin/identity/jwks/rotate                           → 200,403              :: JwksAdminController_rotate
 POST   /api/v1/admin/places                                         → 201                  :: AdminController_create
 POST   /api/v1/admin/safety/scam-reports/{id}/unverify              → 200,404              :: AdminScamModerationController_unverify

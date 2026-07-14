@@ -108,7 +108,6 @@ const ALLOW_PHANTOMS = new Set([
   'STAGING',
   // Workspace-level shell helpers documented for clarity.
   'CI',
-  'CLAUDE_MD',
 ]);
 const realPhantoms = phantomInDoc.filter((v) => !ALLOW_PHANTOMS.has(v));
 

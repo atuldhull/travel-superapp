@@ -28,7 +28,7 @@ import { SearchStaysUseCase, type StayListing } from '../../stays';
 import { GetForecastUseCase, type WeatherForecast } from '../../weather';
 import type { ItineraryDay } from '../domain/itinerary.entity';
 import type { Trip } from '../domain/trip.entity';
-import { daysInclusive } from './generate-itinerary-stub.use-case';
+import { daysInclusive } from './generate-itinerary.use-case';
 import { GetTripTransportLegsUseCase, type TransportLeg } from './get-trip-transport-legs.use-case';
 import { ITINERARY_REPOSITORY, type ItineraryRepository } from './ports/itinerary.repository';
 import { TRIP_REPOSITORY, type TripRepository } from './ports/trip.repository';

@@ -4,7 +4,7 @@
 -- spurious PostGIS `DROP INDEX "*_gist"` + pgvector ivfflat DROP + 2
 -- `ALTER ... DROP DEFAULT` (Unsupported()-type drift — dropping them
 -- would destroy the geo + vector layer). Per project convention +
--- CLAUDE.md #8, only the new publication objects are kept. Applied
+-- the append-only schema rule, only the new publication objects are kept. Applied
 -- via `prisma migrate deploy`. See feedback prisma-migrate-drops-postgis.
 
 -- CreateEnum

@@ -166,15 +166,15 @@ describe('AE509 - layoutOrbsForTrip', () => {
       ],
     });
     const orbs = layoutOrbsForTrip([day]);
-    expect(orbs[0].placeId).toBe('p-9');
-    expect(orbs[1].placeId).toBeNull();
+    expect(orbs[0]!.placeId).toBe('p-9');
+    expect(orbs[1]!.placeId).toBeNull();
   });
 
   it('places a single-item single-day trip at the world origin', () => {
     const orbs = layoutOrbsForTrip([DAY({ items: [ITEM()] })]);
     expect(orbs).toHaveLength(1);
-    expect(orbs[0].x).toBe(0);
-    expect(orbs[0].z).toBe(0);
+    expect(orbs[0]!.x).toBe(0);
+    expect(orbs[0]!.z).toBe(0);
   });
 
   it('spreads two days across the timeline (left edge + right edge)', () => {
@@ -182,8 +182,8 @@ describe('AE509 - layoutOrbsForTrip', () => {
       DAY({ id: 'd0', dayIndex: 0, items: [ITEM({ id: 'a' })] }),
       DAY({ id: 'd1', dayIndex: 1, items: [ITEM({ id: 'b' })] }),
     ]);
-    expect(orbs[0].x).toBe(-8);
-    expect(orbs[1].x).toBe(8);
+    expect(orbs[0]!.x).toBe(-8);
+    expect(orbs[1]!.x).toBe(8);
   });
 
   it('clamps items past maxOrbsPerSlot onto the last visible slot', () => {
@@ -198,18 +198,18 @@ describe('AE509 - layoutOrbsForTrip', () => {
     });
     const orbs = layoutOrbsForTrip([day], config);
     // totalSlots clamps to maxOrbsPerSlot=2 -> z-slots are [-0.225, 0.225]
-    expect(orbs[0].z).toBeCloseTo(-0.225, 6);
-    expect(orbs[1].z).toBeCloseTo(0.225, 6);
+    expect(orbs[0]!.z).toBeCloseTo(-0.225, 6);
+    expect(orbs[1]!.z).toBeCloseTo(0.225, 6);
     // overflow items collapse onto the last slot
-    expect(orbs[2].z).toBeCloseTo(0.225, 6);
-    expect(orbs[3].z).toBeCloseTo(0.225, 6);
+    expect(orbs[2]!.z).toBeCloseTo(0.225, 6);
+    expect(orbs[3]!.z).toBeCloseTo(0.225, 6);
   });
 
   it('uses DEFAULT_ATLAS_LAYOUT when no config arg is supplied', () => {
     const day = DAY({ items: [ITEM({ id: 'a' }), ITEM({ id: 'b', position: 1 })] });
     const orbs = layoutOrbsForTrip([day]);
-    expect(orbs[0].z).toBeCloseTo(-0.225, 6);
-    expect(orbs[1].z).toBeCloseTo(0.225, 6);
+    expect(orbs[0]!.z).toBeCloseTo(-0.225, 6);
+    expect(orbs[1]!.z).toBeCloseTo(0.225, 6);
   });
 
   it('preserves dayIndex on each emitted orb', () => {
@@ -249,14 +249,14 @@ describe('AE509 - layoutDayMarkers', () => {
       DAY({ id: 'd0', dayIndex: 0 }),
       DAY({ id: 'd1', dayIndex: 1 }),
     ]);
-    expect(markers[0].x).toBe(-8);
-    expect(markers[1].x).toBe(8);
+    expect(markers[0]!.x).toBe(-8);
+    expect(markers[1]!.x).toBe(8);
   });
 
   it('places a single-day marker at x=0', () => {
     const markers = layoutDayMarkers([DAY({ dayIndex: 0 })]);
     expect(markers).toHaveLength(1);
-    expect(markers[0].x).toBe(0);
+    expect(markers[0]!.x).toBe(0);
   });
 
   it('honours a custom axisLength via config arg', () => {
@@ -265,8 +265,8 @@ describe('AE509 - layoutDayMarkers', () => {
       [DAY({ id: 'd0', dayIndex: 0 }), DAY({ id: 'd1', dayIndex: 1 })],
       config,
     );
-    expect(markers[0].x).toBe(-10);
-    expect(markers[1].x).toBe(10);
+    expect(markers[0]!.x).toBe(-10);
+    expect(markers[1]!.x).toBe(10);
   });
 });
 

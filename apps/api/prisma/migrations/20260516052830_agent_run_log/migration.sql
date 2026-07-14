@@ -8,8 +8,8 @@
 -- Prisma's `Unsupported()` types, so Prisma re-proposes dropping
 -- them on every migration. Dropping them would destroy the geo +
 -- vector query layer. Per the project convention (every migration
--- that touches geo/vector models is hand-curated) and CLAUDE.md #8
--- (append-only schema), this migration keeps ONLY the new agent
+-- that touches geo/vector models is hand-curated) and the
+-- append-only schema rule, this migration keeps ONLY the new agent
 -- objects. Applied with `prisma migrate deploy` (verbatim, no drift
 -- re-evaluation).
 
