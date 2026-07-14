@@ -66,6 +66,11 @@ describe('RedisStreamsEventBus (integration, requires Docker Redis)', () => {
   });
 
   beforeEach(() => {
+    // The probe in beforeAll decides whether Redis is up. Without this guard we
+    // still construct a bus against a dead Redis, it throws, `bus` stays
+    // undefined, and afterEach then dies on undefined.close() -- which is what
+    // actually failed, rather than anything the suite is meant to test.
+    if (!redisReachable) return;
     bus = new RedisStreamsEventBus({
       url: REDIS_URL,
       keyPrefix: `${KEY_PREFIX}:${randomUUID().slice(0, 8)}:`,
@@ -73,7 +78,7 @@ describe('RedisStreamsEventBus (integration, requires Docker Redis)', () => {
   });
 
   afterEach(async () => {
-    await bus.close();
+    await bus?.close();
   });
 
   it('delivers one event to two different consumer groups', async () => {

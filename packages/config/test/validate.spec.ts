@@ -16,6 +16,8 @@ const BASE_VALID_ENV: NodeJS.ProcessEnv = {
   S3_SECRET_KEY: 'minio_dev_password',
   MEILI_MASTER_KEY: 'meili_dev_key_change_me_minimum_16_chars',
   RATE_LIMIT_PEPPER: 'c'.repeat(32),
+  EMAIL_PEPPER: 'd'.repeat(32),
+  BACKUP_CODE_PEPPER: 'e'.repeat(32),
 };
 
 describe('validateEnv', () => {
