@@ -41,6 +41,13 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      # Prisma's typed client is generated, not committed. Without this, every
+      # `import { TripStatus } from '@prisma/client'` fails to typecheck on a
+      # clean checkout -- which is why this passed locally (a generated client
+      # was already sitting in node_modules) and failed here.
+      - name: Generate Prisma client
+        run: pnpm --filter=api exec prisma generate
+
       - name: Lint
         run: pnpm lint
 
