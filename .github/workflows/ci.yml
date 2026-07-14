@@ -1,10 +1,17 @@
-name: ci
+name: CI
 
-# Minimal "essentials" gate. The full enterprise pipeline (deploy, mobile
-# EAS, Chromatic, security scanners, smoke/e2e/load, etc.) lives under
-# `.github/workflows-disabled/` and needs cloud infra + secrets that aren't
-# provisioned yet — re-enable those files one at a time as you wire each
-# service up. This gate only runs checks that pass without any infra.
+# What this gate covers, stated plainly:
+#
+# Runs: lint (24 packages), typecheck (35 packages), the API's unit suite
+# (201 tests), and the test suites for web and every other package.
+#
+# Does NOT run: the API's e2e specs, or the Redis event-bus integration spec.
+# Both need a live Postgres/Redis. The event-bus spec is additionally failing
+# for reasons I don't understand yet -- it self-skips when Redis is absent, so
+# it is not being falsely reported as green here; it simply doesn't run. Fixing
+# it and then adding service containers to this workflow is the next job.
+#
+# There is no continue-on-error anywhere. If a step is in here, it is a gate.
 
 on:
   push:
@@ -18,8 +25,9 @@ concurrency:
 
 jobs:
   quality:
-    name: typecheck + unit tests
+    name: lint, typecheck, tests
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -30,11 +38,17 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      - name: Install dependencies
+      - name: Install
         run: pnpm install --frozen-lockfile
 
-      - name: Typecheck (web)
-        run: pnpm --filter=web typecheck
+      - name: Lint
+        run: pnpm lint
 
-      - name: Unit tests (canvas-shared)
-        run: pnpm --filter=@app/aether-canvas-shared test
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit tests (api)
+        run: pnpm --filter=api test:unit
+
+      - name: Tests (web + packages)
+        run: pnpm exec turbo run test --filter='!api'
