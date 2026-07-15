@@ -119,8 +119,17 @@ describe('JWT', () => {
 
     it('throws INVALID when the signature is bad', async () => {
       const token = await signJwt(accessClaims, keyV1, { expiresInSeconds: 900 });
-      // Tamper with the last character of the signature.
-      const tampered = token.slice(0, -1) + (token.endsWith('A') ? 'B' : 'A');
+      // Tamper the FIRST character of the signature, not the last. The last
+      // base64url char of a 32-byte HS256 signature only carries 4 significant
+      // bits + 2 padding bits, so some single-char flips (e.g. 'A'->'B') decode
+      // to the same bytes and don't actually change the signature -- which made
+      // this test flaky depending on the run's signature. The first char carries
+      // a full 6 bits, so flipping it always changes a real byte.
+      const parts = token.split('.');
+      const [header, payload, sig] = parts;
+      if (!header || !payload || !sig) throw new Error('signJwt produced a malformed token');
+      const flipped = sig[0] === 'A' ? 'B' : 'A';
+      const tampered = `${header}.${payload}.${flipped}${sig.slice(1)}`;
       const keyring: JwtKeyring = { current: keyV1, previous: [] };
       await expect(verifyJwt(tampered, keyring)).rejects.toBeInstanceOf(JwtVerificationError);
     });
