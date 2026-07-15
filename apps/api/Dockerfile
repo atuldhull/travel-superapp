@@ -32,7 +32,7 @@
 # ─── Stage 1: deps ──────────────────────────────────────────────
 # Pinned to a specific Node 22 alpine for reproducibility. Bump
 # deliberately, not opportunistically.
-FROM node:22.12.0-alpine AS deps
+FROM node:26.5.0-alpine AS deps
 
 # Build context = repo root (we use the full monorepo so workspace
 # resolution works). Copy lockfile + manifests first so changes to
@@ -61,7 +61,7 @@ COPY packages/tsconfig/package.json packages/tsconfig/
 RUN pnpm fetch --frozen-lockfile
 
 # ─── Stage 2: builder ───────────────────────────────────────────
-FROM node:22.12.0-alpine AS builder
+FROM node:26.5.0-alpine AS builder
 
 WORKDIR /workspace
 RUN corepack enable && corepack prepare pnpm@9.12.3 --activate
