@@ -30,7 +30,7 @@
 # Installed by prompt [IV.18.19.19].
 
 # ─── Stage 1: deps ──────────────────────────────────────────────
-FROM node:22.12.0-alpine AS deps
+FROM node:26.7.0-alpine AS deps
 
 WORKDIR /workspace
 RUN corepack enable && corepack prepare pnpm@9.12.3 --activate
@@ -46,7 +46,7 @@ COPY packages/tsconfig/package.json packages/tsconfig/
 RUN pnpm fetch --frozen-lockfile
 
 # ─── Stage 2: builder ───────────────────────────────────────────
-FROM node:22.12.0-alpine AS builder
+FROM node:26.7.0-alpine AS builder
 
 WORKDIR /workspace
 RUN corepack enable && corepack prepare pnpm@9.12.3 --activate
