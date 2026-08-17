@@ -30,7 +30,7 @@
     "@app/aether-motion": "workspace:*"
   },
   "peerDependencies": {
-    "react": "^19.0.0",
+    "react": "^19.2.8",
     "tone": "^15.0.0"
   },
   "peerDependenciesMeta": {
@@ -44,13 +44,13 @@
     "@testing-library/react": "^16.1.0",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.10.5",
-    "@types/react": "^19.0.0",
+    "@types/react": "^19.2.18",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "ts-jest": "^29.2.5",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "@types/react-dom": "^19.2.4",
+    "ts-jest": "^29.4.12",
     "typescript": "^5.7.2"
   }
 }

@@ -50,7 +50,7 @@
   "devDependencies": {
     "@app/eslint-config": "workspace:*",
     "@app/tsconfig": "workspace:*",
-    "@nestjs/common": "^11.0.11",
+    "@nestjs/common": "^11.1.29",
     "@nestjs/config": "^4.0.0",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.10.5",
@@ -58,7 +58,7 @@
     "reflect-metadata": "^0.2.2",
     "rimraf": "^6.0.1",
     "rxjs": "^7.8.1",
-    "ts-jest": "^29.2.5",
+    "ts-jest": "^29.4.12",
     "typescript": "^5.7.2"
   }
 }
